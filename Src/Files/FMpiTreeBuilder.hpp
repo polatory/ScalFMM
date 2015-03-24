@@ -35,7 +35,7 @@
  * Finally it balances the data using an external interval builder.
  *
  */
-template<class ParticleClass>
+template<class FReal, class ParticleClass>
 class FMpiTreeBuilder{
 private:
     /** To keep the leaves information after the sort */
@@ -94,7 +94,7 @@ public:
         IndexedParticle*const originalParticlesUnsorted = new IndexedParticle[loader.getNumberOfParticles()];
         FMemUtils::memset(originalParticlesUnsorted, 0, sizeof(IndexedParticle) * loader.getNumberOfParticles());
 
-        FPoint boxCorner(loader.getCenterOfBox() - (loader.getBoxWidth()/2));
+        FPoint<FReal> boxCorner(loader.getCenterOfBox() - (loader.getBoxWidth()/2));
         FTreeCoordinate host;
         const FReal boxWidthAtLeafLevel = loader.getBoxWidth() / FReal(1 << (TreeHeight - 1) );
 
@@ -125,13 +125,13 @@ public:
 
     /** Get an array of particles sorted from their morton indexes */
     static void GetSortedParticlesFromArray( const FMpi::FComm& communicator, const ParticleClass inOriginalParticles[], const FSize originalNbParticles, const SortingType sortingType,
-                                             const FPoint& centerOfBox, const FReal boxWidth,
+                                             const FPoint<FReal>& centerOfBox, const FReal boxWidth,
                                              const int TreeHeight, IndexedParticle**const outputSortedParticles, FSize* const outputNbParticlesSorted){
         // Allocate the particles array
         IndexedParticle*const originalParticlesUnsorted = new IndexedParticle[originalNbParticles];
         FMemUtils::memset(originalParticlesUnsorted, 0, sizeof(IndexedParticle) * originalNbParticles);
 
-        FPoint boxCorner(centerOfBox - (boxWidth/2));
+        FPoint<FReal> boxCorner(centerOfBox - (boxWidth/2));
         FTreeCoordinate host;
         const FReal boxWidthAtLeafLevel = boxWidth / FReal(1 << (TreeHeight - 1) );
 
@@ -472,7 +472,7 @@ public:
 
     template <class ContainerClass>
     static void DistributeArrayToContainer(const FMpi::FComm& communicator, const ParticleClass originalParticlesArray[], const FSize originalNbParticles,
-                                           const FPoint& boxCenter, const FReal boxWidth, const int treeHeight,
+                                           const FPoint<FReal>& boxCenter, const FReal boxWidth, const int treeHeight,
                                            ContainerClass* particleSaver, FAbstractBalanceAlgorithm* balancer, const SortingType sortingType = QuickSort){
 
         IndexedParticle* sortedParticlesArray = nullptr;

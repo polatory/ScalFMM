@@ -58,17 +58,17 @@
 
 #include "Files/FRandomLoader.hpp"
 
-
+template <class FReal>
 struct sourcePart {
-	FPoint   position;
+    FPoint<FReal>   position;
 	double physicalValue ;
 };
 /** This program show an example of use of
  * the fmm basic algo
  * it also check that each particles is impacted each other particles
  */
-template <int ORDER>
-class FTestCellTsm: public FChebCell<ORDER> , public FExtendCellType{
+template <class FReal, int ORDER>
+class FTestCellTsm: public FChebCell<FReal, ORDER> , public FExtendCellType{
 };
 
 // Simply create particles and try the kernels
@@ -86,16 +86,17 @@ struct TempMainStruct{
 				FParameterDefinitions::NbParticles,LocalOptionPoints);
 
 		//	const int ORDER=4 ;
-		typedef FP2PParticleContainerIndexed<>                    ContainerClassTyped;
-		typedef FTestCellTsm<ORDER>                                   CellClassTyped;
+        typedef double FReal;
+        typedef FP2PParticleContainerIndexed<FReal>                    ContainerClassTyped;
+        typedef FTestCellTsm<FReal, ORDER>                                   CellClassTyped;
 
-		typedef FTypedLeaf< ContainerClassTyped >                      LeafClassTyped;
-		typedef FOctree< CellClassTyped, ContainerClassTyped , LeafClassTyped >  OctreeClassTyped;
+        typedef FTypedLeaf<FReal, ContainerClassTyped >                      LeafClassTyped;
+        typedef FOctree<FReal, CellClassTyped, ContainerClassTyped , LeafClassTyped >  OctreeClassTyped;
 
 		//	typedef FTestKernels< CellClassTyped, ContainerClassTyped >          KernelClassTyped;
-		typedef FInterpMatrixKernelR                                                                              MatrixKernelClass;
+        typedef FInterpMatrixKernelR<FReal>                                                                             MatrixKernelClass;
 		const MatrixKernelClass    MatrixKernel;
-		typedef FChebSymKernel<CellClassTyped,ContainerClassTyped,MatrixKernelClass,ORDER>  KernelClassTyped;
+        typedef FChebSymKernel<FReal, CellClassTyped,ContainerClassTyped,MatrixKernelClass,ORDER>  KernelClassTyped;
 
 		typedef FFmmAlgorithmThreadTsm<OctreeClassTyped, CellClassTyped, ContainerClassTyped, KernelClassTyped, LeafClassTyped > FmmClassTyped;
 		///////////////////////What we do/////////////////////////////
@@ -121,7 +122,7 @@ struct TempMainStruct{
 		//
 		//
 		double boxSize = 1.0 ;
-		FPoint CentreBox(0.5*boxSize,0.5*boxSize,0.5*boxSize) ;
+        FPoint<FReal> CentreBox(0.5*boxSize,0.5*boxSize,0.5*boxSize) ;
 
 		double cellSize  = 1.0/FMath::pow2(TreeHeight);
 		std::cout << " Cell size: "<< cellSize << "  " << 1.0/FMath::pow2(TreeHeight-1)<<  std::endl;
@@ -134,8 +135,8 @@ struct TempMainStruct{
 		//
 		// Sources are inside the cell number 1
 		//
-		FPoint CentreBoxSource(0.5*dimLeaf,0.5*dimLeaf,0.5*dimLeaf) ;
-		FRandomLoaderTsm loader(NbPart, dimLeaf, CentreBoxSource, 1);
+        FPoint<FReal> CentreBoxSource(0.5*dimLeaf,0.5*dimLeaf,0.5*dimLeaf) ;
+        FRandomLoaderTsm<FReal> loader(NbPart, dimLeaf, CentreBoxSource, 1);
 		OctreeClassTyped tree(TreeHeight, SubTreeHeight,boxSize,CentreBox);
 		//
 		//////////////////////////////////////////////////////////////////////////////////
@@ -144,10 +145,10 @@ struct TempMainStruct{
 		std::cout << "Creating " << NbPart << " particles ..." << std::endl;
 		counter.tic();
 
-		FPoint particlePosition;
+        FPoint<FReal> particlePosition;
 		double physicalValue = 1.0;
 		int nbSRC = loader.getNumberOfParticles();
-		sourcePart *tabSrc =  new sourcePart[nbSRC ];
+        sourcePart<FReal> *tabSrc =  new sourcePart<FReal>[nbSRC ];
 
 		{
 			// Insert sources
@@ -170,7 +171,7 @@ struct TempMainStruct{
 			double dx = boxSize/(nbTargets-1) ;
 //
 			std::cout << "   TARGETS "  <<std::endl;
-			FPoint particlePosition(-dx,dimLeaf+quarterDimLeaf,quarterDimLeaf);
+            FPoint<FReal> particlePosition(-dx,dimLeaf+quarterDimLeaf,quarterDimLeaf);
 			//		int nbTargets = 256;
 			for(int idxPart = 0 ; idxPart < nbTargets; ++idxPart){
 				particlePosition.incX(dx);
@@ -220,12 +221,12 @@ struct TempMainStruct{
             //
 			for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 				double pot = 0.0 , xx,yy,zz;
-				FPoint  FF ;
+                FPoint<FReal>  FF ;
 				for(int idxSrc = 0 ; idxSrc < nbSRC ; ++idxSrc){
 					xx = posX[idxPart]-tabSrc[idxSrc].position.getX();
 					yy  = posY[idxPart]-tabSrc[idxSrc].position.getY();
 					zz = posZ[idxPart]-tabSrc[idxSrc].position.getZ();
-					FPoint dx(xx,yy,zz) ;
+                    FPoint<FReal> dx(xx,yy,zz) ;
 					double dd = 1.0/dx.norm() ;
 					double coeff = tabSrc[idxSrc].physicalValue*dd;
 					pot  += coeff;

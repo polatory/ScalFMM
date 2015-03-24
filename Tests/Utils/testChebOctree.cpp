@@ -49,10 +49,10 @@ int main(int argc, char ** argv){
 
 	const int ORDER = 5;
 
-    typedef FP2PParticleContainer<> ContainerClass;
-    typedef FSimpleLeaf<ContainerClass> LeafClass;
-	typedef FChebCell<ORDER> CellClass;
-    typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+    typedef FP2PParticleContainer<FReal> ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
+	typedef FChebCell<FReal,ORDER> CellClass;
+    typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 	
 	///////////////////////What we do/////////////////////////////
 	std::cout << ">> This executable is useless to execute.\n";
@@ -65,8 +65,9 @@ int main(int argc, char ** argv){
 	
     srand48( static_cast<unsigned int>(time(NULL)) );
 	
+    typedef double FReal;
 	const FReal BoxWidth = 1.;
-	const FPoint BoxCenter(.5, .5, .5);
+    const FPoint<FReal> BoxCenter(.5, .5, .5);
 	const unsigned int TreeHeight = 10;
 	OctreeClass tree(TreeHeight, 3, BoxWidth, BoxCenter);
 
@@ -75,7 +76,7 @@ int main(int argc, char ** argv){
 	counter.tic();
     {
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
-            tree.insert(FPoint(FReal(drand48()),FReal(drand48()),FReal(drand48())));
+            tree.insert(FPoint<FReal>(FReal(drand48()),FReal(drand48()),FReal(drand48())));
 		}
 	}
 	counter.tac();
@@ -88,8 +89,8 @@ int main(int argc, char ** argv){
 	{
 		const FReal BoxWidthLeaf = BoxWidth / FReal(FMath::pow(2, TreeHeight-1));
         tree.forEachCellLeaf([&](CellClass* LeafCell, LeafClass* leaf){
-			const FPoint Origin(BoxCenter - BoxWidth / FReal(2.));
-			const FPoint LeafCellCenter(Origin.getX() + (FReal(LeafCell->getCoordinate().getX()) + FReal(.5)) * BoxWidthLeaf,
+            const FPoint<FReal> Origin(BoxCenter - BoxWidth / FReal(2.));
+            const FPoint<FReal> LeafCellCenter(Origin.getX() + (FReal(LeafCell->getCoordinate().getX()) + FReal(.5)) * BoxWidthLeaf,
 																			 Origin.getY() + (FReal(LeafCell->getCoordinate().getY()) + FReal(.5)) * BoxWidthLeaf,
 																			 Origin.getZ() + (FReal(LeafCell->getCoordinate().getZ()) + FReal(.5)) * BoxWidthLeaf);
 
@@ -99,7 +100,7 @@ int main(int argc, char ** argv){
             const FReal*const positionsZ = Particles->getPositions()[2];
 
             for(int idxPart = 0 ; idxPart < Particles->getNbParticles() ; ++idxPart){
-                const FPoint distance(LeafCellCenter-FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]));
+                const FPoint<FReal> distance(LeafCellCenter-FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]));
 				if (std::abs(distance.getX())>BoxWidthLeaf/FReal(2.) ||
 						std::abs(distance.getY())>BoxWidthLeaf/FReal(2.) ||
 						std::abs(distance.getZ())>BoxWidthLeaf/FReal(2.)) {

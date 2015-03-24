@@ -36,6 +36,7 @@
 //!  @param  particles array of particles of type FReal (float or double) Its size is N*nbDataPerParticle
 //!  @param  nbDataPerParticle number of values per particles (default value 4)
 //!
+template <class FReal>
 void exportCVS(std::ofstream& file, const FReal * particles , const int N, const int nbDataPerParticle=4){
 	int j = 0;
 	if (nbDataPerParticle==4){
@@ -64,6 +65,7 @@ void exportCVS(std::ofstream& file, const FReal * particles , const int N, const
 //!  @param  particles array of particles of type FReal (float or double) Its size is 4*N (X,Y,Z,M)
 //!  @param  N number of particles
 //!
+template <class FReal>
 void exportCOSMOS(std::ofstream& file, const FReal * particles , const int N){
 	int j = 0;
 	file << " x ,  y , z, q " <<std::endl;
@@ -84,7 +86,7 @@ void exportCOSMOS(std::ofstream& file, const FReal * particles , const int N){
 //!  @param file stream to save the data
 //!  @param  particles array of particles of type FReal (float or double) Its size is 4*N (X,Y,Z,M)
 //!  @param  N number of particles
-//!
+template <class FReal>
 void exportVTK(std::ofstream& VTKfile, const FReal * particles, const int N, const int nbDataPerParticle=4 ){
 	int j = 0;
 	//---------------------------
@@ -132,7 +134,7 @@ void exportVTK(std::ofstream& VTKfile, const FReal * particles, const int N, con
 //!  @param file stream to save the data
 //!  @param  particles array of particles of type FReal (float or double) Its size is 4*N (X,Y,Z,M)
 //!  @param  N number of particles
-//!
+template <class FReal>
 void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N ){
 	int j = 0;
 
@@ -191,7 +193,7 @@ void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N )
 //!  @param  particles array of particles of type FReal (float or double) Its size is nbDataPerParticle*N
 //!  @param  N number of particles
 //!  @param  nbDataPerParticle number of values per particles (default value 4)
-//!
+template <class FReal>
 void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N, const int nbDataPerParticle ){
 	int j = 0;
 
@@ -278,7 +280,7 @@ void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N, 
 //!  @param  N number of particles
 //!  @param  particles array of particles of type FReal (float or double) Its size is N*nbDataPerParticle
 //!  @param  nbDataPerParticle number of values per particles (default value 4)
-//!
+template <class FReal>
 void driverExportData(std::string & filename, const FReal * particles , const int NbPoints, const int nbDataPerParticle=4){
 	//
 	std::ofstream file( filename.c_str(), std::ofstream::out);

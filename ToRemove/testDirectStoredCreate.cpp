@@ -60,14 +60,14 @@ int main(int argc, char* argv[])
 
   //Direct Computation and Storage of result
   //open particle file
-  FFmaGenericLoader loader(filename);
+  FFmaGenericLoader<FReal> loader(filename);
   if(!loader.isOpen()){
     std::cout << "Loader Error, " << filename << " is missing\n";
     return 1;
   }
 
   struct TestParticle{
-    FPoint position;
+    FPoint<FReal> position;
     FReal forces[3];
     FReal physicalValue;
     FReal potential;
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
   
   TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
   for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-    FPoint position;
+    FPoint<FReal> position;
     FReal physicalValue = 0.0;
     loader.fillParticle(&position,&physicalValue);
     // get copy

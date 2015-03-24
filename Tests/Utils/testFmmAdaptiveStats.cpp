@@ -260,11 +260,11 @@ int main(int argc, char ** argv){
     typedef FBasicCell                   CellClass;
     typedef FBasicParticleContainer<0>   ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FAdaptiveStatsKernel< CellClass, ContainerClass >         KernelClass;
     typedef FAdaptiveCell< CellClass, ContainerClass >         CellWrapperClass;
     typedef FAdaptiveKernelWrapper< KernelClass, CellClass, ContainerClass >         KernelWrapperClass;
-    typedef FOctree< CellWrapperClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FOctree< FReal, CellWrapperClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FFmmAlgorithm<OctreeClass, CellWrapperClass, ContainerClass, KernelWrapperClass, LeafClass >     FmmClass;
 
     ///////////////////////What we do/////////////////////////////
@@ -279,7 +279,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoader loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000), 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoader<FReal> loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000), 1, FPoint<FReal>(0.5,0.5,0.5), 1);
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -290,7 +290,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
     {
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&particlePosition);
             tree.insert(particlePosition);

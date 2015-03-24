@@ -115,11 +115,11 @@ static void Run(int argc, char* argv[])
 
 	// open particle file
 	////////////////////////////////////////////////////////////////////
-	//
-	FFmaGenericLoader loader(filename);
+    typedef double FReal;
+	FFmaGenericLoader<FReal> loader(filename);
 	//
 	FSize nbParticles = loader.getNumberOfParticles() ;
-	FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
+	FmaRWParticle<FReal, 8,8>* const particles = new FmaRWParticle<FReal, 8,8>[nbParticles];
 
 	loader.fillParticle(particles,nbParticles);
 	FReal  energyD = 0.0 ;
@@ -138,13 +138,13 @@ static void Run(int argc, char* argv[])
 	// accuracy
 	//const unsigned int ORDER = 7;
 	// typedefs
-	typedef FP2PParticleContainerIndexed<>                                 ContainerClass;
-	typedef FSimpleLeaf< ContainerClass >                                       LeafClass;
-	typedef FChebCell<ORDER>                                                    CellClass;
-	typedef FOctree<CellClass,ContainerClass,LeafClass>                       OctreeClass;
+	typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
+	typedef FSimpleLeaf<FReal, ContainerClass >                                       LeafClass;
+	typedef FChebCell<FReal,ORDER>                                                    CellClass;
+	typedef FOctree<FReal, CellClass,ContainerClass,LeafClass>                       OctreeClass;
 	//
-	typedef FInterpMatrixKernelR                                        MatrixKernelClass;
-	typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
+	typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
+	typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
 	//
 #ifdef _OPENMP
 	typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
@@ -207,8 +207,8 @@ static void Run(int argc, char* argv[])
 		// Compare
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		printf("Compute Diff...");
-		FMath::FAccurater potentialDiff;
-		FMath::FAccurater fx, fy, fz, f;
+		FMath::FAccurater<FReal> potentialDiff;
+		FMath::FAccurater<FReal> fx, fy, fz, f;
 		{ // Check that each particle has been summed with all other
 
 			tree.forEachLeaf([&](LeafClass* leaf){

@@ -13,7 +13,7 @@
  * The idea is to hidde the group allocation from the group tree but
  * to keep the same interface than the FBasicParticlesContainer.
  */
-template <unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
+template <class FReal, unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FGroupAttachedLeaf {
 protected:
     //< Nb of particles in the current leaf

@@ -36,7 +36,7 @@
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * This is the abstract spherical harmonic kernel
 */
-template< class CellClass, class ContainerClass>
+template< class FReal, class CellClass, class ContainerClass>
 class FAbstractSphericalKernel : public FAbstractKernels<CellClass,ContainerClass> {
 protected:
     const int   devP;           //< The P
@@ -45,58 +45,58 @@ protected:
 
     const FReal widthAtLeafLevel;       //< the width of a box at leaf level
     const FReal widthAtLeafLevelDiv2;   //< the width of a box at leaf level divided by 2
-    const FPoint boxCorner;        //< the corner of the box system
+    const FPoint<FReal> boxCorner;        //< the corner of the box system
 
-    FHarmonic harmonic; //< The harmonic computation class
+    FHarmonic<FReal> harmonic; //< The harmonic computation class
 
     // For normal computation
-    FSmartPointer<FComplex*> preL2LTransitions; //< The pre-computation for the L2L based on the level
-    FSmartPointer<FComplex*> preM2MTransitions; //< The pre-computation for the M2M based on the level
+    FSmartPointer<FComplex<FReal>*> preL2LTransitions; //< The pre-computation for the L2L based on the level
+    FSmartPointer<FComplex<FReal>*> preM2MTransitions; //< The pre-computation for the M2M based on the level
 
 
     /** Alloc and init pre-vectors*/
     void allocAndInit(){
-        preL2LTransitions = new FComplex*[treeHeight ];
-        memset(preL2LTransitions.getPtr(), 0, (treeHeight) * sizeof(FComplex*));
-        preM2MTransitions = new FComplex*[treeHeight];
-        memset(preM2MTransitions.getPtr(), 0, (treeHeight) * sizeof(FComplex*));
+        preL2LTransitions = new FComplex<FReal>*[treeHeight ];
+        memset(preL2LTransitions.getPtr(), 0, (treeHeight) * sizeof(FComplex<FReal>*));
+        preM2MTransitions = new FComplex<FReal>*[treeHeight];
+        memset(preM2MTransitions.getPtr(), 0, (treeHeight) * sizeof(FComplex<FReal>*));
 
         FReal treeWidthAtLevel = (boxWidth)/2;
         for(int idxLevel = 0 ; idxLevel < treeHeight - 1 ; ++idxLevel ){
-            preL2LTransitions[idxLevel] = new FComplex[ 8 * harmonic.getExpSize()];
-            preM2MTransitions[idxLevel] = new FComplex[ 8 * harmonic.getExpSize()];
+            preL2LTransitions[idxLevel] = new FComplex<FReal>[ 8 * harmonic.getExpSize()];
+            preM2MTransitions[idxLevel] = new FComplex<FReal>[ 8 * harmonic.getExpSize()];
 
-            const FPoint father(treeWidthAtLevel,treeWidthAtLevel,treeWidthAtLevel);
+            const FPoint<FReal> father(treeWidthAtLevel,treeWidthAtLevel,treeWidthAtLevel);
             treeWidthAtLevel /= 2;
 
             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild ){
                 FTreeCoordinate childBox;
                 childBox.setPositionFromMorton(idxChild,1);
 
-                const FPoint M2MVector (
+                const FPoint<FReal> M2MVector (
                         father.getX() - (treeWidthAtLevel * FReal(1 + (childBox.getX() * 2))),
                         father.getY() - (treeWidthAtLevel * FReal(1 + (childBox.getY() * 2))),
                         father.getZ() - (treeWidthAtLevel * FReal(1 + (childBox.getZ() * 2)))
                         );
 
-                harmonic.computeInner(FSpherical(M2MVector));
-                FMemUtils::copyall<FComplex>(&preM2MTransitions[idxLevel][harmonic.getExpSize() * idxChild], harmonic.result(), harmonic.getExpSize());
+                harmonic.computeInner(FSpherical<FReal>(M2MVector));
+                FMemUtils::copyall<FComplex<FReal>>(&preM2MTransitions[idxLevel][harmonic.getExpSize() * idxChild], harmonic.result(), harmonic.getExpSize());
 
-                const FPoint L2LVector (
+                const FPoint<FReal> L2LVector (
                         (treeWidthAtLevel * FReal(1 + (childBox.getX() * 2))) - father.getX(),
                         (treeWidthAtLevel * FReal(1 + (childBox.getY() * 2))) - father.getY(),
                         (treeWidthAtLevel * FReal(1 + (childBox.getZ() * 2))) - father.getZ()
                         );
 
-                harmonic.computeInner(FSpherical(L2LVector));
-                FMemUtils::copyall<FComplex>(&preL2LTransitions[idxLevel][harmonic.getExpSize() * idxChild], harmonic.result(), harmonic.getExpSize());
+                harmonic.computeInner(FSpherical<FReal>(L2LVector));
+                FMemUtils::copyall<FComplex<FReal>>(&preL2LTransitions[idxLevel][harmonic.getExpSize() * idxChild], harmonic.result(), harmonic.getExpSize());
            }
         }
     }
 
     /** Get a leaf real position from its tree coordinate */
-    FPoint getLeafCenter(const FTreeCoordinate coordinate) const {
-        return FPoint(
+    FPoint<FReal> getLeafCenter(const FTreeCoordinate coordinate) const {
+        return FPoint<FReal>(
                     FReal(coordinate.getX()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
                     FReal(coordinate.getY()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
                     FReal(coordinate.getZ()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX());
@@ -105,7 +105,7 @@ protected:
 
 public:
     /** Kernel constructor */
-    FAbstractSphericalKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter)
+    FAbstractSphericalKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter)
         : devP(inDevP),
           boxWidth(inBoxWidth),
           treeHeight(inTreeHeight),
@@ -145,9 +145,9 @@ public:
 
     /** P2M with a cell and all its particles */
     void P2M(CellClass* const inPole, const ContainerClass* const inParticles) {
-        FComplex* FRestrict const cellMultiPole = inPole->getMultipole();
+        FComplex<FReal>* FRestrict const cellMultiPole = inPole->getMultipole();
         // Copying the position is faster than using cell position
-        const FPoint polePosition = getLeafCenter(inPole->getCoordinate());
+        const FPoint<FReal> polePosition = getLeafCenter(inPole->getCoordinate());
         // For all particles in the leaf box
         const FReal*const physicalValues = inParticles->getPhysicalValues();
         const FReal*const positionsX = inParticles->getPositions()[0];
@@ -156,16 +156,16 @@ public:
         for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
             // P2M
             particleToMultiPole(cellMultiPole, polePosition,
-                                FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]),
+                                FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]),
                                 physicalValues[idxPart]);
         }
     }
 
     /** M2M with a cell and all its child */
     void M2M(CellClass* const FRestrict inPole, const CellClass *const FRestrict *const FRestrict inChild, const int inLevel) {
-        FComplex* FRestrict const multipole_exp_target = inPole->getMultipole();
+        FComplex<FReal>* FRestrict const multipole_exp_target = inPole->getMultipole();
         // iter on each child and process M2M
-        const FComplex* FRestrict const preM2MTransitionsAtLevel = preM2MTransitions[inLevel];
+        const FComplex<FReal>* FRestrict const preM2MTransitionsAtLevel = preM2MTransitions[inLevel];
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
             if(inChild[idxChild]){
                 multipoleToMultipole(multipole_exp_target, inChild[idxChild]->getMultipole(), &preM2MTransitionsAtLevel[idxChild * harmonic.getExpSize()]);
@@ -180,7 +180,7 @@ public:
     /** L2L with a cell and all its child */
     void L2L(const CellClass* const FRestrict pole, CellClass* FRestrict *const FRestrict child, const int inLevel) {
         // iter on each child and process L2L
-        const FComplex* FRestrict const preL2LTransitionsAtLevel = preL2LTransitions[inLevel];
+        const FComplex<FReal>* FRestrict const preL2LTransitionsAtLevel = preL2LTransitions[inLevel];
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
             if(child[idxChild]){
                 localToLocal(child[idxChild]->getLocal(), pole->getLocal(), &preL2LTransitionsAtLevel[idxChild * harmonic.getExpSize()]);
@@ -190,9 +190,9 @@ public:
 
     /** L2P with a cell and all its particles */
     void L2P(const CellClass* const local, ContainerClass* const inParticles){
-        const FComplex* const cellLocal = local->getLocal();
+        const FComplex<FReal>* const cellLocal = local->getLocal();
         // Copying the position is faster than using cell position
-        const FPoint localPosition = getLeafCenter(local->getCoordinate());
+        const FPoint<FReal> localPosition = getLeafCenter(local->getCoordinate());
         // For all particles in the leaf box
         const FReal*const physicalValues = inParticles->getPhysicalValues();
         const FReal*const positionsX = inParticles->getPositions()[0];
@@ -205,7 +205,7 @@ public:
         for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
             // L2P
             localToParticle(localPosition, cellLocal,
-                            FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]),
+                            FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]),
                             physicalValues[idxPart], &potentials[idxPart],
                             &forcesX[idxPart],&forcesY[idxPart],&forcesZ[idxPart]);
         }
@@ -222,7 +222,7 @@ public:
     void P2P(const FTreeCoordinate& inLeafPosition,
                   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
                   ContainerClass* const directNeighborsParticles[27], const int /*size*/){
-        FP2PRT<FReal>::FullMutual<ContainerClass>(targets,directNeighborsParticles,14);
+        FP2PRT<FReal>::template FullMutual<ContainerClass>(targets,directNeighborsParticles,14);
     }
 
     /** This P2P has to be used when target != sources
@@ -236,7 +236,7 @@ public:
     void P2PRemote(const FTreeCoordinate& ,
                   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict ,
                   ContainerClass* const directNeighborsParticles[27], const int /*size*/){
-        FP2PRT<FReal>::FullRemote<ContainerClass>(targets,directNeighborsParticles,27);
+        FP2PRT<FReal>::template FullRemote<ContainerClass>(targets,directNeighborsParticles,27);
     }
 
 private:
@@ -265,11 +265,11 @@ private:
     * Phi(x) = sum_{n=0}^{+} sum_{m=-n}^{n} M_n^m O_n^{-m} (x - *p_center)
     *
     */
-    void particleToMultiPole(FComplex* const cellMultiPole, const FPoint& inPolePosition ,
-                             const FPoint& particlePosition, const FReal particlePhysicalValue){
+    void particleToMultiPole(FComplex<FReal>* const cellMultiPole, const FPoint<FReal>& inPolePosition ,
+                             const FPoint<FReal>& particlePosition, const FReal particlePhysicalValue){
 
         // Inner of Qi - Z0 => harmonic.result
-        harmonic.computeInner( FSpherical(particlePosition - inPolePosition) );
+        harmonic.computeInner( FSpherical<FReal>(particlePosition - inPolePosition) );
 
         FReal minus_one_pow_j = 1.0;    // (-1)^j => be in turn 1 and -1
         const FReal qParticle = particlePhysicalValue; // q in the formula
@@ -304,9 +304,9 @@ private:
     *
     * Warning: if j-n < |k-l| we do nothing.
      */
-    void multipoleToMultipole(FComplex* const FRestrict multipole_exp_target,
-                              const FComplex* const FRestrict multipole_exp_src,
-                              const FComplex* const FRestrict M2M_Inner_transfer){
+    void multipoleToMultipole(FComplex<FReal>* const FRestrict multipole_exp_target,
+                              const FComplex<FReal>* const FRestrict multipole_exp_src,
+                              const FComplex<FReal>* const FRestrict M2M_Inner_transfer){
 
         // n from 0 to P
         for(int n = 0 ; n <= devP ; ++n ){
@@ -318,7 +318,7 @@ private:
 
             // l from -n to <0
             for(int l = -n ; l < 0 ; ++l){
-                const FComplex M_n__n_l = multipole_exp_src[index_n -l];
+                const FComplex<FReal> M_n__n_l = multipole_exp_src[index_n -l];
 
                 // j from n to P
                 for(int j = n ; j <= devP ; ++j ){
@@ -329,7 +329,7 @@ private:
 
                     // since n-j+l<0
                     for(int k = 0 ; k <= (j-n+l) ; ++k ){ // l<0 && k>=0 => k-l>0
-                        const FComplex I_j_n__k_l = M2M_Inner_transfer[index_j_n + k - l];
+                        const FComplex<FReal> I_j_n__k_l = M2M_Inner_transfer[index_j_n + k - l];
 
                         multipole_exp_target[index_j + k].incReal( pow_of_minus_1_for_l *
                                                     ((M_n__n_l.getReal() * I_j_n__k_l.getReal()) +
@@ -346,7 +346,7 @@ private:
 
             // l from 0 to n
             for(int l = 0 ; l <= n ; ++l){
-                const FComplex M_n__n_l = multipole_exp_src[index_n + l];
+                const FComplex<FReal> M_n__n_l = multipole_exp_src[index_n + l];
 
                 // j from n to P
                 for( int j = n ; j <= devP ; ++j ){
@@ -360,7 +360,7 @@ private:
 
                     int k = first_k;
                     for(; k <= (j-n+l) && k < l ; ++k){ /* l>=0 && k-l<0 */
-                        const FComplex I_j_n__l_k = M2M_Inner_transfer[index_j_n + l - k];
+                        const FComplex<FReal> I_j_n__l_k = M2M_Inner_transfer[index_j_n + l - k];
 
                         multipole_exp_target[index_j + k].incReal( pow_of_minus_1_for_k * pow_of_minus_1_for_l *
                                                     ((M_n__n_l.getReal() * I_j_n__l_k.getReal()) +
@@ -373,7 +373,7 @@ private:
                     } // for k
 
                     for(/* k = l */; k <= (j - n + l) ; ++k){ // l>=0 && k-l>=0
-                        const FComplex I_j_n__k_l = M2M_Inner_transfer[index_j_n + k - l];
+                        const FComplex<FReal> I_j_n__k_l = M2M_Inner_transfer[index_j_n + k - l];
 
                         multipole_exp_target[index_j + k].incReal(
                                 (M_n__n_l.getReal() * I_j_n__k_l.getReal()) -
@@ -408,8 +408,8 @@ private:
       *
       *Warning: if |l-k| > n-j, we do nothing.
       */
-    void localToLocal(FComplex* const FRestrict local_exp_target, const FComplex* const FRestrict local_exp_src,
-                      const FComplex* const FRestrict L2L_tranfer){
+    void localToLocal(FComplex<FReal>* const FRestrict local_exp_target, const FComplex<FReal>* const FRestrict local_exp_src,
+                      const FComplex<FReal>* const FRestrict L2L_tranfer){
         // L_j^k
         int index_j_k = 0;
 
@@ -418,7 +418,7 @@ private:
             FReal pow_of_minus_1_for_k = 1.0;
 
             for (int k = 0 ; k <= j ; ++k, ++index_j_k ){
-                FComplex L_j_k = local_exp_target[index_j_k];
+                FComplex<FReal> L_j_k = local_exp_target[index_j_k];
 
                 for (int n=j; n <= devP;++n){
                     // O_n^l : here points on the source multipole expansion term of degree n and order |l|
@@ -429,8 +429,8 @@ private:
                     const int index_n_j = harmonic.getPreExpRedirJ(n-j);
 
                     for(/*l = n - j + k*/ ; l-k > 0 ;  --l){ /* l>0 && l-k>0 */
-                        const FComplex L_j_l = local_exp_src[index_n + l];
-                        const FComplex I_l_j__l_k = L2L_tranfer[index_n_j  + l - k];
+                        const FComplex<FReal> L_j_l = local_exp_src[index_n + l];
+                        const FComplex<FReal> I_l_j__l_k = L2L_tranfer[index_n_j  + l - k];
 
                         L_j_k.incReal( (L_j_l.getReal() * I_l_j__l_k.getReal()) -
                                                     (L_j_l.getImag() * I_l_j__l_k.getImag()));
@@ -442,8 +442,8 @@ private:
                     // (-1)^l
                     FReal pow_of_minus_1_for_l = ((l&1) ? FReal(-1.0) : FReal(1.0));
                     for(/*l = k*/; l>0 && l>=j-n+k; --l){ /* l>0 && l-k<=0 */
-                        const FComplex L_j_l = local_exp_src[index_n + l];
-                        const FComplex I_l_j__l_k = L2L_tranfer[index_n_j  - l + k];
+                        const FComplex<FReal> L_j_l = local_exp_src[index_n + l];
+                        const FComplex<FReal> I_l_j__l_k = L2L_tranfer[index_n_j  - l + k];
 
                         L_j_k.incReal( pow_of_minus_1_for_l * pow_of_minus_1_for_k *
                                                     ((L_j_l.getReal() * I_l_j__l_k.getReal()) +
@@ -457,8 +457,8 @@ private:
 
                     // l<=0 && l-k<=0
                     for(/*l = 0 ou l = j-n+k-1*/; l>=j-n+k; --l){
-                        const FComplex L_j_l = local_exp_src[index_n - l];
-                        const FComplex I_l_j__l_k = L2L_tranfer[index_n_j  - l + k];
+                        const FComplex<FReal> L_j_l = local_exp_src[index_n - l];
+                        const FComplex<FReal> I_l_j__l_k = L2L_tranfer[index_n_j  - l + k];
 
                         L_j_k.incReal( pow_of_minus_1_for_k *
                                                     ((L_j_l.getReal() * I_l_j__l_k.getReal()) -
@@ -480,8 +480,8 @@ private:
 
     /** L2P
       */
-    void localToParticle(const FPoint& local_position,const FComplex*const local_exp,
-                         const FPoint& particlePosition,
+    void localToParticle(const FPoint<FReal>& local_position,const FComplex<FReal>*const local_exp,
+                         const FPoint<FReal>& particlePosition,
                          const FReal physicalValue, FReal*const potential,
                          FReal*const forcesX,FReal*const forcesY,FReal*const forcesZ){
         //--------------- Forces ----------------//
@@ -490,7 +490,7 @@ private:
         FReal force_vector_in_local_base_y = 0.0;
         FReal force_vector_in_local_base_z = 0.0;
 
-        const FSpherical spherical(particlePosition - local_position);
+        const FSpherical<FReal> spherical(particlePosition - local_position);
         harmonic.computeInnerTheta( spherical );
 //        std::cout << "  L2P:"<<std::endl
 //        		  << "        Centre: " << 		local_position <<std::endl
@@ -552,20 +552,20 @@ private:
 //
             //spherical_position_Set_ph
         FReal ph = 	spherical.getPhiZero2Pi();
-//        FReal ph = FMath::Fmod(spherical.getPhi(), FReal(2)*FMath::FPi);
-//        if (ph > M_PI) ph -= FReal(2) * FMath::FPi;
-//        if (ph < -M_PI + FMath::Epsilon)  ph += FReal(2) * FMath::FPi;
+//        FReal ph = FMath::Fmod(spherical.getPhi(), FReal(2)*FMath::FPi<FReal>());
+//        if (ph > M_PI) ph -= FReal(2) * FMath::FPi<FReal>();
+//        if (ph < -M_PI + FMath::Epsilon)  ph += FReal(2) * FMath::FPi<FReal>();
 //
 //        //spherical_position_Set_th
-//        FReal th = FMath::Fmod(spherical.getTheta(), FReal(2) * FMath::FPi);
+//        FReal th = FMath::Fmod(spherical.getTheta(), FReal(2) * FMath::FPi<FReal>());
 //        //FReal th = spherical.getTheta();
-//        if (th < 0.0) th += 2*FMath::FPi;
-//        if (th > FMath::FPi){
-//            th = 2*FMath::FPi - th;
+//        if (th < 0.0) th += 2*FMath::FPi<FReal>();
+//        if (th > FMath::FPi<FReal>()){
+//            th = 2*FMath::FPi<FReal>() - th;
 //            //spherical_position_Set_ph(p, spherical_position_Get_ph(p) + M_PI);
-//            ph = FMath::Fmod(ph + FMath::FPi, 2*FMath::FPi);
-//            if (ph > M_PI) ph -= 2*FMath::FPi;
-//            if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::FPi;
+//            ph = FMath::Fmod(ph + FMath::FPi<FReal>(), 2*FMath::FPi<FReal>());
+//            if (ph > M_PI) ph -= 2*FMath::FPi<FReal>();
+//            if (ph < -M_PI + FMath::Epsilon)  ph += 2 * FMath::FPi<FReal>();
 //        }
 //        //spherical_position_Set_r
 //        //FReal rh = spherical.r;
@@ -634,7 +634,7 @@ public:
         FReal*const forcesX = inParticles->getForcesX();
         FReal*const forcesY = inParticles->getForcesY();
         FReal*const forcesZ = inParticles->getForcesZ();
-        FVector<FPoint>& velocities = inParticles->getVelocities();
+        FVector<FPoint<FReal>>& velocities = inParticles->getVelocities();
 
         for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
             const FReal physicalValue = physicalValues[idxPart];
@@ -642,7 +642,7 @@ public:
             const FReal coef = (FReal(1.0)/physicalValue) * (DT/FReal(2.0));
 
             // velocity = velocity + forces * coef
-            FPoint forces_coef(forcesX[idxPart], forcesY[idxPart], forcesZ[idxPart]);
+            FPoint<FReal> forces_coef(forcesX[idxPart], forcesY[idxPart], forcesZ[idxPart]);
             forces_coef *= coef;
             velocities[idxPart] += (forces_coef);
         }
@@ -655,10 +655,10 @@ public:
         FReal*const positionsX = inParticles->getWPositions()[0];
         FReal*const positionsY = inParticles->getWPositions()[1];
         FReal*const positionsZ = inParticles->getWPositions()[2];
-        FVector<FPoint>& velocities = inParticles->getVelocities();
+        FVector<FPoint<FReal>>& velocities = inParticles->getVelocities();
 
         for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
-            FPoint velocity_dt( velocities[idxPart] );
+            FPoint<FReal> velocity_dt( velocities[idxPart] );
             velocity_dt *= DT;
             positionsX[idxPart] += velocity_dt.getX();
             positionsY[idxPart] += velocity_dt.getY();

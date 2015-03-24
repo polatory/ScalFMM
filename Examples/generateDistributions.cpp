@@ -112,19 +112,19 @@ int main(int argc, char ** argv){
 
 
 
-
+    typedef double FReal;
 	 FReal       extraRadius = 0.000 ;
     const int NbPoints  = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options,   20000);
     const std::string genericFileName(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,   "unifPointDist"));
 	FReal BoxWith = 0.0;
-	FPoint Centre(0.0, 0.0,0.0);
+    FPoint<FReal> Centre(0.0, 0.0,0.0);
 	//
 	// Allocation
 	//
 	FReal * particles ;
 	particles = new FReal[4*NbPoints] ;
 	memset(particles,0,4*NbPoints*sizeof(FReal));
-	FmaBasicParticle *ppart = (FmaBasicParticle*)(&particles[0]);
+    FmaRWParticle<FReal, 4,4> *ppart = (FmaRWParticle<FReal, 4,4>*)(&particles[0]);
 
 	//
 	// Generate physical values
@@ -140,7 +140,7 @@ int main(int argc, char ** argv){
 	sum = 0.0 ;
 	int j = 3 ;
 	for(int i = 0 ; i< NbPoints; ++i, j+=4){
-		phyVal            = a*getRandom() +b  ;
+        phyVal            = a*getRandom<FReal>() +b  ;
 		sum              += phyVal ;
 		particles[j]       = phyVal ;
 	}
@@ -221,7 +221,7 @@ int main(int argc, char ** argv){
 	//                                           Save data
     /////////////////////////////////////////////////////////////////////////
 	//
-	//  Generate FMA file for FFmaGenericLoader Loader
+    //  Generate FMA file for FFmaGenericLoader<FReal> Loader
 	//
 	if(FParameters::existParameter(argc, argv, "-extraLength")){
 		extraRadius  = FParameters::getValue(argc,argv,"-extraLength",  0.0);
@@ -229,7 +229,7 @@ int main(int argc, char ** argv){
 	}
 	std::string name(genericFileName);
 	std::cout << "Write "<< NbPoints <<" Particles in file " << name << std::endl;
-	FFmaGenericWriter  writer(name) ;
+    FFmaGenericWriter<FReal>  writer(name) ;
 	writer.writeHeader(Centre,BoxWith, NbPoints, *ppart) ;
 	writer.writeArrayOfParticles(ppart, NbPoints);
 	std::cout << "    End of writing "<<std::endl;

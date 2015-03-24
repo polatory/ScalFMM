@@ -48,15 +48,15 @@ int main(int argc, char** argv){
                          FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::SequentialFmm,
                          FParameterDefinitions::TaskFmm);
-
+    typedef double FReal;
     static const int P = 9;
 
-    typedef FRotationCell<P>               CellClass;
-    typedef FP2PParticleContainer<>          ContainerClass;
+    typedef FRotationCell<FReal,P>               CellClass;
+    typedef FP2PParticleContainer<FReal>          ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FRotationKernel< CellClass, ContainerClass , P>   KernelClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FRotationKernel<FReal, CellClass, ContainerClass , P>   KernelClass;
 
     typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassThread;
@@ -72,7 +72,7 @@ int main(int argc, char** argv){
 
     std::cout << "Opening : " << filename << "\n";
 
-    FFmaGenericLoader loader(filename);
+    FFmaGenericLoader<FReal> loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -89,7 +89,7 @@ int main(int argc, char** argv){
     counter.tic();
 
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         FReal physicalValue;
         loader.fillParticle(&particlePosition,&physicalValue);
         tree.insert(particlePosition, physicalValue );

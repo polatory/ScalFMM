@@ -62,6 +62,7 @@ int main(int argc, char ** argv){
 	//
 	bool useFMA=false;
 //
+    typedef double FReal;
 	FReal scaleEnergy, scaleForce  ;
 	// Physical constants
 	const double q0  = 1.6021892e-19;
@@ -95,7 +96,7 @@ int main(int argc, char ** argv){
 	}
 	else 	if(FParameters::existParameter(argc, argv, "-stamp")){
 		// used in Stamp
-		const double Unsur4pie0 =8.98755179e+9; // 1.0/(4*FMath::FPi*e0); //8.98755179e+9 ;
+		const double Unsur4pie0 =8.98755179e+9; // 1.0/(4*FMath::FPi<FReal>()*e0); //8.98755179e+9 ;
 		scaleEnergy =  q0*q0*Unsur4pie0 /ang;
 		scaleForce   = -scaleEnergy/ang;
 	}
@@ -121,24 +122,24 @@ int main(int argc, char ** argv){
 	FTic counter;
 
 	std::cout << "Opening : " << filenameIn << "\n";
-	FDlpolyLoader          *loaderDlpoly = nullptr ;
-	FFmaGenericLoader  *loaderFMA    = nullptr ;
+    FDlpolyLoader<FReal>          *loaderDlpoly = nullptr ;
+    FFmaGenericLoader<FReal>  *loaderFMA    = nullptr ;
 	std::string ext(".bin");
 	std::string ext1(".fma"),ext2(".bfma");
 
 	// open particle file
 	if(filenameIn.find(ext) != std::string::npos) {
-		loaderDlpoly  = new FDlpolyBinLoader(filenameIn.c_str());
+        loaderDlpoly  = new FDlpolyBinLoader<FReal>(filenameIn.c_str());
 	}
 	else if(filenameIn.find(".txt")!=std::string::npos ) {
-		loaderDlpoly  = new FDlpolyAsciiLoader(filenameIn.c_str());
+        loaderDlpoly  = new FDlpolyAsciiLoader<FReal>(filenameIn.c_str());
 	}
 	else if(filenameIn.find(ext1)!=std::string::npos ) {
 		std::cout << "FMA read " << std::endl;
-		loaderFMA  = new FFmaGenericLoader(filenameIn.c_str());
+        loaderFMA  = new FFmaGenericLoader<FReal>(filenameIn.c_str());
 		useFMA = true ;
 	}  else if(filenameIn.find(ext2)!=std::string::npos ) {
-		loaderFMA  = new FFmaGenericLoader(filenameIn.c_str());
+        loaderFMA  = new FFmaGenericLoader<FReal>(filenameIn.c_str());
 		useFMA    = true ;
 	}  else
 	{
@@ -146,10 +147,10 @@ int main(int argc, char ** argv){
 		std::exit ( EXIT_FAILURE) ;
 	}
 	double boxsize[3] = {0.0, 0.0, 0.0} ;
-	FPoint centre ;
+    FPoint<FReal> centre ;
     FSize numberofParticles = 0;
 	double energy = 0.0 ;
-	FmaRWParticle<8,8>*  particlesIn = nullptr  ;
+    FmaRWParticle<FReal, 8,8>*  particlesIn = nullptr  ;
 	if( FParameters::existParameter(argc, argv, "-energy") ){
 		energy = FParameters::getValue(argc,argv,"-energy", 0.0);
 
@@ -165,12 +166,12 @@ int main(int argc, char ** argv){
 		boxsize[0] = boxsize[1]= boxsize[2]=loaderDlpoly->getBoxWidth() ;
 		centre = 	loaderDlpoly->getCenterOfBox();
 		numberofParticles = loaderDlpoly->getNumberOfParticles() ;
-		particlesIn  = new FmaRWParticle<8,8>[numberofParticles];
-		memset(particlesIn, 0, sizeof( FmaRWParticle<8,8>) * numberofParticles) ;
+        particlesIn  = new FmaRWParticle<FReal, 8,8>[numberofParticles];
+        memset(particlesIn, 0, sizeof( FmaRWParticle<FReal, 8,8>) * numberofParticles) ;
 
 		for(int idxPart = 0 ; idxPart < numberofParticles; ++idxPart){
 			//
-			FPoint position;
+            FPoint<FReal> position;
 			FReal  forces[3];
 			FReal  physicalValue;
 			FReal  potential=0.0;
@@ -194,15 +195,15 @@ int main(int argc, char ** argv){
 		boxsize[0] = boxsize[1]= boxsize[2] = loaderFMA->getBoxWidth();
 
 		numberofParticles  = loaderFMA->getNumberOfParticles() ;
-		particlesIn              = new FmaRWParticle<8,8>[numberofParticles];
-		memset(particlesIn, 0, sizeof( FmaRWParticle<8,8>) * numberofParticles) ;
+        particlesIn              = new FmaRWParticle<FReal, 8,8>[numberofParticles];
+        memset(particlesIn, 0, sizeof( FmaRWParticle<FReal, 8,8>) * numberofParticles) ;
 		loaderFMA->fillParticle(particlesIn,numberofParticles);
 		centre = loaderFMA->getCenterOfBox();
 	}
 
 	counter.tic();
-	FPoint electricMoment(0.0,0.0,0.0) ;
-	FPoint xmin,xmax ;
+    FPoint<FReal> electricMoment(0.0,0.0,0.0) ;
+    FPoint<FReal> xmin,xmax ;
 
 	// const --> then shared
 	//
@@ -236,7 +237,7 @@ int main(int argc, char ** argv){
 	//  remove polarization component
 	//
 	double volume               =  boxsize[0] *boxsize[1]*boxsize[2] ;
-	double coeffCorrection   = 4.0*FMath::FPi/volume/3.0 ;
+	double coeffCorrection   = 4.0*FMath::FPi<FReal>()/volume/3.0 ;
 	double preScaleEnergy = 1.0,  postScaleEnergy = 1.0, preScaleForce = 1.0,  postScaleForce = 1.0 ;
 	if( FParameters::existParameter(argc, argv, "-Ewald2FMM") ){
 		preScaleEnergy = 1.0/scaleEnergy ;  postScaleEnergy = 1.0 ; preScaleForce = 1.0/scaleForce;  postScaleForce = 1.0 ;
@@ -304,7 +305,7 @@ int main(int argc, char ** argv){
 
 	std::cout << "Generate " << filenameOut <<"  for output file" << std::endl;
 	//
-	FFmaGenericWriter writer(filenameOut) ;
+    FFmaGenericWriter<FReal> writer(filenameOut) ;
 	writer.writeHeader(centre, boxsize[0] , numberofParticles,*particlesIn) ;
 	writer.writeArrayOfParticles(particlesIn, numberofParticles);
 

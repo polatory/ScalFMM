@@ -23,14 +23,14 @@
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 * This class is the basic spherical harmonic kernel
 */
-template< class CellClass, class ContainerClass>
-class FSphericalKernel : public FAbstractSphericalKernel<CellClass,ContainerClass> {
+template< class FReal, class CellClass, class ContainerClass>
+class FSphericalKernel : public FAbstractSphericalKernel<FReal, CellClass,ContainerClass> {
 protected:
-    typedef FAbstractSphericalKernel<CellClass,ContainerClass> Parent;
+    typedef FAbstractSphericalKernel<FReal, CellClass,ContainerClass> Parent;
 
     const int devM2lP;               //< A secondary P
 
-    FSmartPointer<FComplex*> preM2LTransitions;   //< The pre-computation for the M2L based on the level and the 189 possibilities
+    FSmartPointer<FComplex<FReal>*> preM2LTransitions;   //< The pre-computation for the M2L based on the level and the 189 possibilities
 
     /** To access te pre computed M2L transfer vector */
     int indexM2LTransition(const int idxX,const int idxY,const int idxZ) const {
@@ -41,21 +41,21 @@ protected:
     void allocAndInit(){
 	// M2L transfer, there is a maximum of 3 neighbors in each direction,
 	// so 6 in each dimension
-	preM2LTransitions = new FComplex*[Parent::treeHeight];
-	memset(preM2LTransitions.getPtr(), 0, sizeof(FComplex*) * (Parent::treeHeight));
+    preM2LTransitions = new FComplex<FReal>*[Parent::treeHeight];
+    memset(preM2LTransitions.getPtr(), 0, sizeof(FComplex<FReal>*) * (Parent::treeHeight));
 	// We start from the higher level
 	FReal treeWidthAtLevel = Parent::boxWidth;
 	for(int idxLevel = 0 ; idxLevel < Parent::treeHeight ; ++idxLevel ){
 	    // Allocate data for this level
-	    preM2LTransitions[idxLevel] = new FComplex[(7 * 7 * 7) * devM2lP];
+        preM2LTransitions[idxLevel] = new FComplex<FReal>[(7 * 7 * 7) * devM2lP];
 	    // Precompute transfer vector
 	    for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
 		for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
 		    for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ ){
 			if(FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
-			    const FPoint relativePos( FReal(-idxX) * treeWidthAtLevel , FReal(-idxY) * treeWidthAtLevel , FReal(-idxZ) * treeWidthAtLevel );
-			    Parent::harmonic.computeOuter(FSpherical(relativePos));
-			    FMemUtils::copyall<FComplex>(&preM2LTransitions[idxLevel][indexM2LTransition(idxX,idxY,idxZ)], Parent::harmonic.result(), Parent::harmonic.getExpSize());
+                const FPoint<FReal> relativePos( FReal(-idxX) * treeWidthAtLevel , FReal(-idxY) * treeWidthAtLevel , FReal(-idxZ) * treeWidthAtLevel );
+                Parent::harmonic.computeOuter(FSpherical<FReal>(relativePos));
+                FMemUtils::copyall<FComplex<FReal>>(&preM2LTransitions[idxLevel][indexM2LTransition(idxX,idxY,idxZ)], Parent::harmonic.result(), Parent::harmonic.getExpSize());
 			}
 		    }
 		}
@@ -73,7 +73,7 @@ public:
       * @param inBoxWidth the size of the simulation box
       * @param inPeriodicLevel the number of level upper to 0 that will be requiried
       */
-    FSphericalKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter)
+    FSphericalKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter)
 	: Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter),
 	  devM2lP(int(((inDevP*2)+1) * ((inDevP*2)+2) * 0.5)),
 	  preM2LTransitions(nullptr) {
@@ -100,7 +100,7 @@ public:
 	// For all neighbors compute M2L
 	for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
 	    if( distantNeighbors[idxNeigh] ){
-		const FComplex* const transitionVector = &preM2LTransitions[inLevel][idxNeigh * devM2lP];
+        const FComplex<FReal>* const transitionVector = &preM2LTransitions[inLevel][idxNeigh * devM2lP];
 		multipoleToLocal(pole->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
 	    }
 	}
@@ -125,8 +125,8 @@ public:
     *Remark: here we have always j+n >= |-k-l|
       *
       */
-    void multipoleToLocal(FComplex*const FRestrict local_exp, const FComplex* const FRestrict multipole_exp_src,
-			  const FComplex* const FRestrict M2L_Outer_transfer){
+    void multipoleToLocal(FComplex<FReal>*const FRestrict local_exp, const FComplex<FReal>* const FRestrict multipole_exp_src,
+              const FComplex<FReal>* const FRestrict M2L_Outer_transfer){
 	int index_j_k = 0;
 
 	// L_j^k
@@ -141,7 +141,7 @@ public:
 		FReal pow_of_minus_1_for_n = 1.0;
 
 		// work with a local variable
-		FComplex L_j_k = local_exp[index_j_k];
+        FComplex<FReal> L_j_k = local_exp[index_j_k];
 		// n from 0 to P or do P-j
 		//for (int n = 0 ; n <= Parent::devP /*or*/ /*Parent::devP-j*/ ; ++n){
 		for (int n = 0 ; n <= Parent::devP-j ; ++n){  // faster than double height Parent::devP
@@ -156,8 +156,8 @@ public:
 		    // We start with l=n (and not l=-n) so that we always set p_Outer_term to a correct value in the first loop.
 		    int l = n;
 		    for(/* l = n */ ; l > 0 ; --l){ // we have -k-l<0 and l>0
-			const FComplex M_n_l = multipole_exp_src[index_n + l];
-			const FComplex O_n_j__k_l = M2L_Outer_transfer[index_n_j + k + l];
+            const FComplex<FReal> M_n_l = multipole_exp_src[index_n + l];
+            const FComplex<FReal> O_n_j__k_l = M2L_Outer_transfer[index_n_j + k + l];
 
 			L_j_k.incReal( pow_of_minus_1_for_l * pow_of_minus_1_for_k *
 						    ((M_n_l.getReal() * O_n_j__k_l.getReal()) +
@@ -170,8 +170,8 @@ public:
 		    }
 
 		    for(/* l = 0 */; l >= -n &&  (-k-l) < 0 ; --l){ // we have -k-l<0 and l<=0
-			const FComplex M_n_l = multipole_exp_src[index_n - l];
-			const FComplex O_n_j__k_l = M2L_Outer_transfer[index_n_j + k + l];
+            const FComplex<FReal> M_n_l = multipole_exp_src[index_n - l];
+            const FComplex<FReal> O_n_j__k_l = M2L_Outer_transfer[index_n_j + k + l];
 
 			L_j_k.incReal( pow_of_minus_1_for_k *
 						    ((M_n_l.getReal() * O_n_j__k_l.getReal()) -
@@ -184,8 +184,8 @@ public:
 		    }
 
 		    for(/*l = -n-1 or l = -k-1 */; l >= -n ; --l){ // we have -k-l>=0 and l<=0
-			const FComplex M_n_l = multipole_exp_src[index_n - l];
-			const FComplex O_n_j__k_l = M2L_Outer_transfer[index_n_j - (k + l)];
+            const FComplex<FReal> M_n_l = multipole_exp_src[index_n - l];
+            const FComplex<FReal> O_n_j__k_l = M2L_Outer_transfer[index_n_j - (k + l)];
 
 			L_j_k.incReal( pow_of_minus_1_for_l *
 						    ((M_n_l.getReal() * O_n_j__k_l.getReal()) +

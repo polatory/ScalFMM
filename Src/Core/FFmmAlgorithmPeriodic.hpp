@@ -41,7 +41,7 @@
 *
 * Of course this class does not deallocate pointer given in arguments.
 */
-template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class FReal, class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmPeriodic : public FAbstractAlgorithm{
 
     OctreeClass* const tree;        //< The octree to work on
@@ -123,13 +123,13 @@ public:
       * @param originalBoxWidth the real system size
       * @return the center the kernel should use
       */
-    FPoint extendedBoxCenter() const {
+    FPoint<FReal> extendedBoxCenter() const {
         const FReal originalBoxWidth     = tree->getBoxWidth();
         const FReal originalBoxWidthDiv2 = originalBoxWidth/2.0;
-        const FPoint originalBoxCenter   = tree->getBoxCenter();
+        const FPoint<FReal> originalBoxCenter   = tree->getBoxCenter();
 
         const FReal offset = extendedBoxWidth()/FReal(2.0);
-        return FPoint( originalBoxCenter.getX() - originalBoxWidthDiv2 + offset,
+        return FPoint<FReal>( originalBoxCenter.getX() - originalBoxWidthDiv2 + offset,
                        originalBoxCenter.getY() - originalBoxWidthDiv2 + offset,
                        originalBoxCenter.getZ() - originalBoxWidthDiv2 + offset);
     }

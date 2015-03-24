@@ -60,16 +60,17 @@ int main(int argc, char* argv[]){
                          LocalOptionBlocSize, LocalOptionNoValidate);
 
     // Initialize the types
+    typedef double FReal;
     static const int ORDER = 6;
-    typedef FInterpMatrixKernelR MatrixKernelClass;
+    typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
 
     typedef FUnifCellPODCore         GroupCellSymbClass;
     typedef FUnifCellPODPole<ORDER>  GroupCellUpClass;
     typedef FUnifCellPODLocal<ORDER> GroupCellDownClass;
     typedef FUnifCellPOD<ORDER>      GroupCellClass;
 
-    typedef FP2PGroupParticleContainer<>          GroupContainerClass;
-    typedef FGroupTree< GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
+    typedef FP2PGroupParticleContainer<FReal>          GroupContainerClass;
+    typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
 #ifdef ScalFMM_USE_STARPU
     typedef FStarPUAllCpuCapacities<FUnifKernel<GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
@@ -91,17 +92,17 @@ int main(int argc, char* argv[]){
 
     // Load the particles
 #ifdef RANDOM_PARTICLES
-    FRandomLoader loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000), 1.0, FPoint(0,0,0), 0);
+    FRandomLoader<FReal> loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000), 1.0, FPoint<FReal>(0,0,0), 0);
 #else
     const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
-    FFmaGenericLoader loader(filename);
+    FFmaGenericLoader<FReal> loader(filename);
 #endif
     FAssertLF(loader.isOpen());
     FTic timer;
 
-    FP2PParticleContainer<> allParticles;
+    FP2PParticleContainer<FReal> allParticles;
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         FReal physicalValue;
 #ifdef RANDOM_PARTICLES
         physicalValue = 0.10;
@@ -136,7 +137,7 @@ int main(int argc, char* argv[]){
         FReal*const allPosY = const_cast<FReal*>( allParticles.getPositions()[1]);
         FReal*const allPosZ = const_cast<FReal*>( allParticles.getPositions()[2]);
 
-        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass cellTarget, FP2PGroupParticleContainer<> * leafTarget){
+        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<FReal> >([&](GroupCellClass cellTarget, FP2PGroupParticleContainer<FReal> * leafTarget){
             const FReal*const physicalValues = leafTarget->getPhysicalValues();
             const FReal*const posX = leafTarget->getPositions()[0];
             const FReal*const posY = leafTarget->getPositions()[1];
@@ -171,10 +172,10 @@ int main(int argc, char* argv[]){
             }
         }
 
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
+        FMath::FAccurater<FReal> potentialDiff;
+        FMath::FAccurater<FReal> fx, fy, fz;
         offsetParticles = 0;
-        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass cellTarget, FP2PGroupParticleContainer<> * leafTarget){
+        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<FReal> >([&](GroupCellClass cellTarget, FP2PGroupParticleContainer<FReal> * leafTarget){
             const FReal*const potentials = leafTarget->getPotentials();
             const FReal*const forcesX = leafTarget->getForcesX();
             const FReal*const forcesY = leafTarget->getForcesY();

@@ -37,7 +37,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoader loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoader<FReal> loader(NbPart, 1, FPoint<FReal>(0.5,0.5,0.5), 1);
 
     void* FmmCoreHandle;
     FmmCore_init(&FmmCoreHandle);
@@ -64,7 +64,7 @@ int main(int argc, char ** argv){
     FReal* positions = new FReal[nbPart*3];
 
     {
-        FPoint part;
+        FPoint<FReal> part;
         const FReal physicalValue = 0.1;
 
         for(int idx = 0 ; idx < nbPart ; ++idx){
@@ -157,8 +157,8 @@ int main(int argc, char ** argv){
     std::cout << "Comparing results ..." << std::endl;
     counter.tic();
 
-    FMath::FAccurater forces;
-    FMath::FAccurater potential;
+    FMath::FAccurater<FReal> forces;
+    FMath::FAccurater<FReal> potential;
 
     for(int idx = 0 ; idx < nbPart ; ++idx){
         if(idx < 10){

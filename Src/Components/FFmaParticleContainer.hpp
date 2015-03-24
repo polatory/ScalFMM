@@ -25,7 +25,8 @@
 * This class defines a particle container for FMA loader.
 * position + 1 real for the physical value
 */
-class FFmaParticleContainer : public FBasicParticleContainer<1> {
+template <class FReal>
+class FFmaParticleContainer : public FBasicParticleContainer<FReal, 1> {
     typedef FBasicParticleContainer<1> Parent;
 
 public:

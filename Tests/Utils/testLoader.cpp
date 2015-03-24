@@ -52,7 +52,7 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight);
 
     typedef FBasicParticleContainer<0>      ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
@@ -82,7 +82,7 @@ int main(int argc, char ** argv){
         std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
         counter.tic();
 
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&particlePosition);
             tree.insert(particlePosition);

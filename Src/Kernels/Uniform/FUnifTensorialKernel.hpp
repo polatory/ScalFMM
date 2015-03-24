@@ -60,9 +60,9 @@ class FTreeCoordinate;
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Lagrange interpolation order
  */
-template < class CellClass, class ContainerClass,   class MatrixKernelClass, int ORDER, int NVALS = 1>
+template < class FReal, class CellClass, class ContainerClass,   class MatrixKernelClass, int ORDER, int NVALS = 1>
 class FUnifTensorialKernel
-    : public FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+    : public FAbstractUnifKernel<FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 {
     enum {nRhs = MatrixKernelClass::NRHS,
           nLhs = MatrixKernelClass::NLHS,
@@ -72,7 +72,7 @@ class FUnifTensorialKernel
 protected://PB: for OptiDis
 
     // private types
-    typedef FUnifTensorialM2LHandler<ORDER,MatrixKernelClass,MatrixKernelClass::Type> M2LHandlerClass;
+    typedef FUnifTensorialM2LHandler<FReal, ORDER,MatrixKernelClass,MatrixKernelClass::Type> M2LHandlerClass;
 
     // using from
     typedef FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
@@ -92,7 +92,7 @@ public:
      */
     FUnifTensorialKernel(const int inTreeHeight,
                          const FReal inBoxWidth,
-                         const FPoint& inBoxCenter,
+                         const FPoint<FReal>& inBoxCenter,
                          const MatrixKernelClass *const inMatrixKernel,
                          const FReal inBoxWidthExtension)
     : FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter,inBoxWidthExtension),
@@ -107,7 +107,7 @@ public:
     void P2M(CellClass* const LeafCell,
              const ContainerClass* const SourceParticles)
     {
-        const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate())); 
+        const FPoint<FReal> LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
         const FReal ExtendedLeafCellWidth(AbstractBaseClass::BoxWidthLeaf 
                                           + AbstractBaseClass::BoxWidthExtension);
 
@@ -173,7 +173,7 @@ public:
                 const int idxLoc = idxV*nLhs + idxLhs;
 
                 // load transformed local expansion
-                FComplex *const TransformedLocalExpansion = TargetCell->getTransformedLocal(idxLoc);
+                FComplex<FReal> *const TransformedLocalExpansion = TargetCell->getTransformedLocal(idxLoc);
 
                 // update idxRhs
                 const int idxRhs = idxLhs % nPV; 
@@ -224,7 +224,7 @@ public:
     void L2P(const CellClass* const LeafCell,
              ContainerClass* const TargetParticles)
     {
-        const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
+        const FPoint<FReal> LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
         const FReal ExtendedLeafCellWidth(AbstractBaseClass::BoxWidthLeaf 
                                           + AbstractBaseClass::BoxWidthExtension);
 

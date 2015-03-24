@@ -25,8 +25,8 @@
 * @brief This class is used as a leaf in simple system (source AND target).
 * Here there only one container stores all particles.
 */
-template< class ContainerClass >
-class FSimpleIndexedLeaf : public FSimpleLeaf<ContainerClass> {
+template< class FReal, class ContainerClass >
+class FSimpleIndexedLeaf : public FSimpleLeaf<FReal, ContainerClass> {
 
 	long int index ; //  Index of the leaf. useful for debug purpose
 public:

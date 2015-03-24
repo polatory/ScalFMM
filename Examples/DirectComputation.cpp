@@ -58,144 +58,144 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::InputFile, FParameterDefinitions::OutputFile,
                          FParameterDefinitions::EnabledVerbose);
 
-	//////////////////////////////////////////////////////////////
-
+    //////////////////////////////////////////////////////////////
+    typedef double FReal;
     const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/unitCubeXYZQ20k.fma");
     const std::string filenameIn(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,  defaultFile.c_str()));
     const std::string filenameOut(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options, "output.bfma"));
-	//
-	FTic counter;
+    //
+    FTic counter;
 
-	// -----------------------------------------------------
-	//  LOADER
-	//  -----------------------------------------------------
-	// ---------------------------------------------------------------------------------
-	// Read  particles in the Octree
-	// ---------------------------------------------------------------------------------
-	std::cout << "Opening : " << filenameIn << "\n";
-	//
-	FFmaGenericLoader loader(filenameIn);
-	//
-	int nbParticles = static_cast<int>(loader.getNumberOfParticles());
-	std::cout << "Read " << nbParticles << " particles ..." << std::endl;
-	double BoxWith=loader.getBoxWidth();
-	FPoint Centre(loader.getCenterOfBox().getX(), loader.getCenterOfBox().getY() , loader.getCenterOfBox().getZ());
-	std::cout << "\tWidth : " <<BoxWith << " \t center x : " << loader.getCenterOfBox().getX()
-	    																	<< " y : " << loader.getCenterOfBox().getY() << " z : " << loader.getCenterOfBox().getZ() << std::endl;
+    // -----------------------------------------------------
+    //  LOADER
+    //  -----------------------------------------------------
+    // ---------------------------------------------------------------------------------
+    // Read  particles in the Octree
+    // ---------------------------------------------------------------------------------
+    std::cout << "Opening : " << filenameIn << "\n";
+    //
+    FFmaGenericLoader<FReal> loader(filenameIn);
+    //
+    int nbParticles = static_cast<int>(loader.getNumberOfParticles());
+    std::cout << "Read " << nbParticles << " particles ..." << std::endl;
+    double BoxWith=loader.getBoxWidth();
+    FPoint<FReal> Centre(loader.getCenterOfBox().getX(), loader.getCenterOfBox().getY() , loader.getCenterOfBox().getZ());
+    std::cout << "\tWidth : " <<BoxWith << " \t center x : " << loader.getCenterOfBox().getX()
+              << " y : " << loader.getCenterOfBox().getY() << " z : " << loader.getCenterOfBox().getZ() << std::endl;
 
-	counter.tic();
-	//
-	FmaRParticle *  particles = new FmaRParticle[nbParticles];
-	memset(particles, 0, sizeof(FmaRParticle) * nbParticles) ;
-	//
-	double totalCharge = 0.0;
-	//
-//	int nbDataToRead = particles[0].getReadDataNumber();
-	for(int idx = 0 ; idx<nbParticles ; ++idx){
-		//
-	    loader.fillParticle(particles[idx].getPtrFirstData(), particles[idx].getReadDataNumber());
-		//	loader.fillParticle(particles[idx].getPtrFirstData(), nbDataToRead);    // OK
-		//  loader.fillParticle(particles[idx]); // OK
-	//    std::cout << idx <<"  "<<  particles[idx].getPosition() << " "<<particles[idx].getPhysicalValue() << " "<<particles[idx].getPotential()
-	//			<<"  " << particles[idx].getForces()[0]<<"  " <<particles[idx].getForces()[1]<<"  " <<particles[idx].getForces()[2]<<"  " <<std::endl;
-		//
-	    totalCharge += particles[idx].getPhysicalValue() ;
-	}
+    counter.tic();
+    //
+    FmaRWParticle<FReal, 4,8> *  particles = new FmaRWParticle<FReal, 4,8>[nbParticles];
+    memset(particles, 0, sizeof(FmaRWParticle<FReal, 4,8>) * nbParticles) ;
+    //
+    double totalCharge = 0.0;
+    //
+    //	int nbDataToRead = particles[0].getReadDataNumber();
+    for(int idx = 0 ; idx<nbParticles ; ++idx){
+        //
+        loader.fillParticle(particles[idx].getPtrFirstData(), particles[idx].getReadDataNumber());
+        //	loader.fillParticle(particles[idx].getPtrFirstData(), nbDataToRead);    // OK
+        //  loader.fillParticle(particles[idx]); // OK
+        //    std::cout << idx <<"  "<<  particles[idx].getPosition() << " "<<particles[idx].getPhysicalValue() << " "<<particles[idx].getPotential()
+        //			<<"  " << particles[idx].getForces()[0]<<"  " <<particles[idx].getForces()[1]<<"  " <<particles[idx].getForces()[2]<<"  " <<std::endl;
+        //
+        totalCharge += particles[idx].getPhysicalValue() ;
+    }
 
-	counter.tac();
+    counter.tac();
 
-	std::cout << std::endl;
-	std::cout << "Total Charge         = "<< totalCharge <<std::endl;
-	std::cout << std::endl;
+    std::cout << std::endl;
+    std::cout << "Total Charge         = "<< totalCharge <<std::endl;
+    std::cout << std::endl;
 
-	std::cout << "Done  " << "(@ reading Particles  " << counter.elapsed() << " s)." << std::endl;
-	//
-	// ----------------------------------------------------------------------------------------------------------
-	//                                   COMPUTATION
-	// ----------------------------------------------------------------------------------------------------------
-  // interaction kernel evaluator
-  typedef FInterpMatrixKernelR MatrixKernelClass;
-  const MatrixKernelClass MatrixKernel;
-	FReal denergy = 0.0;
-	//
-	//  computation
-	//
-	{
-		printf("Compute :\n");
-		counter.tic();
+    std::cout << "Done  " << "(@ reading Particles  " << counter.elapsed() << " s)." << std::endl;
+    //
+    // ----------------------------------------------------------------------------------------------------------
+    //                                   COMPUTATION
+    // ----------------------------------------------------------------------------------------------------------
+    // interaction kernel evaluator
+    typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+    const MatrixKernelClass MatrixKernel;
+    FReal denergy = 0.0;
+    //
+    //  computation
+    //
+    {
+        printf("Compute :\n");
+        counter.tic();
 #pragma omp parallel shared(nbParticles, particles,denergy)
-		{
+        {
 #pragma omp for
-			for(int idxTarget = 0 ; idxTarget < nbParticles ; ++idxTarget){
-				//
-				// compute with all other except itself
-				//
-				// Compute force and potential between  particles[idxTarget] and particles inside the box
-				//
-				for(int idxOther = 0; idxOther < nbParticles ; ++idxOther){
-					if( idxOther != idxTarget ){
-						FP2P::NonMutualParticles(
-								particles[idxOther].getPosition().getX(), particles[idxOther].getPosition().getY(),
-								particles[idxOther].getPosition().getZ(),particles[idxOther].getPhysicalValue(),
-								particles[idxTarget].getPosition().getX(), particles[idxTarget].getPosition().getY(),
-								particles[idxTarget].getPosition().getZ(),particles[idxTarget].getPhysicalValue(),
-								&particles[idxTarget].setForces()[0],&particles[idxTarget].setForces()[1],
-								&particles[idxTarget].setForces()[2],particles[idxTarget].setPotential(),&MatrixKernel);
-					}
-				}
-			} // end for
-			// Compute the energy
+            for(int idxTarget = 0 ; idxTarget < nbParticles ; ++idxTarget){
+                //
+                // compute with all other except itself
+                //
+                // Compute force and potential between  particles[idxTarget] and particles inside the box
+                //
+                for(int idxOther = 0; idxOther < nbParticles ; ++idxOther){
+                    if( idxOther != idxTarget ){
+                        FP2P::NonMutualParticles(
+                                    particles[idxOther].getPosition().getX(), particles[idxOther].getPosition().getY(),
+                                    particles[idxOther].getPosition().getZ(),particles[idxOther].getPhysicalValue(),
+                                    particles[idxTarget].getPosition().getX(), particles[idxTarget].getPosition().getY(),
+                                    particles[idxTarget].getPosition().getZ(),particles[idxTarget].getPhysicalValue(),
+                                    &particles[idxTarget].setForces()[0],&particles[idxTarget].setForces()[1],
+                                &particles[idxTarget].setForces()[2],particles[idxTarget].setPotential(),&MatrixKernel);
+                    }
+                }
+            } // end for
+            // Compute the energy
 #pragma omp  for reduction(+:denergy)
-			for(int idx = 0 ; idx < nbParticles ; ++idx){
-			    denergy +=  particles[idx].getPotential()*(particles[idx].getPhysicalValue()) ;
-			}
-		} // end pragma parallel
-		//
-		denergy *= 0.5 ;
-		counter.tac();
-		//
-		printf("Energy =   %.14e\n",denergy);
-		//
-		std::cout << "Done  " << "(@ Direct computation done = " << counter.elapsed() << " s)." << std::endl;
-		std::cout << "\n"<< "END  "
-				<< "-------------------------------------------------------------------------"
-				<< std::endl << std::endl ;
-	} // END
+            for(int idx = 0 ; idx < nbParticles ; ++idx){
+                denergy +=  particles[idx].getPotential()*(particles[idx].getPhysicalValue()) ;
+            }
+        } // end pragma parallel
+        //
+        denergy *= 0.5 ;
+        counter.tac();
+        //
+        printf("Energy =   %.14e\n",denergy);
+        //
+        std::cout << "Done  " << "(@ Direct computation done = " << counter.elapsed() << " s)." << std::endl;
+        std::cout << "\n"<< "END  "
+                  << "-------------------------------------------------------------------------"
+                  << std::endl << std::endl ;
+    } // END
 
-	//
-	// ----------------------------------------------------------------
-	//  Save  computation in binary format
-	//
-	//
+    //
+    // ----------------------------------------------------------------
+    //  Save  computation in binary format
+    //
+    //
 
-	std::cout << "Generate " << filenameOut <<"  for output file" << std::endl;
-	//
-	std::cout << " nbParticles: " << nbParticles <<"  " << sizeof(nbParticles) <<std::endl;
-	std::cout << " denergy: " << denergy <<"  " << sizeof(denergy) <<std::endl;
-	std::cout << " Box size: " << loader.getBoxWidth() << "  " << sizeof(loader.getBoxWidth())<<std::endl;
-	//
-	FFmaGenericWriter writer(filenameOut) ;
-	writer.writeHeader(Centre,BoxWith, nbParticles,*particles) ;
-	writer.writeArrayOfParticles(particles, nbParticles);
-	//
-	// end generate
-	// -----------------------------------------------------
-	//
+    std::cout << "Generate " << filenameOut <<"  for output file" << std::endl;
+    //
+    std::cout << " nbParticles: " << nbParticles <<"  " << sizeof(nbParticles) <<std::endl;
+    std::cout << " denergy: " << denergy <<"  " << sizeof(denergy) <<std::endl;
+    std::cout << " Box size: " << loader.getBoxWidth() << "  " << sizeof(loader.getBoxWidth())<<std::endl;
+    //
+    FFmaGenericWriter<FReal> writer(filenameOut) ;
+    writer.writeHeader(Centre,BoxWith, nbParticles,*particles) ;
+    writer.writeArrayOfParticles(particles, nbParticles);
+    //
+    // end generate
+    // -----------------------------------------------------
+    //
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::EnabledVerbose.options)){
-		denergy = 0 ;
-		for(int idx = 0 ; idx < nbParticles ; ++idx){
-			std::cout << ">> index " << idx << std::endl;
-			std::cout << " x   " << particles[idx].getPosition().getX() << " y  " << particles[idx].getPosition().getY() << " z  " << particles[idx].getPosition().getZ() << std::endl;
-			std::cout << " Q   " << particles[idx].getPhysicalValue()   << " V  " << particles[idx].getPotential() << std::endl;
-			std::cout << " fx  " << particles[idx].getForces()[0]       << " fy " << particles[idx].getForces()[1]       << " fz " << particles[idx].getForces()[2] << std::endl;
-			std::cout << "\n";
-			denergy +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
-		}
-	}
-	std::cout << " ENERGY " << denergy << std::endl;
-	//
-	delete[] particles;
-	return 0;
+        denergy = 0 ;
+        for(int idx = 0 ; idx < nbParticles ; ++idx){
+            std::cout << ">> index " << idx << std::endl;
+            std::cout << " x   " << particles[idx].getPosition().getX() << " y  " << particles[idx].getPosition().getY() << " z  " << particles[idx].getPosition().getZ() << std::endl;
+            std::cout << " Q   " << particles[idx].getPhysicalValue()   << " V  " << particles[idx].getPotential() << std::endl;
+            std::cout << " fx  " << particles[idx].getForces()[0]       << " fy " << particles[idx].getForces()[1]       << " fz " << particles[idx].getForces()[2] << std::endl;
+            std::cout << "\n";
+            denergy +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
+        }
+    }
+    std::cout << " ENERGY " << denergy << std::endl;
+    //
+    delete[] particles;
+    return 0;
 }
 
 

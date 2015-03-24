@@ -9,20 +9,20 @@
 
 typedef FBasicCellPOD FChebCellPODCore;
 
-template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+template <class FReal, int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 struct alignas(FStarPUDefaultAlign::StructAlign) FChebCellPODPole {
     static const int VectorSize = TensorTraits<ORDER>::nnodes * 2;
     FReal multipole_exp[NRHS * NVALS * VectorSize];
 };
 
-template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+template <class FReal, int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 struct alignas(FStarPUDefaultAlign::StructAlign) FChebCellPODLocal {
     static const int VectorSize = TensorTraits<ORDER>::nnodes * 2;
     FReal local_exp[NLHS * NVALS * VectorSize]; //< Local expansion
 };
 
 
-template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+template <class FReal, int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 class FChebCellPOD
 {
     // nnodes = ORDER^3
@@ -30,12 +30,12 @@ class FChebCellPOD
     static const int VectorSize = TensorTraits<ORDER>::nnodes * 2;
 
     FChebCellPODCore* symb;
-    FChebCellPODPole<ORDER,NRHS,NLHS,NVALS>* up;
-    FChebCellPODLocal<ORDER,NRHS,NLHS,NVALS>* down;
+    FChebCellPODPole<FReal, ORDER,NRHS,NLHS,NVALS>* up;
+    FChebCellPODLocal<FReal, ORDER,NRHS,NLHS,NVALS>* down;
 
 public:
-    FChebCellPOD(FChebCellPODCore* inSymb, FChebCellPODPole<ORDER,NRHS,NLHS,NVALS>* inUp,
-              FChebCellPODLocal<ORDER,NRHS,NLHS,NVALS>* inDown): symb(inSymb), up(inUp), down(inDown){
+    FChebCellPOD(FChebCellPODCore* inSymb, FChebCellPODPole<FReal, ORDER,NRHS,NLHS,NVALS>* inUp,
+              FChebCellPODLocal<FReal, ORDER,NRHS,NLHS,NVALS>* inDown): symb(inSymb), up(inUp), down(inDown){
     }
 
     FChebCellPOD()

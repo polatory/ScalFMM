@@ -82,17 +82,17 @@ int main(int argc, char ** argv){
 
 
     const unsigned int P = 5 ;
-    typedef FChebCell<P>                                        CellClass;
+    typedef FChebCell<FReal,P>                                        CellClass;
     //typedef FUnifCell<P>                                        CellClass;
 
-    typedef FP2PParticleContainerIndexed<>            ContainerClass;
-    typedef FSimpleIndexedLeaf<ContainerClass>    LeafClass;
-    typedef FInterpMatrixKernelR                               MatrixKernelClass;
-    typedef FAdaptiveChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
+    typedef FP2PParticleContainerIndexed<FReal>            ContainerClass;
+    typedef FSimpleIndexedLeaf<FReal,ContainerClass>    LeafClass;
+    typedef FInterpMatrixKernelR<FReal>                               MatrixKernelClass;
+    typedef FAdaptiveChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
     //typedef FAdaptiveUnifKernel<CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
     typedef FAdaptiveCell< CellClass, ContainerClass >                                        CellWrapperClass;
     typedef FAdaptiveKernelWrapper< KernelClass, CellClass, ContainerClass >   KernelWrapperClass;
-    typedef FOctree< CellWrapperClass, ContainerClass , LeafClass >                  OctreeClass;
+    typedef FOctree< FReal, CellWrapperClass, ContainerClass , LeafClass >                  OctreeClass;
     typedef FFmmAlgorithm<OctreeClass, CellWrapperClass, ContainerClass, KernelWrapperClass, LeafClass >     FmmClass;
 
     ///////////////////////What we do/////////////////////////////
@@ -108,8 +108,9 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
+    typedef double FReal;
     const FReal boxWidth = 1.0;
-    const FPoint boxCenter(0.0, 0.0, 0.0);
+    const FPoint<FReal> boxCenter(0.0, 0.0, 0.0);
     OctreeClass tree(NbLevels, SizeSubLevels, boxWidth, boxCenter);
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -117,7 +118,7 @@ int main(int argc, char ** argv){
 
     struct Particle{
         int idx;
-        FPoint pos;
+        FPoint<FReal> pos;
         FReal physicalValue;
         FReal forces[3];
         FReal pot;
@@ -127,13 +128,13 @@ int main(int argc, char ** argv){
     memset(particles, 0, sizeof(Particle) * 3);
     {
         particles[0].idx = 0;
-        particles[0].pos = FPoint(0.1-0.5, 0.1-0.5, 0.1-0.5);
+        particles[0].pos = FPoint<FReal>(0.1-0.5, 0.1-0.5, 0.1-0.5);
         particles[0].physicalValue = 1.0;
         particles[1].idx = 1;
-        particles[1].pos = FPoint(0.1-0.5+0.0625, 0.1-0.5+0.0625, 0.1-0.5+0.0625);
+        particles[1].pos = FPoint<FReal>(0.1-0.5+0.0625, 0.1-0.5+0.0625, 0.1-0.5+0.0625);
         particles[1].physicalValue = 1.0;
         particles[2].idx = 2;
-        particles[2].pos = FPoint(0.5-0.1, 0.5-0.1, 0.5-0.1);
+        particles[2].pos = FPoint<FReal>(0.5-0.1, 0.5-0.1, 0.5-0.1);
         particles[2].physicalValue = 1.0;
 
         tree.insert(particles[0].pos, 0, particles[0].physicalValue);

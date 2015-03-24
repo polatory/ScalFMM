@@ -42,6 +42,8 @@
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
+
+template <class FReal>
 void applyM2M(FReal *const S,	FReal *const w, const unsigned int n,	FReal *const W, const unsigned int N)
 { FBlas::gemtva(n, N, FReal(1.), S,	w, W); }
 
@@ -54,9 +56,10 @@ int main(int argc, char* argv[])
 {
     FHelpDescribeAndExit(argc, argv, "Test Chebyshev interation computations.");
 
-    typedef FP2PParticleContainer<> ContainerClass;
-    typedef FSimpleLeaf<ContainerClass> LeafClass;
-	typedef FInterpMatrixKernelR MatrixKernelClass;
+    typedef double FReal;
+    typedef FP2PParticleContainer<FReal> ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
+	typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
 
 	///////////////////////What we do/////////////////////////////
 	std::cout << "\nTask: Compute interactions between source particles in leaf Y and target\n";
@@ -73,7 +76,7 @@ int main(int argc, char* argv[])
 
 	////////////////////////////////////////////////////////////////////
 	LeafClass X;
-	FPoint cx(0., 0., 0.);
+    FPoint<FReal> cx(0., 0., 0.);
 	const long M = 1000;
 	std::cout << "Fill the leaf X of width " << width
 						<< " centered at cx=[" << cx.getX() << "," << cx.getY() << "," << cx.getZ()
@@ -83,14 +86,14 @@ int main(int argc, char* argv[])
             FReal x = (FReal(drand48()) - FReal(.5)) * width + cx.getX();
             FReal y = (FReal(drand48()) - FReal(.5)) * width + cx.getY();
             FReal z = (FReal(drand48()) - FReal(.5)) * width + cx.getZ();
-            X.push(FPoint(x,y,z));
+            X.push(FPoint<FReal>(x,y,z));
 		}
 	}
 
 
 	////////////////////////////////////////////////////////////////////
 	LeafClass Y;
-	FPoint cy(FReal(2.)*width, 0., 0.);
+    FPoint<FReal> cy(FReal(2.)*width, 0., 0.);
 	const long N = 1000;
 	std::cout << "Fill the leaf Y of width " << width
 						<< " centered at cy=[" << cy.getX() << "," << cy.getY() << "," << cy.getZ()
@@ -100,7 +103,7 @@ int main(int argc, char* argv[])
             FReal x = (FReal(drand48()) - FReal(.5)) * width + cy.getX();
             FReal y = (FReal(drand48()) - FReal(.5)) * width + cy.getY();
             FReal z = (FReal(drand48()) - FReal(.5)) * width + cy.getZ();
-            Y.push(FPoint(x, y, z),FReal(drand48()));
+            Y.push(FPoint<FReal>(x, y, z),FReal(drand48()));
 		}
 	}
 
@@ -109,7 +112,7 @@ int main(int argc, char* argv[])
 	// approximative computation
 	const unsigned int ORDER = 10;
 	const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
-	typedef FChebInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
+	typedef FChebInterpolator<FReal,ORDER,MatrixKernelClass> InterpolatorClass;
 	InterpolatorClass S;
 	
 
@@ -125,9 +128,9 @@ int main(int argc, char* argv[])
 	std::cout << "P2M done in " << time.tacAndElapsed() << "s" << std::endl;
 
 	// M2L (direct)
-	FPoint rootsX[nnodes], rootsY[nnodes];
-	FChebTensor<ORDER>::setRoots(cx, width, rootsX);
-	FChebTensor<ORDER>::setRoots(cy, width, rootsY);
+    FPoint<FReal> rootsX[nnodes], rootsY[nnodes];
+	FChebTensor<FReal,ORDER>::setRoots(cx, width, rootsX);
+	FChebTensor<FReal,ORDER>::setRoots(cy, width, rootsY);
 
 	{
 		for (unsigned int i=0; i<nnodes; ++i) {
@@ -177,7 +180,7 @@ int main(int argc, char* argv[])
         const FReal*const physicalValues = Y.getSrc()->getPhysicalValues();
 
         for(int idxPart = 0 ; idxPart < Y.getSrc()->getNbParticles() ; ++idxPart){
-            const FPoint y = FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
+            const FPoint<FReal> y = FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
             const FReal        w = physicalValues[idxPart];
 
             const FReal*const xpositionsX = X.getSrc()->getPositions()[0];
@@ -185,7 +188,7 @@ int main(int argc, char* argv[])
             const FReal*const xpositionsZ = X.getSrc()->getPositions()[2];
 
             for(int idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
-                const FPoint x = FPoint(xpositionsX[idxPart],xpositionsY[idxPart],xpositionsZ[idxPart]);
+                const FPoint<FReal> x = FPoint<FReal>(xpositionsX[idxPart],xpositionsY[idxPart],xpositionsZ[idxPart]);
                 f[idxPartX] += MatrixKernel.evaluate(x,y) * w;
             }
         }
@@ -205,8 +208,8 @@ int main(int argc, char* argv[])
 	//	std::cout << f[i] << "\t" << approx_f[i] << "\t" << approx_f[i]/f[i] << std::endl;
 	
 
-    std::cout << "\nRelative L2 error  = " << FMath::FAccurater( f, approx_f, M) << std::endl;
-    std::cout << "Relative Lmax error = "  << FMath::FAccurater( f, approx_f, M) << "\n" << std::endl;
+    std::cout << "\nRelative L2 error  = " << FMath::FAccurater<FReal>( f, approx_f, M) << std::endl;
+    std::cout << "Relative Lmax error = "  << FMath::FAccurater<FReal>( f, approx_f, M) << "\n" << std::endl;
 
 	// free memory
 	delete [] approx_f;

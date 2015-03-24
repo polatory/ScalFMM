@@ -61,11 +61,13 @@ int main(int argc, char ** argv){
     std::cout << ">> This executable has to be used to test morton index.\n";
     //////////////////////////////////////////////////////////////
 
+    typedef double FReal;
+
     bool stop = false;
     char buffer[256];
 
     int treeLevel = 10;
-    FPoint centerOfBox(0.5,0.5,0.5);
+    FPoint<FReal> centerOfBox(0.5,0.5,0.5);
     FReal rootBoxWidth = 1;
 
     std::cout << "Welcome in the morton index test." << std::endl;
@@ -241,7 +243,7 @@ int main(int argc, char ** argv){
                     std::cout << "    Center of boxe Tapes x y z = ";
                     std::cin.getline( buffer , sizeof(buffer));
                 }while(sscanf(buffer,"%f %f %f",&x,&y,&z) != 3);
-                centerOfBox = FPoint(FReal(x),FReal(y),FReal(z));
+                centerOfBox = FPoint<FReal>(FReal(x),FReal(y),FReal(z));
 
                 std::cout << "    boxe width (default is = " << rootBoxWidth << ") : ";
                 std::cin.getline( buffer , sizeof(buffer));

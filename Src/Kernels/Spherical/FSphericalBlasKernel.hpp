@@ -25,17 +25,17 @@
  * @author Berenger Bramas (berenger.bramas@inria.fr)
  * This class is a spherical harmonic kernels using blas
  */
-template< class CellClass, class ContainerClass>
-class FSphericalBlasKernel : public FAbstractSphericalKernel<CellClass,ContainerClass> {
+template< class FReal, class CellClass, class ContainerClass>
+class FSphericalBlasKernel : public FAbstractSphericalKernel<FReal,CellClass,ContainerClass> {
 protected:
-	typedef FAbstractSphericalKernel<CellClass,ContainerClass> Parent;
+    typedef FAbstractSphericalKernel<FReal,CellClass,ContainerClass> Parent;
 
 	const int FF_MATRIX_ROW_DIM;     //< The blas matrix number of rows
 	const int FF_MATRIX_COLUMN_DIM;  //< The blas matrix number of columns
 	const int FF_MATRIX_SIZE;        //< The blas matrix size
 
-	FComplex* temporaryMultiSource;               //< To perform the M2L without allocating at each call
-	FSmartPointer<FComplex**> preM2LTransitions;   //< The pre-computation for the M2L based on the level and the 189 possibilities
+    FComplex<FReal>* temporaryMultiSource;               //< To perform the M2L without allocating at each call
+    FSmartPointer<FComplex<FReal>**> preM2LTransitions;   //< The pre-computation for the M2L based on the level and the 189 possibilities
 
 	/** To access te precomputed M2L transfer matrixes */
 	int indexM2LTransition(const int idxX,const int idxY,const int idxZ) const {
@@ -45,32 +45,32 @@ protected:
 
 	/** Alloc and init pre-vectors*/
     void allocAndInit(){
-	FHarmonic blasHarmonic(Parent::devP * 2);
+    FHarmonic<FReal> blasHarmonic(Parent::devP * 2);
 
 	// Matrix to fill and then transposed
-	FComplex*const workMatrix = new FComplex[FF_MATRIX_SIZE];
+    FComplex<FReal>*const workMatrix = new FComplex<FReal>[FF_MATRIX_SIZE];
 
 	// M2L transfer, there is a maximum of 3 neighbors in each direction,
 	// so 6 in each dimension
 	FReal treeWidthAtLevel = Parent::boxWidth;
-	preM2LTransitions = new FComplex**[Parent::treeHeight];
-	memset(preM2LTransitions.getPtr(), 0, sizeof(FComplex**) * (Parent::treeHeight));
+    preM2LTransitions = new FComplex<FReal>**[Parent::treeHeight];
+    memset(preM2LTransitions.getPtr(), 0, sizeof(FComplex<FReal>**) * (Parent::treeHeight));
 
 	for(int idxLevel = 0 ; idxLevel < Parent::treeHeight ; ++idxLevel ){
-	    preM2LTransitions[idxLevel] = new FComplex*[(7 * 7 * 7)];
-	    memset(preM2LTransitions[idxLevel], 0, sizeof(FComplex*) * (7*7*7));
+        preM2LTransitions[idxLevel] = new FComplex<FReal>*[(7 * 7 * 7)];
+        memset(preM2LTransitions[idxLevel], 0, sizeof(FComplex<FReal>*) * (7*7*7));
 
 	    for(int idxX = -3 ; idxX <= 3 ; ++idxX ){
 		for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
 		    for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ ){
 			if(FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
 			    // Compute harmonic
-			    const FPoint relativePos( FReal(-idxX) * treeWidthAtLevel , FReal(-idxY) * treeWidthAtLevel , FReal(-idxZ) * treeWidthAtLevel );
-			    blasHarmonic.computeOuter(FSpherical(relativePos));
+                const FPoint<FReal> relativePos( FReal(-idxX) * treeWidthAtLevel , FReal(-idxY) * treeWidthAtLevel , FReal(-idxZ) * treeWidthAtLevel );
+                blasHarmonic.computeOuter(FSpherical<FReal>(relativePos));
 
 			    // Reset Matrix
-			    FMemUtils::setall<FComplex>(workMatrix, FComplex(), FF_MATRIX_SIZE);
-			    FComplex* FRestrict fillTransfer = workMatrix;
+                FMemUtils::setall<FComplex<FReal>>(workMatrix, FComplex<FReal>(), FF_MATRIX_SIZE);
+                FComplex<FReal>* FRestrict fillTransfer = workMatrix;
 
 			    for(int M = 0 ; M <= Parent::devP ; ++M){
 				for (int m = 0 ;  m <= M ; ++m){
@@ -92,7 +92,7 @@ protected:
 			    }
 
 			    // Transpose and copy result
-			    FComplex*const matrix = new FComplex[FF_MATRIX_SIZE];
+                FComplex<FReal>*const matrix = new FComplex<FReal>[FF_MATRIX_SIZE];
 			    for(int idxRow = 0 ; idxRow < FF_MATRIX_ROW_DIM ; ++idxRow){
 				for(int idxCol = 0 ; idxCol < FF_MATRIX_COLUMN_DIM ; ++idxCol){
 				    matrix[idxCol * FF_MATRIX_ROW_DIM + idxRow] = workMatrix[idxCol + idxRow * FF_MATRIX_COLUMN_DIM];
@@ -102,7 +102,7 @@ protected:
 			    //   Single Layer
 			    //
 			    //			    std::cout << std::endl ;
-			    FComplex Czero(0.,0.);
+                FComplex<FReal> Czero(0.,0.);
 			    int idxRow =   0 ;
 			    for(int j =0 ; j<= Parent::devP  ; ++j ){ // Row
 				for(int k=0;    k<=j  ; ++k){                  // Row
@@ -144,11 +144,11 @@ public:
 	 * @param inBoxWidth the size of the simulation box
 	 * @param inPeriodicLevel the number of level upper to 0 that will be requiried
 	 */
-	FSphericalBlasKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter)
+    FSphericalBlasKernel(const int inDevP, const int inTreeHeight, const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter)
 : Parent(inDevP, inTreeHeight, inBoxWidth, inBoxCenter),
   FF_MATRIX_ROW_DIM(Parent::harmonic.getExpSize()), FF_MATRIX_COLUMN_DIM(Parent::harmonic.getNExpSize()),
   FF_MATRIX_SIZE(FF_MATRIX_ROW_DIM * FF_MATRIX_COLUMN_DIM),
-  temporaryMultiSource(new FComplex[FF_MATRIX_COLUMN_DIM]),
+  temporaryMultiSource(new FComplex<FReal>[FF_MATRIX_COLUMN_DIM]),
   preM2LTransitions(nullptr){
 		allocAndInit();
 	}
@@ -158,7 +158,7 @@ public:
 	: Parent(other),
 	  FF_MATRIX_ROW_DIM(other.FF_MATRIX_ROW_DIM), FF_MATRIX_COLUMN_DIM(other.FF_MATRIX_COLUMN_DIM),
 	  FF_MATRIX_SIZE(other.FF_MATRIX_SIZE),
-	  temporaryMultiSource(new FComplex[FF_MATRIX_COLUMN_DIM]),
+      temporaryMultiSource(new FComplex<FReal>[FF_MATRIX_COLUMN_DIM]),
 	  preM2LTransitions(other.preM2LTransitions) {
 
 	}
@@ -186,7 +186,7 @@ public:
 		// For all neighbors compute M2L
 		for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
 			if( distantNeighbors[idxNeigh] ){
-				const FComplex* const transitionVector = preM2LTransitions[inLevel][idxNeigh];
+                const FComplex<FReal>* const transitionVector = preM2LTransitions[inLevel][idxNeigh];
 				multipoleToLocal(pole->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
 			}
 		}
@@ -196,7 +196,7 @@ public:
 	/** preExpNExp
 	 * @param exp an exponent vector to create an computable vector
 	 */
-	void preExpNExp(FComplex* const exp) const {
+    void preExpNExp(FComplex<FReal>* const exp) const {
 		for(int j = Parent::devP; j>= 0 ; --j){
 			// Position in 'exp':  (j*(j+1)*0.5) + k
 			// Position in 'nexp':  j*(j+1)      + k
@@ -241,10 +241,10 @@ public:
 	 *       }
 	 *   }
 	 */
-	void multipoleToLocal(FComplex*const FRestrict local_exp, const FComplex* const FRestrict multipole_exp_src,
-			const FComplex* const FRestrict M2L_Outer_transfer){
+    void multipoleToLocal(FComplex<FReal>*const FRestrict local_exp, const FComplex<FReal>* const FRestrict multipole_exp_src,
+            const FComplex<FReal>* const FRestrict M2L_Outer_transfer){
 		// Copy original vector and compute exp2nexp
-		FMemUtils::copyall<FComplex>(temporaryMultiSource, multipole_exp_src, CellClass::GetPoleSize());
+        FMemUtils::copyall<FComplex<FReal>>(temporaryMultiSource, multipole_exp_src, CellClass::GetPoleSize());
 		// Get a computable vector
 		preExpNExp(temporaryMultiSource);
 
@@ -254,9 +254,9 @@ public:
 				FF_MATRIX_ROW_DIM,
 				FF_MATRIX_COLUMN_DIM,
 				one,
-				FComplex::ToFReal(M2L_Outer_transfer),
-				FComplex::ToFReal(temporaryMultiSource),
-				FComplex::ToFReal(local_exp));
+                FComplex<FReal>::ToFReal(M2L_Outer_transfer),
+                FComplex<FReal>::ToFReal(temporaryMultiSource),
+                FComplex<FReal>::ToFReal(local_exp));
 
 // #ifdef DEBUG_SPHERICAL_M2L
 

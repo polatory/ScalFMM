@@ -55,12 +55,13 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::SequentialFmm,
                          FParameterDefinitions::TaskFmm, FParameterDefinitions::SHDevelopment);
 
-    typedef FSphericalCell                 CellClass;
-    typedef FP2PParticleContainer<>        ContainerClass;
+    typedef double FReal;
+    typedef FSphericalCell<FReal>                 CellClass;
+    typedef FP2PParticleContainer<FReal>        ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FSphericalRotationKernel< CellClass, ContainerClass > KernelClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSphericalRotationKernel<FReal, CellClass, ContainerClass > KernelClass;
 
     typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     typedef FFmmAlgorithmThread<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClassThread;
@@ -94,7 +95,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         FReal physicalValue = 0.0;
         loader.fillParticle(&particlePosition,&physicalValue);
         tree.insert(particlePosition, physicalValue );

@@ -25,7 +25,7 @@
 /** This class is to export a tree in csv file
   *
   */
-template <class OctreeClass, class ContainerClass >
+template <class FReal, class OctreeClass, class ContainerClass >
 class FTreeCsvSaver {
     const bool includeHeader;   //< To include a line of header
     int nbFrames;               //< The current frame

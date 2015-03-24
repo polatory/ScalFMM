@@ -44,8 +44,10 @@
   * related that each other
   */
 
+
+template <class FReal>
 struct Particle{
-    FPoint position;
+    FPoint<FReal> position;
     FReal physicalValue;
     FReal forces[3];
     FReal potential;
@@ -56,12 +58,12 @@ int restultIndex(const int idxP, const int idxH, const int minP,
     return (idxH-minH)*(maxP+1-minP)+(idxP-minP);
 }
 
+typedef double FReal;
+typedef FSphericalCell<FReal>                 CellClass;
+typedef FP2PParticleContainerIndexed<FReal>   ContainerClass;
 
-typedef FSphericalCell                 CellClass;
-typedef FP2PParticleContainerIndexed<>   ContainerClass;
-
-typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 typedef FSphericalKernel< CellClass, ContainerClass >     KernelClass;
 
 typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
@@ -69,10 +71,10 @@ typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafC
 
 void doATest(const int NbParticles, const int minP, const int maxP, const int minH, const int maxH,
              const FReal physicalValue, const bool neutral ,
-             FMath::FAccurater* allPotentialDiff, FReal* allAbsoluteDiff, FReal* timing,
+             FMath::FAccurater<FReal>* allPotentialDiff, FReal* allAbsoluteDiff, FReal* timing,
              const int SizeSubLevels = 3, FReal* timeForDirect = nullptr){
     FTic counter;
-    FRandomLoader loader(NbParticles);
+    FRandomLoader<FReal> loader(NbParticles);
 
 
 
@@ -157,8 +159,8 @@ void doATest(const int NbParticles, const int minP, const int maxP, const int mi
 
             // -----------------------------------------------------
             if(computeDirectAndDiff){
-                FMath::FAccurater potentialDiff;
-                FMath::FAccurater fx, fy, fz;
+                FMath::FAccurater<FReal> potentialDiff;
+                FMath::FAccurater<FReal> fx, fy, fz;
                 FReal absoluteDiff = FReal(0.0);
 
                 tree.forEachLeaf([&](LeafClass* leaf){
@@ -229,8 +231,8 @@ int main(int argc, char ** argv){
     if( FParameters::existParameter(argc,argv,"-test-hp") ){
         std::cout << "Execute : test-hp\n";
 
-//        FMath::FAccurater allPotentialDiff[(NbLevels+1-2)*(DevP+1-2)];
-        FMath::FAccurater *allPotentialDiff = new  FMath::FAccurater [(NbLevels+1-2)*(DevP+1-2)];
+//        FMath::FAccurater<FReal> allPotentialDiff[(NbLevels+1-2)*(DevP+1-2)];
+        FMath::FAccurater<FReal> *allPotentialDiff = new  FMath::FAccurater<FReal> [(NbLevels+1-2)*(DevP+1-2)];
         printf("Size array %d \n", (NbLevels+1-2)*(DevP+1-2));
 
         doATest(NbParticles,2,DevP,2,NbLevels,
@@ -280,10 +282,10 @@ int main(int argc, char ** argv){
         const int nbStep = int((endPosition-startPosition)/stepValue);
 
         const FReal boxWidth = FParameters::getValue(argc,argv,"-bw", 10.0);
-        const FPoint boxCenter(0,0,0);
+        const FPoint<FReal> boxCenter(0,0,0);
 
 
-        FMath::FAccurater* potentialDiff = new FMath::FAccurater[DevP+1];
+        FMath::FAccurater<FReal>* potentialDiff = new FMath::FAccurater<FReal>[DevP+1];
 
         for(int idxP = 1 ; idxP <= DevP ; ++idxP){
             for(int idxStep = 0 ; idxStep <= nbStep ; ++idxStep){
@@ -467,7 +469,7 @@ int main(int argc, char ** argv){
     }
     if( FParameters::existParameter(argc,argv,"-test-p") ){
         std::cout << "Execute : test-p\n";
-        FMath::FAccurater *potentialDiff = new  FMath::FAccurater[DevP+1];
+        FMath::FAccurater<FReal> *potentialDiff = new  FMath::FAccurater<FReal>[DevP+1];
         FReal potentialAbsoluteDiff[DevP+1];
 
         doATest(NbParticles,1,DevP,NbLevels,NbLevels,

@@ -51,10 +51,11 @@
 *
 * Particle has to extend {FExtendPhysicalValue,FExtendPosition}
 */
-class FHLoader : public FAbstractLoader {
+template <class FReal>
+class FHLoader : public FAbstractLoader<FReal> {
 protected:
     FILE* file;                 //< The file to read
-    FPoint centerOfBox;    //< The center of box read from file
+    FPoint<FReal> centerOfBox;    //< The center of box read from file
     FReal boxWidth;             //< the box width read from file
     int nbParticles;            //< the number of particles read from file
 
@@ -116,7 +117,7 @@ public:
       * The center of the box from the simulation file opened by the loader
       * @return box center
       */
-    FPoint getCenterOfBox() const{
+    FPoint<FReal> getCenterOfBox() const{
         return this->centerOfBox;
     }
 
@@ -133,7 +134,7 @@ public:
       * @warning to work with the loader, particles has to expose a setPosition method
       * @param the particle to fill
       */
-    void fillParticle(FPoint*const inParticlePositions, char*const inData){
+    void fillParticle(FPoint<FReal>*const inParticlePositions, char*const inData){
         if(this->file){
             char buff[128];
             float x,y,z;

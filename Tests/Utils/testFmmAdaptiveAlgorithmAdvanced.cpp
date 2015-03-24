@@ -63,19 +63,20 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::NbParticles, FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight,PrintTree);
 
+    typedef double FReal;
     typedef FTestCell                   CellClass;
-    typedef FTestParticleContainer      ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FTestParticleContainer<FReal>      ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FAdaptiveTestKernel< CellClass, ContainerClass >         KernelClass;
     typedef FAdaptiveCell< CellClass, ContainerClass >         CellWrapperClass;
     typedef FAdaptiveKernelWrapper< KernelClass, CellClass, ContainerClass >         KernelWrapperClass;
-    typedef FOctree< CellWrapperClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FOctree< FReal, CellWrapperClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FFmmAlgorithm<OctreeClass, CellWrapperClass, ContainerClass, KernelWrapperClass, LeafClass >     FmmClass;
 
     typedef FTestCell                   CellClassTest;
-    typedef FTestParticleContainer      ContainerClassTest;
-    typedef FSimpleLeaf< ContainerClassTest >                     LeafClassTest;
-    typedef FOctree< CellClassTest, ContainerClassTest , LeafClassTest >  OctreeClassTest;
+    typedef FTestParticleContainer<FReal>      ContainerClassTest;
+    typedef FSimpleLeaf<FReal, ContainerClassTest >                     LeafClassTest;
+    typedef FOctree<FReal, CellClassTest, ContainerClassTest , LeafClassTest >  OctreeClassTest;
     typedef FTestKernels< CellClassTest, ContainerClassTest >         KernelClassTest;
     typedef FFmmAlgorithm<OctreeClassTest, CellClass, ContainerClassTest, KernelClassTest, LeafClassTest >     FmmClassTest;
 
@@ -90,8 +91,8 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    //FRandomLoader loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000), 1, FPoint(0.5,0.5,0.5), 1);
-    FFmaGenericLoader loader(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,"../Data/noDist/prolate50-ref.fma"));
+    //FRandomLoader<FReal> loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000), 1, FPoint<FReal>(0.5,0.5,0.5), 1);
+    FFmaGenericLoader<FReal> loader(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,"../Data/noDist/prolate50-ref.fma"));
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
     OctreeClassTest treeTest(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
@@ -103,7 +104,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
     {
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             FReal pv;
             loader.fillParticle(&particlePosition, &pv);

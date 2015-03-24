@@ -50,11 +50,13 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::NbParticles, FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight);
 
+    typedef double FReal;
+
     typedef FBasicCell                      CellClass;
-    typedef FP2PParticleContainerIndexed<>      ContainerClass;
+    typedef FP2PParticleContainerIndexed<FReal>      ContainerClass;
 
     typedef FTypedLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
     typedef FParticleTypedIndexedMover<OctreeClass, ContainerClass> MoverClass;
     typedef FOctreeArranger<OctreeClass, ContainerClass, MoverClass> ArrangerClass;
@@ -78,7 +80,7 @@ int main(int argc, char ** argv){
     const FReal BoxWidth = 1.0;
     const FReal BoxCenter = 0.5;
 
-    OctreeClass tree(NbLevels, SizeSubLevels, BoxWidth, FPoint(BoxCenter,BoxCenter,BoxCenter));
+    OctreeClass tree(NbLevels, SizeSubLevels, BoxWidth, FPoint<FReal>(BoxCenter,BoxCenter,BoxCenter));
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -90,7 +92,7 @@ int main(int argc, char ** argv){
 
     {
 
-        FPoint particleToFill;
+        FPoint<FReal> particleToFill;
         for(int idxPart = 0 ; idxPart < NbPart_Source; ++idxPart){
             particleToFill.setPosition(
                                        (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2)),
@@ -176,7 +178,7 @@ int main(int argc, char ** argv){
             ContainerClass* particles_sources = octreeIterator.getCurrentLeaf()->getSrc();;
             //Check for current sources
             for(int idxPart = 0; idxPart < particles_sources->getNbParticles() ; ++idxPart){
-                const FPoint particlePosition( particles_sources->getWPositions()[0][idxPart],
+                const FPoint<FReal> particlePosition( particles_sources->getWPositions()[0][idxPart],
                                                particles_sources->getWPositions()[1][idxPart],
                                                particles_sources->getWPositions()[2][idxPart]);
                 const MortonIndex particleIndex = tree.getMortonFromPosition( particlePosition );
@@ -188,7 +190,7 @@ int main(int argc, char ** argv){
             }
             //Check for current targets
             for(int idxPart = 0; idxPart < particles_targets->getNbParticles() ; ++idxPart){
-                const FPoint particlePosition( particles_targets->getWPositions()[0][idxPart],
+                const FPoint<FReal> particlePosition( particles_targets->getWPositions()[0][idxPart],
                                                particles_targets->getWPositions()[1][idxPart],
                                                particles_targets->getWPositions()[2][idxPart]);
 

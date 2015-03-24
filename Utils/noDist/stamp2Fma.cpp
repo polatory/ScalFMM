@@ -71,8 +71,9 @@ int main(int argc, char ** argv){
 		exit(-1);
 	}
 	FSize NbPoints;
+    typedef double FReal;
 	FReal	 * particles = nullptr ;
-	FFmaGenericLoader * loader;
+    FFmaGenericLoader<FReal> * loader;
 	unsigned int nbData;
 	bool stampFile = false ;
 	if (FParameters::existParameter(argc, argv, "-fstamp")) {
@@ -81,10 +82,10 @@ int main(int argc, char ** argv){
 	if (FParameters::existParameter(argc, argv, "-fin")) {
 		const std::string filename(FParameters::getStr(argc,argv,"-fin",   "data.fma"));
 		if(stampFile) {
-			loader = new FFmaGenericLoader(filename,false);
+            loader = new FFmaGenericLoader<FReal>(filename,false);
 		}
 		else {
-			loader = new FFmaGenericLoader(filename) ;
+            loader = new FFmaGenericLoader<FReal>(filename) ;
 		}
 		//
 		// Allocation
@@ -130,7 +131,7 @@ int main(int argc, char ** argv){
 		//			//				for(int idxPart = 0 ; idxPart < NbPoints ; ++idxPart){
 		//				//
 		//			//					int index ;
-		//			//				FPoint P ; FReal t[3];
+        //			//				FPoint<FReal> P ; FReal t[3];
 		// ///	/				loader->fillParticle(&P, t, &physicalValue,&index);
 		//			//				particles[(index-1)*]
 		//				//
@@ -152,7 +153,7 @@ int main(int argc, char ** argv){
 	//
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::OutputFile.options)){
         std::string name(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output.fma"));
-          FFmaGenericWriter writer(name) ;
+          FFmaGenericWriter<FReal> writer(name) ;
   		writer.writeHeader( loader->getCenterOfBox(), loader->getBoxWidth() , NbPoints, sizeof(FReal), nbData) ;
   		writer.writeArrayOfReal(particles, nbData, NbPoints);
     }

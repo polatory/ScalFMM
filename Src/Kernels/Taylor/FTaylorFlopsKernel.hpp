@@ -29,7 +29,7 @@
  * @brief This kernel provide the flops needed for each of the
  * operators used in the Taylor Kernel.
  */
-template< class CellClass, class ContainerClass, int P, int order>
+template<  class FReal, class CellClass, class ContainerClass, int P, int order>
 class FTaylorFlopsKernel : public FAbstractKernels<CellClass,ContainerClass> {
     
   static const int SizeVector = ((P+1)*(P+2)*(P+3))*order/6;
@@ -72,7 +72,7 @@ class FTaylorFlopsKernel : public FAbstractKernels<CellClass,ContainerClass> {
 
 
 public:
-  FTaylorFlopsKernel(const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter) :
+  FTaylorFlopsKernel(const int inTreeHeight, const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter) :
     treeHeight(inTreeHeight),
     flopsP2M(0),
     flopsM2M(0),

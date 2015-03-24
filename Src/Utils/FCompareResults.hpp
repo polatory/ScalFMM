@@ -22,12 +22,12 @@
 #include "Utils/FMath.hpp"
 #include "Files/FFmaGenericLoader.hpp"
 
-template <class classArrayType>
+template <class FReal, class classArrayType>
 int compareTwoArrays(const std::string &tag,  const int &nbParticles, const classArrayType &array1,
 		const classArrayType &array2){
 	//
-	FMath::FAccurater potentialDiff;
-	FMath::FAccurater fx, fy, fz;
+    FMath::FAccurater<FReal> potentialDiff;
+    FMath::FAccurater<FReal> fx, fy, fz;
 	double energy1= 0.0, energy2= 0.0;
 	int error = 0 ;
 	for(int idxPart = 0 ; idxPart < nbParticles ;++idxPart){
@@ -55,10 +55,10 @@ int compareTwoArrays(const std::string &tag,  const int &nbParticles, const clas
 	return error ;
 }
 //
-template <class classArrayType>
-void computeFirstMoment( const int &nbParticles, const classArrayType &particles,  FPoint &FirstMoment){
+template <class FReal, class classArrayType>
+void computeFirstMoment( const int &nbParticles, const classArrayType &particles,  FPoint<FReal> &FirstMoment){
 
-	double mx,my,mz ;
+    FReal mx,my,mz ;
 	//
 #pragma omp parallel  for shared(nbParticles,particles) reduction(+:mx,my,mz)
 	for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
@@ -70,10 +70,10 @@ void computeFirstMoment( const int &nbParticles, const classArrayType &particles
 	FirstMoment.setPosition(mx,my,mz);
 } ;
 
-template <class classArrayType>
+template < class FReal, class classArrayType>
 void removeFirstMoment( const std::string& TYPE, const int &nbParticles, const classArrayType &particles,  FReal &volume) {
-	FPoint FirstMoment ;
-	computeFirstMoment( nbParticles, particles,  FirstMoment);
+    FPoint<FReal> FirstMoment ;
+    computeFirstMoment<FReal, classArrayType>( nbParticles, particles,  FirstMoment);
 	std::cout << std::endl;
 	std::cout << "Electric Moment          = "<< FirstMoment <<std::endl;
 	std::cout << "Electric Moment norm = "<< FirstMoment.norm2()  <<std::endl;
@@ -81,7 +81,7 @@ void removeFirstMoment( const std::string& TYPE, const int &nbParticles, const c
 	std::cout << std::endl;
 	//
 	// Remove
-	FReal coeffCorrection  = 4.0*FMath::FPi/volume/3.0 ;
+	FReal coeffCorrection  = 4.0*FMath::FPi<FReal>()/volume/3.0 ;
 	FReal scaleEnergy=1.0, scaleForce=1.0  ;
 	//
 	if (TYPE == "DLPOLY") {
@@ -120,53 +120,5 @@ void removeFirstMoment( const std::string& TYPE, const int &nbParticles, const c
 		//		newEnergy += Q*particles[idx].getPotential()  ;
 	}
 
-} ;
-/*
-template <class classArrayType, class classTree >
-int compareTwoArrays(const int &nbParticles,const std::string &tag, const classArrayType &array1,
-			const classTree &tree){
-	//
-	FMath::FAccurater potentialDiff;
-	FMath::FAccurater fx, fy, fz;
-	double energy1, energy2;
-	int error = 0 ;
-
-	for(int idxPart = 0 ; idxPart < nbParticles ;++idxPart){
-		energy1 += array1[idxPart].getPhysicalValue() *array1[idxPart].getPotential() ;
-	}
-	//
-	tree.forEachLeaf([&](LeafClass* leaf){
-			const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
-			const FReal*const potentials        = leaf->getTargets()->getPotentials();
-			const FReal*const forcesX            = leaf->getTargets()->getForcesX();
-			const FReal*const forcesY            = leaf->getTargets()->getForcesY();
-			const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
-			const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
-			const FVector<int>& indexes       = leaf->getTargets()->getIndexes();
-
-			for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-				const int indexPartOrig = indexes[idxPart];
-			//	if(array1[indexPartOrig].getPosition() != array2[idxPart].getPosition() )
-			 {
-				potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
-				fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
-				fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
-				fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
-				energy2   += potentials[idxPart]*physicalValues[idxPart] ;
-			}
-		}
-	});
-
-
-	// Print for information
-	std::cout << tag<< " Energy "  << FMath::Abs(energy1-energy2) << "  "
-			<<  FMath::Abs(energy1-energy2) /energy1 <<std::endl;
-	std::cout << tag<< " Potential " << potentialDiff << std::endl;
-	std::cout << tag<< " Fx " << fx << std::endl;
-	std::cout << tag<< " Fy " << fy << std::endl;
-	std::cout << tag<< " Fz " << fz << std::endl;
-	return error ;
-
 }
- */
 #endif

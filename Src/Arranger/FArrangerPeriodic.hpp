@@ -20,7 +20,7 @@
 #include "Utils/FGlobalPeriodic.hpp"
 #include "Arranger/FOctreeArranger.hpp"
 
-template <class OctreeClass, class ContainerClass, class LeafInterface >
+template <class FReal, class OctreeClass, class ContainerClass, class LeafInterface >
 class FArrangerPeriodic : public FOctreeArranger<OctreeClass,ContainerClass,LeafInterface>{
 
     FReal getPeriodicPos(FReal pos, PeriodicCondition periodicPlus, PeriodicCondition periodicMinus,FReal maxDir,FReal minDir,const int dir){
@@ -45,7 +45,7 @@ public:
     }
 
     // To put in inhereed class
-    void checkPosition(FPoint& particlePos) override {
+    void checkPosition(FPoint<FReal>& particlePos) override {
         particlePos.setX( getPeriodicPos( particlePos.getX(), DirMinusX, DirPlusX, (this->MaxBox).getX(),(this->MinBox).getX(),DirX));
         particlePos.setY( getPeriodicPos( particlePos.getY(), DirMinusY, DirPlusY, (this->MaxBox).getY(),(this->MinBox).getY(),DirY));
         particlePos.setZ( getPeriodicPos( particlePos.getZ(), DirMinusZ, DirPlusZ, (this->MaxBox).getZ(),(this->MinBox).getZ(),DirZ));

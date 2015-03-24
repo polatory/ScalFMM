@@ -39,8 +39,8 @@
  * templates can be ChebCell/ChebKernel or UnifCell/UnifKernel
  */
 template<class InterCell,class InterKernel,
-         class ContainerClass = FP2PParticleContainerIndexed<>,
-         class LeafClass = FSimpleLeaf<FP2PParticleContainerIndexed<> >,
+         class ContainerClass = FP2PParticleContainerIndexed<FReal>,
+         class LeafClass = FSimpleLeaf<FReal, FP2PParticleContainerIndexed<FReal> >,
          class MatrixKernelClass = FInterpMatrixKernelR>
 class FInterEngine : public FScalFMMEngine{
 private:
@@ -76,9 +76,9 @@ public:
     }
 
     void build_tree(int TreeHeight, double BoxWidth , double * BoxCenter,User_Scalfmm_Cell_Descriptor notUsedHere){
-        octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint(BoxCenter));
+        octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint<FReal>(BoxCenter));
         this->matrix = new MatrixKernelClass();
-        this->kernel = new InterKernel(TreeHeight,BoxWidth,FPoint(BoxCenter),matrix);
+        this->kernel = new InterKernel(TreeHeight,BoxWidth,FPoint<FReal>(BoxCenter),matrix);
     }
 
 
@@ -95,7 +95,7 @@ public:
     //Inserting array of position
     void tree_insert_particles_xyz(int NbPositions, double * XYZ){
         for(int idPart = 0; idPart<NbPositions ; ++idPart){
-            octree->insert(FPoint(&XYZ[3*idPart]),idPart);
+            octree->insert(FPoint<FReal>(&XYZ[3*idPart]),idPart);
         }
         nbPart += NbPositions;
     }
@@ -103,7 +103,7 @@ public:
     //Inserting arrayS of position
     void tree_insert_particles(int NbPositions, double * X, double * Y, double * Z){
         for(int idPart = 0; idPart<NbPositions ; ++idPart){
-            octree->insert(FPoint(X[idPart],Y[idPart],Z[idPart]),idPart);
+            octree->insert(FPoint<FReal>(X[idPart],Y[idPart],Z[idPart]),idPart);
         }
         nbPart += NbPositions;
     }

@@ -203,8 +203,8 @@ class FUserKernelEngine : public FScalFMMEngine{
 private:
 
     //Typedefs :
-    typedef FP2PParticleContainerIndexed<>           ContainerClass;
-    typedef FSimpleLeaf<ContainerClass>                   LeafClass;
+    typedef FP2PParticleContainerIndexed<FReal>           ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass>                   LeafClass;
     typedef FOctree<CoreCell,ContainerClass,LeafClass>  OctreeClass;
     typedef CoreKernel<CoreCell,ContainerClass>     CoreKernelClass;
 
@@ -223,7 +223,7 @@ private:
 public:
     FUserKernelEngine(/*int TreeHeight, double BoxWidth , double * BoxCenter, */scalfmm_kernel_type KernelType) :
         octree(nullptr), kernel(nullptr), arranger(nullptr){
-        //        octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint(BoxCenter));
+        //        octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint<FReal>(BoxCenter));
         kernelType = KernelType;
         //Kernel is not set now because the user must provide a
         //Scalfmm_Kernel_descriptor
@@ -251,12 +251,12 @@ public:
 
     void build_tree(int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
         CoreCell::Init(user_cell_descriptor);
-        this->octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint(BoxCenter));
+        this->octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint<FReal>(BoxCenter));
     }
 
     void tree_insert_particles( int NbPositions, double * arrayX, double * arrayY, double * arrayZ){
         for(int idPart = 0; idPart<NbPositions ; ++idPart){
-            octree->insert(FPoint(arrayX[idPart],arrayY[idPart],arrayZ[idPart]),idPart);
+            octree->insert(FPoint<FReal>(arrayX[idPart],arrayY[idPart],arrayZ[idPart]),idPart);
         }
         nbPart += NbPositions;
         this->init_cell();
@@ -264,7 +264,7 @@ public:
 
     void tree_insert_particles_xyz( int NbPositions, double * XYZ){
         for(int idPart = 0; idPart<NbPositions ; ++idPart){
-            octree->insert(FPoint(&XYZ[3*idPart]),idPart);
+            octree->insert(FPoint<FReal>(&XYZ[3*idPart]),idPart);
         }
         nbPart += NbPositions;
         this->init_cell();
@@ -430,7 +430,7 @@ public:
     void init_cell(){
 
         double boxwidth = octree->getBoxWidth();
-        FPoint BoxCenter = octree->getBoxCenter();
+        FPoint<FReal> BoxCenter = octree->getBoxCenter();
         double boxCorner[3];
         boxCorner[0] = BoxCenter.getX() - boxwidth/2.0;
         boxCorner[1] = BoxCenter.getY() - boxwidth/2.0;

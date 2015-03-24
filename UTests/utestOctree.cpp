@@ -37,11 +37,12 @@
 
 /** this class test the octree container */
 class TestOctree : public FUTester<TestOctree> {
+    typedef double FReal;
     typedef FBasicCell                   CellClass;
     typedef FBasicParticleContainer<0>      ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree<CellClass, ContainerClass , LeafClass , FBasicBlockAllocator<CellClass> >  OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass , FBasicBlockAllocator<CellClass> >  OctreeClass;
 
     // test size
     void TestAll(){
@@ -61,13 +62,13 @@ class TestOctree : public FUTester<TestOctree> {
             // For each level we try many sub-levels
             for(int idxSub = 1 ; idxSub < idxHeight ; ++idxSub){
 
-                OctreeClass tree(idxHeight, idxSub, BoxWidth, FPoint(BoxCenter,BoxCenter,BoxCenter));
+                OctreeClass tree(idxHeight, idxSub, BoxWidth, FPoint<FReal>(BoxCenter,BoxCenter,BoxCenter));
 
                 // fill the tree
                 for(int idxX = 0 ; idxX < NbSmallBoxesPerSide ; ++idxX){
                     for(int idxY = 0 ; idxY < NbSmallBoxesPerSide ; ++idxY){
                         for(int idxZ = 0 ; idxZ < NbSmallBoxesPerSide ; ++idxZ){
-                            const FPoint pos(FReal(idxX)*SmallBoxWidth + SmallBoxWidthDiv2,
+                            const FPoint<FReal> pos(FReal(idxX)*SmallBoxWidth + SmallBoxWidthDiv2,
                                                        FReal(idxY)*SmallBoxWidth + SmallBoxWidthDiv2,
                                                        FReal(idxZ)*SmallBoxWidth + SmallBoxWidthDiv2);
                             tree.insert(pos);

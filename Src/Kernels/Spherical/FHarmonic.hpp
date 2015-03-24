@@ -25,16 +25,17 @@
 /** This class compute the spherical harmonic.
   * It computes the inner, outter, and legendre.
   */
+template <class FReal>
 class FHarmonic : public FNoAssignement {
     const int devP;     //<  Degre of the Local and Multipole expansions, p.
     const int expSize;  //<  Number of elements in the expansion expSize = (p+1)^2
     const int nExpSize; //<
 
-    FComplex* harmonic;//< Harmonic Result
-    FComplex* cosSin;  //< Cos/Sin precomputed values
+    FComplex<FReal>* harmonic;//< Harmonic Result
+    FComplex<FReal>* cosSin;  //< Cos/Sin precomputed values
     FReal*     legendre;//< Legendre results
 
-    FComplex* thetaDerivatedResult; //< the theta derivated result
+    FComplex<FReal>* thetaDerivatedResult; //< the theta derivated result
     FReal*     sphereHarmoInnerCoef; //< sphere innter pre computed coefficients
     FReal*     sphereHarmoOuterCoef; //< sphere outer pre computed coefficients
     //!
@@ -45,10 +46,10 @@ class FHarmonic : public FNoAssignement {
 
     /** Allocate and init */
     void allocAndInit(){
-        harmonic = new FComplex[expSize];
-        cosSin   = new FComplex[devP + 1];
+        harmonic = new FComplex<FReal>[expSize];
+        cosSin   = new FComplex<FReal>[devP + 1];
         legendre = new FReal[expSize];
-        thetaDerivatedResult = new FComplex[expSize];
+        thetaDerivatedResult = new FComplex<FReal>[expSize];
 
         // Pre compute coef
         sphereHarmoOuterCoef = new FReal[devP + 1];
@@ -89,7 +90,7 @@ class FHarmonic : public FNoAssignement {
     void computeCosSin(const FReal inPhi, const FReal piArray[4]){
         for(int l = 0 ; l <= devP ; ++l){
             const FReal angle = FReal(l) * inPhi + piArray[l & 0x3];
-            cosSin[l].setReal( FMath::Sin(angle + FMath::FPiDiv2) );  // add Pi/2 for the cosine
+            cosSin[l].setReal( FMath::Sin(angle + FMath::FPiDiv2<FReal>()) );  // add Pi/2 for the cosine
 
             cosSin[l].setImag( FMath::Sin(angle) );
         }
@@ -176,35 +177,35 @@ public:
         return nExpSize;
     }
 
-    FComplex* result(){
+    FComplex<FReal>* result(){
         return harmonic;
     }
 
-    const FComplex* result() const {
+    const FComplex<FReal>* result() const {
         return harmonic;
     }
 
-    FComplex& result(const int index){
+    FComplex<FReal>& result(const int index){
         return harmonic[index];
     }
 
-    const FComplex& result(const int index) const{
+    const FComplex<FReal>& result(const int index) const{
         return harmonic[index];
     }
 
-    FComplex* resultThetaDerivated(){
+    FComplex<FReal>* resultThetaDerivated(){
         return thetaDerivatedResult;
     }
 
-    const FComplex* resultThetaDerivated() const {
+    const FComplex<FReal>* resultThetaDerivated() const {
         return thetaDerivatedResult;
     }
 
-    FComplex& resultThetaDerivated(const int index){
+    FComplex<FReal>& resultThetaDerivated(const int index){
         return thetaDerivatedResult[index];
     }
 
-    const FComplex& resultThetaDerivated(const int index) const{
+    const FComplex<FReal>& resultThetaDerivated(const int index) const{
         return thetaDerivatedResult[index];
     }
 
@@ -216,9 +217,9 @@ public:
     // Computation
     /////////////////////////////////////////////////////////////////
 
-    void computeInner(const FSpherical& inSphere){
+    void computeInner(const FSpherical<FReal>& inSphere){
         // For i^|m|
-        const FReal PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
+        const FReal PiArrayInner[4] = {0, FMath::FPiDiv2<FReal>(), FMath::FPi<FReal>(), -FMath::FPiDiv2<FReal>()};
         //
         computeCosSin(inSphere.getPhi(), PiArrayInner);
 
@@ -247,7 +248,7 @@ public:
     *   \result P+1 cofficients of the Inner expansion.
     */
     void computeInnerOnZaxis(const FReal& inRadius,FReal* Inner){
-        // Not used : const FReal PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
+        // Not used : const FReal PiArrayInner[4] = {0, FMath::FPiDiv2<FReal>(), FMath::FPi<FReal>(), -FMath::FPiDiv2<FReal>()};
         //
         int   index_l = 0   ;
         FReal r_pow_l = 1.0 ;
@@ -259,8 +260,8 @@ public:
         }
     }
 
-    void computeOuter(const FSpherical& inSphere){
-        const FReal PiArrayOuter[4] = {0, -FMath::FPiDiv2, FMath::FPi, FMath::FPiDiv2};
+    void computeOuter(const FSpherical<FReal>& inSphere){
+        const FReal PiArrayOuter[4] = {0, -FMath::FPiDiv2<FReal>(), FMath::FPi<FReal>(), FMath::FPiDiv2<FReal>()};
         computeCosSin(inSphere.getPhi(), PiArrayOuter);
 
         // fill legendre array
@@ -313,8 +314,8 @@ public:
         *
         *
       */
-    void computeInnerTheta(const FSpherical& inSphere){
-        const FReal PiArrayInner[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
+    void computeInnerTheta(const FSpherical<FReal>& inSphere){
+        const FReal PiArrayInner[4] = {0, FMath::FPiDiv2<FReal>(), FMath::FPi<FReal>(), -FMath::FPiDiv2<FReal>()};
         computeCosSin(inSphere.getPhi(),PiArrayInner);
 
         // fill legendre array

@@ -47,7 +47,7 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::NbParticles);
 
     typedef FBasicParticleContainer<0>      ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
@@ -57,14 +57,14 @@ int main(int argc, char ** argv){
     const int NbPart = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000);
     FTic counter;
 
-    FRandomLoader loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoader<FReal> loader(NbPart, 1, FPoint<FReal>(0.5,0.5,0.5), 1);
     OctreeClass tree(10, 3, loader.getBoxWidth(), loader.getCenterOfBox());
 
     // -----------------------------------------------------
     std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;
     counter.tic();
 
-    FPoint particlePosition;
+    FPoint<FReal> particlePosition;
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         loader.fillParticle(&particlePosition);
         tree.insert(particlePosition);

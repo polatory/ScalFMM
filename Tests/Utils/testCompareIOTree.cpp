@@ -45,11 +45,12 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::InputFileTwow
                          );
 
+    typedef double FReal;
     typedef FSphericalCell                 CellClass;
-    typedef FP2PParticleContainer<>         ContainerClass;
+    typedef FP2PParticleContainer<FReal>         ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to compare two trees.\n";
     //////////////////////////////////////////////////////////////
@@ -57,8 +58,8 @@ int main(int argc, char ** argv){
 
     // -----------------------------------------------------
     CellClass::Init(DevP, true);
-    OctreeClass tree1(5, 3, 0, FPoint());
-    OctreeClass tree2(5, 3, 0, FPoint());
+    OctreeClass tree1(5, 3, 0, FPoint<FReal>());
+    OctreeClass tree2(5, 3, 0, FPoint<FReal>());
 
     // -----------------------------------------------------
     const char* const filename1 = FParameters::getStr(argc,argv,FParameterDefinitions::InputFileOne.options, "tree.data");

@@ -41,7 +41,7 @@
  * here we try to make the same simulation
  */
 struct MDParticle {
-	FPoint position;
+	FPoint<FReal> position;
 	FReal  forces[3];
 	FReal  physicalValue;
 	FReal  potential;
@@ -116,7 +116,7 @@ int main(int argc, char ** argv){
 
 
 	counter.tic();
-	FPoint electricMoment(0.0,0.0,0.0) ;
+	FPoint<FReal> electricMoment(0.0,0.0,0.0) ;
 	// const --> then shared
 	MDParticle * const particles = new MDParticle[loader->getNumberOfParticles()];
 	memset(particles, 0, sizeof(MDParticle) * loader->getNumberOfParticles()) ;
@@ -212,7 +212,7 @@ int main(int argc, char ** argv){
 	// remove polarization component
 	//
 	double volume               =  boxsize[0] *boxsize[1]*boxsize[2] ;
-	double coeffCorrection  = 2.0*FMath::FPi/volume/3.0 ;
+	double coeffCorrection  = 2.0*FMath::FPi<FReal>()/volume/3.0 ;
 	//
 	double tmp, newEnergy =0.0;
 	for(int idx = 0 ; idx < nbParticles ; ++idx){
@@ -238,7 +238,7 @@ int main(int argc, char ** argv){
 	//
 	//  Comparisons
 	//
-	FMath::FAccurater fx, fy, fz ;
+	FMath::FAccurater<FReal> fx, fy, fz ;
 	for(int idx = 0 ; idx < nbParticles ; ++idx){
 		fx.add(particles[idx].forces[0],particlesDirect[idx].forces[0] );
 		fy.add(particles[idx].forces[1],particlesDirect[idx].forces[1] );

@@ -47,7 +47,7 @@ class FTreeCoordinate;
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Chebyshev interpolation order
  */
-template < class CellClass,	class ContainerClass, class MatrixKernelClass, int ORDER>
+template < class FReal, class CellClass,	class ContainerClass, class MatrixKernelClass, int ORDER>
 class FChebFlopsSymKernel
     : public FAbstractKernels<CellClass, ContainerClass>
 {
@@ -106,7 +106,7 @@ public:
 	 */
 	FChebFlopsSymKernel(const int _inTreeHeight,
 			    const FReal inBoxWidth,
-			    const FPoint& inBoxCenter,
+                const FPoint<FReal>& inBoxCenter,
 			    const FReal Epsilon)
 		:	MatrixKernel(new MatrixKernelClass()),
 			SymHandler(new SymmetryHandler(MatrixKernel.getPtr(), Epsilon)), inTreeHeight(_inTreeHeight),
@@ -350,9 +350,9 @@ private:
 	void precomputeSVD(const MatrixKernelClass *const MatrixKernel, const double Epsilon)
 	{
 		// interpolation points of source (Y) and target (X) cell
-		FPoint X[nnodes], Y[nnodes];
+        FPoint<FReal> X[nnodes], Y[nnodes];
 		// set roots of target cell (X)
-		FChebTensor<ORDER>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
+        FChebTensor<FReal,ORDER>::setRoots(FPoint<FReal>(0.,0.,0.), FReal(2.), X);
 		// temporary matrix
 		FReal* U = new FReal [nnodes*nnodes];
 
@@ -368,15 +368,15 @@ private:
 				for (int k=0; k<=j; ++k) {
 
 					// assemble matrix
-					const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
-					FChebTensor<ORDER>::setRoots(cy, FReal(2.), Y);
+                    const FPoint<FReal> cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
+					FChebTensor<FReal,ORDER>::setRoots(cy, FReal(2.), Y);
 					for (unsigned int n=0; n<nnodes; ++n)
 						for (unsigned int m=0; m<nnodes; ++m)
 							U[n*nnodes + m] = MatrixKernel->evaluate(X[m], Y[n]);
 
 					// applying weights ////////////////////////////////////////
 					FReal weights[nnodes];
-					FChebTensor<ORDER>::setRootOfWeights(weights);
+					FChebTensor<FReal,ORDER>::setRootOfWeights(weights);
 					for (unsigned int n=0; n<nnodes; ++n) {
 						FBlas::scal(nnodes, weights[n], U + n,  nnodes); // scale rows
 						FBlas::scal(nnodes, weights[n], U + n * nnodes); // scale cols

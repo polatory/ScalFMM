@@ -11,33 +11,33 @@
 
 typedef FBasicCellPOD FRotationCellPODCore;
 
-template <int P>
+template <class FReal, int P>
 struct alignas(FStarPUDefaultAlign::StructAlign) FRotationCellPODPole {
     //< Size of multipole vector
     static const int MultipoleSize = ((P+2)*(P+1))/2; // Artimethique suite (n+1)*n/2
     //< Multipole vector (static memory)
-    FComplex multipole_exp[MultipoleSize]; //< For multipole extenssion
+    FComplex<FReal> multipole_exp[MultipoleSize]; //< For multipole extenssion
 };
 
-template <int P>
+template <class FReal, int P>
 struct alignas(FStarPUDefaultAlign::StructAlign) FRotationCellPODLocal {
     //< Size of local vector
     static const int LocalSize = ((P+2)*(P+1))/2;     // Artimethique suite (n+1)*n/2
     //< Local vector (static memory)
-    FComplex local_exp[LocalSize];         //< For local extenssion
+    FComplex<FReal> local_exp[LocalSize];         //< For local extenssion
 };
 
 
-template <int P>
+template <class FReal, int P>
 class FRotationCellPOD
 {
     FRotationCellPODCore* symb;
-    FRotationCellPODPole<P>* up;
-    FRotationCellPODLocal<P>* down;
+    FRotationCellPODPole<FReal, P>* up;
+    FRotationCellPODLocal<FReal, P>* down;
 
 public:
-    FRotationCellPOD(FRotationCellPODCore* inSymb, FRotationCellPODPole<P>* inUp,
-              FRotationCellPODLocal<P>* inDown): symb(inSymb), up(inUp), down(inDown){
+    FRotationCellPOD(FRotationCellPODCore* inSymb, FRotationCellPODPole<FReal, P>* inUp,
+              FRotationCellPODLocal<FReal, P>* inDown): symb(inSymb), up(inUp), down(inDown){
     }
 
     FRotationCellPOD()
@@ -75,20 +75,20 @@ public:
     }
 
     /** Get Multipole */
-    const FComplex* getMultipole() const
+    const FComplex<FReal>* getMultipole() const
     {	return up->multipole_exp;
     }
     /** Get Local */
-    const FComplex* getLocal() const{
+    const FComplex<FReal>* getLocal() const{
         return down->local_exp;
     }
 
     /** Get Multipole */
-    FComplex* getMultipole(){
+    FComplex<FReal>* getMultipole(){
         return up->multipole_exp;
     }
     /** Get Local */
-    FComplex* getLocal(){
+    FComplex<FReal>* getLocal(){
         return down->local_exp;
     }
 

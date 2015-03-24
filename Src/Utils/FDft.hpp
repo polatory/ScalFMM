@@ -45,7 +45,7 @@
  * Fourier Transform (FFT). The FFT algorithm can either be provided by the 
  * FFTW(3) library itself or a version that is wrapped in Intel MKL.
  *
- * The direct DFT is templatized with the input value type (FReal or FComplex),
+ * The direct DFT is templatized with the input value type (FReal or FComplex<FReal>),
  * while 2 distinct classes resp. @class FFft and @class FCFft are defined 
  * resp. for the real and complex valued FFT.
  *
@@ -63,12 +63,12 @@
  *
  * @tparam nsteps number of sampled values \f$N\f$
  */
-template<typename ValueType = FReal>
+template< class FReal, typename ValueType = FReal>
 class FDft
 {
 
   ValueType* data_;  //< data in physical space
-  FComplex* dataF_; //< data in Fourier space
+  FComplex<FReal>* dataF_; //< data in Fourier space
 
   FReal *cosRS_, *sinRS_; 
 
@@ -79,7 +79,7 @@ private:
   {
     // allocate arrays
     data_  = new ValueType[nsteps_];
-    dataF_ = new FComplex[nsteps_];
+    dataF_ = new FComplex<FReal>[nsteps_];
 
     // Beware this is extremely HEAVY to store!!! => Use FDft only for debug!
     cosRS_ = new FReal[nsteps_*nsteps_];
@@ -120,7 +120,7 @@ public:
   /// Forward DFT
   // Real valued DFT
   void applyDFT(const FReal* sampledData,
-                FComplex* transformedData) const
+                FComplex<FReal>* transformedData) const
   {
     // read sampled data
     FBlas::c_setzero(nsteps_,reinterpret_cast<FReal*>(dataF_));
@@ -129,7 +129,7 @@ public:
     // perform direct forward transformation
     for(unsigned int r=0; r<nsteps_; ++r)
       for(unsigned int s=0; s<nsteps_; ++s){
-        dataF_[r] += FComplex(data_[s]*cosRS_[r*nsteps_+s], 
+        dataF_[r] += FComplex<FReal>(data_[s]*cosRS_[r*nsteps_+s],
                               -data_[s]*sinRS_[r*nsteps_+s]);
       }
 
@@ -138,8 +138,8 @@ public:
                   reinterpret_cast<FReal*>(transformedData));
   }
   // Complexe valued DFT
-  void applyDFT(const FComplex* sampledData,
-                FComplex* transformedData) const
+  void applyDFT(const FComplex<FReal>* sampledData,
+                FComplex<FReal>* transformedData) const
   {
     // read sampled data
     FBlas::c_setzero(nsteps_,reinterpret_cast<FReal*>(dataF_));
@@ -149,7 +149,7 @@ public:
     // perform direct forward transformation
     for(unsigned int r=0; r<nsteps_; ++r)
       for(unsigned int s=0; s<nsteps_; ++s){
-        dataF_[r] += FComplex(data_[s].getReal()*cosRS_[r*nsteps_+s]
+        dataF_[r] += FComplex<FReal>(data_[s].getReal()*cosRS_[r*nsteps_+s]
                                + data_[s].getImag()*sinRS_[r*nsteps_+s], 
                                data_[s].getImag()*cosRS_[r*nsteps_+s]
                                - data_[s].getReal()*sinRS_[r*nsteps_+s]);
@@ -162,7 +162,7 @@ public:
 
   /// Backward DFT
   // Real valued IDFT
-  void applyIDFT(const FComplex* transformedData,
+  void applyIDFT(const FComplex<FReal>* transformedData,
                  FReal* sampledData) const
   {
     // read transformed data
@@ -184,8 +184,8 @@ public:
   }
 
   // Complexe valued IDFT
-  void applyIDFT(const FComplex* transformedData,
-                 FComplex* sampledData) const
+  void applyIDFT(const FComplex<FReal>* transformedData,
+                 FComplex<FReal>* sampledData) const
   {
     // read transformed data
     FBlas::c_setzero(nsteps_,reinterpret_cast<FReal*>(data_));
@@ -195,7 +195,7 @@ public:
     // perform direct backward transformation
     for(unsigned int r=0; r<nsteps_; ++r){
       for(unsigned int s=0; s<nsteps_; ++s){
-        data_[r] += FComplex(dataF_[s].getReal()*cosRS_[r*nsteps_+s]
+        data_[r] += FComplex<FReal>(dataF_[s].getReal()*cosRS_[r*nsteps_+s]
                               - dataF_[s].getImag()*sinRS_[r*nsteps_+s],
                               dataF_[s].getImag()*cosRS_[r*nsteps_+s]
                               + dataF_[s].getReal()*sinRS_[r*nsteps_+s]);
@@ -223,7 +223,7 @@ class FFft
 
   // arrays
   FReal* data_;      //< data in physical space
-  FComplex* dataF_; //< data in Fourier space
+  FComplex<FReal>* dataF_; //< data in Fourier space
 
   // plans
   fftw_plan plan_c2r_; //< backward FFT plan
@@ -238,7 +238,7 @@ private:
   {
     // allocate arrays
     data_ = (FReal*) fftw_malloc(sizeof(FReal) * nsteps_);
-    dataF_ = (FComplex*) fftw_malloc(sizeof(FComplex) * nsteps_opt_);
+    dataF_ = (FComplex<FReal>*) fftw_malloc(sizeof(FComplex<FReal>) * nsteps_opt_);
 
 //    // unidim fftw plans
 //    plan_c2r_ =
@@ -306,7 +306,7 @@ public:
   }
 
   void applyDFT(const FReal* sampledData,
-                FComplex* transformedData) const
+                FComplex<FReal>* transformedData) const
   {
     FBlas::c_setzero(nsteps_opt_,reinterpret_cast<FReal*>(dataF_));
     FBlas::copy(nsteps_, sampledData,data_);
@@ -320,7 +320,7 @@ public:
   }
 
 
-  void applyIDFT(const FComplex* transformedData,
+  void applyIDFT(const FComplex<FReal>* transformedData,
                  FReal* sampledData) const
   {
     // read transformed data
@@ -354,8 +354,8 @@ class FCFft
   enum{dim = DIM};
 
   // arrays
-  FComplex* data_;  //< data in physical space
-  FComplex* dataF_; //< data in Fourier space
+  FComplex<FReal>* data_;  //< data in physical space
+  FComplex<FReal>* dataF_; //< data in Fourier space
 
   // plans
   fftw_plan plan_b_; // backward FFT plan
@@ -376,8 +376,8 @@ public:
     }
 
     // allocate arrays
-    data_  = (FComplex*) fftw_malloc(sizeof(FComplex) * nsteps_);
-    dataF_ = (FComplex*) fftw_malloc(sizeof(FComplex) * nsteps_);
+    data_  = (FComplex<FReal>*) fftw_malloc(sizeof(FComplex<FReal>) * nsteps_);
+    dataF_ = (FComplex<FReal>*) fftw_malloc(sizeof(FComplex<FReal>) * nsteps_);
 
     // multidim fftw plans
     plan_b_ =
@@ -403,8 +403,8 @@ public:
     fftw_free(dataF_);
   }
 
-  void applyDFT(const FComplex* sampledData,
-                FComplex* transformedData) const
+  void applyDFT(const FComplex<FReal>* sampledData,
+                FComplex<FReal>* transformedData) const
   {
     FBlas::c_setzero(nsteps_,reinterpret_cast<FReal*>(dataF_));
     FBlas::c_copy(nsteps_, reinterpret_cast<const FReal*>(sampledData),
@@ -419,8 +419,8 @@ public:
   }
 
 
-  void applyIDFT(const FComplex* transformedData,
-                 FComplex* sampledData) const
+  void applyIDFT(const FComplex<FReal>* transformedData,
+                 FComplex<FReal>* sampledData) const
   {
     // read transformed data
     FBlas::c_setzero(nsteps_,reinterpret_cast<FReal*>(data_));

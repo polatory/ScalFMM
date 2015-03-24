@@ -25,6 +25,8 @@
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
+
+template <class FReal>
 FReal FRandom() { return (FReal(drand48())); }
 
 /**
@@ -35,17 +37,18 @@ int main(int argc, char** argv)
 {
     FHelpDescribeAndExit(argc, argv, "Simply ensure that blas are compuling and running.");
 
+    typedef double FReal;
 	const unsigned int m = 4, n = 4; // to be able to test both, transpose and not transpose operations
 	FReal* A = new FReal [m * n]; // matrix: column major ordering
 	FReal* x = new FReal [n];
 	FReal* y = new FReal [m];
 	
-	const FReal d = FRandom();
+	const FReal d = FRandom<FReal>();
 	
 	for (unsigned int j=0; j<n; ++j) {
-		x[j] = FRandom();
+		x[j] = FRandom<FReal>();
 		for (unsigned int i=0; i<m; ++i) {
-			A[j*m + i] = FRandom();
+			A[j*m + i] = FRandom<FReal>();
 		}
 	}
 

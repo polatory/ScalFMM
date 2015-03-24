@@ -25,8 +25,8 @@
 * @brief This class is used as a leaf in simple system (source AND target).
 * Here there only one container stores all particles.
 */
-template< class ContainerClass>
-class FSimpleLeaf : public FAbstractLeaf<ContainerClass> {
+template<class FReal, class ContainerClass>
+class FSimpleLeaf : public FAbstractLeaf<FReal, ContainerClass> {
     ContainerClass particles; //! The container to store all the particles
 
 public:
@@ -40,7 +40,7 @@ public:
     * and the other parameters given by the user
     */
     template<typename... Args>
-    void push(const FPoint& inParticlePosition, Args ...  args){
+    void push(const FPoint<FReal>& inParticlePosition, Args ...  args){
 	// We pass every thing to the container and let it manage
 	this->particles.push(inParticlePosition, args...);
     }
@@ -51,7 +51,7 @@ public:
     * and the other parameters given by the user
     */
     template<typename... Args>
-    void pushArray(const FPoint* inParticlePosition, int numberOfParts, Args ...  args){
+    void pushArray(const FPoint<FReal>* inParticlePosition, int numberOfParts, Args ...  args){
 	// We pass every thing to the container and let it manage
 	this->particles.pushArray(inParticlePosition,numberOfParts, args...);
     }

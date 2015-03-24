@@ -56,8 +56,10 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight);
 
+    typedef double FReal;
+
     typedef FBasicParticleContainer<0>      ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to show some stat about the tree.\n";
@@ -70,7 +72,7 @@ int main(int argc, char ** argv){
     const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     std::cout << "Opening : " << filename << "\n";
 
-    FFmaGenericLoader loader(filename);
+    FFmaGenericLoader<FReal> loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -87,7 +89,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         FReal physicalValue;
         loader.fillParticle(&particlePosition,&physicalValue);
         tree.insert(particlePosition );

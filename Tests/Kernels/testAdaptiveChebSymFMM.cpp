@@ -72,15 +72,16 @@ int main(int argc, char ** argv){
             FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
             LocalOptionMinMultipoleThreshod,LocalOptionMinLocalThreshod);
 
+    typedef double FReal;
     const unsigned int P = 5 ;
-    typedef FChebCell<P>                                        CellClass;
-    typedef FP2PParticleContainerIndexed<>            ContainerClass;
-    typedef FSimpleLeaf<ContainerClass>    LeafClass;
-    typedef FInterpMatrixKernelR                               MatrixKernelClass;
-    typedef FAdaptiveChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
+    typedef FChebCell<FReal,P>                                        CellClass;
+    typedef FP2PParticleContainerIndexed<FReal>            ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass>    LeafClass;
+    typedef FInterpMatrixKernelR<FReal>                               MatrixKernelClass;
+    typedef FAdaptiveChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
     typedef FAdaptiveCell< CellClass, ContainerClass >                                        CellWrapperClass;
     typedef FAdaptiveKernelWrapper< KernelClass, CellClass, ContainerClass >   KernelWrapperClass;
-    typedef FOctree< CellWrapperClass, ContainerClass , LeafClass >                  OctreeClass;
+    typedef FOctree<FReal, CellWrapperClass, ContainerClass , LeafClass >                  OctreeClass;
     typedef FFmmAlgorithm<OctreeClass, CellWrapperClass, ContainerClass, KernelWrapperClass, LeafClass >     FmmClass;
 
     FTic counter;
@@ -92,7 +93,7 @@ int main(int argc, char ** argv){
     const unsigned int TreeHeight      = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 3);
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
 
-    FFmaGenericLoader loader(fileName);
+    FFmaGenericLoader<FReal> loader(fileName);
     const long int NbPart  = loader.getNumberOfParticles() ;
     //////////////////////////////////////////////////////////////////////////////////
 
@@ -107,11 +108,11 @@ int main(int argc, char ** argv){
 
     counter.tic();
 
-    FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[NbPart];
+    FmaRWParticle<FReal, 8,8>* const particles = new FmaRWParticle<FReal, 8,8>[NbPart];
     loader.fillParticle(particles,NbPart);
 
     for(int idxPart = 0 ; idxPart < NbPart; ++idxPart){
-        const FPoint PP(particles[idxPart].getPosition() ) ;
+        const FPoint<FReal> PP(particles[idxPart].getPosition() ) ;
         tree.insert(PP, idxPart, particles[idxPart].getPhysicalValue());
     }
 
@@ -145,8 +146,8 @@ int main(int argc, char ** argv){
     // Compare
     /////////////////////////////////////////////////////////////////////////////////////////////////
     {
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
+        FMath::FAccurater<FReal> potentialDiff;
+        FMath::FAccurater<FReal> fx, fy, fz;
         FReal energy= 0.0;
         { // Check that each particle has been summed with all other
 

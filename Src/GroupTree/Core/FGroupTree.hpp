@@ -17,12 +17,12 @@
 
 
 
-template <class CompositeCellClass, class SymboleCellClass, class PoleCellClass, class LocalCellClass,
+template <class FReal, class CompositeCellClass, class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class GroupAttachedLeafClass, unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FGroupTree {
 public:
     typedef GroupAttachedLeafClass BasicAttachedClass;
-    typedef FGroupOfParticles<NbSymbAttributes, NbAttributesPerParticle,AttributeClass> ParticleGroupClass;
+    typedef FGroupOfParticles<FReal, NbSymbAttributes, NbAttributesPerParticle,AttributeClass> ParticleGroupClass;
     typedef FGroupOfCells<CompositeCellClass, SymboleCellClass, PoleCellClass, LocalCellClass> CellGroupClass;
 
 protected:
@@ -39,9 +39,9 @@ protected:
     std::vector<ParticleGroupClass*> particleBlocks;
 
     //< the space system center
-    const FPoint boxCenter;
+    const FPoint<FReal> boxCenter;
     //< the space system corner (used to compute morton index)
-    const FPoint boxCorner;
+    const FPoint<FReal> boxCorner;
     //< the space system width
     const FReal boxWidth;
     //< the width of a box at width level
@@ -108,7 +108,7 @@ public:
                 CellGroupClass*const newBlock = new CellGroupClass(blockIteratorInOctree.getCurrentGlobalIndex(),
                                                                  octreeIterator.getCurrentGlobalIndex()+1,
                                                                  sizeOfBlock);
-                FGroupOfParticles<NbSymbAttributes, NbAttributesPerParticle, AttributeClass>*const newParticleBlock = new FGroupOfParticles<NbSymbAttributes, NbAttributesPerParticle, AttributeClass>(blockIteratorInOctree.getCurrentGlobalIndex(),
+                FGroupOfParticles<FReal, NbSymbAttributes, NbAttributesPerParticle, AttributeClass>*const newParticleBlock = new FGroupOfParticles<FReal, NbSymbAttributes, NbAttributesPerParticle, AttributeClass>(blockIteratorInOctree.getCurrentGlobalIndex(),
                                                                  octreeIterator.getCurrentGlobalIndex()+1,
                                                                  sizeOfBlock, nbParticlesInGroup);
 
@@ -199,7 +199,7 @@ public:
      * It should be easy to make it parallel using for and tasks.
      */
     template<class ParticleContainer>
-    FGroupTree(const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter,
+    FGroupTree(const int inTreeHeight, const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter,
                const int inNbElementsPerBlock, ParticleContainer* inParticlesContainer, const bool particlesAreSorted = false):
             treeHeight(inTreeHeight),nbElementsPerBlock(inNbElementsPerBlock),cellBlocksPerLevel(nullptr),
             boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth),
@@ -267,7 +267,7 @@ public:
                 CellGroupClass*const newBlock = new CellGroupClass(currentBlockIndexes[0],
                                                                  currentBlockIndexes[sizeOfBlock-1]+1,
                                                                  sizeOfBlock);
-                FGroupOfParticles<NbSymbAttributes, NbAttributesPerParticle, AttributeClass>*const newParticleBlock = new FGroupOfParticles<NbSymbAttributes, NbAttributesPerParticle, AttributeClass>(currentBlockIndexes[0],
+                FGroupOfParticles<FReal, NbSymbAttributes, NbAttributesPerParticle, AttributeClass>*const newParticleBlock = new FGroupOfParticles<FReal, NbSymbAttributes, NbAttributesPerParticle, AttributeClass>(currentBlockIndexes[0],
                         currentBlockIndexes[sizeOfBlock-1]+1,
                         sizeOfBlock, lastParticle-firstParticle);
 
@@ -375,7 +375,7 @@ public:
      * If no limite give inLeftLimite = -1
      */
     template<class ParticleContainer>
-    FGroupTree(const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter,
+    FGroupTree(const int inTreeHeight, const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter,
                const int inNbElementsPerBlock, ParticleContainer* inParticlesContainer,
                const bool particlesAreSorted, MortonIndex inLeftLimite):
             treeHeight(inTreeHeight),nbElementsPerBlock(inNbElementsPerBlock),cellBlocksPerLevel(nullptr),
@@ -446,7 +446,7 @@ public:
                 CellGroupClass*const newBlock = new CellGroupClass(currentBlockIndexes[0],
                                                                  currentBlockIndexes[sizeOfBlock-1]+1,
                                                                  sizeOfBlock);
-                FGroupOfParticles<NbSymbAttributes, NbAttributesPerParticle, AttributeClass>*const newParticleBlock = new FGroupOfParticles<NbSymbAttributes, NbAttributesPerParticle, AttributeClass>(currentBlockIndexes[0],
+                FGroupOfParticles<FReal, NbSymbAttributes, NbAttributesPerParticle, AttributeClass>*const newParticleBlock = new FGroupOfParticles<FReal, NbSymbAttributes, NbAttributesPerParticle, AttributeClass>(currentBlockIndexes[0],
                         currentBlockIndexes[sizeOfBlock-1]+1,
                         sizeOfBlock, lastParticle-firstParticle);
 

@@ -53,9 +53,10 @@
 int main(int argc, char ** argv){
     FHelpDescribeAndExit(argc, argv, "Test Chebyshev interpolator.");
 
-  typedef FP2PParticleContainer<> ContainerClass;
-  typedef FSimpleLeaf<ContainerClass> LeafClass;
-	typedef FInterpMatrixKernelR MatrixKernelClass;
+    typedef double FReal;
+  typedef FP2PParticleContainer<FReal> ContainerClass;
+  typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
+	typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
 
 
 	///////////////////////What we do/////////////////////////////
@@ -88,7 +89,7 @@ int main(int argc, char ** argv){
 
 	////////////////////////////////////////////////////////////////////
 	LeafClass X;
-	FPoint cx(0., 0., 0.);
+    FPoint<FReal> cx(0., 0., 0.);
 	const unsigned long M = 20000;
 	std::cout << "Fill the leaf X of width " << width
 						<< " centered at cx=" << cx 
@@ -100,14 +101,14 @@ int main(int argc, char ** argv){
       FReal x = (FReal(drand48()) - FReal(.5)) * width + cx.getX();
       FReal y = (FReal(drand48()) - FReal(.5)) * width + cx.getY();
       FReal z = (FReal(drand48()) - FReal(.5)) * width + cx.getZ();
-      X.push(FPoint(x, y, z), FReal(drand48()));
+      X.push(FPoint<FReal>(x, y, z), FReal(drand48()));
       // generate and insert duplicata (in 1 random direction)
       FReal ddir[3] = {FReal(drand48()),FReal(drand48()),FReal(drand48())};
       FReal norm_ddir = sqrt(ddir[0]*ddir[0]+ddir[1]*ddir[1]+ddir[2]*ddir[2]);
       FReal xd = x + dradius*ddir[0]/norm_ddir;
       FReal yd = y + dradius*ddir[1]/norm_ddir;
       FReal zd = z + dradius*ddir[2]/norm_ddir;
-      X.push(FPoint(xd, yd, zd), FReal(drand48()));
+      X.push(FPoint<FReal>(xd, yd, zd), FReal(drand48()));
       // count duplicata that are outside original leaf
       bool isinX = ((xd<cx.getX() + 0.5*width) && (xd>cx.getX() - 0.5*width));
       bool isinY = ((yd<cx.getY() + 0.5*width) && (yd>cx.getY() - 0.5*width));
@@ -123,7 +124,7 @@ int main(int argc, char ** argv){
 
 	////////////////////////////////////////////////////////////////////
 	LeafClass Y;
-	FPoint cy(beta*width, 0., 0.);
+    FPoint<FReal> cy(beta*width, 0., 0.);
 	const unsigned long N = 20000;
 	std::cout << "Fill the leaf Y of width " << width
 						<< " centered at cy=" << cy	
@@ -135,14 +136,14 @@ int main(int argc, char ** argv){
       FReal x = (FReal(drand48()) - FReal(.5)) * width + cy.getX();
       FReal y = (FReal(drand48()) - FReal(.5)) * width + cy.getY();
       FReal z = (FReal(drand48()) - FReal(.5)) * width + cy.getZ();
-      Y.push(FPoint(x, y, z), FReal(drand48()));
+      Y.push(FPoint<FReal>(x, y, z), FReal(drand48()));
       // generate and insert duplicata (in 1 random direction)
       FReal ddir[3] = {FReal(drand48()),FReal(drand48()),FReal(drand48())};
       FReal norm_ddir = sqrt(ddir[0]*ddir[0]+ddir[1]*ddir[1]+ddir[2]*ddir[2]);
       FReal xd = x + dradius*ddir[0]/norm_ddir;
       FReal yd = y + dradius*ddir[1]/norm_ddir;
       FReal zd = z + dradius*ddir[2]/norm_ddir;
-      Y.push(FPoint(xd, yd, zd), FReal(drand48()));
+      Y.push(FPoint<FReal>(xd, yd, zd), FReal(drand48()));
       // count duplicata that are outside original leaf
       bool isinX = ((xd<cy.getX() + 0.5*width) && (xd>cy.getX() - 0.5*width));
       bool isinY = ((yd<cy.getY() + 0.5*width) && (yd>cy.getY() - 0.5*width));
@@ -159,7 +160,7 @@ int main(int argc, char ** argv){
 	// approximative computation
 	const unsigned int ORDER = 10;
 	const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
-	typedef FChebInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
+	typedef FChebInterpolator<FReal,ORDER,MatrixKernelClass> InterpolatorClass;
 	InterpolatorClass S; // default ctor is used since no M2M/L2L op required
 
 	std::cout << "\nCompute interactions approximatively, interpolation order = " << ORDER << " ..." << std::endl;
@@ -174,9 +175,9 @@ int main(int argc, char ** argv){
 	std::cout << "M2L ... " << std::flush;
 	time.tic();
 	// Multipole to local: F_m = \sum_n^L K(\bar x_m, \bar y_n) * W_n
-	FPoint rootsX[nnodes], rootsY[nnodes];
-	FChebTensor<ORDER>::setRoots(cx, ExtendedCellWidth, rootsX);
-	FChebTensor<ORDER>::setRoots(cy, ExtendedCellWidth, rootsY);
+    FPoint<FReal> rootsX[nnodes], rootsY[nnodes];
+	FChebTensor<FReal,ORDER>::setRoots(cx, ExtendedCellWidth, rootsX);
+	FChebTensor<FReal,ORDER>::setRoots(cy, ExtendedCellWidth, rootsY);
 
 	FReal F[nnodes]; // local expansion
 	for (unsigned int i=0; i<nnodes; ++i) {
@@ -216,13 +217,13 @@ int main(int argc, char ** argv){
 		unsigned int counter = 0;
 		
     for(int idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
-      const FPoint x = FPoint(X.getSrc()->getPositions()[0][idxPartX],
+      const FPoint<FReal> x = FPoint<FReal>(X.getSrc()->getPositions()[0][idxPartX],
                               X.getSrc()->getPositions()[1][idxPartX],
                               X.getSrc()->getPositions()[2][idxPartX]);
       const FReal  wx = X.getSrc()->getPhysicalValues()[idxPartX];
 			
       for(int idxPartY = 0 ; idxPartY < Y.getSrc()->getNbParticles() ; ++idxPartY){
-        const FPoint y = FPoint(Y.getSrc()->getPositions()[0][idxPartY],
+        const FPoint<FReal> y = FPoint<FReal>(Y.getSrc()->getPositions()[0][idxPartY],
                                 Y.getSrc()->getPositions()[1][idxPartY],
                                 Y.getSrc()->getPositions()[2][idxPartY]);
         const FReal  wy = Y.getSrc()->getPhysicalValues()[idxPartY];
@@ -231,7 +232,7 @@ int main(int argc, char ** argv){
 				// potential
 				p[counter] += one_over_r * wy;
 				// force
-				FPoint force(y - x);
+                FPoint<FReal> force(y - x);
 				force *= one_over_r*one_over_r*one_over_r;
 				f[counter*3 + 0] += force.getX() * wx * wy;
 				f[counter*3 + 1] += force.getY() * wx * wy;
@@ -251,7 +252,7 @@ int main(int argc, char ** argv){
 	unsigned int counter = 0;
   for(int idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
     approx_p[counter] = X.getSrc()->getPotentials()[idxPartX];
-    const FPoint force = FPoint(X.getSrc()->getForcesX()[idxPartX],
+    const FPoint<FReal> force = FPoint<FReal>(X.getSrc()->getForcesX()[idxPartX],
                                 X.getSrc()->getForcesY()[idxPartX],
                                 X.getSrc()->getForcesZ()[idxPartX]);
 		approx_f[counter*3 + 0] = force.getX();
@@ -262,10 +263,10 @@ int main(int argc, char ** argv){
 	}
 
 	std::cout << "\nPotential error:" << std::endl;
-  std::cout << "Relative error   = " << FMath::FAccurater( p, approx_p, M) << std::endl;
+  std::cout << "Relative error   = " << FMath::FAccurater<FReal>( p, approx_p, M) << std::endl;
 
 	std::cout << "\nForce error:" << std::endl;
-  std::cout << "Relative L2 error   = " << FMath::FAccurater( f, approx_f, M*3) << std::endl;
+  std::cout << "Relative L2 error   = " << FMath::FAccurater<FReal>( f, approx_f, M*3) << std::endl;
 	std::cout << std::endl;
 
 	// free memory

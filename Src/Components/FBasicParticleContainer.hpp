@@ -45,8 +45,8 @@
  * AStruct* strucs = container.getAttributes<0>();
  * \endcode
  */
-template <unsigned NbAttributesPerParticle, class AttributeClass = FReal >
-class FBasicParticleContainer : public FAbstractParticleContainer, public FAbstractSerializable {
+template <class FReal, unsigned NbAttributesPerParticle, class AttributeClass >
+class FBasicParticleContainer : public FAbstractParticleContainer<FReal>, public FAbstractSerializable {
 protected:
     static const int MemoryAlignement   = FP2PDefaultAlignement;
     static const int DefaultNbParticles = int(MemoryAlignement/sizeof(FReal));
@@ -231,7 +231,7 @@ public:
    * @param Array of position, number of parts to insert, followed by array of attribute
    */
     template<typename... Args>
-    void pushArray(const FPoint * inParticlePosition, FSize numberOfParts, Args... args){
+    void pushArray(const FPoint<FReal> * inParticlePosition, FSize numberOfParts, Args... args){
         const int positionToInsert = nbParticles;
         //Tests if enough space
         increaseSizeIfNeeded(numberOfParts);
@@ -261,7 +261,7 @@ public:
    * Should have a particle position fallowed by attributes
    */
     template<typename... Args>
-    void push(const FPoint& inParticlePosition, Args... args){
+    void push(const FPoint<FReal>& inParticlePosition, Args... args){
         // enought space?
         increaseSizeIfNeeded();
 
@@ -280,7 +280,7 @@ public:
    * Should have a particle position fallowed by attributes
    */
     template<typename... Args>
-    void push(const FPoint& inParticlePosition, const std::array<AttributeClass , NbAttributesPerParticle>& values){
+    void push(const FPoint<FReal>& inParticlePosition, const std::array<AttributeClass , NbAttributesPerParticle>& values){
         // enought space?
         increaseSizeIfNeeded();
 
@@ -300,7 +300,7 @@ public:
    * Should have a particle position fallowed by isTarget flag and attributes
    */
     template<typename... Args>
-    void push(const FPoint& inParticlePosition, const FParticleType type,
+    void push(const FPoint<FReal>& inParticlePosition, const FParticleType type,
               const std::array<AttributeClass , NbAttributesPerParticle>& values){
         push(inParticlePosition,values);
     }
@@ -309,7 +309,7 @@ public:
    * Push called usually by FTypedLeaf with the isTarget flag in addition
    */
     template<typename... Args>
-    void push(const FPoint& inParticlePosition, const FParticleType /*particleType*/, Args... args){
+    void push(const FPoint<FReal>& inParticlePosition, const FParticleType /*particleType*/, Args... args){
         push(inParticlePosition, args...);
     }
 

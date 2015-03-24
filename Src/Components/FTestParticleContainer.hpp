@@ -28,8 +28,9 @@
 * look at this class to know whit it is.
 * We store the positions + 1 long long int
 */
-class FTestParticleContainer : public FBasicParticleContainer<1, long long int> {
-    typedef FBasicParticleContainer<1, long long int> Parent;
+template <class FReal>
+class FTestParticleContainer : public FBasicParticleContainer<FReal, 1, long long int> {
+    typedef FBasicParticleContainer<FReal, 1, long long int> Parent;
 
 public:
     /**
@@ -37,7 +38,7 @@ public:
      * @return
      */
     long long int* getDataDown(){
-        return Parent::getAttribute<0>();
+        return Parent::template getAttribute<0>();
     }
 
     /**
@@ -45,7 +46,7 @@ public:
      * @return
      */
     const long long int* getDataDown() const {
-        return Parent::getAttribute<0>();
+        return Parent::template getAttribute<0>();
     }
 };
 

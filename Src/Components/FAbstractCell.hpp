@@ -54,7 +54,7 @@ public:
         * Must be implemented by each user Cell class
         * @param inPosition the position of the current cell
         */
-    virtual void setPosition(const FPoint& inPosition) = 0;
+    virtual void setPosition(const FPoint<FReal>& inPosition) = 0;
 
     /**
     * Must be implemented by each user Cell class

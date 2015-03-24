@@ -34,7 +34,7 @@
   * So the size of such vector can be obtained by a suite:
   * (n+1)*n/2 => (P+2)*(P+1)/2
   */
-template <int P>
+template <class FReal, int P>
 class FRotationCell : public FBasicCell {
 protected:
     //< Size of multipole vector
@@ -43,9 +43,9 @@ protected:
     static const int LocalSize = ((P+2)*(P+1))/2;     // Artimethique suite (n+1)*n/2
 
     //< Multipole vector (static memory)
-    FComplex multipole_exp[MultipoleSize]; //< For multipole extenssion
+    FComplex<FReal> multipole_exp[MultipoleSize]; //< For multipole extenssion
     //< Local vector (static memory)
-    FComplex local_exp[LocalSize];         //< For local extenssion
+    FComplex<FReal> local_exp[LocalSize];         //< For local extenssion
 
 public:
     /** Default constructor
@@ -75,20 +75,20 @@ public:
     }
 
     /** Get Multipole array */
-    const FComplex* getMultipole() const {
+    const FComplex<FReal>* getMultipole() const {
         return multipole_exp;
     }
     /** Get Local array */
-    const FComplex* getLocal() const {
+    const FComplex<FReal>* getLocal() const {
         return local_exp;
     }
 
     /** Get Multipole array */
-    FComplex* getMultipole() {
+    FComplex<FReal>* getMultipole() {
         return multipole_exp;
     }
     /** Get Local array */
-    FComplex* getLocal() {
+    FComplex<FReal>* getLocal() {
         return local_exp;
     }
 
@@ -146,39 +146,39 @@ public:
     }
 
     int getSavedSize() const {
-        return ((int) sizeof(FComplex)) * (MultipoleSize + LocalSize)
+        return ((int) sizeof(FComplex<FReal>)) * (MultipoleSize + LocalSize)
                 + FBasicCell::getSavedSize();
     }
 
     int getSavedSizeUp() const {
-        return ((int) sizeof(FComplex)) * (MultipoleSize);
+        return ((int) sizeof(FComplex<FReal>)) * (MultipoleSize);
     }
 
     int getSavedSizeDown() const {
-        return ((int) sizeof(FComplex)) * (LocalSize);
+        return ((int) sizeof(FComplex<FReal>)) * (LocalSize);
     }
 };
 
-template <int P>
-class FTypedRotationCell : public FRotationCell<P>, public FExtendCellType {
+template <class FReal, int P>
+class FTypedRotationCell : public FRotationCell<FReal, P>, public FExtendCellType {
 public:
     template <class BufferWriterClass>
     void save(BufferWriterClass& buffer) const{
-        FRotationCell<P>::save(buffer);
+        FRotationCell<FReal, P>::save(buffer);
         FExtendCellType::save(buffer);
     }
     template <class BufferReaderClass>
     void restore(BufferReaderClass& buffer){
-        FRotationCell<P>::restore(buffer);
+        FRotationCell<FReal, P>::restore(buffer);
         FExtendCellType::restore(buffer);
     }
     void resetToInitialState(){
-        FRotationCell<P>::resetToInitialState();
+        FRotationCell<FReal, P>::resetToInitialState();
         FExtendCellType::resetToInitialState();
     }
 
     int getSavedSize() const {
-        return FExtendCellType::getSavedSize() + FRotationCell<P>::getSavedSize();
+        return FExtendCellType::getSavedSize() + FRotationCell<FReal, P>::getSavedSize();
     }
 };
 

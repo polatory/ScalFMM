@@ -105,17 +105,18 @@ int main(int argc, char ** argv){
 	const int sminM    = FParameters::getValue(argc,argv,LocalOptionMinMultipoleThreshod.options, P*P*P);
 	const int sminL     = FParameters::getValue(argc,argv,LocalOptionMinLocalThreshod.options, P*P*P);
 //
+    typedef double FReal;
 	typedef FUnifCell<P>                                        CellClass;
-	typedef FP2PParticleContainerIndexed<>            ContainerClass;
-	typedef FSimpleIndexedLeaf<ContainerClass>    LeafClass;
-	typedef FInterpMatrixKernelR                               MatrixKernelClass;
+	typedef FP2PParticleContainerIndexed<FReal>            ContainerClass;
+	typedef FSimpleIndexedLeaf<FReal,ContainerClass>    LeafClass;
+	typedef FInterpMatrixKernelR<FReal>                               MatrixKernelClass;
 	//
 	typedef FAdaptiveUnifKernel<CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
 	//
 	//
 	typedef FAdaptiveCell< CellClass, ContainerClass >                                        CellWrapperClass;
 	typedef FAdaptiveKernelWrapper< KernelClass, CellClass, ContainerClass >   KernelWrapperClass;
-	typedef FOctree< CellWrapperClass, ContainerClass , LeafClass >                  OctreeClass;
+	typedef FOctree< FReal, CellWrapperClass, ContainerClass , LeafClass >                  OctreeClass;
 
 	// FFmmAlgorithmTask FFmmAlgorithmThread
 	typedef FFmmAlgorithm<OctreeClass, CellWrapperClass, ContainerClass, KernelWrapperClass, LeafClass >     FmmClass;
@@ -134,11 +135,11 @@ int main(int argc, char ** argv){
 	// Not Random Loader
 	//////////////////////////////////////////////////////////////////////////////////
 
-	FFmaGenericLoader loader(fileName);
+	FFmaGenericLoader<FReal> loader(fileName);
 	const long int NbPart  = loader.getNumberOfParticles() ;
 	// Random Loader
 	//const int NbPart       = FParameters::getValue(argc,argv,"-nb", 2000000);
-	//	FRandomLoader loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
+    //	FRandomLoader<FReal> loader(NbPart, 1, FPoint<FReal>(0.5,0.5,0.5), 1);
 	//////////////////////////////////////////////////////////////////////////////////
 
 	OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
@@ -155,14 +156,14 @@ int main(int argc, char ** argv){
 	counter.tic();
 	FReal L= loader.getBoxWidth();
 	//FmaRParticle* particles=  new FmaRParticle[NbPart];
-	FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[NbPart];
+	FmaRWParticle<FReal, 8,8>* const particles = new FmaRWParticle<FReal, 8,8>[NbPart];
 
-	FPoint minPos(L,L,L), maxPos(-L,-L,-L);
+    FPoint<FReal> minPos(L,L,L), maxPos(-L,-L,-L);
 	//
 	loader.fillParticle(particles,NbPart);
 
 	for(int idxPart = 0 ; idxPart < NbPart; ++idxPart){
-		const FPoint PP(particles[idxPart].getPosition() ) ;
+        const FPoint<FReal> PP(particles[idxPart].getPosition() ) ;
 		//
 		minPos.setX(FMath::Min(minPos.getX(),PP.getX())) ;
 		minPos.setY(FMath::Min(minPos.getY(),PP.getY())) ;
@@ -210,8 +211,8 @@ int main(int argc, char ** argv){
 	/////////////////////////////////////////////////////////////////////////////////////////////////
 	// Compare
 	/////////////////////////////////////////////////////////////////////////////////////////////////
-	FMath::FAccurater potentialDiff;
-	FMath::FAccurater fx, fy, fz;
+	FMath::FAccurater<FReal> potentialDiff;
+	FMath::FAccurater<FReal> fx, fy, fz;
 	{ // Check that each particle has been summed with all other
 
 		//    std::cout << "indexPartOrig || DIRECT V fx || FMM V fx" << std::endl;

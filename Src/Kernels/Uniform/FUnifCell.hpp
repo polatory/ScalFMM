@@ -38,7 +38,7 @@
  *
  * @param NVALS is the number of right hand side.
  */
-template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+template < class FReal, int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 class FUnifCell : public FBasicCell
 {
   static const int VectorSize = TensorTraits<ORDER>::nnodes;
@@ -47,17 +47,17 @@ class FUnifCell : public FBasicCell
   FReal multipole_exp[NRHS * NVALS * VectorSize]; //< Multipole expansion
   FReal     local_exp[NLHS * NVALS * VectorSize]; //< Local expansion
   // PB: Store multipole and local expansion in Fourier space
-  FComplex transformed_multipole_exp[NRHS * NVALS * TransformedVectorSize];
-  FComplex     transformed_local_exp[NLHS * NVALS * TransformedVectorSize];
+  FComplex<FReal> transformed_multipole_exp[NRHS * NVALS * TransformedVectorSize];
+  FComplex<FReal>     transformed_local_exp[NLHS * NVALS * TransformedVectorSize];
 
 public:
   FUnifCell(){
     memset(multipole_exp, 0, sizeof(FReal) * NRHS * NVALS * VectorSize);
     memset(local_exp, 0, sizeof(FReal) * NLHS * NVALS * VectorSize);
     memset(transformed_multipole_exp, 0, 
-           sizeof(FComplex) * NRHS * NVALS * TransformedVectorSize);
+           sizeof(FComplex<FReal>) * NRHS * NVALS * TransformedVectorSize);
     memset(transformed_local_exp, 0, 
-           sizeof(FComplex) * NLHS * NVALS * TransformedVectorSize);
+           sizeof(FComplex<FReal>) * NLHS * NVALS * TransformedVectorSize);
   }
 
   ~FUnifCell() {}
@@ -86,20 +86,20 @@ public:
   }
 
   /** Get Transformed Multipole */
-  const FComplex* getTransformedMultipole(const int inRhs) const{	
+  const FComplex<FReal>* getTransformedMultipole(const int inRhs) const{
     return this->transformed_multipole_exp + inRhs*TransformedVectorSize;
   }
   /** Get Transformed Local */
-  const FComplex* getTransformedLocal(const int inRhs) const{
+  const FComplex<FReal>* getTransformedLocal(const int inRhs) const{
     return this->transformed_local_exp + inRhs*TransformedVectorSize;
   }
 
   /** Get Transformed Multipole */
-  FComplex* getTransformedMultipole(const int inRhs){
+  FComplex<FReal>* getTransformedMultipole(const int inRhs){
     return this->transformed_multipole_exp + inRhs*TransformedVectorSize;
   }
   /** Get Transformed Local */
-  FComplex* getTransformedLocal(const int inRhs){
+  FComplex<FReal>* getTransformedLocal(const int inRhs){
     return this->transformed_local_exp + inRhs*TransformedVectorSize;
   }
 
@@ -113,9 +113,9 @@ public:
     memset(multipole_exp, 0, sizeof(FReal) * NRHS * NVALS * VectorSize);
     memset(local_exp, 0, sizeof(FReal) * NLHS * NVALS * VectorSize);
     memset(transformed_multipole_exp, 0, 
-           sizeof(FComplex) * NRHS * NVALS * TransformedVectorSize);
+           sizeof(FComplex<FReal>) * NRHS * NVALS * TransformedVectorSize);
     memset(transformed_local_exp, 0, 
-           sizeof(FComplex) * NLHS * NVALS * TransformedVectorSize);
+           sizeof(FComplex<FReal>) * NLHS * NVALS * TransformedVectorSize);
   }
 
   ///////////////////////////////////////////////////////
@@ -167,16 +167,16 @@ public:
   }
 
   int getSavedSize() const {
-      return (NRHS+NLHS)*NVALS*VectorSize * (int) sizeof(FReal) + (NRHS+NLHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex)
+      return (NRHS+NLHS)*NVALS*VectorSize * (int) sizeof(FReal) + (NRHS+NLHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex<FReal>)
               + FBasicCell::getSavedSize();
   }
 
   int getSavedSizeUp() const {
-      return (NRHS)*NVALS*VectorSize * (int) sizeof(FReal) + (NRHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex);
+      return (NRHS)*NVALS*VectorSize * (int) sizeof(FReal) + (NRHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex<FReal>);
   }
 
   int getSavedSizeDown() const {
-      return (NLHS)*NVALS*VectorSize * (int) sizeof(FReal) + (NLHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex);
+      return (NLHS)*NVALS*VectorSize * (int) sizeof(FReal) + (NLHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex<FReal>);
   }
 
  template <class StreamClass>

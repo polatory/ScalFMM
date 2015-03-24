@@ -242,7 +242,7 @@ public:
         return indexes.getSize();
     }
 
-    void push(const FPoint& partPosition, const int partIndex){
+    void push(const FPoint<FReal>& partPosition, const int partIndex){
         positions.push(partPosition.getX());
         positions.push(partPosition.getY());
         positions.push(partPosition.getZ());
@@ -254,7 +254,7 @@ public:
 typedef CoreVector          CoreContainerClass;
 
 typedef CoreCell<CoreContainerClass>      CoreCellClass;
-typedef FSimpleLeaf<CoreContainerClass >                        LeafClass;
+typedef FSimpleLeaf<FReal, CoreContainerClass >                        LeafClass;
 typedef FOctree<CoreCellClass, CoreContainerClass , LeafClass >     OctreeClass;
 typedef CoreKernel<CoreCellClass, CoreContainerClass>         CoreKernelClass;
 
@@ -533,7 +533,7 @@ int FmmCore_setPositions(void *fmmCore, int *nb, FReal *position)  {
     ScalFmmCoreHandle* corehandle = (ScalFmmCoreHandle*)fmmCore;
 
     corehandle->octree = new OctreeClass(corehandle->config.treeHeight, FMath::Min(3,corehandle->config.treeHeight-1),
-                                         corehandle->config.boxWidth, FPoint(corehandle->config.boxCenter));
+                                         corehandle->config.boxWidth, FPoint<FReal>(corehandle->config.boxCenter));
 
     if( corehandle->config.nbThreads != 0){
         omp_set_num_threads(corehandle->config.nbThreads);
@@ -541,7 +541,7 @@ int FmmCore_setPositions(void *fmmCore, int *nb, FReal *position)  {
 
     for(int idxPart = 0 ; idxPart < (*nb) ; ++idxPart){
         const FReal* pos = &position[idxPart * 3];
-        corehandle->octree->insert(FPoint(pos[0], pos[1], pos[2]),idxPart);
+        corehandle->octree->insert(FPoint<FReal>(pos[0], pos[1], pos[2]),idxPart);
     }
 
     return FMMAPI_NO_ERROR;
@@ -581,7 +581,7 @@ int FmmCore_doComputation(void *fmmCore)  {
     ScalFmmCoreHandle* corehandle = (ScalFmmCoreHandle*)fmmCore;
 
     { // Ceck if there is number of NbPart summed at level 1
-        FPoint corner = corehandle->octree->getBoxCenter();
+        FPoint<FReal> corner = corehandle->octree->getBoxCenter();
         corner -= (corehandle->octree->getBoxWidth()/2);
 
         FReal boxWidth = corehandle->octree->getBoxWidth()/( 1<< (corehandle->config.treeHeight-1) );
@@ -599,7 +599,7 @@ int FmmCore_doComputation(void *fmmCore)  {
                 octreeIterator.getCurrentCell()->createArrays(multipoleSize, localSize);
                 octreeIterator.getCurrentCell()->setLevel(idxLevel);
                 const FTreeCoordinate coord = octreeIterator.getCurrentCell()->getCoordinate();
-                FPoint position( coord.getX()*boxWidth + boxWidth/2.0 + corner.getX(),
+                FPoint<FReal> position( coord.getX()*boxWidth + boxWidth/2.0 + corner.getX(),
                                  coord.getY()*boxWidth + boxWidth/2.0 + corner.getY(),
                                  coord.getZ()*boxWidth + boxWidth/2.0 + corner.getZ());
                 octreeIterator.getCurrentCell()->setPosition(position.getDataValue());

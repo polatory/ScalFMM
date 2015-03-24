@@ -47,7 +47,7 @@
  * Please refere to testOctree.cpp to see an example
  * @warning Give the particleClass & cellClass
  */
-template< class CellClass , class ContainerClass, class LeafClass, class CellAllocatorClass>
+template<class FReal, class CellClass , class ContainerClass, class LeafClass, class CellAllocatorClass>
 class FAbstractSubOctree {
 protected:
 
@@ -234,7 +234,7 @@ public:
     * @param inParticle the inTreeHeight the height of the tree
     */
     /*template<typename... Args>
-    void insert(const MortonIndex index, const FTreeCoordinate& host, const int inTreeHeight, const FPoint& inParticlePosition,
+    void insert(const MortonIndex index, const FTreeCoordinate& host, const int inTreeHeight, const FPoint<FReal>& inParticlePosition,
                         Args... args){
     }*/
 
@@ -335,10 +335,10 @@ public:
  * Please refere to testOctree.cpp to see an example.
  * @warning Give the particleClass & cellClass
  */
-template< class CellClass , class ContainerClass, class LeafClass, class CellAllocatorClass>
-class FSubOctreeWithLeafs : public FAbstractSubOctree<CellClass,ContainerClass,LeafClass, CellAllocatorClass> {
+template< class FReal, class CellClass , class ContainerClass, class LeafClass, class CellAllocatorClass>
+class FSubOctreeWithLeafs : public FAbstractSubOctree<FReal, CellClass,ContainerClass,LeafClass, CellAllocatorClass> {
 private:
-    typedef FAbstractSubOctree<CellClass,ContainerClass,LeafClass, CellAllocatorClass> Parent;
+    typedef FAbstractSubOctree<FReal, CellClass,ContainerClass,LeafClass, CellAllocatorClass> Parent;
 
     LeafClass** leafs;            //< Leafs array
 
@@ -353,9 +353,9 @@ public:
     * @param inSubOctreeHeight Height of this suboctree
     * @param inSubOctreePosition Level of the current suboctree in the global tree (1 if upper tree)
     */
-    FSubOctreeWithLeafs(FAbstractSubOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* const inParent, const int inIndexInParent,
+    FSubOctreeWithLeafs(FAbstractSubOctree<FReal,CellClass,ContainerClass,LeafClass,CellAllocatorClass>* const inParent, const int inIndexInParent,
                         const int inSubOctreeHeight, const int inSubOctreePosition) :
-                        FAbstractSubOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>(inParent, inIndexInParent, inSubOctreeHeight, inSubOctreePosition, true) {
+                        FAbstractSubOctree<FReal,CellClass,ContainerClass,LeafClass,CellAllocatorClass>(inParent, inIndexInParent, inSubOctreeHeight, inSubOctreePosition, true) {
 
         const int cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
 
@@ -381,7 +381,7 @@ public:
     * Refer to FAbstractSubOctree::insert
     */
     template<typename... Args>
-    void insert(const MortonIndex index, const FTreeCoordinate& host, const int inTreeHeight, const FPoint& inParticlePosition,
+    void insert(const MortonIndex index, const FTreeCoordinate& host, const int inTreeHeight, const FPoint<FReal>& inParticlePosition,
                         Args... args){
         // Get the morton index for the leaf level
         const MortonIndex arrayIndex = Parent::getLeafIndex(index,inTreeHeight);
@@ -480,11 +480,11 @@ public:
  *
  * @warning Give the particleClass & cellClass
  */
-template< class CellClass , class ContainerClass, class LeafClass, class CellAllocatorClass>
-class FSubOctree : public FAbstractSubOctree<CellClass,ContainerClass,LeafClass, CellAllocatorClass> {
+template<class FReal, class CellClass , class ContainerClass, class LeafClass, class CellAllocatorClass>
+class FSubOctree : public FAbstractSubOctree<FReal, CellClass,ContainerClass,LeafClass, CellAllocatorClass> {
 private:
-    typedef FAbstractSubOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass> Parent;
-    typedef FSubOctreeWithLeafs<CellClass,ContainerClass,LeafClass,CellAllocatorClass> SubOctreeWithLeaf;
+    typedef FAbstractSubOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass> Parent;
+    typedef FSubOctreeWithLeafs<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass> SubOctreeWithLeaf;
 
     Parent** subleafs;    //< Last levels is composed of suboctree
 
@@ -500,9 +500,9 @@ public:
     * @param inSubOctreeHeight Height of this suboctree
     * @param inSubOctreePosition Level of the current suboctree in the global tree (0 if upper tree)
     */
-    FSubOctree(FAbstractSubOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* const inParent,  const int inIndexInParent,
+    FSubOctree(FAbstractSubOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>* const inParent,  const int inIndexInParent,
                const int inSubOctreeHeight, const int inSubOctreePosition) :
-            FAbstractSubOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>(inParent, inIndexInParent, inSubOctreeHeight, inSubOctreePosition, false) {
+            FAbstractSubOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>(inParent, inIndexInParent, inSubOctreeHeight, inSubOctreePosition, false) {
 
         const int cellsAtLeafLevel = 1 << (3 * inSubOctreeHeight);
 
@@ -524,7 +524,7 @@ public:
 
 
     template<typename... Args>
-    void insert(const MortonIndex index, const FTreeCoordinate& host, const int inTreeHeight, const FPoint& inParticlePosition,
+    void insert(const MortonIndex index, const FTreeCoordinate& host, const int inTreeHeight, const FPoint<FReal>& inParticlePosition,
                         Args... args){
         // We need the morton index at the bottom level of this sub octree
         // so we remove the right side
@@ -616,14 +616,14 @@ public:
     /** To get access to leafs elements (child suboctree)
       * @param index the position of the leaf/child suboctree
       * @return child at this index */
-    FAbstractSubOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* leafs(const int index) {
+    FAbstractSubOctree<FReal,CellClass,ContainerClass,LeafClass,CellAllocatorClass>* leafs(const int index) {
         return this->subleafs[index];
     }
 
     /** To get access to leafs elements (child suboctree)
       * @param index the position of the leaf/child suboctree
       * @return child at this index */
-    const FAbstractSubOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* leafs(const int index) const {
+    const FAbstractSubOctree<FReal,CellClass,ContainerClass,LeafClass,CellAllocatorClass>* leafs(const int index) const {
         return this->subleafs[index];
     }
 };

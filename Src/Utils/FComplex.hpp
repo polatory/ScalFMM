@@ -20,7 +20,7 @@
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FComplex.hpp
+* @class FComplex<FReal>.hpp
 *
 * This class is a basic implementation of Complexe.
 * Please read the license
@@ -30,6 +30,7 @@
 * It can be passed to blas fonction and has to be
 * 2 x complex[0] size only.
 */
+template <class FReal>
 class FComplex {
     FReal complex[2];    //< Real & Imaginary
 
@@ -50,26 +51,26 @@ public:
     }
 
     /** Copy constructor */
-    FComplex(const FComplex& other){
+    FComplex(const FComplex<FReal>& other){
         complex[0] = other.complex[0];
         complex[1] = other.complex[1];
     }
 
     /** Copy operator */
-    FComplex& operator=(const FComplex& other){
+    FComplex<FReal>& operator=(const FComplex<FReal>& other){
         this->complex[0] = other.complex[0];
         this->complex[1] = other.complex[1];
         return *this;
     }
 
     /** Equality operator */
-    bool operator==(const FComplex& other){
+    bool operator==(const FComplex<FReal>& other){
         return FMath::LookEqual(this->complex[1],other.complex[1])
                        && FMath::LookEqual(this->complex[0],other.complex[0]);
     }
 
     /** Different equal */
-    bool operator!=(const FComplex& other){
+    bool operator!=(const FComplex<FReal>& other){
         return !(*this == other);
     }
 
@@ -100,12 +101,12 @@ public:
     }
 
     /** Return the conjugate */
-    FComplex conjugate() const{
+    FComplex<FReal> conjugate() const{
         return FComplex(complex[0],-complex[1]);
     }
 
     /** Return the conjugate */
-    FComplex negate() const{
+    FComplex<FReal> negate() const{
         return FComplex(-complex[0],-complex[1]);
     }
     /**
@@ -125,7 +126,7 @@ public:
      * in complex[0] with other complex[0], same for complex[1]
      * @param other the complex to use data
      */
-    FComplex& operator+=(const FComplex& other){
+    FComplex<FReal>& operator+=(const FComplex<FReal>& other){
         this->complex[0] += other.complex[0];
         this->complex[1] += other.complex[1];
         return *this;
@@ -177,7 +178,7 @@ public:
     }
 
     /** Mul a complexe by another "c*=c2" */
-    FComplex& operator*=(const FComplex& other){
+    FComplex<FReal>& operator*=(const FComplex<FReal>& other){
         const FReal tempReal = this->complex[0];
         this->complex[0] = (tempReal * other.complex[0]) - (this->complex[1] * other.complex[1]);
         this->complex[1] = (tempReal * other.complex[1]) + (this->complex[1] * other.complex[0]);
@@ -185,14 +186,14 @@ public:
     }
 
     /** Mul a complexe by another "c*=c2" */
-    FComplex& operator*=(const FReal& real){
+    FComplex<FReal>& operator*=(const FReal& real){
         this->complex[0] *= real;
         this->complex[1] *= real;
         return *this;
     }
 
     /** Mul a complexe by another "c*=c2" */
-    FComplex& operator/=(const FReal& real){
+    FComplex<FReal>& operator/=(const FReal& real){
         this->complex[0] /= real;
         this->complex[1] /= real;
         return *this;
@@ -204,35 +205,35 @@ public:
     }
 
     /** Mul other and another and add the result to current complexe */
-    void addMul(const FComplex& other, const FComplex& another){
+    void addMul(const FComplex<FReal>& other, const FComplex<FReal>& another){
         this->complex[0] += (other.complex[0] * another.complex[0]) - (other.complex[1] * another.complex[1]);
         this->complex[1] += (other.complex[0] * another.complex[1]) + (other.complex[1] * another.complex[0]);
     }
 
     /** Mul other and another and add the result to current complexe */
-    void equalMul(const FComplex& other, const FComplex& another){
+    void equalMul(const FComplex<FReal>& other, const FComplex<FReal>& another){
         this->complex[0] = (other.complex[0] * another.complex[0]) - (other.complex[1] * another.complex[1]);
         this->complex[1] = (other.complex[0] * another.complex[1]) + (other.complex[1] * another.complex[0]);
     }
 
     /** To cast to FReal */
-    static FReal* ToFReal(FComplex*const array){
+    static FReal* ToFReal(FComplex<FReal>*const array){
         return reinterpret_cast<FReal*>(array);
     }
 
     /** To cast to FReal */
-    static const FReal* ToFReal(const FComplex*const array){
+    static const FReal* ToFReal(const FComplex<FReal>*const array){
         return reinterpret_cast<const FReal*>(array);
     }
     /**
-     * Operator stream FComplex to std::ostream
+     * Operator stream FComplex<FReal> to std::ostream
      * This can be used to simpldata[1] write out a complex with format (Re,Im)
      * @param[in,out] output where to write the position
      * @param[in] inPosition the position to write out
      * @return the output for multiple << operators
      */
     template <class StreamClass>
-    friend StreamClass& operator<<(StreamClass& output, const FComplex& inC){
+    friend StreamClass& operator<<(StreamClass& output, const FComplex<FReal>& inC){
         output << "(" <<  inC.getReal() << ", " << inC.getImag() << ")";
         return output;  // for multiple << operators.
     }
@@ -240,8 +241,9 @@ public:
 };
 
 /** Global operator Mul a complexe by another "c=c1*c2" */
-inline FComplex operator*=(const FComplex& first, const FComplex& second){
-    return FComplex(
+template <class FReal>
+inline FComplex<FReal> operator*=(const FComplex<FReal>& first, const FComplex<FReal>& second){
+    return FComplex<FReal>(
             (first.getReal() * second.getImag()) + (first.getImag() * second.getReal()),
             (first.getReal() * second.getReal()) - (first.getImag() * second.getImag())
             );

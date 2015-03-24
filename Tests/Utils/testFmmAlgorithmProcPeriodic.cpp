@@ -62,10 +62,10 @@ int main(int argc, char ** argv){
 
 
     typedef FTestCell                   CellClass;
-    typedef FTestParticleContainer      ContainerClass;
+    typedef FTestParticleContainer<FReal>      ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
 
     typedef FFmmAlgorithmThreadProcPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
@@ -91,13 +91,14 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    FRandomLoader loader(NbParticles,FReal(1.0),FPoint(0,0,0), app.global().processId());
+    typedef double FReal;
+    FRandomLoader<FReal> loader(NbParticles,FReal(1.0),FPoint<FReal>(0,0,0), app.global().processId());
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     {
         struct TestParticle{
-            FPoint position;
-            const FPoint& getPosition(){
+            FPoint<FReal> position;
+            const FPoint<FReal>& getPosition(){
                 return position;
             }
         };
@@ -111,7 +112,7 @@ int main(int argc, char ** argv){
         FVector<TestParticle> finalParticles;
         FLeafBalance balancer;
 
-        FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles,
+        FMpiTreeBuilder< FReal,TestParticle >::DistributeArrayToContainer(app.global(),particles,
                                                                     NbParticles,
                                                                     loader.getCenterOfBox(),
                                                                     loader.getBoxWidth(),tree.getHeight(),
@@ -172,10 +173,10 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
 
     {
-        OctreeClass treeSeq(NbLevels, SizeSubLevels, FReal(1.0), FPoint(0,0,0));
+        OctreeClass treeSeq(NbLevels, SizeSubLevels, FReal(1.0), FPoint<FReal>(0,0,0));
         for(int idx = 0 ; idx < app.global().processCount() ; ++idx ){
-            FPoint position;
-            FRandomLoader loaderSeq(NbParticles,FReal(1.0),FPoint(0,0,0), idx);
+            FPoint<FReal> position;
+            FRandomLoader<FReal> loaderSeq(NbParticles,FReal(1.0),FPoint<FReal>(0,0,0), idx);
             for(int idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
                 loaderSeq.fillParticle(&position);
                 treeSeq.insert(position);

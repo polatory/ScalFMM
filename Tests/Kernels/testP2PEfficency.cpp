@@ -50,34 +50,50 @@ int main(int argc, char ** argv){
 
     //////////////////////////////////////////////////////////
 
-    FRandomLoader loader(nbParticles*2);
+    FRandomLoader<FReal> loader(nbParticles*2);
 
     FTic timer;
-    FP2PParticleContainer<> leaf1;
+    FP2PParticleContainer<FReal> leaf1;
     for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
-        FPoint pos;
+        FPoint<FReal> pos;
         loader.fillParticle(&pos);
         leaf1.push(pos, 1.0);
     }
 
-    FP2PParticleContainer<> leaf2;
+    FP2PParticleContainer<FReal> leaf2;
     for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
-        FPoint pos;
+        FPoint<FReal> pos;
         loader.fillParticle(&pos);
         leaf2.push(pos, 1.0);
     }
-    FP2PParticleContainer<> * const pleaf2 = &leaf2;
+    FP2PParticleContainer<FReal> * const pleaf2 = &leaf2;
     std::cout << "Timer taken to create and insert the particles = " << timer.tacAndElapsed() << "s" << std::endl;
 
     //////////////////////////////////////////////////////////
 
+    std::cout << "Double pricision:" <<  std::endl;
+
     timer.tic();
-    FP2PRT<FReal>::FullMutual<FP2PParticleContainer<>>( &leaf1, &pleaf2, 1);
+    FP2PRT<double>::FullMutual<FP2PParticleContainer<FReal>>( &leaf1, &pleaf2, 1);
     timer.tac();
     std::cout << "Timer taken by FullMutual = " << timer.elapsed() << "s" << std::endl;
 
     timer.tic();
-    FP2PRT<FReal>::FullRemote<FP2PParticleContainer<>>( &leaf1, &pleaf2, 1);
+    FP2PRT<double>::FullRemote<FP2PParticleContainer<FReal>>( &leaf1, &pleaf2, 1);
+    timer.tac();
+    std::cout << "Timer taken by FullRemote = " << timer.elapsed() << "s" << std::endl;
+
+    //////////////////////////////////////////////////////////
+
+    std::cout << "Single pricision:" <<  std::endl;
+
+    timer.tic();
+    FP2PRT<float>::FullMutual<FP2PParticleContainer<FReal>>( &leaf1, &pleaf2, 1);
+    timer.tac();
+    std::cout << "Timer taken by FullMutual = " << timer.elapsed() << "s" << std::endl;
+
+    timer.tic();
+    FP2PRT<float>::FullRemote<FP2PParticleContainer<FReal>>( &leaf1, &pleaf2, 1);
     timer.tac();
     std::cout << "Timer taken by FullRemote = " << timer.elapsed() << "s" << std::endl;
 

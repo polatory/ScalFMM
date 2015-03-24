@@ -17,7 +17,7 @@
 // Keep in private GIT
 // @SCALFMM_PRIVATE
 
- #define DEBUG_SPHERICAL_M2L
+#define DEBUG_SPHERICAL_M2L
 #define  BLAS_SPHERICAL_COMPRESS
 #define  BLAS_M2L_P
 #include <iostream>
@@ -52,18 +52,18 @@
   */
 class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     /** The test method to factorize all the test based on different kernels */
-    template < class CellClass, class ContainerClass, class KernelClass, class LeafClass,
-              class OctreeClass, class FmmClass>
+    template < class FReal, class CellClass, class ContainerClass, class KernelClass, class LeafClass,
+               class OctreeClass, class FmmClass>
     void RunTest(const bool isBlasKernel){
         const int DevP = 2;
         // Warning in make test the exec dir it Build/UTests
         // Load particles
         const int nbParticles = 2;
         const FReal boxWidth = 1.0;
-        const FPoint boxCenter(boxWidth/2.0,boxWidth/2.0,boxWidth/2.0);
+        const FPoint<FReal> boxCenter(boxWidth/2.0,boxWidth/2.0,boxWidth/2.0);
 
         struct TestParticle{
-            FPoint position;
+            FPoint<FReal> position;
             FReal forces[3];
             FReal physicalValue;
             FReal potential;
@@ -86,30 +86,30 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
         FSphericalCell::Init(DevP, isBlasKernel);
 
         TestParticle* const particles = new TestParticle[nbParticles];
-        particles[0].position = FPoint(quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
+        particles[0].position = FPoint<FReal>(quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
         particles[0].physicalValue = 1;
-//        particles[1].position = FPoint(2*quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
+        //        particles[1].position = FPoint<FReal>(2*quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
         particles[1].physicalValue = -1;
 
         Print("Number of particles:");
         Print(nbParticles);
         //int idxLeafY = 0,idxLeafZ = 0 ;
-        	std::cout << "\n ------  Loop starts ---"<< std::endl ;
+        std::cout << "\n ------  Loop starts ---"<< std::endl ;
         for(int idxLeafX = 2 ; idxLeafX < dimGrid ; ++idxLeafX){
             /*for(int idxLeafY = 0 ; idxLeafY < dimGrid ; ++idxLeafY)*/{
-              /*  for(int idxLeafZ = 0 ; idxLeafZ < dimGrid ; ++idxLeafZ)*/{
+                /*  for(int idxLeafZ = 0 ; idxLeafZ < dimGrid ; ++idxLeafZ)*/{
                     //std::cout << "Shift : " << idxLeafX << " " << idxLeafY << " " << idxLeafZ << std::endl;
 
-                  /*  particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + 3*quarterDimLeaf,
+                    /*  particles[1].position = FPoint<FReal>(FReal(idxLeafX)*dimLeaf + 3*quarterDimLeaf,
                                                    FReal(idxLeafY)*dimLeaf + quarterDimLeaf,
                                                    FReal(idxLeafZ)*dimLeaf + quarterDimLeaf);*/
-//                   particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + quarterDimLeaf,
-//                               quarterDimLeaf,
-//                               quarterDimLeaf);
-                particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + 2*quarterDimLeaf,
-                               quarterDimLeaf,
-                               quarterDimLeaf);
-               /*     particles[1].position = FPoint(FReal(idxLeafX)*dimLeaf + 2*quarterDimLeaf,
+                    //                   particles[1].position = FPoint<FReal>(FReal(idxLeafX)*dimLeaf + quarterDimLeaf,
+                    //                               quarterDimLeaf,
+                    //                               quarterDimLeaf);
+                    particles[1].position = FPoint<FReal>(FReal(idxLeafX)*dimLeaf + 2*quarterDimLeaf,
+                                                   quarterDimLeaf,
+                                                   quarterDimLeaf);
+                    /*     particles[1].position = FPoint<FReal>(FReal(idxLeafX)*dimLeaf + 2*quarterDimLeaf,
                                quarterDimLeaf,
                                quarterDimLeaf);*/
 
@@ -139,20 +139,20 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
                     for(int idxTarget = 0 ; idxTarget < nbParticles ; ++idxTarget){
                         for(int idxOther = idxTarget + 1 ; idxOther < nbParticles ; ++idxOther){
                             FP2PR::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
-                                                  particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
-                                                  &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
-                                                  &particles[idxTarget].forces[2],&particles[idxTarget].potential,
-                                            particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                                            particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
-                                            &particles[idxOther].forces[0],&particles[idxOther].forces[1],
-                                                  &particles[idxOther].forces[2],&particles[idxOther].potential);
+                                                   particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
+                                                   &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
+                                    &particles[idxTarget].forces[2],&particles[idxTarget].potential,
+                                    particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                    particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
+                                    &particles[idxOther].forces[0],&particles[idxOther].forces[1],
+                                    &particles[idxOther].forces[2],&particles[idxOther].potential);
                         }
                     }
 
                     // Compare
                     //Print("Compute Diff...");
-                    FMath::FAccurater potentialDiff;
-                    FMath::FAccurater fx, fy, fz;
+                    FMath::FAccurater<FReal> potentialDiff;
+                    FMath::FAccurater<FReal> fx, fy, fz;
                     { // Check that each particle has been summed with all other
 
                         tree.forEachLeaf([&](LeafClass* leaf){
@@ -219,25 +219,25 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
                     // Assert
                     // Assert
-                     const FReal MaximumDiff = FReal(0.0001);
-                     uassert(potentialDiff.getL2Norm() < MaximumDiff);
-                     uassert(potentialDiff.getInfNorm() < MaximumDiff);
-                     uassert(fx.getL2Norm()  < MaximumDiff);
-                     uassert(fx.getInfNorm() < MaximumDiff);
-                     uassert(fy.getL2Norm()  < MaximumDiff);
-                     uassert(fy.getInfNorm() < MaximumDiff);
-                     uassert(fz.getL2Norm()  < MaximumDiff);
-                     uassert(fz.getInfNorm() < MaximumDiff);
-//                   const FReal MaximumDiff = FReal(0.0001);
-//                    if(fx.getL2Norm() > MaximumDiff || fx.getInfNorm() > MaximumDiff){
-//                        std::cout << "Error in X " << fx.getL2Norm() << " " << fx.getInfNorm() << std::endl;
-//                    }
-//                    if(fy.getL2Norm() > MaximumDiff || fy.getInfNorm() > MaximumDiff){
-//                        std::cout << "Error in Y " << fy.getL2Norm() << " " << fy.getInfNorm() << std::endl;
-//                    }
-//                    if(fz.getL2Norm() > MaximumDiff || fz.getInfNorm() > MaximumDiff){
-//                        std::cout << "Error in Z " << fz.getL2Norm() << " " << fz.getInfNorm() << std::endl;
-//                    }
+                    const FReal MaximumDiff = FReal(0.0001);
+                    uassert(potentialDiff.getL2Norm() < MaximumDiff);
+                    uassert(potentialDiff.getInfNorm() < MaximumDiff);
+                    uassert(fx.getL2Norm()  < MaximumDiff);
+                    uassert(fx.getInfNorm() < MaximumDiff);
+                    uassert(fy.getL2Norm()  < MaximumDiff);
+                    uassert(fy.getInfNorm() < MaximumDiff);
+                    uassert(fz.getL2Norm()  < MaximumDiff);
+                    uassert(fz.getInfNorm() < MaximumDiff);
+                    //                   const FReal MaximumDiff = FReal(0.0001);
+                    //                    if(fx.getL2Norm() > MaximumDiff || fx.getInfNorm() > MaximumDiff){
+                    //                        std::cout << "Error in X " << fx.getL2Norm() << " " << fx.getInfNorm() << std::endl;
+                    //                    }
+                    //                    if(fy.getL2Norm() > MaximumDiff || fy.getInfNorm() > MaximumDiff){
+                    //                        std::cout << "Error in Y " << fy.getL2Norm() << " " << fy.getInfNorm() << std::endl;
+                    //                    }
+                    //                    if(fz.getL2Norm() > MaximumDiff || fz.getInfNorm() > MaximumDiff){
+                    //                        std::cout << "Error in Z " << fz.getL2Norm() << " " << fz.getInfNorm() << std::endl;
+                    //                    }
                 }
             }
         }
@@ -260,19 +260,21 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
     /** Classic */
     void TestSpherical(){
+        typedef double FReal;
+
         typedef FSphericalCell            CellClass;
-        typedef FP2PParticleContainerIndexed<>  ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
         typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
 
-        typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+        typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
         typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
         std::cout << std::endl << std::endl << std::endl
-    			      << " $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<<std::endl
-    			      << " $$$$$$$$$                                                    TestSpherical                                             $$$$$$$$$$$$$$$$"<<std::endl
-    			      << " $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<<std::endl;
+                  << " $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<<std::endl
+                  << " $$$$$$$$$                                                    TestSpherical                                             $$$$$$$$$$$$$$$$"<<std::endl
+                  << " $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<<std::endl;
 
         RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
                 OctreeClass, FmmClass>(false);
@@ -280,13 +282,15 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
     /** Rotation */
     void TestRotation(){
+        typedef double FReal;
+
         typedef FSphericalCell            CellClass;
-        typedef FP2PParticleContainerIndexed<>  ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
         typedef FSphericalRotationKernel< CellClass, ContainerClass >          KernelClass;
 
-        typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+        typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
         typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
@@ -297,13 +301,15 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 #ifdef ScalFMM_USE_BLAS
     /** Blas */
     void TestSphericalBlas(){
+        typedef double FReal;
+
         typedef FSphericalCell            CellClass;
-        typedef FP2PParticleContainerIndexed<>  ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
         typedef FSphericalBlasKernel< CellClass, ContainerClass >          KernelClass;
 
-        typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+        typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
         typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
@@ -313,20 +319,22 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
     /** Block blas */
     void TestSphericalBlockBlas(){
+        typedef double FReal;
+
         typedef FSphericalCell            CellClass;
-        typedef FP2PParticleContainerIndexed<> ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
 
         typedef FSphericalBlockBlasKernel< CellClass, ContainerClass >          KernelClass;
 
-        typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+        typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
         typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
         //
         std::cout << std::endl << std::endl << std::endl
-			      << " $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<<std::endl
-			      << " $$$$$$$$$                                                    TestSphericalBlockBlas                                $$$$$$$$$$$$$$$$"<<std::endl
-			      << " $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<<std::endl;
+                  << " $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<<std::endl
+                  << " $$$$$$$$$                                                    TestSphericalBlockBlas                                $$$$$$$$$$$$$$$$"<<std::endl
+                  << " $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<<std::endl;
         RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
                 OctreeClass, FmmClass>(true);
     }
@@ -338,11 +346,11 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
     /** set test */
     void SetTests(){
-   //    AddTest(&TestSphericalDirect::TestSpherical,"Test Spherical Kernel");
+        //    AddTest(&TestSphericalDirect::TestSpherical,"Test Spherical Kernel");
         //AddTest(&TestSphericalDirect::TestRotation,"Test Rotation Spherical Kernel");
 #ifdef ScalFMM_USE_BLAS
-   AddTest(&TestSphericalDirect::TestSphericalBlas,"Test Spherical Blas Kernel");
-     //        AddTest(&TestSphericalDirect::TestSphericalBlockBlas,"Test Spherical Block Blas Kernel");
+        AddTest(&TestSphericalDirect::TestSphericalBlas,"Test Spherical Blas Kernel");
+        //        AddTest(&TestSphericalDirect::TestSphericalBlockBlas,"Test Spherical Block Blas Kernel");
 #endif
     }
 };

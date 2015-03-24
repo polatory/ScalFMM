@@ -40,23 +40,24 @@
 #include "../../Src/Utils/FParameterNames.hpp"
 
 
-class VelocityContainer : public FP2PParticleContainer<> {
-    typedef FP2PParticleContainer<> Parent;
+template <class FReal>
+class VelocityContainer : public FP2PParticleContainer<FReal> {
+    typedef FP2PParticleContainer<FReal> Parent;
 
-    FVector<FPoint> velocities;
+    FVector<FPoint<FReal>> velocities;
 
 public:
     template<typename... Args>
-    void push(const FPoint& inParticlePosition, const FPoint& velocity, Args... args){
+    void push(const FPoint<FReal>& inParticlePosition, const FPoint<FReal>& velocity, Args... args){
         Parent::push(inParticlePosition, args... );
         velocities.push(velocity);
     }
 
-    const FVector<FPoint>& getVelocities() const{
+    const FVector<FPoint<FReal>>& getVelocities() const{
         return velocities;
     }
 
-    FVector<FPoint>& getVelocities() {
+    FVector<FPoint<FReal>>& getVelocities() {
         return velocities;
     }
 
@@ -69,12 +70,13 @@ public:
 };
 
 
-class GalaxyLoader : public FFmaGenericLoader {
+template <class FReal>
+class GalaxyLoader : public FFmaGenericLoader<FReal> {
 public:
     GalaxyLoader(const std::string & filename) : FFmaGenericLoader(filename) {
     }
 
-    void fillParticle(FPoint* position, FReal* physivalValue, FPoint* velocity){
+    void fillParticle(FPoint<FReal>* position, FReal* physivalValue, FPoint<FReal>* velocity){
         FReal x,y,z,data, vx, vy, vz;
         (*this->file)  >> x >> y >> z >> data >> vx >> vy >> vz;
         position->setPosition(x,y,z);
@@ -83,18 +85,19 @@ public:
     }
 };
 
+template <class FReal>
 struct TestParticle{
-    FPoint position;
+    FPoint<FReal> position;
     FReal physicalValue;
     FReal potential;
     FReal forces[3];
-    FPoint velocity;
-    const FPoint& getPosition(){
+    FPoint<FReal> velocity;
+    const FPoint<FReal>& getPosition(){
         return position;
     }
 };
 
-template <class ParticleClass>
+template < class FReal,class ParticleClass>
 class Converter {
 public:
     template <class ContainerClass>
@@ -107,7 +110,7 @@ public:
         const FReal*const forcesZ = containers->getForcesZ();
         const FReal*const physicalValues = containers->getPhysicalValues();
         const FReal*const potentials = containers->getPotentials();
-        FVector<FPoint> velocites = containers->getVelocities();
+        FVector<FPoint<FReal>> velocites = containers->getVelocities();
 
         TestParticle part;
         part.position.setPosition( positionsX[idxExtract],positionsY[idxExtract],positionsZ[idxExtract]);
@@ -136,11 +139,12 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
                          FParameterDefinitions::InputFile);
 
+    typedef double FReal;
     typedef FBasicCell              CellClass;
     typedef VelocityContainer  ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -161,7 +165,7 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
 
     {
-        FPoint position, velocity;
+        FPoint<FReal> position, velocity;
         FReal physicalValue;
 
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){

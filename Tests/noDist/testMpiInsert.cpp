@@ -72,13 +72,14 @@
  */
 int main(int argc, char** argv){
 
+    typedef double FReal;
 
     struct TestParticle{
 	MortonIndex index;
 	FSize indexInFile;
-	FPoint position;
+    FPoint<FReal> position;
 	FReal physicalValue;
-	const FPoint& getPosition()const{
+    const FPoint<FReal>& getPosition()const{
 	    return position;
 	}
 	TestParticle& operator=(const TestParticle& other){
@@ -109,10 +110,10 @@ int main(int argc, char** argv){
     static const int P = 9;
 
     typedef FRotationCell<P>               CellClass;
-    typedef FP2PParticleContainer<>          ContainerClass;
+    typedef FP2PParticleContainer<FReal>          ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
     const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
@@ -125,7 +126,7 @@ int main(int argc, char** argv){
     std::cout << "Opening : " << filename << "\n";
 
 
-    FMpiFmaGenericLoader loaderRef(filename,app.global());
+    FMpiFmaGenericLoader<FReal> loaderRef(filename,app.global());
     if(!loaderRef.isOpen()){
 	std::cout << "LoaderRef Error, " << filename << " is missing\n";
 	return 1;
@@ -146,14 +147,14 @@ int main(int argc, char** argv){
 	memset(particles, 0, sizeof(FmaRWParticle<4,4>) * loaderRef.getNumberOfParticles());
 
 	for(int idxPart = 0 ; idxPart < loaderRef.getNumberOfParticles() ; ++idxPart){
-	    FPoint pos;
+        FPoint<FReal> pos;
 	    loaderRef.fillParticle(&pos,particles[idxPart].setPhysicalValue());
 	    particles[idxPart].setPosition(pos);
 	}
 
 	FVector<FmaRWParticle<4,4>> finalParticles;
 	FLeafBalance balancer;
-	FMpiTreeBuilder< FmaRWParticle<4,4> >::DistributeArrayToContainer(app.global(),particles,
+	FMpiTreeBuilder< FReal,FmaRWParticle<4,4> >::DistributeArrayToContainer(app.global(),particles,
 									  loaderRef.getMyNumberOfParticles(),
 									  treeRef.getBoxCenter(),
 									  treeRef.getBoxWidth(),treeRef.getHeight(),
@@ -178,7 +179,7 @@ int main(int argc, char** argv){
     FTic leavesOffset;
     FTic leavesPtr;
 
-    FMpiFmaGenericLoader loader(filename,app.global());
+    FMpiFmaGenericLoader<FReal> loader(filename,app.global());
     if(!loader.isOpen()){
 	std::cout << "Loader Error, " << filename << " is missing\n";
 	return 1;
@@ -195,7 +196,7 @@ int main(int argc, char** argv){
     fillTimer.tic();
 
     for(int idxPart = 0 ; idxPart < nbOfParticles ; ++idxPart){
-	FPoint pos;
+    FPoint<FReal> pos;
 	loader.fillParticle(&pos,arrayOfParts[idxPart].setPhysicalValue());
 	arrayOfParts[idxPart].setPosition(pos);
     }
@@ -209,7 +210,7 @@ int main(int argc, char** argv){
     FLeafBalance balancer;
     FTic paraSort;
     paraSort.tic();
-    FMpiTreeBuilder< FmaRWParticle<4,4> >::DistributeArrayToContainer(app.global(),arrayOfParts,
+    FMpiTreeBuilder< FReal,FmaRWParticle<4,4> >::DistributeArrayToContainer(app.global(),arrayOfParts,
 								      loader.getMyNumberOfParticles(),
 								      tree.getBoxCenter(),
 								      tree.getBoxWidth(),tree.getHeight(),

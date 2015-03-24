@@ -62,11 +62,12 @@ int main(int argc, char ** argv){
                          LocalOptionMaxBlockSize);
 
 
+    typedef double FReal;
     typedef FSphericalCell                 CellClass;
-    typedef FP2PParticleContainer<>         ContainerClass;
+    typedef FP2PParticleContainer<FReal>         ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FSphericalBlockBlasKernel< CellClass, ContainerClass > KernelClass;
 
     typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
@@ -99,7 +100,7 @@ int main(int argc, char ** argv){
         // -----------------------------------------------------
 
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            FPoint particlePosition;
+            FPoint<FReal> particlePosition;
             FReal physicalValue = 0.0;
             loader.fillParticle(&particlePosition,&physicalValue);
             tree.insert(particlePosition, physicalValue );

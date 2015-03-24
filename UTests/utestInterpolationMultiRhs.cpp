@@ -60,7 +60,7 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
     // The tests!
     ///////////////////////////////////////////////////////////
 
-    template <class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
+    template <class FReal, class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
               class LeafClass, class OctreeClass, class FmmClass, const int NVals>
     void RunTest()	{
         // Warning in make test the exec dir it Build/UTests
@@ -78,7 +78,7 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
         //
         std::string filename(SCALFMMDataPath+parFile);
         //
-        FFmaGenericLoader loader(filename);
+        FFmaGenericLoader<FReal> loader(filename);
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
             uassert(false);
@@ -96,7 +96,7 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
         const MatrixKernelClass MatrixKernel; // FUKernelTester is only designed to work with 1/R, i.e. matrix kernel ctor takes no argument.
         //
         FSize nbParticles = loader.getNumberOfParticles() ;
-        FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
+        FmaRWParticle<FReal, 8,8>* const particles = new FmaRWParticle<FReal, 8,8>[nbParticles];
 
         loader.fillParticle(particles,nbParticles);
 
@@ -131,8 +131,8 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
         //
         // Compare
         Print("Compute Diff...");
-        FMath::FAccurater potentialDiff[NVals];
-        FMath::FAccurater fx, fy, fz;
+        FMath::FAccurater<FReal> potentialDiff[NVals];
+        FMath::FAccurater<FReal> fx, fy, fz;
         {
             tree.forEachLeaf([&](LeafClass* leaf){
                 //
@@ -221,8 +221,8 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
 
 
         // Compute multipole local rhs diff
-        FMath::FAccurater localDiff;
-        FMath::FAccurater multiPoleDiff;
+        FMath::FAccurater<FReal> localDiff;
+        FMath::FAccurater<FReal> multiPoleDiff;
         tree.forEachCell([&](CellClass* cell){
             for( int idxRhs = 1 ; idxRhs < NVals ; ++idxRhs){
                 localDiff.add(cell->getLocal(0), cell->getLocal(idxRhs), cell->getVectorSize());
@@ -262,17 +262,18 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
 
     /** TestUnifKernel */
     void TestUnifKernel(){
+        typedef double FReal;
         const int NVals = 3;
         const unsigned int ORDER = 6 ;
         // run test
-        typedef FInterpMatrixKernelR MatrixKernelClass;
+        typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
 
 
         typedef FP2PParticleContainerIndexed<1,1,NVals> ContainerClass;
-        typedef FSimpleLeaf< ContainerClass >  LeafClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
         typedef FUnifCell<ORDER,1,1,NVals> CellClass;
-        typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-        typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER,NVals> KernelClass;
+        typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
+        typedef FUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER,NVals> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
         RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass, NVals>();
@@ -280,14 +281,15 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
 
     /** TestChebSymKernel */
     void TestChebSymKernel(){
+        typedef double FReal;
         const int NVals = 3;
         const unsigned int ORDER = 6;
         typedef FP2PParticleContainerIndexed<1,1,NVals> ContainerClass;
-        typedef FSimpleLeaf<ContainerClass> LeafClass;
-        typedef FInterpMatrixKernelR MatrixKernelClass;
+        typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
+        typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
         typedef FChebCell<ORDER, 1, 1, NVals> CellClass;
-        typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-        typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER, NVals> KernelClass;
+        typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
+        typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER, NVals> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
         // run test
         RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass, NVals>();
@@ -295,14 +297,15 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
 
     /** TestChebKernel */
     void TestChebKernel(){
+        typedef double FReal;
         const int NVals = 3;
         const unsigned int ORDER = 6;
         typedef FP2PParticleContainerIndexed<1,1,NVals> ContainerClass;
-        typedef FSimpleLeaf<ContainerClass> LeafClass;
-        typedef FInterpMatrixKernelR MatrixKernelClass;
+        typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
+        typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
         typedef FChebCell<ORDER, 1, 1, NVals> CellClass;
-        typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-        typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER, NVals> KernelClass;
+        typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
+        typedef FChebKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER, NVals> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
         // run test
         RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass, NVals>();

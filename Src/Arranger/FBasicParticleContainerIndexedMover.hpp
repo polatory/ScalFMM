@@ -20,12 +20,12 @@ public:
     }
 
     /** To get the position of the particle at idx idxPart in leaf lf */
-    void getParticlePosition(ContainerClass* lf, const int idxPart, FPoint* particlePos){
-        (*particlePos) = FPoint(lf->getPositions()[0][idxPart],lf->getPositions()[1][idxPart],lf->getPositions()[2][idxPart]);
+    void getParticlePosition(ContainerClass* lf, const int idxPart, FPoint<FReal>* particlePos){
+        (*particlePos) = FPoint<FReal>(lf->getPositions()[0][idxPart],lf->getPositions()[1][idxPart],lf->getPositions()[2][idxPart]);
     }
 
     /** Remove a particle but keep it to reinsert it later*/
-    void removeFromLeafAndKeep(ContainerClass* lf, const FPoint& particlePos, const int idxPart, FParticleType /*type*/){
+    void removeFromLeafAndKeep(ContainerClass* lf, const FPoint<FReal>& particlePos, const int idxPart, FParticleType /*type*/){
         std::array<typename ContainerClass::AttributesClass, ContainerClass::NbAttributes> particleValues;
         for(int idxAttr = 0 ; idxAttr < ContainerClass::NbAttributes ; ++idxAttr){
             particleValues[idxAttr] = lf->getAttribute(idxAttr)[idxPart];
@@ -44,7 +44,7 @@ public:
             for(int idxAttr = 0 ; idxAttr < ContainerClass::NbAttributes ; ++idxAttr){
                 particleValues[idxAttr] = toStoreRemovedParts.getAttribute(idxAttr)[idxToInsert];
             }
-            const FPoint particlePos(toStoreRemovedParts.getPositions()[0][idxToInsert],
+            const FPoint<FReal> particlePos(toStoreRemovedParts.getPositions()[0][idxToInsert],
                                      toStoreRemovedParts.getPositions()[1][idxToInsert],
                                      toStoreRemovedParts.getPositions()[2][idxToInsert]);
 

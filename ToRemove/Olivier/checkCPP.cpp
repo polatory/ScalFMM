@@ -11,6 +11,7 @@
 #include "Utils/FGlobal.hpp"
 
 
+
 class FmaBAsicParticle {
 public:
 	FReal  x,y,z;

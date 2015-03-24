@@ -9,14 +9,14 @@
 // P2P Wrappers
 ///////////////////////////////////////////////////////
 
-template <int NCMP, int NVALS> 
+template <class FReal, int NCMP, int NVALS>
 struct DirectInteractionComputer
 {
   template <typename ContainerClass, typename MatrixKernelClass>
   static void P2P( ContainerClass* const FRestrict TargetParticles,
                    ContainerClass* const NeighborSourceParticles[27],
                    const MatrixKernelClass *const MatrixKernel){
-      FP2P::FullMutualKIJ(TargetParticles,NeighborSourceParticles,14,MatrixKernel);
+      FP2P::FullMutualKIJ<FReal, ContainerClass, MatrixKernelClass>(TargetParticles,NeighborSourceParticles,14,MatrixKernel);
   }
 
   template <typename ContainerClass, typename MatrixKernelClass>
@@ -24,20 +24,20 @@ struct DirectInteractionComputer
                          ContainerClass* const inNeighbors[27],
                          const int inSize,
                          const MatrixKernelClass *const MatrixKernel){
-      FP2P::FullRemoteKIJ(inTargets,inNeighbors,inSize,MatrixKernel);
+      FP2P::FullRemoteKIJ<FReal, ContainerClass, MatrixKernelClass>(inTargets,inNeighbors,inSize,MatrixKernel);
   }
 };
 
 
 /*! Specialization for scalar kernels */
-template <int NVALS>
-struct DirectInteractionComputer<1,NVALS>
+template <class FReal, int NVALS>
+struct DirectInteractionComputer<FReal, 1,NVALS>
 {
   template <typename ContainerClass, typename MatrixKernelClass>
   static void P2P( ContainerClass* const FRestrict TargetParticles,
                    ContainerClass* const NeighborSourceParticles[27],
                    const MatrixKernelClass *const MatrixKernel){
-      FP2P::FullMutualMultiRhs(TargetParticles,NeighborSourceParticles,14,MatrixKernel);
+      FP2P::FullMutualMultiRhs<FReal, ContainerClass, MatrixKernelClass>(TargetParticles,NeighborSourceParticles,14,MatrixKernel);
   }
 
   template <typename ContainerClass, typename MatrixKernelClass>
@@ -45,19 +45,19 @@ struct DirectInteractionComputer<1,NVALS>
                          ContainerClass* const inNeighbors[27],
                          const int inSize,
                          const MatrixKernelClass *const MatrixKernel){
-      FP2P::FullRemoteMultiRhs(inTargets,inNeighbors,inSize,MatrixKernel);
+      FP2P::FullRemoteMultiRhs<FReal, ContainerClass, MatrixKernelClass>(inTargets,inNeighbors,inSize,MatrixKernel);
   }
 };
 
 /*! Specialization for scalar kernels and single rhs*/
-template <>
-struct DirectInteractionComputer<1,1>
+template <class FReal>
+struct DirectInteractionComputer<FReal, 1,1>
 {
   template <typename ContainerClass, typename MatrixKernelClass>
   static void P2P( ContainerClass* const FRestrict TargetParticles,
                    ContainerClass* const NeighborSourceParticles[27],
                    const MatrixKernelClass *const MatrixKernel){
-      FP2PT<FReal>::FullMutual<ContainerClass,MatrixKernelClass> (TargetParticles,NeighborSourceParticles,14,MatrixKernel);
+      FP2PT<FReal>::template FullMutual<ContainerClass,MatrixKernelClass> (TargetParticles,NeighborSourceParticles,14,MatrixKernel);
   }
 
   template <typename ContainerClass, typename MatrixKernelClass>
@@ -65,7 +65,7 @@ struct DirectInteractionComputer<1,1>
                          ContainerClass* const inNeighbors[27],
                          const int inSize,
                          const MatrixKernelClass *const MatrixKernel){
-      FP2PT<FReal>::FullRemote<ContainerClass,MatrixKernelClass>(inTargets,inNeighbors,inSize,MatrixKernel);
+      FP2PT<FReal>::template FullRemote<ContainerClass,MatrixKernelClass>(inTargets,inNeighbors,inSize,MatrixKernel);
   }
 };
 

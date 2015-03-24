@@ -30,7 +30,7 @@
  * This class defines a cell used in the Chebyshev based FMM.
  * @param NVALS is the number of right hand side.
  */
-template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+template <class FReal, int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 class FChebCell : public FBasicCell
 {
 	// nnodes = ORDER^3
@@ -129,7 +129,7 @@ public:
 //	template <class StreamClass>
 //	const void print(StreamClass& output) const{
  template <class StreamClass>
-	friend StreamClass& operator<<(StreamClass& output, const FChebCell<ORDER, NRHS, NLHS, NVALS>&  cell){
+    friend StreamClass& operator<<(StreamClass& output, const FChebCell<FReal, ORDER, NRHS, NLHS, NVALS>&  cell){
 //	const void print() const{
 		output <<"  Multipole exp NRHS " <<NRHS <<" NVALS "  <<NVALS << " VectorSize/2 "  << cell.getVectorSize() *0.5<< std::endl;
 		for (int rhs= 0 ; rhs < NRHS ; ++rhs) {
@@ -147,21 +147,21 @@ public:
 
 };
 
-template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
-class FTypedChebCell : public FChebCell<ORDER,NRHS,NLHS,NVALS>, public FExtendCellType {
+template <class FReal, int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+class FTypedChebCell : public FChebCell<FReal, ORDER,NRHS,NLHS,NVALS>, public FExtendCellType {
 public:
 	template <class BufferWriterClass>
 	void save(BufferWriterClass& buffer) const{
-		FChebCell<ORDER,NRHS,NLHS,NVALS>::save(buffer);
+        FChebCell<FReal,ORDER,NRHS,NLHS,NVALS>::save(buffer);
 		FExtendCellType::save(buffer);
 	}
 	template <class BufferReaderClass>
 	void restore(BufferReaderClass& buffer){
-		FChebCell<ORDER,NRHS,NLHS,NVALS>::restore(buffer);
+        FChebCell<FReal,ORDER,NRHS,NLHS,NVALS>::restore(buffer);
 		FExtendCellType::restore(buffer);
 	}
 	void resetToInitialState(){
-		FChebCell<ORDER,NRHS,NLHS,NVALS>::resetToInitialState();
+        FChebCell<FReal,ORDER,NRHS,NLHS,NVALS>::resetToInitialState();
 		FExtendCellType::resetToInitialState();
 	}
 

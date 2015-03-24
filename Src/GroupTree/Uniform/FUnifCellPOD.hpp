@@ -10,31 +10,31 @@
 
 typedef FBasicCellPOD FTestCellPODCore;
 
-template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+template <class FReal, int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 struct alignas(FStarPUDefaultAlign::StructAlign) FUnifCellPODPole {
     static const int VectorSize = TensorTraits<ORDER>::nnodes;
     static const int TransformedVectorSize = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1);
     FReal multipole_exp[NRHS * NVALS * VectorSize]; //< Multipole expansion
-    FComplex transformed_multipole_exp[NRHS * NVALS * TransformedVectorSize];
+    FComplex<FReal> transformed_multipole_exp[NRHS * NVALS * TransformedVectorSize];
 };
 
-template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+template <class FReal, int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 struct alignas(FStarPUDefaultAlign::StructAlign) FUnifCellPODLocal {
     static const int VectorSize = TensorTraits<ORDER>::nnodes;
     static const int TransformedVectorSize = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1);
-    FComplex     transformed_local_exp[NLHS * NVALS * TransformedVectorSize];
+    FComplex<FReal>     transformed_local_exp[NLHS * NVALS * TransformedVectorSize];
     FReal     local_exp[NLHS * NVALS * VectorSize]; //< Local expansion
 };
 
-template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+template <class FReal, int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 class FUnifCellPOD {
   FUnifCellPODCore* symb;
-  FUnifCellPODPole<ORDER,NRHS,NLHS,NVALS>* up;
-  FUnifCellPODLocal<ORDER,NRHS,NLHS,NVALS>* down;
+  FUnifCellPODPole<FReal,ORDER,NRHS,NLHS,NVALS>* up;
+  FUnifCellPODLocal<FReal,ORDER,NRHS,NLHS,NVALS>* down;
 
 public:
-  FUnifCellPOD(FUnifCellPODCore* inSymb, FUnifCellPODPole<ORDER,NRHS,NLHS,NVALS>* inUp,
-            FUnifCellPODLocal<ORDER,NRHS,NLHS,NVALS>* inDown): symb(inSymb), up(inUp), down(inDown){
+  FUnifCellPOD(FUnifCellPODCore* inSymb, FUnifCellPODPole<FReal,ORDER,NRHS,NLHS,NVALS>* inUp,
+            FUnifCellPODLocal<FReal,ORDER,NRHS,NLHS,NVALS>* inDown): symb(inSymb), up(inUp), down(inDown){
   }
 
   FUnifCellPOD()
@@ -96,20 +96,20 @@ public:
   }
 
   /** Get Transformed Multipole */
-  const FComplex* getTransformedMultipole(const int inRhs) const{
+  const FComplex<FReal>* getTransformedMultipole(const int inRhs) const{
     return up->transformed_multipole_exp + inRhs*up->TransformedVectorSize;
   }
   /** Get Transformed Local */
-  const FComplex* getTransformedLocal(const int inRhs) const{
+  const FComplex<FReal>* getTransformedLocal(const int inRhs) const{
     return down->transformed_local_exp + inRhs*down->TransformedVectorSize;
   }
 
   /** Get Transformed Multipole */
-  FComplex* getTransformedMultipole(const int inRhs){
+  FComplex<FReal>* getTransformedMultipole(const int inRhs){
     return up->transformed_multipole_exp + inRhs*up->TransformedVectorSize;
   }
   /** Get Transformed Local */
-  FComplex* getTransformedLocal(const int inRhs){
+  FComplex<FReal>* getTransformedLocal(const int inRhs){
     return down->transformed_local_exp + inRhs*down->TransformedVectorSize;
   }
 
@@ -123,9 +123,9 @@ public:
     memset(up->multipole_exp, 0, sizeof(FReal) * NRHS * NVALS * up->VectorSize);
     memset(down->local_exp, 0, sizeof(FReal) * NLHS * NVALS * down->VectorSize);
     memset(up->transformed_multipole_exp, 0,
-           sizeof(FComplex) * NRHS * NVALS * up->TransformedVectorSize);
+           sizeof(FComplex<FReal>) * NRHS * NVALS * up->TransformedVectorSize);
     memset(down->transformed_local_exp, 0,
-           sizeof(FComplex) * NLHS * NVALS * down->TransformedVectorSize);
+           sizeof(FComplex<FReal>) * NLHS * NVALS * down->TransformedVectorSize);
   }
 };
 

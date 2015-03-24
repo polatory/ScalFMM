@@ -38,14 +38,14 @@
 * to move the particles in the tree instead of building a new
 * tree.
 */
-template <class OctreeClass, class ContainerClass, class MoverClass >
+template <class FReal, class OctreeClass, class ContainerClass, class MoverClass >
 class FOctreeArranger {
     OctreeClass* const tree; //< The tree to work on
 
 public:
     FReal boxWidth;
-    FPoint MinBox;
-    FPoint MaxBox;
+    FPoint<FReal> MinBox;
+    FPoint<FReal> MaxBox;
     MoverClass* interface;
 
 public:
@@ -62,7 +62,7 @@ public:
         delete interface;
     }
 
-    virtual void checkPosition(FPoint& particlePos){
+    virtual void checkPosition(FPoint<FReal>& particlePos){
         // Assert
         FAssertLF(   MinBox.getX() < particlePos.getX() && MaxBox.getX() > particlePos.getX()
                   && MinBox.getY() < particlePos.getY() && MaxBox.getY() > particlePos.getY()
@@ -78,7 +78,7 @@ public:
             //First we test sources
             ContainerClass * particles = octreeIterator.getCurrentLeaf()->getSrc();
             for(int idxPart = 0 ; idxPart < particles->getNbParticles(); /*++idxPart*/){
-                FPoint currentPart;
+                FPoint<FReal> currentPart;
                 interface->getParticlePosition(particles,idxPart,&currentPart);
                 checkPosition(currentPart);
                 const MortonIndex particuleIndex = tree->getMortonFromPosition(currentPart);
@@ -95,7 +95,7 @@ public:
             if(octreeIterator.getCurrentLeaf()->getTargets() != particles){ //Leaf is TypedLeaf
                 ContainerClass * particleTargets = octreeIterator.getCurrentLeaf()->getTargets();
                 for(int idxPart = 0 ; idxPart < particleTargets->getNbParticles(); /*++idxPart*/){
-                    FPoint currentPart;
+                    FPoint<FReal> currentPart;
                     interface->getParticlePosition(particleTargets,idxPart,&currentPart);
                     checkPosition(currentPart);
                     const MortonIndex particuleIndex = tree->getMortonFromPosition(currentPart);

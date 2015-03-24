@@ -6,7 +6,7 @@
 #include "../../Utils/FGlobal.hpp"
 #include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
-template <unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
+template <class FReal, unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FCudaGroupOfParticles {
     /** One header is allocated at the beginning of each block */
     struct alignas(FStarPUDefaultAlign::StructAlign) BlockHeader{

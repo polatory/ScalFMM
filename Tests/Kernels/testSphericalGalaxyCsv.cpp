@@ -44,22 +44,23 @@
 #include "../../Src/Arranger/FAbstractMover.hpp"
 
 
-class VelocityContainer : public FP2PParticleContainer<> {
-    typedef FP2PParticleContainer<> Parent;
-    FVector<FPoint> velocities;
+template <class FReal>
+class VelocityContainer : public FP2PParticleContainer<FReal> {
+    typedef FP2PParticleContainer<FReal> Parent;
+    FVector<FPoint<FReal>> velocities;
 
 public:
     template<typename... Args>
-    void push(const FPoint& inParticlePosition, const FPoint& velocity, Args... args){
+    void push(const FPoint<FReal>& inParticlePosition, const FPoint<FReal>& velocity, Args... args){
         Parent::push(inParticlePosition, args... );
         velocities.push(velocity);
     }
 
-    const FVector<FPoint>& getVelocities() const{
+    const FVector<FPoint<FReal>>& getVelocities() const{
         return velocities;
     }
 
-    FVector<FPoint>& getVelocities() {
+    FVector<FPoint<FReal>>& getVelocities() {
         return velocities;
     }
 
@@ -72,14 +73,15 @@ public:
 };
 
 
-class GalaxyLoader : public FFmaGenericLoader {
+template <class FReal>
+class GalaxyLoader : public FFmaGenericLoader<FReal> {
 public:
-    GalaxyLoader(const char* const filename) : FFmaGenericLoader(filename) {
+    GalaxyLoader(const char* const filename) : FFmaGenericLoader<FReal>(filename) {
     }
 
-    void fillParticle(FPoint* position, FReal* physivalValue, FPoint* velocity){
+    void fillParticle(FPoint<FReal>* position, FReal* physivalValue, FPoint<FReal>* velocity){
         FReal x,y,z,data, vx, vy, vz;
-        *(this->file) >> x >> y >> z >> data >> vx >> vy >> vz;
+        *(FFmaGenericLoader<FReal>file) >> x >> y >> z >> data >> vx >> vy >> vz;
         position->setPosition(x,y,z);
         *physivalValue = (data);
         velocity->setPosition(vx,vy,vz);
@@ -99,12 +101,12 @@ public:
     }
 
     /** To get the position of the particle at idx idxPart in leaf lf */
-    void getParticlePosition(VelocityContainer* lf, const int idxPart, FPoint* particlePos){
-        (*particlePos) = FPoint(lf->getPositions()[0][idxPart],lf->getPositions()[1][idxPart],lf->getPositions()[2][idxPart]);
+    void getParticlePosition(VelocityContainer* lf, const int idxPart, FPoint<FReal>* particlePos){
+        (*particlePos) = FPoint<FReal>(lf->getPositions()[0][idxPart],lf->getPositions()[1][idxPart],lf->getPositions()[2][idxPart]);
     }
 
     /** Remove a particle but keep it to reinsert it later*/
-    void removeFromLeafAndKeep(VelocityContainer* lf, const FPoint& particlePos, const int idxPart,FParticleType /*type*/){
+    void removeFromLeafAndKeep(VelocityContainer* lf, const FPoint<FReal>& particlePos, const int idxPart,FParticleType /*type*/){
         std::array<typename VelocityContainer::AttributesClass, VelocityContainer::NbAttributes> particleValues;
         for(int idxAttr = 0 ; idxAttr < VelocityContainer::NbAttributes ; ++idxAttr){
             particleValues[idxAttr] = lf->getAttribute(idxAttr)[idxPart];
@@ -124,7 +126,7 @@ public:
             for(int idxAttr = 0 ; idxAttr < VelocityContainer::NbAttributes ; ++idxAttr){
                 particleValues[idxAttr] = toStoreRemovedParts.getAttribute(idxAttr)[idxToInsert];
             }
-            const FPoint particlePos(toStoreRemovedParts.getPositions()[0][idxToInsert],
+            const FPoint<FReal> particlePos(toStoreRemovedParts.getPositions()[0][idxToInsert],
                                      toStoreRemovedParts.getPositions()[1][idxToInsert],
                                      toStoreRemovedParts.getPositions()[2][idxToInsert]);
 
@@ -145,12 +147,13 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::SHDevelopment,
                          FParameterDefinitions::DeltaT, FParameterDefinitions::OutputFile);
 
-    typedef FSphericalCell          CellClass;
+    typedef double FReal;
+    typedef FSphericalCell<FReal>          CellClass;
     typedef VelocityContainer  ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FSphericalKernel< CellClass, ContainerClass >   KernelClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSphericalKernel<FReal, CellClass, ContainerClass >   KernelClass;
 
     typedef FFmmAlgorithmThread<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
@@ -179,7 +182,7 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
 
     {
-        FPoint position, velocity;
+        FPoint<FReal> position, velocity;
         FReal physicalValue;
 
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){

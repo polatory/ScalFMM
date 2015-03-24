@@ -55,6 +55,7 @@
     @param[out] V matrix containing \a k row vectors
     @param[out] k final low-rank depends on prescribed accuracy \a eps
  */
+template <class FReal>
 void fACA(FReal *const K,
           const unsigned int nx, const unsigned int ny,
           const double eps, FReal* &U, FReal* &V, unsigned int &k)
@@ -161,7 +162,7 @@ void fACA(FReal *const K,
     @param[out] V matrix containing \a k row vectors
     @param[out] k final low-rank depends on prescribed accuracy \a eps
  */
-template <typename ComputerType>
+template <class FReal, typename ComputerType>
 void pACA(const ComputerType& Computer,
         const unsigned int nx, const unsigned int ny,
         const FReal eps, FReal* &U, FReal* &V, unsigned int &k)
@@ -259,7 +260,7 @@ void pACA(const ComputerType& Computer,
   permutations of the 16 we compute in this function). Depending on whether
   FACASVD is defined or not, either ACA+SVD or only SVD is used to compress
   them. */
-template <int ORDER, typename MatrixKernelClass>
+template <class FReal, int ORDER, typename MatrixKernelClass>
 static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal CellWidth,
         const FReal Epsilon, FReal* K[343], int LowRank[343])
 {
@@ -269,9 +270,9 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
     static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
     // interpolation points of source (Y) and target (X) cell
-    FPoint X[nnodes], Y[nnodes];
+    FPoint<FReal> X[nnodes], Y[nnodes];
     // set roots of target cell (X)
-    FChebTensor<ORDER>::setRoots(FPoint(0.,0.,0.), CellWidth, X);
+    FChebTensor<FReal, ORDER>::setRoots(FPoint<FReal>(0.,0.,0.), CellWidth, X);
     // temporary matrix
     FReal* U = new FReal [nnodes*nnodes];
 
@@ -297,13 +298,13 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
             for (int k=0; k<=j; ++k) {
 
                 // assemble matrix and apply weighting matrices
-                const FPoint cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
-                FChebTensor<ORDER>::setRoots(cy, CellWidth, Y);
+                const FPoint<FReal> cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
+                FChebTensor<FReal, ORDER>::setRoots(cy, CellWidth, Y);
                 FReal weights[nnodes];
-                FChebTensor<ORDER>::setRootOfWeights(weights);
+                FChebTensor<FReal, ORDER>::setRootOfWeights(weights);
 
                 // now the entry-computer is responsible for weighting the matrix entries
-                EntryComputer<MatrixKernelClass> Computer(MatrixKernel, nnodes, X, nnodes, Y, weights);
+                EntryComputer<FReal, MatrixKernelClass> Computer(MatrixKernel, nnodes, X, nnodes, Y, weights);
 
                 // start timer
                 time.tic();
@@ -314,7 +315,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
                 /*
                 // applying weights ////////////////////////////////////////
                 FReal weights[nnodes];
-                FChebTensor<ORDER>::setRootOfWeights(weights);
+                FChebTensor<FReal,ORDER>::setRootOfWeights(weights);
                 for (unsigned int n=0; n<nnodes; ++n) {
                     FBlas::scal(nnodes, weights[n], U + n,  nnodes); // scale rows
                     FBlas::scal(nnodes, weights[n], U + n * nnodes); // scale cols
@@ -520,11 +521,11 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
   because it allows us to use to associate the far-field interactions based on
   the index \f$t = 7^2(i+3) + 7(j+3) + (k+3)\f$ where \f$(i,j,k)\f$ denotes
   the relative position of the source cell to the target cell. */
-template <int ORDER, KERNEL_FUNCTION_TYPE TYPE> class SymmetryHandler;
+template <class FReal, int ORDER, KERNEL_FUNCTION_TYPE TYPE> class SymmetryHandler;
 
 /*! Specialization for homogeneous kernel functions */
-template <int ORDER>
-class SymmetryHandler<ORDER, HOMOGENEOUS>
+template <class FReal, int ORDER>
+class SymmetryHandler<FReal, ORDER, HOMOGENEOUS>
 {
     static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
@@ -563,7 +564,7 @@ public:
 
         // precompute 16 M2L operators
         const FReal ReferenceCellWidth = FReal(2.0);
-        precompute<ORDER>(MatrixKernel, ReferenceCellWidth, Epsilon, K, LowRank);
+        precompute<FReal, ORDER>(MatrixKernel, ReferenceCellWidth, Epsilon, K, LowRank);
     }
 
 
@@ -591,8 +592,8 @@ public:
 
 
 /*! Specialization for non-homogeneous kernel functions */
-template <int ORDER>
-class SymmetryHandler<ORDER, NON_HOMOGENEOUS>
+template <class FReal, int ORDER>
+class SymmetryHandler<FReal, ORDER, NON_HOMOGENEOUS>
 {
     static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
@@ -691,7 +692,7 @@ public:
 /**
  * Computes, compresses and stores the 16 M2L kernels in a binary file.
  */
-template <int ORDER, typename MatrixKernelClass>
+template <class FReal, int ORDER, typename MatrixKernelClass>
 static void ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *const MatrixKernel, const FReal Epsilon)
 {
     static const unsigned int nnodes = ORDER*ORDER*ORDER;
@@ -700,7 +701,7 @@ static void ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *cons
     FReal* K[343];
     int LowRank[343];
     for (unsigned int idx=0; idx<343; ++idx) { K[idx] = nullptr; LowRank[idx] = 0;  }
-    precompute<ORDER>(MatrixKernel, FReal(2.), Epsilon, K, LowRank);
+    precompute<FReal,ORDER>(MatrixKernel, FReal(2.), Epsilon, K, LowRank);
 
     // write to binary file ////////////
     FTic time; time.tic();
@@ -741,7 +742,7 @@ static void ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *cons
  * Reads the 16 compressed M2L kernels from the binary files and writes them
  * in K and the respective low-rank in LowRank.
  */
-template <int ORDER>
+template <class FReal, int ORDER>
 void ReadFromBinaryFile(const FReal Epsilon, FReal* K[343], int LowRank[343])
 {
     // compile time constants

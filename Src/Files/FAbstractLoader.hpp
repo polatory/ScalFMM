@@ -18,9 +18,8 @@
 
 
 #include "../Utils/FGlobal.hpp"
+#include "../Utils/FPoint.hpp"
 
-
-class FPoint;
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -36,6 +35,7 @@ class FPoint;
 *
 * @warning Inherit from this class when defining a loader class
 */
+template <class FReal>
 class FAbstractLoader {
 public:	
     /** Default destructor */
@@ -52,7 +52,7 @@ public:
         * Get the center of the simulation box
         * @return box center needed by the octree
         */
-    virtual FPoint getCenterOfBox() const = 0;
+    virtual FPoint<FReal> getCenterOfBox() const = 0;
 
     /**
         * Get the simulation box width

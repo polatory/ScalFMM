@@ -27,7 +27,7 @@
 * It has to be implemented has show in FSimpleLeaf.
 * Leaf are stored in the octree.
 */
-template< class ContainerClass >
+template<class FReal, class ContainerClass >
 class FAbstractLeaf {
 public:
     /** Default destructor */
@@ -41,7 +41,7 @@ public:
         * this interface can sort the particle as they like.
         */
     template<typename... Args>
-    void push(const FPoint& /*inParticlePosition*/, Args ... /*args*/){
+    void push(const FPoint<FReal>& /*inParticlePosition*/, Args ... /*args*/){
         FLOG( FLog::Controller.write("Warning, push is not implemented!").write(FLog::Flush) );
     }
 

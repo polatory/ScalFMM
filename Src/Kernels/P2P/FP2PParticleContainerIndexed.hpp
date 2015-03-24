@@ -21,21 +21,21 @@
 #include "FP2PParticleContainer.hpp"
 #include "Components/FParticleType.hpp"
 
-template<int NRHS = 1, int NLHS = 1, int NVALS = 1>
-class FP2PParticleContainerIndexed : public FP2PParticleContainer<NRHS,NLHS,NVALS> {
-    typedef FP2PParticleContainer<NRHS,NLHS,NVALS> Parent;
+template<class FReal, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+class FP2PParticleContainerIndexed : public FP2PParticleContainer<FReal, NRHS,NLHS,NVALS> {
+    typedef FP2PParticleContainer<FReal, NRHS,NLHS,NVALS> Parent;
 
     FVector<int> indexes;
 
 public:
     template<typename... Args>
-    void push(const FPoint& inParticlePosition, const int index, Args... args){
+    void push(const FPoint<FReal>& inParticlePosition, const int index, Args... args){
         Parent::push(inParticlePosition, args... );
         indexes.push(index);
     }
 
     template<typename... Args>
-    void push(const FPoint& inParticlePosition, const FParticleType particleType, const int index, Args... args){
+    void push(const FPoint<FReal>& inParticlePosition, const FParticleType particleType, const int index, Args... args){
         Parent::push(inParticlePosition, particleType, args... );
         indexes.push(index);
     }

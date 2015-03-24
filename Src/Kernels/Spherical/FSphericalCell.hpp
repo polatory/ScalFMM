@@ -26,6 +26,7 @@
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 */
+template <class FReal>
 class FSphericalCell : public FBasicCell {
 protected:
     static int DevP;
@@ -33,8 +34,8 @@ protected:
     static int PoleSize;
     static bool UseBlas;
 
-    FComplex* multipole_exp; //< For multipole extenssion
-    FComplex* local_exp;     //< For local extenssion
+    FComplex<FReal>* multipole_exp; //< For multipole extenssion
+    FComplex<FReal>* local_exp;     //< For local extenssion
 
 public:
     static void Init(const int inDevP, const bool inUseBlas = false){
@@ -62,15 +63,15 @@ public:
     /** Default constructor */
     FSphericalCell()
         : multipole_exp(nullptr), local_exp(nullptr){
-        multipole_exp = new FComplex[PoleSize];
-        local_exp = new FComplex[LocalSize];
+        multipole_exp = new FComplex<FReal>[PoleSize];
+        local_exp = new FComplex<FReal>[LocalSize];
     }
 
     /** Constructor */
     FSphericalCell(const FSphericalCell& other)
         : multipole_exp(nullptr), local_exp(nullptr){
-        multipole_exp = new FComplex[PoleSize];
-        local_exp = new FComplex[LocalSize];
+        multipole_exp = new FComplex<FReal>[PoleSize];
+        local_exp = new FComplex<FReal>[LocalSize];
         (*this) = other;
     }
 
@@ -88,20 +89,20 @@ public:
     }
 
     /** Get Multipole */
-    const FComplex* getMultipole() const {
+    const FComplex<FReal>* getMultipole() const {
         return multipole_exp;
     }
     /** Get Local */
-    const FComplex* getLocal() const {
+    const FComplex<FReal>* getLocal() const {
         return local_exp;
     }
 
     /** Get Multipole */
-    FComplex* getMultipole() {
+    FComplex<FReal>* getMultipole() {
         return multipole_exp;
     }
     /** Get Local */
-    FComplex* getLocal() {
+    FComplex<FReal>* getLocal() {
         return local_exp;
     }
 
@@ -153,46 +154,50 @@ public:
     }
 
     int getSavedSize() const {
-        return ((int) sizeof(FComplex)) * (PoleSize+LocalSize)
+        return ((int) sizeof(FComplex<FReal>)) * (PoleSize+LocalSize)
                 + FBasicCell::getSavedSize();
     }
 
     int getSavedSizeUp() const {
-        return ((int) sizeof(FComplex)) * (PoleSize);
+        return ((int) sizeof(FComplex<FReal>)) * (PoleSize);
     }
 
     int getSavedSizeDown() const {
-        return ((int) sizeof(FComplex)) * (LocalSize);
+        return ((int) sizeof(FComplex<FReal>)) * (LocalSize);
     }
 };
 
-int FSphericalCell::DevP(-1);
-int FSphericalCell::LocalSize(-1);
-int FSphericalCell::PoleSize(-1);
+template <class FReal>
+int FSphericalCell<FReal>::DevP(-1);
+template <class FReal>
+int FSphericalCell<FReal>::LocalSize(-1);
+template <class FReal>
+int FSphericalCell<FReal>::PoleSize(-1);
 
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 */
-class FTypedSphericalCell : public FSphericalCell, public FExtendCellType {
+template <class FReal>
+class FTypedSphericalCell : public FSphericalCell<FReal>, public FExtendCellType {
 public:
     template <class BufferWriterClass>
     void save(BufferWriterClass& buffer) const{
-        FSphericalCell::save(buffer);
+        FSphericalCell<FReal>::save(buffer);
         FExtendCellType::save(buffer);
     }
     template <class BufferReaderClass>
     void restore(BufferReaderClass& buffer){
-        FSphericalCell::restore(buffer);
+        FSphericalCell<FReal>::restore(buffer);
         FExtendCellType::restore(buffer);
     }
     void resetToInitialState(){
-        FSphericalCell::resetToInitialState();
+        FSphericalCell<FReal>::resetToInitialState();
         FExtendCellType::resetToInitialState();
     }
 
     int getSavedSize() const {
-        return FExtendCellType::getSavedSize() + FSphericalCell::getSavedSize();
+        return FExtendCellType::getSavedSize() + FSphericalCell<FReal>::getSavedSize();
     }
 };
 

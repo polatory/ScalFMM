@@ -18,6 +18,7 @@
 //
 #include "../../Src/Utils/FPoint.hpp"
 //
+template <class FReal>
 class FIOVtk {
 public:
 
@@ -114,12 +115,13 @@ private:
 	std::string   _format ;
 };
 
+template <class FReal>
 template<class OctreeClass>
-void FIOVtk::writeOctree(const std::string &vtkName,const std::string &header, const OctreeClass& tree)
+void FIOVtk<FReal>::writeOctree(const std::string &vtkName,const std::string &header, const OctreeClass& tree)
 {
 	//
 	const double boxWidth = tree.getBoxWidth();
-	const        FPoint min(tree.getBoxCenter(),-boxWidth/2);
+    const        FPoint<FReal> min(tree.getBoxCenter(),-boxWidth/2);
 	int          level = tree.getHeight() ;
 	//
 	int nx = (int)pow(2.,level-1)+1;
@@ -159,7 +161,9 @@ void FIOVtk::writeOctree(const std::string &vtkName,const std::string &header, c
 	VTKfile << "\n";
 	VTKfile << "\n";
 }
-void FIOVtk::writeXMLmasterFile(const int & numProc, std::string& VTKname,const std::string& /*title*/)
+
+template <class FReal>
+void FIOVtk<FReal>::writeXMLmasterFile(const int & numProc, std::string& VTKname,const std::string& /*title*/)
 {
 
 	std::string       filename;
@@ -191,8 +195,9 @@ void FIOVtk::writeXMLmasterFile(const int & numProc, std::string& VTKname,const 
 	std::cout << "filename " << filename<< std::endl;
 }
 
+template <class FReal>
 template<typename OctreeClass>
-void FIOVtk::writeXMLParticles( const std::string& VTKname,const std::string& /*title*/,  OctreeClass& tree)
+void FIOVtk<FReal>::writeXMLParticles( const std::string& VTKname,const std::string& /*title*/,  OctreeClass& tree)
 {
 	//
 	// --- SAUVEGARDE

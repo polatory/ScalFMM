@@ -80,9 +80,9 @@ void usage() {
 
 int main(int argc, char ** argv){
 	typedef FBasicParticleContainer<0>                                     ContainerClass;
-	typedef FSimpleIndexedLeaf<ContainerClass>                                  LeafClass;
+	typedef FSimpleIndexedLeaf<FReal,ContainerClass>                                  LeafClass;
 	typedef FAdaptCell<FBasicCell,LeafClass>                            CellClass;
-	typedef FOctree<CellClass, ContainerClass, LeafClass >       OctreeClass;
+	typedef FOctree<FReal, CellClass, ContainerClass, LeafClass >       OctreeClass;
 	//
 	if(FParameters::existParameter(argc, argv, "-h")||FParameters::existParameter(argc, argv, "-help")|| (argc < 3 )){
 		usage() ;
@@ -102,7 +102,7 @@ int main(int argc, char ** argv){
 	const std::string genericFileName(FParameters::getStr(argc,argv,"-outfile",   "output"));
 	//
 	std::cout << "Opening : " << filename << "\n";
-	FFmaGenericLoader loader(filename);
+	FFmaGenericLoader<FReal> loader(filename);
 	if(!loader.isOpen()){
 		std::cout << "Loader Error, " << filename << " is missing\n";
 		return 1;
@@ -121,7 +121,7 @@ int main(int argc, char ** argv){
 	//
 	std::cout << "Creating and Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
 	std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
-	FPoint particlePosition, minPos, maxPos;
+	FPoint<FReal> particlePosition, minPos, maxPos;
 	FReal physicalValue;
 	for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
 		loader.fillParticle(&particlePosition,&physicalValue);

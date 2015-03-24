@@ -44,7 +44,7 @@
 *
 */
 
-template<class OctreeClass, class LeafClass>
+template<class FReal, class OctreeClass, class LeafClass>
 class FTreeBuilder{
 private:
     /**
@@ -92,10 +92,10 @@ public:
 
         // General values needed
         const int NbLevels       = tree->getHeight();
-        const FPoint centerOfBox = tree->getBoxCenter();
+        const FPoint<FReal> centerOfBox = tree->getBoxCenter();
         const FReal boxWidth     = tree->getBoxWidth();
         const FReal boxWidthAtLeafLevel = boxWidth/FReal(1 << (NbLevels - 1));
-        const FPoint boxCorner   = centerOfBox - boxWidth/2;
+        const FPoint<FReal> boxCorner   = centerOfBox - boxWidth/2;
 
         ////////////////////////////////////////////////////////////////
         ////////////////////////////////////////////////////////////////
@@ -227,7 +227,7 @@ public:
                     // Get position in the original container
                     const int particleOriginalPos = particleIndexes[leavesDescriptor[idxLeaf].offsetInArray + idxPart].particlePositionInArray;
                     // Get the original position
-                    FPoint particlePos( partX[particleOriginalPos],
+                    FPoint<FReal> particlePos( partX[particleOriginalPos],
                                         partY[particleOriginalPos],
                                         partZ[particleOriginalPos]);
                     // Copy the attributes

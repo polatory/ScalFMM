@@ -58,8 +58,10 @@
  * here we try to make the same simulation
  */
 
+
+template <class FReal>
 struct EwalParticle {
-	FPoint position;
+    FPoint<FReal> position;
 	FReal forces[3];
 	FReal physicalValue;
 	FReal potential;
@@ -70,23 +72,24 @@ struct EwalParticle {
 int main(int argc, char ** argv){
     FHelpDescribeAndExit(argc, argv, "Please read the code to know more, sorry");
 
-	typedef FP2PParticleContainerIndexed<>                    ContainerClass;
-	typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef double FReal;
+	typedef FP2PParticleContainerIndexed<FReal>                    ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 
 #ifdef  ScalFMM_USE_BLAS
 	// begin Chebyshev kernel
 	// accuracy
 	const unsigned int ORDER = 13;
 	// typedefs
-	typedef FInterpMatrixKernelR                                              MatrixKernelClass;
-	typedef FChebCell<ORDER>                                                  CellClass;
-	typedef FOctree<CellClass,ContainerClass,LeafClass>                       OctreeClass;
-	typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
+    typedef FInterpMatrixKernelR<FReal>                                              MatrixKernelClass;
+    typedef FChebCell<FReal,ORDER>                                                  CellClass;
+    typedef FOctree<FReal, CellClass,ContainerClass,LeafClass>                       OctreeClass;
+    typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
 
 #else
-	typedef FSphericalCell                                    CellClass;
-	typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-	typedef FSphericalKernel< CellClass, ContainerClass >     KernelClass;
+    typedef FSphericalCell<FReal>                                    CellClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSphericalKernel<FReal, CellClass, ContainerClass >     KernelClass;
 	const int DevP          = FParameters::getValue(argc,argv,"-P", 9);
 #endif
 
@@ -167,7 +170,7 @@ int main(int argc, char ** argv){
 	std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
 
 	counter.tic();
-	FPoint electricMoment(0.0,0.0,0.0) ;
+    FPoint<FReal> electricMoment(0.0,0.0,0.0) ;
 	EwalParticle * const particles = new EwalParticle[loader->getNumberOfParticles()];
 	memset(particles, 0, sizeof(EwalParticle) * loader->getNumberOfParticles());
 	double totalCharge = 0.0;
@@ -187,7 +190,7 @@ int main(int argc, char ** argv){
 	counter.tac();
 	double dipoleNorm = electricMoment.norm2() ;
 	double volume     =  loader->getBoxWidth()*loader->getBoxWidth()*loader->getBoxWidth() ;
-	double coeffCorrectionDLPOLY = 2.0*FMath::FPi/volume/3.0 ;
+	double coeffCorrectionDLPOLY = 2.0*FMath::FPi<FReal>()/volume/3.0 ;
 
 	std::cout << std::endl;
 	std::cout << "Total Charge         = "<< totalCharge <<std::endl;
@@ -206,9 +209,9 @@ int main(int argc, char ** argv){
 	octreeIterator.gotoBottomLeft();
 	int inTreeHeight = NbLevels ;
 	double  inBoxWidth = loader->getBoxWidth() ;
-	FPoint inBoxCenter(loader->getCenterOfBox()) ;
+    FPoint<FReal> inBoxCenter(loader->getCenterOfBox()) ;
 	double  widthAtLeafLevel(inBoxWidth/FReal(1 << (inTreeHeight-1))) , widthAtLeafLevelDiv2 = widthAtLeafLevel/2;
-	FPoint  boxCorner(inBoxCenter.getX()-(inBoxWidth/2),inBoxCenter.getY()-(inBoxWidth/2),
+    FPoint<FReal>  boxCorner(inBoxCenter.getX()-(inBoxWidth/2),inBoxCenter.getY()-(inBoxWidth/2),
 			inBoxCenter.getZ()-(inBoxWidth/2));
 	octreeData << "Box Width  " << inBoxWidth << std::endl ;
 	octreeData << "Leaf width " << widthAtLeafLevel << std::endl ;
@@ -217,7 +220,7 @@ int main(int argc, char ** argv){
 	do{
 		auto * const FRestrict cell = octreeIterator.getCurrentCell();
 		FTreeCoordinate coordinate  = cell->getCoordinate() ;
-		FPoint leafCenter(FReal(coordinate.getX()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
+        FPoint<FReal> leafCenter(FReal(coordinate.getX()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
 				FReal(coordinate.getY()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
 				FReal(coordinate.getZ()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX());
 		octreeData << "Leaf " << cell->getMortonIndex() << std::endl
@@ -234,7 +237,7 @@ int main(int argc, char ** argv){
 	std::cout << "Create kernel & run simu ..." << std::endl;
 	counter.tic();
 
-  const FInterpMatrixKernelR MatrixKernel;
+  const FInterpMatrixKernelR<FReal> MatrixKernel;
 
 	FTreeCoordinate min, max;
 
@@ -287,7 +290,7 @@ int main(int argc, char ** argv){
 		particlesDirect = new EwalParticle[loader->getNumberOfParticles()];
 
 		FReal denergy = 0.0;
-		FMath::FAccurater dfx, dfy, dfz ;
+		FMath::FAccurater<FReal> dfx, dfy, dfz ;
 		//
 		//
 		// particles       : Ewald results
@@ -329,7 +332,7 @@ int main(int argc, char ** argv){
 							//	    for(int idxZ = -nL ; idxZ <= nL-1; ++idxZ){
 							if(idxX == 0 && idxY == 0 && idxZ == 0) continue;
 
-							const FPoint offset(loader->getBoxWidth() * FReal(idxX),
+                            const FPoint<FReal> offset(loader->getBoxWidth() * FReal(idxX),
 									loader->getBoxWidth() * FReal(idxY),
 									loader->getBoxWidth() * FReal(idxZ));
 							//							std::cout <<" ( "<< idxX<<" , "<<idxY << " , "<< idxZ << " ) "<< offset <<std::endl;
@@ -423,7 +426,7 @@ int main(int argc, char ** argv){
 		//
 
 		FReal energy = 0.0;
-		FMath::FAccurater fx, fy, fz, fmmdfx, fmmdfy, fmmdfz,fmmpot;
+		FMath::FAccurater<FReal> fx, fy, fz, fmmdfx, fmmdfy, fmmdfz,fmmpot;
 
 		tree.forEachLeaf([&](LeafClass* leaf){
 			const FReal*const potentials = leaf->getTargets()->getPotentials();

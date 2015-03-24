@@ -54,10 +54,10 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::NbParticles);
 
     typedef FTestCell                   CellClass;
-    typedef FTestParticleContainer      ContainerClass;
+    typedef FTestParticleContainer<FReal>      ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
 
     // FFmmAlgorithmTask FFmmAlgorithmThread
@@ -75,7 +75,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoader loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoader<FReal> loader(NbPart, 1, FPoint<FReal>(0.5,0.5,0.5), 1);
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -86,7 +86,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
     {
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&particlePosition);
             tree.insert(particlePosition);

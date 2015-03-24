@@ -47,26 +47,27 @@ int main(int argc, char* argv[]){
                          FParameterDefinitions::NbParticles, LocalOptionBlocSize, LocalOptionNoValidate);
 
     // Initialize the types
+    typedef double FReal;
     static const int P = 9;
     typedef FRotationCellPODCore     GroupCellSymbClass;
-    typedef FRotationCellPODPole<P>  GroupCellUpClass;
-    typedef FRotationCellPODLocal<P> GroupCellDownClass;
-    typedef FRotationCellPOD<P>      GroupCellClass;
+    typedef FRotationCellPODPole<FReal,P>  GroupCellUpClass;
+    typedef FRotationCellPODLocal<FReal,P> GroupCellDownClass;
+    typedef FRotationCellPOD<FReal,P>      GroupCellClass;
 
-    typedef FP2PGroupParticleContainer<>          GroupContainerClass;
-    typedef FGroupTree< GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
+    typedef FP2PGroupParticleContainer<FReal>          GroupContainerClass;
+    typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
 #ifdef ScalFMM_USE_STARPU
-    typedef FStarPUAllCpuCapacities<FRotationKernel< GroupCellClass, GroupContainerClass , P>>   GroupKernelClass;
+    typedef FStarPUAllCpuCapacities<FRotationKernel< FReal, GroupCellClass, GroupContainerClass , P>>   GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
 #elif defined(ScalFMM_USE_OMP4)
-    typedef FRotationKernel< GroupCellClass, GroupContainerClass , P>  GroupKernelClass;
+    typedef FRotationKernel< FReal, GroupCellClass, GroupContainerClass , P>  GroupKernelClass;
     // Set the number of threads
     omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
     typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass,
             GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #else
-    typedef FRotationKernel< GroupCellClass, GroupContainerClass , P>  GroupKernelClass;
+    typedef FRotationKernel< FReal, GroupCellClass, GroupContainerClass , P>  GroupKernelClass;
     //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
     typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #endif
@@ -78,15 +79,15 @@ int main(int argc, char* argv[]){
     const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
 
     // Load the particles
-    //FRandomLoader loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 20), 1.0, FPoint(0,0,0), 0);
-    FFmaGenericLoader loader(filename);
+    //FRandomLoader<FReal> loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 20), 1.0, FPoint<FReal>(0,0,0), 0);
+    FFmaGenericLoader<FReal> loader(filename);
     FAssertLF(loader.isOpen());
     FTic timer;
 
-    FP2PParticleContainer<> allParticles;
+    FP2PParticleContainer<FReal> allParticles;
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         FReal physicalValue;
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         loader.fillParticle(&particlePosition, &physicalValue);
         allParticles.push(particlePosition, physicalValue);
     }
@@ -114,7 +115,7 @@ int main(int argc, char* argv[]){
         FReal*const allPosY = const_cast<FReal*>( allParticles.getPositions()[1]);
         FReal*const allPosZ = const_cast<FReal*>( allParticles.getPositions()[2]);
 
-        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass cellTarget, FP2PGroupParticleContainer<> * leafTarget){
+        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<FReal> >([&](GroupCellClass cellTarget, FP2PGroupParticleContainer<FReal> * leafTarget){
             const FReal*const physicalValues = leafTarget->getPhysicalValues();
             const FReal*const posX = leafTarget->getPositions()[0];
             const FReal*const posY = leafTarget->getPositions()[1];
@@ -149,10 +150,10 @@ int main(int argc, char* argv[]){
             }
         }
 
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
+        FMath::FAccurater<FReal> potentialDiff;
+        FMath::FAccurater<FReal> fx, fy, fz;
         offsetParticles = 0;
-        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass cellTarget, FP2PGroupParticleContainer<> * leafTarget){
+        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<FReal> >([&](GroupCellClass cellTarget, FP2PGroupParticleContainer<FReal> * leafTarget){
             const FReal*const potentials = leafTarget->getPotentials();
             const FReal*const forcesX = leafTarget->getForcesX();
             const FReal*const forcesY = leafTarget->getForcesY();

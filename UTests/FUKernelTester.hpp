@@ -35,7 +35,7 @@
  * a kernel.
  * For Example :
  * RunTest<CellClass,ContainerClass,KernelClass,LeafClass,OctreeClass,FmmClass>(
- *       [&](int NbLevels, FReal boxWidth, FPoint centerOfBox){
+ *       [&](int NbLevels, FReal boxWidth, FPoint<FReal> centerOfBox){
  *           return std::unique_ptr<KernelClass>(new KernelClass(NbLevels, boxWidth, centerOfBox));
  *       });
  * But it can be a static method or function.
@@ -48,9 +48,9 @@ public:
     using FUTester<TestClass>::uassert;
 
     // The run function is performing the test for the given configuration
-    template <class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
+    template <class FReal, class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
               class LeafClass, class OctreeClass, class FmmClass>
-    void RunTest(std::function<std::unique_ptr<KernelClass>(int NbLevels, FReal boxWidth, FPoint centerOfBox, const MatrixKernelClass *const MatrixKernel)> GetKernelFunc)	{
+    void RunTest(std::function<std::unique_ptr<KernelClass>(int NbLevels, FReal boxWidth, FPoint<FReal> centerOfBox, const MatrixKernelClass *const MatrixKernel)> GetKernelFunc)	{
         //
         // Load particles
         //
@@ -64,7 +64,7 @@ public:
         //
         std::string filename(SCALFMMDataPath+parFile);
         //
-        FFmaGenericLoader loader(filename);
+        FFmaGenericLoader<FReal> loader(filename);
         Print("Number of particles:");
         Print(loader.getNumberOfParticles());
 
@@ -73,7 +73,7 @@ public:
 
 
         FSize nbParticles = loader.getNumberOfParticles() ;
-        FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
+        FmaRWParticle<FReal, 8,8>* const particles = new FmaRWParticle<FReal, 8,8>[nbParticles];
 
         loader.fillParticle(particles,nbParticles);
         //
@@ -108,8 +108,8 @@ public:
         // Compare
         /////////////////////////////////////////////////////////////////////////////////////////////////
         Print("Compute Diff...");
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
+        FMath::FAccurater<FReal> potentialDiff;
+        FMath::FAccurater<FReal> fx, fy, fz;
         { // Check that each particle has been summed with all other
 
             tree.forEachLeaf([&](LeafClass* leaf){

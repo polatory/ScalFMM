@@ -26,15 +26,20 @@
 #include "Utils/FMpi.hpp"
 #include "Files/FFmaGenericLoader.hpp"
 
-class FMpiFmaGenericLoader : public FFmaGenericLoader {
+template <class FReal>
+class FMpiFmaGenericLoader : public FFmaGenericLoader<FReal> {
 protected:
+    using FFmaGenericLoader<FReal>::nbParticles;
+    using FFmaGenericLoader<FReal>::file;
+    using FFmaGenericLoader<FReal>::typeData;
+
   FSize myNbOfParticles;     //Number of particles that the calling process will manage
   MPI_Offset idxParticles;   //
   FSize start;               // number of my first parts in file
   size_t headerSize;
 public:
   FMpiFmaGenericLoader(const std::string inFilename,const FMpi::FComm& comm, const bool useMpiIO = false)
-    : FFmaGenericLoader(inFilename,true),myNbOfParticles(0),idxParticles(0),headerSize(0)
+    : FFmaGenericLoader<FReal>(inFilename,true),myNbOfParticles(0),idxParticles(0),headerSize(0)
   {
     FSize startPart = comm.getLeft(nbParticles);
     FSize endPart   = comm.getRight(nbParticles);
@@ -64,8 +69,8 @@ public:
    * Given an index, get the one particle from this index
    */
   void fill1Particle(FReal*datas,FSize indexInFile){
-    file->seekg(headerSize+(int(indexInFile)*getNbRecordPerline()*sizeof(FReal)));
-    file->read((char*) datas,getNbRecordPerline()*sizeof(FReal));
+    file->seekg(headerSize+(int(indexInFile)*FFmaGenericLoader<FReal>::getNbRecordPerline()*sizeof(FReal)));
+    file->read((char*) datas,FFmaGenericLoader<FReal>::getNbRecordPerline()*sizeof(FReal));
   }
   
 };

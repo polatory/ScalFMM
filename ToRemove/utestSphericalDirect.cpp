@@ -59,7 +59,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 		//
 		std::string filename(SCALFMMDataPath+parFile);
 		//
-		FFmaGenericLoader loader(filename);
+		FFmaGenericLoader<FReal> loader(filename);
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
             uassert(false);
@@ -106,8 +106,8 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 		// Compare
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		Print("Compute Diff...");
-		FMath::FAccurater potentialDiff;
-		FMath::FAccurater fx, fy, fz;
+		FMath::FAccurater<FReal> potentialDiff;
+		FMath::FAccurater<FReal> fx, fy, fz;
 		{ // Check that each particle has been summed with all other
 
 			tree.forEachLeaf([&](LeafClass* leaf){
@@ -199,12 +199,12 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     /** Classic */
     void TestSpherical(){
         typedef FSphericalCell            CellClass;
-        typedef FP2PParticleContainerIndexed<>  ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
         typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
 
-        typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+        typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
         typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
@@ -215,12 +215,12 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     /** Rotation */
     void TestRotation(){
         typedef FSphericalCell            CellClass;
-        typedef FP2PParticleContainerIndexed<>  ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
         typedef FSphericalRotationKernel< CellClass, ContainerClass >          KernelClass;
 
-        typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+        typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
         typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
@@ -232,12 +232,12 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     /** Blas */
     void TestSphericalBlas(){
         typedef FSphericalCell            CellClass;
-        typedef FP2PParticleContainerIndexed<>  ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
         typedef FSphericalBlasKernel< CellClass, ContainerClass >          KernelClass;
 
-        typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+        typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
         typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
@@ -248,12 +248,12 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     /** Block blas */
     void TestSphericalBlockBlas(){
         typedef FSphericalCell            CellClass;
-        typedef FP2PParticleContainerIndexed<> ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
 
         typedef FSphericalBlockBlasKernel< CellClass, ContainerClass >          KernelClass;
 
-        typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+        typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
         typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 

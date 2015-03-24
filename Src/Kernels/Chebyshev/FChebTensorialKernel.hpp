@@ -41,9 +41,9 @@ class FTreeCoordinate;
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Chebyshev interpolation order
  */
-template < class CellClass, class ContainerClass,   class MatrixKernelClass, int ORDER, int NVALS = 1>
+template < class FReal, class CellClass, class ContainerClass,   class MatrixKernelClass, int ORDER, int NVALS = 1>
 class FChebTensorialKernel
-    : public FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+    : public FAbstractChebKernel< FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 {
     enum {nRhs = MatrixKernelClass::NRHS,
           nLhs = MatrixKernelClass::NLHS,
@@ -53,10 +53,10 @@ class FChebTensorialKernel
 protected://PB: for OptiDis
 
     // private types
-    typedef FChebTensorialM2LHandler<ORDER,MatrixKernelClass,MatrixKernelClass::Type> M2LHandlerClass;
+    typedef FChebTensorialM2LHandler<FReal, ORDER,MatrixKernelClass,MatrixKernelClass::Type> M2LHandlerClass;
 
     // using from 
-    typedef FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+    typedef FAbstractChebKernel< FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
     AbstractBaseClass;
 
     /// Needed for P2P and M2L operators
@@ -73,11 +73,11 @@ public:
      */
     FChebTensorialKernel(const int inTreeHeight,
                          const FReal inBoxWidth,
-                         const FPoint& inBoxCenter,
+                         const FPoint<FReal>& inBoxCenter,
                          const MatrixKernelClass *const inMatrixKernel,
                          const FReal inBoxWidthExtension, 
                          const FReal Epsilon)
-    : FAbstractChebKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter,inBoxWidthExtension),
+    : FAbstractChebKernel< FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter,inBoxWidthExtension),
       MatrixKernel(inMatrixKernel),
       M2LHandler(new M2LHandlerClass(MatrixKernel,
                                      inTreeHeight,
@@ -90,7 +90,7 @@ public:
     void P2M(CellClass* const LeafCell,
                      const ContainerClass* const SourceParticles)
     {
-        const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
+        const FPoint<FReal> LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
         const FReal ExtendedLeafCellWidth(AbstractBaseClass::BoxWidthLeaf 
                                           + AbstractBaseClass::BoxWidthExtension);
 
@@ -204,7 +204,7 @@ public:
     void L2P(const CellClass* const LeafCell,
                      ContainerClass* const TargetParticles)
     {
-        const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
+        const FPoint<FReal> LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
         const FReal ExtendedLeafCellWidth(AbstractBaseClass::BoxWidthLeaf 
                                           + AbstractBaseClass::BoxWidthExtension);
 

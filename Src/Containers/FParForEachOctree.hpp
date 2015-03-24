@@ -18,12 +18,12 @@ namespace FParForEachOctree {
 template< template< class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass > class FOctree,
           class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass,
           class FunctionTemplate>
-void forEachLeaf(FOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree, FunctionTemplate function){
+void forEachLeaf(FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree, FunctionTemplate function){
     #pragma omp parallel
     {
         #pragma omp single
         {
-            typename FOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>::Iterator octreeIterator(tree);
+            typename FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
 
             do{
@@ -46,15 +46,15 @@ void forEachLeaf(FOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>*
 template< template< class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass > class FOctree,
           class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass,
           class FunctionTemplate>
-void forEachCell(FOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree, FunctionTemplate function){
+void forEachCell(FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree, FunctionTemplate function){
     #pragma omp parallel
     {
         #pragma omp single
         {
-            typename FOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>::Iterator octreeIterator(tree);
+            typename FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
 
-            typename FOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>::Iterator avoidGoLeft(octreeIterator);
+            typename FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>::Iterator avoidGoLeft(octreeIterator);
 
             for(int idx = tree->getHeight()-1 ; idx >= 1 ; --idx ){
                 do{
@@ -80,15 +80,15 @@ void forEachCell(FOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>*
 template< template< class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass > class FOctree,
           class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass,
           class FunctionTemplate>
-void forEachCellWithLevel(FOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree, FunctionTemplate function){
+void forEachCellWithLevel(FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree, FunctionTemplate function){
     #pragma omp parallel
     {
         #pragma omp single
         {
-            typename FOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>::Iterator octreeIterator(tree);
+            typename FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
 
-            typename FOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>::Iterator avoidGoLeft(octreeIterator);
+            typename FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>::Iterator avoidGoLeft(octreeIterator);
 
             for(int idx = tree->getHeight()-1 ; idx >= 1 ; --idx ){
                 do{
@@ -114,12 +114,12 @@ void forEachCellWithLevel(FOctree<CellClass,ContainerClass,LeafClass,CellAllocat
 template< template< class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass > class FOctree,
           class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass,
           class FunctionTemplate>
-void forEachCellLeaf(FOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree, FunctionTemplate function){
+void forEachCellLeaf(FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree, FunctionTemplate function){
     #pragma omp parallel
     {
         #pragma omp single
         {
-            typename FOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>::Iterator octreeIterator(tree);
+            typename FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
 
             do{

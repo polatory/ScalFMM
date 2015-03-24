@@ -44,34 +44,36 @@ class TestChebyshevDirect : public FUKernelTester<TestChebyshevDirect> {
 
 	/** TestChebKernel */
 	void TestChebKernel(){
+        typedef double FReal;
 		const unsigned int ORDER = 6;
-		typedef FP2PParticleContainerIndexed<> ContainerClass;
-		typedef FSimpleLeaf<ContainerClass> LeafClass;
-		typedef FInterpMatrixKernelR MatrixKernelClass;
-		typedef FChebCell<ORDER> CellClass;
-		typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-		typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+		typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+		typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
+		typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+		typedef FChebCell<FReal,ORDER> CellClass;
+		typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
+		typedef FChebKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 		typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
     RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(
-                                                                                     [&](int NbLevels, FReal boxWidth, FPoint centerOfBox, const MatrixKernelClass *const MatrixKernel){
+                                                                                     [&](int NbLevels, FReal boxWidth, FPoint<FReal> centerOfBox, const MatrixKernelClass *const MatrixKernel){
                                                                                        return std::unique_ptr<KernelClass>(new KernelClass(NbLevels, boxWidth, centerOfBox, MatrixKernel));
         });
 	}
 
 	/** TestChebSymKernel */
 	void TestChebSymKernel(){
+        typedef double FReal;
 		const unsigned int ORDER = 6;
-		typedef FP2PParticleContainerIndexed<> ContainerClass;
-		typedef FSimpleLeaf<ContainerClass> LeafClass;
-		typedef FInterpMatrixKernelR MatrixKernelClass;
-		typedef FChebCell<ORDER> CellClass;
-		typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-		typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+		typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+		typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
+		typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+		typedef FChebCell<FReal,ORDER> CellClass;
+		typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
+		typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 		typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
     RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(
-                    [&](int NbLevels, FReal boxWidth, FPoint centerOfBox, const MatrixKernelClass *const MatrixKernel){
+                    [&](int NbLevels, FReal boxWidth, FPoint<FReal> centerOfBox, const MatrixKernelClass *const MatrixKernel){
             return std::unique_ptr<KernelClass>(new KernelClass(NbLevels, boxWidth, centerOfBox, MatrixKernel));
         });
 	}

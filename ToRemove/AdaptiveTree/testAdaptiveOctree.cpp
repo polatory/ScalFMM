@@ -93,14 +93,14 @@ int main(int argc, char ** argv){
 //	// accuracy
 //	const unsigned int P =8;
 //	//
-//	typedef FP2PParticleContainerIndexed<>                             ContainerClass;
-//	typedef FSimpleIndexedLeaf<ContainerClass>                     		        LeafClass;
-//    typedef FChebCell<P>                                                          KernelCellClass;
+//	typedef FP2PParticleContainerIndexed<FReal>                             ContainerClass;
+//	typedef FSimpleIndexedLeaf<FReal,ContainerClass>                     		        LeafClass;
+//    typedef FChebCell<FReal,P>                                                          KernelCellClass;
 //
 //	//
 //	typedef FAdaptCell<KernelCellClass,LeafClass>                                                CellClass;
-//	typedef FOctree<CellClass, ContainerClass, LeafClass >                                    OctreeClass;
-//    typedef FInterpMatrixKernelR                                                                            MatrixKernelClass;
+//	typedef FOctree<FReal, CellClass, ContainerClass, LeafClass >                                    OctreeClass;
+//    typedef FInterpMatrixKernelR<FReal>                                                                            MatrixKernelClass;
 //    typedef FAdaptChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
 //	//
 //	typedef FAdaptSeqAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
@@ -127,7 +127,7 @@ int main(int argc, char ** argv){
 //	if(FParameters::existParameter(argc, argv, "-bin")){
 //		binaryMode = true;
 //	}
-//	FFmaGenericLoader loader(filename,binaryMode);
+//	FFmaGenericLoader<FReal> loader(filename,binaryMode);
 //	if(!loader.isOpen()){
 //		std::cout << "Loader Error, " << filename << " is missing\n";
 //		return 1;
@@ -148,7 +148,7 @@ int main(int argc, char ** argv){
 //	//
 //	std::cout << "Creating and Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
 //	std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
-//	FPoint particlePosition, minPos, maxPos;
+//	FPoint<FReal> particlePosition, minPos, maxPos;
 //	FReal physicalValue;
 //	for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
 //		loader.fillParticle(&particlePosition,&physicalValue);

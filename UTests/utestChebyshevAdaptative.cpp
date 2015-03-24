@@ -50,21 +50,22 @@ class TestChebyshevDirect : public FUKernelTester<TestChebyshevDirect> {
 
     /** TestChebKernel */
     void TestChebKernel(){
+        typedef double FReal;
         const unsigned int ORDER = 6;
-        typedef FChebCell<ORDER>                                        CellClass;
-        typedef FP2PParticleContainerIndexed<>            ContainerClass;
-        typedef FSimpleLeaf<ContainerClass>    LeafClass;
-        typedef FInterpMatrixKernelR                               MatrixKernelClass;
-        typedef FAdaptiveChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        typedef FChebCell<FReal,ORDER>                                        CellClass;
+        typedef FP2PParticleContainerIndexed<FReal>            ContainerClass;
+        typedef FSimpleLeaf<FReal, ContainerClass>    LeafClass;
+        typedef FInterpMatrixKernelR<FReal>                               MatrixKernelClass;
+        typedef FAdaptiveChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FAdaptiveCell< CellClass, ContainerClass >                                        CellWrapperClass;
         typedef FAdaptiveKernelWrapper< KernelClass, CellClass, ContainerClass >   KernelWrapperClass;
-        typedef FOctree< CellWrapperClass, ContainerClass , LeafClass >                  OctreeClass;
+        typedef FOctree< FReal, CellWrapperClass, ContainerClass , LeafClass >                  OctreeClass;
         // FFmmAlgorithmTask FFmmAlgorithmThread
         typedef FFmmAlgorithm<OctreeClass, CellWrapperClass, ContainerClass, KernelWrapperClass, LeafClass >     FmmClass;
 
         // run test
         RunTest<CellClass,ContainerClass,KernelWrapperClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(
-                          [&](int NbLevels, FReal boxWidth, FPoint centerOfBox, const MatrixKernelClass *const MatrixKernel){
+                          [&](int NbLevels, FReal boxWidth, FPoint<FReal> centerOfBox, const MatrixKernelClass *const MatrixKernel){
              return std::unique_ptr<KernelWrapperClass>(new KernelWrapperClass(NbLevels, boxWidth, centerOfBox, MatrixKernel, 4, 4));
         });
     }

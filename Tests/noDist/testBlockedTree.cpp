@@ -53,19 +53,20 @@ int main(int argc, char* argv[]){
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
                          FParameterDefinitions::InputFile, LocalOptionBlocSize);
 
+    typedef double FReal;
     static const int P = 3;
-    typedef FRotationCell<P>               CellClass;
-    typedef FP2PParticleContainer<>          ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FRotationCell<FReal,P>               CellClass;
+    typedef FP2PParticleContainer<FReal>          ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
     typedef FRotationCellPODCore     GroupCellSymbClass;
-    typedef FRotationCellPODPole<P>  GroupCellUpClass;
-    typedef FRotationCellPODLocal<P> GroupCellDownClass;
-    typedef FRotationCellPOD<P>      GroupCellClass;
+    typedef FRotationCellPODPole<FReal,P>  GroupCellUpClass;
+    typedef FRotationCellPODLocal<FReal,P> GroupCellDownClass;
+    typedef FRotationCellPOD<FReal,P>      GroupCellClass;
 
-    typedef FP2PGroupParticleContainer<>          GroupContainerClass;
-    typedef FGroupTree< GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
+    typedef FP2PGroupParticleContainer<FReal>          GroupContainerClass;
+    typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
 
 
     FTic counter;
@@ -73,15 +74,15 @@ int main(int argc, char* argv[]){
     const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
     const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.bin.fma.double");
 
-    FFmaGenericLoader loader(filename);
+    FFmaGenericLoader<FReal> loader(filename);
     FAssertLF(loader.isOpen());
 
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
-    FP2PParticleContainer<> allParticles;
+    FP2PParticleContainer<FReal> allParticles;
 
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         FReal physicalValue;
         loader.fillParticle(&particlePosition,&physicalValue);
         tree.insert(particlePosition, physicalValue );
@@ -105,17 +106,17 @@ int main(int argc, char* argv[]){
 
 
 #ifdef ScalFMM_USE_STARPU
-    typedef FStarPUAllCpuCapacities<FRotationKernel< GroupCellClass, GroupContainerClass , P>>   GroupKernelClass;
+    typedef FStarPUAllCpuCapacities<FRotationKernel< FReal, GroupCellClass, GroupContainerClass , P>>   GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
 #elif defined(ScalFMM_USE_OMP4)
-    typedef FRotationKernel< GroupCellClass, GroupContainerClass , P>  GroupKernelClass;
+    typedef FRotationKernel< FReal, GroupCellClass, GroupContainerClass , P>  GroupKernelClass;
     // Set the number of threads
     omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
     typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass,
             GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #else
-    typedef FRotationKernel< GroupCellClass, GroupContainerClass , P>  GroupKernelClass;
+    typedef FRotationKernel< FReal, GroupCellClass, GroupContainerClass , P>  GroupKernelClass;
     //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
     typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #endif

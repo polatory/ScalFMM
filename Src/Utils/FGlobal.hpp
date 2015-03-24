@@ -45,12 +45,6 @@
 // Types
 ///////////////////////////////////////////////////////
 
-#ifdef ScalFMM_USE_DOUBLE_PRECISION
-    typedef double FReal;
-#else
-    typedef float FReal;
-#endif
-
 typedef long long int FSize;
 
 ///////////////////////////////////////////////////////

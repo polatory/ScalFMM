@@ -43,11 +43,12 @@
  * 
  */
 
+typedef double FReal;
 // Typedefs to shorten code
 typedef FBasicCell                                      CellClass;
-typedef FBasicParticleContainer< 0 >                    ContainerClass;
-typedef FSimpleLeaf< ContainerClass >                   LeafClass;
-typedef FOctree< CellClass, ContainerClass, LeafClass > OctreeClass;
+typedef FBasicParticleContainer<FReal, 0, FReal >                    ContainerClass;
+typedef FSimpleLeaf<FReal, ContainerClass >                   LeafClass;
+typedef FOctree<FReal, CellClass, ContainerClass, LeafClass > OctreeClass;
 
 namespace FPD = FParameterDefinitions;
 
@@ -74,7 +75,6 @@ int main(int argc, char ** argv)
                          FPD::OutputFile, 
                          LocalOptionHist);
 
-
     // Octree, input and output parameters
     const int TreeHeight   = FParameters::getValue(argc,argv,FPD::OctreeHeight.options, 4);
     const int SubTreeHeight= FParameters::getValue(argc,argv,FPD::OctreeSubHeight.options, 1);
@@ -96,7 +96,7 @@ int main(int argc, char ** argv)
     // The loader reads FMA formated files. The file header is read
     // automatically : we have basic information on the tree
     // structure. Initially, the tree is empty.
-    FFmaGenericLoader loader(inFileName.c_str()); 
+    FFmaGenericLoader<FReal> loader(inFileName.c_str());
     OctreeClass tree(TreeHeight, SubTreeHeight,loader.getBoxWidth(),loader.getCenterOfBox());
 
     std::cout << newline
@@ -106,7 +106,7 @@ int main(int argc, char ** argv)
               << std::endl << std::endl;
 
     FReal  physicalValue;
-    FPoint particlePosition,
+    FPoint<FReal> particlePosition,
         minPos(loader.getBoxWidth(),loader.getBoxWidth(),loader.getBoxWidth()),
         maxPos(0., 0., 0.);
 

@@ -55,8 +55,9 @@ int main(int argc, char ** argv){
     const std::string filename1(FParameters::getStr(argc,argv,FParameterDefinitions::InputFileOne.options,   "data.fma"));
     const std::string filename2(FParameters::getStr(argc,argv,FParameterDefinitions::InputFileTwow.options,   "data.fma"));
 
-	FFmaGenericLoader loader1(filename1);
-	FFmaGenericLoader loader2(filename2);
+    typedef double FReal;
+    FFmaGenericLoader<FReal> loader1(filename1);
+    FFmaGenericLoader<FReal> loader2(filename2);
 	//
 	// Allocation
 	//
@@ -70,8 +71,8 @@ int main(int argc, char ** argv){
 		std::cerr << "Wrong files only " << std::min(loader2.getNbRecordPerline(),nbData)<<  " to read."<<std::endl ;
 		return -2 ;
 	}
-	FmaRWParticle<8,8>* const particles1 = new FmaRWParticle<8,8>[nbParticles];
-	FmaRWParticle<8,8>* const particles2 = new FmaRWParticle<8,8>[nbParticles];
+    FmaRWParticle<FReal,8,8>* const particles1 = new FmaRWParticle<FReal,8,8>[nbParticles];
+    FmaRWParticle<FReal,8,8>* const particles2 = new FmaRWParticle<FReal,8,8>[nbParticles];
 
 
 	//
@@ -79,7 +80,7 @@ int main(int argc, char ** argv){
 	loader2.fillParticle(particles2,nbParticles);
 
  
-    const int error = compareTwoArrays("TAG", nbParticles, particles1, particles2);
+    const int error = compareTwoArrays<FReal, FmaRWParticle<FReal,8,8>* >("TAG", nbParticles, particles1, particles2);
 
 	//
     delete[] particles1 ;

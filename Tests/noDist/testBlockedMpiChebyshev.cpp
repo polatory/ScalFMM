@@ -50,6 +50,7 @@
 #include <memory>
 
 
+template <class FReal>
 int getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidth,
                       const FReal boxWidthAtLeafLevel, const int treeHeight) {
     FAssertLF( (inRelativePosition >= 0 && inRelativePosition <= boxWidth), "inRelativePosition : ",inRelativePosition );
@@ -60,9 +61,10 @@ int getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidth,
     return static_cast<int>(indexFReal);
 }
 
-FTreeCoordinate getCoordinateFromPosition(const FPoint& centerOfBox, const FReal boxWidth, const int treeHeight,
-                                          const FPoint& pos) {
-    const FPoint boxCorner(centerOfBox,-(boxWidth/2));
+template <class FReal>
+FTreeCoordinate getCoordinateFromPosition(const FPoint<FReal>& centerOfBox, const FReal boxWidth, const int treeHeight,
+                                          const FPoint<FReal>& pos) {
+    const FPoint<FReal> boxCorner(centerOfBox,-(boxWidth/2));
     const FReal boxWidthAtLeafLevel(boxWidth/FReal(1<<(treeHeight-1)));
 
     // box coordinate to host the particle
@@ -83,20 +85,21 @@ int main(int argc, char* argv[]){
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::NbThreads,
                          LocalOptionBlocSize, LocalOptionNoValidate);
 
+    typedef double FReal;
     // Initialize the types
     static const int ORDER = 6;
-    typedef FInterpMatrixKernelR MatrixKernelClass;
+    typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
 
     typedef FChebCellPODCore         GroupCellSymbClass;
-    typedef FChebCellPODPole<ORDER>  GroupCellUpClass;
-    typedef FChebCellPODLocal<ORDER> GroupCellDownClass;
-    typedef FChebCellPOD<ORDER>      GroupCellClass;
+    typedef FChebCellPODPole<FReal,ORDER>  GroupCellUpClass;
+    typedef FChebCellPODLocal<FReal,ORDER> GroupCellDownClass;
+    typedef FChebCellPOD<FReal,ORDER>      GroupCellClass;
 
 
-    typedef FP2PGroupParticleContainer<>          GroupContainerClass;
-    typedef FGroupTree< GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
+    typedef FP2PGroupParticleContainer<FReal>          GroupContainerClass;
+    typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
 
-    typedef FStarPUAllCpuCapacities<FChebSymKernel<GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
+    typedef FStarPUAllCpuCapacities<FChebSymKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
     typedef FGroupTaskStarPUMpiAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper> GroupAlgorithm;
 
@@ -113,16 +116,16 @@ int main(int argc, char* argv[]){
 
     // init particles position and physical value
     struct TestParticle{
-        FPoint position;
+        FPoint<FReal> position;
         FReal physicalValue;
-        const FPoint& getPosition(){
+        const FPoint<FReal>& getPosition(){
             return position;
         }
     };
 
     // open particle file
     std::cout << "Opening : " << filename << "\n" << std::endl;
-    FMpiFmaGenericLoader loader(filename,mpiComm.global());
+    FMpiFmaGenericLoader<FReal> loader(filename,mpiComm.global());
     FAssertLF(loader.isOpen());
 
     TestParticle* allParticles = new TestParticle[loader.getMyNumberOfParticles()];
@@ -133,7 +136,7 @@ int main(int argc, char* argv[]){
 
     FVector<TestParticle> myParticles;
     FLeafBalance balancer;
-    FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(mpiComm.global(),allParticles,
+    FMpiTreeBuilder< FReal,TestParticle >::DistributeArrayToContainer(mpiComm.global(),allParticles,
                                                                 loader.getMyNumberOfParticles(),
                                                                 loader.getCenterOfBox(),
                                                                 loader.getBoxWidth(),TreeHeight,
@@ -166,7 +169,7 @@ int main(int argc, char* argv[]){
 
 
     // Put the data into the tree
-    FP2PParticleContainer<> myParticlesInContainer;
+    FP2PParticleContainer<FReal> myParticlesInContainer;
     for(int idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
         myParticlesInContainer.push(myParticles[idxPart].position,
                                     myParticles[idxPart].physicalValue);
@@ -196,12 +199,12 @@ int main(int argc, char* argv[]){
 
 
     if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
-        typedef FP2PParticleContainer<> ContainerClass;
-        typedef FSimpleLeaf< ContainerClass >  LeafClass;
-        typedef FInterpMatrixKernelR MatrixKernelClass;
-        typedef FChebCell<ORDER> CellClass;
-        typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-        typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        typedef FP2PParticleContainer<FReal> ContainerClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
+        typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+        typedef FChebCell<FReal,ORDER> CellClass;
+        typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
+        typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithmThreadProc<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
         const FReal epsi = 1E-10;
@@ -226,12 +229,12 @@ int main(int argc, char* argv[]){
                 std::cout << "[Empty] Error cell should exist " << gcell.getMortonIndex() << "\n";
             }
             else {
-                FMath::FAccurater diffUp;
+                FMath::FAccurater<FReal> diffUp;
                 diffUp.add(cell->getMultipole(0), gcell.getMultipole(0), gcell.getVectorSize());
                 if(diffUp.getRelativeInfNorm() > epsi || diffUp.getRelativeL2Norm() > epsi){
                     std::cout << "[Up] Up is different at index " << gcell.getMortonIndex() << " level " << level << " is " << diffUp << "\n";
                 }
-                FMath::FAccurater diffDown;
+                FMath::FAccurater<FReal> diffDown;
                 diffDown.add(cell->getLocal(0), gcell.getLocal(0), gcell.getVectorSize());
                 if(diffDown.getRelativeInfNorm() > epsi || diffDown.getRelativeL2Norm() > epsi){
                     std::cout << "[Up] Down is different at index " << gcell.getMortonIndex() << " level " << level << " is " << diffDown << "\n";
@@ -239,7 +242,7 @@ int main(int argc, char* argv[]){
             }
         });
 
-        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<> >([&](GroupCellClass gcell, FP2PGroupParticleContainer<> * leafTarget){
+        groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<FReal> >([&](GroupCellClass gcell, FP2PGroupParticleContainer<FReal> * leafTarget){
             const ContainerClass* targets = treeCheck.getLeafSrc(gcell.getMortonIndex());
             if(targets == nullptr){
                 std::cout << "[Empty] Error leaf should exist " << gcell.getMortonIndex() << "\n";
@@ -268,8 +271,8 @@ int main(int argc, char* argv[]){
                               << " gnbPartsInLeafTarget " << gnbPartsInLeafTarget << " nbPartsInLeafTarget " << nbPartsInLeafTarget << "\n";
                 }
                 else{
-                    FMath::FAccurater potentialDiff;
-                    FMath::FAccurater fx, fy, fz;
+                    FMath::FAccurater<FReal> potentialDiff;
+                    FMath::FAccurater<FReal> fx, fy, fz;
                     for(int idxPart = 0 ; idxPart < nbPartsInLeafTarget ; ++idxPart){
                         if(gposX[idxPart] != posX[idxPart] || gposY[idxPart] != posY[idxPart]
                                 || gposZ[idxPart] != posZ[idxPart]){

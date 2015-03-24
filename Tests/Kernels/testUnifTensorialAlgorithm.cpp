@@ -61,6 +61,7 @@ int main(int argc, char* argv[])
                          FParameterDefinitions::OctreeHeight,FParameterDefinitions::NbThreads,
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile);
 
+    typedef double FReal;
     const char* const filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 3);
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
@@ -91,20 +92,20 @@ int main(int argc, char* argv[])
 
     // init particles position and physical value
     struct TestParticle{
-        FPoint position;
+        FPoint<FReal> position;
         FReal forces[3][NPOT];
         FReal physicalValue[NPV];
         FReal potential[NPOT];
     };
 
     // open particle file
-    FFmaGenericLoader loader(filename);
+    FFmaGenericLoader<FReal> loader(filename);
 
     if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 
     TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        FPoint position;
+        FPoint<FReal> position;
         FReal physicalValue = 0.0;
         loader.fillParticle(&position,&physicalValue);
 
@@ -174,9 +175,9 @@ int main(int argc, char* argv[])
 
         typedef FP2PParticleContainerIndexed<NRHS,NLHS> ContainerClass;
 
-        typedef FSimpleLeaf< ContainerClass >  LeafClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
         typedef FUnifCell<ORDER,NRHS,NLHS> CellClass;
-        typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+        typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
         typedef FUnifTensorialKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
         //  typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
@@ -221,8 +222,8 @@ int main(int argc, char* argv[])
 
         { // -----------------------------------------------------
             std::cout << "\nError computation ... " << std::endl;
-            FMath::FAccurater potentialDiff[NPOT];
-            FMath::FAccurater fx[NPOT], fy[NPOT], fz[NPOT];
+            FMath::FAccurater<FReal> potentialDiff[NPOT];
+            FMath::FAccurater<FReal> fx[NPOT], fy[NPOT], fz[NPOT];
 
             FReal checkPotential[20000][NPOT];
             FReal checkfx[20000][NPOT];

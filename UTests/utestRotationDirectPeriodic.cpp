@@ -34,14 +34,15 @@
 class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
     /** Here we test only the P2P */
     void TestPeriodicFmm(){
+        typedef double FReal;
         static const int P = 14;
         typedef FRotationCell<P>            CellClass;
-        typedef FP2PParticleContainerIndexed<>  ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
         typedef FRotationKernel< CellClass, ContainerClass, P >   KernelClass;
 
-        typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+        typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
         typedef FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
@@ -51,11 +52,11 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
         const int PeriodicDeep  = 2;
         const int nbParticles   = 100;
 
-        FRandomLoader loader(nbParticles);
+        FRandomLoader<FReal> loader(nbParticles);
       //
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
         struct TestParticle{
-            FPoint position;
+            FPoint<FReal> position;
             FReal forces[3];
             FReal physicalValue;
             FReal potential;
@@ -63,7 +64,7 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
         FReal coeff = -1.0, value = 0.10, sum = 0.0, coerr =0.0, a=0.0;
         TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            FPoint position;
+            FPoint<FReal> position;
             loader.fillParticle(&position);
             value *= coeff ;
             sum += value ;
@@ -113,7 +114,7 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
                         if(idxX ==0 && idxY == 0 && idxZ == 0) continue;
                         // next lines for test
 
-                        const FPoint offset(loader.getBoxWidth() * FReal(idxX),
+                        const FPoint<FReal> offset(loader.getBoxWidth() * FReal(idxX),
                                             loader.getBoxWidth() * FReal(idxY),
                                             loader.getBoxWidth() * FReal(idxZ));
 
@@ -144,8 +145,8 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
 
         // Compare
         Print("Compute Diff...");
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
+        FMath::FAccurater<FReal> potentialDiff;
+        FMath::FAccurater<FReal> fx, fy, fz;
        { // Check that each particle has been summed with all other
 
             tree.forEachLeaf([&](LeafClass* leaf){

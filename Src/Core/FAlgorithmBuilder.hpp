@@ -40,17 +40,18 @@ typedef int MPI_Comm;
  * @brief The FAlgorithmBuilder class
  * This class manage the creation of an algorithm.
  */
+template <class FReal>
 class FAlgorithmBuilder {
 public:
     /** To give the informtion to the kernel */
     struct SimulationProperties{
         const int height;
-        const FPoint centerOfBox;
+        const FPoint<FReal> centerOfBox;
         const FReal dimOfBox;
     };
 
     /** Get the simulation information from the properties (periodic or not etc.) */
-    static SimulationProperties BuildKernelSimulationProperties(const int realHeight, const FPoint realCenterOfBox, const FReal realDimOfBox,
+    static SimulationProperties BuildKernelSimulationProperties(const int realHeight, const FPoint<FReal> realCenterOfBox, const FReal realDimOfBox,
                                                    const bool isPeriodic = false, const int inUpperLevel = 0){
         if( isPeriodic == false ){
             // Simply return the original data
@@ -64,10 +65,10 @@ public:
 
             const FReal originalBoxWidth = realDimOfBox;
             const FReal originalBoxWidthDiv2 = originalBoxWidth/2.0;
-            const FPoint originalBoxCenter = realCenterOfBox;
+            const FPoint<FReal> originalBoxCenter = realCenterOfBox;
 
             const FReal offset = extendedBoxWidth/2;
-            const FPoint extendedBoxCenter( originalBoxCenter.getX() - originalBoxWidthDiv2 + offset,
+            const FPoint<FReal> extendedBoxCenter( originalBoxCenter.getX() - originalBoxWidthDiv2 + offset,
                            originalBoxCenter.getY() - originalBoxWidthDiv2 + offset,
                            originalBoxCenter.getZ() - originalBoxWidthDiv2 + offset);
 

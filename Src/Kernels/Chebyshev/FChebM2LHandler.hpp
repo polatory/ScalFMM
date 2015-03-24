@@ -29,7 +29,7 @@
 #include "FChebTensor.hpp"
 
 
-template <int ORDER>
+template <class FReal, int ORDER>
 unsigned int Compress(const FReal epsilon, const unsigned int ninteractions,
 											FReal* &U,	FReal* &C, FReal* &B);
 
@@ -63,7 +63,7 @@ unsigned int Compress(const FReal epsilon, const unsigned int ninteractions,
  *
  * @tparam ORDER interpolation order \f$\ell\f$
  */
-template <int ORDER, class MatrixKernelClass>
+template <class FReal, int ORDER, class MatrixKernelClass>
 class FChebM2LHandler : FNoCopyable
 {
 	enum {order = ORDER,
@@ -123,7 +123,7 @@ public:
 	 */
 	void ComputeAndCompressAndStoreInBinaryFileAndReadFromFileAndSet()
 	{
-		FChebM2LHandler<ORDER,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(epsilon);
+        FChebM2LHandler<FReal, ORDER,MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(epsilon);
 		this->ReadFromBinaryFileAndSet();
 	}
 
@@ -227,9 +227,9 @@ public:
 
 
 
-template <int ORDER, class MatrixKernelClass>
+template <class FReal, int ORDER, class MatrixKernelClass>
 unsigned int
-FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const MatrixKernelClass *const MatrixKernel, 
+FChebM2LHandler<FReal, ORDER, MatrixKernelClass>::ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
                                                               const FReal epsilon,
 																															FReal* &U,
 																															FReal* &C,
@@ -239,9 +239,9 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const MatrixKernel
 	if (U||C||B) throw std::runtime_error("Compressed M2L operators are already set");
 
 	// interpolation points of source (Y) and target (X) cell
-	FPoint X[nnodes], Y[nnodes];
+    FPoint<FReal> X[nnodes], Y[nnodes];
 	// set roots of target cell (X)
-	FChebTensor<order>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
+    FChebTensor<FReal, order>::setRoots(FPoint<FReal>(0.,0.,0.), FReal(2.), X);
 
 	// allocate memory and compute 316 m2l operators
 	FReal *_U, *_C, *_B;
@@ -253,8 +253,8 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const MatrixKernel
 			for (int k=-3; k<=3; ++k) {
 				if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
 					// set roots of source cell (Y)
-					const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
-					FChebTensor<order>::setRoots(cy, FReal(2.), Y);
+                    const FPoint<FReal> cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
+                    FChebTensor<FReal, order>::setRoots(cy, FReal(2.), Y);
 					// evaluate m2l operator
 					for (unsigned int n=0; n<nnodes; ++n)
 						for (unsigned int m=0; m<nnodes; ++m)
@@ -272,7 +272,7 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const MatrixKernel
 
 	//////////////////////////////////////////////////////////		
 	FReal weights[nnodes];
-	FChebTensor<order>::setRootOfWeights(weights);
+    FChebTensor<FReal, order>::setRootOfWeights(weights);
 	for (unsigned int i=0; i<316; ++i)
 		for (unsigned int n=0; n<nnodes; ++n) {
 			FBlas::scal(nnodes, weights[n], _C+i*nnodes*nnodes + n,  nnodes); // scale rows
@@ -281,7 +281,7 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const MatrixKernel
 	//////////////////////////////////////////////////////////		
 
 	// svd compression of M2L
-	const unsigned int rank	= Compress<ORDER>(epsilon, ninteractions, _U, _C, _B);
+    const unsigned int rank	= Compress<FReal, ORDER>(epsilon, ninteractions, _U, _C, _B);
 	if (!(rank>0)) throw std::runtime_error("Low rank must be larger then 0!");
 
 
@@ -327,9 +327,9 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompress(const MatrixKernel
 
 
 
-template <int ORDER, class MatrixKernelClass>
+template <class FReal, int ORDER, class MatrixKernelClass>
 void
-FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *const MatrixKernel, const FReal epsilon)
+FChebM2LHandler<FReal, ORDER, MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFile(const MatrixKernelClass *const MatrixKernel, const FReal epsilon)
 {
 	// measure time
 	FTic time; time.tic();
@@ -367,9 +367,9 @@ FChebM2LHandler<ORDER, MatrixKernelClass>::ComputeAndCompressAndStoreInBinaryFil
 }
 
 
-template <int ORDER, class MatrixKernelClass>
+template <class FReal, int ORDER, class MatrixKernelClass>
 void
-FChebM2LHandler<ORDER, MatrixKernelClass>::ReadFromBinaryFileAndSet()
+FChebM2LHandler<FReal, ORDER, MatrixKernelClass>::ReadFromBinaryFileAndSet()
 {
 	// measure time
 	FTic time; time.tic();
@@ -449,7 +449,7 @@ unsigned int ReadRankFromBinaryFile(const std::string& filename)
  * \ge \sigma_2 \ge \dots \ge \sigma_N\f$
  * @param[in] eps accuracy \f$\epsilon\f$
  */ 
-template <int ORDER>
+template <class FReal, int ORDER>
 unsigned int getRank(const FReal singular_values[], const double eps)
 {
 	enum {nnodes = TensorTraits<ORDER>::nnodes};
@@ -467,6 +467,7 @@ unsigned int getRank(const FReal singular_values[], const double eps)
 	return 0;
 }
 
+template <class FReal>
 unsigned int getRank(const FReal singular_values[], const unsigned int size, const double eps)
 {
 	const FReal nrm2 = FBlas::scpr(size, singular_values, singular_values);
@@ -492,7 +493,7 @@ unsigned int getRank(const FReal singular_values[], const unsigned int size, con
  * @param[out] C matrix of size \f$r\times 316 r\f$ storing \f$[C_1,\dots,C_{316}]\f$
  * @param[out] B matrix of size \f$\ell^3\times r\f$
  */
-template <int ORDER>
+template <class FReal, int ORDER>
 unsigned int Compress(const FReal epsilon, const unsigned int ninteractions,
 											FReal* &U,	FReal* &C, FReal* &B)
 {
@@ -523,7 +524,7 @@ unsigned int Compress(const FReal epsilon, const unsigned int ninteractions,
 		throw std::runtime_error("SVD did not converge with " + stream.str());
 	}
 	delete [] K_col;
-	const unsigned int k_col = getRank<ORDER>(S, epsilon);
+    const unsigned int k_col = getRank<FReal, ORDER>(S, epsilon);
 
 	// Q' -> B 
 	B = new FReal [nnodes*k_col];
@@ -541,7 +542,7 @@ unsigned int Compress(const FReal epsilon, const unsigned int ninteractions,
 		stream << info_row;
 		throw std::runtime_error("SVD did not converge with " + stream.str());
 	}
-	const unsigned int k_row = getRank<ORDER>(S, epsilon);
+    const unsigned int k_row = getRank<FReal, ORDER>(S, epsilon);
 	delete [] WORK;
 
 	// Q -> U

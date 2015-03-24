@@ -42,7 +42,7 @@
  */
 class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 	/** The test method to factorize all the test based on different kernels */
-	template <class CellClass, class ContainerClass, class KernelClass, class LeafClass,
+    template <class FReal, class CellClass, class ContainerClass, class KernelClass, class LeafClass,
 	class OctreeClass, class FmmClass>
 	void RunTest(){
 		// Warning in make test the exec dir it Build/UTests
@@ -50,7 +50,7 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 		const int nbSources = 5000;
 		const int nbTargets = 5000;
 
-		FRandomLoader loader(nbSources + nbTargets);
+		FRandomLoader<FReal> loader(nbSources + nbTargets);
 
 		Print("Number of particles:");
 		Print(loader.getNumberOfParticles());
@@ -63,9 +63,9 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 
 		const FReal physicalValue = 0.10;
 		//
-		FmaRWParticle<8,8>* const particlesTargets = new FmaRWParticle<8,8>[nbTargets];
+		FmaRWParticle<FReal, 8,8>* const particlesTargets = new FmaRWParticle<FReal, 8,8>[nbTargets];
 		for(int idxPart = 0 ; idxPart < nbTargets ; ++idxPart){
-			FPoint position;
+            FPoint<FReal> position;
 			loader.fillParticle(&position);
 			// put in tree
 			tree.insert(position, FParticleTypeTarget, idxPart, physicalValue);
@@ -78,9 +78,9 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 			particlesTargets[idxPart].setForces()[2]        = 0.0;
 		}
 
-		FmaRWParticle<8,8>* const particlesSources = new FmaRWParticle<8,8>[nbSources];
+		FmaRWParticle<FReal, 8,8>* const particlesSources = new FmaRWParticle<FReal, 8,8>[nbSources];
 		for(int idxPart = 0 ; idxPart < nbSources ; ++idxPart){
-			FPoint position;
+            FPoint<FReal> position;
 			loader.fillParticle(&position);
 			// put in tree
 			tree.insert(position, FParticleTypeSource, idxPart, physicalValue);
@@ -126,8 +126,8 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 		// Compare
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		Print("Compute Diff...");
-		FMath::FAccurater potentialDiff;
-		FMath::FAccurater fx, fy, fz;
+		FMath::FAccurater<FReal> potentialDiff;
+		FMath::FAccurater<FReal> fx, fy, fz;
 		{ // Check that each particle has been summed with all other
 
 			tree.forEachLeaf([&](LeafClass* leaf){
@@ -222,13 +222,14 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 
 	/** Rotation */
 	void TestRotation(){
+        typedef double FReal;
 		typedef FTypedRotationCell<P>    CellClass;
-		typedef FP2PParticleContainerIndexed<>  ContainerClass;
+		typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
 		typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
 
 		typedef FTypedLeaf<ContainerClass >                     LeafClass;
-		typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+		typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
 		typedef FFmmAlgorithmTsm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
@@ -236,13 +237,14 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 	}
 
 	void TestRotationThread(){
+        typedef double FReal;
 		typedef FTypedRotationCell<P>    CellClass;
-		typedef FP2PParticleContainerIndexed<>  ContainerClass;
+		typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
 		typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
 
 		typedef FTypedLeaf<ContainerClass >                     LeafClass;
-		typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+		typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
 		typedef FFmmAlgorithmThreadTsm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 

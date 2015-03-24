@@ -48,12 +48,12 @@ class FTreeCoordinate;
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Chebyshev interpolation order
  */
-template < class CellClass, class ContainerClass,   class MatrixKernelClass, int ORDER, int NVALS = 1>
+template < class FReal, class CellClass, class ContainerClass,   class MatrixKernelClass, int ORDER, int NVALS = 1>
 class FChebSymKernel
-    : public FAbstractChebKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+    : public FAbstractChebKernel<FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 {
-    typedef FAbstractChebKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS> AbstractBaseClass;
-    typedef SymmetryHandler<ORDER, MatrixKernelClass::Type> SymmetryHandlerClass;
+    typedef FAbstractChebKernel<FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS> AbstractBaseClass;
+    typedef SymmetryHandler<FReal, ORDER, MatrixKernelClass::Type> SymmetryHandlerClass;
     enum {nnodes = AbstractBaseClass::nnodes};
 
     /// Needed for P2P and M2L operators
@@ -109,7 +109,7 @@ public:
      */
     FChebSymKernel(const int inTreeHeight,
                    const FReal inBoxWidth,
-                   const FPoint& inBoxCenter,
+                   const FPoint<FReal>& inBoxCenter,
                    const MatrixKernelClass *const inMatrixKernel,
                    const FReal Epsilon)
       : AbstractBaseClass(inTreeHeight, inBoxWidth, inBoxCenter),
@@ -132,7 +132,7 @@ public:
      */
     FChebSymKernel(const int inTreeHeight,
                    const FReal inBoxWidth,
-                   const FPoint& inBoxCenter,
+                   const FPoint<FReal>& inBoxCenter,
                    const MatrixKernelClass *const inMatrixKernel) :FChebSymKernel(inTreeHeight,inBoxWidth, inBoxCenter,inMatrixKernel,FMath::pow(10.0,static_cast<FReal>(-ORDER)))
     {}
 
@@ -179,7 +179,7 @@ public:
                      const ContainerClass* const SourceParticles/*, const int level = AbstractBaseClass::TreeHeight*/)
     {
         // apply Sy
-        const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
+        const FPoint<FReal> LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
         AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
                                                   LeafCell->getMultipole(0), SourceParticles);
     }
@@ -442,7 +442,7 @@ public:
     void L2P(const CellClass* const LeafCell,
              ContainerClass* const TargetParticles)
     {
-        const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
+        const FPoint<FReal> LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
 //      // a) apply Sx
 //      AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,
 //                                                AbstractBaseClass::BoxWidthLeaf,
@@ -466,7 +466,7 @@ public:
              ContainerClass* const NeighborSourceParticles[27],
              const int /* size */)
     {
-        DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
+        DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
     }
 
 
@@ -474,7 +474,7 @@ public:
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                    ContainerClass* const inNeighbors[27], const int /*inSize*/)
     {
-        DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
+        DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
     }
 
 };

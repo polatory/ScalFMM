@@ -223,7 +223,7 @@ struct ScalFmmCoreHandle {
         // Read/Write parameter
         int treeHeight;     //  Number of level in the octree
         FReal boxWidth;    // Simulation box size (root level)
-        FPoint boxCenter; // Center position of the box simulation(FReal[3])
+        FPoint<FReal> boxCenter; // Center position of the box simulation(FReal[3])
     };
 
     ScalFmmCoreConfig config;

@@ -21,7 +21,7 @@ namespace FP2P {
   /*
    * FullMutualMultiRhs (generic version)
    */
-  template <class ContainerClass, typename MatrixKernelClass>
+  template <class FReal, class ContainerClass, typename MatrixKernelClass>
   inline void FullMutualMultiRhs(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                                  const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
 
@@ -54,8 +54,8 @@ namespace FP2P {
                 for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
 
                     // Compute kernel of interaction and its derivative
-                    const FPoint sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
-                    const FPoint targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
+                    const FPoint<FReal> sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
+                    const FPoint<FReal> targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
                     FReal Kxy[1];
                     FReal dKxy[3];
                     MatrixKernel->evaluateBlockAndDerivative(sourcePoint.getX(),sourcePoint.getY(),sourcePoint.getZ(),
@@ -89,8 +89,8 @@ namespace FP2P {
         for(int idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){
 
             // Compute kernel of interaction...
-            const FPoint sourcePoint(targetsX[idxSource],targetsY[idxSource],targetsZ[idxSource]);
-            const FPoint targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
+            const FPoint<FReal> sourcePoint(targetsX[idxSource],targetsY[idxSource],targetsZ[idxSource]);
+            const FPoint<FReal> targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
             FReal Kxy[1];
             FReal dKxy[3];
             MatrixKernel->evaluateBlockAndDerivative(sourcePoint.getX(),sourcePoint.getY(),sourcePoint.getZ(),
@@ -123,7 +123,7 @@ namespace FP2P {
 /**
    * FullRemoteMultiRhs (generic version)
    */
-template <class ContainerClass, typename MatrixKernelClass>
+template <class FReal, class ContainerClass, typename MatrixKernelClass>
 inline void FullRemoteMultiRhs(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                        const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
 
@@ -152,8 +152,8 @@ inline void FullRemoteMultiRhs(ContainerClass* const FRestrict inTargets, Contai
                 for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
 
                     // Compute kernel of interaction...
-                    const FPoint sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
-                    const FPoint targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
+                    const FPoint<FReal> sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
+                    const FPoint<FReal> targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
                     FReal Kxy[1];
                     FReal dKxy[3];
                     MatrixKernel->evaluateBlockAndDerivative(sourcePoint.getX(),sourcePoint.getY(),sourcePoint.getZ(),

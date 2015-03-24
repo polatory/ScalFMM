@@ -63,17 +63,18 @@ int main(int argc, char* argv[])
                          FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::NbThreads);
 
+    typedef double FReal;
     const unsigned int ORDER = 7;
     const FReal epsilon = FReal(1e-7);
 
-    typedef FP2PParticleContainerIndexed<> ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >  LeafClass;
+    typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
 
-    typedef FInterpMatrixKernelR MatrixKernelClass;
-    typedef FChebCell<ORDER> CellClass;
-    typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+    typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+    typedef FChebCell<FReal,ORDER> CellClass;
+    typedef FOctree<FReal,CellClass,ContainerClass,LeafClass> OctreeClass;
 
-    typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+    typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
     typedef FFmmAlgorithmThreadProc<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
     FMpi app(argc,argv);
@@ -94,16 +95,16 @@ int main(int argc, char* argv[])
 
     // init particles position and physical value
     struct TestParticle{
-        FPoint position;
+        FPoint<FReal> position;
         FReal physicalValue;
-        const FPoint& getPosition(){
+        const FPoint<FReal>& getPosition(){
             return position;
         }
     };
 
     // open particle file
     std::cout << "Opening : " <<filename << "\n" << std::endl;
-    FMpiFmaGenericLoader loader(filename,app.global());
+    FMpiFmaGenericLoader<FReal> loader(filename,app.global());
     if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 
     OctreeClass tree(TreeHeight, SubTreeHeight,loader.getBoxWidth(),loader.getCenterOfBox());
@@ -117,7 +118,7 @@ int main(int argc, char* argv[])
 
     FVector<TestParticle> finalParticles;
     FLeafBalance balancer;
-    FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles,
+    FMpiTreeBuilder< FReal,TestParticle >::DistributeArrayToContainer(app.global(),particles,
                                                                 loader.getMyNumberOfParticles(),
                                                                 tree.getBoxCenter(),
                                                                 tree.getBoxWidth(),tree.getHeight(),

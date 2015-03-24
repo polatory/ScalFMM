@@ -30,16 +30,17 @@
 class TestBuilder : public FUTester<TestBuilder> {
 
     void Test(){
+        typedef double FReal;
         typedef FTestCell                   CellClass;
-        typedef FTestParticleContainer      ContainerClass;
+        typedef FTestParticleContainer<FReal>      ContainerClass;
 
-        typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+        typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
         typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
 
         const int height = 5;
         const FReal dim = 1.0;
-        const FPoint center(0.0,0.0,0.0);
+        const FPoint<FReal> center(0.0,0.0,0.0);
 
         OctreeClass tree(height, 2, dim, center);
         KernelClass kernel;

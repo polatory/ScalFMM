@@ -91,25 +91,25 @@ int main(int argc, char* argv[])
 	// init timer
 	FTic time;
 
-	FMpiFmaGenericLoader loader(filename,app.global());
+    typedef double FReal;
+    FMpiFmaGenericLoader<FReal> loader(filename,app.global());
 
 	if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
 	////////////////////////////////////////////////////////////////////
 
 
 
-	// begin spherical kernel
-
+    // begin spherical kernel
 	// accuracy
 	const unsigned int ORDER = 7;
 	// typedefs
-	typedef FP2PParticleContainerIndexed<>                      ContainerClass;
-	typedef FSimpleLeaf< ContainerClass >                       LeafClass;
-	typedef FChebCell<ORDER>                                    CellClass;
-	typedef FOctree<CellClass,ContainerClass,LeafClass>         OctreeClass;
-	typedef FInterpMatrixKernelR                                MatrixKernelClass;
+    typedef FP2PParticleContainerIndexed<FReal>                      ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                       LeafClass;
+    typedef FChebCell<FReal,ORDER>                                    CellClass;
+    typedef FOctree<FReal,CellClass,ContainerClass,LeafClass>         OctreeClass;
+    typedef FInterpMatrixKernelR<FReal>                                MatrixKernelClass;
 	const MatrixKernelClass MatrixKernel;
-	typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
+    typedef FChebSymKernel<FReal, CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
 
 	//
 	typedef FFmmAlgorithmThreadProc<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClassProc;
@@ -129,9 +129,9 @@ int main(int argc, char* argv[])
 
 	  struct TestParticle{
 	    FSize index;
-	    FPoint position;
+        FPoint<FReal> position;
 	    FReal physicalValue;
-	    const FPoint& getPosition(){
+        const FPoint<FReal>& getPosition(){
 	      return position;
 	    }
 	  };
@@ -151,12 +151,12 @@ int main(int argc, char* argv[])
 	  }
 
 	  FVector<TestParticle> finalParticles;
-	  FLeafBalance balancer;
-	  // FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getMyNumberOfParticles(),
+      FLeafBalance balancer;
+	  // FMpiTreeBuilder< FReal,TestParticle >::ArrayToTree(app.global(), particles, loader.getMyNumberOfParticles(),
 	  //					 tree.getBoxCenter(),
 	  //					 tree.getBoxWidth(),
 	  //					 tree.getHeight(), &finalParticles,&balancer);
-	  FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles,
+      FMpiTreeBuilder< FReal, TestParticle >::DistributeArrayToContainer(app.global(),particles,
 								      loader.getMyNumberOfParticles(),
 								      tree.getBoxCenter(),
 								      tree.getBoxWidth(),tree.getHeight(),

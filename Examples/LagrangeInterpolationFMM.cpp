@@ -98,22 +98,22 @@ int main(int argc, char* argv[])
         // open particle file
         ////////////////////////////////////////////////////////////////////
         //
-        FFmaGenericLoader loader(filename);
+        FFmaGenericLoader<FReal> loader(filename);
         //
         ////////////////////////////////////////////////////////////////////
         // begin Lagrange kernel
-
+        typedef double FReal;
         // accuracy
         const unsigned int ORDER = 7;
         // typedefs
-        typedef FP2PParticleContainerIndexed<>                     ContainerClass;
-        typedef FSimpleLeaf< ContainerClass >                        LeafClass;
-        typedef FUnifCell<ORDER>                                            CellClass;
-        typedef FOctree<CellClass,ContainerClass,LeafClass>  OctreeClass;
+        typedef FP2PParticleContainerIndexed<FReal>                     ContainerClass;
+        typedef FSimpleLeaf<FReal,  ContainerClass >                        LeafClass;
+        typedef FUnifCell<FReal,ORDER>                                            CellClass;
+        typedef FOctree<FReal, CellClass,ContainerClass,LeafClass>  OctreeClass;
         //
-        typedef FInterpMatrixKernelR                                                                              MatrixKernelClass;
+        typedef FInterpMatrixKernelR<FReal>                                                                              MatrixKernelClass;
         const MatrixKernelClass MatrixKernel;
-        typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
+        typedef FUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
         //
 #ifdef _OPENMP
         typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
@@ -130,7 +130,7 @@ int main(int argc, char* argv[])
                 std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
                 time.tic();
                 //
-                FPoint position;
+                FPoint<FReal> position;
                 FReal physicalValue = 0.0;
                 //
                 for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){

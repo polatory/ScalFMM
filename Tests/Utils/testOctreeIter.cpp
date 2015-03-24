@@ -48,8 +48,9 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::NbParticles, FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight);
 
+    typedef double FReal;
     typedef FBasicParticleContainer<0>     ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
@@ -66,13 +67,13 @@ int main(int argc, char ** argv){
     srand48 ( 1 ); // volontary set seed to constant
     // -----------------------------------------------------
 
-    OctreeClass tree(NbLevels, NbSubLevels, 1.0, FPoint(0.5,0.5,0.5));
+    OctreeClass tree(NbLevels, NbSubLevels, 1.0, FPoint<FReal>(0.5,0.5,0.5));
 
     // -----------------------------------------------------
     std::cout << "Creating and inserting " << NbPart << " particles ..." << std::endl;
     counterTime.tic();
     {
-        FPoint particle;
+        FPoint<FReal> particle;
         for(long idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             particle.setPosition(FReal(drand48()),FReal(drand48()),FReal(drand48()));
             tree.insert(particle);

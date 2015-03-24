@@ -33,7 +33,7 @@
 
 
 //TODO spécifier les arguments.
-template< class CellClass, class ContainerClass, int P, int order>
+template< class FReal, class CellClass, class ContainerClass, int P, int order>
 class FTaylorKernel : public FAbstractKernels<CellClass,ContainerClass> {
   
 private:
@@ -48,7 +48,7 @@ private:
   const int   treeHeight;             //< The height of the tree
   const FReal widthAtLeafLevel;       //< width of box at leaf level
   const FReal widthAtLeafLevelDiv2;   //< width of box at leaf leve div 2
-  const FPoint boxCorner;             //< position of the box corner
+  const FPoint<FReal> boxCorner;             //< position of the box corner
   
   FReal factorials[2*P+1];             //< This contains the factorial until P
   FReal arrayDX[P+2],arrayDY[P+2],arrayDZ[P+2] ; //< Working arrays
@@ -78,8 +78,8 @@ private:
 
 
   /** Return the position of a leaf from its tree coordinate */
-  FPoint getLeafCenter(const FTreeCoordinate coordinate) const {
-    return FPoint(
+  FPoint<FReal> getLeafCenter(const FTreeCoordinate coordinate) const {
+    return FPoint<FReal>(
 		  FReal(coordinate.getX()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
 		  FReal(coordinate.getY()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getY(),
 		  FReal(coordinate.getZ()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getZ());
@@ -91,7 +91,7 @@ private:
    * @param FTreeCoordinate
    * @param inLevel the current level of Cell
    */
-  FPoint getCellCenter(const FTreeCoordinate coordinate, int inLevel)
+  FPoint<FReal> getCellCenter(const FTreeCoordinate coordinate, int inLevel)
   {
 
     //Set the boxes width needed
@@ -108,7 +108,7 @@ private:
     FReal Y = boxCorner.getY() + FReal(b)*widthAtCurrentLevel + widthAtCurrentLevelDiv2;
     FReal Z = boxCorner.getZ() + FReal(c)*widthAtCurrentLevel + widthAtCurrentLevelDiv2;
     
-    FPoint cCenter = FPoint(X,Y,Z);
+    FPoint<FReal> cCenter = FPoint<FReal>(X,Y,Z);
     return cCenter;
   }
 
@@ -425,7 +425,7 @@ private:
 public:
   
   /*Constructor, need system information*/
-  FTaylorKernel(const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter) :
+  FTaylorKernel(const int inTreeHeight, const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter) :
     boxWidth(inBoxWidth),
     treeHeight(inTreeHeight),
     widthAtLeafLevel(inBoxWidth/FReal(1 << (inTreeHeight-1))),
@@ -465,7 +465,7 @@ public:
 	   const ContainerClass* const particles)
   {
     //Copying cell center position once and for all
-    const FPoint& cellCenter = getLeafCenter(pole->getCoordinate());
+    const FPoint<FReal>& cellCenter = getLeafCenter(pole->getCoordinate());
     FReal * FRestrict multipole = pole->getMultipole();
     FMemUtils::memset(multipole,0,SizeVector*sizeof(FReal(0.0)));
     FReal multipole2[SizeVector] ;
@@ -537,7 +537,7 @@ public:
     FReal dy = 0.0;
     FReal dz = 0.0;
     //Center point of parent cell
-    const FPoint& cellCenter = getCellCenter(pole->getCoordinate(),inLevel);
+    const FPoint<FReal>& cellCenter = getCellCenter(pole->getCoordinate(),inLevel);
     FReal * FRestrict mult = pole->getMultipole();
     
     //Iteration over the eight children
@@ -546,7 +546,7 @@ public:
     for(idxChild=0 ; idxChild<8 ; ++idxChild)
       {
 	if(child[idxChild]){ //Test if child exists
-	  const FPoint& childCenter = getCellCenter(child[idxChild]->getCoordinate(),inLevel+1);
+      const FPoint<FReal>& childCenter = getCellCenter(child[idxChild]->getCoordinate(),inLevel+1);
 	  const FReal * FRestrict multChild = child[idxChild]->getMultipole();
 	  
 	  //Set the distance between centers of cells
@@ -617,7 +617,7 @@ public:
   {
     //Iteration over distantNeighbors
     int idxNeigh;
-    const FPoint & locCenter = getCellCenter(local->getCoordinate(),inLevel);
+    const FPoint<FReal> & locCenter = getCellCenter(local->getCoordinate(),inLevel);
     FReal * FRestrict iterLocal = local->getLocal();
     
     for(idxNeigh=0 ; idxNeigh<343 ; ++idxNeigh){
@@ -625,7 +625,7 @@ public:
       //Need to test if current neighbor is one of the interaction list
       if(distantNeighbors[idxNeigh]){
 	
-	const FPoint curDistCenter = getCellCenter(distantNeighbors[idxNeigh]->getCoordinate(),inLevel);
+    const FPoint<FReal> curDistCenter = getCellCenter(distantNeighbors[idxNeigh]->getCoordinate(),inLevel);
 	FMemUtils::memset(this->_PsiVector,0,sizeDerivative*sizeof(FReal(0.0)));
 
 	// Compute derivatives on  locCenter - curDistCenter
@@ -738,7 +738,7 @@ public:
 	   CellClass* FRestrict * const FRestrict childCell, 
 	   const int inLevel)
   {
-    FPoint locCenter = getCellCenter(fatherCell->getCoordinate(),inLevel);
+    FPoint<FReal> locCenter = getCellCenter(fatherCell->getCoordinate(),inLevel);
     
     // Get father local expansion
     const FReal* FRestrict fatherExpansion = fatherCell->getLocal()  ;
@@ -752,7 +752,7 @@ public:
       if(childCell[idxChild]){ //test if child exists
 	
 	FReal* FRestrict childExpansion = childCell[idxChild]->getLocal() ;
-	const FPoint& childCenter = getCellCenter(childCell[idxChild]->getCoordinate(),inLevel+1);
+    const FPoint<FReal>& childCenter = getCellCenter(childCell[idxChild]->getCoordinate(),inLevel+1);
 	
 	//Set the distance between centers of cells
 	// Child - father
@@ -810,7 +810,7 @@ public:
     void L2P(const CellClass* const local, 
 	     ContainerClass* const particles)
     {
-      FPoint locCenter = getLeafCenter(local->getCoordinate());
+      FPoint<FReal> locCenter = getLeafCenter(local->getCoordinate());
       //Iterator over particles
       int nbPart = particles->getNbParticles();
       
@@ -882,13 +882,13 @@ public:
 	   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
 	   ContainerClass* const directNeighborsParticles[27], const int /*size*/)
   {
-    FP2PRT<FReal>::FullMutual<ContainerClass>(targets,directNeighborsParticles,14);
+    FP2PRT<FReal>::template FullMutual<ContainerClass>(targets,directNeighborsParticles,14);
   }
 
   void P2PRemote(const FTreeCoordinate& /*inPosition*/,
          ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
          ContainerClass* const inNeighbors[27], const int /*inSize*/){
-    FP2PRT<FReal>::FullRemote<ContainerClass>(inTargets,inNeighbors,27);
+    FP2PRT<FReal>::template FullRemote<ContainerClass>(inTargets,inNeighbors,27);
   }
 
 };

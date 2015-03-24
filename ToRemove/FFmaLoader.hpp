@@ -54,7 +54,7 @@
 class FFmaLoader : public FAbstractLoader {
 protected:
     std::ifstream file;                   //< The file to read
-    FPoint           centerOfBox;     //< The center of box read from file
+    FPoint<FReal>           centerOfBox;     //< The center of box read from file
     FReal boxWidth;                     //< the box width read from file
     int nbParticles;                       //< the number of particles read from file
 
@@ -105,7 +105,7 @@ public:
       * The center of the box from the simulation file opened by the loader
       * @return box center
       */
-    FPoint getCenterOfBox() const{
+    FPoint<FReal> getCenterOfBox() const{
         return this->centerOfBox;
     }
 
@@ -122,7 +122,7 @@ public:
       * @warning to work with the loader, particles has to expose a setPosition method
       * @param the particle to fill
       */
-    void fillParticle(FPoint*const inParticlePositions, FReal*const inPhysicalValue){
+    void fillParticle(FPoint<FReal>*const inParticlePositions, FReal*const inPhysicalValue){
         FReal x,y,z,data;
         this->file >> x >> y >> z >> data;
         inParticlePositions->setPosition(x,y,z);

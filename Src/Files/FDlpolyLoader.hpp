@@ -25,10 +25,11 @@
 #include "FAbstractLoader.hpp"
 #include "../Utils/FPoint.hpp"
 
-class FDlpolyLoader : public FAbstractLoader {
+template <class FReal>
+class FDlpolyLoader : public FAbstractLoader<FReal> {
 protected:
 //    std::ifstream file;         //< The file to read
-    FPoint        centerOfBox;          //< The center of box read from file
+    FPoint<FReal>        centerOfBox;          //< The center of box read from file
     FReal         boxWidth;             //< the box width read from file
     int           nbParticles;            //< the number of particles read from file
     int           levcfg  ;               //< DL_POLY CONFIG file key. 0,1 or 2
@@ -45,7 +46,7 @@ public:
     virtual ~FDlpolyLoader()
     {}
     virtual bool isOpen() const =0;
-    virtual void fillParticle(FPoint* inPosition, FReal inForces[3], FReal* inPhysicalValue, int* inIndex)=0;
+    virtual void fillParticle(FPoint<FReal>* inPosition, FReal inForces[3], FReal* inPhysicalValue, int* inIndex)=0;
 
     /**
        * To get the number of particles from this loader
@@ -59,7 +60,7 @@ public:
        * The center of the box from the simulation file opened by the loader
        * @return box center
        */
-     FPoint getCenterOfBox() const{
+     FPoint<FReal> getCenterOfBox() const{
          return this->centerOfBox;
      }
 
@@ -131,10 +132,11 @@ public:
 * Please read the license
 * Particle has to extend {FExtendPhysicalValue,FExtendPosition}
 */
-class FDlpolyAsciiLoader : public FDlpolyLoader {
+template <class FReal>
+class FDlpolyAsciiLoader : public FDlpolyLoader<FReal> {
 private:
     std::ifstream file;         //< The file to read
-//    FPoint        centerOfBox;          //< The center of box read from file
+//    FPoint<FReal>        centerOfBox;          //< The center of box read from file
 //    FReal         boxWidth;             //< the box width read from file
 //    int           nbParticles;            //< the number of particles read from file
 //    int           levcfg  ;               //< DL_POLY CONFIG file key. 0,1 or 2
@@ -170,7 +172,7 @@ public:
             int imcon ;
             //int tempi(0);
             FReal tempf(0);
-            file >> levcfg >> imcon >> this->nbParticles >> this->energy;
+            file >> FDlpolyLoader<FReal>::levcfg >> imcon >> FDlpolyLoader<FReal>::nbParticles >> FDlpolyLoader<FReal>::energy;
             // Periodic case
             if( imcon > 0 ) {
                 FReal widthx, widthy, widthz;
@@ -218,7 +220,7 @@ public:
            7.64746800518      -1.34490700206      -2.81036521708
           -4406.48579000       6815.52906417       10340.2577024
       */
-    void fillParticle(FPoint* inPosition, FReal inForces[3], FReal* inPhysicalValue, int* inIndex){
+    void fillParticle(FPoint<FReal>* inPosition, FReal inForces[3], FReal* inPhysicalValue, int* inIndex){
 
     	FReal x, y, z, fx=0.0, fy=0.0, fz=0.0, vx=0.0, vy=0.0, vz=0.0;
     	int index;
@@ -233,9 +235,9 @@ public:
 
     	std::getline(file, line); // needed to skip the end of the line in non periodic case
   //  	std::cout << "line: " << line << std::endl;
-    	if ( levcfg == 0) {
+        if ( FDlpolyLoader<FReal>::levcfg == 0) {
     		file >> x >> y >> z;
-    	}else if ( levcfg == 1) {
+        }else if ( FDlpolyLoader<FReal>::levcfg == 1) {
     		file >> x >> y >> z;
     		file >> vx >> vy >> vz;
     	}else {
@@ -251,16 +253,17 @@ public:
     	inForces[1] = fy;
     	inForces[2] = fz;
 
-    	getPhysicalValue(atomType, *inPhysicalValue,*inIndex  );
+        FDlpolyLoader<FReal>::getPhysicalValue(atomType, *inPhysicalValue,*inIndex  );
 
     }
 };
 
 
-class FDlpolyBinLoader : public FDlpolyLoader {
+template <class FReal>
+class FDlpolyBinLoader : public FDlpolyLoader<FReal> {
 protected:
     FILE* const file;         //< The file to read
-//    FPoint centerOfBox;    //< The center of box read from file
+//    FPoint<FReal> centerOfBox;    //< The center of box read from file
 //    double boxWidth;             //< the box width read from file
 //    int nbParticles;            //< the number of particles read from file
 //    double energy;
@@ -301,18 +304,18 @@ public:
     FDlpolyBinLoader(const char* const filename): file(fopen(filename, "rb")) {
         // test if open
         if(this->file != nullptr){
-            energy = readValue<double>();
+            FDlpolyLoader<FReal>::energy = readValue<double>();
             double boxDim[3];
-            boxWidth = readArray<double>(boxDim,3)[0];
-            nbParticles = readValue<int>();
+            FDlpolyLoader<FReal>::boxWidth = readArray<double>(boxDim,3)[0];
+            FDlpolyLoader<FReal>::nbParticles = readValue<int>();
 
-            centerOfBox.setPosition(0.0,0.0,0.0);
+            FDlpolyLoader<FReal>::centerOfBox.setPosition(0.0,0.0,0.0);
         }
         else {
-            this->boxWidth    = 0;
-            this->nbParticles = 0;
+            FDlpolyLoader<FReal>::boxWidth    = 0;
+            FDlpolyLoader<FReal>::nbParticles = 0;
         }
-        	std::cout << "nbParticles  "<< nbParticles <<std::endl;
+            std::cout << "nbParticles  "<< FDlpolyLoader<FReal>::nbParticles <<std::endl;
     }
     /**
     * Default destructor, simply close the file
@@ -341,7 +344,7 @@ public:
 //      * The center of the box from the simulation file opened by the loader
 //      * @return box center
 //      */
-//    FPoint getCenterOfBox() const{
+//    FPoint<FReal> getCenterOfBox() const{
 //        return this->centerOfBox;
 //    }
 //
@@ -363,7 +366,7 @@ public:
       * @param the particle to fill
         [index charge x y z fx fy fz]
       */
-    void fillParticle(FPoint* inPosition, FReal inForces[3], FReal* inPhysicalValue, int* inIndex){
+    void fillParticle(FPoint<FReal>* inPosition, FReal inForces[3], FReal* inPhysicalValue, int* inIndex){
         double x, y, z, fx, fy, fz, charge;
         int index;
 

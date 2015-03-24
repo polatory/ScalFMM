@@ -34,7 +34,7 @@
 
 // 
 #include "../../Src/Utils/FDft.hpp"
-#include "../../Src/Utils/FComplex.hpp" 
+#include "../../Src/Utils/FComplex.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
@@ -42,6 +42,7 @@
 int main(int argc, char ** argv){
     FHelpDescribeAndExit(argc, argv, "Test the FFT (only the code is interesting).");
 
+    typedef double FReal;
     const FReal FRandMax = FReal(RAND_MAX);
 
     FTic time;
@@ -100,9 +101,9 @@ int main(int argc, char ** argv){
     std::cout<<std::endl;
 
     // now compute via DFT and use convolution theorem
-    FComplex FK[N];
-    FComplex FY[N];
-    FComplex FX[N];
+    FComplex<FReal> FK[N];
+    FComplex<FReal> FY[N];
+    FComplex<FReal> FX[N];
     FReal iFX[N];
 
     // Init DFTor
@@ -117,7 +118,7 @@ int main(int argc, char ** argv){
 
     // Initialize manually
     //  for(unsigned int s=0; s<N; ++s){
-    //    FX[s] = FY[s] = FK[s] =FComplex(0.0,0.0); // init
+    //    FX[s] = FY[s] = FK[s] =FComplex<FReal>(0.0,0.0); // init
     //    iFX[s]=0.0;
     //  }
     // ... or using Blas routines
@@ -177,7 +178,7 @@ int main(int argc, char ** argv){
         std::cout<< iFX[i] << ", ";
     }std::cout<<std::endl;
 
-    std::cout << "Relative error   = " << FMath::FAccurater( X, iFX, N) << std::endl;
+    std::cout << "Relative error   = " << FMath::FAccurater<FReal>( X, iFX, N) << std::endl;
 
 
     return 0;

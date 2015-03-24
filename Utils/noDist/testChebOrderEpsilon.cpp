@@ -61,6 +61,8 @@
 #include "Utils/FTemplate.hpp"
 
 
+typedef double FReal;
+
 void usage() {
     std::cout << "Driver for all kernel (1/r kernel)" << std::endl;
     std::cout <<     "Options  "<< std::endl
@@ -74,11 +76,11 @@ void usage() {
 
 
 template <class OctreeClass, class LeafClass>
-void checkResAndPrint(OctreeClass * tree, FmaRWParticle<8,8> * const particles,
+void checkResAndPrint(OctreeClass * tree, FmaRWParticle<FReal, 8,8> * const particles,
                       FReal energyD, std::string name,int order,double timeSpent, FReal epsilon){
     FReal energy = 0.0;
-    FMath::FAccurater potentialDiff;
-    FMath::FAccurater fx, fy, fz;
+    FMath::FAccurater<FReal> potentialDiff;
+    FMath::FAccurater<FReal> fx, fy, fz;
 
     { // Check that each particle has been summed with all other
 
@@ -136,7 +138,7 @@ void checkResAndPrint(OctreeClass * tree, FmaRWParticle<8,8> * const particles,
 struct ChebMainStruct{
     template <const unsigned int ORDER>
     static void For(int argc, char* argv[],FSize nbParticles,int TreeHeight, int SubTreeHeight,
-                    FReal BoxWidth, FPoint& CenterOfBox,FmaRWParticle<8,8> * const particles,
+                    FReal BoxWidth, FPoint<FReal>& CenterOfBox,FmaRWParticle<FReal, 8,8> * const particles,
                     FReal energyD,FReal totPhysicalValue)
     {
         //Global timer to be used
@@ -146,13 +148,13 @@ struct ChebMainStruct{
 
         //Start of kernels there
         {//Chebyshev
-            typedef FP2PParticleContainerIndexed<> ContainerClass;
-            typedef FSimpleLeaf<ContainerClass> LeafClass;
-            typedef FInterpMatrixKernelR MatrixKernelClass;
-            typedef FChebCell<ORDER> CellClass;
-            typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+            typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+            typedef FSimpleLeaf<FReal,ContainerClass> LeafClass;
+            typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+            typedef FChebCell<FReal,ORDER> CellClass;
+            typedef FOctree<FReal,CellClass,ContainerClass,LeafClass> OctreeClass;
 
-            typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+            typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
             typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
             // Create Matrix Kernel
             //Variation on compression espilon
@@ -208,10 +210,10 @@ int main(int argc, char** argv){
 
 
     //Open files
-    FFmaGenericLoader loader(filename);
+    FFmaGenericLoader<FReal> loader(filename);
     if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
     FSize nbParticles = loader.getNumberOfParticles() ;
-    FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
+    FmaRWParticle<FReal,8,8>* const particles = new FmaRWParticle<FReal,8,8>[nbParticles];
     //
     loader.fillParticle(particles,nbParticles);
 

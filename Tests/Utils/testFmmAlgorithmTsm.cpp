@@ -60,10 +60,10 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::NbParticles);
 
     typedef FTestCellTsm                 CellClassTyped;
-    typedef FTestParticleContainer       ContainerClassTyped;
+    typedef FTestParticleContainer<FReal>       ContainerClassTyped;
 
     typedef FTypedLeaf< ContainerClassTyped >                      LeafClassTyped;
-    typedef FOctree< CellClassTyped, ContainerClassTyped , LeafClassTyped >  OctreeClassTyped;
+    typedef FOctree<FReal, CellClassTyped, ContainerClassTyped , LeafClassTyped >  OctreeClassTyped;
     typedef FTestKernels< CellClassTyped, ContainerClassTyped >          KernelClassTyped;
 
     typedef FFmmAlgorithmThreadTsm<OctreeClassTyped, CellClassTyped, ContainerClassTyped, KernelClassTyped, LeafClassTyped > FmmClassTyped;
@@ -79,7 +79,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoaderTsm loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoaderTsm loader(NbPart, 1, FPoint<FReal>(0.5,0.5,0.5), 1);
     OctreeClassTyped tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -89,7 +89,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
     {
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         FParticleType particleType;
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&particlePosition, &particleType);

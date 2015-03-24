@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 	if(FParameters::existParameter(argc, argv, "-bin")){
 		binaryMode = true;
 	}
-	FFmaGenericLoader loader(filename,binaryMode);
+	FFmaGenericLoader<FReal> loader(filename,binaryMode);
 
 	if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
 
@@ -116,13 +116,13 @@ int main(int argc, char* argv[])
 	// accuracy
 	const unsigned int ORDER=7;
 	// typedefs
-	typedef FP2PParticleContainerIndexed<>                     ContainerClass;
-	typedef FSimpleLeaf< ContainerClass >                        LeafClass;
-	typedef FUnifCell<ORDER>                                         CellClass;
-	typedef FOctree<CellClass,ContainerClass,LeafClass>  OctreeClass;
+	typedef FP2PParticleContainerIndexed<FReal>                     ContainerClass;
+	typedef FSimpleLeaf<FReal, ContainerClass >                        LeafClass;
+	typedef FUnifCell<FReal,ORDER>                                         CellClass;
+	typedef FOctree<FReal, CellClass,ContainerClass,LeafClass>  OctreeClass;
 	//
-	typedef FInterpMatrixKernelR                                                                              MatrixKernelClass;
-	typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
+	typedef FInterpMatrixKernelR<FReal>                                                                              MatrixKernelClass;
+	typedef FUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
 	//
 	typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
 		std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
 		time.tic();
 		//
-		FPoint position;
+		FPoint<FReal> position;
 		FReal physicalValue = 0.0;
 		//
 		for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){

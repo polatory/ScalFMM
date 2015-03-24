@@ -54,12 +54,13 @@ int main(int argc, char ** argv){
                              FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
                              FParameterDefinitions::NbParticles, FParameterDefinitions::SHDevelopment);
 
+        typedef double FReal;
         typedef FSphericalCell                 CellClass;
 
-        typedef FP2PParticleContainer<>      ContainerClass;
+        typedef FP2PParticleContainer<FReal>      ContainerClass;
 
-        typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+        typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
         //typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
         typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
 
@@ -72,7 +73,7 @@ int main(int argc, char ** argv){
         const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
         const int NbPart       = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000);
         const int DevP         = FParameters::getValue(argc,argv,FParameterDefinitions::SHDevelopment.options, 5);
-        const FPoint centerOfBox = FPoint(0.5,0.5,0.5);
+        const FPoint<FReal> centerOfBox = FPoint<FReal>(0.5,0.5,0.5);
         FTic counter;
 
         srand48 ( 1 ); // volontary set seed to constant
@@ -92,7 +93,7 @@ int main(int argc, char ** argv){
         counter.tic();
 
         {
-            FPoint particlePosition;
+            FPoint<FReal> particlePosition;
             FReal physicalValue = 0.10;
             for(int idxPart = 0 ; idxPart < NbPart ; ++idxPart){
                 particlePosition.setPosition(FReal(drand48()),FReal(drand48()),FReal(drand48()));

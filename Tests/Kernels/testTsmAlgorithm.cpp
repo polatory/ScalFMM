@@ -49,7 +49,7 @@
 
 
 // Simply create particles and try the kernels
-template <class CellClass, class ContainerClass, class LeafClass, class OctreeClass,
+template <class FReal, class CellClass, class ContainerClass, class LeafClass, class OctreeClass,
           class KernelClass, class FmmClass, typename... Args>
 int testFunction(int argc, char ** argv, Args ... kernelPreArgs){
     FTic counter;
@@ -77,7 +77,7 @@ int testFunction(int argc, char ** argv, Args ... kernelPreArgs){
     counter.tic();
 
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         FReal physicalValue = 0.0;
         FParticleType particleType;
         loader.fillParticle(&particlePosition,&physicalValue,&particleType);
@@ -152,11 +152,12 @@ int main(int argc, char ** argv){
     if( FParameters::existParameter(argc,argv,FParameterDefinitions::SphericalKernel.options) ){
         std::cout << "[INFO] -spherical is used\n";
         // Create template
+        typedef double FReal;
         typedef FTypedSphericalCell            CellClass;
-        typedef FP2PParticleContainer<>         ContainerClass;
+        typedef FP2PParticleContainer<FReal>         ContainerClass;
 
         typedef FTypedLeaf< ContainerClass >                      LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
         typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
 
         typedef FFmmAlgorithmTsm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
@@ -171,12 +172,13 @@ int main(int argc, char ** argv){
     if( FParameters::existParameter(argc,argv,FParameterDefinitions::RotationKernel.options) ){
         std::cout << "[INFO] -rotation is used\n";
         // Create template
+        typedef double FReal;
         static const int P = 9;
         typedef FTypedRotationCell<P>            CellClass;
-        typedef FP2PParticleContainer<>         ContainerClass;
+        typedef FP2PParticleContainer<FReal>         ContainerClass;
 
         typedef FTypedLeaf< ContainerClass >                      LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
         typedef FRotationKernel< CellClass, ContainerClass, P >          KernelClass;
 
         typedef FFmmAlgorithmTsm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;

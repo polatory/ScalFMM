@@ -85,22 +85,23 @@ int main(int argc, char* argv[])
     FTic time;
 
     // interaction kernel evaluator
-    typedef FInterpMatrixKernelR MatrixKernelClass;
+    typedef double FReal;
+    typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
     const MatrixKernelClass MatrixKernel;
 
     struct TestParticle{
-        FPoint position;
+        FPoint<FReal> position;
         FReal forces[3];
         FReal physicalValue;
         FReal potential;
     };
     // open particle file
-    FFmaGenericLoader loader(filename);
+    FFmaGenericLoader<FReal> loader(filename);
     if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 
     TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        FPoint position;
+        FPoint<FReal> position;
         FReal physicalValue = 0.0;
         loader.fillParticle(&position,&physicalValue);
         // get copy
@@ -134,13 +135,13 @@ int main(int argc, char* argv[])
         const FReal epsilon = FReal(1e-7);
 
         // typedefs
-        typedef FP2PParticleContainerIndexed<> ContainerClass;
-        typedef FSimpleLeaf<ContainerClass> LeafClass;
-        typedef FChebCell<ORDER> CellClass;
-        typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+        typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+        typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
+        typedef FChebCell<FReal,ORDER> CellClass;
+        typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 
-        //typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-        typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        //typedef FChebKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         //typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
         typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
@@ -174,8 +175,8 @@ int main(int argc, char* argv[])
             std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
         } // -----------------------------------------------------
 
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
+        FMath::FAccurater<FReal> potentialDiff;
+        FMath::FAccurater<FReal> fx, fy, fz;
         { // Check that each particle has been summed with all other
 
             tree.forEachLeaf([&](LeafClass* leaf){
@@ -213,9 +214,9 @@ int main(int argc, char* argv[])
 
         // typedefs
         typedef FSphericalCell                 CellClass;
-        typedef FP2PParticleContainerIndexed<>         ContainerClass;
-        typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FP2PParticleContainerIndexed<FReal>         ContainerClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+        typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
           typedef FSphericalBlockBlasKernel< CellClass, ContainerClass > KernelClass;
          typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
@@ -251,8 +252,8 @@ int main(int argc, char* argv[])
         std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
         // -----------------------------------------------------
 
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
+        FMath::FAccurater<FReal> potentialDiff;
+        FMath::FAccurater<FReal> fx, fy, fz;
         { // Check that each particle has been summed with all other
 
             tree.forEachLeaf([&](LeafClass* leaf){

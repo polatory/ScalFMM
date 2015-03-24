@@ -40,19 +40,19 @@
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Chebyshev interpolation order
  */
-template < class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER, int NVALS = 1>
+template < class FReal, class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER, int NVALS = 1>
 class FAbstractChebKernel : public FAbstractKernels< CellClass, ContainerClass>
 {
 protected:
   enum {nnodes = TensorTraits<ORDER>::nnodes};
-  typedef FChebInterpolator<ORDER,MatrixKernelClass,NVALS> InterpolatorClass;
+  typedef FChebInterpolator<FReal, ORDER,MatrixKernelClass,NVALS> InterpolatorClass;
 
   /// Needed for P2M, M2M, L2L and L2P operators
   const FSmartPointer<InterpolatorClass,FSmartPointerMemory> Interpolator;
   /// Height of the entire oct-tree
   const unsigned int TreeHeight;
   /// Corner of oct-tree box
-  const FPoint BoxCorner;
+  const FPoint<FReal> BoxCorner;
   /// Width of oct-tree box   
   const FReal BoxWidth;    
   /// Width of a leaf cell box 
@@ -65,9 +65,9 @@ protected:
    * @param[in] Coordinate tree coordinate
    * @return center of leaf cell
    */
-  const FPoint getLeafCellCenter(const FTreeCoordinate& Coordinate) const
+  const FPoint<FReal> getLeafCellCenter(const FTreeCoordinate& Coordinate) const
   {
-    return FPoint(BoxCorner.getX() + (FReal(Coordinate.getX()) + FReal(.5)) * BoxWidthLeaf,
+    return FPoint<FReal>(BoxCorner.getX() + (FReal(Coordinate.getX()) + FReal(.5)) * BoxWidthLeaf,
 		  BoxCorner.getY() + (FReal(Coordinate.getY()) + FReal(.5)) * BoxWidthLeaf,
 		  BoxCorner.getZ() + (FReal(Coordinate.getZ()) + FReal(.5)) * BoxWidthLeaf);
   }
@@ -78,7 +78,7 @@ protected:
    * @param FTreeCoordinate
    * @param inLevel the current level of Cell
    */
-  FPoint getCellCenter(const FTreeCoordinate coordinate, int inLevel)
+  FPoint<FReal> getCellCenter(const FTreeCoordinate coordinate, int inLevel)
   {
 
     //Set the boxes width needed
@@ -90,7 +90,7 @@ protected:
     FReal Y = BoxCorner.getY() + FReal(coordinate.getY())*widthAtCurrentLevel + widthAtCurrentLevelDiv2;
     FReal Z = BoxCorner.getZ() + FReal(coordinate.getZ())*widthAtCurrentLevel + widthAtCurrentLevelDiv2;
     
-    return FPoint(X,Y,Z);
+    return FPoint<FReal>(X,Y,Z);
   }
 
 public:
@@ -101,7 +101,7 @@ public:
    */
   FAbstractChebKernel(const int inTreeHeight,
                       const FReal inBoxWidth,
-                      const FPoint& inBoxCenter,
+                      const FPoint<FReal>& inBoxCenter,
                       const FReal inBoxWidthExtension = 0.0)
     : Interpolator(new InterpolatorClass(inTreeHeight,
                                          inBoxWidth,

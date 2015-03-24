@@ -26,29 +26,29 @@
 ////////////////////// Opérateurs FMM Kernel : //////////////////////////
 
 class KernelCell : public FBasicCell {
-    FComplex* multipole;
-    FComplex* local;
+    FComplex<FReal>* multipole;
+    FComplex<FReal>* local;
 public:
     KernelCell() : multipole(nullptr), local(nullptr){
     }
-    void attachArrays(FComplex inMultipole[], FComplex inLocal[]){
+    void attachArrays(FComplex<FReal> inMultipole[], FComplex<FReal> inLocal[]){
         multipole = inMultipole;
         local = inLocal;
     }
 
-    const FComplex* getMultipole() const{
+    const FComplex<FReal>* getMultipole() const{
         return multipole;
     }
 
-    const FComplex* getLocal() const{
+    const FComplex<FReal>* getLocal() const{
         return local;
     }
 
-    FComplex* getMultipole(){
+    FComplex<FReal>* getMultipole(){
         return multipole;
     }
 
-    FComplex* getLocal(){
+    FComplex<FReal>* getLocal(){
         return local;
     }
 };
@@ -57,8 +57,8 @@ public:
 static const int P = 5;
 
 typedef KernelCell               KernelCellClass;
-typedef FP2PParticleContainer<>          ContainerClass;
-typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+typedef FP2PParticleContainer<FReal>          ContainerClass;
+typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 typedef FRotationKernel< KernelCellClass, ContainerClass , P>   KernelClass;
 
 struct ScalFmmKernelHandle {
@@ -82,7 +82,7 @@ int FmmKernel_init(void *fmmCore, void **fmmKernel){
 
     FmmCore_getParameter(fmmCore, FMMCORE_THREADS_NUMBER, &kernelhandle->nbthread);
 
-    KernelClass original( NbLevels, boxWidth, FPoint(centerOfBox) );
+    KernelClass original( NbLevels, boxWidth, FPoint<FReal>(centerOfBox) );
     kernelhandle->kernel = new KernelClass*[kernelhandle->nbthread];
     for(int idxThread = 0 ; idxThread < kernelhandle->nbthread ; ++idxThread){
         kernelhandle->kernel[idxThread] = new KernelClass(original);
@@ -184,12 +184,12 @@ int FmmKernel_getParameter(void *fmmKernel, int name, void*value){
 
 /****** Données FMM : *****/
 int FmmKernel_getMultipoleArraySize(void */*fmmCore*/, int *size) {
-    *size = ((P+2)*(P+1))/2 * sizeof(FComplex);
+    *size = ((P+2)*(P+1))/2 * sizeof(FComplex<FReal>);
     return FMMAPI_NO_ERROR;
 } /* Renvoie dans size la taille (en octets) de l'expansion multipôle associée à la boîte boxId */
 
 int FmmKernel_getLocalArraySize(void */*fmmCore*/, int *size){
-    *size = ((P+2)*(P+1))/2 * sizeof(FComplex);
+    *size = ((P+2)*(P+1))/2 * sizeof(FComplex<FReal>);
     return FMMAPI_NO_ERROR;
 } /* Renvoie dans size la taille (en octets) de l'expansion locale associée à la boîte boxId*/
 
@@ -201,7 +201,7 @@ int FmmKernel_P2M(void *fmmCore, void* boxId){
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
-    FComplex* multipole;
+    FComplex<FReal>* multipole;
     FmmCore_getMultipoleArray(fmmCore, boxId, (void**)&multipole);
 
     KernelCellClass cell;
@@ -215,9 +215,9 @@ int FmmKernel_P2M(void *fmmCore, void* boxId){
     int number;
     FmmCore_getSource(fmmCore, boxId, &positions, (void**)&physicalValues, &number);
 
-    FP2PParticleContainer<> sources;
+    FP2PParticleContainer<FReal> sources;
     for(int idxPart = 0 ; idxPart < number ; ++idxPart){
-        sources.push(FPoint(positions[idxPart*3],positions[idxPart*3+1],positions[idxPart*3+2]),physicalValues[idxPart]);
+        sources.push(FPoint<FReal>(positions[idxPart*3],positions[idxPart*3+1],positions[idxPart*3+2]),physicalValues[idxPart]);
     }
 
     kernelhandle->kernel[threadId]->P2M(&cell, &sources);
@@ -233,7 +233,7 @@ int FmmKernel_L2P(void *fmmCore, void* boxId){
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
-    FComplex* local;
+    FComplex<FReal>* local;
     FmmCore_getLocalArray(fmmCore, boxId, (void**)&local);
 
     KernelCellClass cell;
@@ -250,9 +250,9 @@ int FmmKernel_L2P(void *fmmCore, void* boxId){
     FReal* fields = new FReal[number*kernelhandle->fieldDataSize];
     FmmCore_getTargetField(fmmCore, boxId, fields);
 
-    FP2PParticleContainer<> targets;
+    FP2PParticleContainer<FReal> targets;
     for(int idxPart = 0 ; idxPart < number ; ++idxPart){
-        targets.push(FPoint(&positions[idxPart*3]),physicalValues[idxPart],
+        targets.push(FPoint<FReal>(&positions[idxPart*3]),physicalValues[idxPart],
                 fields[idxPart*kernelhandle->fieldDataSize],
                 fields[idxPart*kernelhandle->fieldDataSize+1],
                 fields[idxPart*kernelhandle->fieldDataSize+2],
@@ -286,7 +286,7 @@ int FmmKernel_M2M(void *fmmCore, void *boxIdFather, void *boxIdSon){
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
-    FComplex* multipole;
+    FComplex<FReal>* multipole;
     FmmCore_getMultipoleArray(fmmCore, boxIdFather, (void**)&multipole);
 
     KernelCellClass cellFather;
@@ -322,7 +322,7 @@ int FmmKernel_L2L(void *fmmCore, void *boxIdFather, void *boxIdSon){
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
-    FComplex* local;
+    FComplex<FReal>* local;
     FmmCore_getLocalArray(fmmCore, boxIdFather, (void**)&local);
 
     KernelCellClass cellFather;
@@ -358,7 +358,7 @@ int FmmKernel_M2L(void *fmmCore, void *boxIdSrc, void *boxIdDest){
     int threadId;
     FmmCore_getParameter(fmmCore, FMMCORE_THREAD_ID, &threadId);
 
-    FComplex* multipole;
+    FComplex<FReal>* multipole;
     FmmCore_getMultipoleArray(fmmCore, boxIdSrc, (void**)&multipole);
     KernelCellClass cellSrc;
     cellSrc.attachArrays(multipole,nullptr);
@@ -366,7 +366,7 @@ int FmmKernel_M2L(void *fmmCore, void *boxIdSrc, void *boxIdDest){
     FmmCore_getCoord(fmmCore, boxIdSrc, coord);
     cellSrc.setCoordinate(coord[0], coord[1], coord[2]);
 
-    FComplex* local;
+    FComplex<FReal>* local;
     FmmCore_getLocalArray(fmmCore, boxIdDest, (void**)&local);
     KernelCellClass cellDst;
     cellDst.attachArrays(nullptr, local);
@@ -408,9 +408,9 @@ int FmmKernel_P2P_inner(void *fmmCore, void *boxIdSrcDest){
     FmmCore_getCoord(fmmCore, boxIdSrcDest, coordTargets);
     FTreeCoordinate treecoord(coordTargets[0], coordTargets[1], coordTargets[2]);
 
-    FP2PParticleContainer<> targets;
+    FP2PParticleContainer<FReal> targets;
     for(int idxPart = 0 ; idxPart < numberTargets ; ++idxPart){
-        targets.push(FPoint(positionsTargets[idxPart*3],positionsTargets[idxPart*3+1],positionsTargets[idxPart*3+2]),
+        targets.push(FPoint<FReal>(positionsTargets[idxPart*3],positionsTargets[idxPart*3+1],positionsTargets[idxPart*3+2]),
                 potentialsTargets[idxPart],
                 fieldsTargets[idxPart*kernelhandle->fieldDataSize],
                 fieldsTargets[idxPart*kernelhandle->fieldDataSize+1],
@@ -419,8 +419,8 @@ int FmmKernel_P2P_inner(void *fmmCore, void *boxIdSrcDest){
     }
 
 
-    FP2PParticleContainer<>* ptrs[27];
-    memset(ptrs, 0, sizeof(FP2PParticleContainer<>*) * 27);
+    FP2PParticleContainer<FReal>* ptrs[27];
+    memset(ptrs, 0, sizeof(FP2PParticleContainer<FReal>*) * 27);
     kernelhandle->kernel[threadId]->P2P(treecoord, &targets, &targets, ptrs, 0);
 
     const FReal*const potentials = targets.getPotentials();
@@ -460,9 +460,9 @@ int FmmKernel_P2P(void *fmmCore, void *boxIdSrc, void *boxIdDest){ //return FMMA
     FmmCore_getCoord(fmmCore, boxIdDest, coordTargets);
     FTreeCoordinate treecoord(coordTargets[0], coordTargets[1], coordTargets[2]);
 
-    FP2PParticleContainer<> targets;
+    FP2PParticleContainer<FReal> targets;
     for(int idxPart = 0 ; idxPart < numberTargets ; ++idxPart){
-        targets.push(FPoint(positionsTargets[idxPart*3],positionsTargets[idxPart*3+1],positionsTargets[idxPart*3+2]),
+        targets.push(FPoint<FReal>(positionsTargets[idxPart*3],positionsTargets[idxPart*3+1],positionsTargets[idxPart*3+2]),
                 potentialsTargets[idxPart],
                 fieldsTargets[idxPart*kernelhandle->fieldDataSize],
                 fieldsTargets[idxPart*kernelhandle->fieldDataSize+1],
@@ -475,13 +475,13 @@ int FmmKernel_P2P(void *fmmCore, void *boxIdSrc, void *boxIdDest){ //return FMMA
     int numberSources;
     FmmCore_getSource(fmmCore, boxIdSrc, &positionsSrc, (void**)&potentialsSrc, &numberSources);
 
-    FP2PParticleContainer<> sources;
+    FP2PParticleContainer<FReal> sources;
     for(int idxPart = 0 ; idxPart < numberSources ; ++idxPart){
-        sources.push(FPoint(positionsSrc[idxPart*3],positionsSrc[idxPart*3+1],positionsSrc[idxPart*3+2]),potentialsSrc[idxPart]);
+        sources.push(FPoint<FReal>(positionsSrc[idxPart*3],positionsSrc[idxPart*3+1],positionsSrc[idxPart*3+2]),potentialsSrc[idxPart]);
     }
 
-    FP2PParticleContainer<>* ptrs[27];
-    memset(ptrs, 0, sizeof(FP2PParticleContainer<>*) * 27);
+    FP2PParticleContainer<FReal>* ptrs[27];
+    memset(ptrs, 0, sizeof(FP2PParticleContainer<FReal>*) * 27);
     ptrs[0] = &sources;
     kernelhandle->kernel[threadId]->P2PRemote(treecoord, &targets, &targets, ptrs, 1);
 

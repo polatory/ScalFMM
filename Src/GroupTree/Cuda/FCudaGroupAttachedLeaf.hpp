@@ -4,7 +4,7 @@
 
 #include "FCudaGlobal.hpp"
 
-template <unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
+template <class FReal, unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass = FReal>
 class FCudaGroupAttachedLeaf {
 protected:
     //< Nb of particles in the current leaf

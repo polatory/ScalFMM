@@ -54,10 +54,10 @@ class FTreeCoordinate;
  */
 
 template< class CellClass, class ContainerClass, class MatrixKernelClass, int ORDER, int NVALS = 1>
-class FAdaptiveUnifKernel : FUnifKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+class FAdaptiveUnifKernel : FUnifKernel<FReal,CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 , public FAbstractAdaptiveKernel<CellClass, ContainerClass> {
 	//
-	typedef FUnifKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	KernelBaseClass;
+	typedef FUnifKernel<FReal,CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	KernelBaseClass;
 
 	enum {order = ORDER,
         nnodes = TensorTraits<ORDER>::nnodes};
@@ -87,7 +87,7 @@ public:
 	//	 * runtime_error is thrown if the required file is not valid).
 	//	 */
 	FAdaptiveUnifKernel(const int inTreeHeight, const FReal inBoxWidth,
-                      const FPoint& inBoxCenter, const MatrixKernelClass *const inMatrixKernel) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter, inMatrixKernel)/*, M2LHandler(inMatrixKernel, inTreeHeight, inBoxWidth)*/, MatrixKernel(inMatrixKernel)
+                      const FPoint<FReal>& inBoxCenter, const MatrixKernelClass *const inMatrixKernel) : KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter, inMatrixKernel)/*, M2LHandler(inMatrixKernel, inTreeHeight, inBoxWidth)*/, MatrixKernel(inMatrixKernel)
 	{}
 	//	/** Copy constructor */
 	FAdaptiveUnifKernel(const FAdaptiveUnifKernel& other)
@@ -102,7 +102,7 @@ public:
 		}
 	void P2M(CellClass* const pole, const int cellLevel, const ContainerClass* const particles) override {
 
-		const FPoint CellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),cellLevel));
+		const FPoint<FReal> CellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),cellLevel));
 		const FReal BoxWidth = KernelBaseClass::BoxWidth / FMath::pow(2.0,cellLevel);
 
 		for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
@@ -119,10 +119,10 @@ public:
 
 	void M2M(CellClass* const pole, const int poleLevel, const CellClass* const subCell, const int subCellLevel) override {
 
-    const FPoint subCellCenter(KernelBaseClass::getCellCenter(subCell->getCoordinate(),subCellLevel));
+    const FPoint<FReal> subCellCenter(KernelBaseClass::getCellCenter(subCell->getCoordinate(),subCellLevel));
     const FReal subCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0,subCellLevel))); 
 
-    const FPoint poleCellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),poleLevel));
+    const FPoint<FReal> poleCellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),poleLevel));
     const FReal poleCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0, poleLevel))); 
 
 //    ////////////////////////////////////////////////////////////////////////////
@@ -131,7 +131,7 @@ public:
 //    FReal* subChildParentInterpolator = new FReal [nnodes * nnodes];
 //
 //    // set child info
-//    FPoint ChildRoots[nnodes], localChildRoots[nnodes];
+//    FPoint<FReal> ChildRoots[nnodes], localChildRoots[nnodes];
 //    FUnifTensor<ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
 //
 //    // map global position of roots to local position in parent cell
@@ -153,9 +153,9 @@ public:
     // Map global position of sub-child nodes to [-1,1]
     FReal localChildCoords[3][ORDER];
     const map_glob_loc map(poleCellCenter, poleCellWidth);
-    FPoint localChildPoints;
+    FPoint<FReal> localChildPoints;
     for (unsigned int n=0; n<ORDER; ++n) {
-      map(FPoint(globalChildCoords[0][n],globalChildCoords[1][n],globalChildCoords[2][n]), localChildPoints);
+      map(FPoint<FReal>(globalChildCoords[0][n],globalChildCoords[1][n],globalChildCoords[2][n]), localChildPoints);
       localChildCoords[0][n] = localChildPoints.getX();
       localChildCoords[1][n] = localChildPoints.getY();
       localChildCoords[2][n] = localChildPoints.getZ();
@@ -218,10 +218,10 @@ public:
 
     // Target cell: local
     const FReal localCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0, localLevel))); 
-    const FPoint localCellCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),localLevel));
+    const FPoint<FReal> localCellCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),localLevel));
 
     // interpolation points of target (X) cell
-    FPoint X[nnodes];
+    FPoint<FReal> X[nnodes];
     FUnifTensor<order>::setRoots(localCellCenter, localCellWidth, X);
 
     // read positions
@@ -237,7 +237,7 @@ public:
       // apply P2L
       for (unsigned int idxPart=0; idxPart<particles->getNbParticles(); ++idxPart){
 
-        const FPoint y = FPoint(positionsX[idxPart],
+        const FPoint<FReal> y = FPoint<FReal>(positionsX[idxPart],
                                 positionsY[idxPart],
                                 positionsZ[idxPart]);
 
@@ -254,14 +254,14 @@ public:
 
     // Source cell: pole
     const FReal poleCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0, poleLevel))); 
-    const FPoint poleCellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),poleLevel));
+    const FPoint<FReal> poleCellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),poleLevel));
 
     // Target cell: local
     const FReal localCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0, localLevel))); 
-    const FPoint localCellCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),localLevel));
+    const FPoint<FReal> localCellCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),localLevel));
 
     // interpolation points of source (Y) and target (X) cell
-    FPoint X[nnodes], Y[nnodes];
+    FPoint<FReal> X[nnodes], Y[nnodes];
     FUnifTensor<order>::setRoots(poleCellCenter, poleCellWidth, Y);
     FUnifTensor<order>::setRoots(localCellCenter, localCellWidth, X);
 
@@ -283,10 +283,10 @@ public:
 
     // Source cell: pole
     const FReal poleCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0, poleLevel))); 
-    const FPoint poleCellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),poleLevel));
+    const FPoint<FReal> poleCellCenter(KernelBaseClass::getCellCenter(pole->getCoordinate(),poleLevel));
 
     // interpolation points of source (Y) cell
-    FPoint Y[nnodes];
+    FPoint<FReal> Y[nnodes];
     FUnifTensor<order>::setRoots(poleCellCenter, poleCellWidth, Y);
 
     // read positions
@@ -301,7 +301,7 @@ public:
       // apply M2P
       for (unsigned int idxPart=0; idxPart<particles->getNbParticles(); ++idxPart){
 
-        const FPoint x = FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
+        const FPoint<FReal> x = FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
 
         FReal targetValue=0.;
         {
@@ -323,10 +323,10 @@ public:
 
 	void L2L(const CellClass* const local, const int localLevel, CellClass* const subCell, const int subCellLevel) override {
 
-    const FPoint subCellCenter(KernelBaseClass::getCellCenter(subCell->getCoordinate(),subCellLevel));
+    const FPoint<FReal> subCellCenter(KernelBaseClass::getCellCenter(subCell->getCoordinate(),subCellLevel));
     const FReal subCellWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0,subCellLevel))); 
 
-    const FPoint localCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),localLevel));
+    const FPoint<FReal> localCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),localLevel));
     const FReal localWidth(KernelBaseClass::BoxWidth / FReal(FMath::pow(2.0,localLevel))); 
 
 //    ////////////////////////////////////////////////////////////////////////////
@@ -335,7 +335,7 @@ public:
 //    FReal* subChildParentInterpolator = new FReal [nnodes * nnodes];
 //
 //    // set child info
-//    FPoint ChildRoots[nnodes], localChildRoots[nnodes];
+//    FPoint<FReal> ChildRoots[nnodes], localChildRoots[nnodes];
 //    FUnifTensor<ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
 //
 //    // map global position of roots to local position in parent cell
@@ -355,9 +355,9 @@ public:
     // Map global position of sub-child nodes to [-1,1]
     FReal localChildCoords[3][ORDER];
     const map_glob_loc map(localCenter, localWidth);
-    FPoint localChildPoints;
+    FPoint<FReal> localChildPoints;
     for (unsigned int n=0; n<ORDER; ++n) {
-      map(FPoint(globalChildCoords[0][n],globalChildCoords[1][n],globalChildCoords[2][n]), localChildPoints);
+      map(FPoint<FReal>(globalChildCoords[0][n],globalChildCoords[1][n],globalChildCoords[2][n]), localChildPoints);
       localChildCoords[0][n] = localChildPoints.getX();
       localChildCoords[1][n] = localChildPoints.getY();
       localChildCoords[2][n] = localChildPoints.getZ();
@@ -415,7 +415,7 @@ public:
 
 	void L2P(const CellClass* const local, const int cellLevel, ContainerClass* const particles)  override {
 
-    const FPoint CellCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),cellLevel));
+    const FPoint<FReal> CellCenter(KernelBaseClass::getCellCenter(local->getCoordinate(),cellLevel));
 		const FReal BoxWidth = KernelBaseClass::BoxWidth / FMath::pow(2.0,cellLevel);
 
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
@@ -457,9 +457,9 @@ public:
 //
 //template < class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER, int NVALS = 1>
 //class FAdaptUnifKernel
-//		: public FUnifKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+//		: public FUnifKernel<FReal,CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 //{
-//	typedef FUnifKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	KernelBaseClass;
+//	typedef FUnifKernel<FReal,CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	KernelBaseClass;
 //
 //#ifdef LOG_TIMINGS
 //	FTic time;
@@ -474,7 +474,7 @@ public:
 //	 */
 //	FAdaptUnifKernel(const int inTreeHeight,
 //			const FReal inBoxWidth,
-//			const FPoint& inBoxCenter)
+//			const FPoint<FReal>& inBoxCenter)
 //: KernelBaseClass(inTreeHeight, inBoxWidth, inBoxCenter)
 //{
 //
@@ -508,7 +508,7 @@ public:
 //
 //	void P2MAdapt(CellClass* const ParentCell,  const int &level)
 //	{
-//		const FPoint LeafCellCenter(KernelBaseClass::getLeafCellCenter(ParentCell->getCoordinate()));
+//		const FPoint<FReal> LeafCellCenter(KernelBaseClass::getLeafCellCenter(ParentCell->getCoordinate()));
 //		const FReal BoxWidth = KernelBaseClass::BoxWidthLeaf*FMath::pow(2.0,KernelBaseClass::TreeHeight-level);
 //		//
 //		for(int i = 0 ; i <ParentCell->getLeavesSize(); ++i ){

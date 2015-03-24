@@ -49,11 +49,13 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::NbParticles, FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight);
 
-    typedef FBasicCell                      CellClass;
-    typedef FP2PParticleContainerIndexed<>      ContainerClass;
+    typedef double FReal;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FBasicCell                      CellClass;
+    typedef FP2PParticleContainerIndexed<FReal>      ContainerClass;
+
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
     typedef FBasicParticleContainerIndexedMover<OctreeClass, ContainerClass> MoverClass;
     typedef FArrangerPeriodic<OctreeClass, ContainerClass, MoverClass> ArrangerClassPeriodic;
@@ -76,7 +78,7 @@ int main(int argc, char ** argv){
     const FReal BoxWidth = 1.0;
     const FReal BoxCenter = 0.5;
 
-    OctreeClass tree(NbLevels, SizeSubLevels, BoxWidth, FPoint(BoxCenter,BoxCenter,BoxCenter));
+    OctreeClass tree(NbLevels, SizeSubLevels, BoxWidth, FPoint<FReal>(BoxCenter,BoxCenter,BoxCenter));
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -88,7 +90,7 @@ int main(int argc, char ** argv){
 
     {
 
-        FPoint particleToFill;
+        FPoint<FReal> particleToFill;
         for(int idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             particleToFill.setPosition(
                         (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2)),
@@ -155,7 +157,7 @@ int main(int argc, char ** argv){
 
             ContainerClass* particles = octreeIterator.getCurrentListTargets();
             for(int idxPart = 0; idxPart < particles->getNbParticles() ; ++idxPart){
-                const FPoint particlePosition( particles->getWPositions()[0][idxPart],
+                const FPoint<FReal> particlePosition( particles->getWPositions()[0][idxPart],
                                                particles->getWPositions()[1][idxPart],
                                                particles->getWPositions()[2][idxPart]);
 

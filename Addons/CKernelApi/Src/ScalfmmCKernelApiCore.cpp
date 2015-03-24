@@ -152,7 +152,7 @@ public:
 
 // Here are all the type definition
 typedef FBasicParticleContainer<1, int>   CoreContainerClass;
-typedef FSimpleLeaf<CoreContainerClass >                        LeafClass;
+typedef FSimpleLeaf<FReal, CoreContainerClass >                        LeafClass;
 typedef FOctree<CoreCell, CoreContainerClass , LeafClass >     OctreeClass;
 typedef CoreKernel<CoreCell, CoreContainerClass>         CoreKernelClass;
 typedef FFmmAlgorithmThread<OctreeClass, CoreCell, CoreContainerClass, CoreKernelClass, LeafClass >     FmmClassThread;
@@ -164,7 +164,7 @@ struct ScalFmmCoreHandle {
         // Read/Write parameter
         int treeHeight;     //  Number of level in the octree
         FReal boxWidth;    // Simulation box size (root level)
-        FPoint boxCenter; // Center position of the box simulation(FReal[3])
+        FPoint<FReal> boxCenter; // Center position of the box simulation(FReal[3])
     };
 
     ScalFmmCoreConfig config;
@@ -179,7 +179,7 @@ extern "C" Scalfmm_Handle Scalfmm_init_handle(int treeHeight, double boxWidth, d
 
     corehandle->config.treeHeight = treeHeight;
     corehandle->config.boxWidth   = boxWidth;
-    corehandle->config.boxCenter  = FPoint(boxCenter[0],boxCenter[1],boxCenter[2]);
+    corehandle->config.boxCenter  = FPoint<FReal>(boxCenter[0],boxCenter[1],boxCenter[2]);
 
     corehandle->octree = new OctreeClass(corehandle->config.treeHeight, FMath::Min(3,corehandle->config.treeHeight-1),
                                          corehandle->config.boxWidth, corehandle->config.boxCenter);
@@ -229,7 +229,7 @@ extern "C" void Scalfmm_dealloc_handle(Scalfmm_Handle handle, Callback_free_cell
 extern "C" void Scalfmm_insert_array_of_particles(Scalfmm_Handle handle, int nbParticles, int* particleIndexes, double* particleXYZ){
     ScalFmmCoreHandle* corehandle = (ScalFmmCoreHandle*)handle;
     for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
-        corehandle->octree->insert(FPoint(particleXYZ[idxPart*3],particleXYZ[idxPart*3+1],particleXYZ[idxPart*3+2]),
+        corehandle->octree->insert(FPoint<FReal>(particleXYZ[idxPart*3],particleXYZ[idxPart*3+1],particleXYZ[idxPart*3+2]),
                                 particleIndexes[idxPart]);
     }
 }
@@ -237,7 +237,7 @@ extern "C" void Scalfmm_insert_array_of_particles(Scalfmm_Handle handle, int nbP
 // Push one particle in the tree
 extern "C" void Scalfmm_one_particle(Scalfmm_Handle handle, int particleIndex, double x, double y, double z){
     ScalFmmCoreHandle* corehandle = (ScalFmmCoreHandle*)handle;
-    corehandle->octree->insert(FPoint(x,y,z), particleIndex);
+    corehandle->octree->insert(FPoint<FReal>(x,y,z), particleIndex);
 }
 
 // Execute a kernel (by using the user functions callback).

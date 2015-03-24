@@ -19,9 +19,10 @@
 #include "../Utils/FPoint.hpp"
 #include "../Utils/FGlobal.hpp"
 
+template <class FReal>
 class FPerLeafLoader {
     const FReal boxWidth;
-    const FPoint boxCenter;
+    const FPoint<FReal> boxCenter;
 
     int NbSmallBoxesPerSide;
     FReal SmallBoxWidth;
@@ -33,7 +34,7 @@ class FPerLeafLoader {
     int iterZ;
 
 public:
-    FPerLeafLoader(const int inTreeHeight, const FReal inBoxWidth = 1.0, const FPoint& inBoxCenter = FPoint())
+    FPerLeafLoader(const int inTreeHeight, const FReal inBoxWidth = 1.0, const FPoint<FReal>& inBoxCenter = FPoint<FReal>())
         : boxWidth(inBoxWidth), boxCenter(inBoxCenter){
         NbSmallBoxesPerSide = (1 << (inTreeHeight-1));
         SmallBoxWidth = boxWidth / FReal(NbSmallBoxesPerSide);
@@ -62,7 +63,7 @@ public:
         * Get the center of the simulation box
         * @return box center needed by the octree
         */
-    FPoint getCenterOfBox() const{
+    FPoint<FReal> getCenterOfBox() const{
         return boxCenter;
     }
 
@@ -82,7 +83,7 @@ public:
         return true;
     }
 
-    void fillParticle(FPoint*const inParticlePositions){
+    void fillParticle(FPoint<FReal>*const inParticlePositions){
         inParticlePositions->setPosition(
                FReal(iterX)*SmallBoxWidth + SmallBoxWidthDiv2 + boxCenter.getX() - boxWidth/2.0,
                FReal(iterY)*SmallBoxWidth + SmallBoxWidthDiv2 + boxCenter.getY() - boxWidth/2.0,

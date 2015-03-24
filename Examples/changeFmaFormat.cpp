@@ -54,29 +54,21 @@ int main(int argc, char ** argv){
                          "fdlpoly is not supported for now.",
                          FParameterDefinitions::InputFile, FParameterDefinitions::OutputFile,
                          FParameterDefinitions::OutputVisuFile);
-
-    FSize NbPoints;
-    FReal	 * particles = nullptr ;
-    FFmaGenericLoader * loader;
-    unsigned int nbData;
-
+    typedef double FReal;
     const std::string filename(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,   "data.fma"));
 
-    loader = new FFmaGenericLoader(filename);
-    //
-    // Allocation
-    //
-    NbPoints                              = loader->getNumberOfParticles();
-    nbData   = loader->getNbRecordPerline() ;
+    FFmaGenericLoader<FReal> loader(filename);
+
+    const FSize NbPoints  = loader.getNumberOfParticles();
+    const unsigned int nbData   = loader.getNbRecordPerline() ;
     const unsigned int arraySize =nbData*NbPoints;
-    //
-    particles = new FReal[arraySize] ;
+
+    FReal * particles = new FReal[arraySize] ;
     std::memset(particles,0,arraySize*sizeof(FReal));
-    //
-    // Read Data
+
     int j = 0 ;
     for(int idxPart = 0 ; idxPart < NbPoints ;++idxPart, j+=nbData){
-        loader->fillParticle(&particles[j],nbData);
+        loader.fillParticle(&particles[j],nbData);
     }
 
 
@@ -88,8 +80,8 @@ int main(int argc, char ** argv){
     //
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::OutputFile.options)){
         std::string name(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output.fma"));
-          FFmaGenericWriter writer(name) ;
-        writer.writeHeader( loader->getCenterOfBox(), loader->getBoxWidth() , NbPoints, sizeof(FReal), nbData) ;
+          FFmaGenericWriter<FReal> writer(name) ;
+        writer.writeHeader( loader.getCenterOfBox(), loader.getBoxWidth() , NbPoints, sizeof(FReal), nbData) ;
         writer.writeArrayOfReal(particles, nbData, NbPoints);
     }
     //
@@ -97,11 +89,9 @@ int main(int argc, char ** argv){
     //
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::OutputVisuFile.options)){
         std::string outfilename(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output.vtp"));
-        driverExportData(outfilename, particles , NbPoints,loader->getNbRecordPerline() );
+        driverExportData(outfilename, particles , NbPoints,loader.getNbRecordPerline() );
     }
     //
     delete particles ;
-
-    //
-    return 1;
+    return 0;
 }

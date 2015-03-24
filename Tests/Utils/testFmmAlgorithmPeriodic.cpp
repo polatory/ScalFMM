@@ -58,10 +58,10 @@ int main(int argc, char ** argv){
 
 
     typedef FTestCell                   CellClass;
-    typedef FTestParticleContainer      ContainerClass;
+    typedef FTestParticleContainer<FReal>      ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
 
     typedef FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
@@ -80,7 +80,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoader loader(NbParticles);
+    FRandomLoader<FReal> loader(NbParticles);
     //FPerLeafLoader loader(NbLevels);
 
     std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
@@ -90,7 +90,7 @@ int main(int argc, char ** argv){
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
     {
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&particlePosition);
             tree.insert(particlePosition);

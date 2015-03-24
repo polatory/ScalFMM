@@ -101,7 +101,8 @@ int main(int argc, char* argv[])
     // init timer
     FTic time;
 
-    FMpiFmaGenericLoader* loader = new FMpiFmaGenericLoader(filename,app.global());
+    typedef double FReal;
+    FMpiFmaGenericLoader<FReal>* loader = new FMpiFmaGenericLoader<FReal>(filename,app.global());
 
     if(!loader->isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
     ////////////////////////////////////////////////////////////////////
@@ -109,16 +110,15 @@ int main(int argc, char* argv[])
 
 
     // begin spherical kernel
-
     // accuracy
     const unsigned int P = 22;
     // typedefs
-    typedef FP2PParticleContainerIndexed<>                     ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >                       LeafClass;
-    typedef FRotationCell<P>                                             CellClass;
-    typedef FOctree<CellClass,ContainerClass,LeafClass>  OctreeClass;
+    typedef FP2PParticleContainerIndexed<FReal>                     ContainerClass;
+    typedef FSimpleLeaf< FReal, ContainerClass >                       LeafClass;
+    typedef FRotationCell<FReal, P>                                             CellClass;
+    typedef FOctree<FReal, CellClass,ContainerClass,LeafClass>  OctreeClass;
     //
-    typedef FRotationKernel< CellClass, ContainerClass , P>   KernelClass;
+    typedef FRotationKernel<FReal, CellClass, ContainerClass , P>   KernelClass;
     //
     typedef FFmmAlgorithmThreadProc<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClassProc;
 
@@ -137,9 +137,9 @@ int main(int argc, char* argv[])
 
         struct TestParticle{
             int indexInFile;
-            FPoint position;
+            FPoint<FReal> position;
             FReal physicalValue;
-            const FPoint& getPosition(){
+            const FPoint<FReal>& getPosition(){
                 return position;
             }
         };
@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
 
         FVector<TestParticle> finalParticles;
         FLeafBalance balancer;
-        FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(), particles, loader->getMyNumberOfParticles(),
+        FMpiTreeBuilder<FReal, TestParticle >::DistributeArrayToContainer(app.global(), particles, loader->getMyNumberOfParticles(),
                                                                     tree.getBoxCenter(),
                                                                     tree.getBoxWidth(),
                                                                     tree.getHeight(), &finalParticles,&balancer);

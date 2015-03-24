@@ -47,7 +47,9 @@ int main(int argc, char* argv[])
 {
     FHelpDescribeAndExit(argc, argv, "Look to the code.");
 
-	typedef FInterpMatrixKernelR MatrixKernelClass;
+    typedef double FReal;
+
+    typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
 	MatrixKernelClass MatrixKernel;
 
 	const unsigned int ORDER = 9;
@@ -62,26 +64,26 @@ int main(int argc, char* argv[])
 	//FReal wx = FReal(2.);
 	//FReal wy = FReal(2.);
 	//// centers of cells X and Y
-	//FPoint cx( 0., 0., 0.);
-	//FPoint cy( 4., 0., 0.);
+    //FPoint<FReal> cx( 0., 0., 0.);
+    //FPoint<FReal> cy( 4., 0., 0.);
 
 	// width of cell X and Y
 	FReal wx = FReal(2.);
 	FReal wy = FReal(4.);
 	// centers of cells X and Y
-	FPoint cx( 1.,-1.,-1.);
-	//FPoint cy(-4., 0., 0.);
-	FPoint cy(-4., 4., 4.);
+    FPoint<FReal> cx( 1.,-1.,-1.);
+    //FPoint<FReal> cy(-4., 0., 0.);
+    FPoint<FReal> cy(-4., 4., 4.);
 
 
 	std::cout << "[cx = " << cx << ", wx = " << wx
 						<< "] [cy = " << cy << ", wy = " << wy
-						<< "] -> dist = " << FPoint(cx-cy).norm() << std::endl;
+                        << "] -> dist = " << FPoint<FReal>(cx-cy).norm() << std::endl;
 
 	// compute Cheb points in cells X and Y
-	FPoint rootsX[nnodes], rootsY[nnodes];
-	FChebTensor<ORDER>::setRoots(cx, wx, rootsX);
-	FChebTensor<ORDER>::setRoots(cy, wy, rootsY);
+    FPoint<FReal> rootsX[nnodes], rootsY[nnodes];
+    FChebTensor<FReal,ORDER>::setRoots(cx, wx, rootsX);
+    FChebTensor<FReal,ORDER>::setRoots(cy, wy, rootsY);
 
 	
 
@@ -91,7 +93,7 @@ int main(int argc, char* argv[])
 	std::cout << "|- Assembling K" << std::flush;
 	FReal *const K = new FReal [nnodes * nnodes];
 	time.tic();
-	EntryComputer<MatrixKernelClass> Computer(nnodes, rootsX, nnodes, rootsY);
+    EntryComputer<FReal,MatrixKernelClass> Computer(nnodes, rootsX, nnodes, rootsY);
 	Computer(0, nnodes, 0, nnodes, K);
 	std::cout << ", finished in " << time.tacAndElapsed() << "s." << std::endl;
 	
@@ -153,13 +155,13 @@ int main(int argc, char* argv[])
 	const FReal pw = FReal(4.);
 	const FReal cw = pw / FReal(2.);
 
-	const FPoint cpx( 0., 0., 0.);
-	const FPoint ccx(-1.,-1.,-1.);
+    const FPoint<FReal> cpx( 0., 0., 0.);
+    const FPoint<FReal> ccx(-1.,-1.,-1.);
 
 
 	// compute Cheb points in cells X and Y
-	FPoint rootsX[nnodes], rootsY[nnodes];
-	FChebTensor<ORDER>::setRoots(ccx, cw, rootsX);
+    FPoint<FReal> rootsX[nnodes], rootsY[nnodes];
+    FChebTensor<FReal,ORDER>::setRoots(ccx, cw, rootsX);
 
 	unsigned int all_counter = 0;
 	unsigned int ccounter = 0;
@@ -176,7 +178,7 @@ int main(int argc, char* argv[])
 	for (int i=-1; i<=1; ++i)
 		for (int j=-1; j<=1; ++j)
 			for (int k=-1; k<=1; ++k) {
-				const FPoint cpy(FReal(i)*pw, FReal(j)*pw, FReal(k)*pw);
+                const FPoint<FReal> cpy(FReal(i)*pw, FReal(j)*pw, FReal(k)*pw);
 				
 				// exclude target cell itself
 				if ((FMath::Abs(i) + FMath::Abs(j) + FMath::Abs(k)) != 0) {
@@ -186,12 +188,12 @@ int main(int argc, char* argv[])
 					for (int ci=-1; ci<=1; ci+=2)
 						for (int cj=-1; cj<=1; cj+=2)
 							for (int ck=-1; ck<=1; ck+=2) {
-								const FPoint ccy(cpy.getX() + FReal(ci)*cw/2., cpy.getY() + FReal(cj)*cw/2., cpy.getZ() + FReal(ck)*cw/2.);
+                                const FPoint<FReal> ccy(cpy.getX() + FReal(ci)*cw/2., cpy.getY() + FReal(cj)*cw/2., cpy.getZ() + FReal(ck)*cw/2.);
 								
 								// exclude near-field 
-								if (FPoint(ccx-ccy).norm() > FReal(3.5)) {
-									FChebTensor<ORDER>::setRoots(ccy, cw, rootsY);
-									EntryComputer<MatrixKernelClass> Computer(&MatrixKernel,nnodes, rootsX, nnodes, rootsY);
+                                if (FPoint<FReal>(ccx-ccy).norm() > FReal(3.5)) {
+                                    FChebTensor<FReal,ORDER>::setRoots(ccy, cw, rootsY);
+                                    EntryComputer<FReal,MatrixKernelClass> Computer(&MatrixKernel,nnodes, rootsX, nnodes, rootsY);
 									pACA(Computer, nnodes, nnodes, epsilon, U, V, rank);
 									//std::cout << "- Compress " << ccy << "\tof width " << cw << " to rank " << rank << std::endl;
 									
@@ -210,12 +212,12 @@ int main(int argc, char* argv[])
 						for (int ci=-1; ci<=1; ci+=2)
 							for (int cj=-1; cj<=1; cj+=2)
 								for (int ck=-1; ck<=1; ck+=2) {
-									const FPoint ccy(cpy.getX() + FReal(ci)*cw/2., cpy.getY() + FReal(cj)*cw/2., cpy.getZ() + FReal(ck)*cw/2.);
+                                    const FPoint<FReal> ccy(cpy.getX() + FReal(ci)*cw/2., cpy.getY() + FReal(cj)*cw/2., cpy.getZ() + FReal(ck)*cw/2.);
 									
 									// exclude near-field 
-									if (FPoint(ccx-ccy).norm() > FReal(3.5)) {
-										FChebTensor<ORDER>::setRoots(ccy, cw, rootsY);
-										EntryComputer<MatrixKernelClass> Computer(&MatrixKernel,nnodes, rootsX, nnodes, rootsY);
+                                    if (FPoint<FReal>(ccx-ccy).norm() > FReal(3.5)) {
+                                        FChebTensor<FReal,ORDER>::setRoots(ccy, cw, rootsY);
+                                        EntryComputer<FReal,MatrixKernelClass> Computer(&MatrixKernel,nnodes, rootsX, nnodes, rootsY);
 										pACA(Computer, nnodes, nnodes, epsilon, U, V, rank);
 										//std::cout << "- Compress " << ccy << "\tof width " << cw << " to rank " << rank << std::endl;
 										
@@ -230,8 +232,8 @@ int main(int argc, char* argv[])
 					}
 					// remaining far-field: source cells whose multipole expansion is taken from parent level
 					else {
-						FChebTensor<ORDER>::setRoots(cpy, pw, rootsY);
-						EntryComputer<MatrixKernelClass> Computer(&MatrixKernel,nnodes, rootsX, nnodes, rootsY);
+                        FChebTensor<FReal,ORDER>::setRoots(cpy, pw, rootsY);
+                        EntryComputer<FReal,MatrixKernelClass> Computer(&MatrixKernel,nnodes, rootsX, nnodes, rootsY);
 						pACA(Computer, nnodes, nnodes, epsilon, U, V, rank);
 						//std::cout << "- Compress " << cpy << "\tof width " << pw << " to rank " << rank << std::endl;
 

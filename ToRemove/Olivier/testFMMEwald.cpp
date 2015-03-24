@@ -55,7 +55,7 @@
  */
 
 struct EwalParticle {
-	FPoint position;
+	FPoint<FReal> position;
 	FReal forces[3];
 	FReal physicalValue;
 	FReal potential;
@@ -65,22 +65,22 @@ struct EwalParticle {
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
 
-	typedef FP2PParticleContainerIndexed<>                    ContainerClass;
-	typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+	typedef FP2PParticleContainerIndexed<FReal>                    ContainerClass;
+	typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 
 #ifdef  ScalFMM_USE_BLAS
 	// begin Chebyshev kernel
 	// accuracy
 	const unsigned int ORDER = 13;
 	// typedefs
-	typedef FInterpMatrixKernelR                                              MatrixKernelClass;
-	typedef FChebCell<ORDER>                                                  CellClass;
-	typedef FOctree<CellClass,ContainerClass,LeafClass>                       OctreeClass;
-	typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
+	typedef FInterpMatrixKernelR<FReal>                                              MatrixKernelClass;
+	typedef FChebCell<FReal,ORDER>                                                  CellClass;
+	typedef FOctree<FReal, CellClass,ContainerClass,LeafClass>                       OctreeClass;
+	typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
 
 #else
 	typedef FSphericalCell                                    CellClass;
-	typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+	typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 	typedef FSphericalKernel< CellClass, ContainerClass >     KernelClass;
 	const int DevP          = FParameters::getValue(argc,argv,"-P", 9);
 #endif
@@ -168,7 +168,7 @@ int main(int argc, char ** argv){
 	std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
 
 	counter.tic();
-	FPoint electricMoment(0.0,0.0,0.0) ;
+	FPoint<FReal> electricMoment(0.0,0.0,0.0) ;
 	EwalParticle * const particles = new EwalParticle[loader->getNumberOfParticles()];
 	memset(particles, 0, sizeof(EwalParticle) * loader->getNumberOfParticles());
 	double totalCharge = 0.0;
@@ -188,7 +188,7 @@ int main(int argc, char ** argv){
 	counter.tac();
 	double dipoleNorm = electricMoment.norm2() ;
 	double volume     =  loader->getBoxWidth()*loader->getBoxWidth()*loader->getBoxWidth() ;
-	double coeffCorrection = 2.0*FMath::FPi/volume/3.0 ;
+	double coeffCorrection = 2.0*FMath::FPi<FReal>()/volume/3.0 ;
 
 	std::cout << std::endl;
 	std::cout << "Total Charge                 = "<< totalCharge <<std::endl;
@@ -243,7 +243,7 @@ int main(int argc, char ** argv){
 	// ----------------------------------------------------------------------------------------------------------
 	{
 		FReal energy = 0.0, tmp;
-		FMath::FAccurater fx, fy, fz, fmmdfx, fmmdfy, fmmdfz,fmmpot;
+		FMath::FAccurater<FReal> fx, fy, fz, fmmdfx, fmmdfy, fmmdfz,fmmpot;
 
 		tree.forEachLeaf([&](LeafClass* leaf){
 			const FReal*const positionsX = leaf->getTargets()->getPositions()[0];

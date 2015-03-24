@@ -40,7 +40,7 @@
  * The class @p FUnifInterpolator defines the anterpolation (M2M) and
  * interpolation (L2L) concerning operations.
  */
-template <int ORDER, class MatrixKernelClass, int NVALS = 1>
+template < class FReal,int ORDER, class MatrixKernelClass, int NVALS = 1>
 class FUnifInterpolator : FNoCopyable
 {
   // compile time constants and types
@@ -49,8 +49,8 @@ class FUnifInterpolator : FNoCopyable
         nLhs = MatrixKernelClass::NLHS,
         nPV = MatrixKernelClass::NPV,
         nVals = NVALS};
-  typedef FUnifRoots< ORDER>  BasisType;
-  typedef FUnifTensor<ORDER> TensorType;
+  typedef FUnifRoots<FReal, ORDER>  BasisType;
+  typedef FUnifTensor<FReal, ORDER> TensorType;
 
   unsigned int node_ids[nnodes][3];
 
@@ -82,12 +82,12 @@ class FUnifInterpolator : FNoCopyable
 /*
   void initM2MandL2L()
   {
-    FPoint ParentRoots[nnodes], ChildRoots[nnodes];
+    FPoint<FReal> ParentRoots[nnodes], ChildRoots[nnodes];
     const FReal ParentWidth(2.);
-    const FPoint ParentCenter(0., 0., 0.);
+    const FPoint<FReal> ParentCenter(0., 0., 0.);
     FUnifTensor<ORDER>::setRoots(ParentCenter, ParentWidth, ParentRoots);
 
-    FPoint ChildCenter;
+    FPoint<FReal> ChildCenter;
     const FReal ChildWidth(1.);
 
     // loop: child cells
@@ -114,7 +114,7 @@ class FUnifInterpolator : FNoCopyable
   void initTensorM2MandL2L(const int TreeLevel, const FReal ParentWidth)
   {
     FReal ChildCoords[3][ORDER];
-    FPoint ChildCenter;
+    FPoint<FReal> ChildCenter;
 
     // Ratio of extended cell widths (definition: child ext / parent ext)
     const FReal ExtendedCellRatio = 
@@ -127,8 +127,8 @@ class FUnifInterpolator : FNoCopyable
     for (unsigned int child=0; child<8; ++child) {
 
       // set child info
-      FUnifTensor<ORDER>::setRelativeChildCenter(child, ChildCenter, ExtendedCellRatio);
-      FUnifTensor<ORDER>::setPolynomialsRoots(ChildCenter, ChildWidth, ChildCoords);
+      FUnifTensor<FReal, ORDER>::setRelativeChildCenter(child, ChildCenter, ExtendedCellRatio);
+      FUnifTensor<FReal, ORDER>::setPolynomialsRoots(ChildCenter, ChildWidth, ChildCoords);
 
       // allocate memory
       ChildParentInterpolator[TreeLevel][child] = new FReal [3 * ORDER*ORDER];
@@ -228,7 +228,7 @@ public:
    * @param[out] Interpolator
    */
   void assembleInterpolator(const unsigned int NumberOfLocalPoints,
-                            const FPoint *const LocalPoints,
+                            const FPoint<FReal> *const LocalPoints,
                             FReal *const Interpolator) const
   {
     // values of Lagrange polynomials of source particle: L_o(x_i)
@@ -288,7 +288,7 @@ public:
    * (anterpolation, it is the transposed interpolation)
    */
   template <class ContainerClass>
-  void applyP2M(const FPoint& center,
+  void applyP2M(const FPoint<FReal>& center,
                 const FReal width,
                 FReal *const multipoleExpansion,
                 const ContainerClass *const sourceParticles) const;
@@ -299,7 +299,7 @@ public:
    * Local to particle operation: application of \f$S_\ell(x,\bar x_m)\f$ (interpolation)
    */
   template <class ContainerClass>
-  void applyL2P(const FPoint& center,
+  void applyL2P(const FPoint<FReal>& center,
                 const FReal width,
                 const FReal *const localExpansion,
                 ContainerClass *const localParticles) const;
@@ -309,7 +309,7 @@ public:
    * Local to particle operation: application of \f$\nabla_x S_\ell(x,\bar x_m)\f$ (interpolation)
    */
   template <class ContainerClass>
-  void applyL2PGradient(const FPoint& center,
+  void applyL2PGradient(const FPoint<FReal>& center,
                         const FReal width,
                         const FReal *const localExpansion,
                         ContainerClass *const localParticles) const;
@@ -319,7 +319,7 @@ public:
    * \f$\nabla_x S_\ell(x,\bar x_m)\f$ (interpolation)
    */
   template <class ContainerClass>
-  void applyL2PTotal(const FPoint& center,
+  void applyL2PTotal(const FPoint<FReal>& center,
                      const FReal width,
                      const FReal *const localExpansion,
                      ContainerClass *const localParticles) const;
@@ -412,17 +412,17 @@ public:
  * Particle to moment: application of \f$S_\ell(y,\bar y_n)\f$
  * (anterpolation, it is the transposed interpolation)
  */
-template <int ORDER, class MatrixKernelClass, int NVALS>
+template <class FReal, int ORDER, class MatrixKernelClass, int NVALS>
 template <class ContainerClass>
-inline void FUnifInterpolator<ORDER,MatrixKernelClass,NVALS>::applyP2M(const FPoint& center,
+inline void FUnifInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyP2M(const FPoint<FReal>& center,
                                                                  const FReal width,
                                                                  FReal *const multipoleExpansion,
                                                                  const ContainerClass *const inParticles) const
 {
 
   // allocate stuff
-  const map_glob_loc map(center, width);
-  FPoint localPosition;
+  const map_glob_loc<FReal> map(center, width);
+  FPoint<FReal> localPosition;
 
   // loop over source particles
   const FReal*const positionsX = inParticles->getPositions()[0];
@@ -431,7 +431,7 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass,NVALS>::applyP2M(const FPo
 
   for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
     // map global position to [-1,1]
-    map(FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition); // 15 flops
+    map(FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition); // 15 flops
     // evaluate Lagrange polynomial at local position
     FReal L_of_x[ORDER][3];
     for (unsigned int o=0; o<ORDER; ++o) {
@@ -475,16 +475,16 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass,NVALS>::applyP2M(const FPo
 /**
  * Local to particle operation: application of \f$S_\ell(x,\bar x_m)\f$ (interpolation)
  */
-template <int ORDER, class MatrixKernelClass, int NVALS>
+template <class FReal, int ORDER, class MatrixKernelClass, int NVALS>
 template <class ContainerClass>
-inline void FUnifInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2P(const FPoint& center,
+inline void FUnifInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyL2P(const FPoint<FReal>& center,
                                                                  const FReal width,
                                                                  const FReal *const localExpansion,
                                                                  ContainerClass *const inParticles) const
 {
   // loop over particles
-  const map_glob_loc map(center, width);
-  FPoint localPosition;
+  const map_glob_loc<FReal> map(center, width);
+  FPoint<FReal> localPosition;
 
   const FReal*const positionsX = inParticles->getPositions()[0];
   const FReal*const positionsY = inParticles->getPositions()[1];
@@ -495,7 +495,7 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2P(const FPo
   for(int idxPart = 0 ; idxPart < nParticles ; ++ idxPart){
 
     // map global position to [-1,1]
-    map(FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition); // 15 flops
+    map(FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition); // 15 flops
 
     // evaluate Lagrange polynomial at local position
     FReal L_of_x[ORDER][3];
@@ -554,9 +554,9 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2P(const FPo
 /**
  * Local to particle operation: application of \f$\nabla_x S_\ell(x,\bar x_m)\f$ (interpolation)
  */
-template <int ORDER, class MatrixKernelClass, int NVALS>
+template <class FReal, int ORDER, class MatrixKernelClass, int NVALS>
 template <class ContainerClass>
-inline void FUnifInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2PGradient(const FPoint& center,
+inline void FUnifInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyL2PGradient(const FPoint<FReal>& center,
                                                                          const FReal width,
                                                                          const FReal *const localExpansion,
                                                                          ContainerClass *const inParticles) const
@@ -566,11 +566,11 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2PGradient(c
   ////////////////////////////////////////////////////////////////////
 
   // setup local to global mapping
-  const map_glob_loc map(center, width);
-  FPoint Jacobian;
+  const map_glob_loc<FReal> map(center, width);
+  FPoint<FReal> Jacobian;
   map.computeJacobian(Jacobian);
   const FReal jacobian[3] = {Jacobian.getX(), Jacobian.getY(), Jacobian.getZ()};
-  FPoint localPosition;
+  FPoint<FReal> localPosition;
   FReal L_of_x[ORDER][3];
   FReal dL_of_x[ORDER][3];
 
@@ -583,7 +583,7 @@ inline void FUnifInterpolator<ORDER,MatrixKernelClass,NVALS>::applyL2PGradient(c
   for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
 
     // map global position to [-1,1]
-    map(FPoint(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition);
+    map(FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition);
 
     // evaluate Lagrange polynomials of source particle
     for (unsigned int o=0; o<ORDER; ++o) {

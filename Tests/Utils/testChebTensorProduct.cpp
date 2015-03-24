@@ -40,15 +40,19 @@
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
+template <class FReal>
 void applyM2M(FReal *const S,	FReal *const w, const unsigned int n,	FReal *const W, const unsigned int N)
 { FBlas::gemtva(n, N, FReal(1.), S,	w, W); }
 
+template <class FReal>
 void applym2m(FReal *const S,	FReal *const w, const unsigned int n,	FReal *const W, const unsigned int N)
 { FBlas::gemtm(n, n, n*n, FReal(1.), S, n, w, n, W, n); }
 
+template <class FReal>
 void applyL2L(FReal *const S,	FReal *const F, const unsigned int n,	FReal *const f, const unsigned int N)
 { FBlas::gemva(N, n, FReal(1.), S, F, f);	}
 
+template <class FReal>
 void applyl2l(FReal *const S,	FReal *const F, const unsigned int n,	FReal *const f, const unsigned int N)
 { FBlas::gemm(n, n, n*n, FReal(1.), S, n, F, n, f, n); }
 
@@ -61,25 +65,26 @@ int main(int argc, char* argv[])
 {
     FHelpDescribeAndExit(argc, argv, "Test Chebyshev tensor product.");
 
+    typedef double FReal;
 	const unsigned int ORDER = 10;
 	const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
-	FPoint X[nnodes];
-	FChebInterpolator<ORDER> Interpolator;
+    FPoint<FReal> X[nnodes];
+	FChebInterpolator<FReal,ORDER> Interpolator;
 
 	{
-		FChebTensor<ORDER>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
-		FPoint x[nnodes];
+        FChebTensor<FReal,ORDER>::setRoots(FPoint<FReal>(0.,0.,0.), FReal(2.), X);
+        FPoint<FReal> x[nnodes];
 	
-		//	const FPoint cx(-.5, -.5, -.5);
-		//	const FPoint cx(-.5, -.5,  .5);
-		//	const FPoint cx(-.5,  .5, -.5);
-		//	const FPoint cx(-.5,  .5,  .5);
-		//	const FPoint cx( .5, -.5, -.5);
-		//	const FPoint cx( .5, -.5,  .5);
-		//	const FPoint cx( .5,  .5, -.5);
-		const FPoint cx( .5,  .5,  .5);
+        //	const FPoint<FReal> cx(-.5, -.5, -.5);
+        //	const FPoint<FReal> cx(-.5, -.5,  .5);
+        //	const FPoint<FReal> cx(-.5,  .5, -.5);
+        //	const FPoint<FReal> cx(-.5,  .5,  .5);
+        //	const FPoint<FReal> cx( .5, -.5, -.5);
+        //	const FPoint<FReal> cx( .5, -.5,  .5);
+        //	const FPoint<FReal> cx( .5,  .5, -.5);
+        const FPoint<FReal> cx( .5,  .5,  .5);
 		const FReal  wx(1.);
-		FChebTensor<ORDER>::setRoots(cx, wx, x);
+		FChebTensor<FReal,ORDER>::setRoots(cx, wx, x);
 	
 		FReal w[nnodes], f[nnodes];
 		for (unsigned int n=0; n<nnodes; ++n) {
@@ -90,7 +95,7 @@ int main(int argc, char* argv[])
 
 
 		FReal coords[3][ORDER];
-		FChebTensor<ORDER>::setPolynomialsRoots(cx, wx, coords);
+		FChebTensor<FReal,ORDER>::setPolynomialsRoots(cx, wx, coords);
 	
 		//	for (unsigned int n=0; n<ORDER; ++n) {
 		//		std::cout << coords[0][n] << "\t"
@@ -185,7 +190,7 @@ int main(int argc, char* argv[])
 	const unsigned int M = 10;
 	FReal points[3][M];
 	FReal weights[M];
-	FPoint lp[M];
+    FPoint<FReal> lp[M];
 	FReal equivW[nnodes];
 
     { ////////////////////////////////////////////////////////
@@ -369,7 +374,7 @@ int main(int argc, char* argv[])
 
 		{
 			unsigned int nids[nnodes][3];
-			FChebTensor<ORDER>::setNodeIds(nids);
+			FChebTensor<FReal,ORDER>::setNodeIds(nids);
 
 			for (unsigned int idx=0; idx<nnodes; ++idx) {
 				f1 += W[idx];

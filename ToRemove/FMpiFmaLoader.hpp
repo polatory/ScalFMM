@@ -54,7 +54,7 @@
  */
 class FMpiFmaLoader : public FAbstractLoader {
 protected:
-  FPoint centerOfBox;         //< The center of box read from file
+  FPoint<FReal> centerOfBox;         //< The center of box read from file
   FReal boxWidth;             //< the box width read from file
   FSize totalNbParticles;     //< the number of particles read from file
   FSize nbParticles;          //< the number of particles read from file for this proc
@@ -215,7 +215,7 @@ public:
       * The center of the box from the simulation file opened by the loader
       * @return box center
       */
-    FPoint getCenterOfBox() const{
+    FPoint<FReal> getCenterOfBox() const{
         return this->centerOfBox;
     }
 
@@ -241,7 +241,7 @@ public:
       * @warning to work with the loader, particles has to expose a setPosition method
       * @param the particle to fill
       */
-    void fillParticle(FPoint*const inParticlePositions, FReal*const inPhysicalValue){
+    void fillParticle(FPoint<FReal>*const inParticlePositions, FReal*const inPhysicalValue){
         if(nbParticles*4 <= idxParticles){
             printf("Error you're loading too much particles.\n");
             exit(0);

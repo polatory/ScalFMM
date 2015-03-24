@@ -43,6 +43,7 @@
 #include "../../Src/GroupTree/StarPUUtils/FStarPUCpuWrapper.hpp"
 
 
+template <class FReal>
 int getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidth,
                       const FReal boxWidthAtLeafLevel, const int treeHeight) {
     FAssertLF( (inRelativePosition >= 0 && inRelativePosition <= boxWidth), "inRelativePosition : ",inRelativePosition );
@@ -53,9 +54,11 @@ int getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidth,
     return static_cast<int>(indexFReal);
 }
 
-FTreeCoordinate getCoordinateFromPosition(const FPoint& centerOfBox, const FReal boxWidth, const int treeHeight,
-                                          const FPoint& pos) {
-    const FPoint boxCorner(centerOfBox,-(boxWidth/2));
+
+template <class FReal>
+FTreeCoordinate getCoordinateFromPosition(const FPoint<FReal>& centerOfBox, const FReal boxWidth, const int treeHeight,
+                                          const FPoint<FReal>& pos) {
+    const FPoint<FReal> boxCorner(centerOfBox,-(boxWidth/2));
     const FReal boxWidthAtLeafLevel(boxWidth/FReal(1<<(treeHeight-1)));
 
     // box coordinate to host the particle
@@ -77,14 +80,15 @@ int main(int argc, char* argv[]){
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbThreads,
                          FParameterDefinitions::NbParticles, FParameterDefinitions::NbThreads,
                          LocalOptionBlocSize);
+    typedef double FReal;
     // Initialize the types
     typedef FTestCellPODCore  GroupCellSymbClass;
     typedef FTestCellPODData  GroupCellUpClass;
     typedef FTestCellPODData  GroupCellDownClass;
     typedef FTestCellPOD      GroupCellClass;
 
-    typedef FGroupTestParticleContainer                                     GroupContainerClass;
-    typedef FGroupTree< GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass,
+    typedef FGroupTestParticleContainer<FReal>                                     GroupContainerClass;
+    typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass,
             GroupContainerClass, 0, 1, long long int>  GroupOctreeClass;
     typedef FStarPUAllCpuCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
@@ -100,13 +104,13 @@ int main(int argc, char* argv[]){
     const int totalNbParticles = (NbParticles*mpiComm.global().processCount());
 
     // Load the particles
-    FRandomLoader loader(NbParticles, 1.0, FPoint(0,0,0), mpiComm.global().processId());
+    FRandomLoader<FReal> loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), mpiComm.global().processId());
     FAssertLF(loader.isOpen());
 
     // Fill the particles
     struct TestParticle{
-        FPoint position;
-        const FPoint& getPosition(){
+        FPoint<FReal> position;
+        const FPoint<FReal>& getPosition(){
             return position;
         }
     };
@@ -119,7 +123,7 @@ int main(int argc, char* argv[]){
     // Sort in parallel
     FVector<TestParticle> myParticles;
     FLeafBalance balancer;
-    FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(mpiComm.global(),
+    FMpiTreeBuilder<FReal, TestParticle >::DistributeArrayToContainer(mpiComm.global(),
                                                                 particles.get(),
                                                                 loader.getNumberOfParticles(),
                                                                 loader.getCenterOfBox(),
@@ -128,7 +132,7 @@ int main(int argc, char* argv[]){
                                                                 &myParticles,
                                                                 &balancer);
 
-    FP2PParticleContainer<> allParticles;
+    FP2PParticleContainer<FReal> allParticles;
     for(int idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
         allParticles.push(myParticles[idxPart].position);
     }
@@ -165,7 +169,7 @@ int main(int argc, char* argv[]){
     GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel,maxThreads);
     groupalgo.execute();
 
-    groupedTree.forEachCellLeaf<FGroupTestParticleContainer>([&](GroupCellClass cell, FGroupTestParticleContainer* leaf){
+    groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass cell, GroupContainerClass* leaf){
         const int nbPartsInLeaf = leaf->getNbParticles();
         const long long int* dataDown = leaf->getDataDown();
         for(int idxPart = 0 ; idxPart < nbPartsInLeaf ; ++idxPart){
@@ -177,9 +181,9 @@ int main(int argc, char* argv[]){
 
 
     typedef FTestCell                   CellClass;
-    typedef FTestParticleContainer      ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FTestParticleContainer<FReal>      ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
     typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
 
@@ -187,9 +191,9 @@ int main(int argc, char* argv[]){
         // Usual octree
         OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());
         for(int idxProc = 0 ; idxProc < mpiComm.global().processCount() ; ++idxProc){
-            FRandomLoader loaderAll(NbParticles, 1.0, FPoint(0,0,0), idxProc);
+            FRandomLoader<FReal> loaderAll(NbParticles, 1.0, FPoint<FReal>(0,0,0), idxProc);
             for(int idxPart = 0 ; idxPart < loaderAll.getNumberOfParticles() ; ++idxPart){
-                FPoint pos;
+                FPoint<FReal> pos;
                 loaderAll.fillParticle(&pos);
                 tree.insert(pos);
             }

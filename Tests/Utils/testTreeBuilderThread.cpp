@@ -44,13 +44,15 @@ int main(int argc, char** argv){
                          FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight);
 
+    typedef double FReal;
+
     static const int P = 9;
 
     typedef FRotationCell<P>               CellClass;
-    typedef FP2PParticleContainer<>          ContainerClass;
+    typedef FP2PParticleContainer<FReal>          ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
@@ -58,7 +60,7 @@ int main(int argc, char** argv){
 
     // -----------------------------------------------------
 
-    FFmaGenericLoader loader(filename);
+    FFmaGenericLoader<FReal> loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -74,7 +76,7 @@ int main(int argc, char** argv){
         ContainerClass particles;
 
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            FPoint particlePosition;
+            FPoint<FReal> particlePosition;
             FReal physicalValue;
             loader.fillParticle(&particlePosition,&physicalValue);
             particles.push(particlePosition, physicalValue );

@@ -40,13 +40,13 @@
  *
  * @tparam ORDER interpolation order \f$\ell\f$
  */
-template <int ORDER>
-class FUnifTensor : public FInterpTensor<ORDER,FUnifRoots<ORDER>>
+template <class FReal, int ORDER>
+class FUnifTensor : public FInterpTensor<FReal, ORDER,FUnifRoots<FReal, ORDER>>
 {
   enum {nnodes = TensorTraits<ORDER>::nnodes,
         rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1)};
-  typedef FUnifRoots<ORDER> BasisType;
-  typedef FInterpTensor<ORDER,BasisType> ParentTensor;
+  typedef FUnifRoots<FReal, ORDER> BasisType;
+  typedef FInterpTensor<FReal, ORDER,BasisType> ParentTensor;
 
  public:
 

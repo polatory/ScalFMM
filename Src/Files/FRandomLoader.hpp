@@ -32,11 +32,12 @@
 * @class FRandomLoader
 * Please read the license
 */
-class FRandomLoader : public FAbstractLoader {
+template <class FReal>
+class FRandomLoader : public FAbstractLoader<FReal> {
 protected:
     const size_t nbParticles;            //< the number of particles
     const FReal boxWidth;             //< the box width
-    const FPoint centerOfBox;    //< The center of box
+    const FPoint<FReal> centerOfBox;    //< The center of box
 
 public:
     /**
@@ -48,7 +49,7 @@ public:
     *
     */
     FRandomLoader(const size_t inNbParticles, const FReal inBoxWidth = 1.0,
-                  const FPoint& inCenterOfBox = FPoint(0,0,0),
+                  const FPoint<FReal>& inCenterOfBox = FPoint<FReal>(0,0,0),
                   const unsigned int inSeed = static_cast<long int>(time(nullptr)))
         : nbParticles(inNbParticles), boxWidth(inBoxWidth), centerOfBox(inCenterOfBox) {
         srand48(inSeed);
@@ -78,7 +79,7 @@ public:
       * The center of the box
       * @return box center
       */
-    FPoint getCenterOfBox() const{
+    FPoint<FReal> getCenterOfBox() const{
         return this->centerOfBox;
     }
 
@@ -95,7 +96,7 @@ public:
       * @warning to work with the loader, particles has to expose a setPosition method
       * @param the particle to fill
       */
-    void fillParticle(FPoint*const inParticlePositions){
+    void fillParticle(FPoint<FReal>*const inParticlePositions){
         inParticlePositions->setPosition(
                     (getRandom() * boxWidth) + centerOfBox.getX() - boxWidth/2,
                     (getRandom() * boxWidth) + centerOfBox.getY() - boxWidth/2,
@@ -112,17 +113,18 @@ public:
 /** This class is a random loader but it also generate
   * randomly the particles type (target or source)
   */
-class FRandomLoaderTsm : public FRandomLoader {
+template <class FReal>
+class FRandomLoaderTsm : public FRandomLoader<FReal> {
 public:
     FRandomLoaderTsm(const size_t inNbParticles, const FReal inBoxWidth = 1.0,
-                  const FPoint& inCenterOfBox = FPoint(0,0,0), const unsigned int inSeed = static_cast<unsigned int>(time(nullptr)))
-        : FRandomLoader(inNbParticles,inBoxWidth,inCenterOfBox,inSeed) {
+                  const FPoint<FReal>& inCenterOfBox = FPoint<FReal>(0,0,0), const unsigned int inSeed = static_cast<unsigned int>(time(nullptr)))
+        : FRandomLoader<FReal>(inNbParticles,inBoxWidth,inCenterOfBox,inSeed) {
     }
 
 
-    void fillParticle(FPoint*const inParticlePositions, FParticleType*const isTarget){
-        FRandomLoader::fillParticle(inParticlePositions);
-        if(FRandomLoader::getRandom() > 0.5 ) (*isTarget) = FParticleTypeTarget;
+    void fillParticle(FPoint<FReal>*const inParticlePositions, FParticleType*const isTarget){
+        FRandomLoader<FReal>::fillParticle(inParticlePositions);
+        if(FRandomLoader<FReal>::getRandom() > 0.5 ) (*isTarget) = FParticleTypeTarget;
         else (*isTarget) = FParticleTypeSource;
     }
 };

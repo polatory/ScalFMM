@@ -73,6 +73,8 @@ int main(int argc, char* argv[])
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
                          FParameterDefinitions::NbThreads, FParameterDefinitions::PeriodicityNbLevels);
 
+    typedef double FReal;
+
     const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/test20k.fma" );
     const std::string filename                = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, defaultFile.c_str());
     const std::string filenameOut          = FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options, "resultPer.fma");
@@ -102,9 +104,9 @@ int main(int argc, char* argv[])
     // open particle file
     ////////////////////////////////////////////////////////////////////
     //
-    FFmaGenericLoader loader(filename);
+    FFmaGenericLoader<FReal> loader(filename);
     FSize nbParticles = loader.getNumberOfParticles() ;
-    FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
+    FmaRWParticle<FReal,8,8>* const particles = new FmaRWParticle<FReal,8,8>[nbParticles];
 
     //
     ////////////////////////////////////////////////////////////////////
@@ -113,16 +115,16 @@ int main(int argc, char* argv[])
     // accuracy
     const unsigned int ORDER = 7;
     // typedefs
-    typedef FP2PParticleContainerIndexed<>                     ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >                        LeafClass;
-    typedef FChebCell<ORDER>                                         CellClass;
-    typedef FOctree<CellClass,ContainerClass,LeafClass>  OctreeClass;
+    typedef FP2PParticleContainerIndexed<FReal>                     ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                        LeafClass;
+    typedef FChebCell<FReal,ORDER>                                         CellClass;
+    typedef FOctree<FReal,CellClass,ContainerClass,LeafClass>  OctreeClass;
     //
-    typedef FInterpMatrixKernelR                                                                              MatrixKernelClass;
+    typedef FInterpMatrixKernelR<FReal>                                       MatrixKernelClass;
     const MatrixKernelClass MatrixKernel;
-    typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
+    typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
     //
-    typedef FFmmAlgorithmPeriodic<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+    typedef FFmmAlgorithmPeriodic<FReal, OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
     // init oct-tree
     OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
@@ -133,7 +135,7 @@ int main(int argc, char* argv[])
                   << " particles ..." << std::endl;
         time.tic();
         //
-        FPoint position;
+        FPoint<FReal> position;
         //
         loader.fillParticle(particles,nbParticles);
 
@@ -167,7 +169,7 @@ int main(int argc, char* argv[])
     // Some output
     //
     //
-    FmaRWParticle<8,8>* const particlesOut = new FmaRWParticle<8,8>[nbParticles];
+    FmaRWParticle<FReal, 8,8>* const particlesOut = new FmaRWParticle<FReal, 8,8>[nbParticles];
 
     { // -----------------------------------------------------
         //
@@ -188,8 +190,8 @@ int main(int argc, char* argv[])
         /////////////////////////////////////////////////////////////////////////////////////////////////
         // Compare
         /////////////////////////////////////////////////////////////////////////////////////////////////
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
+        FMath::FAccurater<FReal> potentialDiff;
+        FMath::FAccurater<FReal> fx, fy, fz;
 
         tree.forEachLeaf([&](LeafClass* leaf){
             const FReal*const posX = leaf->getTargets()->getPositions()[0];
@@ -256,7 +258,7 @@ int main(int argc, char* argv[])
         std::cout << " numberofParticles: " << nbParticles <<"  " << sizeof(nbParticles) <<std::endl;
         std::cout << " Box size: " << loader.getBoxWidth() << "  " << sizeof(loader.getBoxWidth())<<std::endl;
         //
-        FFmaGenericWriter writer(filenameOut) ;
+        FFmaGenericWriter<FReal> writer(filenameOut) ;
         writer.writeHeader(loader.getCenterOfBox(), loader.getBoxWidth() , nbParticles,*particlesOut) ;
         writer.writeArrayOfParticles(particlesOut, nbParticles);
 

@@ -52,10 +52,11 @@ enum KERNEL_FUNCTION_TYPE {HOMOGENEOUS, NON_HOMOGENEOUS};
  * only 1 set of M2L ops can be used for all levels??
  *
  */
+template <class FReal>
 struct FInterpAbstractMatrixKernel : FNoCopyable
 { 
     virtual ~FInterpAbstractMatrixKernel(){} // to remove warning
-    //virtual FReal evaluate(const FPoint&, const FPoint&) const = 0;
+    //virtual FReal evaluate(const FPoint<FReal>&, const FPoint<FReal>&) const = 0;
     // I need both functions because required arguments are not always given
     virtual FReal getScaleFactor(const FReal, const int) const = 0;
     virtual FReal getScaleFactor(const FReal) const = 0;
@@ -64,7 +65,8 @@ struct FInterpAbstractMatrixKernel : FNoCopyable
 
 
 /// One over r
-struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
+template <class FReal>
+struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel<FReal>
 {
     static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
     static const unsigned int NCMP = 1; //< number of components
@@ -135,20 +137,21 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel
         return FReal(2.) / CellWidth;
     }
 
-    FReal evaluate(const FPoint& p1, const FPoint& p2) const {
+    FReal evaluate(const FPoint<FReal>& p1, const FPoint<FReal>& p2) const {
         return evaluate<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
     }
-    void evaluateBlock(const FPoint& p1, const FPoint& p2, FReal* block) const{
+    void evaluateBlock(const FPoint<FReal>& p1, const FPoint<FReal>& p2, FReal* block) const{
         evaluateBlock<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block);
     }
-    void evaluateBlockAndDerivative(const FPoint& p1, const FPoint& p2,
+    void evaluateBlockAndDerivative(const FPoint<FReal>& p1, const FPoint<FReal>& p2,
                                     FReal block[1], FReal blockDerivative[3]) const {
         evaluateBlockAndDerivative<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block, blockDerivative);
     }
 };
 
 /// One over r when the box size is rescaled to 1
-struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
+template <class FReal>
+struct FInterpMatrixKernelRH :FInterpMatrixKernelR<FReal>{
     static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
     static const unsigned int NCMP = 1; //< number of components
     static const unsigned int NPV  = 1; //< dim of physical values
@@ -162,7 +165,7 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
 
     // copy ctor
     FInterpMatrixKernelRH(const FInterpMatrixKernelRH& other)
-        :FInterpMatrixKernelR(other), LX(other.LX), LY(other.LY), LZ(other.LZ)
+        :FInterpMatrixKernelR<FReal>(other), LX(other.LX), LY(other.LY), LZ(other.LZ)
     {}
 
   static const char* getID() { return "ONE_OVER_RH"; }
@@ -225,13 +228,13 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
         return FReal(2.) / CellWidth;
     }
 
-    FReal evaluate(const FPoint& p1, const FPoint& p2) const{
+    FReal evaluate(const FPoint<FReal>& p1, const FPoint<FReal>& p2) const{
         return evaluate<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
     }
-    void evaluateBlock(const FPoint& p1, const FPoint& p2, FReal* block) const{
+    void evaluateBlock(const FPoint<FReal>& p1, const FPoint<FReal>& p2, FReal* block) const{
         evaluateBlock<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block);
     }
-    void evaluateBlockAndDerivative(const FPoint& p1, const FPoint& p2,
+    void evaluateBlockAndDerivative(const FPoint<FReal>& p1, const FPoint<FReal>& p2,
                                     FReal block[1], FReal blockDerivative[3]) const {
         evaluateBlockAndDerivative<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block, blockDerivative);
     }
@@ -239,7 +242,8 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR{
 
 
 /// One over r^2
-struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
+template <class FReal>
+struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel<FReal>
 {
     static const KERNEL_FUNCTION_TYPE Type = HOMOGENEOUS;
     static const unsigned int NCMP = 1; //< number of components
@@ -316,13 +320,13 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
         return FReal(4.) / (CellWidth*CellWidth);
     }
 
-    FReal evaluate(const FPoint& p1, const FPoint& p2) const{
+    FReal evaluate(const FPoint<FReal>& p1, const FPoint<FReal>& p2) const{
         return evaluate<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
     }
-    void evaluateBlock(const FPoint& p1, const FPoint& p2, FReal* block) const{
+    void evaluateBlock(const FPoint<FReal>& p1, const FPoint<FReal>& p2, FReal* block) const{
         evaluateBlock<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block);
     }
-    void evaluateBlockAndDerivative(const FPoint& p1, const FPoint& p2,
+    void evaluateBlockAndDerivative(const FPoint<FReal>& p1, const FPoint<FReal>& p2,
                                     FReal block[1], FReal blockDerivative[3]) const {
         evaluateBlockAndDerivative<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block, blockDerivative);
     }
@@ -331,7 +335,8 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel
 
 
 /// One over r^12 - One over r^6
-struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
+template <class FReal>
+struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel<FReal>
 {
     static const KERNEL_FUNCTION_TYPE Type = NON_HOMOGENEOUS;
     static const unsigned int NCMP = 1; //< number of components
@@ -418,13 +423,13 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
 
 
 
-    FReal evaluate(const FPoint& p1, const FPoint& p2) const{
+    FReal evaluate(const FPoint<FReal>& p1, const FPoint<FReal>& p2) const{
         return evaluate<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
     }
-    void evaluateBlock(const FPoint& p1, const FPoint& p2, FReal* block) const{
+    void evaluateBlock(const FPoint<FReal>& p1, const FPoint<FReal>& p2, FReal* block) const{
         evaluateBlock<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block);
     }
-    void evaluateBlockAndDerivative(const FPoint& p1, const FPoint& p2,
+    void evaluateBlockAndDerivative(const FPoint<FReal>& p1, const FPoint<FReal>& p2,
                                     FReal block[1], FReal blockDerivative[3]) const {
         evaluateBlockAndDerivative<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block, blockDerivative);
     }
@@ -462,7 +467,8 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel
 /// R_{,ij}
 // PB: IMPORTANT! This matrix kernel does not present the symmetries 
 // required by ChebSym kernel => only suited for Unif interpolation
-struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
+template <class FReal>
+struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel<FReal>
 {
     static const KERNEL_FUNCTION_TYPE Type = NON_HOMOGENEOUS;
     static const unsigned int NK   = 3*3; //< total number of components
@@ -624,17 +630,27 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
 
 
 
-    FReal evaluate(const FPoint& p1, const FPoint& p2) const{
+    FReal evaluate(const FPoint<FReal>& p1, const FPoint<FReal>& p2) const{
         return evaluate<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
     }
-    void evaluateBlock(const FPoint& p1, const FPoint& p2, FReal* block) const{
+    void evaluateBlock(const FPoint<FReal>& p1, const FPoint<FReal>& p2, FReal* block) const{
         evaluateBlock<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block);
     }
-    void evaluateBlockAndDerivative(const FPoint& p1, const FPoint& p2,
+    void evaluateBlockAndDerivative(const FPoint<FReal>& p1, const FPoint<FReal>& p2,
                                     FReal block[NCMP], FReal blockDerivative[NCMP][3]) const {
         evaluateBlockAndDerivative<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block, blockDerivative);
     }
 };
+
+/// R_IJ
+template <class FReal>
+const unsigned int FInterpMatrixKernel_R_IJ<FReal>::indexTab[]={0,0,0,1,1,2,
+                                                         0,1,2,1,2,2};
+
+template <class FReal>
+const unsigned int FInterpMatrixKernel_R_IJ<FReal>::applyTab[]={0,1,2,
+                                                         1,3,4,
+                                                         2,4,5};
 
 
 
@@ -642,20 +658,20 @@ struct FInterpMatrixKernel_R_IJ : FInterpAbstractMatrixKernel
   number of rows and cols and on the coordinates x and y and the type of the
   generating matrix-kernel function.
 */
-template <typename MatrixKernelClass>
+template <class FReal, typename MatrixKernelClass>
 class EntryComputer
 {
     const MatrixKernelClass *const MatrixKernel;
 
     const unsigned int nx, ny;
-    const FPoint *const px, *const py;
+    const FPoint<FReal> *const px, *const py;
 
     const FReal *const weights;
 
 public:
     explicit EntryComputer(const MatrixKernelClass *const inMatrixKernel,
-                           const unsigned int _nx, const FPoint *const _px,
-                           const unsigned int _ny, const FPoint *const _py,
+                           const unsigned int _nx, const FPoint<FReal> *const _px,
+                           const unsigned int _ny, const FPoint<FReal> *const _py,
                            const FReal *const _weights = NULL)
         : MatrixKernel(inMatrixKernel),	nx(_nx), ny(_ny), px(_px), py(_py), weights(_weights) {}
 

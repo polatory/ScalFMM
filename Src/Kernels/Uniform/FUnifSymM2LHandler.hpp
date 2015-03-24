@@ -40,9 +40,9 @@
   arrangement all 316 far-field interactions can be represented by
   permutations of the 16 we compute in this function).
  */
-template <int ORDER, typename MatrixKernelClass>
+template < class FReal, int ORDER, typename MatrixKernelClass>
 static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal CellWidth,
-                       FComplex* FC[343])
+                       FComplex<FReal>* FC[343])
 {
   //	std::cout << "\nComputing 16 far-field interactions (l=" << ORDER << ", eps=" << Epsilon
   //						<< ") for cells of width w = " << CellWidth << std::endl;
@@ -50,17 +50,17 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 	static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
 	// interpolation points of source (Y) and target (X) cell
-	FPoint X[nnodes], Y[nnodes];
+    FPoint<FReal> X[nnodes], Y[nnodes];
 	// set roots of target cell (X)
-	FUnifTensor<ORDER>::setRoots(FPoint(0.,0.,0.), CellWidth, X);
+    FUnifTensor<ORDER>::setRoots(FPoint<FReal>(0.,0.,0.), CellWidth, X);
 	// temporary matrices
 	FReal *_C;
-	FComplex *_FC;
+    FComplex<FReal> *_FC;
 
   // reduce storage from nnodes^2=order^6 to (2order-1)^3
   const unsigned int rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1);
 	_C = new FReal [rc];
-	_FC = new FComplex [rc]; // TODO: do it in the non-sym version!!!
+    _FC = new FComplex<FReal> [rc]; // TODO: do it in the non-sym version!!!
 
   // init Discrete Fourier Transformator
   const int dimfft = 1; // unidim FFT since fully circulant embedding
@@ -91,7 +91,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 			for (int k=0; k<=j; ++k) {
 
 				// set roots of source cell (Y)
-				const FPoint cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
+                const FPoint<FReal> cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
 				FUnifTensor<ORDER>::setRoots(cy, CellWidth, Y);
 
 				// start timer
@@ -136,7 +136,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 				{
 					// allocate
 					assert(FC[idx]==NULL);
-					FC[idx] = new FComplex[opt_rc];
+                    FC[idx] = new FComplex<FReal>[opt_rc];
           FBlas::c_copy(opt_rc, reinterpret_cast<FReal*>(_FC), 
                         reinterpret_cast<FReal*>(FC[idx]));
 				}
@@ -151,7 +151,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 
 		std::cout << "The approximation of the " << counter
               << " far-field interactions (sizeM2L= " 
-              << counter*opt_rc*sizeof(FComplex) << " B"
+              << counter*opt_rc*sizeof(FComplex<FReal>) << " B"
               << ") took " << overall_time << "s\n" << std::endl;
 
     // Free _C & _FC
@@ -185,7 +185,7 @@ class FUnifSymM2LHandler<ORDER, HOMOGENEOUS>
   static const unsigned int nnodes = ORDER*ORDER*ORDER;
 
 	// M2L operators
-	FComplex*    K[343];
+    FComplex<FReal>*    K[343];
 
 public:
 	
@@ -229,7 +229,7 @@ public:
 
 
 	/*! return the t-th approximated far-field interactions*/
-	const FComplex *const getK(const unsigned int, const unsigned int t) const
+    const FComplex<FReal> *const getK(const unsigned int, const unsigned int t) const
 	{	return K[t]; }
 
 };
@@ -249,7 +249,7 @@ class FUnifSymM2LHandler<ORDER, NON_HOMOGENEOUS>
 	const unsigned int TreeHeight;
 
 	// M2L operators for all levels in the octree
-	FComplex***    K;
+    FComplex<FReal>***    K;
 
 public:
 	
@@ -265,10 +265,10 @@ public:
 		: TreeHeight(inTreeHeight)
 	{
 		// init all 343 item to zero, because effectively only 16 exist
-		K       = new FComplex** [TreeHeight];
+        K       = new FComplex<FReal>** [TreeHeight];
 		K[0]       = NULL; K[1]       = NULL;
 		for (unsigned int l=2; l<TreeHeight; ++l) {
-			K[l]       = new FComplex* [343];
+            K[l]       = new FComplex<FReal>* [343];
 			for (unsigned int t=0; t<343; ++t)
 				K[l][t]       = NULL;
 		}
@@ -309,7 +309,7 @@ public:
 	}
 
 	/*! return the t-th approximated far-field interactions*/
-	const FComplex *const getK(const unsigned int l, const unsigned int t) const
+    const FComplex<FReal> *const getK(const unsigned int l, const unsigned int t) const
 	{	return K[l][t]; }
 
 };

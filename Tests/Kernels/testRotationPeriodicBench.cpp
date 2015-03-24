@@ -60,12 +60,13 @@ int main(int argc, char** argv){
     /////////////////////////////////////////////////
     // Types
     /////////////////////////////////////////////////
+    typedef double FReal;
     static const int P = 6;
-    typedef FRotationCell<P>            CellClass;
-    typedef FP2PParticleContainerIndexed<>  ContainerClass;
-    typedef FRotationKernel< CellClass, ContainerClass, P >   KernelClass;
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+    typedef FRotationCell<FReal,P>            CellClass;
+    typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
+    typedef FRotationKernel<FReal, CellClass, ContainerClass, P >   KernelClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal,CellClass,ContainerClass,LeafClass> OctreeClass;
     typedef FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassPer;
 
     /////////////////////////////////////////////////
@@ -88,8 +89,8 @@ int main(int argc, char** argv){
     // Insert particlePositions in tree and copy into array
     /////////////////////////////////////////////////
 
-    FRandomLoader loader(NbParticles);
-    FPoint* const particlePositions = new FPoint[NbParticles];
+    FRandomLoader<FReal> loader(NbParticles);
+    FPoint<FReal>* const particlePositions = new FPoint<FReal>[NbParticles];
 
     for(int idxPart = 0 ; idxPart < NbParticles ; ++idxPart){
         loader.fillParticle(&particlePositions[idxPart]);

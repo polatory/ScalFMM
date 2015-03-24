@@ -52,11 +52,13 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::OutputFile);
 
-	typedef FSphericalCell                 CellClass;
-	typedef FP2PParticleContainer<>         ContainerClass;
+    typedef double FReal;
 
-	typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-	typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+	typedef FSphericalCell                 CellClass;
+	typedef FP2PParticleContainer<FReal>         ContainerClass;
+
+	typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+	typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
 	///////////////////////What we do/////////////////////////////
 	std::cout << ">> This executable has to be used to load or retrieve an entier tree.\n";
@@ -69,7 +71,7 @@ int main(int argc, char ** argv){
     const std::string filenameOUT = FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options, "tmp_tree.data");
 	std::cout << "Opening : " << filenameIN << "\n";
 
-	FFmaGenericLoader loader(filenameIN);
+	FFmaGenericLoader<FReal> loader(filenameIN);
 	//
 	// -----------------------------------------------------
 	CellClass::Init(5);
@@ -82,7 +84,7 @@ int main(int argc, char ** argv){
 	counter.tic();
 
 	for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-		FPoint particlePosition;
+        FPoint<FReal> particlePosition;
 		FReal physicalValue = 0.0;
 		loader.fillParticle(&particlePosition,&physicalValue);
 		tree.insert(particlePosition, physicalValue );

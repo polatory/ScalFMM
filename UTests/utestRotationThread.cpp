@@ -37,7 +37,7 @@
   */
 class TestRotationDirect : public FUTester<TestRotationDirect> {
     /** The test method to factorize all the test based on different kernels */
-    template <class CellClass, class ContainerClass, class KernelClass, class LeafClass,
+    template <class FReal, class CellClass, class ContainerClass, class KernelClass, class LeafClass,
               class OctreeClass, class FmmClass>
     void RunTest(){
 		//
@@ -53,7 +53,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 		//
 		std::string filename(SCALFMMDataPath+parFile);
 		//
-		FFmaGenericLoader loader(filename);
+		FFmaGenericLoader<FReal> loader(filename);
         if(!loader.isOpen()){
             Print("Cannot open particles file.");
             uassert(false);
@@ -66,7 +66,7 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
         const int SizeSubLevels = 2;
 //
 		FSize nbParticles = loader.getNumberOfParticles() ;
-		FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
+		FmaRWParticle<FReal, 8,8>* const particles = new FmaRWParticle<FReal, 8,8>[nbParticles];
 
 		loader.fillParticle(particles,nbParticles);
          //
@@ -99,8 +99,8 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 		// Compare
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		Print("Compute Diff...");
-		FMath::FAccurater potentialDiff;
-		FMath::FAccurater fx, fy, fz;
+		FMath::FAccurater<FReal> potentialDiff;
+		FMath::FAccurater<FReal> fx, fy, fz;
 		{ // Check that each particle has been summed with all other
 
 			tree.forEachLeaf([&](LeafClass* leaf){
@@ -193,13 +193,14 @@ class TestRotationDirect : public FUTester<TestRotationDirect> {
 
     /** Rotation */
     void TestRotation(){
+        typedef double FReal;
         typedef FRotationCell<P>              CellClass;
-        typedef FP2PParticleContainerIndexed<>  ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
         typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
 
-        typedef FSimpleLeaf<ContainerClass >                     LeafClass;
-        typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+        typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
         typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 

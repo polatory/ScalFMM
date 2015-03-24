@@ -50,8 +50,8 @@ int main(int argc, char ** argv){
 
     typedef FBasicCell CellClass;
     typedef FBasicParticleContainer<0>      ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree<CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
     std::cout << ">> It is only interesting to wath the code to understand\n";
@@ -60,7 +60,7 @@ int main(int argc, char ** argv){
     const int NbPart = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000);
     FTic counter;
 
-    FRandomLoader loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoader<FReal> loader(NbPart, 1, FPoint<FReal>(0.5,0.5,0.5), 1);
     OctreeClass tree(10, 3, loader.getBoxWidth(), loader.getCenterOfBox());
 
     // -----------------------------------------------------
@@ -68,7 +68,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
     {
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&particlePosition);
             tree.insert(particlePosition);

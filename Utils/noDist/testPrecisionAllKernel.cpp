@@ -80,11 +80,11 @@ void usage() {
               <<     "      -t  n  specifies the number of threads used in the computations" << std::endl;
 }
 
-template <class OctreeClass, class LeafClass>
-void checkResAndPrint(OctreeClass * tree, FmaRWParticle<8,8> * const particles,FReal energyD, std::string name,int order){
+template <class FReal, class OctreeClass, class LeafClass>
+void checkResAndPrint(OctreeClass * tree, FmaRWParticle<FReal, 8,8> * const particles,FReal energyD, std::string name,int order){
     FReal energy = 0.0;
-    FMath::FAccurater potentialDiff;
-    FMath::FAccurater fx, fy, fz;
+    FMath::FAccurater<FReal> potentialDiff;
+    FMath::FAccurater<FReal> fx, fy, fz;
 
     { // Check that each particle has been summed with all other
 
@@ -136,9 +136,9 @@ void checkResAndPrint(OctreeClass * tree, FmaRWParticle<8,8> * const particles,F
 
 // Simply create particles and try the CHEBYSHEV kernels
 struct ChebMainStruct{
-    template <const unsigned int ORDER>
+    template <const unsigned int ORDER, class FReal>
     static void For(int argc, char* argv[],FSize nbParticles,int TreeHeight, int SubTreeHeight,
-                    FReal BoxWidth, FPoint& CenterOfBox,FmaRWParticle<8,8> * const particles,
+                    FReal BoxWidth, FPoint<FReal>& CenterOfBox,FmaRWParticle<FReal, 8,8> * const particles,
                     FReal energyD,FReal totPhysicalValue)
     {
         //Global timer to be used
@@ -148,13 +148,13 @@ struct ChebMainStruct{
 
         //Start of kernels there
         {//Chebyshev
-            typedef FP2PParticleContainerIndexed<> ContainerClass;
-            typedef FSimpleLeaf<ContainerClass> LeafClass;
-            typedef FInterpMatrixKernelR MatrixKernelClass;
-            typedef FChebCell<ORDER> CellClass;
-            typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+            typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+            typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
+            typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+            typedef FChebCell<FReal,ORDER> CellClass;
+            typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 
-            typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+            typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
             typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
             // init oct-tree
             OctreeClass tree(TreeHeight, SubTreeHeight,  BoxWidth,CenterOfBox);
@@ -185,9 +185,9 @@ struct ChebMainStruct{
 
 // Simply create particles and try the CHEBYSHEV kernels
 struct UnifMainStruct{
-    template <const unsigned int ORDER>
+    template <const unsigned int ORDER, class FReal>
     static void For(int argc, char* argv[],FSize nbParticles,int TreeHeight, int SubTreeHeight,
-                    FReal BoxWidth, FPoint& CenterOfBox,FmaRWParticle<8,8> * const particles,
+                    FReal BoxWidth, FPoint<FReal>& CenterOfBox,FmaRWParticle<FReal, 8,8> * const particles,
                     FReal energyD,FReal totPhysicalValue)
     {
         //Global timer to be used
@@ -197,13 +197,13 @@ struct UnifMainStruct{
 
         //Start of kernels there
         {//Lagrange
-            typedef FP2PParticleContainerIndexed<> ContainerClass;
-            typedef FSimpleLeaf<ContainerClass> LeafClass;
-            typedef FInterpMatrixKernelR MatrixKernelClass;
-            typedef FUnifCell<ORDER> CellClass;
-            typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+            typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+            typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
+            typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+            typedef FUnifCell<FReal,ORDER> CellClass;
+            typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 
-            typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+            typedef FUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
             typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
             // init oct-tree
             OctreeClass tree(TreeHeight, SubTreeHeight,  BoxWidth,CenterOfBox);
@@ -233,9 +233,9 @@ struct UnifMainStruct{
 };
 
 struct RotMainStruct{
-    template <const unsigned int ORDER>
+    template <const unsigned int ORDER, class FReal>
     static void For(int argc, char* argv[],FSize nbParticles,int TreeHeight, int SubTreeHeight,
-                    FReal BoxWidth, FPoint& CenterOfBox,FmaRWParticle<8,8> * const particles,
+                    FReal BoxWidth, FPoint<FReal>& CenterOfBox,FmaRWParticle<FReal, 8,8> * const particles,
                     FReal energyD,FReal totPhysicalValue)
     {
         //Global timer to be used
@@ -245,10 +245,10 @@ struct RotMainStruct{
 
         //Start of kernels there
         {//Rotation
-            typedef FP2PParticleContainerIndexed<> ContainerClass;
-            typedef FSimpleLeaf<ContainerClass> LeafClass;
+            typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+            typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
             typedef FRotationCell<ORDER> CellClass;
-            typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+            typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 
             typedef FRotationKernel<CellClass,ContainerClass,ORDER> KernelClass;
             typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
@@ -278,9 +278,9 @@ struct RotMainStruct{
 };
 
 struct TaylorMainStruct{
-    template <const unsigned int ORDER>
+    template <const unsigned int ORDER, class FReal>
     static void For(int argc, char* argv[],FSize nbParticles,int TreeHeight, int SubTreeHeight,
-                    FReal BoxWidth, FPoint& CenterOfBox,FmaRWParticle<8,8> * const particles,
+                    FReal BoxWidth, FPoint<FReal>& CenterOfBox,FmaRWParticle<FReal, 8,8> * const particles,
                     FReal energyD,FReal totPhysicalValue)
     {
         //Global timer to be used
@@ -290,10 +290,10 @@ struct TaylorMainStruct{
 
         //Start of kernels there
         {//Taylor
-            typedef FP2PParticleContainerIndexed<> ContainerClass;
-            typedef FSimpleLeaf<ContainerClass> LeafClass;
+            typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+            typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
             typedef FTaylorCell<ORDER,1> CellClass;
-            typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+            typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 
             typedef FTaylorKernel<CellClass,ContainerClass,ORDER,1> KernelClass;
             typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
@@ -325,9 +325,9 @@ struct TaylorMainStruct{
 
 // Simply create particles and try the SPHERICAL kernels
 struct SphericalBlasMainStruct{
-    template <const unsigned int ORDER>
+    template <const unsigned int ORDER, class FReal>
     static void For(int argc, char* argv[],FSize nbParticles,int TreeHeight, int SubTreeHeight,
-                    FReal BoxWidth, FPoint& CenterOfBox,FmaRWParticle<8,8> * const particles,
+                    FReal BoxWidth, FPoint<FReal>& CenterOfBox,FmaRWParticle<FReal, 8,8> * const particles,
                     FReal energyD,FReal totPhysicalValue)
     {
         //Global timer to be used
@@ -337,10 +337,10 @@ struct SphericalBlasMainStruct{
 
         //Start of kernels there
         {//Spherical
-            typedef FP2PParticleContainerIndexed<> ContainerClass;
-            typedef FSimpleLeaf<ContainerClass> LeafClass;
+            typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+            typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
             typedef FSphericalCell CellClass;
-            typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+            typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
             CellClass::Init(ORDER);
             typedef FSphericalBlasKernel<CellClass,ContainerClass> KernelClass;
             typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
@@ -371,9 +371,9 @@ struct SphericalBlasMainStruct{
 
 // Simply create particles and try the SPHERICAL kernels
 struct SphericalBlockBlasMainStruct{
-    template <const unsigned int ORDER>
+    template <const unsigned int ORDER, class FReal>
     static void For(int argc, char* argv[],FSize nbParticles,int TreeHeight, int SubTreeHeight,
-                    FReal BoxWidth, FPoint& CenterOfBox,FmaRWParticle<8,8> * const particles,
+                    FReal BoxWidth, FPoint<FReal>& CenterOfBox,FmaRWParticle<FReal, 8,8> * const particles,
                     FReal energyD,FReal totPhysicalValue)
     {
         //Global timer to be used
@@ -383,10 +383,10 @@ struct SphericalBlockBlasMainStruct{
 
         //Start of kernels there
         {//Spherical
-            typedef FP2PParticleContainerIndexed<> ContainerClass;
-            typedef FSimpleLeaf<ContainerClass> LeafClass;
+            typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+            typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
             typedef FSphericalCell CellClass;
-            typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+            typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
             CellClass::Init(ORDER);
             typedef FSphericalBlockBlasKernel<CellClass,ContainerClass> KernelClass;
             typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
@@ -428,12 +428,13 @@ int main(int argc, char** argv){
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-subdepth", 2);
     const unsigned int NbThreads      = FParameters::getValue(argc, argv, "-t", omp_get_max_threads());
 
+    typedef double FReal;
 
     //Open files
-    FFmaGenericLoader loader(filename);
+    FFmaGenericLoader<FReal> loader(filename);
     if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
     FSize nbParticles = loader.getNumberOfParticles() ;
-    FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
+    FmaRWParticle<FReal, 8,8>* const particles = new FmaRWParticle<FReal, 8,8>[nbParticles];
     //
     loader.fillParticle(particles,nbParticles);
 

@@ -45,6 +45,7 @@ int main(int argc, char ** argv ){
     FHelpDescribeAndExit(argc, argv, "Load a file and put the particles in a tree with the TSM (target source model)",
                          FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight);
 
+    typedef double FReal;
     typedef FBasicParticleContainer<1>     ContainerClass;
     typedef FTypedLeaf< ContainerClass >                     LeafClass;
     typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
@@ -74,7 +75,7 @@ int main(int argc, char ** argv ){
         std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
         counter.tic();
 
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         FReal physicalValue = 0.0;
         FParticleType particleType;
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){

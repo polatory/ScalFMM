@@ -65,7 +65,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		const int PeriodicDeep  = 2;
 		const int NbParticles     = 250;
 
-		FRandomLoader loader(NbParticles);
+		FRandomLoader<FReal> loader(NbParticles);
 
 		Print("Number of particles:");
 		Print(loader.getNumberOfParticles());
@@ -73,7 +73,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		// Create octree
 		OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 		struct TestParticle{
-			FPoint position;
+			FPoint<FReal> position;
 			FReal physicalValue;
 			FReal potential;
 			FReal forces[3];
@@ -84,7 +84,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		FReal coeff = -1.0, value = 0.10, sum = 0.0, physicalValue;
 		TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
 		for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-			FPoint position;
+			FPoint<FReal> position;
 			loader.fillParticle(&position);
 			//	loader.fillParticle(&position,&physicalValue);
 
@@ -144,7 +144,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 						if(idxX ==0 && idxY == 0 && idxZ == 0) continue;
 						// next lines for test
 
-						const FPoint offset(loader.getBoxWidth() * FReal(idxX),
+						const FPoint<FReal> offset(loader.getBoxWidth() * FReal(idxX),
 								loader.getBoxWidth() * FReal(idxY),
 								loader.getBoxWidth() * FReal(idxZ));
 
@@ -183,8 +183,8 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 
 		Print("Compute Diff...");
-		FMath::FAccurater potentialDiff;
-		FMath::FAccurater fx, fy, fz;
+		FMath::FAccurater<FReal> potentialDiff;
+		FMath::FAccurater<FReal> fx, fy, fz;
 
 		{ // Check that each particle has been summed with all other
 
@@ -275,12 +275,12 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 	/** TestChebKernel */
 	void TestChebKernel(){
 		const unsigned int ORDER = 6;
-		typedef FP2PParticleContainerIndexed<> ContainerClass;
-		typedef FSimpleLeaf<ContainerClass> LeafClass;
-		typedef FInterpMatrixKernelR MatrixKernelClass;
-		typedef FChebCell<ORDER> CellClass;
-		typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-		typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+		typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+		typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
+		typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+		typedef FChebCell<FReal,ORDER> CellClass;
+		typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
+		typedef FChebKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 		typedef FFmmAlgorithmPeriodic<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
 		std::cout <<" TEST 1  "<<std::endl;
@@ -290,12 +290,12 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 	/** TestChebSymKernel */
 	void TestChebSymKernel(){
 		const unsigned int ORDER = 7;
-		typedef FP2PParticleContainerIndexed<> ContainerClass;
-		typedef FSimpleLeaf<ContainerClass> LeafClass;
-		typedef FInterpMatrixKernelR MatrixKernelClass;
-		typedef FChebCell<ORDER> CellClass;
-		typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-		typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+		typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+		typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
+		typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+		typedef FChebCell<FReal,ORDER> CellClass;
+		typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
+		typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 		typedef FFmmAlgorithmPeriodic<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
 		std::cout <<std::endl<<" TEST 2 "<<std::endl;

@@ -51,7 +51,7 @@ template <int ORDER> struct TensorTraits
  * (e.g. FChebRoots, FUnifRoots...)
 
  */
-template <int ORDER, typename RootsClass>
+template <class FReal, int ORDER, typename RootsClass>
 class FInterpTensor : FNoCopyable
 {
   enum {nnodes = TensorTraits<ORDER>::nnodes};
@@ -86,12 +86,12 @@ public:
    * @param[out] rootPositions coordinates of interpolation points
    */
   static
-  void setRoots(const FPoint& center, const FReal width, FPoint rootPositions[nnodes])
+  void setRoots(const FPoint<FReal>& center, const FReal width, FPoint<FReal> rootPositions[nnodes])
   {
     unsigned int node_ids[nnodes][3];
     setNodeIds(node_ids);
-    const map_loc_glob map(center, width);
-    FPoint localPosition;
+    const map_loc_glob<FReal> map(center, width);
+    FPoint<FReal> localPosition;
     for (unsigned int n=0; n<nnodes; ++n) {
       localPosition.setX(FReal(BasisType::roots[node_ids[n][0]]));
       localPosition.setY(FReal(BasisType::roots[node_ids[n][1]]));
@@ -108,10 +108,10 @@ public:
    * @param[out] roots coordinates of equispaced roots
    */
   static
-  void setPolynomialsRoots(const FPoint& center, const FReal width, FReal roots[3][ORDER])
+  void setPolynomialsRoots(const FPoint<FReal>& center, const FReal width, FReal roots[3][ORDER])
   {
-    const map_loc_glob map(center, width);
-    FPoint lPos, gPos;
+    const map_loc_glob<FReal> map(center, width);
+    FPoint<FReal> lPos, gPos;
     for (unsigned int n=0; n<ORDER; ++n) {
       lPos.setX(FReal(BasisType::roots[n]));
       lPos.setY(FReal(BasisType::roots[n]));
@@ -132,7 +132,7 @@ public:
    */
   static
   void setRelativeChildCenter(const unsigned int ChildIndex,
-                              FPoint& ChildCenter,
+                              FPoint<FReal>& ChildCenter,
                               const FReal ExtendedCellRatio=FReal(.5))
   {
     const int RelativeChildPositions[][3] = { {-1, -1, -1},

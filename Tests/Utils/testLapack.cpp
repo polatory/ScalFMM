@@ -41,6 +41,7 @@ int main(int argc, char ** argv)
    * TODO QR decomposition: FBlas::geqrf()
    */
 
+    typedef double FReal;
     const unsigned int m = 4, n = 4;
     FReal* A = new FReal [m * n]; // matrix: column major ordering
 

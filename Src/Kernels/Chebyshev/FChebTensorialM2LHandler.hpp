@@ -36,7 +36,7 @@
  * @param[out] C matrix of size \f$r\times 316 r\f$ storing \f$[C_1,\dots,C_{316}]\f$
  * @param[out] B matrix of size \f$\ell^3\times r\f$
  */
-template <int ORDER, class MatrixKernelClass>
+template <class FReal, int ORDER, class MatrixKernelClass>
 unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel, 
                                 const FReal CellWidth, 
                                 const FReal epsilon,
@@ -72,10 +72,10 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
  *
  * @tparam ORDER interpolation order \f$\ell\f$
  */
-template <int ORDER, class MatrixKernelClass, KERNEL_FUNCTION_TYPE TYPE> class FChebTensorialM2LHandler;
+template <class FReal, int ORDER, class MatrixKernelClass, KERNEL_FUNCTION_TYPE TYPE> class FChebTensorialM2LHandler;
 
-template <int ORDER, class MatrixKernelClass>
-class FChebTensorialM2LHandler<ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyable
+template <class FReal, int ORDER, class MatrixKernelClass>
+class FChebTensorialM2LHandler<FReal, ORDER,MatrixKernelClass,HOMOGENEOUS> : FNoCopyable
 {
     enum {order = ORDER,
           nnodes = TensorTraits<ORDER>::nnodes,
@@ -371,10 +371,10 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
     if (C[d]) throw std::runtime_error("Compressed M2L operators are already set");
 
     // interpolation points of source (Y) and target (X) cell
-    FPoint X[nnodes], Y[nnodes];
+    FPoint<FReal> X[nnodes], Y[nnodes];
     // set roots of target cell (X)
     const FReal ExtendedCellWidth(CellWidth+CellWidthExtension);
-    FChebTensor<order>::setRoots(FPoint(0.,0.,0.), ExtendedCellWidth, X);
+    FChebTensor<FReal,order>::setRoots(FPoint<FReal>(0.,0.,0.), ExtendedCellWidth, X);
 
     // allocate memory and compute 316 m2l operators
     FReal** _C; 
@@ -388,8 +388,8 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
             for (int k=-3; k<=3; ++k) {
                 if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
                     // set roots of source cell (Y)
-                    const FPoint cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
-                    FChebTensor<order>::setRoots(cy, ExtendedCellWidth, Y);
+                    const FPoint<FReal> cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
+                    FChebTensor<FReal,order>::setRoots(cy, ExtendedCellWidth, Y);
 
                     // evaluate m2l operator
                     for (unsigned int n=0; n<nnodes; ++n)
@@ -420,7 +420,7 @@ unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel,
 
     //  //////////////////////////////////////////////////////////      
     //  FReal weights[nnodes];
-    //  FChebTensor<order>::setRootOfWeights(weights);
+    //  FChebTensor<FReal,order>::setRootOfWeights(weights);
     //  for (unsigned int i=0; i<316; ++i)
     //      for (unsigned int n=0; n<nnodes; ++n) {
     //          FBlas::scal(nnodes, weights[n], _C+i*nnodes*nnodes + n,  nnodes); // scale rows

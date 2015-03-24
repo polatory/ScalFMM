@@ -61,6 +61,8 @@
 int main(int argc, char ** argv){
     FHelpDescribeAndExit(argc, argv, "Test the uniform tensorial interpolator (only the code is interesting)");
 
+    typedef double FReal;
+
     typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
     const double a = 0.0; // core width (Beware! if diff from 0. then Kernel should be NON HOMOGENEOUS !!!)
 
@@ -70,7 +72,7 @@ int main(int argc, char ** argv){
     const unsigned int npot = MatrixKernelClass::NPOT;
 
     typedef FP2PParticleContainer<nrhs,nlhs> ContainerClass;
-    typedef FSimpleLeaf<ContainerClass> LeafClass;
+    typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
 
     ///////////////////////What we do/////////////////////////////
     std::cout << "\nTask: Compute interactions between source particles in leaf Y and target\n";
@@ -87,7 +89,7 @@ int main(int argc, char ** argv){
 
     ////////////////////////////////////////////////////////////////////
     LeafClass X;
-    FPoint cx(0., 0., 0.);
+    FPoint<FReal> cx(0., 0., 0.);
     const unsigned long M = 5000;
     std::cout << "Fill the leaf X of width " << width
               << " centered at cx=" << cx << " with M=" << M << " target particles" << std::endl;
@@ -98,15 +100,15 @@ int main(int argc, char ** argv){
             FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getY();
             FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cx.getZ();
             // PB: need to know the actual value of NRHS (=3 here)
-            X.push(FPoint(x, y, z), FReal(rand())/FRandMax, FReal(rand())/FRandMax, FReal(rand())/FRandMax);
+            X.push(FPoint<FReal>(x, y, z), FReal(rand())/FRandMax, FReal(rand())/FRandMax, FReal(rand())/FRandMax);
         }
     }
 
 
     ////////////////////////////////////////////////////////////////////
     LeafClass Y;
-    FPoint cy(FReal(2.)*width, 0., 0.);
-    //FPoint cy(FReal(2.)*width, FReal(2.)*width, 0.);
+    FPoint<FReal> cy(FReal(2.)*width, 0., 0.);
+    //FPoint<FReal> cy(FReal(2.)*width, FReal(2.)*width, 0.);
 
     const unsigned long N = 5000;
     std::cout << "Fill the leaf Y of width " << width
@@ -117,7 +119,7 @@ int main(int argc, char ** argv){
             FReal y = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getY();
             FReal z = (FReal(rand())/FRandMax - FReal(.5)) * width + cy.getZ();
             // PB: need to know the actual value of NRHS (=3 here)
-            Y.push(FPoint(x, y, z), FReal(rand())/FRandMax, FReal(rand())/FRandMax, FReal(rand())/FRandMax);
+            Y.push(FPoint<FReal>(x, y, z), FReal(rand())/FRandMax, FReal(rand())/FRandMax, FReal(rand())/FRandMax);
         }
     }
 
@@ -144,7 +146,7 @@ int main(int argc, char ** argv){
     std::cout << "M2L ... " << std::flush;
     time.tic();
     // Multipole to local: F_m = \sum_n^L K(\bar x_m, \bar y_n) * W_n
-    FPoint rootsX[nnodes], rootsY[nnodes];
+    FPoint<FReal> rootsX[nnodes], rootsY[nnodes];
     FUnifTensor<ORDER>::setRoots(cx, width, rootsX);
     FUnifTensor<ORDER>::setRoots(cy, width, rootsY);
 
@@ -390,8 +392,8 @@ int main(int argc, char ** argv){
     //  std::cout<<std::endl;
 
     // Apply DFT to T
-    FComplex FT[ncmp*rc];
-    //  for (unsigned int n=0; n<rc; ++n) FT[n]=FComplex(0.0,0.0);
+    FComplex<FReal> FT[ncmp*rc];
+    //  for (unsigned int n=0; n<rc; ++n) FT[n]=FComplex<FReal>(0.0,0.0);
     FBlas::c_setzero(ncmp*rc,reinterpret_cast<FReal*>(FT));
 
     // if first COLUMN (T) of C is used
@@ -400,11 +402,11 @@ int main(int argc, char ** argv){
     //  // if first ROW of C is used
     //  Dft.applyDFT(C,FT);
 
-    FComplex FPMultExp[nrhs*rc];
-    FComplex FPLocalExp[nlhs*rc];
+    FComplex<FReal> FPMultExp[nrhs*rc];
+    FComplex<FReal> FPLocalExp[nlhs*rc];
     FReal PLocalExp[nlhs*rc];
 
-    //for (unsigned int n=0; n<rc; ++n) FPLocalExp[n]=FComplex(0.0,0.0);
+    //for (unsigned int n=0; n<rc; ++n) FPLocalExp[n]=FComplex<FReal>(0.0,0.0);
     FBlas::c_setzero(nlhs*rc,reinterpret_cast<FReal*>(FPLocalExp));
 
     FBlas::setzero(nlhs*rc,PLocalExp);
@@ -426,7 +428,7 @@ int main(int argc, char ** argv){
 
 
     // Set transformed MultExp to 0
-    //  for (unsigned int n=0; n<rc; ++n) FPMultExp[n]=FComplex(0.0,0.0);
+    //  for (unsigned int n=0; n<rc; ++n) FPMultExp[n]=FComplex<FReal>(0.0,0.0);
     FBlas::c_setzero(nrhs*rc,reinterpret_cast<FReal*>(FPMultExp));
 
     // Transform PaddedMultExp
@@ -443,7 +445,7 @@ int main(int argc, char ** argv){
     //            reinterpret_cast<FReal*>(FPMultExp),
     //            reinterpret_cast<FReal*>(FPLocalExp));
     // > or perform entrywise product manually
-    FComplex tmpFX;
+    FComplex<FReal> tmpFX;
     for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs){
         unsigned int idxRhs = idxLhs % npot;
         unsigned int d = MatrixKernel.getPosition(idxLhs);
@@ -533,7 +535,7 @@ int main(int argc, char ** argv){
         unsigned int counter = 0;
 
         for(int idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
-            const FPoint x = FPoint(X.getSrc()->getPositions()[0][idxPartX],
+            const FPoint<FReal> x = FPoint<FReal>(X.getSrc()->getPositions()[0][idxPartX],
                     X.getSrc()->getPositions()[1][idxPartX],
                     X.getSrc()->getPositions()[2][idxPartX]);
             const FReal wx[nrhs] = {X.getSrc()->getPhysicalValues(0)[idxPartX],
@@ -541,7 +543,7 @@ int main(int argc, char ** argv){
                                     X.getSrc()->getPhysicalValues(2)[idxPartX]};
 
             for(int idxPartY = 0 ; idxPartY < Y.getSrc()->getNbParticles() ; ++idxPartY){
-                const FPoint y = FPoint(Y.getSrc()->getPositions()[0][idxPartY],
+                const FPoint<FReal> y = FPoint<FReal>(Y.getSrc()->getPositions()[0][idxPartY],
                         Y.getSrc()->getPositions()[1][idxPartY],
                         Y.getSrc()->getPositions()[2][idxPartY]);
                 const FReal wy[nrhs] = {Y.getSrc()->getPhysicalValues(0)[idxPartY],
@@ -554,7 +556,7 @@ int main(int argc, char ** argv){
                 //        // potential
                 //        p[counter] += one_over_r * wy;
                 //        // force
-                //        FPoint force(y - x);
+                //        FPoint<FReal> force(y - x);
                 //        force *= one_over_r*one_over_r*one_over_r;
                 //        f[counter*3 + 0] += force.getX() * wx * wy;
                 //        f[counter*3 + 1] += force.getY() * wx * wy;
@@ -594,7 +596,7 @@ int main(int argc, char ** argv){
     for(int idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
         for (unsigned int i=0; i<npot; ++i){
             approx_p[i][counter] = X.getSrc()->getPotentials(i)[idxPartX];
-            const FPoint force = FPoint(X.getSrc()->getForcesX(i)[idxPartX],
+            const FPoint<FReal> force = FPoint<FReal>(X.getSrc()->getForcesX(i)[idxPartX],
                                         X.getSrc()->getForcesY(i)[idxPartX],
                                         X.getSrc()->getForcesZ(i)[idxPartX]);
             approx_f[i][counter*3 + 0] = force.getX();
@@ -622,8 +624,8 @@ int main(int argc, char ** argv){
     std::cout << "  Potential:" << std::endl;
     for(unsigned i = 0; i<npot;++i) {
         std::cout << "    " << i << ": "
-                  << FMath::FAccurater(p[i],approx_p[i],M).getRelativeInfNorm()<<", "
-                  << FMath::FAccurater(p[i],approx_p[i],M).getRelativeL2Norm()
+                  << FMath::FAccurater<FReal>(p[i],approx_p[i],M).getRelativeInfNorm()<<", "
+                  << FMath::FAccurater<FReal>(p[i],approx_p[i],M).getRelativeL2Norm()
                   << std::endl;
     }
     std::cout << std::endl;
@@ -631,8 +633,8 @@ int main(int argc, char ** argv){
     std::cout << "  Force:" << std::endl;
     for(unsigned i = 0; i<npot;++i) {
         std::cout << "    " << i << ": "
-                  << FMath::FAccurater(f[i],approx_f[i],3*M).getRelativeInfNorm()<<", "
-                  << FMath::FAccurater(f[i],approx_f[i],3*M).getRelativeL2Norm()
+                  << FMath::FAccurater<FReal>(f[i],approx_f[i],3*M).getRelativeInfNorm()<<", "
+                  << FMath::FAccurater<FReal>(f[i],approx_f[i],3*M).getRelativeL2Norm()
                   << std::endl;
     }
     std::cout << std::endl;

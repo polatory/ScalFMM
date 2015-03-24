@@ -32,8 +32,8 @@
 *
 * Particles should be typed to enable targets/sources difference.
 */
-template< class ContainerClass>
-class FTypedLeaf  : public FAbstractLeaf<ContainerClass> {
+template<class FReal, class ContainerClass>
+class FTypedLeaf  : public FAbstractLeaf<FReal, ContainerClass> {
     ContainerClass sources; //< The sources containers
     ContainerClass targets; //< The targets containers
 
@@ -50,7 +50,7 @@ public:
         * followed by other param given by the user
         */
     template<typename... Args>
-    void push(const FPoint& inParticlePosition, const FParticleType type, Args ... args){
+    void push(const FPoint<FReal>& inParticlePosition, const FParticleType type, Args ... args){
         if(type == FParticleTypeTarget) targets.push(inParticlePosition, FParticleTypeTarget, args...);
         else sources.push(inParticlePosition, FParticleTypeSource, args...);
     }

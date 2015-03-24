@@ -100,21 +100,21 @@ int main(int argc, char* argv[])
 	//
 	////////////////////////////////////////////////////////////////////
 	//
-	FFmaGenericLoader loader(filename);
+    typedef double FReal;
+    FFmaGenericLoader<FReal> loader(filename);
 	//
 	////////////////////////////////////////////////////////////////////
 	//
-	// begin spherical kernel
-
+    // begin spherical kernel
 	// accuracy
 	const unsigned int P = 22;
 	// typedefs
-	typedef FP2PParticleContainerIndexed<>                     ContainerClass;
-	typedef FSimpleLeaf< ContainerClass >                       LeafClass;
-	typedef FRotationCell<P>                                             CellClass;
-	typedef FOctree<CellClass,ContainerClass,LeafClass>  OctreeClass;
+    typedef FP2PParticleContainerIndexed<FReal>                     ContainerClass;
+    typedef FSimpleLeaf< FReal, ContainerClass >                       LeafClass;
+    typedef FRotationCell<FReal, P>                                             CellClass;
+    typedef FOctree<FReal, CellClass,ContainerClass,LeafClass>  OctreeClass;
 	//
-	typedef FRotationKernel< CellClass, ContainerClass , P>   KernelClass;
+    typedef FRotationKernel< FReal, CellClass, ContainerClass , P>   KernelClass;
 	//
 #ifdef _OPENMP
 	typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
@@ -131,7 +131,7 @@ int main(int argc, char* argv[])
 		std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
 		time.tic();
 		//
-		FPoint position;
+        FPoint<FReal> position;
 		FReal physicalValue = 0.0;
 		//
 		for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){

@@ -16,20 +16,20 @@ extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,double* 
 
     case 1:
         //TODO typedefs
-        typedef FP2PParticleContainerIndexed<>                                 ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
         typedef FChebCell<7>                                                         ChebCell;
 
-        typedef FInterpMatrixKernelR                                        MatrixKernelClass;
+        typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
         typedef FChebSymKernel<ChebCell,ContainerClass,MatrixKernelClass,7>        ChebKernel;
 
         handle->engine = new FInterEngine<ChebCell,ChebKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
         break;
     // case 2:
     //     //TODO typedefs
-    //     typedef FP2PParticleContainerIndexed<>                                 ContainerClass;
+    //     typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
     //     typedef FUnifCell<7>                                                         UnifCell;
 
-    //     typedef FInterpMatrixKernelR                                        MatrixKernelClass;
+    //     typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
     //     typedef FUnifKernel<UnifCell,ContainerClass,MatrixKernelClass,7>           UnifKernel;
 
     //     handle->engine = new FInterEngine<UnifCell,UnifKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
@@ -90,8 +90,8 @@ extern "C" void ChebCellStruct_free(ChebCellStruct * inCell){
 
 typedef struct FChebKernel_struct{
     //Be ready full duplication go there !!!
-    FChebSymKernel<FChebCell<7>,FP2PParticleContainerIndexed<>,FInterpMatrixKernelR,7> ** kernel;
-    FInterpMatrixKernelR * matrix;
+    FChebSymKernel<FChebCell<7>,FP2PParticleContainerIndexed<FReal>,FInterpMatrixKernelR,7> ** kernel;
+    FInterpMatrixKernelR<FReal> * matrix;
 } ChebKernelStruct;
 
 //Kernel functions
@@ -99,14 +99,14 @@ extern "C" ChebKernelStruct * ChebKernelStruct_create(int inTreeHeight,
                                                       double inBoxWidth,
                                                       double* inBoxCenter){
     //typedef to lighten the writing
-    typedef FChebSymKernel<FChebCell<7>, FP2PParticleContainerIndexed<>, FInterpMatrixKernelR,7> KernelClass;
+    typedef FChebSymKernel<FChebCell<7>, FP2PParticleContainerIndexed<FReal>, FInterpMatrixKernelR,7> KernelClass;
     ChebKernelStruct * newKernel = new ChebKernelStruct();
     newKernel->matrix= new FInterpMatrixKernelR();
     int nb_threads = omp_get_max_threads();
     newKernel->kernel = new KernelClass*[nb_threads];
     newKernel->kernel[0]=new KernelClass(inTreeHeight,
                                          inBoxWidth,
-                                         FPoint(inBoxCenter[0], inBoxCenter[1], inBoxCenter[2]),
+                                         FPoint<FReal>(inBoxCenter[0], inBoxCenter[1], inBoxCenter[2]),
                                          newKernel->matrix);
 
     for(int idThreads=1 ; idThreads<nb_threads ; ++idThreads){
@@ -128,11 +128,11 @@ extern "C" void ChebKernelStruct_free(void *inKernel){
 
 extern "C" void ChebKernel_P2M(void * leafCell, int nbParticles, const int *particleIndexes, void * inKernel){
     //make temporary array of parts
-    FP2PParticleContainerIndexed<>* tempContainer = new FP2PParticleContainerIndexed<>();
+    FP2PParticleContainerIndexed<FReal>* tempContainer = new FP2PParticleContainerIndexed<FReal>();
     tempContainer->reserve(nbParticles);
-    FPoint pos;
+    FPoint<FReal> pos;
     for(int i=0 ; i<nbParticles ; ++i){
-        pos = FPoint(reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3  ],
+        pos = FPoint<FReal>(reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3  ],
                      reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+1],
                      reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+2]);
         double Phi = reinterpret_cast<UserData *>(inKernel)->myPhyValues[particleIndexes[i]];
@@ -217,11 +217,11 @@ extern "C" void ChebKernel_L2L(int level, void* parentCell, int childPosition, v
 
 extern "C" void ChebKernel_L2P(void* leafCell, int nbParticles, const int* particleIndexes, void* inKernel){
     //Create temporary FSimpleLeaf
-    FP2PParticleContainerIndexed<>* tempContainer = new FP2PParticleContainerIndexed<>();
+    FP2PParticleContainerIndexed<FReal>* tempContainer = new FP2PParticleContainerIndexed<FReal>();
     tempContainer->reserve(nbParticles);
-    FPoint pos;
+    FPoint<FReal> pos;
     for(int i=0 ; i<nbParticles ; ++i){
-    pos = FPoint(reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3  ],
+    pos = FPoint<FReal>(reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3  ],
         reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+1],
         reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+2]);
     double Phi = reinterpret_cast<UserData *>(inKernel)->myPhyValues[particleIndexes[i]];
@@ -258,10 +258,10 @@ extern "C" void ChebKernel_L2P(void* leafCell, int nbParticles, const int* parti
                     const int * sourceParticleIndexes[27],int sourceNbPart[27],void* inKernel){
 
     //Create temporary FSimpleLeaf for target
-    FP2PParticleContainerIndexed<>* tempContTarget = new FP2PParticleContainerIndexed<>();
+    FP2PParticleContainerIndexed<FReal>* tempContTarget = new FP2PParticleContainerIndexed<FReal>();
     tempContTarget->reserve(nbParticles);
     for(int i=0 ; i<nbParticles ; ++i){
-        FPoint pos = FPoint(reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3  ],
+        FPoint<FReal> pos = FPoint<FReal>(reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3  ],
                             reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+1],
                             reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+2]);
         double Phi = reinterpret_cast<UserData *>(inKernel)->myPhyValues[particleIndexes[i]];
@@ -269,18 +269,18 @@ extern "C" void ChebKernel_L2P(void* leafCell, int nbParticles, const int* parti
     }
 
     //Create 27 FSimpleLeaf for 27 sources
-    FP2PParticleContainerIndexed<>* tempContSources[27];
+    FP2PParticleContainerIndexed<FReal>* tempContSources[27];
     for(int idSource=0; idSource<27 ; ++idSource){
         if(sourceNbPart[idSource] != 0){
             //Create container
-            tempContSources[idSource] = new FP2PParticleContainerIndexed<>();
+            tempContSources[idSource] = new FP2PParticleContainerIndexed<FReal>();
             //Allocate memory
             tempContSources[idSource]->reserve(sourceNbPart[idSource]);
             //Store a ptr to the indices of that source leaf
             const int * indSource = sourceParticleIndexes[idSource];
             //Then, for each part in this source
             for(int i=0 ; i<sourceNbPart[idSource] ; ++i){
-                FPoint pos = FPoint(reinterpret_cast<UserData *>(inKernel)->insertedPositions[indSource[i]*3  ],
+                FPoint<FReal> pos = FPoint<FReal>(reinterpret_cast<UserData *>(inKernel)->insertedPositions[indSource[i]*3  ],
                                     reinterpret_cast<UserData *>(inKernel)->insertedPositions[indSource[i]*3+1],
                                     reinterpret_cast<UserData *>(inKernel)->insertedPositions[indSource[i]*3+2]);
                 double Phi = reinterpret_cast<UserData *>(inKernel)->myPhyValues[indSource[i]];

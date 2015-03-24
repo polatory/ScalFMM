@@ -43,6 +43,7 @@ int main(int argc, char ** argv){
     std::cout << ">> [x] [y] [z] [physical value] [1 if target 0 if source]...\n";
     //////////////////////////////////////////////////////////////
     // Nb of particles
+    typedef double FReal;
     const long NbParticles = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, long(20000));
     const FReal physicalValue = FParameters::getValue(argc,argv,FParameterDefinitions::PhysicalValue.options, FReal(0.1));
 

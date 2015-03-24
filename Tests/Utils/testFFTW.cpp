@@ -37,6 +37,7 @@ int main(int argc, char** argv)
 {
     FHelpDescribeAndExit(argc, argv, "Test the FFTw (only the code is interesting).");
 
+    typedef double FReal;
     const FReal FRandMax = FReal(RAND_MAX);
 
     FTic time;
@@ -49,10 +50,10 @@ int main(int argc, char** argv)
 
     // fftw arrays
     FReal* fftR_;
-    FComplex* fftC_;
+    FComplex<FReal>* fftC_;
 
     fftR_ = (FReal*) fftw_malloc(sizeof(FReal) * nsteps_);
-    fftC_ = (FComplex*) fftw_malloc(sizeof(FComplex) * nsteps_);
+    fftC_ = (FComplex<FReal>*) fftw_malloc(sizeof(FComplex<FReal>) * nsteps_);
 
     // fftw plans
     // use routine defined in file:
@@ -108,7 +109,7 @@ int main(int argc, char** argv)
     //  std::cout<<std::endl;
 
     //  for(unsigned int s=0; s<nsteps_/2+1; ++s){
-    //    fftC_[nsteps_-s]=FComplex(fftC_[s].getReal(),-fftC_[s].getImag());
+    //    fftC_[nsteps_-s]=FComplex<FReal>(fftC_[s].getReal(),-fftC_[s].getImag());
     //  }
     //
     //  std::cout<< "Full Transformed data : "<<std::endl;

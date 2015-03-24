@@ -39,12 +39,12 @@
  * Potential, forceX, forceY, forceZ. The first 4 are mandatory.
  * Data is stored as FReal.
  *
- * See FFmaGenericLoader for information on the format. 
+ * See FFmaGenericLoader<FReal> for information on the format.
  *
  * \tparam READ  number of items to read (UNUSED, see WRITE)
  * \tparam WRITE number of items to write (must be >= 4)
  */
-template<int READ, int WRITE>
+template<class FReal, int READ, int WRITE>
 class FmaRWParticle {
     /// Data stored
     FReal data[WRITE];
@@ -56,12 +56,12 @@ public:
         }
     }
 
-    /// Get a FPoint from the position
-    FPoint getPosition() const{
-        return FPoint(data[0],data[1],data[2]);
+    /// Get a FPoint<FReal> from the position
+    FPoint<FReal> getPosition() const{
+        return FPoint<FReal>(data[0],data[1],data[2]);
     }
-    /// Set the position from a FPoint
-    void setPosition(FPoint & inPoint){
+    /// Set the position from a FPoint<FReal>
+    void setPosition(FPoint<FReal> & inPoint){
         data[0] = inPoint.getX();
         data[1] = inPoint.getY();
         data[2] = inPoint.getZ();
@@ -146,7 +146,7 @@ public:
 
     /// Get size of Class Particle
     unsigned int getWriteDataSize() const {
-        return sizeof(FmaRWParticle<READ,WRITE>);
+        return sizeof(FmaRWParticle<FReal, READ,WRITE>);
     }
 
     /// Get Size of array (should be same as above...)
@@ -156,11 +156,6 @@ public:
 };
 
 
-typedef FmaRWParticle<4,4> FmaBasicParticle;
-typedef FmaRWParticle<4,8> FmaRParticle;
-typedef FmaRWParticle<8,8> FmaParticle;
-
-
 
 /**\class FFmaGenericLoader
  * \warning This class only works in shared memory (doesn't work with MPI).
@@ -168,13 +163,13 @@ typedef FmaRWParticle<8,8> FmaParticle;
  * \brief Reads an FMA formated particle file.
  *
  * The file may be in ascii or binary mode.  There are several overloads of the
- * fillParticle(FPoint*, FReal*) member function to read data from a file. The
+ * fillParticle(FPoint<FReal>*, FReal*) member function to read data from a file. The
  * example below shows how to use the loader to read from a file.
  *
  *
  * \code 
  * // Instanciate the loader with the particle file. 
- * FFmaGenericLoader loader("../Data/unitCubeXYZQ20k.fma"); // extension fma -> ascii format //
+ * FFmaGenericLoader<FReal> loader("../Data/unitCubeXYZQ20k.fma"); // extension fma -> ascii format //
  * Retrieve the number of particles FSize nbParticles =
  * loader.getNumberOfParticles();
  *
@@ -206,11 +201,12 @@ typedef FmaRWParticle<8,8> FmaParticle;
  *  - 8, the particle values are X Y Z Q  P FX FY FZ<br>
  *
  */
-class FFmaGenericLoader : public FAbstractLoader  {
+template <class FReal>
+class FFmaGenericLoader : public FAbstractLoader<FReal>  {
 protected:
     std::fstream *file;        ///< the stream used to read the file
     bool binaryFile  ;         ///< if true the file to read is in binary mode
-    FPoint     centerOfBox;    ///< The center of box (read from file)
+    FPoint<FReal>     centerOfBox;    ///< The center of box (read from file)
     FReal boxWidth;            ///< the box width (read from file)
     FSize    nbParticles;      ///< the number of particles (read from file)
     unsigned int typeData[2];  ///< Size of the data to read, number of data on 1 line
@@ -311,7 +307,7 @@ public:
      * The center of the box from the simulation file opened by the loader
      * @return box center
      */
-    FPoint getCenterOfBox() const{
+    FPoint<FReal> getCenterOfBox() const{
         return this->centerOfBox;
     }
     /**
@@ -337,10 +333,10 @@ public:
     /**
      * Fills a particle from the current position in the file.
      *
-     * @param outParticlePositions the position of particle to fill (FPoint class)
+     * @param outParticlePositions the position of particle to fill (FPoint<FReal> class)
      * @param outPhysicalValue     the physical value of particle to fill (FReal)
      */
-    void fillParticle(FPoint*const outParticlePositions, FReal*const outPhysicalValue){
+    void fillParticle(FPoint<FReal>*const outParticlePositions, FReal*const outPhysicalValue){
         if(binaryFile){
             file->read((char*)(outParticlePositions), sizeof(FReal)*3);
             file->read((char*)(outPhysicalValue), sizeof(FReal));
@@ -542,7 +538,7 @@ private:
  *  - 8, the particle values are X Y Z Q  P FX FY FZ<br>
 
  */
-
+template <class FReal>
 class FFmaGenericWriter {
 
 protected:
@@ -622,13 +618,13 @@ public:
      * Writes the header of the FMA file
      * \warning All values inside typePart should be of the same type (float or double)
      *
-     * @param centerOfBox  The centre of the Box (FPoint class)
+     * @param centerOfBox  The centre of the Box (FPoint<FReal> class)
      * @param boxWidth     The width of the box
      * @param nbParticles  Number of particles in the box (or to save)
      * @param data         Data type of the particle class (FmaBasicParticle, FmaRParticle or FmaParticle)
      */
     template <class typePart>
-    void writeHeader(const FPoint &centerOfBox,const FReal &boxWidth, const FSize &nbParticles, const typePart  data) {
+    void writeHeader(const FPoint<FReal> &centerOfBox,const FReal &boxWidth, const FSize &nbParticles, const typePart  data) {
         unsigned int typeFReal[2]  = {sizeof(FReal) , sizeof(typePart) / sizeof(FReal) };
         const unsigned int ndata  = data.getWriteDataNumber();
         std::cout <<"    WriteHeader: typeFReal: " << typeFReal[0]  << "  nb Elts: " << typeFReal[1]  <<"   NData to write "<< ndata<< "\n";
@@ -649,13 +645,13 @@ public:
      * 
      * Should be used if we write the particles with writeArrayOfReal method
      * 
-     * @param centerOfBox      The center of the Box (FPoint class)
+     * @param centerOfBox      The center of the Box (FPoint<FReal> class)
      * @param boxWidth            The width of the box
      * @param nbParticles          Number of particles in the box (or to save)
      * @param dataType             Data type of the values in particle
      * @param nbDataPerRecord  Number of record/value per particle
      */
-    void writeHeader(const FPoint &centerOfBox,const FReal &boxWidth, const FSize &nbParticles,
+    void writeHeader(const FPoint<FReal> &centerOfBox,const FReal &boxWidth, const FSize &nbParticles,
                      const unsigned int  dataType, const unsigned int  nbDataPerRecord) {
         unsigned int typeFReal[2]  = {dataType , nbDataPerRecord };
         FReal x = boxWidth *0.5;
@@ -780,7 +776,7 @@ public:
     }
 
 private:
-    void writerAscciHeader( const FPoint &centerOfBox,const FReal &boxWidth,
+    void writerAscciHeader( const FPoint<FReal> &centerOfBox,const FReal &boxWidth,
                             const FSize &nbParticles, const unsigned int *typeFReal) {
         this->file->precision(10);
         (*this->file) << typeFReal[0] <<"   "<<typeFReal[1]<<std::endl;
@@ -788,7 +784,7 @@ private:
                       <<  centerOfBox.getX()  << "  " << centerOfBox.getY() << " "<<centerOfBox.getZ()
                       << std::endl;
     }
-    void writerBinaryHeader(const FPoint &centerOfBox,const FReal &boxWidth,
+    void writerBinaryHeader(const FPoint<FReal> &centerOfBox,const FReal &boxWidth,
                             const FSize &nbParticles, const unsigned int *typeFReal) {
         file->seekg (std::ios::beg);
         file->write((char*)typeFReal,2*sizeof(unsigned int));
@@ -819,7 +815,7 @@ private:
 //$
 // class FmaR4W4Particle {
 // public:
-// 	FPoint position;            ///< position of the particle
+// 	FPoint<FReal> position;            ///< position of the particle
 // 	FReal  physicalValue;    ///<  its physical value
 // 	/**
 // 	 *  return a pointer on the first value of the structure
@@ -855,7 +851,7 @@ private:
 //$
 // class FmaR4W8Particle {
 // public:
-// 	FPoint position;            ///< position of the particle
+// 	FPoint<FReal> position;            ///< position of the particle
 // 	FReal  physicalValue;    ///< its physical value (mass or charge
 // 	FReal  potential;           ///< the potential
 // 	FReal  forces[3];            ///<the force

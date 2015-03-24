@@ -45,15 +45,15 @@ class FTreeCoordinate;
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Lagrange interpolation order
  */
-template < class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER, int NVALS = 1>
+template < class FReal, class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER, int NVALS = 1>
 class FUnifDenseKernel
-  : public FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+  : public FAbstractUnifKernel<FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 {
     // private types
-    typedef FUnifM2LHandler<ORDER,MatrixKernelClass::Type> M2LHandlerClass;
+    typedef FUnifM2LHandler<FReal, ORDER,MatrixKernelClass::Type> M2LHandlerClass;
 
     // using from
-    typedef FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+    typedef FAbstractUnifKernel<FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
     AbstractBaseClass;
 
     /// Needed for P2P and M2L operators
@@ -71,7 +71,7 @@ public:
     */
     FUnifDenseKernel(const int inTreeHeight,
                      const FReal inBoxWidth,
-                     const FPoint& inBoxCenter,
+                     const FPoint<FReal>& inBoxCenter,
                      const MatrixKernelClass *const inMatrixKernel)
     : FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter),
       MatrixKernel(inMatrixKernel),
@@ -84,7 +84,7 @@ public:
     void P2M(CellClass* const LeafCell,
              const ContainerClass* const SourceParticles)
     {
-        const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
+        const FPoint<FReal> LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
             // 1) apply Sy
             AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
@@ -115,7 +115,7 @@ public:
         const FReal CellWidth(AbstractBaseClass::BoxWidth / FReal(FMath::pow(2, TreeLevel)));
 
         // interpolation points of source (Y) and target (X) cell
-        FPoint X[AbstractBaseClass::nnodes], Y[AbstractBaseClass::nnodes];
+        FPoint<FReal> X[AbstractBaseClass::nnodes], Y[AbstractBaseClass::nnodes];
         FUnifTensor<ORDER>::setRoots(AbstractBaseClass::getCellCenter(TargetCell->getCoordinate(),TreeLevel), CellWidth, X);
 
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
@@ -153,7 +153,7 @@ public:
     void L2P(const CellClass* const LeafCell,
              ContainerClass* const TargetParticles)
     {
-        const FPoint LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
+        const FPoint<FReal> LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
 
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
 

@@ -8,7 +8,7 @@
 
 typedef FBasicCellPOD FTaylorCellPODCore;
 
-template <int P, int order>
+template <class FReal, int P, int order>
 struct alignas(FStarPUDefaultAlign::StructAlign) FTaylorCellPODPole {
     //Size of Multipole Vector
     static const int MultipoleSize = ((P+1)*(P+2)*(P+3))*order/6;
@@ -16,7 +16,7 @@ struct alignas(FStarPUDefaultAlign::StructAlign) FTaylorCellPODPole {
     FReal multipole_exp[MultipoleSize];
 };
 
-template <int P, int order>
+template <class FReal, int P, int order>
 struct alignas(FStarPUDefaultAlign::StructAlign) FTaylorCellPODLocal {
     //Size of Local Vector
     static const int LocalSize = ((P+1)*(P+2)*(P+3))*order/6;
@@ -25,16 +25,16 @@ struct alignas(FStarPUDefaultAlign::StructAlign) FTaylorCellPODLocal {
 };
 
 
-template <int P, int order>
+template <class FReal, int P, int order>
 class FTaylorCellPOD
 {
     FTaylorCellPODCore* symb;
-    FTaylorCellPODPole<P,order>* up;
-    FTaylorCellPODLocal<P,order>* down;
+    FTaylorCellPODPole<FReal, P,order>* up;
+    FTaylorCellPODLocal<FReal, P,order>* down;
 
 public:
-    FTaylorCellPOD(FTaylorCellPODCore* inSymb, FTaylorCellPODPole<P,order>* inUp,
-              FTaylorCellPODLocal<P,order>* inDown): symb(inSymb), up(inUp), down(inDown){
+    FTaylorCellPOD(FTaylorCellPODCore* inSymb, FTaylorCellPODPole<FReal, P,order>* inUp,
+              FTaylorCellPODLocal<FReal, P,order>* inDown): symb(inSymb), up(inUp), down(inDown){
     }
 
     FTaylorCellPOD()

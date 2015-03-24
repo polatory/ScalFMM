@@ -28,31 +28,32 @@
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
- * @class FPoint
+ * @class FPoint<FReal>
  * Please read the license
  *
  * This class is a 3D vector. It can be used as a position
  * or as a 3d forces vector etc.
  */
+template <class FReal>
 class FPoint {
 private:
 	FReal data[3]; //< all positions x y z
 
 public:	
 	/** Default constructor (sets position to 0/0/0) */
-	FPoint(){
+    FPoint<FReal>(){
 		data[0] = data[1] = data[2] = FReal(0.0);
 	}
 
 	/** Constructor from an array */
-	explicit FPoint(const FReal inPosition[3]){
+    explicit FPoint<FReal>(const FReal inPosition[3]){
 		data[0] = inPosition[0];
 		data[1] = inPosition[1];
 		data[2] = inPosition[2];
 	}
 
 	/** Constructor from values */
-	explicit FPoint(const FReal inX,const FReal inY,const FReal inZ){
+    explicit FPoint<FReal>(const FReal inX,const FReal inY,const FReal inZ){
 		data[0] = inX;
 		data[1] = inY;
 		data[2] = inZ;
@@ -62,7 +63,7 @@ public:
 	 * Copdata[1] constructor
 	 * @param other the source class to copy
 	 */
-	FPoint(const FPoint& other) {
+    FPoint<FReal>(const FPoint<FReal>& other) {
 		data[0] = other.data[0];
 		data[1] = other.data[1];
 		data[2] = other.data[2];
@@ -72,7 +73,7 @@ public:
 	 * Assignment operator
 	 * @param other the source class to copy
 	 */
-	FPoint(const FPoint& other, const FReal addset) {
+    FPoint<FReal>(const FPoint<FReal>& other, const FReal addset) {
 		data[0] = other.data[0] + addset;
 		data[1] = other.data[1] + addset;
 		data[2] = other.data[2] + addset;
@@ -83,7 +84,7 @@ public:
 	 * @param other the source class to copy
 	 * @return this a reference to the current class
 	 */
-	FPoint& operator=(const FPoint& other){
+    FPoint<FReal>& operator=(const FPoint<FReal>& other){
 		this->data[0] = other.data[0];
 		this->data[1] = other.data[1];
 		this->data[2] = other.data[2];
@@ -173,14 +174,14 @@ public:
 		this->data[2] += inZ;
 	}
 	/**
-	 * Get a pointer on the coordinate of FPoint
+     * Get a pointer on the coordinate of FPoint<FReal>
 	 * @return the data value array
 	 */
 	FReal * getDataValue(){
 		return this->data ;
 	}
 	/**
-	 * Get a pointer on the coordinate of FPoint
+     * Get a pointer on the coordinate of FPoint<FReal>
 	 * @return the data value array
 	 */
 	const FReal *  getDataValue()  const{
@@ -210,7 +211,7 @@ public:
 	 * @param inValue the value to substract
 	 * @return the current object after being subtracted
 	 */
-	FPoint& operator-=(const FReal inValue){
+    FPoint<FReal>& operator-=(const FReal inValue){
 		this->data[0] -= inValue;
 		this->data[1] -= inValue;
 		this->data[2] -= inValue;
@@ -222,7 +223,7 @@ public:
 	 * @param inValue the value to affect
 	 * @return the current object after being affected
 	 */
-	FPoint& operator+=(const FReal inValue){
+    FPoint<FReal>& operator+=(const FReal inValue){
 		this->data[0] += inValue;
 		this->data[1] += inValue;
 		this->data[2] += inValue;
@@ -234,7 +235,7 @@ public:
 	 * @param other the value to substract
 	 * @return the current object after being subtracted
 	 */
-	FPoint& operator-=(const FPoint& other){
+    FPoint<FReal>& operator-=(const FPoint<FReal>& other){
 		this->data[0] -= other.data[0];
 		this->data[1] -= other.data[1];
 		this->data[2] -= other.data[2];
@@ -246,7 +247,7 @@ public:
 	 * @param other the value to affect
 	 * @return the current object after being affected
 	 */
-	FPoint& operator+=(const FPoint& other){
+    FPoint<FReal>& operator+=(const FPoint<FReal>& other){
 		this->data[0] += other.data[0];
 		this->data[1] += other.data[1];
 		this->data[2] += other.data[2];
@@ -257,7 +258,7 @@ public:
 	 * @param other the value to affect
 	 * @return the current object after being affected
 	 */
-	FPoint& operator/=(const FPoint& other){
+    FPoint<FReal>& operator/=(const FPoint<FReal>& other){
 		this->data[0] /= other.data[0];
 		this->data[1] /= other.data[1];
 		this->data[2] /= other.data[2];
@@ -268,7 +269,7 @@ public:
 	 * @param other the value to affect
 	 * @return the current object after being affected
 	 */
-	FPoint& operator*=(const FReal value){
+    FPoint<FReal>& operator*=(const FReal value){
 		this->data[0] *= value;
 		this->data[1] *= value;
 		this->data[2] *= value;
@@ -282,8 +283,8 @@ public:
 	 * @param inValue the value to decrease/substract position
 	 * @return the resulting position
 	 */
-	friend inline FPoint operator-(const FPoint& inPosition, const FReal inValue){
-		return FPoint(inPosition, -inValue);
+    friend inline FPoint<FReal> operator-(const FPoint<FReal>& inPosition, const FReal inValue){
+        return FPoint<FReal>(inPosition, -inValue);
 	}
 
 	/**
@@ -293,8 +294,8 @@ public:
 	 * @param inValue the value to increase/affect position
 	 * @return the resulting position
 	 */
-	friend inline FPoint operator+(const FPoint& inPosition, const FReal inValue){
-		return FPoint(inPosition, inValue);
+    friend inline FPoint<FReal> operator+(const FPoint<FReal>& inPosition, const FReal inValue){
+        return FPoint<FReal>(inPosition, inValue);
 	}
 
 	/**
@@ -304,8 +305,8 @@ public:
 	 * @param inOther the position to decrease/substract inPosition
 	 * @return the resulting position
 	 */
-	friend inline FPoint operator-(const FPoint& inPosition, const FPoint& inOther){
-		return FPoint(inPosition.data[0] - inOther.data[0], inPosition.data[1] - inOther.data[1], inPosition.data[2] - inOther.data[2]);
+    friend inline FPoint<FReal> operator-(const FPoint<FReal>& inPosition, const FPoint<FReal>& inOther){
+        return FPoint<FReal>(inPosition.data[0] - inOther.data[0], inPosition.data[1] - inOther.data[1], inPosition.data[2] - inOther.data[2]);
 	}
 
 	/**
@@ -315,41 +316,41 @@ public:
 	 * @param inOther the position to increase inPosition
 	 * @return the resulting position
 	 */
-	friend inline FPoint operator+(const FPoint& inPosition, const FPoint& inOther){
-		return FPoint(inPosition.data[0] + inOther.data[0], inPosition.data[1] + inOther.data[1], inPosition.data[2] + inOther.data[2]);
+    friend inline FPoint<FReal> operator+(const FPoint<FReal>& inPosition, const FPoint<FReal>& inOther){
+        return FPoint<FReal>(inPosition.data[0] + inOther.data[0], inPosition.data[1] + inOther.data[1], inPosition.data[2] + inOther.data[2]);
 	}
 	/**
 	 *   Compare two points
 	 */
-	inline bool operator==(const FPoint& pp){
+    inline bool operator==(const FPoint<FReal>& pp){
 		/* do actual comparison */
 		return this->data[0]==pp.data[0] &&   this->data[1]==pp.data[1]&&  this->data[2]==pp.data[2];
 
 	}
-	inline bool operator!=( const FPoint& rhs)
+    inline bool operator!=( const FPoint<FReal>& rhs)
 			{return !(*this == rhs);}
 
 	/**
-	 * Operator stream FPoint to std::ostream
+     * Operator stream FPoint<FReal> to std::ostream
 	 * This can be used to simpldata[1] write out a position
 	 * @param[in,out] output where to write the position
 	 * @param[in] inPosition the position to write out
 	 * @return the output for multiple << operators
 	 */
 	template <class StreamClass>
-	friend StreamClass& operator<<(StreamClass& output, const FPoint& inPosition){
+    friend StreamClass& operator<<(StreamClass& output, const FPoint<FReal>& inPosition){
 		output << "(" <<  inPosition.getX() << ", " << inPosition.getY() << ", " << inPosition.getZ() <<")";
 		return output;  // for multiple << operators.
 	}
 	/**
-	 * Operator stream FPoint to std::istream
+     * Operator stream FPoint<FReal> to std::istream
 	 * This can be used to simpldata[1] write out a position
 	 * @param[in,out] input where to write the position
 	 * @param[out] outPosition the position to write out
 	 * @return the input for multiple << operators
 	 */
 	template <class StreamClass>
-	friend StreamClass& operator>>(StreamClass& input,  FPoint& outPosition){
+    friend StreamClass& operator>>(StreamClass& input,  FPoint<FReal>& outPosition){
 		FReal x,y,z;
 		input >> x>> y>> z ;
 		outPosition.setPosition(x,y,z);

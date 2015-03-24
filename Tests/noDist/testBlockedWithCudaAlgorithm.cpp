@@ -71,13 +71,15 @@ int main(int argc, char* argv[]){
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbThreads,
                          FParameterDefinitions::NbParticles, LocalOptionBlocSize);
     // Initialize the types
+    typedef double FReal;
+
     typedef FTestCellPODCore  GroupCellSymbClass;
     typedef FTestCellPODData  GroupCellUpClass;
     typedef FTestCellPODData  GroupCellDownClass;
     typedef FTestCellPOD      GroupCellClass;
 
-    typedef FGroupTestParticleContainer                                     GroupContainerClass;
-    typedef FGroupTree< GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass,
+    typedef FGroupTestParticleContainer<FReal>                                     GroupContainerClass;
+    typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass,
             GroupContainerClass, 0, 1, long long int>  GroupOctreeClass;
     typedef FStarPUAllCpuCudaCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
 
@@ -90,9 +92,9 @@ int main(int argc, char* argv[]){
             GroupCpuWrapper, GroupCudaWrapper> GroupAlgorithm;
 
     typedef FTestCell                   CellClass;
-    typedef FTestParticleContainer      ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FTestParticleContainer<FReal>      ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
 
     // FFmmAlgorithmTask FFmmAlgorithmThread
@@ -105,20 +107,20 @@ int main(int argc, char* argv[]){
 //#define LOAD_FILE
 #ifndef LOAD_FILE
     const int NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 20);
-    FRandomLoader loader(NbParticles, 1.0, FPoint(0,0,0), 0);
+    FRandomLoader<FReal> loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), 0);
 #else
     // Load the particles
     const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
-    FFmaGenericLoader loader(filename);
+    FFmaGenericLoader<FReal> loader(filename);
 #endif
     FAssertLF(loader.isOpen());
 
     // Usual octree
     OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());
 
-    FP2PParticleContainer<> allParticles;
+    FP2PParticleContainer<FReal> allParticles;
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
 #ifndef LOAD_FILE
         loader.fillParticle(&particlePosition);
 #else
@@ -135,7 +137,7 @@ int main(int argc, char* argv[]){
     groupedTree.printInfoBlocks();
 
     // Check tree structure at leaf level
-    groupedTree.forEachCellLeaf<FGroupTestParticleContainer>([&](GroupCellClass gcell, FGroupTestParticleContainer* gleaf){
+    groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass gcell, GroupContainerClass* gleaf){
         const ContainerClass* src = tree.getLeafSrc(gcell.getMortonIndex());
         if(src == nullptr){
             std::cout << "[PartEmpty] Error cell should not exist " << gcell.getMortonIndex() << "\n";
@@ -158,13 +160,13 @@ int main(int argc, char* argv[]){
     algo.execute();
 
     // Validate the result
-    groupedTree.forEachCellLeaf<FGroupTestParticleContainer>([&](GroupCellClass cell, FGroupTestParticleContainer* leaf){
+    groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass cell, GroupContainerClass* leaf){
         const int nbPartsInLeaf = leaf->getNbParticles();
         if(cell.getDataUp() != nbPartsInLeaf){
             std::cout << "[P2M] Error a Cell has " << cell.getDataUp() << " (it should be " << nbPartsInLeaf << ")\n";
         }
     });
-    groupedTree.forEachCellLeaf<FGroupTestParticleContainer>([&](GroupCellClass cell, FGroupTestParticleContainer* leaf){
+    groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass cell, GroupContainerClass* leaf){
         const int nbPartsInLeaf = leaf->getNbParticles();
         const long long int* dataDown = leaf->getDataDown();
         for(int idxPart = 0 ; idxPart < nbPartsInLeaf ; ++idxPart){

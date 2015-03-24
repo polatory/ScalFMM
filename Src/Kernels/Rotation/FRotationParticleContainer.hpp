@@ -19,8 +19,9 @@
 
 #include "../../Components/FBasicParticleContainer.hpp"
 
-class FRotationParticleContainer : public FBasicParticleContainer<5> {
-    typedef FBasicParticleContainer<5> Parent;
+template <class FReal>
+class FRotationParticleContainer : public FBasicParticleContainer<FReal, 5> {
+    typedef FBasicParticleContainer<FReal, 5> Parent;
 public:
     FReal* getPhysicalValues(){
         return Parent::getAttribute(0);

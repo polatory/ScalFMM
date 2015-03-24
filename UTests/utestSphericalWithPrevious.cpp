@@ -37,14 +37,14 @@
  * This test compare a previous FMM result with a previous simulation result.
  */
 
-
+typedef double FReal;
 typedef FSphericalCell           CellClass;
-typedef FP2PParticleContainerIndexed<>  ContainerClass;
+typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
 typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
 
-typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
 typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
@@ -77,7 +77,7 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
 		//
 		std::string filename(SCALFMMDataPath+parFile);
 		//
-		FFmaGenericLoader loader(filename);
+		FFmaGenericLoader<FReal> loader(filename);
 		if(!loader.isOpen()){
 			Print("Cannot open particles file.");
 			uassert(false);
@@ -96,7 +96,7 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
 		OctreeClass testTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 		//
 		for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
-			FPoint position;
+            FPoint<FReal> position;
 			FReal physicalValue = 0.0;
 			loader.fillParticle(&position,&physicalValue);
 			// put in tree

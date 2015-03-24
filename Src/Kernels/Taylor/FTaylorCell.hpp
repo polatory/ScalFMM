@@ -29,7 +29,7 @@
  *
  *
  */
-template <int P, int order>
+template < class FReal, int P, int order>
 class FTaylorCell : public FBasicCell {
 protected:
   //Size of Multipole Vector
@@ -83,21 +83,21 @@ public:
 
 };
 
-template <int P, int order>
-class FTypedTaylorCell : public FTaylorCell<P,order>, public FExtendCellType {
+template <class FReal, int P, int order>
+class FTypedTaylorCell : public FTaylorCell<FReal, P,order>, public FExtendCellType {
 public:
     template <class BufferWriterClass>
     void save(BufferWriterClass& buffer) const{
-        FTaylorCell<P,order>::save(buffer);
+        FTaylorCell<FReal,P,order>::save(buffer);
         FExtendCellType::save(buffer);
     }
     template <class BufferReaderClass>
     void restore(BufferReaderClass& buffer){
-        FTaylorCell<P,order>::restore(buffer);
+        FTaylorCell<FReal,P,order>::restore(buffer);
         FExtendCellType::restore(buffer);
     }
     void resetToInitialState(){
-        FTaylorCell<P,order>::resetToInitialState();
+        FTaylorCell<FReal,P,order>::resetToInitialState();
         FExtendCellType::resetToInitialState();
     }
 };

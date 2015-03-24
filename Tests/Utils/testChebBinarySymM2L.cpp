@@ -44,10 +44,11 @@ int main(int argc, char* argv[])
     FHelpDescribeAndExit(argc, argv, "Generate and store Chebyshev M2L matrices for several orders.");
 
 	// typedefs   
-	typedef FInterpMatrixKernelR MatrixKernelClass;
+    typedef double FReal;
+	typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
 
 	// instantiations
-	FTic time;
+    FTic time;
 	MatrixKernelClass MatrixKernel;
 
 	/*
@@ -83,10 +84,10 @@ int main(int argc, char* argv[])
 		if (K[idx]!=NULL) delete [] K[idx];
 	*/
 
-	ComputeAndCompressAndStoreInBinaryFile<3>(&MatrixKernel, FReal(1e-3));
-	ComputeAndCompressAndStoreInBinaryFile<5>(&MatrixKernel, FReal(1e-5));
-	ComputeAndCompressAndStoreInBinaryFile<7>(&MatrixKernel, FReal(1e-7));
-	ComputeAndCompressAndStoreInBinaryFile<9>(&MatrixKernel, FReal(1e-9));
+    ComputeAndCompressAndStoreInBinaryFile<FReal,3>(&MatrixKernel, FReal(1e-3));
+    ComputeAndCompressAndStoreInBinaryFile<FReal,5>(&MatrixKernel, FReal(1e-5));
+    ComputeAndCompressAndStoreInBinaryFile<FReal,7>(&MatrixKernel, FReal(1e-7));
+    ComputeAndCompressAndStoreInBinaryFile<FReal,9>(&MatrixKernel, FReal(1e-9));
 
 
 	return 0;

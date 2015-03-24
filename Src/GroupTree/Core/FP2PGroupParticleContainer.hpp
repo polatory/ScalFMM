@@ -6,9 +6,9 @@
 
 #include "FGroupAttachedLeaf.hpp"
 
-template<int NRHS = 1, int NLHS = 1, int NVALS = 1>
-class FP2PGroupParticleContainer : public FGroupAttachedLeaf<NVALS*NRHS, NVALS*4*NLHS, FReal> {
-    typedef FGroupAttachedLeaf<NVALS*NRHS, NVALS*4*NLHS, FReal> Parent;
+template<class FReal, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+class FP2PGroupParticleContainer : public FGroupAttachedLeaf<FReal, NVALS*NRHS, NVALS*4*NLHS, FReal> {
+    typedef FGroupAttachedLeaf<FReal, NVALS*NRHS, NVALS*4*NLHS, FReal> Parent;
 
 public:
     FP2PGroupParticleContainer(){}

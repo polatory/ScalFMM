@@ -41,7 +41,7 @@
  * Please refere to testOctree.cpp to see an example.
  * @code
  * // can be used as : <br>
- * FOctree<TestParticle, TestCell> tree(1.0,FPoint(0.5,0.5,0.5));
+ * FOctree<TestParticle, TestCell> tree(1.0,FPoint<FReal>(0.5,0.5,0.5));
  * @endcode
  *
  * Particles and cells has to respect the Abstract class definition.
@@ -52,13 +52,13 @@
  * at level 0 the space is not split
  * CellAllocator can be FListBlockAllocator<CellClass, 10> or FBasicBlockAllocator<CellClass>
  */
-template< class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass = FBasicBlockAllocator<CellClass> /*FListBlockAllocator<CellClass, 15>*/ >
+template<class FReal, class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass = FBasicBlockAllocator<CellClass> /*FListBlockAllocator<CellClass, 15>*/ >
 class FOctree : public FNoCopyable {
-    typedef FOctree< CellClass , ContainerClass, LeafClass, CellAllocatorClass>      OctreeType;
-    typedef  FSubOctreeWithLeafs< CellClass , ContainerClass, LeafClass, CellAllocatorClass> SubOctreeWithLeaves;
-    typedef FSubOctree< CellClass , ContainerClass, LeafClass, CellAllocatorClass>           SubOctree;
+    typedef FOctree<FReal, CellClass , ContainerClass, LeafClass, CellAllocatorClass>      OctreeType;
+    typedef  FSubOctreeWithLeafs<FReal, CellClass , ContainerClass, LeafClass, CellAllocatorClass> SubOctreeWithLeaves;
+    typedef FSubOctree<FReal, CellClass , ContainerClass, LeafClass, CellAllocatorClass>           SubOctree;
 
-    FAbstractSubOctree< CellClass , ContainerClass, LeafClass, CellAllocatorClass>* root;   //< root suboctree
+    FAbstractSubOctree<FReal, CellClass , ContainerClass, LeafClass, CellAllocatorClass>* root;   //< root suboctree
 
     FReal*const boxWidthAtLevel;	//< to store the width of each boxs at all levels
 
@@ -66,8 +66,8 @@ class FOctree : public FNoCopyable {
     const int subHeight;		//< tree height
     const int leafIndex;		//< index of leaf int array
 
-    const FPoint boxCenter;	//< the space system center
-    const FPoint boxCorner;	//< the space system corner (used to compute morton index)
+    const FPoint<FReal> boxCenter;	//< the space system center
+    const FPoint<FReal> boxCorner;	//< the space system corner (used to compute morton index)
 
     const FReal boxWidth;       //< the space system width
 
@@ -77,7 +77,7 @@ class FOctree : public FNoCopyable {
      * @param inPosition position to compute
      * @return the morton index
      */
-    FTreeCoordinate getCoordinateFromPosition(const FPoint& inPosition) const {
+    FTreeCoordinate getCoordinateFromPosition(const FPoint<FReal>& inPosition) const {
         // box coordinate to host the particle
         FTreeCoordinate host;
         // position has to be relative to corner not center
@@ -111,7 +111,7 @@ public:
      * @param inBoxCenter box center for this simulation
      */
     FOctree(const int inHeight, const int inSubHeight,
-            const FReal inBoxWidth, const FPoint& inBoxCenter)
+            const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter)
         : root(nullptr), boxWidthAtLevel(new FReal[inHeight]),
           height(inHeight) , subHeight(inSubHeight), leafIndex(this->height-1),
           boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth)
@@ -119,10 +119,10 @@ public:
         FAssertLF(subHeight <= height - 1, "Subheight cannot be greater than height", __LINE__, __FILE__ );
         // Does we only need one suboctree?
         if(subHeight == height - 1){
-            root = new FSubOctreeWithLeafs< CellClass , ContainerClass, LeafClass,CellAllocatorClass>(nullptr, 0, this->subHeight, 1);
+            root = new FSubOctreeWithLeafs< FReal, CellClass , ContainerClass, LeafClass,CellAllocatorClass>(nullptr, 0, this->subHeight, 1);
         }
         else {// if(subHeight < height - 1)
-            root = new FSubOctree< CellClass , ContainerClass, LeafClass,CellAllocatorClass>(nullptr, 0, this->subHeight, 1);
+            root = new FSubOctree< FReal, CellClass , ContainerClass, LeafClass,CellAllocatorClass>(nullptr, 0, this->subHeight, 1);
         }
 
         FReal tempWidth = this->boxWidth;
@@ -155,7 +155,7 @@ public:
     }
 
     /** To get the center of the box */
-    const FPoint& getBoxCenter() const{
+    const FPoint<FReal>& getBoxCenter() const{
         return this->boxCenter;
     }
 
@@ -189,7 +189,7 @@ public:
      * @param inParticle the particle to insert (must inherite from FAbstractParticle)
      */
     template<typename... Args>
-    void insert(const FPoint& inParticlePosition, Args... args){
+    void insert(const FPoint<FReal>& inParticlePosition, Args... args){
         const FTreeCoordinate host = getCoordinateFromPosition( inParticlePosition );
         const MortonIndex particleIndex = host.getMortonIndex(leafIndex);
         if(root->isLeafPart()){
@@ -225,7 +225,7 @@ public:
      * @param position a position to compute MI
      * @return the morton index
      */
-    MortonIndex getMortonFromPosition(const FPoint& position) const {
+    MortonIndex getMortonFromPosition(const FPoint<FReal>& position) const {
         return getCoordinateFromPosition(position).getMortonIndex(leafIndex);
     }
 
@@ -243,18 +243,18 @@ public:
      * depending if we are working on the bottom of the tree.
      */
     union SubOctreeTypes {
-        FAbstractSubOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree;     //< Usual pointer to work
-        FSubOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* middleTree;       //< To access to sub-octree under
-        FSubOctreeWithLeafs<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* leafTree;//< To access to particles lists
+        FAbstractSubOctree<FReal,CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree;     //< Usual pointer to work
+        FSubOctree<FReal,CellClass,ContainerClass,LeafClass,CellAllocatorClass>* middleTree;       //< To access to sub-octree under
+        FSubOctreeWithLeafs<FReal,CellClass,ContainerClass,LeafClass,CellAllocatorClass>* leafTree;//< To access to particles lists
     };
 
     /**
      * This class is a const SubOctreeTypes
      */
     union SubOctreeTypesConst {
-        const FAbstractSubOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree;     //< Usual pointer to work
-        const FSubOctree<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* middleTree;       //< To access to sub-octree under
-        const FSubOctreeWithLeafs<CellClass,ContainerClass,LeafClass,CellAllocatorClass>* leafTree;//< To access to particles lists
+        const FAbstractSubOctree<FReal,CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree;     //< Usual pointer to work
+        const FSubOctree<FReal,CellClass,ContainerClass,LeafClass,CellAllocatorClass>* middleTree;       //< To access to sub-octree under
+        const FSubOctreeWithLeafs<FReal,CellClass,ContainerClass,LeafClass,CellAllocatorClass>* leafTree;//< To access to particles lists
     };
 
     /**

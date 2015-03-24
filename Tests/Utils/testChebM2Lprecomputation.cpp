@@ -48,7 +48,8 @@ int main(int argc, char* argv[])
     FTic time;
 
     // define set matrix kernel
-    typedef FInterpMatrixKernelR MatrixKernelClass;
+    typedef double FReal;
+    typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
     MatrixKernelClass MatrixKernel;
 
     // constants
@@ -59,9 +60,9 @@ int main(int argc, char* argv[])
     const unsigned int nnodes = TensorTraits<order>::nnodes;
 
     // interpolation points of source (Y) and target (X) cell
-    FPoint X[nnodes], Y[nnodes];
+    FPoint<FReal> X[nnodes], Y[nnodes];
     // set roots of target cell (X)
-    FChebTensor<order>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
+    FChebTensor<FReal,order>::setRoots(FPoint<FReal>(0.,0.,0.), FReal(2.), X);
 
 
     /*
@@ -83,8 +84,8 @@ int main(int argc, char* argv[])
             for (int k=-3; k<=3; ++k) {
                 if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
                     // set roots of source cell (Y)
-                    const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
-                    FChebTensor<order>::setRoots(cy, FReal(2.), Y);
+                    const FPoint<FReal> cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
+                    FChebTensor<FReal,order>::setRoots(cy, FReal(2.), Y);
                     // evaluate m2l operator
                     for (unsigned int n=0; n<nnodes; ++n)
                         for (unsigned int m=0; m<nnodes; ++m)
@@ -126,8 +127,8 @@ int main(int argc, char* argv[])
     const unsigned int i = 3;
     const unsigned int j = 3;
     const unsigned int k = 3;
-    const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
-    FChebTensor<order>::setRoots(cy, FReal(2.), Y);
+    const FPoint<FReal> cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
+    FChebTensor<FReal,order>::setRoots(cy, FReal(2.), Y);
     // evaluate m2l operator
     for (unsigned int n=0; n<nnodes; ++n)
         for (unsigned int m=0; m<nnodes; ++m)
@@ -143,7 +144,7 @@ int main(int argc, char* argv[])
     FBlas::copy(nnodes*nnodes, C1, C2);
     // Omega_x^{1/2} C2 Omega_y^{1/2}
     FReal weights[nnodes];
-    FChebTensor<order>::setRootOfWeights(weights);
+    FChebTensor<FReal,order>::setRootOfWeights(weights);
     for (unsigned int n=0; n<nnodes; ++n) {
         FBlas::scal(nnodes, weights[n], C2+n, nnodes); // scale rows
         FBlas::scal(nnodes, weights[n], C2+n*nnodes);  // scale cols

@@ -55,6 +55,7 @@ int main(int argc, char* argv[])
                          FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight);
 
+    typedef double FReal;
     const char* const filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
@@ -66,12 +67,12 @@ int main(int argc, char* argv[])
 	FTic time;
 
 	// typedefs
-	typedef FP2PParticleContainer<> ContainerClass;
-	typedef FSimpleLeaf<ContainerClass> LeafClass;
-	typedef FInterpMatrixKernelR MatrixKernelClass;
-	typedef FChebCell<ORDER> CellClass;
-	typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-	typedef FChebFlopsSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+	typedef FP2PParticleContainer<FReal> ContainerClass;
+    typedef FSimpleLeaf<FReal,ContainerClass> LeafClass;
+    typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+    typedef FChebCell<FReal,ORDER> CellClass;
+    typedef FOctree<FReal,CellClass,ContainerClass,LeafClass> OctreeClass;
+    typedef FChebFlopsSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 	typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 
@@ -92,7 +93,7 @@ int main(int argc, char* argv[])
 	time.tic();
 
 	{
-		FPoint particlePosition;
+        FPoint<FReal> particlePosition;
 		FReal physicalValue = 0.0;
 		for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
 			loader.fillParticle(&particlePosition,&physicalValue);

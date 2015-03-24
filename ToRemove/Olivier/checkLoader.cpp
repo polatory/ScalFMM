@@ -59,7 +59,7 @@ int main(int argc, char ** argv){
 	//  LOADER  PARTICLES
 	//  -----------------------------------------------------
 	std::cout << "Opening : " << filenameIn << "\n";
-	FFmaGenericLoader  loader(filenameIn);
+	FFmaGenericLoader<FReal>  loader(filenameIn);
 
 	// ---------------------------------------------------------------------------------
 	//  Read particles

@@ -44,10 +44,10 @@
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
     typedef FSphericalCell                 CellClass;
-    typedef FP2PParticleContainer<>     ContainerClass;
+    typedef FP2PParticleContainer<FReal>     ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                             LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                             LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FSphericalKernel< CellClass, ContainerClass >      KernelClass;
 
     typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
@@ -63,7 +63,7 @@ int main(int argc, char ** argv){
 
     std::cout << "Openening : " << filename << "\n";
 
-    FFmaGenericLoader loader(filename);
+    FFmaGenericLoader<FReal> loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -80,7 +80,7 @@ int main(int argc, char ** argv){
     counter.tic();
 
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         FReal physicalValue;
         loader.fillParticle(&particlePosition,&physicalValue);
         tree.insert(particlePosition, physicalValue );

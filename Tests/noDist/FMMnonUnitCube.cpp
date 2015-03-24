@@ -85,6 +85,8 @@ void usage() {
 // Simply create particles and try the kernels
 int main(int argc, char* argv[])
 {
+    typedef double FReal;
+
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::OctreeHeight.options)||FParameters::existParameter(argc, argv, "-help")){
 		usage() ;
 		std::cout << "Driver for testing different approximations  for the  1/r kernel" << std::endl;
@@ -115,17 +117,17 @@ int main(int argc, char* argv[])
 	// init timer
 	FTic time;
 
-	FFmaGenericLoader loader(filename);
+	FFmaGenericLoader<FReal> loader(filename);
 	//
 
 	FSize nbParticles = loader.getNumberOfParticles() ;
-	FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
+	FmaRWParticle<FReal, 8,8>* const particles = new FmaRWParticle<FReal, 8,8>[nbParticles];
 	//
 	loader.fillParticle(particles,nbParticles);
 	FReal LL = loader.getBoxWidth() ;
-	FPoint maxPos(-LL,-LL,-LL),minPos(LL,LL,LL), BoxWidth;
+    FPoint<FReal> maxPos(-LL,-LL,-LL),minPos(LL,LL,LL), BoxWidth;
 	for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
-		const FPoint PP(particles[idxPart].getPosition() ) ;
+        const FPoint<FReal> PP(particles[idxPart].getPosition() ) ;
 		//
 		minPos.setX(FMath::Min(minPos.getX(),PP.getX())) ;
 		minPos.setY(FMath::Min(minPos.getY(),PP.getY())) ;
@@ -140,7 +142,7 @@ int main(int argc, char* argv[])
 	BoxWidth.setY(ceil(BoxWidth.getY()));
 	BoxWidth.setZ(ceil(BoxWidth.getZ()));
 
-//	BoxWidth = FPoint(loader.getBoxWidth(),loader.getBoxWidth(),loader.getBoxWidth() );
+//	BoxWidth = FPoint<FReal>(loader.getBoxWidth(),loader.getBoxWidth(),loader.getBoxWidth() );
 
 	FReal LX = ceil(BoxWidth.getX()),  LY = ceil(BoxWidth.getY()),  LZ = ceil(BoxWidth.getZ()) ;
 	std::cout << "Data are inside the box delimited by "<<std::endl
@@ -163,25 +165,25 @@ int main(int argc, char* argv[])
 	////////////////////////////////////////////////////////////////////
 	// Rescale the data into the unit cube
 	//
-	FPoint CenterOfBox(0.5,0.5,0.5) ; //(loader.getCenterOfBox()) ;
+    FPoint<FReal> CenterOfBox(0.5,0.5,0.5) ; //(loader.getCenterOfBox()) ;
 	FReal   boxWidth = 1.0 ;// BoxWidth.getX();
 	//
 	// Scale the Points
 	for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
 		// put in tree
 		//	std::cout << idxPart<< " "<< particles[idxPart].getPosition()<< "  ";
-		FPoint PP(particles[idxPart].getPosition()/= BoxWidth) ;
+        FPoint<FReal> PP(particles[idxPart].getPosition()/= BoxWidth) ;
 		particles[idxPart].setPosition(PP);
 		//	std::cout <<particles[idxPart].getPosition()<< std::endl;
 	}
-	typedef FInterpMatrixKernelRH MatrixKernelClass;
+    typedef FInterpMatrixKernelRH<FReal> MatrixKernelClass;
 	MatrixKernelClass MatrixKernel;
 	MatrixKernel.setCoeff(LX,LY,LZ);
 	//
-	FPoint A(1.0,0.0,0.0), B(0.0,1.0,0.0);
+    FPoint<FReal> A(1.0,0.0,0.0), B(0.0,1.0,0.0);
 	//
 	//
-	FPoint xy(A-B);
+    FPoint<FReal> xy(A-B);
 	FReal rr = FReal(1.) / FMath::Sqrt(xy.getX()*xy.getX() +
 			xy.getY()*xy.getY() + xy.getZ()*xy.getZ());
 	//
@@ -197,13 +199,13 @@ int main(int argc, char* argv[])
 		std::cout << "\nFChebSymKernel FMM ... ORDER: " << ORDER <<std::endl;
 
 		// typedefs
-		typedef FP2PParticleContainerIndexed<> ContainerClass;
-		typedef FSimpleLeaf<ContainerClass> LeafClass;
-		typedef FChebCell<ORDER> CellClass;
-		typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+        typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+        typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
+        typedef FChebCell<FReal,ORDER> CellClass;
+        typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 
-	//	typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-		typedef FChebKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+    //	typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        typedef FChebKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 		typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 		//
@@ -234,8 +236,8 @@ int main(int argc, char* argv[])
 			std::cout << "(FChebSymKernel @Algorithm = " << time.elapsed() << " s)." << std::endl;
 		} // -----------------------------------------------------
 		FReal energy = 0.0;
-		FMath::FAccurater potentialDiff;
-		FMath::FAccurater fx, fy, fz;
+		FMath::FAccurater<FReal> potentialDiff;
+		FMath::FAccurater<FReal> fx, fy, fz;
 		{ // Check that each particle has been summed with all other
 
 			tree.forEachLeaf([&](LeafClass* leaf){
@@ -287,12 +289,12 @@ int main(int argc, char* argv[])
 
 		// typedefs
 
-		typedef FP2PParticleContainerIndexed<> ContainerClass;
-		typedef FSimpleLeaf< ContainerClass >  LeafClass;
-		//		typedef FInterpMatrixKernelR MatrixKernelClass;
-		typedef FUnifCell<ORDER> CellClass;
-		typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-		typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
+        //		typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+        typedef FUnifCell<FReal,ORDER> CellClass;
+        typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
+        typedef FUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 		typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		//		typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
@@ -322,8 +324,8 @@ int main(int argc, char* argv[])
 		} // -----------------------------------------------------
 
 		FReal energy = 0.0;
-		FMath::FAccurater potentialDiff;
-		FMath::FAccurater fx, fy, fz;
+		FMath::FAccurater<FReal> potentialDiff;
+		FMath::FAccurater<FReal> fx, fy, fz;
 		{ // Check that each particle has been summed with all other
 
 			tree.forEachLeaf([&](LeafClass* leaf){

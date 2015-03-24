@@ -35,7 +35,7 @@
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
-template <int ORDER>
+template < class FReal, int ORDER>
 void permuteMatrix(const unsigned int perm[ORDER*ORDER*ORDER], FReal *const Matrix)
 {
     const unsigned int nnodes = ORDER*ORDER*ORDER;
@@ -61,7 +61,8 @@ int main(int argc, char* argv[])
     FTic time;
 
     // define set matrix kernel
-    typedef FInterpMatrixKernelR MatrixKernelClass;
+    typedef double FReal;
+    typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
     MatrixKernelClass MatrixKernel;
 
     // constants
@@ -72,9 +73,9 @@ int main(int argc, char* argv[])
     const unsigned int nnodes = TensorTraits<order>::nnodes;
 
     // interpolation points of source (Y) and target (X) cell
-    FPoint X[nnodes], Y[nnodes];
+    FPoint<FReal> X[nnodes], Y[nnodes];
     // set roots of target cell (X)
-    FChebTensor<order>::setRoots(FPoint(0.,0.,0.), FReal(2.), X);
+    FChebTensor<FReal,order>::setRoots(FPoint<FReal>(0.,0.,0.), FReal(2.), X);
 
     // allocate 343 pointers to K, but only 16 are actually filled
     FReal** K = new FReal* [343];
@@ -92,8 +93,8 @@ int main(int argc, char* argv[])
 
                     //std::cout << i << "," << j << "," << k << "\t" << idx << std::endl;
 
-                    const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
-                    FChebTensor<order>::setRoots(cy, FReal(2.), Y);
+                    const FPoint<FReal> cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
+                    FChebTensor<FReal,order>::setRoots(cy, FReal(2.), Y);
                     for (unsigned int n=0; n<nnodes; ++n)
                         for (unsigned int m=0; m<nnodes; ++m)
                             K[idx][n*nnodes + m] = MatrixKernel.evaluate(X[m], Y[n]);
@@ -124,8 +125,8 @@ int main(int argc, char* argv[])
             for (int k=-3; k<=3; ++k) {
                 if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
 
-                    const FPoint cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
-                    FChebTensor<order>::setRoots(cy, FReal(2.), Y);
+                    const FPoint<FReal> cy(FReal(2.*i), FReal(2.*j), FReal(2.*k));
+                    FChebTensor<FReal,order>::setRoots(cy, FReal(2.), Y);
                     for (unsigned int n=0; n<nnodes; ++n)
                         for (unsigned int m=0; m<nnodes; ++m)
                             K0[n*nnodes + m] = MatrixKernel.evaluate(X[m], Y[n]);

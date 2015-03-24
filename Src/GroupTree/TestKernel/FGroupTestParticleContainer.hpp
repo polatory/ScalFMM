@@ -6,8 +6,9 @@
 
 #include "../Core/FGroupAttachedLeaf.hpp"
 
-class FGroupTestParticleContainer : public FGroupAttachedLeaf<0, 1, long long int> {
-    typedef FGroupAttachedLeaf<0, 1, long long int> Parent;
+template <class FReal>
+class FGroupTestParticleContainer : public FGroupAttachedLeaf<FReal, 0, 1, long long int> {
+    typedef FGroupAttachedLeaf<FReal, 0, 1, long long int> Parent;
 
 public:
     FGroupTestParticleContainer(){}
@@ -22,7 +23,7 @@ public:
      * @return
      */
     long long int* getDataDown(){
-        return Parent::getAttribute<0>();
+        return Parent::template getAttribute<0>();
     }
 
     /**
@@ -30,7 +31,7 @@ public:
      * @return
      */
     const long long int* getDataDown() const {
-        return Parent::getAttribute<0>();
+        return Parent::template getAttribute<0>();
     }
 };
 

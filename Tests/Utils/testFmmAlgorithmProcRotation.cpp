@@ -58,6 +58,7 @@
  * related that each other
  */
 
+typedef double FReal;
 
 #ifdef VALIDATE_FMM
 
@@ -69,7 +70,7 @@ static const FReal Epsilon = FReal(0.00005);
 /** To compare data */
 template <class CellClass>
 bool isEqualPole(const CellClass& me, const CellClass& other, FReal*const cumul){
-    FMath::FAccurater accurate;
+    FMath::FAccurater<FReal> accurate;
     for(int idx = 0; idx < me.getArraySize(); ++idx){
         accurate.add(me.getMultipole()[idx].getImag(),other.getMultipole()[idx].getImag());
         accurate.add(me.getMultipole()[idx].getReal(),other.getMultipole()[idx].getReal());
@@ -80,7 +81,7 @@ bool isEqualPole(const CellClass& me, const CellClass& other, FReal*const cumul)
 
 /** To compare data */
 bool isEqualLocal(const FRotationCell<7>& me, const FRotationCell<7>& other, FReal*const cumul){
-    FMath::FAccurater accurate;
+    FMath::FAccurater<FReal> accurate;
     for(int idx = 0; idx < me.getArraySize(); ++idx){
         accurate.add(me.getLocal()[idx].getImag(),other.getLocal()[idx].getImag());
         accurate.add(me.getLocal()[idx].getReal(),other.getLocal()[idx].getReal());
@@ -198,12 +199,12 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
                         error = true;
                     }
                     if( error ){
-                        std::cout << "At position " << FPoint(validePositionX[idxValideLeaf],validePositionY[idxValideLeaf],validePositionZ[idxValideLeaf])
-                                  << " == " << FPoint(positionX[idxLeaf],positionY[idxLeaf],positionZ[idxLeaf]) << std::endl;
+                        std::cout << "At position " << FPoint<FReal>(validePositionX[idxValideLeaf],validePositionY[idxValideLeaf],validePositionZ[idxValideLeaf])
+                                  << " == " << FPoint<FReal>(positionX[idxLeaf],positionY[idxLeaf],positionZ[idxLeaf]) << std::endl;
                     }
                 }
                 else{
-                    std::cout << "Particle not found " << FPoint(positionX[idxLeaf],positionY[idxLeaf],positionZ[idxLeaf]) << std::endl;
+                    std::cout << "Particle not found " << FPoint<FReal>(positionX[idxLeaf],positionY[idxLeaf],positionZ[idxLeaf]) << std::endl;
                 }
             }
 
@@ -224,10 +225,10 @@ int main(int argc, char ** argv){
 
     // For Rotation test ::
     typedef FRotationCell<7>         CellClass;
-    typedef FP2PParticleContainer<>         ContainerClass;
+    typedef FP2PParticleContainer<FReal>         ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FRotationKernel< CellClass, ContainerClass,7 >     KernelClass;
 
     typedef FFmmAlgorithmThreadProc<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
@@ -251,7 +252,7 @@ int main(int argc, char ** argv){
 
     std::cout << "Opening : " << filename << "\n";
 
-    FMpiFmaGenericLoader loader(filename, app.global());
+    FMpiFmaGenericLoader<FReal> loader(filename, app.global());
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -275,9 +276,9 @@ int main(int argc, char ** argv){
         counter.tic();
 
         struct TestParticle{
-            FPoint position;
+            FPoint<FReal> position;
             FReal physicalValue;
-            const FPoint& getPosition(){
+            const FPoint<FReal>& getPosition(){
                 return position;
             }
         };
@@ -292,7 +293,7 @@ int main(int argc, char ** argv){
         FVector<TestParticle> finalParticles;
         FLeafBalance balancer;
 
-        FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles,
+        FMpiTreeBuilder< FReal,TestParticle >::DistributeArrayToContainer(app.global(),particles,
                                                                     loader.getMyNumberOfParticles(),
                                                                     tree.getBoxCenter(),
                                                                     tree.getBoxWidth(),tree.getHeight(),
@@ -311,7 +312,7 @@ int main(int argc, char ** argv){
     }
     else{
         FAssertLF(loader.getMyNumberOfParticles() == loader.getNumberOfParticles());
-        FPoint position;
+        FPoint<FReal> position;
         FReal physicalValue;
         for(FSize idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&position,&physicalValue);
@@ -379,8 +380,8 @@ int main(int argc, char ** argv){
             {
                 OctreeClass treeValide(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
                 {
-                    FFmaGenericLoader loaderSeq(filename);
-                    FPoint position;
+                    FFmaGenericLoader<FReal> loaderSeq(filename);
+                    FPoint<FReal> position;
                     FReal physicalValue;
                     for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
                         loaderSeq.fillParticle(&position,&physicalValue);

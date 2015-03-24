@@ -45,8 +45,8 @@
 #include "../../Src/Utils/FParameterNames.hpp"
 
 struct TestParticle{
-    FPoint position;
-    const FPoint& getPosition(){
+    FPoint<FReal> position;
+    const FPoint<FReal>& getPosition(){
         return position;
     }
 };
@@ -82,11 +82,13 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::NbParticles, FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight);
 
+    typedef double FReal;
+
     typedef FTestCell                   CellClass;
     typedef FBasicParticleContainer<0>      ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
@@ -108,7 +110,7 @@ int main(int argc, char ** argv){
     const FReal BoxWidth = 1.0;
     const FReal BoxCenter = 0.5;
 
-    OctreeClass tree(NbLevels, SizeSubLevels, BoxWidth, FPoint(BoxCenter,BoxCenter,BoxCenter));
+    OctreeClass tree(NbLevels, SizeSubLevels, BoxWidth, FPoint<FReal>(BoxCenter,BoxCenter,BoxCenter));
 
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
@@ -128,12 +130,12 @@ int main(int argc, char ** argv){
 
         FVector<TestParticle> finalParticles;
 	FLeafBalance balancer;
-        // FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, NbPart,
-	// 					     FPoint(BoxCenter,BoxCenter,BoxCenter),
+        // FMpiTreeBuilder< FReal,TestParticle >::ArrayToTree(app.global(), particles, NbPart,
+    // 					     FPoint<FReal>(BoxCenter,BoxCenter,BoxCenter),
 	// 					     BoxWidth, tree.getHeight(), &finalParticles,&balancer);
-	FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles, 
+	FMpiTreeBuilder< FReal,TestParticle >::DistributeArrayToContainer(app.global(),particles, 
 								    NbPart,
-								    FPoint(BoxCenter,BoxCenter,BoxCenter),
+                                    FPoint<FReal>(BoxCenter,BoxCenter,BoxCenter),
 								    BoxWidth,NbLevels,
 								    &finalParticles, &balancer);
         for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
@@ -200,7 +202,7 @@ int main(int argc, char ** argv){
 
             ContainerClass* particles = octreeIterator.getCurrentListTargets();
             for(int idxPart = 0; idxPart < particles->getNbParticles() ; ++idxPart){
-                const FPoint particlePosition( particles->getWPositions()[0][idxPart],
+                const FPoint<FReal> particlePosition( particles->getWPositions()[0][idxPart],
                                                particles->getWPositions()[1][idxPart],
                                                particles->getWPositions()[2][idxPart]);
 

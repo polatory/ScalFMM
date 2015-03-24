@@ -48,7 +48,7 @@
 
 int main(int argc, char ** argv ){
 	typedef FBasicParticleContainer<1>      ContainerClass;
-	typedef FSimpleLeaf< ContainerClass >                     LeafClass;
+	typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 	typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
 	///////////////////////What we do/////////////////////////////
 	std::cout << ">> This executable is useless to execute.\n";
@@ -77,7 +77,7 @@ int main(int argc, char ** argv ){
 		std::cout << "Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
 		counter.tic();
 
-		FPoint particlePosition;
+		FPoint<FReal> particlePosition;
 		FReal physicalValue = 0.0;
 		FReal forces[3];
 		FReal potential;

@@ -48,7 +48,7 @@
 * }
 * @endcode
 */
-template< class CellClass, class ContainerClass, int P>
+template< class FReal, class CellClass, class ContainerClass, int P>
 class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass> {
     //< Size of the data array computed using a suite relation
     static const int SizeArray = ((P+2)*(P+1))/2;
@@ -61,11 +61,11 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
     const int   treeHeight;             //< The height of the tree
     const FReal widthAtLeafLevel;       //< width of box at leaf level
     const FReal widthAtLeafLevelDiv2;   //< width of box at leaf leve div 2
-    const FPoint boxCorner;             //< position of the box corner
+    const FPoint<FReal> boxCorner;             //< position of the box corner
 
 
-    FSmartPointer<FSpherical> childrenPosition;     //< The transfers between level
-    FSmartPointer<FSpherical> interactionsPosition; //< The transfers at a same level
+    FSmartPointer<FSpherical<FReal>> childrenPosition;     //< The transfers between level
+    FSmartPointer<FSpherical<FReal>> interactionsPosition; //< The transfers at a same level
 
     ///////////////////////////////////////////////////////
     // d_lmk
@@ -192,12 +192,12 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       * The computation is simply a multiplication per a complex number \f$ e^{-i \phi m} \f$
       * Phi should be in [0,2pi]
       */
-    void rotateMultipoleAroundZ(FComplex vec[], const FReal phi){
-        FComplex cell_rotate[SizeArray];
+    void rotateMultipoleAroundZ(FComplex<FReal> vec[], const FReal phi){
+        FComplex<FReal> cell_rotate[SizeArray];
         for(int l = 0 ; l <= P ; ++l){
             for(int m = 0 ; m <= l ; ++m ){
                 // O_{l,m}( \alpha, \beta + \phi ) = e^{-i \phi m} O_{l,m}( \alpha, \beta )
-                const FComplex exp_minus_imphi(FMath::Cos(-phi * FReal(m)), FMath::Sin(-phi * FReal(m)));
+                const FComplex<FReal> exp_minus_imphi(FMath::Cos(-phi * FReal(m)), FMath::Sin(-phi * FReal(m)));
                 cell_rotate[atLm(l,m)].equalMul(exp_minus_imphi , vec[atLm(l,m)]);
             }
         }
@@ -214,12 +214,12 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       * The computation is simply a multiplication per a complex number \f$ e^{i \phi m} \f$
       * Phi should be in [0,2pi]
       */
-    void rotateTaylorAroundZ(FComplex vec[], const FReal phi){
-        FComplex cell_rotate[SizeArray];
+    void rotateTaylorAroundZ(FComplex<FReal> vec[], const FReal phi){
+        FComplex<FReal> cell_rotate[SizeArray];
         for(int l = 0 ; l <= P ; ++l){
             for(int m = 0 ; m <= l ; ++m ){
                 // M_{l,m}( \alpha, \beta + \phi ) = e^{i \phi m} M_{l,m}( \alpha, \beta )
-                const FComplex exp_imphi(FMath::Cos(phi * FReal(m)), FMath::Sin(phi * FReal(m)));
+                const FComplex<FReal> exp_imphi(FMath::Cos(phi * FReal(m)), FMath::Sin(phi * FReal(m)));
                 cell_rotate[atLm(l,m)].equalMul(exp_imphi , vec[atLm(l,m)]);
             }
         }
@@ -238,8 +238,8 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       * \f$ O_{l,-m} = \bar{ O_{l,m} } (-1)^m \f$
       * Theta should be in [0,pi]
       */
-    void rotateMultipoleAroundY(FComplex vec[], const FReal theta){
-        FComplex cell_rotate[SizeArray];
+    void rotateMultipoleAroundY(FComplex<FReal> vec[], const FReal theta){
+        FComplex<FReal> cell_rotate[SizeArray];
         for(int l = 0 ; l <= P ; ++l){
             for(int m = 0 ; m <= l ; ++m ){
                 FReal w_lkm_real = 0.0;
@@ -278,8 +278,8 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       * \f$ M_{l,-m} = \bar{ M_{l,m} } (-1)^m \f$
       * Theta should be in [0,pi]
       */
-    void rotateTaylorAroundY(FComplex vec[], const FReal theta){
-        FComplex cell_rotate[SizeArray];
+    void rotateTaylorAroundY(FComplex<FReal> vec[], const FReal theta){
+        FComplex<FReal> cell_rotate[SizeArray];
         for(int l = 0 ; l <= P ; ++l){
             for(int m = 0 ; m <= l ; ++m ){
                 FReal w_lkm_real = 0.0;
@@ -313,8 +313,8 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       *
       * Rotation are not commutative so we have to do it in the right order
       */
-    void rotateMultipole(FComplex vec[], const FReal azimuth, const FReal inclination){
-        rotateMultipoleAroundZ(vec,(FMath::FPiDiv2 + azimuth));
+    void rotateMultipole(FComplex<FReal> vec[], const FReal azimuth, const FReal inclination){
+        rotateMultipoleAroundZ(vec,(FMath::FPiDiv2<FReal>() + azimuth));
         rotateMultipoleAroundY(vec,inclination);
     }
     /** This function rotate a multipole vector by a angles inclination & azimuth
@@ -324,9 +324,9 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       *
       * Rotation are not commutative so we have to do it in the right order
       */
-    void deRotateMultipole(FComplex vec[], const FReal azimuth, const FReal inclination){
+    void deRotateMultipole(FComplex<FReal> vec[], const FReal azimuth, const FReal inclination){
         rotateMultipoleAroundY(vec,-inclination);
-        rotateMultipoleAroundZ(vec,-(FMath::FPiDiv2 + azimuth));
+        rotateMultipoleAroundZ(vec,-(FMath::FPiDiv2<FReal>() + azimuth));
     }
 
     /** This function rotate a local vector by a angles inclination & azimuth
@@ -336,8 +336,8 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       *
       * Rotation are not commutative so we have to do it in the right order
       */
-    void rotateTaylor(FComplex vec[], const FReal azimuth, const FReal inclination){
-        rotateTaylorAroundZ(vec,(FMath::FPiDiv2 + azimuth));
+    void rotateTaylor(FComplex<FReal> vec[], const FReal azimuth, const FReal inclination){
+        rotateTaylorAroundZ(vec,(FMath::FPiDiv2<FReal>() + azimuth));
         rotateTaylorAroundY(vec,inclination);
     }
     /** This function rotate a local vector by a angles inclination & azimuth
@@ -347,9 +347,9 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
       *
       * Rotation are not commutative so we have to do it in the right order
       */
-    void deRotateTaylor(FComplex vec[], const FReal azimuth, const FReal inclination){
+    void deRotateTaylor(FComplex<FReal> vec[], const FReal azimuth, const FReal inclination){
         rotateTaylorAroundY(vec,-inclination);
-        rotateTaylorAroundZ(vec,-(FMath::FPiDiv2 + azimuth));
+        rotateTaylorAroundZ(vec,-(FMath::FPiDiv2<FReal>() + azimuth));
     }
 
     ///////////////////////////////////////////////////////
@@ -359,7 +359,7 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
     /** This function precompute the position between cells */
     void preComputePosition(){
         // Compute the parent/children relation for M2M L2L
-        childrenPosition = new FSpherical[8 * (treeHeight-1)];
+        childrenPosition = new FSpherical<FReal>[8 * (treeHeight-1)];
         {
             FReal subBoxWidth = widthAtLeafLevelDiv2;
             // For each
@@ -369,15 +369,15 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
                     const FReal x = FReal((idxChild&4)? -subBoxWidth : subBoxWidth);
                     const FReal y = FReal((idxChild&2)? -subBoxWidth : subBoxWidth);
                     const FReal z = FReal((idxChild&1)? -subBoxWidth : subBoxWidth);
-                    const FPoint relativePosition( x , y , z );
+                    const FPoint<FReal> relativePosition( x , y , z );
 
-                    childrenPosition[(idxLevel-1)*8 + idxChild] = FSpherical(relativePosition);
+                    childrenPosition[(idxLevel-1)*8 + idxChild] = FSpherical<FReal>(relativePosition);
                 }
                 subBoxWidth *= FReal(2.0);
             }
         }
         // Compute the interaction relations for M2L
-        interactionsPosition = new FSpherical[343 * (treeHeight-1)];
+        interactionsPosition = new FSpherical<FReal>[343 * (treeHeight-1)];
         {
             FReal boxWidthAtLevel = widthAtLeafLevel;
             for(int idxLevel = treeHeight-1 ; idxLevel > 0 ; --idxLevel){
@@ -385,11 +385,11 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
                     for(int idxY = -3 ; idxY <= 3 ; ++idxY ){
                         for(int idxZ = -3 ; idxZ <= 3 ; ++idxZ ){
                             if( idxX != 0 || idxY != 0 || idxZ != 0 ){
-                                const FPoint relativePosition( -FReal(idxX)*boxWidthAtLevel,
+                                const FPoint<FReal> relativePosition( -FReal(idxX)*boxWidthAtLevel,
                                                                -FReal(idxY)*boxWidthAtLevel,
                                                                -FReal(idxZ)*boxWidthAtLevel);
                                 const int position = ((( (idxX+3) * 7) + (idxY+3))) * 7 + idxZ + 3;
-                                interactionsPosition[(idxLevel-1)*343 + position] = FSpherical(relativePosition);
+                                interactionsPosition[(idxLevel-1)*343 + position] = FSpherical<FReal>(relativePosition);
                             }
                         }
                     }
@@ -400,18 +400,18 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
     }
 
     /** To get the right spherical object from level and child position */
-    FSpherical getSphericalChild(const int idxLevel, const int position) const {
+    FSpherical<FReal> getSphericalChild(const int idxLevel, const int position) const {
         return childrenPosition[(idxLevel-1)*8 + position];
     }
 
     /** To get the right spherical object from level and interaction position */
-    FSpherical getSphericalInteraction(const int idxLevel, const int position) const {
+    FSpherical<FReal> getSphericalInteraction(const int idxLevel, const int position) const {
         return interactionsPosition[(idxLevel-1)*343 + position];
     }
 
     /** Return the position of a leaf from its tree coordinate */
-    FPoint getLeafCenter(const FTreeCoordinate coordinate) const {
-        return FPoint(
+    FPoint<FReal> getLeafCenter(const FTreeCoordinate coordinate) const {
+        return FPoint<FReal>(
                     FReal(coordinate.getX()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getX(),
                     FReal(coordinate.getY()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getY(),
                     FReal(coordinate.getZ()) * widthAtLeafLevel + widthAtLeafLevelDiv2 + boxCorner.getZ());
@@ -420,7 +420,7 @@ class FRotationOriginalKernel : public FAbstractKernels<CellClass,ContainerClass
 public:
 
     /** Constructor, needs system information */
-    FRotationOriginalKernel( const int inTreeHeight, const FReal inBoxWidth, const FPoint& inBoxCenter) :
+    FRotationOriginalKernel( const int inTreeHeight, const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter) :
         boxWidth(inBoxWidth),
         treeHeight(inTreeHeight),
         widthAtLeafLevel(inBoxWidth/FReal(1 << (inTreeHeight-1))),
@@ -444,12 +444,12 @@ public:
       * \f]
       */
     void P2M(CellClass* const inPole, const ContainerClass* const inParticles ) {
-        const FReal i_pow_m[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
+        const FReal i_pow_m[4] = {0, FMath::FPiDiv2<FReal>(), FMath::FPi<FReal>(), -FMath::FPiDiv2<FReal>()};
         // w is the multipole moment
-        FComplex* FRestrict const w = inPole->getMultipole();
+        FComplex<FReal>* FRestrict const w = inPole->getMultipole();
 
         // Copying the position is faster than using cell position
-        const FPoint cellPosition = getLeafCenter(inPole->getCoordinate());
+        const FPoint<FReal> cellPosition = getLeafCenter(inPole->getCoordinate());
 
         // We need a legendre array
         FReal legendre[SizeArray];
@@ -462,8 +462,8 @@ public:
 
         for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
             // P2M
-            const FPoint position(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
-            const FSpherical sph(position - cellPosition);
+            const FPoint<FReal> position(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
+            const FSpherical<FReal> sph(position - cellPosition);
 
             // The physical value (charge, mass)
             const FReal q = physicalValues[idxPart];
@@ -498,7 +498,7 @@ public:
       */
     void M2M(CellClass* const FRestrict inPole, const CellClass*const FRestrict *const FRestrict inChildren, const int inLevel) {
         // A buffer to copy the source w allocated once
-        FComplex source_w[SizeArray];
+        FComplex<FReal> source_w[SizeArray];
         // For all children
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
             // if child exists
@@ -507,12 +507,12 @@ public:
                 FMemUtils::copyall(source_w, inChildren[idxChild]->getMultipole(), SizeArray);
 
                 // rotate it forward
-                const FSpherical sph = getSphericalChild(inLevel, idxChild);
+                const FSpherical<FReal> sph = getSphericalChild(inLevel, idxChild);
                 rotateMultipole(source_w, sph.getPhiZero2Pi(), sph.getInclination());
 
                 const FReal b = -sph.getR();
                 // Translate it
-                FComplex target_w[SizeArray];
+                FComplex<FReal> target_w[SizeArray];
                 for(int l = 0 ; l <= P ; ++l ){
                     for(int m = 0 ; m <= l ; ++m ){
                         // w{l,m}(a+b) = sum(j=m:l, b^(l-j)/(l-j)! w{j,m}(a)
@@ -549,7 +549,7 @@ public:
       */
     void M2L(CellClass* const FRestrict inLocal, const CellClass* inInteractions[], const int /*inSize*/, const int inLevel) {
         // To copy the multipole data allocated once
-        FComplex source_w[SizeArray];
+        FComplex<FReal> source_w[SizeArray];
         // For all children
         for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
             // if interaction exits
@@ -558,12 +558,12 @@ public:
                 FMemUtils::copyall(source_w, inInteractions[idxNeigh]->getMultipole(), SizeArray);
 
                 // Rotate
-                const FSpherical sph = getSphericalInteraction(inLevel, idxNeigh);
+                const FSpherical<FReal> sph = getSphericalInteraction(inLevel, idxNeigh);
                 rotateMultipole(source_w, sph.getPhiZero2Pi(), sph.getInclination());
 
                 const FReal b = sph.getR();
                 // Transfer to u
-                FComplex target_u[SizeArray];
+                FComplex<FReal> target_u[SizeArray];
                 for(int l = 0 ; l <= P ; ++l ){
                     for(int m = 0 ; m <= l ; ++m ){
                         // u{l,m}(a-b) = sum(j=|m|:P-l, (j+l)!/b^(j+l+1) w{j,-m}(a)
@@ -601,7 +601,7 @@ public:
       */
     void L2L(const CellClass* const FRestrict inLocal, CellClass* FRestrict *const FRestrict  inChildren, const int inLevel) {
         // To copy the source local allocated once
-        FComplex source_u[SizeArray];
+        FComplex<FReal> source_u[SizeArray];
         // For all children
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
             // if child exists
@@ -610,12 +610,12 @@ public:
                 FMemUtils::copyall(source_u, inLocal->getLocal(), SizeArray);
 
                 // Rotate
-                const FSpherical sph = getSphericalChild(inLevel, idxChild);
+                const FSpherical<FReal> sph = getSphericalChild(inLevel, idxChild);
                 rotateTaylor(source_u, sph.getPhiZero2Pi(), sph.getInclination());
 
                 const FReal b = sph.getR();
                 // Translate
-                FComplex target_u[SizeArray];
+                FComplex<FReal> target_u[SizeArray];
                 for(int l = 0 ; l <= P ; ++l ){
                     for(int m = 0 ; m <= l ; ++m ){
                         // u{l,m}(r-b) = sum(j=0:P, b^(j-l)/(j-l)! u{j,m}(r);
@@ -658,12 +658,12 @@ public:
       * \f]
       */
     void L2P(const CellClass* const inLocal, ContainerClass* const inParticles){
-        const FReal i_pow_m[4] = {0, FMath::FPiDiv2, FMath::FPi, -FMath::FPiDiv2};
+        const FReal i_pow_m[4] = {0, FMath::FPiDiv2<FReal>(), FMath::FPi<FReal>(), -FMath::FPiDiv2<FReal>()};
         // Take the local value from the cell
-        const FComplex* FRestrict const u = inLocal->getLocal();
+        const FComplex<FReal>* FRestrict const u = inLocal->getLocal();
 
         // Copying the position is faster than using cell position
-        const FPoint cellPosition = getLeafCenter(inLocal->getCoordinate());
+        const FPoint<FReal> cellPosition = getLeafCenter(inLocal->getCoordinate());
 
         // For all particles in the leaf box
         const FReal*const physicalValues = inParticles->getPhysicalValues();
@@ -677,8 +677,8 @@ public:
 
         for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
             // L2P
-            const FPoint position(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
-            const FSpherical sph(position - cellPosition);
+            const FPoint<FReal> position(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
+            const FSpherical<FReal> sph(position - cellPosition);
 
             // The distance between the SH and the particle
             const FReal r = sph.getR();

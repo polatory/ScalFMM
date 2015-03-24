@@ -63,6 +63,8 @@
 /** This method has been tacken from the octree
  * it computes a tree coordinate (x or y or z) from real position
  */
+
+template <class FReal>
 static int getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidthAtLeafLevel) {
     const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
     const int index = int(FMath::dfloor(indexFReal));
@@ -80,13 +82,13 @@ static int getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidt
  */
 int main(int argc, char** argv){
 
-
+    typedef double FReal;
     struct TestParticle{
 	MortonIndex index;
 	FSize indexInFile;
-	FPoint position;
+    FPoint<FReal> position;
 	FReal physicalValue;
-	const FPoint& getPosition()const{
+    const FPoint<FReal>& getPosition()const{
 	    return position;
 	}
 	TestParticle& operator=(const TestParticle& other){
@@ -117,10 +119,10 @@ int main(int argc, char** argv){
     static const int P = 9;
 
     typedef FRotationCell<P>               CellClass;
-    typedef FP2PParticleContainer<>          ContainerClass;
+    typedef FP2PParticleContainer<FReal>          ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
     const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
@@ -133,7 +135,7 @@ int main(int argc, char** argv){
     std::cout << "Opening : " << filename << "\n";
 
 
-    FFmaGenericLoader loaderRef(filename);
+    FFmaGenericLoader<FReal> loaderRef(filename);
     if(!loaderRef.isOpen()){
 	std::cout << "LoaderRef Error, " << filename << " is missing\n";
 	return 1;
@@ -150,7 +152,7 @@ int main(int argc, char** argv){
 	regInsert.tic();
 
 	for(int idxPart = 0 ; idxPart < loaderRef.getNumberOfParticles() ; ++idxPart){
-	    FPoint particlePosition;
+        FPoint<FReal> particlePosition;
 	    FReal physicalValue;
 	    loaderRef.fillParticle(&particlePosition,&physicalValue);
 	    treeRef.insert(particlePosition, physicalValue );
@@ -170,7 +172,7 @@ int main(int argc, char** argv){
     FTic leavesOffset;
     FTic leavesPtr;
 
-    FFmaGenericLoader loader(filename);
+    FFmaGenericLoader<FReal> loader(filename);
     if(!loader.isOpen()){
 	std::cout << "Loader Error, " << filename << " is missing\n";
 	return 1;
@@ -179,8 +181,8 @@ int main(int argc, char** argv){
     //Get the needed informations
     FReal boxWidth = loader.getBoxWidth();
     FReal boxWidthAtLeafLevel = boxWidth/FReal(1 << (NbLevels - 1));
-    FPoint centerOfBox = loader.getCenterOfBox();
-    FPoint boxCorner   = centerOfBox - boxWidth/2;
+    FPoint<FReal> centerOfBox = loader.getCenterOfBox();
+    FPoint<FReal> boxCorner   = centerOfBox - boxWidth/2;
     FSize nbOfParticles = loader.getNumberOfParticles();
 
     //Temporary TreeCoordinate

@@ -60,10 +60,10 @@ int main(int argc, char ** argv){
 			 FParameterDefinitions::NbThreads);
 
   typedef FSphericalCell         CellClass;
-  typedef FP2PParticleContainer<>         ContainerClass;
+  typedef FP2PParticleContainer<FReal>         ContainerClass;
 
-  typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-  typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+  typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+  typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
   typedef FSphericalBlockBlasKernel< CellClass, ContainerClass >     KernelClass;
 
   typedef FFmmAlgorithmThreadProc<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
@@ -79,6 +79,7 @@ int main(int argc, char ** argv){
   const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
   const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
   FTic counter;
+  typedef double FReal;
   const char* const defaultFilename = (sizeof(FReal) == sizeof(float))?
     "../Data/test20k.bin.fma.single":
     "../Data/test20k.bin.fma.double";
@@ -88,7 +89,7 @@ int main(int argc, char ** argv){
 
   std::cout << "Opening : " << filename << "\n";
 
-  FMpiFmaGenericLoader loader(filename, app.global());
+  FMpiFmaGenericLoader<FReal> loader(filename, app.global());
   if(!loader.isOpen()){
     std::cout << "Loader Error, " << filename << " is missing\n";
     return 1;
@@ -113,9 +114,9 @@ int main(int argc, char ** argv){
     counter.tic();
 
     struct TestParticle{
-      FPoint position;
+      FPoint<FReal> position;
       FReal physicalValue;
-      const FPoint& getPosition(){
+      const FPoint<FReal>& getPosition(){
 	return position;
       }
     };
@@ -129,11 +130,11 @@ int main(int argc, char ** argv){
 
     FVector<TestParticle> finalParticles;
     FLeafBalance balancer;
-    // FMpiTreeBuilder< TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
+    // FMpiTreeBuilder< FReal,TestParticle >::ArrayToTree(app.global(), particles, loader.getNumberOfParticles(),
     //						 tree.getBoxCenter(),
     //						 tree.getBoxWidth(),
     //						 tree.getHeight(), &finalParticles,&balancer);
-    FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles,
+    FMpiTreeBuilder< FReal,TestParticle >::DistributeArrayToContainer(app.global(),particles,
 								loader.getMyNumberOfParticles(),
 								tree.getBoxCenter(),
 								tree.getBoxWidth(),tree.getHeight(),
@@ -162,7 +163,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
   }
   else{
-    FPoint position;
+    FPoint<FReal> position;
     FReal physicalValue;
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
       loader.fillParticle(&position,&physicalValue);

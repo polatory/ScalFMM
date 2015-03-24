@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
   FTic time;
   typedef FmaRPart TestParticle;
 //  struct TestParticle{
-//    FPoint position;
+//    FPoint<FReal> position;
 //    FReal forces[3];
 //    FReal physicalValue;
 //    FReal potential;
@@ -87,13 +87,13 @@ int main(int argc, char* argv[])
     //Direct Computation and Storage of result
 
     //open particle file
-    FFmaGenericLoader loader(filename);
+    FFmaGenericLoader<FReal> loader(filename);
 
   
     time.tic();
     TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-      FPoint position;
+      FPoint<FReal> position;
       FReal physicalValue = 0.0;
       loader.fillParticle(&position,&physicalValue);
       // get copy
@@ -170,14 +170,14 @@ int main(int argc, char* argv[])
     const unsigned int ORDER = 7;
 
     // typedefs
-    typedef FP2PParticleContainerIndexed<> ContainerClass;
-    typedef FSimpleLeaf< ContainerClass >  LeafClass;
+    typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
 
-    typedef FInterpMatrixKernelR MatrixKernelClass;
-    typedef FChebCell<ORDER> CellClass;
-    typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+    typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+    typedef FChebCell<FReal,ORDER> CellClass;
+    typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 
-    typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+    typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
     typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
 
@@ -197,7 +197,7 @@ int main(int argc, char* argv[])
 			     &particles2[idxPart].forces[1],
 			     &particles2[idxPart].forces[2],
 			     &particles2[idxPart].potential);
-	tree.insert(FPoint(particles2[idxPart].position),idxPart,particles2[idxPart].physicalValue);
+	tree.insert(FPoint<FReal>(particles2[idxPart].position),idxPart,particles2[idxPart].physicalValue);
       }
     time.tac();
     printf("Elapsed Time for Reading File: \t %f\n",time.elapsed());  
@@ -210,8 +210,8 @@ int main(int argc, char* argv[])
     printf("Elapsed Time for Fmm Computation: \t %f\n",time.elapsed());  
  
 
-    FMath::FAccurater potentialDiff;
-    FMath::FAccurater fx, fy, fz;
+    FMath::FAccurater<FReal> potentialDiff;
+    FMath::FAccurater<FReal> fx, fy, fz;
 
     //Compare the kernel to the stored elements
     {

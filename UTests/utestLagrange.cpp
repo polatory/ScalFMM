@@ -53,7 +53,7 @@ class TestLagrange : public FUTester<TestLagrange> {
 	// The tests!
 	///////////////////////////////////////////////////////////
 
-	template <class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
+    template <class FReal, class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
 	class LeafClass, class OctreeClass, class FmmClass>
 	void RunTest()	{
 		//
@@ -69,7 +69,7 @@ class TestLagrange : public FUTester<TestLagrange> {
 		//
 		std::string filename(SCALFMMDataPath+parFile);
 		//
-		FFmaGenericLoader loader(filename);
+		FFmaGenericLoader<FReal> loader(filename);
 		Print("Number of particles:");
 		Print(loader.getNumberOfParticles());
 
@@ -81,7 +81,7 @@ class TestLagrange : public FUTester<TestLagrange> {
 
     // Load particles
 		FSize nbParticles = loader.getNumberOfParticles() ;
-		FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[nbParticles];
+		FmaRWParticle<FReal, 8,8>* const particles = new FmaRWParticle<FReal, 8,8>[nbParticles];
 
 		loader.fillParticle(particles,nbParticles);
 
@@ -114,8 +114,8 @@ class TestLagrange : public FUTester<TestLagrange> {
 		// Compare
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		Print("Compute Diff...");
-		FMath::FAccurater potentialDiff;
-		FMath::FAccurater fx, fy, fz;
+		FMath::FAccurater<FReal> potentialDiff;
+		FMath::FAccurater<FReal> fx, fy, fz;
 		{ // Check that each particle has been summed with all other
 
 			tree.forEachLeaf([&](LeafClass* leaf){
@@ -212,14 +212,15 @@ class TestLagrange : public FUTester<TestLagrange> {
 
 	/** TestUnifKernel */
 	void TestUnifKernel(){
+        typedef double FReal;
 		const unsigned int ORDER = 6;
 	    // typedefs
-	    typedef FP2PParticleContainerIndexed<> ContainerClass;
-	    typedef FSimpleLeaf< ContainerClass >  LeafClass;
-	    typedef FInterpMatrixKernelR MatrixKernelClass;
-	    typedef FUnifCell<ORDER> CellClass;
-	    typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
-	    typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+	    typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+	    typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
+	    typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+	    typedef FUnifCell<FReal,ORDER> CellClass;
+	    typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
+	    typedef FUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 	    typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
 		RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>();

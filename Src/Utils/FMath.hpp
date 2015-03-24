@@ -39,10 +39,14 @@
  * Propose basic math functions or indirections to std math.
  */
 struct FMath{
-    static const FReal FPi;        //< Pi constant
-    static const FReal FTwoPi;     //< 2 Pi constant
-    static const FReal FPiDiv2;    //< Pi/2 constant
-    static const FReal Epsilon;    //< Epsilon
+    template <class FReal>
+    constexpr static FReal FPi(){ return FReal(M_PI); }
+    template <class FReal>
+    constexpr static FReal FTwoPi(){ return FReal(2.0*M_PI); }
+    template <class FReal>
+    constexpr static FReal FPiDiv2(){ return FReal(M_PI_2); }
+    template <class FReal>
+    constexpr static FReal Epsilon(){ return FReal(0.00000000000000000001); }
 
     /** To get absolute value */
     template <class NumType>
@@ -123,7 +127,7 @@ struct FMath{
 
     /** To know if 2 values seems to be equal */
     template <class NumType>
-    static FReal RelatifDiff(const NumType inV1, const NumType inV2){
+    static NumType RelatifDiff(const NumType inV1, const NumType inV2){
         return Abs(inV1 - inV2)*Abs(inV1 - inV2)/Max(Abs(inV1*inV1), Abs(inV2*inV2));
     }
 
@@ -356,6 +360,7 @@ struct FMath{
 
 
     /** A class to compute accuracy */
+    template <class FReal>
     class FAccurater {
         int    nbElements;
         FReal l2Dot;

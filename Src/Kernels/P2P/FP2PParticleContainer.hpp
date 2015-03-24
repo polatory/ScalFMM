@@ -18,9 +18,9 @@
 
 #include "Components/FBasicParticleContainer.hpp"
 
-template<int NRHS = 1, int NLHS = 1, int NVALS = 1>
-class FP2PParticleContainer : public FBasicParticleContainer<NVALS*(NRHS+4*NLHS)> {
-    typedef FBasicParticleContainer<NVALS*(NRHS+4*NLHS)> Parent;
+template<class FReal, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+class FP2PParticleContainer : public FBasicParticleContainer<FReal, NVALS*(NRHS+4*NLHS), FReal> {
+    typedef FBasicParticleContainer<FReal, NVALS*(NRHS+4*NLHS), FReal> Parent;
 
 public:
     static const int NbAttributes = NVALS*(NRHS+4*NLHS);

@@ -70,6 +70,8 @@ int main(int argc, char ** argv){
 	const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/unitCubeXYZQ20k.fma");
     const std::string filenameIn(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,  defaultFile.c_str()));
 
+    typedef double FReal;
+
 	FTic counter;
 
 	// -----------------------------------------------------
@@ -80,12 +82,12 @@ int main(int argc, char ** argv){
 	// ---------------------------------------------------------------------------------
 	std::cout << "Opening : " << filenameIn << "\n";
 	//
-	FFmaGenericLoader loader(filenameIn);
+	FFmaGenericLoader<FReal> loader(filenameIn);
 	//
 	int nbParticles = static_cast<int>(loader.getNumberOfParticles());
 	std::cout << "Read " << nbParticles << " particles ..." << std::endl;
 	double BoxWith=loader.getBoxWidth();
-	FPoint Centre(loader.getCenterOfBox().getX(), loader.getCenterOfBox().getY() , loader.getCenterOfBox().getZ());
+    FPoint<FReal> Centre(loader.getCenterOfBox().getX(), loader.getCenterOfBox().getY() , loader.getCenterOfBox().getZ());
 	std::cout << "\tWidth : " <<BoxWith << " \t center x : " << loader.getCenterOfBox().getX()
 																		<< " y : " << loader.getCenterOfBox().getY() << " z : " << loader.getCenterOfBox().getZ() << std::endl;
 
@@ -111,10 +113,10 @@ int main(int argc, char ** argv){
 	std::cout << "Done  " << "(@ reading Particles  " << counter.elapsed() << " s)." << std::endl;
 	//Need to copy particles to ContainerClass -> FP2PParticleContainer
 	typedef FBasicCell                 CellClass;
-	typedef FP2PParticleContainer<>         ContainerClass;
+	typedef FP2PParticleContainer<FReal>         ContainerClass;
 
-	typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-	typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+	typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+	typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
 	OctreeClass tree(2, 1, loader.getBoxWidth(), loader.getCenterOfBox());
 	for(int idxP=0 ; idxP<nbParticles ; ++idxP){

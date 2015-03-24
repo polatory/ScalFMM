@@ -50,6 +50,7 @@
 * such expression is used to match the SH expression.
 *  See http://en.wikipedia.org/wiki/Spherical_coordinate_system
 */
+template <class FReal>
 class FSpherical {
     // The attributes of a sphere
     FReal r;         //!< the radial distance
@@ -64,7 +65,7 @@ public:
     }
 
     /** From now, we just need a constructor based on a 3D position */
-    explicit FSpherical(const FPoint& inVector){
+    explicit FSpherical(const FPoint<FReal>& inVector){
         const FReal x2y2 = (inVector.getX() * inVector.getX()) + (inVector.getY() * inVector.getY());
         this->r          = FMath::Sqrt( x2y2 + (inVector.getZ() * inVector.getZ()));
 
@@ -74,7 +75,7 @@ public:
         this->sinTheta = FMath::Sqrt(x2y2) / r;
         this->theta    = FMath::ACos(this->cosTheta);
         // if r == 0 we cannot divide!
-        FLOG(if( r < FMath::Epsilon ) FLog::Controller << "!!! In FSpherical, r == 0!\n"; )
+        FLOG(if( r < FMath::Epsilon<FReal>() ) FLog::Controller << "!!! In FSpherical, r == 0!\n"; )
     }
 
     /** Get the radius */
@@ -97,7 +98,7 @@ public:
     }
     /** Get the azimuth angle [0,2pi]. You should use this method in order to obtain (x,y,z)*/
     FReal getPhiZero2Pi() const{
-        return (phi < 0 ? FMath::FTwoPi + phi : phi);
+        return (phi < 0 ? FMath::FTwoPi<FReal>() + phi : phi);
     }
 
     /** Get the cos of theta = z / r */
@@ -111,7 +112,7 @@ public:
     }
 
     /**
-     * Operator stream FPoint to std::ostream
+     * Operator stream FPoint<FReal> to std::ostream
      * This can be used to simpldata[1] write out a position
      * @param[in,out] output where to write the position
      * @param[in] inPosition the position to write out

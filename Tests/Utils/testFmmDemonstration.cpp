@@ -54,7 +54,7 @@ class MyContainer : public FAbstractParticleContainer {
     FVector<int> indexes;
 public:
     template<typename... Args>
-    void push(const FPoint& /*inParticlePosition*/, const int newParticleIndex, Args ... /*args*/){
+    void push(const FPoint<FReal>& /*inParticlePosition*/, const int newParticleIndex, Args ... /*args*/){
         indexes.push(newParticleIndex);
     }
 
@@ -74,7 +74,7 @@ class MyLeaf : public FAbstractLeaf< MyContainer > {
 
 public:
     template<typename... Args>
-    void push(const FPoint& inParticlePosition, const bool keepIt, Args ... args){
+    void push(const FPoint<FReal>& inParticlePosition, const bool keepIt, Args ... args){
         if(keepIt) particles.push(inParticlePosition, args...);
     }
     MyContainer* getSrc(){
@@ -144,7 +144,7 @@ int main(int argc, char ** argv){
     typedef MyLeaf            LeafClass;
 
     // Standard things here
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef MyKernel< CellClass, ContainerClass >         KernelClass;
     typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
 
@@ -164,7 +164,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoader loader(NbPart, 1, FPoint(0.5,0.5,0.5), 1);
+    FRandomLoader<FReal> loader(NbPart, 1, FPoint<FReal>(0.5,0.5,0.5), 1);
     OctreeClass tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     //////////////////////////////////////////////////////////////////////////////////
@@ -174,9 +174,9 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    FPoint*const realsParticlesPositions = new FPoint[NbPart];
+    FPoint<FReal>*const realsParticlesPositions = new FPoint<FReal>[NbPart];
     {
-        FPoint particlePosition;
+        FPoint<FReal> particlePosition;
         bool keepIt;
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             // get a random position

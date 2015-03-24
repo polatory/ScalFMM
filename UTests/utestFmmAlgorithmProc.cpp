@@ -210,11 +210,12 @@ class TestFmmAlgoProc : public FUTesterMpi<TestFmmAlgoProc> {
         }
     }
 
+    typedef double FReal;
     typedef FTestCell                  CellClass;
-    typedef FTestParticleContainer     ContainerClass;
+    typedef FTestParticleContainer<FReal>     ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
 
     typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
@@ -225,14 +226,14 @@ class TestFmmAlgoProc : public FUTesterMpi<TestFmmAlgoProc> {
         const int NbLevels = 7;
         const int SizeSubLevels = 3;
         const char* const filename = "../../Data/unitCubeXYZQ20k.bfma";
-        FMpiFmaGenericLoader loader(filename,app.global());
+        FMpiFmaGenericLoader<FReal> loader(filename,app.global());
 
         OctreeClass realTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
         if( app.global().processCount() != 1){
             struct TestParticle{
-                FPoint position;
-                const FPoint& getPosition(){
+                FPoint<FReal> position;
+                const FPoint<FReal>& getPosition(){
                     return position;
                 }
             };
@@ -246,7 +247,7 @@ class TestFmmAlgoProc : public FUTesterMpi<TestFmmAlgoProc> {
 
             FVector<TestParticle> finalParticles;
             FLeafBalance balancer;
-            FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles,
+            FMpiTreeBuilder< FReal,TestParticle >::DistributeArrayToContainer(app.global(),particles,
                                                                         loader.getMyNumberOfParticles(),
                                                                         realTree.getBoxCenter(),
                                                                         realTree.getBoxWidth(),realTree.getHeight(),
@@ -258,7 +259,7 @@ class TestFmmAlgoProc : public FUTesterMpi<TestFmmAlgoProc> {
             delete[] particles;
         }
         else{
-            FPoint position;
+            FPoint<FReal> position;
             FReal physicalValue;
             const FSize nbParticles = loader.getNumberOfParticles();
             for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
@@ -269,8 +270,8 @@ class TestFmmAlgoProc : public FUTesterMpi<TestFmmAlgoProc> {
 
         OctreeClass treeValide(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
         {
-            FFmaGenericLoader loaderSeq(filename);
-            FPoint position;
+            FFmaGenericLoader<FReal> loaderSeq(filename);
+            FPoint<FReal> position;
             FReal physicalValue;
             for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
                 loaderSeq.fillParticle(&position,&physicalValue);

@@ -29,18 +29,19 @@ int main(int argc,char* argv[]){
                          FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight);
 
+    typedef double FReal;
     const int P             = 3;
     const int NbLevels      = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options,  4);
     const int SizeSubLevels = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
     static const int order = 1;
-    FPoint rootCenter(FReal(0.0),FReal(0.0),FReal(0.0));
+    FPoint<FReal> rootCenter(FReal(0.0),FReal(0.0),FReal(0.0));
     FReal boxWidth = FReal(4);
 
     typedef FTaylorCell<P,order> CellClass;
-    typedef FP2PParticleContainer<> ContainerClass;
+    typedef FP2PParticleContainer<FReal> ContainerClass;
 
-    typedef FSimpleLeaf< ContainerClass > LeafClass;
-    typedef FOctree< CellClass, ContainerClass , LeafClass > OctreeClass;
+    typedef FSimpleLeaf<FReal, ContainerClass > LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass > OctreeClass;
     typedef FTaylorKernel<CellClass,ContainerClass,P,order> KernelClass;
 
     typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
@@ -50,12 +51,12 @@ int main(int argc,char* argv[]){
 
     int nbPart = 3;
 
-    FPoint tabPart[3];
-    tabPart[0] = FPoint(FReal(-1.9),FReal(-1.9),FReal(1.6));
-    tabPart[1] = FPoint(FReal(0.9),FReal(1.1),FReal(1.6));
-    tabPart[2] = FPoint(FReal(1.9),FReal(0.1),FReal(1.6));
-    //tabPart[2] = FPoint(FReal(0.1),FReal(1.9),FReal(1.6));
-    //tabPart[4] = FPoint(FReal(0.1),FReal(0.1),FReal(1.6));
+    FPoint<FReal> tabPart[3];
+    tabPart[0] = FPoint<FReal>(FReal(-1.9),FReal(-1.9),FReal(1.6));
+    tabPart[1] = FPoint<FReal>(FReal(0.9),FReal(1.1),FReal(1.6));
+    tabPart[2] = FPoint<FReal>(FReal(1.9),FReal(0.1),FReal(1.6));
+    //tabPart[2] = FPoint<FReal>(FReal(0.1),FReal(1.9),FReal(1.6));
+    //tabPart[4] = FPoint<FReal>(FReal(0.1),FReal(0.1),FReal(1.6));
 
     FReal tabPhyValue[nbPart];
     tabPhyValue[0] = FReal(1);

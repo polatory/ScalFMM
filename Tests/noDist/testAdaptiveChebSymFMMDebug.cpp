@@ -91,23 +91,24 @@ int main(int argc, char ** argv){
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
     //
     // accuracy
+    typedef double FReal;
     const unsigned int P = 5 ;
-    typedef FChebCell<P>                                        CellClass;
-    typedef FP2PParticleContainerIndexed<>            ContainerClass;
-    typedef FSimpleIndexedLeaf<ContainerClass>    LeafClass;
-    typedef FInterpMatrixKernelR                               MatrixKernelClass;
-    typedef FAdaptiveChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
+    typedef FChebCell<FReal,P>                                        CellClass;
+    typedef FP2PParticleContainerIndexed<FReal>            ContainerClass;
+    typedef FSimpleIndexedLeaf<FReal,ContainerClass>    LeafClass;
+    typedef FInterpMatrixKernelR<FReal>                               MatrixKernelClass;
+    typedef FAdaptiveChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
     typedef FAdaptiveCell< CellClass, ContainerClass >                                        CellWrapperClass;
     typedef FAdaptiveKernelWrapper< KernelClass, CellClass, ContainerClass >   KernelWrapperClass;
-    typedef FOctree< CellWrapperClass, ContainerClass , LeafClass >                  OctreeClass;
+    typedef FOctree< FReal, CellWrapperClass, ContainerClass , LeafClass >                  OctreeClass;
     // FFmmAlgorithmTask FFmmAlgorithmThread
     typedef FFmmAlgorithm<OctreeClass, CellWrapperClass, ContainerClass, KernelWrapperClass, LeafClass >     FmmClass;
 
-    typedef FP2PParticleContainerIndexed<> ContainerClassDebug;
-    typedef FSimpleLeaf< ContainerClass >  LeafClassDebug;
-    typedef FChebCell<P> CellClassDebug;
-    typedef FOctree<CellClassDebug,ContainerClassDebug,LeafClassDebug> OctreeClassDebug;
-    typedef FChebSymKernel<CellClassDebug,ContainerClassDebug,MatrixKernelClass,P> KernelClassDebug;
+    typedef FP2PParticleContainerIndexed<FReal> ContainerClassDebug;
+    typedef FSimpleLeaf<FReal, ContainerClass >  LeafClassDebug;
+    typedef FChebCell<FReal,P> CellClassDebug;
+    typedef FOctree<FReal, CellClassDebug,ContainerClassDebug,LeafClassDebug> OctreeClassDebug;
+    typedef FChebSymKernel<FReal,CellClassDebug,ContainerClassDebug,MatrixKernelClass,P> KernelClassDebug;
     typedef FFmmAlgorithm<OctreeClassDebug,CellClassDebug,ContainerClassDebug,KernelClassDebug,LeafClassDebug> FmmClassDebug;
 
     ///////////////////////What we do/////////////////////////////
@@ -123,7 +124,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     // Not Random Loader
     //////////////////////////////////////////////////////////////////////////////////
-    FFmaGenericLoader loader(fileName);
+    FFmaGenericLoader<FReal> loader(fileName);
     const long int NbPart  = loader.getNumberOfParticles() ;
     //////////////////////////////////////////////////////////////////////////////////
 
@@ -142,14 +143,14 @@ int main(int argc, char ** argv){
     counter.tic();
     FReal L= loader.getBoxWidth();
     //
-    FmaRWParticle<8,8>* const particles = new FmaRWParticle<8,8>[NbPart];
+    FmaRWParticle<FReal, 8,8>* const particles = new FmaRWParticle<FReal, 8,8>[NbPart];
 
-    FPoint minPos(L,L,L), maxPos(-L,-L,-L);
+    FPoint<FReal> minPos(L,L,L), maxPos(-L,-L,-L);
     //
     loader.fillParticle(particles,NbPart);
 
     for(int idxPart = 0 ; idxPart < NbPart; ++idxPart){
-        const FPoint PP(particles[idxPart].getPosition() ) ;
+        const FPoint<FReal> PP(particles[idxPart].getPosition() ) ;
         //
         minPos.setX(FMath::Min(minPos.getX(),PP.getX())) ;
         minPos.setY(FMath::Min(minPos.getY(),PP.getY())) ;
@@ -202,16 +203,16 @@ int main(int argc, char ** argv){
     // Compare
     /////////////////////////////////////////////////////////////////////////////////////////////////
     {
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
+        FMath::FAccurater<FReal> potentialDiff;
+        FMath::FAccurater<FReal> fx, fy, fz;
         FReal energy= 0.0;
         { // Check that each particle has been summed with all other
 
             //    std::cout << "indexPartOrig || DIRECT V fx || FMM V fx" << std::endl;
 
             tree.forEachCellLeaf([&](CellWrapperClass* cell, LeafClass* leaf){
-                FMath::FAccurater potentialDiffLeaf;
-                FMath::FAccurater fxLeaf, fyLeaf, fzLeaf;
+                FMath::FAccurater<FReal> potentialDiffLeaf;
+                FMath::FAccurater<FReal> fxLeaf, fyLeaf, fzLeaf;
 
                 const FReal*const potentials        = leaf->getTargets()->getPotentials();
                 const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
@@ -256,8 +257,8 @@ int main(int argc, char ** argv){
         std::cout << "Fz " << fz << std::endl;
     }
     {
-        FMath::FAccurater potentialDiff;
-        FMath::FAccurater fx, fy, fz;
+        FMath::FAccurater<FReal> potentialDiff;
+        FMath::FAccurater<FReal> fx, fy, fz;
         FReal energy= 0.0;
         { // Check that each particle has been summed with all other
 
@@ -307,7 +308,7 @@ int main(int argc, char ** argv){
                 CellClassDebug* testcelltest = treedebug.getCell(testcell->getMortonIndex(), level);
                 FAssertLF(testcelltest);
 
-                FMath::FAccurater pole, local;
+                FMath::FAccurater<FReal> pole, local;
 
                 for(int idx = 0 ; idx < testcell->getVectorSize() ; ++idx){
                     pole.add(testcelltest->getMultipole(0)[idx], testcell->getMultipole(0)[idx]);

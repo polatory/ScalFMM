@@ -94,23 +94,22 @@ int main(int argc, char* argv[])
 
         // open particle file
         ////////////////////////////////////////////////////////////////////
-        //
-        FFmaGenericLoader loader(filename);
+        typedef double FReal;
+        FFmaGenericLoader<FReal> loader(filename);
         //
         ////////////////////////////////////////////////////////////////////
         // begin Chebyshev kernel
-
         // accuracy
         const unsigned int ORDER = 7;
         // typedefs
-        typedef FP2PParticleContainerIndexed<>                     ContainerClass;
-        typedef FSimpleLeaf< ContainerClass >                        LeafClass;
-        typedef FChebCell<ORDER>                                         CellClass;
-        typedef FOctree<CellClass,ContainerClass,LeafClass>  OctreeClass;
+        typedef FP2PParticleContainerIndexed<FReal>                     ContainerClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >                        LeafClass;
+        typedef FChebCell<FReal,ORDER>                                         CellClass;
+        typedef FOctree<FReal,CellClass,ContainerClass,LeafClass>  OctreeClass;
         //
-        typedef FInterpMatrixKernelR                                                                              MatrixKernelClass;
-  const MatrixKernelClass MatrixKernel;
-        typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
+        typedef FInterpMatrixKernelR<FReal>                                                                              MatrixKernelClass;
+        const MatrixKernelClass MatrixKernel;
+        typedef FChebSymKernel<FReal, CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
         //
 #ifdef _OPENMP
         typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
@@ -127,7 +126,7 @@ int main(int argc, char* argv[])
                 std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
                 time.tic();
                 //
-                FPoint position;
+                FPoint<FReal> position;
                 FReal physicalValue = 0.0;
                 //
                 for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){

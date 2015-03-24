@@ -34,6 +34,7 @@
   * [morton index][cell] ....
   * ...
   */
+template <class FReal>
 class FTreeIO{
 
     enum TargetSourceDiff{
@@ -65,7 +66,7 @@ public:
         const FReal width = tree.getBoxWidth();
         file.write((const char*)&width, sizeof(FReal));
 
-        file.write((const char*)&tree.getBoxCenter(), sizeof(FPoint));
+        file.write((const char*)&tree.getBoxCenter(), sizeof(FPoint<FReal>));
 
         {
             typename OctreeClass::Iterator octreeIterator(&tree);
@@ -185,8 +186,8 @@ public:
         file.read((char*)&treeSubHeight, sizeof(int));
         FReal boxWidth = 0;
         file.read((char*)&boxWidth, sizeof(FReal));
-        FPoint center;
-        file.read((char*)&center, sizeof(FPoint));
+        FPoint<FReal> center;
+        file.read((char*)&center, sizeof(FPoint<FReal>));
 
         tree.~OctreeClass();
         new (&tree) OctreeClass(treeHeight,treeSubHeight,boxWidth,center);

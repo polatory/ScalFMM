@@ -65,127 +65,128 @@ int main(int argc, char* argv[])
                          "Test Uniform kernel with MPI and compare it with the direct computation.",
                          FParameterDefinitions::OctreeHeight,FParameterDefinitions::NbThreads,
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile);
-  
-  const unsigned int ORDER = 7;
-  const FReal epsilon = FReal(1e-7);
 
-  typedef FP2PParticleContainerIndexed<> ContainerClass;
-  typedef FSimpleLeaf< ContainerClass >  LeafClass;
+    typedef double FReal;
+    const unsigned int ORDER = 7;
+    const FReal epsilon = FReal(1e-7);
 
-  typedef FInterpMatrixKernelR MatrixKernelClass;
-  typedef FUnifCell<ORDER> CellClass;
-  typedef FOctree<CellClass,ContainerClass,LeafClass> OctreeClass;
+    typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
 
-  typedef FUnifKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-  typedef FFmmAlgorithmThreadProc<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-  
-  FMpi app(argc,argv);
-  
-  const char* const filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
-  const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
-  const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
-  const unsigned int NbThreads     = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, 1);
+    typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+    typedef FUnifCell<FReal,ORDER> CellClass;
+    typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 
-  std::cout << ">> This executable has to be used to test Proc Uniform Algorithm. \n";
-  
+    typedef FUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+    typedef FFmmAlgorithmThreadProc<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+
+    FMpi app(argc,argv);
+
+    const char* const filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
+    const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
+    const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
+    const unsigned int NbThreads     = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, 1);
+
+    std::cout << ">> This executable has to be used to test Proc Uniform Algorithm. \n";
+
 
 #ifdef _OPENMP
-  omp_set_num_threads(NbThreads);
-  std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
+    omp_set_num_threads(NbThreads);
+    std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
 #else
-  std::cout << "\n>> Sequential version.\n" << std::endl;
+    std::cout << "\n>> Sequential version.\n" << std::endl;
 #endif
     
-  std::cout << "Opening : " <<filename << "\n" << std::endl;
-  // init timer
-  FTic time;
-  
-  // Create Matrix Kernel
-  const MatrixKernelClass MatrixKernel;
+    std::cout << "Opening : " <<filename << "\n" << std::endl;
+    // init timer
+    FTic time;
 
-  // init particles position and physical value
-  struct TestParticle{
-    FPoint position;
-    FReal physicalValue;
-    const FPoint& getPosition(){
-      return position;
+    // Create Matrix Kernel
+    const MatrixKernelClass MatrixKernel;
+
+    // init particles position and physical value
+    struct TestParticle{
+        FPoint<FReal> position;
+        FReal physicalValue;
+        const FPoint<FReal>& getPosition(){
+            return position;
+        }
+    };
+
+    // open particle file
+    FMpiFmaGenericLoader<FReal> loader(filename,app.global());
+    if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
+
+    OctreeClass tree(TreeHeight, SubTreeHeight,loader.getBoxWidth(),loader.getCenterOfBox());
+    time.tic();
+    TestParticle* particles = new TestParticle[loader.getMyNumberOfParticles()];
+    memset(particles,0,(unsigned int) (sizeof(TestParticle)* loader.getMyNumberOfParticles()));
+    for(int idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
+        loader.fillParticle(&particles[idxPart].position,&particles[idxPart].physicalValue);
     }
-  };
+    FVector<TestParticle> finalParticles;
+    FLeafBalance balancer;
 
-  // open particle file
-  FMpiFmaGenericLoader loader(filename,app.global());
-  if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
-  
-  OctreeClass tree(TreeHeight, SubTreeHeight,loader.getBoxWidth(),loader.getCenterOfBox());
-  time.tic();
-  TestParticle* particles = new TestParticle[loader.getMyNumberOfParticles()];
-  memset(particles,0,(unsigned int) (sizeof(TestParticle)* loader.getMyNumberOfParticles()));
-  for(int idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
-    loader.fillParticle(&particles[idxPart].position,&particles[idxPart].physicalValue);
-  }
-  FVector<TestParticle> finalParticles;
-  FLeafBalance balancer;
-
-  FMpiTreeBuilder< TestParticle >::DistributeArrayToContainer(app.global(),particles, 
-							      loader.getMyNumberOfParticles(),
-							      tree.getBoxCenter(),
-							      tree.getBoxWidth(),tree.getHeight(),
-							      &finalParticles, &balancer);
+    FMpiTreeBuilder< FReal,TestParticle >::DistributeArrayToContainer(app.global(),particles,
+                                                                loader.getMyNumberOfParticles(),
+                                                                tree.getBoxCenter(),
+                                                                tree.getBoxWidth(),tree.getHeight(),
+                                                                &finalParticles, &balancer);
     { // -----------------------------------------------------
-    std::cout << "Creating & Inserting " << loader.getMyNumberOfParticles() << " particles ..." << std::endl;
-    std::cout << "For a total of " << loader.getNumberOfParticles() << " particles ..." << std::endl;
-    std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
-    time.tic();
+        std::cout << "Creating & Inserting " << loader.getMyNumberOfParticles() << " particles ..." << std::endl;
+        std::cout << "For a total of " << loader.getNumberOfParticles() << " particles ..." << std::endl;
+        std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
+        time.tic();
 
-    for(int idxPart = 0 ; idxPart < finalParticles.getSize() ; ++idxPart){
-      // put in tree
-      tree.insert(finalParticles[idxPart].position, idxPart, finalParticles[idxPart].physicalValue);
-    }
+        for(int idxPart = 0 ; idxPart < finalParticles.getSize() ; ++idxPart){
+            // put in tree
+            tree.insert(finalParticles[idxPart].position, idxPart, finalParticles[idxPart].physicalValue);
+        }
 
-    time.tac();
-    std::cout << "Done  " << "(@Creating and Inserting Particles = "
-	      << time.elapsed() << "s)." << std::endl;
-  } // -----------------------------------------------------
+        time.tac();
+        std::cout << "Done  " << "(@Creating and Inserting Particles = "
+                  << time.elapsed() << "s)." << std::endl;
+    } // -----------------------------------------------------
 
-  { // -----------------------------------------------------
-    std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ",EPS="<< epsilon <<") ... " << std::endl;
-    time.tic();
-    KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
-    FmmClass algorithm(app.global(),&tree, &kernels);
-    algorithm.execute();
-    time.tac();
-    std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
-  } // -----------------------------------------------------
-
-
-  { // -----------------------------------------------------
-    std::cout << "\nError computation ... " << std::endl;
-    FReal potential;
-    FReal fx, fy, fz;
-    { // Check that each particle has been summed with all other
-      tree.forEachLeaf([&](LeafClass* leaf){
-	  const FReal*const potentials = leaf->getTargets()->getPotentials();
-	  const FReal*const forcesX = leaf->getTargets()->getForcesX();
-	  const FReal*const forcesY = leaf->getTargets()->getForcesY();
-	  const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-	  const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-	  for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-	    potential += potentials[idxPart];
-	    fx += forcesX[idxPart];
-	    fy += forcesY[idxPart];
-	    fz += forcesZ[idxPart];
-	  }
-	});
-    }
-
-    // Print for information
-    std::cout << "Potential " << potential << std::endl;
-    std::cout << "Fx " << fx << std::endl;
-    std::cout << "Fy " << fy << std::endl;
-    std::cout << "Fz " << fz << std::endl;
-    
-  } // end Unif kernel
+    { // -----------------------------------------------------
+        std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ",EPS="<< epsilon <<") ... " << std::endl;
+        time.tic();
+        KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
+        FmmClass algorithm(app.global(),&tree, &kernels);
+        algorithm.execute();
+        time.tac();
+        std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
+    } // -----------------------------------------------------
 
 
-  return 0;
+    { // -----------------------------------------------------
+        std::cout << "\nError computation ... " << std::endl;
+        FReal potential;
+        FReal fx, fy, fz;
+        { // Check that each particle has been summed with all other
+            tree.forEachLeaf([&](LeafClass* leaf){
+                const FReal*const potentials = leaf->getTargets()->getPotentials();
+                const FReal*const forcesX = leaf->getTargets()->getForcesX();
+                const FReal*const forcesY = leaf->getTargets()->getForcesY();
+                const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+                const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                    potential += potentials[idxPart];
+                    fx += forcesX[idxPart];
+                    fy += forcesY[idxPart];
+                    fz += forcesZ[idxPart];
+                }
+            });
+        }
+
+        // Print for information
+        std::cout << "Potential " << potential << std::endl;
+        std::cout << "Fx " << fx << std::endl;
+        std::cout << "Fy " << fy << std::endl;
+        std::cout << "Fz " << fz << std::endl;
+
+    } // end Unif kernel
+
+
+    return 0;
 }

@@ -60,8 +60,9 @@
 /** DLpoly particle is used in the gadget program
  * here we try to make the same simulation
  */
+template <class FReal>
 struct MDParticle {
-	FPoint position;
+    FPoint<FReal> position;
 	FReal forces[3];
 	FReal physicalValue;
 	FReal potential;
@@ -78,10 +79,10 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::PeriodicityDisabled, FParameterDefinitions::PeriodicityNbLevels,
                          FParameterDefinitions::OutputFile, FParameterDefinitions::InputFile,
                          FParameterDefinitions::InputBinFormat);
-
-	typedef FP2PParticleContainerIndexed<>                    ContainerClass;
-	typedef FSimpleLeaf< ContainerClass >                     LeafClass;
-	typedef FInterpMatrixKernelR                                              MatrixKernelClass;
+    typedef double FReal;
+    typedef FP2PParticleContainerIndexed<FReal>                    ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FInterpMatrixKernelR<FReal>                                              MatrixKernelClass;
   const MatrixKernelClass MatrixKernel;
 
 #ifdef  ScalFMM_USE_BLAS
@@ -89,18 +90,18 @@ int main(int argc, char ** argv){
 	// accuracy
 	const unsigned int ORDER = 12;
 	// typedefs
-	typedef FChebCell<ORDER>                                                  CellClass;
-	typedef FOctree<CellClass,ContainerClass,LeafClass>                       OctreeClass;
-	typedef FChebSymKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
+    typedef FChebCell<FReal,ORDER>                                                  CellClass;
+    typedef FOctree<FReal,CellClass,ContainerClass,LeafClass>                       OctreeClass;
+    typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
 
 #else
-	typedef FSphericalCell                                    CellClass;
-	typedef FOctree< CellClass, ContainerClass , LeafClass >  OctreeClass;
-	typedef FSphericalKernel< CellClass, ContainerClass >     KernelClass;
+    typedef FSphericalCell<FReal>                                    CellClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FSphericalKernel<FReal, CellClass, ContainerClass >     KernelClass;
 	const int DevP          = FParameters::getValue(argc,argv,"-P", 9);
 #endif
 
-	typedef FFmmAlgorithmPeriodic<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+    typedef FFmmAlgorithmPeriodic<FReal, OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 	//	typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass >         FmmClassNoPer;
 	//////////////////////////////////////////////////////////////
 
@@ -118,12 +119,12 @@ int main(int argc, char ** argv){
 	//  LOADER
 	//  -----------------------------------------------------
 	std::cout << "Opening : " << filenameIn << "\n";
-	FDlpolyLoader  *loader = nullptr ;
+    FDlpolyLoader<FReal>  *loader = nullptr ;
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::InputBinFormat.options)){
-		loader  = new FDlpolyBinLoader(filenameIn.c_str());
+        loader  = new FDlpolyBinLoader<FReal>(filenameIn.c_str());
 	}
 	else {
-		loader  = new FDlpolyAsciiLoader(filenameIn.c_str());
+        loader  = new FDlpolyAsciiLoader<FReal>(filenameIn.c_str());
 	}
 
 	if(! loader->isOpen()){
@@ -139,13 +140,13 @@ int main(int argc, char ** argv){
 	std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
 
 	counter.tic();
-	FPoint electricMoment(0.0,0.0,0.0) ;
+    FPoint<FReal> electricMoment(0.0,0.0,0.0) ;
 	// const --> then shared
-	MDParticle * const particles = new MDParticle[loader->getNumberOfParticles()];
-	std::memset(particles, 0, sizeof(MDParticle) * loader->getNumberOfParticles()) ;
-	MDParticle* particlesDirect = nullptr;
-	particlesDirect = new MDParticle[loader->getNumberOfParticles()];
-	std::memset(particlesDirect, 0, sizeof(MDParticle) * loader->getNumberOfParticles()) ;
+    MDParticle<FReal> * const particles = new MDParticle<FReal>[loader->getNumberOfParticles()];
+    std::memset(particles, 0, sizeof(MDParticle<FReal>) * loader->getNumberOfParticles()) ;
+    MDParticle<FReal>* particlesDirect = nullptr;
+    particlesDirect = new MDParticle<FReal>[loader->getNumberOfParticles()];
+    std::memset(particlesDirect, 0, sizeof(MDParticle<FReal>) * loader->getNumberOfParticles()) ;
 	//
 	int nbParticles = static_cast<int>(loader->getNumberOfParticles());
 	double totalCharge = 0.0;
@@ -240,12 +241,12 @@ int main(int argc, char ** argv){
 							{
 								if(idxX == 0 && idxY == 0 && idxZ == 0) continue;
 
-								const FPoint offset(loader->getBoxWidth() * FReal(idxX),
+                                const FPoint<FReal> offset(loader->getBoxWidth() * FReal(idxX),
 										loader->getBoxWidth() * FReal(idxY),
 										loader->getBoxWidth() * FReal(idxZ));
 								//
 								for(int idxSource = 0 ; idxSource < nbParticles ; ++idxSource){
-									MDParticle source = particles[idxSource];
+                                    MDParticle<FReal> source = particles[idxSource];
 									source.position += offset;
 									FP2P::NonMutualParticles(
 											source.position.getX(), source.position.getY(),source.position.getZ(),source.physicalValue,
@@ -308,7 +309,7 @@ int main(int argc, char ** argv){
 	fileout.write((char*)&PER,sizeof(int)*4);
 	fileout.write((char*)&denergy,sizeof(denergy));
 	//
-	fileout.write ((char*)&particlesDirect[0], sizeof(MDParticle)*nbParticles);
+    fileout.write ((char*)&particlesDirect[0], sizeof(MDParticle<FReal>)*nbParticles);
 	fileout.flush();
 	//
 	// end generate

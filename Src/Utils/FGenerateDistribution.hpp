@@ -28,12 +28,11 @@
 #include "Utils/FParameters.hpp"
 
 /**  return a random number between 0 and 1 */
-//double getRandom() {
-//	return drand48();
-//} ;
+
 void initRandom() {
 	srand48( static_cast<long int>(time(nullptr))) ;
 } ;
+template <class FReal>
 FReal getRandom() {
 	return static_cast<FReal>(drand48());
 	//return static_cast<FReal>(rand()/FReal(RAND_MAX));
@@ -46,15 +45,16 @@ FReal getRandom() {
 //! \param N the number of points uniformly randomly sample on the unit cube
 //! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
 //! \example  generateDistributions.cpp
+template <class FReal>
 void unifRandonPointsOnUnitCube(const int N , FReal * points) {
 	//
 	initRandom() ;
 	int j = 0;
 	for (int i = 0 ; i< N ; ++i, j+=4)  {
 		//
-		points[j]	  =	getRandom()  ;
-		points[j+1] =	getRandom()  ;
-		points[j+2] =	getRandom()  ;
+        points[j]	  =	getRandom<FReal>()  ;
+        points[j+1] =	getRandom<FReal>()  ;
+        points[j+2] =	getRandom<FReal>()  ;
 		//
 	}
 };
@@ -69,6 +69,7 @@ void unifRandonPointsOnUnitCube(const int N , FReal * points) {
 //! \param Lz the the Z-length of the  cube
 //! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
 //! \example  generateDistributions.cpp
+template <class FReal>
 void unifRandonPointsOnCube(const int& N , const FReal& Lx,  const FReal &Ly,  const FReal& Lz, FReal * points) {
 	//
 	unifRandonPointsOnUnitCube(N , points) ;
@@ -87,6 +88,7 @@ void unifRandonPointsOnCube(const int& N , const FReal& Lx,  const FReal &Ly,  c
 //! \param N the number of points uniformly randomly sample on the unit sphere
 //! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
 //! \example  generateDistributions.cpp
+template <class FReal>
 void unifRandonPointsOnUnitSphere(const int N , FReal * points) {
 	FReal u, v, theta, phi, sinPhi ;
 	//
@@ -94,8 +96,8 @@ void unifRandonPointsOnUnitSphere(const int N , FReal * points) {
 	int j = 0 ;
 	for (int i = 0 ; i< N ; ++i, j+=4)  {
 		//
-		u = getRandom() ;  v = getRandom() ;
-		theta  = FMath::FTwoPi*u ;
+        u = getRandom<FReal>() ;  v = getRandom<FReal>() ;
+        theta  = FMath::FTwoPi<FReal>()*u ;
 		phi     = FMath::ACos(2*v-1);
 		sinPhi = FMath::Sin(phi);
 		//
@@ -116,13 +118,14 @@ void unifRandonPointsOnUnitSphere(const int N , FReal * points) {
 //! \param c  the z  semi-axe length
 //! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
 //!
+template <class FReal>
 void nonunifRandonPointsOnElipsoid(const int N , const FReal &a, const FReal &b, const FReal &c, FReal * points) {
 	//
 	FReal u, v , cosu ;
 	int j =0 ;
 	for (int i = 0 ; i< N ; ++i, j+=4)  {
-		u = getRandom() ;  v = getRandom() ;
-		u  = FMath::FPi*u - FMath::FPiDiv2;   v   = FMath::FTwoPi*v - FMath::FPi;
+        u = getRandom<FReal>() ;  v = getRandom<FReal>() ;
+        u  = FMath::FPi<FReal>()*u - FMath::FPiDiv2<FReal>();   v   = FMath::FTwoPi<FReal>()*v - FMath::FPi<FReal>();
 		cosu = FMath::Cos(u) ;
 		points[j]	   = a*cosu*FMath::Cos(v)  ;
 		points[j+1]  = b*cosu*FMath::Sin(v)  ;
@@ -139,6 +142,7 @@ void nonunifRandonPointsOnElipsoid(const int N , const FReal &a, const FReal &b,
 //! \param c  the z  semi-axe length
 //! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
 //!
+template <class FReal>
 void unifRandonPointsOnProlate(const int N , const FReal &a, const FReal &c, FReal * points){
 	//
 	FReal u, w,v ,ksi ;
@@ -150,14 +154,14 @@ void unifRandonPointsOnProlate(const int N , const FReal &a, const FReal &c, FRe
 		// Select a random point on the prolate
 		do {
 			cpt++	;
-			u = getRandom() ;  v = getRandom() ;
-			u  = 2.0*u - 1.0;   v   = FMath::FTwoPi*v;
+            u = getRandom<FReal>() ;  v = getRandom<FReal>() ;
+            u  = 2.0*u - 1.0;   v   = FMath::FTwoPi<FReal>()*v;
 			w =FMath::Sqrt(1-u*u) ;
 			points[j]	   = a*w*FMath::Cos(v)  ;
 			points[j+1]  = a*w*FMath::Sin(v)  ;
 			points[j+2]  = c*u ;
 			// Accept the position ?
-			ksi = a*getRandom()  ;
+            ksi = a*getRandom<FReal>()  ;
 			//			std::cout << "Gradf  "<<  points[j]*points[j] + points[j+1] *points[j+1]  +e*points[j+2] *points[j+2]  << std::endl;
 			isgood = (points[j]*points[j] + points[j+1] *points[j+1]  +e*points[j+2] *points[j+2]  < ksi*ksi );
 		} while (isgood);
@@ -176,6 +180,7 @@ void unifRandonPointsOnProlate(const int N , const FReal &a, const FReal &c, FRe
 //! \param R the radius of the sphere
 //! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
 //!
+template <class FReal>
 void unifRandonPointsOnSphere(const int N , const FReal R, FReal * points) {
 	//
 	unifRandonPointsOnUnitSphere(N , points) ;
@@ -195,12 +200,13 @@ void unifRandonPointsOnSphere(const int N , const FReal R, FReal * points) {
 //! \param R    : Radius of the sphere that contains the particles
 //! @return Return the radius according to the Plummer distribution either double type or float type
 //!
+template <class FReal>
 FReal  plummerDist(int & cpt, const FReal &R) {
 	//
 	FReal radius ,u ;
 	do  {
 		//
-		u        = FMath::pow (getRandom() , 2.0/3.0) ;
+        u        = FMath::pow (getRandom<FReal>() , 2.0/3.0) ;
 		radius = FMath::Sqrt (u/(1.0-u));
 		cpt++;
 		if(radius  <=R){
@@ -219,13 +225,13 @@ FReal  plummerDist(int & cpt, const FReal &R) {
 //! \param R the radius of the sphere that contains all the points
 //! \param M the total mass of all the particles inside the Sphere or radius R
 //! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
-//!
+template <class FReal>
 void unifRandonPlummer(const int N , const FReal R, const FReal M, FReal * points) {
 	//
 	unifRandonPointsOnUnitSphere(N , points) ;
 	//
 	FReal r , rm= 0.0;
-	//	FReal Coeff =  3.0*M/(4.0*FMath::FPi*R*R*R) ;
+    //	FReal Coeff =  3.0*M/(4.0*FMath::FPi<FReal>()*R*R*R) ;
 	//am1 = 0 ;//1/FMath::pow(1+R*R,2.5);
 	int cpt = 0 ;
 	for (int i = 0,j=0 ; i< N ; ++i, j+=4)  {
@@ -256,6 +262,7 @@ void unifRandonPlummer(const int N , const FReal R, const FReal M, FReal * point
 //!  @param  particles array of particles of type FReal (float or double) Its size is N*nbDataPerParticle
 //!  @param  nbDataPerParticle number of values per particles (default value 4)
 //!
+template <class FReal>
 void exportCVS(std::ofstream& file, const FReal * particles , const int N, const int nbDataPerParticle=4){
 	int j = 0;
 	if (nbDataPerParticle==4){
@@ -283,7 +290,7 @@ void exportCVS(std::ofstream& file, const FReal * particles , const int N, const
 //!  @param file stream to save the data
 //!  @param  particles array of particles of type FReal (float or double) Its size is 4*N (X,Y,Z,M)
 //!  @param  N number of particles
-//!
+template <class FReal>
 void exportCOSMOS(std::ofstream& file, const FReal * particles , const int N){
 	int j = 0;
 	file << " x ,  y , z, q " <<std::endl;
@@ -304,7 +311,7 @@ void exportCOSMOS(std::ofstream& file, const FReal * particles , const int N){
 //!  @param file stream to save the data
 //!  @param  particles array of particles of type FReal (float or double) Its size is 4*N (X,Y,Z,M)
 //!  @param  N number of particles
-//!
+template <class FReal>
 void exportVTK(std::ofstream& VTKfile, const FReal * particles, const int N, const int nbDataPerParticle=4 ){
 	int j = 0;
 	//---------------------------
@@ -352,7 +359,7 @@ void exportVTK(std::ofstream& VTKfile, const FReal * particles, const int N, con
 //!  @param file stream to save the data
 //!  @param  particles array of particles of type FReal (float or double) Its size is 4*N (X,Y,Z,M)
 //!  @param  N number of particles
-//!
+template <class FReal>
 void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N ){
 	int j = 0;
 
@@ -411,7 +418,7 @@ void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N )
 //!  @param  particles array of particles of type FReal (float or double) Its size is nbDataPerParticle*N
 //!  @param  N number of particles
 //!  @param  nbDataPerParticle number of values per particles (default value 4)
-//!
+template <class FReal>
 void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N, const int nbDataPerParticle ){
 	int j = 0;
 

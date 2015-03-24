@@ -18,9 +18,7 @@
 
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FLog.hpp"
-
-/* forward declaration to avoid include */
-class FPoint;
+#include "../Utils/FPoint.hpp"
 
 /**
 * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -32,6 +30,7 @@ class FPoint;
 *
 * @warning Inherit from this class when implement a specific particle type
 */
+template <class FReal>
 class FAbstractParticleContainer {
 public:
     /** Default destructor */
@@ -44,7 +43,7 @@ public:
      * pass through its push method.
      */
     template<typename... Args>
-    void push(const FPoint& /*inParticlePosition*/, Args ... /*args*/){
+    void push(const FPoint<FReal>& /*inParticlePosition*/, Args ... /*args*/){
         FLOG( FLog::Controller.write("Warning, push is not implemented!").write(FLog::Flush) );
     }
 };

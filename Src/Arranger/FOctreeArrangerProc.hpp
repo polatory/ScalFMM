@@ -35,7 +35,7 @@
   * to move the particles in the tree instead of building a new
   * tree.
   */
-template <class OctreeClass, class ContainerClass, class ParticleClass, class ConverterClass >
+template <class FReal, class OctreeClass, class ContainerClass, class ParticleClass, class ConverterClass >
 class FOctreeArrangerProc  {
     /** Interval is the min/max morton index
       * for a proc
@@ -104,8 +104,8 @@ public:
         { // iterate on the leafs and found particle to remove or to send
             // For periodic
             const FReal boxWidth = tree->getBoxWidth();
-            const FPoint min(tree->getBoxCenter(),-boxWidth/2);
-            const FPoint max(tree->getBoxCenter(),boxWidth/2);
+            const FPoint<FReal> min(tree->getBoxCenter(),-boxWidth/2);
+            const FPoint<FReal> max(tree->getBoxCenter(),boxWidth/2);
 
             FVector<int> indexesToExtract;
 
@@ -116,7 +116,7 @@ public:
                 ContainerClass* particles = octreeIterator.getCurrentLeaf()->getSrc();
                 //IdxPart is incremented at the end of the loop
                 for(int idxPart = 0 ; idxPart < particles->getNbParticles(); /*++idxPart*/){
-                    FPoint partPos( particles->getPositions()[0][idxPart],
+                    FPoint<FReal> partPos( particles->getPositions()[0][idxPart],
                             particles->getPositions()[1][idxPart],
                             particles->getPositions()[2][idxPart] );
                     // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
