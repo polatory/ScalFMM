@@ -6,13 +6,10 @@
 #include "../../Utils/FComplex.hpp"
 #include "../../Utils/FMemUtils.hpp"
 #include "../../Utils/FGlobal.hpp"
-#include "../../Containers/FTreeCoordinate.hpp"
+#include "../Core/FBasicCellPOD.hpp"
 #include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
-struct alignas(FStarPUDefaultAlign::StructAlign) FRotationCellPODCore {
-    MortonIndex mortonIndex;
-    int coordinates[3];
-};
+typedef FBasicCellPOD FRotationCellPODCore;
 
 template <int P>
 struct alignas(FStarPUDefaultAlign::StructAlign) FRotationCellPODPole {

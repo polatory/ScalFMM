@@ -3,13 +3,10 @@
 
 
 #include "../../Utils/FGlobal.hpp"
-#include "../../Containers/FTreeCoordinate.hpp"
+#include "../Core/FBasicCellPOD.hpp"
 #include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 
-struct alignas(FStarPUDefaultAlign::StructAlign) FTaylorCellPODCore {
-    MortonIndex mortonIndex;
-    int coordinates[3];
-};
+typedef FBasicCellPOD FTaylorCellPODCore;
 
 template <int P, int order>
 struct alignas(FStarPUDefaultAlign::StructAlign) FTaylorCellPODPole {

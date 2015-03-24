@@ -3,14 +3,11 @@
 #define FCHEBCELLPOD_HPP
 
 #include "../../Utils/FGlobal.hpp"
-#include "../../Containers/FTreeCoordinate.hpp"
+#include "../Core/FBasicCellPOD.hpp"
 #include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 #include "../../Kernels/Chebyshev/FChebTensor.hpp"
 
-struct alignas(FStarPUDefaultAlign::StructAlign) FChebCellPODCore {
-    MortonIndex mortonIndex;
-    int coordinates[3];
-};
+typedef FBasicCellPOD FChebCellPODCore;
 
 template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 struct alignas(FStarPUDefaultAlign::StructAlign) FChebCellPODPole {

@@ -3,15 +3,12 @@
 #define FUNIFCELLPOD_HPP
 
 #include "../../Utils/FGlobal.hpp"
-#include "../../Containers/FTreeCoordinate.hpp"
+#include "../Core/FBasicCellPOD.hpp"
 #include "../StarPUUtils/FStarPUDefaultAlign.hpp"
 #include "../../Kernels/Uniform//FUnifTensor.hpp"
 #include "../../Utils/FComplex.hpp"
 
-struct alignas(FStarPUDefaultAlign::StructAlign) FUnifCellPODCore {
-    MortonIndex mortonIndex;
-    int coordinates[3];
-};
+typedef FBasicCellPOD FTestCellPODCore;
 
 template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 struct alignas(FStarPUDefaultAlign::StructAlign) FUnifCellPODPole {
