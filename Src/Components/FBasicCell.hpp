@@ -16,10 +16,9 @@
 #ifndef FBASICCELL_HPP
 #define FBASICCELL_HPP
 
+#include "../Utils/FGlobal.hpp"
+#include "../Containers/FTreeCoordinate.hpp"
 #include "FAbstractSerializable.hpp"
-#include "../Extensions/FExtendMortonIndex.hpp"
-#include "../Extensions/FExtendCoordinate.hpp"
-
 
 
 /**
@@ -34,27 +33,61 @@
 *
 *
 */
-class FBasicCell : public FExtendMortonIndex, public FExtendCoordinate, public FAbstractSerializable {
+class FBasicCell : public FAbstractSerializable {
+    MortonIndex mortonIndex;    //< Morton index (need by most elements)
+    FTreeCoordinate coordinate; //< The position
+
 public:
+    /** Default constructor */
+    FBasicCell() : mortonIndex(0) {
+    }
+
     /** Default destructor */
     virtual ~FBasicCell(){
+    }    
+
+    /** To get the morton index */
+    MortonIndex getMortonIndex() const {
+        return this->mortonIndex;
+    }
+
+    /** To set the morton index */
+    void setMortonIndex(const MortonIndex inMortonIndex) {
+        this->mortonIndex = inMortonIndex;
+    }
+
+    /** To get the position */
+    const FTreeCoordinate& getCoordinate() const {
+        return this->coordinate;
+    }
+
+    /** To set the position */
+    void setCoordinate(const FTreeCoordinate& inCoordinate) {
+        this->coordinate = inCoordinate;
+    }
+
+    /** To set the position from 3 FReals */
+    void setCoordinate(const int inX, const int inY, const int inZ) {
+        this->coordinate.setX(inX);
+        this->coordinate.setY(inY);
+        this->coordinate.setZ(inZ);
     }
 
     /** Save the current cell in a buffer */
     template <class BufferWriterClass>
     void save(BufferWriterClass& buffer) const{
-        FExtendMortonIndex::save(buffer);
-        FExtendCoordinate::save(buffer);
+        buffer << mortonIndex;
+        coordinate.save(buffer);
     }
     /** Restore the current cell from a buffer */
     template <class BufferReaderClass>
     void restore(BufferReaderClass& buffer){
-        FExtendMortonIndex::restore(buffer);
-        FExtendCoordinate::restore(buffer);
+        buffer >> mortonIndex;
+        coordinate.restore(buffer);
     }
 
     int getSavedSize() const {
-        return FExtendMortonIndex::getSavedSize() + FExtendMortonIndex::getSavedSize();
+        return int(sizeof(mortonIndex)) +  coordinate.getSavedSize();
     }
 
     /** Do nothing */

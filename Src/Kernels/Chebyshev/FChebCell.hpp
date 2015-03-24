@@ -18,8 +18,6 @@
 #include <iostream>
 
 #include "../../Components/FBasicCell.hpp"
-#include "../../Extensions/FExtendMortonIndex.hpp"
-#include "../../Extensions/FExtendCoordinate.hpp"
 
 #include "./FChebTensor.hpp"
 #include "../../Extensions/FExtendCellType.hpp"

@@ -46,7 +46,7 @@
  *
  * Particles and cells has to respect the Abstract class definition.
  * Particle must extend {FExtendPosition}
- * Cell must extend extend {FTreeCoordinate,FExtendMortonIndex}
+ * Cell must extend extend proposes accessors to FTreeCoordinate and MortonIndex.
  *
  * If the octree as an height H, then it goes from 0 to H-1
  * at level 0 the space is not split

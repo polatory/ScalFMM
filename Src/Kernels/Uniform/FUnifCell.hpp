@@ -20,9 +20,6 @@
 #define FUNIFCELL_HPP
 
 
-#include "../../Extensions/FExtendMortonIndex.hpp"
-#include "../../Extensions/FExtendCoordinate.hpp"
-
 #include "./FUnifTensor.hpp"
 #include "../../Components/FBasicCell.hpp"
 #include "../../Extensions/FExtendCellType.hpp"

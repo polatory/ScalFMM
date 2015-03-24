@@ -17,9 +17,6 @@
 #define FINTERPCELL_HPP
 
 
-#include "../../Extensions/FExtendMortonIndex.hpp"
-#include "../../Extensions/FExtendCoordinate.hpp"
-
 #include "./FInterpTensor.hpp"
 #include "../../Components/FBasicCell.hpp"
 #include "../../Extensions/FExtendCellType.hpp"
