@@ -31,24 +31,24 @@
 #include <omp.h>
 
 /**
-* @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FFmmAlgorithmThread
-* @brief
+* \author Berenger Bramas (berenger.bramas@inria.fr)
+* \brief Implements an FMM algorithm threaded using OpenMP.
+*
 * Please read the license
 *
-* This class is a threaded FMM algorithm
-* It just iterates on a tree and call the kernels with good arguments.
-* It used the inspector-executor model :
-* iterates on the tree and builds an array to work in parallel on this array
-*
-* Of course this class does not deallocate pointer given in arguments.
+* This class runs a threaded FMM algorithm.  It just iterates on a tree and call
+* the kernels with good arguments.  The inspector-executor model is used : the
+* class iterates on the tree and builds an array and works in parallel on this
+* array.
 *
 * When using this algorithm the P2P is thread safe.
+*
+* This class does not deallocate pointers given to its constructor.
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThread : public FAbstractAlgorithm, public FAlgorithmTimers{
-    OctreeClass* const tree;                  //< The octree to work on
-    KernelClass** kernels;                    //< The kernels
+    OctreeClass* const tree;                  ///< The octree to work on.
+    KernelClass** kernels;                    ///< The kernels.
 
     typename OctreeClass::Iterator* iterArray;
     int leafsNumber;
@@ -56,16 +56,19 @@ class FFmmAlgorithmThread : public FAbstractAlgorithm, public FAlgorithmTimers{
     static const int SizeShape = 3*3*3;
     int shapeLeaf[SizeShape];
 
-    const int MaxThreads;
+    const int MaxThreads;                     ///< The maximum number of threads.
 
-    const int OctreeHeight;
+    const int OctreeHeight;                   ///< The height of the given tree.
 
 public:
-    /** The constructor need the octree and the kernels used for computation
-      * @param inTree the octree to work on
-      * @param inKernels the kernels to call
-      * An assert is launched if one of the arguments is null
-      */
+    /** Class constructor
+     * 
+     * The constructor needs the octree and the kernels used for computation.
+     * \param inTree the octree to work on.
+     * \param inKernels the kernels to call.
+     *
+     * \except An exception is thrown if one of the arguments is NULL.
+     */
     FFmmAlgorithmThread(OctreeClass* const inTree, KernelClass* const inKernels)
         : tree(inTree) , kernels(nullptr), iterArray(nullptr), leafsNumber(0),
           MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()) {
@@ -96,8 +99,7 @@ public:
 
 protected:
     /**
-      * To execute the fmm algorithm
-      * Call this function to run the complete algorithm
+      * Runs the complete algorithm.
       */
     void executeCore(const unsigned operationsToProceed) override {
 
@@ -146,7 +148,7 @@ protected:
     // P2M
     /////////////////////////////////////////////////////////////////////////////
 
-    /** P2M */
+    /** Runs the P2M kernel. */
     void bottomPass(){
         FLOG( FLog::Controller.write("\tStart Bottom Pass\n").write(FLog::Flush) );
         FLOG(FTic counterTime);
@@ -184,7 +186,7 @@ protected:
     // Upward
     /////////////////////////////////////////////////////////////////////////////
 
-    /** M2M */
+    /** Runs the M2M kernel. */
     void upwardPass(){
         FLOG( FLog::Controller.write("\tStart Upward Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
@@ -241,7 +243,7 @@ protected:
     // Transfer
     /////////////////////////////////////////////////////////////////////////////
 
-    /** M2L L2L */
+    /** Runs the M2L kernel. */
     void transferPass(){
 
         FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
@@ -297,7 +299,8 @@ protected:
     // Downward
     /////////////////////////////////////////////////////////////////////////////
 
-    void downardPass(){ // second L2L
+    /** Runs the L2L kernel. */
+    void downardPass(){
 
         FLOG( FLog::Controller.write("\tStart Downward Pass (L2L)\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
@@ -349,7 +352,11 @@ protected:
     // Direct
     /////////////////////////////////////////////////////////////////////////////
 
-    /** P2P */
+    /** Runs the P2P & L2P kernels.
+      *
+     * \param p2pEnabled Run the P2P kernel.
+     * \param l2pEnabled Run the L2P kernel.
+     */
     void directPass(const bool p2pEnabled, const bool l2pEnabled){
         FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
