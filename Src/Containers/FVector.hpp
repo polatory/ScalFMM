@@ -77,6 +77,20 @@ public:
         }
     }
 
+    /**
+     * Copy constructor
+     * @param other original vector
+     * object must have an copy constructor
+     */
+    FVector(FVector&& other): array(nullptr), capacity(0), index(0) {
+        array    = other.array;
+        capacity = other.capacity;
+        index    = other.index;
+        other.array    = nullptr;
+        other.capacity = 0;
+        other.index    = 0;
+    }
+
     /** Copy operator
       * @param other the original vector
       * @return this after copying data
@@ -101,6 +115,23 @@ public:
             }
         }
         return *this;
+    }
+
+    /**
+    *@brief Copy operator
+    */
+    FVector& operator=(FVector&& other){
+        if(&other != this){
+            clear();
+            delete [] reinterpret_cast< char* >(array);
+            array    = other.array;
+            capacity = other.capacity;
+            index    = other.index;
+            other.array    = nullptr;
+            other.capacity = 0;
+            other.index    = 0;
+        }
+        return (*this);
     }
 
     /**

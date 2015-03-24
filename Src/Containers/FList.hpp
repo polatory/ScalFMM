@@ -97,6 +97,34 @@ public:
     }
 
     /**
+        * Copy operator
+        * This will clear the current list before copying
+        * @param other the source list
+        * @return the current list as a reference
+        */
+    FList& operator=(FList&& other){
+        if(&other != this){
+            clear();
+            root = other.root;
+            size = other.size;
+            other.root = nullptr;
+            other.size = 0;
+        }
+        return *this;
+    }
+
+    /**
+        * Copy constructor
+        * @param other the source/original list
+        */
+    FList(FList&& other): root(nullptr) , size(0)  {
+        root = other.root;
+        size = other.size;
+        other.root = nullptr;
+        other.size = 0;
+    }
+
+    /**
         * To clear the list
         * Size is 0 after calling this function
         */
