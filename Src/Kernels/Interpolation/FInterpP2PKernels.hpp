@@ -57,7 +57,7 @@ struct DirectInteractionComputer<1,1>
   static void P2P( ContainerClass* const FRestrict TargetParticles,
                    ContainerClass* const NeighborSourceParticles[27],
                    const MatrixKernelClass *const MatrixKernel){
-      FP2P::FullMutual(TargetParticles,NeighborSourceParticles,14,MatrixKernel);
+      FP2PT<FReal>::FullMutual<ContainerClass,MatrixKernelClass> (TargetParticles,NeighborSourceParticles,14,MatrixKernel);
   }
 
   template <typename ContainerClass, typename MatrixKernelClass>
@@ -65,7 +65,7 @@ struct DirectInteractionComputer<1,1>
                          ContainerClass* const inNeighbors[27],
                          const int inSize,
                          const MatrixKernelClass *const MatrixKernel){
-      FP2P::FullRemote(inTargets,inNeighbors,inSize,MatrixKernel);
+      FP2PT<FReal>::FullRemote<ContainerClass,MatrixKernelClass>(inTargets,inNeighbors,inSize,MatrixKernel);
   }
 };
 

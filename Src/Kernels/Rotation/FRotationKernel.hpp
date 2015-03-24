@@ -1310,7 +1310,7 @@ public:
     void P2P(const FTreeCoordinate& /*inPosition*/,
 		     ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
 		     ContainerClass* const inNeighbors[27], const int /*inSize*/){
-	FP2PR::FullMutual(inTargets,inNeighbors,14);
+    FP2PRT<FReal>::FullMutual<ContainerClass>(inTargets,inNeighbors,14);
     }
 
 
@@ -1318,7 +1318,7 @@ public:
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
 		   ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
 		   ContainerClass* const inNeighbors[27], const int /*inSize*/){
-	FP2PR::FullRemote(inTargets,inNeighbors,27);
+    FP2PRT<FReal>::FullRemote<ContainerClass>(inTargets,inNeighbors,27);
     }
 };
 

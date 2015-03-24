@@ -300,92 +300,107 @@ static void GenericFullRemote(ContainerClass* const FRestrict inTargets, Contain
     }
 }
 
-#ifdef ScalFMM_USE_DOUBLE_PRECISION
+} // End namespace
+
+template <class ValueClass>
+struct FP2PRT{
+};
+
 #if defined(ScalFMM_USE_AVX)
-// AVX DOUBLE
-template <class ContainerClass>
-static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors){
-    GenericFullMutual<ContainerClass, __m256d, 4>(inTargets, inNeighbors, limiteNeighbors);
-}
 
-template <class ContainerClass>
-static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-           const int limiteNeighbors){
-    GenericFullRemote<ContainerClass, __m256d, 4>(inTargets, inNeighbors, limiteNeighbors);
-}
+template <>
+struct FP2PRT<double>{
+    template <class ContainerClass>
+    static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors){
+        FP2PR::GenericFullMutual<ContainerClass, __m256d, 4>(inTargets, inNeighbors, limiteNeighbors);
+    }
+
+    template <class ContainerClass>
+    static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+               const int limiteNeighbors){
+        FP2PR::GenericFullRemote<ContainerClass, __m256d, 4>(inTargets, inNeighbors, limiteNeighbors);
+    }
+};
+
+template <>
+struct FP2PRT<float>{
+    template <class ContainerClass>
+    static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors){
+        FP2PR::GenericFullMutual<ContainerClass, __m256, 8>(inTargets, inNeighbors, limiteNeighbors);
+    }
+
+    template <class ContainerClass>
+    static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+               const int limiteNeighbors){
+        FP2PR::GenericFullRemote<ContainerClass, __m256, 8>(inTargets, inNeighbors, limiteNeighbors);
+    }
+};
+
 #elif defined(ScalFMM_USE_SSE)
-// SSE DOUBLE
-template <class ContainerClass>
-static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors){
-    GenericFullMutual<ContainerClass, __m128d, 2>(inTargets, inNeighbors, limiteNeighbors);
-}
+template <>
+struct FP2PRT<double>{
+    template <class ContainerClass>
+    static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors){
+        FP2PR::GenericFullMutual<ContainerClass, __m128d, 2>(inTargets, inNeighbors, limiteNeighbors);
+    }
 
-template <class ContainerClass>
-static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-           const int limiteNeighbors){
-    GenericFullRemote<ContainerClass, __m128d, 2>(inTargets, inNeighbors, limiteNeighbors);
-}
+    template <class ContainerClass>
+    static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+               const int limiteNeighbors){
+        FP2PR::GenericFullRemote<ContainerClass, __m128d, 2>(inTargets, inNeighbors, limiteNeighbors);
+    }
+};
+
+template <>
+struct FP2PRT<float>{
+    template <class ContainerClass>
+    static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors){
+        FP2PR::GenericFullMutual<ContainerClass, __m128, 4>(inTargets, inNeighbors, limiteNeighbors);
+    }
+
+    template <class ContainerClass>
+    static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+               const int limiteNeighbors){
+        FP2PR::GenericFullRemote<ContainerClass, __m128, 4>(inTargets, inNeighbors, limiteNeighbors);
+    }
+};
+
 #else
-// SSE DOUBLE
-template <class ContainerClass>
-static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors){
-    GenericFullMutual<ContainerClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors);
-}
+template <>
+struct FP2PRT<double>{
+    template <class ContainerClass>
+    static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors){
+        FP2PR::GenericFullMutual<ContainerClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors);
+    }
 
-template <class ContainerClass>
-static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-           const int limiteNeighbors){
-    GenericFullRemote<ContainerClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors);
-}
-#endif
-#else
-#if defined(ScalFMM_USE_AVX)
-// AVX DOUBLE
-template <class ContainerClass>
-static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors){
-    GenericFullMutual<ContainerClass, __m256, 8>(inTargets, inNeighbors, limiteNeighbors);
-}
+    template <class ContainerClass>
+    static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+               const int limiteNeighbors){
+        FP2PR::GenericFullRemote<ContainerClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors);
+    }
+};
 
-template <class ContainerClass>
-static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-           const int limiteNeighbors){
-    GenericFullRemote<ContainerClass, __m256, 8>(inTargets, inNeighbors, limiteNeighbors);
-}
-#elif defined(ScalFMM_USE_SSE)
-// SSE DOUBLE
-template <class ContainerClass>
-static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors){
-    GenericFullMutual<ContainerClass, __m128, 4>(inTargets, inNeighbors, limiteNeighbors);
-}
+template <>
+struct FP2PRT<float>{
+    template <class ContainerClass>
+    static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors){
+        FP2PR::GenericFullMutual<ContainerClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors);
+    }
 
-template <class ContainerClass>
-static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-           const int limiteNeighbors){
-    GenericFullRemote<ContainerClass, __m128, 4>(inTargets, inNeighbors, limiteNeighbors);
-}
-#else
-// SSE DOUBLE
-template <class ContainerClass>
-static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors){
-    GenericFullMutual<ContainerClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors);
-}
-
-template <class ContainerClass>
-static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-           const int limiteNeighbors){
-    GenericFullRemote<ContainerClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors);
-}
-#endif
+    template <class ContainerClass>
+    static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+               const int limiteNeighbors){
+        FP2PR::GenericFullRemote<ContainerClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors);
+    }
+};
 #endif
 
-
-}
 
 
 

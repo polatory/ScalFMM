@@ -72,12 +72,12 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////
 
     timer.tic();
-    FP2PR::FullMutual<FP2PParticleContainer<>>( &leaf1, &pleaf2, 1);
+    FP2PRT<FReal>::FullMutual<FP2PParticleContainer<>>( &leaf1, &pleaf2, 1);
     timer.tac();
     std::cout << "Timer taken by FullMutual = " << timer.elapsed() << "s" << std::endl;
 
     timer.tic();
-    FP2PR::FullRemote<FP2PParticleContainer<>>( &leaf1, &pleaf2, 1);
+    FP2PRT<FReal>::FullRemote<FP2PParticleContainer<>>( &leaf1, &pleaf2, 1);
     timer.tac();
     std::cout << "Timer taken by FullRemote = " << timer.elapsed() << "s" << std::endl;
 

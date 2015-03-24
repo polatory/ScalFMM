@@ -130,12 +130,9 @@ int main(int argc, char ** argv){
 	// ----------------------------------------------------------------------------------------------------------
 	//
 	//  computation
-	//
-#ifdef ScalFMM_USE_DOUBLE_PRECISION
-	printf("Double precision \n");
-#else
-	printf("Simple precision \n");
-#endif
+    //
+    printf("Precision, sizeof Real %lu\n", sizeof(FReal));
+
 #ifdef ScalFMM_USE_AVX
 	printf("AVX incomming .......\n\n");
 #endif
@@ -158,7 +155,7 @@ int main(int argc, char ** argv){
 		FTreeCoordinate coord = iterator.getCurrentGlobalCoordinate();
 		ContainerClass** neighbors = new ContainerClass*[27];
 		tree.getLeafsNeighbors(neighbors,coord,1);
-        FP2PR::FullMutual(iterator.getCurrentLeaf()->getTargets(),neighbors,27);
+        FP2PRT<FReal>::FullMutual<ContainerClass>(iterator.getCurrentLeaf()->getTargets(),neighbors,27);
 
 	    }while(iterator.moveRight());
 	}

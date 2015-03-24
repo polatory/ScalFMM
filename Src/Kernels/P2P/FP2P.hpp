@@ -574,91 +574,103 @@ static void GenericFullRemote(ContainerClass* const FRestrict inTargets, Contain
     }
 }
 
-#ifdef ScalFMM_USE_DOUBLE_PRECISION
+} // End namespace
+
+template <class ValueClass>
+struct FP2PT{
+};
+
 #if defined(ScalFMM_USE_AVX)
-// AVX DOUBLE
-template <class ContainerClass, class MatrixKernelClass>
-static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
-    GenericFullMutual<ContainerClass, MatrixKernelClass, __m256d, 4>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
-}
+template <>
+struct FP2PT<double>{
+    template <class ContainerClass, class MatrixKernelClass>
+    static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericFullMutual<ContainerClass, MatrixKernelClass, __m256d, 4>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
 
-template <class ContainerClass, class MatrixKernelClass>
-static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
-    GenericFullRemote<ContainerClass, MatrixKernelClass, __m256d, 4>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
-}
+    template <class ContainerClass, class MatrixKernelClass>
+    static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericFullRemote<ContainerClass, MatrixKernelClass, __m256d, 4>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
+};
+
+template <>
+struct FP2PT<float>{
+    template <class ContainerClass, class MatrixKernelClass>
+    static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericFullMutual<ContainerClass, MatrixKernelClass, __m256, 8>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
+
+    template <class ContainerClass, class MatrixKernelClass>
+    static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericFullRemote<ContainerClass, MatrixKernelClass, __m256, 8>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
+};
 #elif defined(ScalFMM_USE_SSE)
-// SSE DOUBLE
-template <class ContainerClass, class MatrixKernelClass>
-static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
-    GenericFullMutual<ContainerClass, MatrixKernelClass, __m128d, 2>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
-}
+template <>
+struct FP2PT<double>{
+    template <class ContainerClass, class MatrixKernelClass>
+    static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericFullMutual<ContainerClass, MatrixKernelClass, __m128d, 2>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
 
-template <class ContainerClass, class MatrixKernelClass>
-static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
-    GenericFullRemote<ContainerClass, MatrixKernelClass, __m128d, 2>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
-}
+    template <class ContainerClass, class MatrixKernelClass>
+    static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericFullRemote<ContainerClass, MatrixKernelClass, __m128d, 2>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
+};
+
+template <>
+struct FP2PT<float>{
+    template <class ContainerClass, class MatrixKernelClass>
+    static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericFullMutual<ContainerClass, MatrixKernelClass, __m128, 4>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
+
+    template <class ContainerClass, class MatrixKernelClass>
+    static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericFullRemote<ContainerClass, MatrixKernelClass, __m128, 4>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
+};
 #else
-// SSE DOUBLE
-template <class ContainerClass, class MatrixKernelClass>
-static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
-    GenericFullMutual<ContainerClass, MatrixKernelClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
-}
+template <>
+struct FP2PT<double>{
+    template <class ContainerClass, class MatrixKernelClass>
+    static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericFullMutual<ContainerClass, MatrixKernelClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
 
-template <class ContainerClass, class MatrixKernelClass>
-static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
-    GenericFullRemote<ContainerClass, MatrixKernelClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
-}
+    template <class ContainerClass, class MatrixKernelClass>
+    static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericFullRemote<ContainerClass, MatrixKernelClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
+};
+
+template <>
+struct FP2PT<float>{
+    template <class ContainerClass, class MatrixKernelClass>
+    static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericFullMutual<ContainerClass, MatrixKernelClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
+
+    template <class ContainerClass, class MatrixKernelClass>
+    static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericFullRemote<ContainerClass, MatrixKernelClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
+};
 #endif
-#else
-#if defined(ScalFMM_USE_AVX)
-// AVX DOUBLE
-template <class ContainerClass, class MatrixKernelClass>
-static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
-    GenericFullMutual<ContainerClass, MatrixKernelClass, __m256, 8>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
-}
-
-template <class ContainerClass, class MatrixKernelClass>
-static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
-    GenericFullRemote<ContainerClass, MatrixKernelClass, __m256, 8>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
-}
-#elif defined(ScalFMM_USE_SSE)
-// SSE DOUBLE
-template <class ContainerClass, class MatrixKernelClass>
-static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
-    GenericFullMutual<ContainerClass, MatrixKernelClass, __m128, 4>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
-}
-
-template <class ContainerClass, class MatrixKernelClass>
-static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
-    GenericFullRemote<ContainerClass, MatrixKernelClass, __m128, 4>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
-}
-#else
-// SSE DOUBLE
-template <class ContainerClass, class MatrixKernelClass>
-static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
-    GenericFullMutual<ContainerClass, MatrixKernelClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
-}
-
-template <class ContainerClass, class MatrixKernelClass>
-static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
-                       const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
-    GenericFullRemote<ContainerClass, MatrixKernelClass, FReal, 1>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
-}
-#endif
-#endif
-
-}
 
 #include "FP2PMultiRhs.hpp"
 
