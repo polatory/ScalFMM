@@ -14,7 +14,7 @@
 #include "Utils/FGlobal.hpp"
 #include "Utils/FMath.hpp"
 #include "Utils/FPoint.hpp"
-#include "Utils/FGenerateDistribution.hpp"
+#include "Files/FGenerateDistribution.hpp"
 #include "Files/FFmaGenericLoader.hpp"
 #include "Files/FExportWriter.hpp"
 

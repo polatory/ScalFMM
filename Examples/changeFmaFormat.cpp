@@ -17,7 +17,7 @@
 #include "Utils/FGlobal.hpp"
 #include "Utils/FPoint.hpp"
 #include "Utils/FParameters.hpp"
-#include "Utils/FGenerateDistribution.hpp"
+#include "Files/FGenerateDistribution.hpp"
 #include "Files/FExportWriter.hpp"
 
 #include "Utils/FParameterNames.hpp"

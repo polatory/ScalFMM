@@ -16,7 +16,7 @@
 #include "Files/FFmaGenericLoader.hpp"
 #include "Files/FDlpolyLoader.hpp"
 #include "Utils/FParameters.hpp"
-#include "Utils/FGenerateDistribution.hpp"
+#include "Files/FGenerateDistribution.hpp"
 #include "Utils/FParameterNames.hpp"
 #include "Files/FExportWriter.hpp"
 
