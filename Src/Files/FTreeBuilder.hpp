@@ -16,7 +16,7 @@
 #ifndef FTREEBUILDER_H
 #define FTREEBUILDER_H
 
-#include "ScalFmmConfig.h"
+#include "../Utils/FGlobal.hpp"
 
 #include "../Utils/FLog.hpp"
 #include "../Utils/FQuickSort.hpp"

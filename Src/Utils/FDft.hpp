@@ -15,7 +15,12 @@
 // ===================================================================================
 #ifndef FDFT_HPP
 #define FDFT_HPP
-#include "ScalFmmConfig.h"
+
+#include "FGlobal.hpp"
+#ifndef SCALFMM_USE_FFT
+#error The FFT header is included while SCALFMM_USE_FFT is turned OFF
+#endif
+
 
 #ifdef SCALFMM_USE_FFT
 #include <iostream>

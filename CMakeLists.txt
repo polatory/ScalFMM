@@ -57,6 +57,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   option( SCALFMM_BUILD_TESTS          "Set to ON to build functionalities Tests"    OFF )
   option( SCALFMM_BUILD_UTESTS         "Set to ON to build UTests"                   OFF )
   option( SCALFMM_INSTALL_DATA         "Set to ON to include the data when proceeding to the installtion " OFF )
+  option( SCALFMM_BUILD_DOC            "Set to ON to build the Doxygen documentation " OFF )
   option( SCALFMM_BUILD_DEBUG          "Set to ON to build in Debug"                 OFF )
   option( SCALFMM_USE_LOG              "Set to ON to print output debug information" OFF )
   option( SCALFMM_USE_MEM_STATS        "Set to ON to profile memory"                 OFF )
@@ -612,8 +613,9 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   ##################################################################
   #                           Add - doc                            #
   ##################################################################
-  #
-  add_subdirectory(Doc)
+  if(SCALFMM_BUILD_DOC)
+    add_subdirectory(Doc)
+  endif()
   ##################################################################
   #                       Build - Addons                           #
   ##################################################################

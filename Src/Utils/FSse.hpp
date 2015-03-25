@@ -16,6 +16,11 @@
 #ifndef FSSE_HPP
 #define FSSE_HPP
 
+#include "FGlobal.hpp"
+#ifndef SCALFMM_USE_SSE
+#error The SSE header is included while SCALFMM_USE_SSE is turned OFF
+#endif
+
 #include <xmmintrin.h>  // SSE
 #include <emmintrin.h>  //SSE2
 #include <pmmintrin.h> //SSE3

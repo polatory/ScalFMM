@@ -16,6 +16,11 @@
 #ifndef FAVX_HPP
 #define FAVX_HPP
 
+#include "FGlobal.hpp"
+#ifndef SCALFMM_USE_AVX
+#error The AVX header is included while SCALFMM_USE_AVX is turned OFF
+#endif
+
 #include "immintrin.h"
 
 #ifdef __AVXPE_INTEL_COMPILER

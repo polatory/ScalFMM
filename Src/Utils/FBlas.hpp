@@ -18,6 +18,10 @@
 
 #include "FGlobal.hpp"
 
+#ifndef SCALFMM_USE_BLAS
+#error The BLAS header is included while SCALFMM_USE_BLAS is turned OFF
+#endif
+
 // This file interfaces the blas functions
 // to enable a generic use.
 // If no blas has been enabled in the cmake,

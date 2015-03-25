@@ -22,9 +22,8 @@
 #include <cstring>
 #include <iostream>
 
-#include "ScalFmmConfig.h"
-#include "FMath.hpp"
 #include "FGlobal.hpp"
+#include "FMath.hpp"
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
