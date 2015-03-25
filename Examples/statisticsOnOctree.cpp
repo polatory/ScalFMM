@@ -43,21 +43,22 @@
  * 
  */
 
-typedef double FReal;
-// Typedefs to shorten code
-typedef FBasicCell                                      CellClass;
-typedef FBasicParticleContainer<FReal, 0, FReal >                    ContainerClass;
-typedef FSimpleLeaf<FReal, ContainerClass >                   LeafClass;
-typedef FOctree<FReal, CellClass, ContainerClass, LeafClass > OctreeClass;
-
-namespace FPD = FParameterDefinitions;
-
-// Constant strings for output
-const std::string lhead("[STAT] ");
-const std::string newline = "\n" + lhead;
 
 int main(int argc, char ** argv) 
 {
+    typedef double FReal;
+    // Typedefs to shorten code
+    typedef FBasicCell                                      CellClass;
+    typedef FBasicParticleContainer<FReal, 0, FReal >                    ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                   LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass, LeafClass > OctreeClass;
+
+    namespace FPD = FParameterDefinitions;
+
+    // Constant strings for output
+    const std::string lhead("[STAT] ");
+    const std::string newline = "\n" + lhead;
+
     //     Parameter handling
     // -------------------------------------------------------------------------
     // Custom parameter
@@ -76,10 +77,9 @@ int main(int argc, char ** argv)
                          LocalOptionHist);
 
     // Octree, input and output parameters
-    const int TreeHeight   = FParameters::getValue(argc,argv,FPD::OctreeHeight.options, 4);
-    const int SubTreeHeight= FParameters::getValue(argc,argv,FPD::OctreeSubHeight.options, 1);
-    const std::string inFileName = 
-        FParameters::getStr(argc, argv, FPD::InputFile.options, "../Data/test20k.fma");
+    const int TreeHeight          = FParameters::getValue(argc,argv,FPD::OctreeHeight.options, 4);
+    const int SubTreeHeight       = FParameters::getValue(argc,argv,FPD::OctreeSubHeight.options, 1);
+    const std::string inFileName  =  FParameters::getStr(argc, argv, FPD::InputFile.options, "../Data/test20k.fma");
     const std::string outFileName =
         FParameters::getStr(argc, argv, FPD::OutputFile.options, "output.txt");
 
