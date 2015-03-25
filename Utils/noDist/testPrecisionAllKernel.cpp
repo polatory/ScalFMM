@@ -69,6 +69,7 @@
 
 #include "Utils/FTemplate.hpp"
 
+typedef double FReal;
 
 void usage() {
     std::cout << "Driver for all kernel (1/r kernel)" << std::endl;
@@ -136,7 +137,7 @@ void checkResAndPrint(OctreeClass * tree, FmaRWParticle<FReal, 8,8> * const part
 
 // Simply create particles and try the CHEBYSHEV kernels
 struct ChebMainStruct{
-    template <const unsigned int ORDER, class FReal>
+    template <const unsigned int ORDER>
     static void For(int argc, char* argv[],FSize nbParticles,int TreeHeight, int SubTreeHeight,
                     FReal BoxWidth, FPoint<FReal>& CenterOfBox,FmaRWParticle<FReal, 8,8> * const particles,
                     FReal energyD,FReal totPhysicalValue)
@@ -175,7 +176,7 @@ struct ChebMainStruct{
                 std::cout <<"(FChebSymKernel @Algorithm = " << time.elapsed() << " s)." << std::endl;
             } // -----------------------------------------------------
             { // Check that each particle has been summed with all other
-                checkResAndPrint<OctreeClass,LeafClass>(&tree,particles,energyD,std::string("Chebyshev.res"),ORDER);
+                checkResAndPrint<FReal,OctreeClass,LeafClass>(&tree,particles,energyD,std::string("Chebyshev.res"),ORDER);
             }
 
         }
@@ -185,7 +186,7 @@ struct ChebMainStruct{
 
 // Simply create particles and try the CHEBYSHEV kernels
 struct UnifMainStruct{
-    template <const unsigned int ORDER, class FReal>
+    template <const unsigned int ORDER>
     static void For(int argc, char* argv[],FSize nbParticles,int TreeHeight, int SubTreeHeight,
                     FReal BoxWidth, FPoint<FReal>& CenterOfBox,FmaRWParticle<FReal, 8,8> * const particles,
                     FReal energyD,FReal totPhysicalValue)
@@ -197,6 +198,7 @@ struct UnifMainStruct{
 
         //Start of kernels there
         {//Lagrange
+
             typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
             typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
             typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
@@ -224,7 +226,7 @@ struct UnifMainStruct{
                 std::cout <<"(FUnifKernel @Algorithm = " << time.elapsed() << " s)." << std::endl;
             } // -----------------------------------------------------
             { // Check that each particle has been summed with all other
-                checkResAndPrint<OctreeClass,LeafClass>(&tree,particles,energyD,std::string("Lagrange.res"),ORDER);
+                checkResAndPrint<FReal,OctreeClass,LeafClass>(&tree,particles,energyD,std::string("Lagrange.res"),ORDER);
             }
 
         }
@@ -233,7 +235,7 @@ struct UnifMainStruct{
 };
 
 struct RotMainStruct{
-    template <const unsigned int ORDER, class FReal>
+    template <const unsigned int ORDER>
     static void For(int argc, char* argv[],FSize nbParticles,int TreeHeight, int SubTreeHeight,
                     FReal BoxWidth, FPoint<FReal>& CenterOfBox,FmaRWParticle<FReal, 8,8> * const particles,
                     FReal energyD,FReal totPhysicalValue)
@@ -245,12 +247,13 @@ struct RotMainStruct{
 
         //Start of kernels there
         {//Rotation
+
             typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
             typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
-            typedef FRotationCell<ORDER> CellClass;
+            typedef FRotationCell<FReal,ORDER> CellClass;
             typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 
-            typedef FRotationKernel<CellClass,ContainerClass,ORDER> KernelClass;
+            typedef FRotationKernel<FReal, CellClass,ContainerClass,ORDER> KernelClass;
             typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
             // init oct-tree
             OctreeClass tree(TreeHeight, SubTreeHeight,  BoxWidth,CenterOfBox);
@@ -269,7 +272,7 @@ struct RotMainStruct{
                 std::cout <<"(FRotationKernel @Algorithm = " << time.elapsed() << " s)." << std::endl;
             } // -----------------------------------------------------
             { // Check that each particle has been summed with all other
-                checkResAndPrint<OctreeClass,LeafClass>(&tree,particles,energyD,std::string("Rotation.res"),ORDER);
+                checkResAndPrint<FReal,OctreeClass,LeafClass>(&tree,particles,energyD,std::string("Rotation.res"),ORDER);
             }
 
         }
@@ -278,7 +281,7 @@ struct RotMainStruct{
 };
 
 struct TaylorMainStruct{
-    template <const unsigned int ORDER, class FReal>
+    template <const unsigned int ORDER>
     static void For(int argc, char* argv[],FSize nbParticles,int TreeHeight, int SubTreeHeight,
                     FReal BoxWidth, FPoint<FReal>& CenterOfBox,FmaRWParticle<FReal, 8,8> * const particles,
                     FReal energyD,FReal totPhysicalValue)
@@ -290,12 +293,13 @@ struct TaylorMainStruct{
 
         //Start of kernels there
         {//Taylor
+
             typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
             typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
-            typedef FTaylorCell<ORDER,1> CellClass;
+            typedef FTaylorCell<FReal,ORDER,1> CellClass;
             typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 
-            typedef FTaylorKernel<CellClass,ContainerClass,ORDER,1> KernelClass;
+            typedef FTaylorKernel<FReal,CellClass,ContainerClass,ORDER,1> KernelClass;
             typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
             // init oct-tree
             OctreeClass tree(TreeHeight, SubTreeHeight,  BoxWidth,CenterOfBox);
@@ -314,7 +318,7 @@ struct TaylorMainStruct{
                 std::cout <<"(FTaylorKernel @Algorithm = " << time.elapsed() << " s)." << std::endl;
             } // -----------------------------------------------------
             { // Check that each particle has been summed with all other
-                checkResAndPrint<OctreeClass,LeafClass>(&tree,particles,energyD,std::string("Taylor.res"),ORDER);
+                checkResAndPrint<FReal,OctreeClass,LeafClass>(&tree,particles,energyD,std::string("Taylor.res"),ORDER);
             }
 
         }
@@ -325,7 +329,7 @@ struct TaylorMainStruct{
 
 // Simply create particles and try the SPHERICAL kernels
 struct SphericalBlasMainStruct{
-    template <const unsigned int ORDER, class FReal>
+    template <const unsigned int ORDER>
     static void For(int argc, char* argv[],FSize nbParticles,int TreeHeight, int SubTreeHeight,
                     FReal BoxWidth, FPoint<FReal>& CenterOfBox,FmaRWParticle<FReal, 8,8> * const particles,
                     FReal energyD,FReal totPhysicalValue)
@@ -337,12 +341,13 @@ struct SphericalBlasMainStruct{
 
         //Start of kernels there
         {//Spherical
+
             typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
             typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
-            typedef FSphericalCell CellClass;
+            typedef FSphericalCell<FReal> CellClass;
             typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
             CellClass::Init(ORDER);
-            typedef FSphericalBlasKernel<CellClass,ContainerClass> KernelClass;
+            typedef FSphericalBlasKernel<FReal,CellClass,ContainerClass> KernelClass;
             typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
             // init oct-tree
             OctreeClass tree(TreeHeight, SubTreeHeight,  BoxWidth,CenterOfBox);
@@ -361,7 +366,7 @@ struct SphericalBlasMainStruct{
                 std::cout <<"(FSphericalBlasKernel @Algorithm = " << time.elapsed() << " s)." << std::endl;
             } // -----------------------------------------------------
             { // Check that each particle has been summed with all other
-                checkResAndPrint<OctreeClass,LeafClass>(&tree,particles,energyD,std::string("Blas.res"),ORDER);
+                checkResAndPrint<FReal,OctreeClass,LeafClass>(&tree,particles,energyD,std::string("Blas.res"),ORDER);
             }
 
         }
@@ -371,7 +376,7 @@ struct SphericalBlasMainStruct{
 
 // Simply create particles and try the SPHERICAL kernels
 struct SphericalBlockBlasMainStruct{
-    template <const unsigned int ORDER, class FReal>
+    template <const unsigned int ORDER>
     static void For(int argc, char* argv[],FSize nbParticles,int TreeHeight, int SubTreeHeight,
                     FReal BoxWidth, FPoint<FReal>& CenterOfBox,FmaRWParticle<FReal, 8,8> * const particles,
                     FReal energyD,FReal totPhysicalValue)
@@ -383,12 +388,13 @@ struct SphericalBlockBlasMainStruct{
 
         //Start of kernels there
         {//Spherical
+
             typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
             typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
-            typedef FSphericalCell CellClass;
+            typedef FSphericalCell<FReal> CellClass;
             typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
             CellClass::Init(ORDER);
-            typedef FSphericalBlockBlasKernel<CellClass,ContainerClass> KernelClass;
+            typedef FSphericalBlockBlasKernel<FReal,CellClass,ContainerClass> KernelClass;
             typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
             // init oct-tree
             OctreeClass tree(TreeHeight, SubTreeHeight,  BoxWidth,CenterOfBox);
@@ -407,7 +413,7 @@ struct SphericalBlockBlasMainStruct{
                 std::cout <<"(FSphericalBlockBlasKernel @Algorithm = " << time.elapsed() << " s)." << std::endl;
             } // -----------------------------------------------------
             { // Check that each particle has been summed with all other
-                checkResAndPrint<OctreeClass,LeafClass>(&tree,particles,energyD,std::string("BlockBlas.res"),ORDER);
+                checkResAndPrint<FReal,OctreeClass,LeafClass>(&tree,particles,energyD,std::string("BlockBlas.res"),ORDER);
             }
 
         }
@@ -428,7 +434,7 @@ int main(int argc, char** argv){
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, "-subdepth", 2);
     const unsigned int NbThreads      = FParameters::getValue(argc, argv, "-t", omp_get_max_threads());
 
-    typedef double FReal;
+
 
     //Open files
     FFmaGenericLoader<FReal> loader(filename);

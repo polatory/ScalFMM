@@ -63,12 +63,12 @@ int main(int argc, char ** argv){
 
 
     typedef double FReal;
-    typedef FSphericalCell                 CellClass;
+    typedef FSphericalCell<FReal>                 CellClass;
     typedef FP2PParticleContainer<FReal>         ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FSphericalBlockBlasKernel< CellClass, ContainerClass > KernelClass;
+    typedef FSphericalBlockBlasKernel< FReal, CellClass, ContainerClass > KernelClass;
 
     typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     ///////////////////////What we do/////////////////////////////
@@ -89,7 +89,7 @@ int main(int argc, char ** argv){
 
     CellClass::Init(DevP, true);
     for(int idxBlockSize = 1 ; idxBlockSize < MaxBlockSize ; idxBlockSize *= 2){
-        FFmaScanfLoader loader(filename);
+        FFmaScanfLoader<FReal> loader(filename);
         if(!loader.isOpen()){
             std::cout << "Loader Error, " << filename << " is missing\n";
             return 1;

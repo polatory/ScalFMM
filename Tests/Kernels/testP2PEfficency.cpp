@@ -50,6 +50,8 @@ int main(int argc, char ** argv){
 
     //////////////////////////////////////////////////////////
 
+    typedef double FReal;
+
     FRandomLoader<FReal> loader(nbParticles*2);
 
     FTic timer;
@@ -80,20 +82,6 @@ int main(int argc, char ** argv){
 
     timer.tic();
     FP2PRT<double>::FullRemote<FP2PParticleContainer<FReal>>( &leaf1, &pleaf2, 1);
-    timer.tac();
-    std::cout << "Timer taken by FullRemote = " << timer.elapsed() << "s" << std::endl;
-
-    //////////////////////////////////////////////////////////
-
-    std::cout << "Single pricision:" <<  std::endl;
-
-    timer.tic();
-    FP2PRT<float>::FullMutual<FP2PParticleContainer<FReal>>( &leaf1, &pleaf2, 1);
-    timer.tac();
-    std::cout << "Timer taken by FullMutual = " << timer.elapsed() << "s" << std::endl;
-
-    timer.tic();
-    FP2PRT<float>::FullRemote<FP2PParticleContainer<FReal>>( &leaf1, &pleaf2, 1);
     timer.tac();
     std::cout << "Timer taken by FullRemote = " << timer.elapsed() << "s" << std::endl;
 

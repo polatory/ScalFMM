@@ -106,12 +106,12 @@ int main(int argc, char ** argv){
 	const int sminL     = FParameters::getValue(argc,argv,LocalOptionMinLocalThreshod.options, P*P*P);
 //
     typedef double FReal;
-	typedef FUnifCell<P>                                        CellClass;
+	typedef FUnifCell<FReal,P>                                        CellClass;
 	typedef FP2PParticleContainerIndexed<FReal>            ContainerClass;
 	typedef FSimpleIndexedLeaf<FReal,ContainerClass>    LeafClass;
 	typedef FInterpMatrixKernelR<FReal>                               MatrixKernelClass;
 	//
-	typedef FAdaptiveUnifKernel<CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
+	typedef FAdaptiveUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
 	//
 	//
 	typedef FAdaptiveCell< CellClass, ContainerClass >                                        CellWrapperClass;

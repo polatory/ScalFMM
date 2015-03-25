@@ -60,7 +60,7 @@ int testFunction(int argc, char ** argv, Args ... kernelPreArgs){
     const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.tsm.fma");
     std::cout << "Opening : " << filename << "\n";
     // Create particles loader
-    FFmaTsmLoader loader(filename);
+    FFmaTsmLoader<FReal> loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;
@@ -153,12 +153,12 @@ int main(int argc, char ** argv){
         std::cout << "[INFO] -spherical is used\n";
         // Create template
         typedef double FReal;
-        typedef FTypedSphericalCell            CellClass;
+        typedef FTypedSphericalCell< FReal>            CellClass;
         typedef FP2PParticleContainer<FReal>         ContainerClass;
 
-        typedef FTypedLeaf< ContainerClass >                      LeafClass;
+        typedef FTypedLeaf< FReal, ContainerClass >                      LeafClass;
         typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
-        typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
+        typedef FSphericalKernel< FReal, CellClass, ContainerClass >          KernelClass;
 
         typedef FFmmAlgorithmTsm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
@@ -166,7 +166,7 @@ int main(int argc, char ** argv){
         CellClass::Init(DevP);
 
         // Call Main function
-        testFunction< CellClass, ContainerClass, LeafClass, OctreeClass, KernelClass, FmmClass>(argc, argv, DevP,NbLevels);
+        testFunction< FReal, CellClass, ContainerClass, LeafClass, OctreeClass, KernelClass, FmmClass>(argc, argv, DevP,NbLevels);
     }
 
     if( FParameters::existParameter(argc,argv,FParameterDefinitions::RotationKernel.options) ){
@@ -174,17 +174,17 @@ int main(int argc, char ** argv){
         // Create template
         typedef double FReal;
         static const int P = 9;
-        typedef FTypedRotationCell<P>            CellClass;
+        typedef FTypedRotationCell<FReal,P>            CellClass;
         typedef FP2PParticleContainer<FReal>         ContainerClass;
 
-        typedef FTypedLeaf< ContainerClass >                      LeafClass;
+        typedef FTypedLeaf< FReal, ContainerClass >                      LeafClass;
         typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
-        typedef FRotationKernel< CellClass, ContainerClass, P >          KernelClass;
+        typedef FRotationKernel< FReal, CellClass, ContainerClass, P >          KernelClass;
 
         typedef FFmmAlgorithmTsm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
         // Call Main function
-        testFunction< CellClass, ContainerClass, LeafClass, OctreeClass, KernelClass, FmmClass>(argc, argv,NbLevels);
+        testFunction< FReal, CellClass, ContainerClass, LeafClass, OctreeClass, KernelClass, FmmClass>(argc, argv,NbLevels);
     }
 
     return 0;

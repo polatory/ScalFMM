@@ -36,15 +36,15 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
     void TestPeriodicFmm(){
         typedef double FReal;
         static const int P = 14;
-        typedef FRotationCell<P>            CellClass;
+        typedef FRotationCell<FReal,P>            CellClass;
         typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
-        typedef FRotationKernel< CellClass, ContainerClass, P >   KernelClass;
+        typedef FRotationKernel< FReal, CellClass, ContainerClass, P >   KernelClass;
 
         typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
         typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-        typedef FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+        typedef FFmmAlgorithmPeriodic<FReal,OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
         // Parameters
         const int NbLevels         = 4;

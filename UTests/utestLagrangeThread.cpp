@@ -230,7 +230,7 @@ class TestLagrange : public FUTester<TestLagrange> {
         typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
         // run test
-        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>();
+        RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>();
     }
 
     ///////////////////////////////////////////////////////////

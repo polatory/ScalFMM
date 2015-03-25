@@ -194,8 +194,8 @@ public:
 };
 
 
-template <int ORDER, class MatrixKernelClass>
-class FChebTensorialM2LHandler<ORDER,MatrixKernelClass,NON_HOMOGENEOUS> : FNoCopyable
+template <class FReal, int ORDER, class MatrixKernelClass>
+class FChebTensorialM2LHandler<FReal,ORDER,MatrixKernelClass,NON_HOMOGENEOUS> : FNoCopyable
 {
     enum {order = ORDER,
           nnodes = TensorTraits<ORDER>::nnodes,
@@ -264,7 +264,7 @@ public:
         rank[0]=rank[1]=0;
         for (unsigned int l=2; l<TreeHeight; ++l) {
             // compute m2l operator on extended cell
-            rank[l] = ComputeAndCompress<order>(MatrixKernel, CellWidth, CellWidthExtension, epsilon, U[l], C[l], B[l]);
+            rank[l] = ComputeAndCompress<FReal, order>(MatrixKernel, CellWidth, CellWidthExtension, epsilon, U[l], C[l], B[l]);
             // update cell width
             CellWidth /= FReal(2.);                    // at level l+1 
         }
@@ -351,7 +351,7 @@ public:
 
 
 
-template <int ORDER, class MatrixKernelClass>
+template <class FReal, int ORDER, class MatrixKernelClass>
 unsigned int ComputeAndCompress(const MatrixKernelClass *const MatrixKernel, 
                                 const FReal CellWidth, 
                                 const FReal CellWidthExtension, 

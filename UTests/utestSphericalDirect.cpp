@@ -83,7 +83,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 		//
 		// Create octree
 		//
-		FSphericalCell::Init(DevP);
+		FSphericalCell<FReal>::Init(DevP);
 		OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 		//   Insert particle in the tree
 		//
@@ -210,10 +210,10 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 	/** Classic */
 	void TestSpherical(){
         typedef double FReal;
-		typedef FSphericalCell            CellClass;
+		typedef FSphericalCell<FReal>            CellClass;
 		typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
-		typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
+		typedef FSphericalKernel< FReal, CellClass, ContainerClass >          KernelClass;
 
 		typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 		typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
@@ -221,33 +221,33 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 		typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
 		printf("Spherical\n \n");
-		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        // RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 		//	 OctreeClass, FmmClass, 4>(false);
-		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        // RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 		//	 OctreeClass, FmmClass, 6>(false);
-		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        // RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 		//	 OctreeClass, FmmClass, 8>(false);
-		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        // RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 		//	 OctreeClass, FmmClass, 10>(false);
-		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        // RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 		//	 OctreeClass, FmmClass, 12>(false);
-		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        // RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 		//	 OctreeClass, FmmClass, 14>(false);
-		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        // RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 		//	 OctreeClass, FmmClass, 16>(false);
-		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        // RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 		//	 OctreeClass, FmmClass, 18>(false);
-		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        // RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 		//	 OctreeClass, FmmClass, 20>(true);
-		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        // RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 		//	 OctreeClass, FmmClass, 22>(true);
-		// RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        // RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 		//	 OctreeClass, FmmClass, 24>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 50>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 55>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 60>(true);
 
 
@@ -259,10 +259,10 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 	/** Blas */
 	void TestSphericalBlas(){
         typedef double FReal;
-		typedef FSphericalCell            CellClass;
+		typedef FSphericalCell<FReal>            CellClass;
 		typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
-		typedef FSphericalBlasKernel< CellClass, ContainerClass >          KernelClass;
+		typedef FSphericalBlasKernel<FReal, CellClass, ContainerClass >          KernelClass;
 
 		typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 		typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
@@ -270,37 +270,37 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 		typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
 		printf("Spherical BLAS\n \n");
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 4>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 6>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 8>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 10>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 12>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 14>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 16>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 18>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 20>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 22>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 24>(true);
 	}
 
 	/** Block blas */
 	void TestSphericalBlockBlas(){
         typedef double FReal;
-		typedef FSphericalCell            CellClass;
+		typedef FSphericalCell<FReal>            CellClass;
 		typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
 
-		typedef FSphericalBlockBlasKernel< CellClass, ContainerClass >          KernelClass;
+		typedef FSphericalBlockBlasKernel< FReal, CellClass, ContainerClass >          KernelClass;
 
 		typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 		typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
@@ -309,35 +309,35 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
 
 		printf("Spherical BLOCK BLAS\n \n");
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 4>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 6>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 8>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 10>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 12>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 14>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 16>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 18>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 20>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 22>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 24>(true);
-		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 			 OctreeClass, FmmClass, 26>(true);
-//		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+//		RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 //			 OctreeClass, FmmClass, 28>(true);
-//		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+//		RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 //			 OctreeClass, FmmClass, 30>(true);
-//		RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+//		RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
 //			 OctreeClass, FmmClass, 32>(true);
 
 	}

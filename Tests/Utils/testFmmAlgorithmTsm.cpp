@@ -59,10 +59,11 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
                          FParameterDefinitions::NbParticles);
 
+    typedef double FReal;
     typedef FTestCellTsm                 CellClassTyped;
     typedef FTestParticleContainer<FReal>       ContainerClassTyped;
 
-    typedef FTypedLeaf< ContainerClassTyped >                      LeafClassTyped;
+    typedef FTypedLeaf< FReal, ContainerClassTyped >                      LeafClassTyped;
     typedef FOctree<FReal, CellClassTyped, ContainerClassTyped , LeafClassTyped >  OctreeClassTyped;
     typedef FTestKernels< CellClassTyped, ContainerClassTyped >          KernelClassTyped;
 
@@ -79,7 +80,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    FRandomLoaderTsm loader(NbPart, 1, FPoint<FReal>(0.5,0.5,0.5), 1);
+    FRandomLoaderTsm<FReal> loader(NbPart, 1, FPoint<FReal>(0.5,0.5,0.5), 1);
     OctreeClassTyped tree(NbLevels, SizeSubLevels,loader.getBoxWidth(),loader.getCenterOfBox());
 
     //////////////////////////////////////////////////////////////////////////////////

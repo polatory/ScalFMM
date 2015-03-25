@@ -257,8 +257,9 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::NbParticles, FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight);
 
+    typedef double FReal;
     typedef FBasicCell                   CellClass;
-    typedef FBasicParticleContainer<0>   ContainerClass;
+    typedef FBasicParticleContainer<FReal, 0, FReal>   ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FAdaptiveStatsKernel< CellClass, ContainerClass >         KernelClass;

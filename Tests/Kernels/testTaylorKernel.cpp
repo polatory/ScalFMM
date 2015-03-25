@@ -40,11 +40,12 @@ int main(int argc,char** argv){
                          "Compile a Taylor Kernel (but do nothing).");
     const int P = 10;
     const int order = 1;
+    typedef double FReal;
     FPoint<FReal> centerBox = FPoint<FReal>(0,0,0);
 
-    typedef FTaylorCell<P,order> CellClass;
+    typedef FTaylorCell<FReal, P,order> CellClass;
     typedef FP2PParticleContainer<FReal> ContainerClass;
-    typedef FTaylorKernel<CellClass,ContainerClass,P,order> KernelClass;
+    typedef FTaylorKernel<FReal,CellClass,ContainerClass,P,order> KernelClass;
     //typedef FSimpleLeaf<FReal, ContainerClass > LeafClass;
     //typedef FOctree<FReal, CellClass, ContainerClass , LeafClass > OctreeClass;
 

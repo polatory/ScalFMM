@@ -154,7 +154,7 @@ int main(int argc, char* argv[])
     ////////////////////////////////////////////////
     std::cout << "\nSVD compression of K ";
     time.tic();
-    const unsigned int rank1 = Compress<order>(epsilon, 1, Qu1, C1, Qb1);
+    const unsigned int rank1 = Compress<FReal,order>(epsilon, 1, Qu1, C1, Qb1);
     std::cout << "to low rank = " << rank1 << " (eps = " << epsilon
               << ") took " << time.tacAndElapsed() << " sec." << std::endl;
     ////////////////////////////////////////////////
@@ -162,7 +162,7 @@ int main(int argc, char* argv[])
     ////////////////////////////////////////////////
     std::cout << "SVD compression of Omega_x^{1/2} K Omega_y^{1/2} ";
     time.tic();
-    const unsigned int rank2 = Compress<order>(epsilon, 1, Qu2, C2, Qb2);
+    const unsigned int rank2 = Compress<FReal,order>(epsilon, 1, Qu2, C2, Qb2);
     std::cout << "to low rank = " << rank2 << " (eps = " << epsilon
               << ") took " << time.tacAndElapsed() << " sec." << std::endl;
     ////////////////////////////////////////////////

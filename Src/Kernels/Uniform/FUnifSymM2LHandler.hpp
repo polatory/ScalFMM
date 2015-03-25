@@ -52,7 +52,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 	// interpolation points of source (Y) and target (X) cell
     FPoint<FReal> X[nnodes], Y[nnodes];
 	// set roots of target cell (X)
-    FUnifTensor<ORDER>::setRoots(FPoint<FReal>(0.,0.,0.), CellWidth, X);
+    FUnifTensor<FReal,ORDER>::setRoots(FPoint<FReal>(0.,0.,0.), CellWidth, X);
 	// temporary matrices
 	FReal *_C;
     FComplex<FReal> *_FC;
@@ -66,7 +66,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
   const int dimfft = 1; // unidim FFT since fully circulant embedding
   const int steps[dimfft] = {rc};
 //	FDft Dft(rc);
-	FFft<dimfft> Dft(steps);
+	FFft<FReal,dimfft> Dft(steps);
 
   // reduce storage if real valued kernel
   const unsigned int opt_rc = rc/2+1;
@@ -92,7 +92,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
 
 				// set roots of source cell (Y)
                 const FPoint<FReal> cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
-				FUnifTensor<ORDER>::setRoots(cy, CellWidth, Y);
+				FUnifTensor<FReal,ORDER>::setRoots(cy, CellWidth, Y);
 
 				// start timer
 				time.tic();

@@ -68,7 +68,7 @@ public:
     }
 
     /** Constructor */
-    FSphericalCell(const FSphericalCell& other)
+    FSphericalCell(const FSphericalCell<FReal>& other)
         : multipole_exp(nullptr), local_exp(nullptr){
         multipole_exp = new FComplex<FReal>[PoleSize];
         local_exp = new FComplex<FReal>[LocalSize];
@@ -82,7 +82,7 @@ public:
     }
 
     /** Copy constructor */
-    FSphericalCell& operator=(const FSphericalCell& other) {
+    FSphericalCell<FReal>& operator=(const FSphericalCell<FReal>& other) {
         FMemUtils::copyall(multipole_exp, other.multipole_exp, PoleSize);
         FMemUtils::copyall(local_exp, other.local_exp, LocalSize);
         return *this;

@@ -81,15 +81,16 @@ int main(int argc, char ** argv){
                          LocalOptionMinLocalThreshod);
 
 
+    typedef double FReal;
     const unsigned int P = 5 ;
     typedef FChebCell<FReal,P>                                        CellClass;
-    //typedef FUnifCell<P>                                        CellClass;
+    //typedef FUnifCell<FReal,P>                                        CellClass;
 
     typedef FP2PParticleContainerIndexed<FReal>            ContainerClass;
     typedef FSimpleIndexedLeaf<FReal,ContainerClass>    LeafClass;
     typedef FInterpMatrixKernelR<FReal>                               MatrixKernelClass;
     typedef FAdaptiveChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
-    //typedef FAdaptiveUnifKernel<CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
+    //typedef FAdaptiveUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
     typedef FAdaptiveCell< CellClass, ContainerClass >                                        CellWrapperClass;
     typedef FAdaptiveKernelWrapper< KernelClass, CellClass, ContainerClass >   KernelWrapperClass;
     typedef FOctree< FReal, CellWrapperClass, ContainerClass , LeafClass >                  OctreeClass;
@@ -108,7 +109,6 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////
 
-    typedef double FReal;
     const FReal boxWidth = 1.0;
     const FPoint<FReal> boxCenter(0.0, 0.0, 0.0);
     OctreeClass tree(NbLevels, SizeSubLevels, boxWidth, boxCenter);

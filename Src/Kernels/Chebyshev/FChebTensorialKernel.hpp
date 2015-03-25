@@ -229,14 +229,14 @@ public:
              ContainerClass* const NeighborSourceParticles[27],
              const int /* size */)
     {
-        DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
+        DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
     }
 
 
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                    ContainerClass* const inNeighbors[27], const int /*inSize*/){
-        DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
+        DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
     }
 
 };

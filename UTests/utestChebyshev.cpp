@@ -54,7 +54,7 @@ class TestChebyshevDirect : public FUKernelTester<TestChebyshevDirect> {
 		typedef FChebKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 		typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
-    RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(
+    RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(
                                                                                      [&](int NbLevels, FReal boxWidth, FPoint<FReal> centerOfBox, const MatrixKernelClass *const MatrixKernel){
                                                                                        return std::unique_ptr<KernelClass>(new KernelClass(NbLevels, boxWidth, centerOfBox, MatrixKernel));
         });
@@ -72,7 +72,7 @@ class TestChebyshevDirect : public FUKernelTester<TestChebyshevDirect> {
 		typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 		typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
-    RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(
+    RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(
                     [&](int NbLevels, FReal boxWidth, FPoint<FReal> centerOfBox, const MatrixKernelClass *const MatrixKernel){
             return std::unique_ptr<KernelClass>(new KernelClass(NbLevels, boxWidth, centerOfBox, MatrixKernel));
         });

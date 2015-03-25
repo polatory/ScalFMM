@@ -109,7 +109,7 @@ int main(int argc, char** argv){
 
     static const int P = 9;
 
-    typedef FRotationCell<P>               CellClass;
+    typedef FRotationCell<FReal,P>               CellClass;
     typedef FP2PParticleContainer<FReal>          ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
@@ -143,8 +143,8 @@ int main(int argc, char** argv){
 
 
 	//Store the parts
-	FmaRWParticle<4,4>* particles = new FmaRWParticle<4,4>[loaderRef.getNumberOfParticles()];
-	memset(particles, 0, sizeof(FmaRWParticle<4,4>) * loaderRef.getNumberOfParticles());
+    FmaRWParticle<FReal, 4,4>* particles = new FmaRWParticle<FReal,4,4>[loaderRef.getNumberOfParticles()];
+    memset(particles, 0, sizeof(FmaRWParticle<FReal,4,4>) * loaderRef.getNumberOfParticles());
 
 	for(int idxPart = 0 ; idxPart < loaderRef.getNumberOfParticles() ; ++idxPart){
         FPoint<FReal> pos;
@@ -152,9 +152,9 @@ int main(int argc, char** argv){
 	    particles[idxPart].setPosition(pos);
 	}
 
-	FVector<FmaRWParticle<4,4>> finalParticles;
+    FVector<FmaRWParticle<FReal,4,4>> finalParticles;
 	FLeafBalance balancer;
-	FMpiTreeBuilder< FReal,FmaRWParticle<4,4> >::DistributeArrayToContainer(app.global(),particles,
+    FMpiTreeBuilder< FReal,FmaRWParticle<FReal,4,4> >::DistributeArrayToContainer(app.global(),particles,
 									  loaderRef.getMyNumberOfParticles(),
 									  treeRef.getBoxCenter(),
 									  treeRef.getBoxWidth(),treeRef.getHeight(),
@@ -190,8 +190,8 @@ int main(int argc, char** argv){
 
     //Temporary TreeCoordinate
     FTreeCoordinate host;
-    FmaRWParticle<4,4> * arrayOfParts = new FmaRWParticle<4,4>[nbOfParticles];
-    memset(arrayOfParts,0,sizeof(FmaRWParticle<4,4>)*nbOfParticles);
+    FmaRWParticle<FReal,4,4> * arrayOfParts = new FmaRWParticle<FReal,4,4>[nbOfParticles];
+    memset(arrayOfParts,0,sizeof(FmaRWParticle<FReal,4,4>)*nbOfParticles);
 
     fillTimer.tic();
 
@@ -206,11 +206,11 @@ int main(int argc, char** argv){
     std::cout << "Time needed for filling the array : "<< fillTimer.elapsed() << " secondes !" << std::endl;
 
     OctreeClass tree(NbLevels, SizeSubLevels, loaderRef.getBoxWidth(), loaderRef.getCenterOfBox());
-    FVector< FmaRWParticle<4,4> > finalParticles;
+    FVector< FmaRWParticle<FReal,4,4> > finalParticles;
     FLeafBalance balancer;
     FTic paraSort;
     paraSort.tic();
-    FMpiTreeBuilder< FReal,FmaRWParticle<4,4> >::DistributeArrayToContainer(app.global(),arrayOfParts,
+    FMpiTreeBuilder< FReal,FmaRWParticle<FReal,4,4> >::DistributeArrayToContainer(app.global(),arrayOfParts,
 								      loader.getMyNumberOfParticles(),
 								      tree.getBoxCenter(),
 								      tree.getBoxWidth(),tree.getHeight(),
@@ -229,7 +229,7 @@ int main(int argc, char** argv){
 
     FTic treeBuilder;
     treeBuilder.tic();
-    FTreeBuilder<OctreeClass,LeafClass>::BuildTreeFromArray(&tree,parts,true);
+    FTreeBuilder<FReal,OctreeClass,LeafClass>::BuildTreeFromArray(&tree,parts,true);
     treeBuilder.tac();
     std::cout << "Time needed for TreeBuilder : "<< treeBuilder.elapsed() << " secondes !" << std::endl;
 #define CHECK_TREE

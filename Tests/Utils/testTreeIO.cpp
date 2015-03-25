@@ -54,7 +54,7 @@ int main(int argc, char ** argv){
 
     typedef double FReal;
 
-	typedef FSphericalCell                 CellClass;
+	typedef FSphericalCell<FReal>                 CellClass;
 	typedef FP2PParticleContainer<FReal>         ContainerClass;
 
 	typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
@@ -97,13 +97,13 @@ int main(int argc, char ** argv){
 
 	std::cout << "Save tree in binary format ..." << std::endl;
 
-	FTreeIO::Save<OctreeClass, CellClass, LeafClass, ContainerClass >(filenameOUT.c_str(), tree);
+    FTreeIO<FReal>::Save<OctreeClass, CellClass, LeafClass, ContainerClass >(filenameOUT.c_str(), tree);
 
 	// -----------------------------------------------------
 
 	std::cout << "Load tree in binary format  ..." << std::endl;
 
-	FTreeIO::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(filenameOUT.c_str(),tree);
+    FTreeIO<FReal>::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(filenameOUT.c_str(),tree);
 
 	return 0;
 }

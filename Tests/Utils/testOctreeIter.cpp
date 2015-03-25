@@ -49,9 +49,9 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::OctreeSubHeight);
 
     typedef double FReal;
-    typedef FBasicParticleContainer<0>     ContainerClass;
+    typedef FBasicParticleContainer<FReal,0,FReal>     ContainerClass;
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
-    typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
+    typedef FOctree<FReal, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
     std::cout << ">> It is only interesting to wath the code to understand\n";

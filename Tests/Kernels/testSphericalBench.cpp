@@ -64,7 +64,7 @@ typedef FP2PParticleContainerIndexed<FReal>   ContainerClass;
 
 typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
-typedef FSphericalKernel< CellClass, ContainerClass >     KernelClass;
+typedef FSphericalKernel< FReal, CellClass, ContainerClass >     KernelClass;
 
 typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
@@ -78,7 +78,7 @@ void doATest(const int NbParticles, const int minP, const int maxP, const int mi
 
 
 
-    Particle*const particles = new Particle[loader.getNumberOfParticles()];
+    Particle<FReal>*const particles = new Particle<FReal>[loader.getNumberOfParticles()];
 
     const bool computeDirectAndDiff = timeForDirect || allAbsoluteDiff || allPotentialDiff;
     {
@@ -289,11 +289,11 @@ int main(int argc, char ** argv){
 
         for(int idxP = 1 ; idxP <= DevP ; ++idxP){
             for(int idxStep = 0 ; idxStep <= nbStep ; ++idxStep){
-                Particle centeredParticle;
+                Particle<FReal> centeredParticle;
                 centeredParticle.position.setPosition(0.0,0.0,0.5);
                 centeredParticle.physicalValue  = physicalValue;
 
-                Particle otherParticle;
+                Particle<FReal> otherParticle;
                 otherParticle.position.setPosition(0.0,0.0,startPosition + (idxStep*stepValue));
                 otherParticle.physicalValue = physicalValue;
 
@@ -325,7 +325,7 @@ int main(int argc, char ** argv){
 
                         for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
                             const int indexPartOrig = indexes[idxPart];
-                            const Particle& other = (indexPartOrig==0?centeredParticle:otherParticle);
+                            const Particle<FReal>& other = (indexPartOrig==0?centeredParticle:otherParticle);
                             potentialDiff[idxP].add(other.potential,potentials[idxPart]);
                         }
                     });

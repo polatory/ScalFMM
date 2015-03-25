@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
 
 
   // typedefs
-  typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
+  typedef FInterpMatrixKernel_R_IJ<FReal> MatrixKernelClass;
 
   const unsigned int NPV  = MatrixKernelClass::NPV;
   const unsigned int NPOT = MatrixKernelClass::NPOT;
@@ -167,7 +167,7 @@ int main(int argc, char* argv[])
     if(MatrixKernelClass::Type==HOMOGENEOUS && BoxWidthExtension>0.)
       throw std::runtime_error("Extension of box width is not yet supported for homogeneous kernels! Work-around: artificially set Type to NON_HOMOGENEOUS.");
 
-    typedef FP2PParticleContainerIndexed<NRHS,NLHS> ContainerClass;
+    typedef FP2PParticleContainerIndexed<FReal, NRHS,NLHS> ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
     typedef FChebCell<FReal,ORDER,NRHS,NLHS> CellClass;

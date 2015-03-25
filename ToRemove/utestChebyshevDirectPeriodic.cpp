@@ -258,7 +258,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		typedef FChebCell<FReal,ORDER> CellClass;
 		typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 		typedef FChebKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-		typedef FFmmAlgorithmPeriodic<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+		typedef FFmmAlgorithmPeriodic<FReal,OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
 		std::cout <<" TEST 1  "<<std::endl;
 		RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>();
@@ -273,7 +273,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		typedef FChebCell<FReal,ORDER> CellClass;
 		typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 		typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-		typedef FFmmAlgorithmPeriodic<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+		typedef FFmmAlgorithmPeriodic<FReal,OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
 		std::cout <<std::endl<<" TEST 2 "<<std::endl;
 		RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>();

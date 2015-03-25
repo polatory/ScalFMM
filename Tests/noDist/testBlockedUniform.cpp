@@ -65,24 +65,24 @@ int main(int argc, char* argv[]){
     typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
 
     typedef FUnifCellPODCore         GroupCellSymbClass;
-    typedef FUnifCellPODPole<ORDER>  GroupCellUpClass;
-    typedef FUnifCellPODLocal<ORDER> GroupCellDownClass;
-    typedef FUnifCellPOD<ORDER>      GroupCellClass;
+    typedef FUnifCellPODPole<FReal,ORDER>  GroupCellUpClass;
+    typedef FUnifCellPODLocal<FReal,ORDER> GroupCellDownClass;
+    typedef FUnifCellPOD<FReal,ORDER>      GroupCellClass;
 
     typedef FP2PGroupParticleContainer<FReal>          GroupContainerClass;
     typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
 #ifdef ScalFMM_USE_STARPU
-    typedef FStarPUAllCpuCapacities<FUnifKernel<GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
+    typedef FStarPUAllCpuCapacities<FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
 #elif defined(ScalFMM_USE_OMP4)
-    typedef FUnifKernel<GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
+    typedef FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
     // Set the number of threads
     omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
     typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass,
             GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #else
-    typedef FUnifKernel<GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
+    typedef FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
     //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
     typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #endif

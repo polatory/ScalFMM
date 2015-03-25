@@ -44,6 +44,7 @@
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
+template <class FReal>
 struct TestParticle{
     FPoint<FReal> position;
     const FPoint<FReal>& getPosition(){
@@ -51,16 +52,16 @@ struct TestParticle{
     }
 };
 
-template <class ParticleClass>
+template <class FReal, class ParticleClass>
 class Converter {
 public:
     template <class ContainerClass>
     static ParticleClass GetParticleAndRemove(ContainerClass* container, const int idxExtract){
-        TestParticle part;
+        TestParticle<FReal> part;
         part.position.setPosition(
                     container->getPositions()[0][idxExtract],
-                    container->getPositions()[1][idxExtract],
-                    container->getPositions()[2][idxExtract]);
+                container->getPositions()[1][idxExtract],
+                container->getPositions()[2][idxExtract]);
         container->removeParticles(&idxExtract, 1);
         return part;
     }
@@ -85,7 +86,7 @@ int main(int argc, char ** argv){
     typedef double FReal;
 
     typedef FTestCell                   CellClass;
-    typedef FBasicParticleContainer<0>      ContainerClass;
+    typedef FBasicParticleContainer<FReal,0,FReal>      ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
@@ -120,7 +121,7 @@ int main(int argc, char ** argv){
 
 
     {
-        TestParticle* particles = new TestParticle[NbPart];
+        TestParticle<FReal>* particles = new TestParticle<FReal>[NbPart];
         for(int idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             particles[idxPart].position.setPosition(
                         (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/FReal(2.0))),
@@ -128,16 +129,16 @@ int main(int argc, char ** argv){
                         (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/FReal(2.0))));
         }
 
-        FVector<TestParticle> finalParticles;
-	FLeafBalance balancer;
-        // FMpiTreeBuilder< FReal,TestParticle >::ArrayToTree(app.global(), particles, NbPart,
-    // 					     FPoint<FReal>(BoxCenter,BoxCenter,BoxCenter),
-	// 					     BoxWidth, tree.getHeight(), &finalParticles,&balancer);
-	FMpiTreeBuilder< FReal,TestParticle >::DistributeArrayToContainer(app.global(),particles, 
-								    NbPart,
-                                    FPoint<FReal>(BoxCenter,BoxCenter,BoxCenter),
-								    BoxWidth,NbLevels,
-								    &finalParticles, &balancer);
+        FVector<TestParticle<FReal>> finalParticles;
+        FLeafBalance balancer;
+        // FMpiTreeBuilder< FReal,TestParticle<FReal> >::ArrayToTree(app.global(), particles, NbPart,
+        // 					     FPoint<FReal>(BoxCenter,BoxCenter,BoxCenter),
+        // 					     BoxWidth, tree.getHeight(), &finalParticles,&balancer);
+        FMpiTreeBuilder< FReal,TestParticle<FReal> >::DistributeArrayToContainer(app.global(),particles,
+                                                                                 NbPart,
+                                                                                 FPoint<FReal>(BoxCenter,BoxCenter,BoxCenter),
+                                                                                 BoxWidth,NbLevels,
+                                                                                 &finalParticles, &balancer);
         for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
             tree.insert(finalParticles[idx].position);
         }
@@ -176,7 +177,7 @@ int main(int argc, char ** argv){
     std::cout << "Arrange ..." << std::endl;
     counter.tic();
 
-    FOctreeArrangerProc<OctreeClass, ContainerClass, TestParticle, Converter<TestParticle> > arrange(&tree);
+    FOctreeArrangerProc<FReal, OctreeClass, ContainerClass, TestParticle<FReal>, Converter<FReal, TestParticle<FReal>> > arrange(&tree);
     arrange.rearrange(app.global());
 
     counter.tac();
@@ -203,8 +204,8 @@ int main(int argc, char ** argv){
             ContainerClass* particles = octreeIterator.getCurrentListTargets();
             for(int idxPart = 0; idxPart < particles->getNbParticles() ; ++idxPart){
                 const FPoint<FReal> particlePosition( particles->getWPositions()[0][idxPart],
-                                               particles->getWPositions()[1][idxPart],
-                                               particles->getWPositions()[2][idxPart]);
+                        particles->getWPositions()[1][idxPart],
+                        particles->getWPositions()[2][idxPart]);
 
                 const MortonIndex particleIndex = tree.getMortonFromPosition( particlePosition );
                 if( leafIndex != particleIndex){

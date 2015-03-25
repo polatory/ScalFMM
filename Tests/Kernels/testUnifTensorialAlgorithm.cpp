@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
 
 
     // typedefs
-    typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
+    typedef FInterpMatrixKernel_R_IJ<FReal> MatrixKernelClass;
 
     // useful features of matrix kernel
     const unsigned int NPV  = MatrixKernelClass::NPV;
@@ -173,12 +173,12 @@ int main(int argc, char* argv[])
         if(MatrixKernelClass::Type==HOMOGENEOUS && BoxWidthExtension>0.)
             throw std::runtime_error("Extension of box width is not yet supported for homogeneous kernels! Work-around: artificially set Type to NON_HOMOGENEOUS.");
 
-        typedef FP2PParticleContainerIndexed<NRHS,NLHS> ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal,NRHS,NLHS> ContainerClass;
 
         typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
-        typedef FUnifCell<ORDER,NRHS,NLHS> CellClass;
+        typedef FUnifCell<FReal,ORDER,NRHS,NLHS> CellClass;
         typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
-        typedef FUnifTensorialKernel<CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        typedef FUnifTensorialKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
         //  typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 

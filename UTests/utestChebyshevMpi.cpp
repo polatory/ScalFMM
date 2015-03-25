@@ -51,10 +51,9 @@
 
 class TestChebyshevMpiDirect : public FUTesterMpi<TestChebyshevMpiDirect>{
 
-    template <class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
+    template <class FReal, class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
               class LeafClass, class OctreeClass, class FmmClassProc>
     void RunTest(){
-        typedef double FReal;
         const std::string parFile( (sizeof(FReal) == sizeof(float))?
                                        "Test/DirectFloatbfma":
                                        "UTest/DirectDouble.bfma");
@@ -282,6 +281,7 @@ class TestChebyshevMpiDirect : public FUTesterMpi<TestChebyshevMpiDirect>{
     /** TestChebSymKernel */
     void TestChebSymKernel(){
         const unsigned int ORDER = 6;
+        typedef double FReal;
         typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
         typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
         typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
@@ -290,7 +290,7 @@ class TestChebyshevMpiDirect : public FUTesterMpi<TestChebyshevMpiDirect>{
         typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithmThreadProc<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClassProc;
         // run test
-        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClassProc>();
+        RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClassProc>();
     }
 
     ///////////////////////////////////////////////////////////

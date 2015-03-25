@@ -8,8 +8,8 @@
  * This class should be use with the octree arrange to move particles
  * that are typed (src/tgt) and stored in a FBasicParticleContainer
  */
-template<class OctreeClass, class ContainerClass >
-class FParticleTypedIndexedMover : public FAbstractMover<OctreeClass, ContainerClass>{
+template<class FReal, class OctreeClass, class ContainerClass >
+class FParticleTypedIndexedMover : public FAbstractMover<FReal, OctreeClass, ContainerClass>{
 private:
     ContainerClass toStoreRemovedSourceParts;
     ContainerClass toStoreRemovedTargetParts;

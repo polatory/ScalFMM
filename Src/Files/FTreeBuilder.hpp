@@ -83,7 +83,7 @@ public:
 
     /** Should be used to insert a FBasicParticleContainer class */
     template < unsigned NbAttributes, class AttributeClass>
-    static void BuildTreeFromArray(OctreeClass*const tree, const FBasicParticleContainer<NbAttributes, AttributeClass>& particlesContainers,
+    static void BuildTreeFromArray(OctreeClass*const tree, const FBasicParticleContainer<FReal, NbAttributes, AttributeClass>& particlesContainers,
                                    bool isAlreadySorted=false){
         const FSize numberOfParticle = particlesContainers.getNbParticles();
         // If the parts are already sorted, no need to sort again

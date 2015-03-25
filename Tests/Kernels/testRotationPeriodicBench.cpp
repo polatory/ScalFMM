@@ -67,7 +67,7 @@ int main(int argc, char** argv){
     typedef FRotationKernel<FReal, CellClass, ContainerClass, P >   KernelClass;
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FOctree<FReal,CellClass,ContainerClass,LeafClass> OctreeClass;
-    typedef FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassPer;
+    typedef FFmmAlgorithmPeriodic<FReal,OctreeClass , CellClass, ContainerClass, KernelClass, LeafClass > FmmClassPer;
 
     /////////////////////////////////////////////////
     // Parameters

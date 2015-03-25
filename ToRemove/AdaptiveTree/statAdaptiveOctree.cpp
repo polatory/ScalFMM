@@ -81,7 +81,7 @@ void usage() {
 }
 
 int main(int argc, char ** argv){
-	typedef FBasicParticleContainer<0>                                     ContainerClass;
+	typedef FBasicParticleContainer<FReal,0,FReal>                                     ContainerClass;
 	typedef FSimpleIndexedLeaf<FReal,ContainerClass>                                  LeafClass;
 	typedef FAdaptCell<FBasicCell,LeafClass>                            CellClass;
 	typedef FOctree<FReal, CellClass, ContainerClass, LeafClass >       OctreeClass;

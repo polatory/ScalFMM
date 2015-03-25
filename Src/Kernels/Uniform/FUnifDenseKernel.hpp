@@ -73,7 +73,7 @@ public:
                      const FReal inBoxWidth,
                      const FPoint<FReal>& inBoxCenter,
                      const MatrixKernelClass *const inMatrixKernel)
-    : FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter),
+    : FAbstractUnifKernel< FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter),
       MatrixKernel(inMatrixKernel),
       M2LHandler(MatrixKernel,
                  inTreeHeight,
@@ -116,14 +116,14 @@ public:
 
         // interpolation points of source (Y) and target (X) cell
         FPoint<FReal> X[AbstractBaseClass::nnodes], Y[AbstractBaseClass::nnodes];
-        FUnifTensor<ORDER>::setRoots(AbstractBaseClass::getCellCenter(TargetCell->getCoordinate(),TreeLevel), CellWidth, X);
+        FUnifTensor<FReal,ORDER>::setRoots(AbstractBaseClass::getCellCenter(TargetCell->getCoordinate(),TreeLevel), CellWidth, X);
 
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
 
             for (int idx=0; idx<343; ++idx){
                 if (SourceCells[idx]){
 
-                    FUnifTensor<ORDER>::setRoots(AbstractBaseClass::getCellCenter(SourceCells[idx]->getCoordinate(),TreeLevel), CellWidth, Y);
+                    FUnifTensor<FReal,ORDER>::setRoots(AbstractBaseClass::getCellCenter(SourceCells[idx]->getCoordinate(),TreeLevel), CellWidth, Y);
 
                     for (unsigned int m=0; m<AbstractBaseClass::nnodes; ++m)
                         for (unsigned int n=0; n<AbstractBaseClass::nnodes; ++n){
@@ -174,7 +174,7 @@ public:
              ContainerClass* const NeighborSourceParticles[27],
              const int /* size */)
     {
-        DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
+        DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
     }
 
 
@@ -182,7 +182,7 @@ public:
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                    ContainerClass* const inNeighbors[27], const int /*inSize*/)
     {
-        DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
+        DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
     }
 
 };

@@ -279,11 +279,11 @@ public:
  * Handler to deal with all symmetries: Stores permutation indices and vectors
  * to reduce 343 different interactions to 16 only.
  */
-template <			class CellClass,
+template <class FReal,			class CellClass,
 					class ContainerClass,
 					class MatrixKernelClass,
 					int ORDER>
-struct FChebFlopsSymKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER>
+struct FChebFlopsSymKernel<FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER>
 ::SymmetryHandler
 {
 	// M2L operators

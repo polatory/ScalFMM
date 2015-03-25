@@ -39,7 +39,7 @@
 class TestOctree : public FUTester<TestOctree> {
     typedef double FReal;
     typedef FBasicCell                   CellClass;
-    typedef FBasicParticleContainer<0>      ContainerClass;
+    typedef FBasicParticleContainer<FReal,0,FReal>      ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FOctree<FReal, CellClass, ContainerClass , LeafClass , FBasicBlockAllocator<CellClass> >  OctreeClass;

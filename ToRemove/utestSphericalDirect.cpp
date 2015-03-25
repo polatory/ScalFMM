@@ -77,7 +77,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 		loader.fillParticle(particles,nbParticles);
          //
 		// Create octree
-        // FSphericalCell::Init(DevP);
+        // FSphericalCell<FReal>::Init(DevP);
 		OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 		//   Insert particle in the tree
 		//
@@ -198,10 +198,10 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
     /** Classic */
     void TestSpherical(){
-        typedef FSphericalCell            CellClass;
+        typedef FSphericalCell<FReal>            CellClass;
         typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
-        typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
+        typedef FSphericalKernel< FReal, CellClass, ContainerClass >          KernelClass;
 
         typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
         typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
@@ -214,7 +214,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
     /** Rotation */
     void TestRotation(){
-        typedef FSphericalCell            CellClass;
+        typedef FSphericalCell<FReal>            CellClass;
         typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
         typedef FSphericalRotationKernel< CellClass, ContainerClass >          KernelClass;
@@ -231,10 +231,10 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 #ifdef ScalFMM_USE_BLAS
     /** Blas */
     void TestSphericalBlas(){
-        typedef FSphericalCell            CellClass;
+        typedef FSphericalCell<FReal>            CellClass;
         typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
-        typedef FSphericalBlasKernel< CellClass, ContainerClass >          KernelClass;
+        typedef FSphericalBlasKernel<FReal, CellClass, ContainerClass >          KernelClass;
 
         typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
         typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
@@ -247,10 +247,10 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
     /** Block blas */
     void TestSphericalBlockBlas(){
-        typedef FSphericalCell            CellClass;
+        typedef FSphericalCell<FReal>            CellClass;
         typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
 
-        typedef FSphericalBlockBlasKernel< CellClass, ContainerClass >          KernelClass;
+        typedef FSphericalBlockBlasKernel< FReal, CellClass, ContainerClass >          KernelClass;
 
         typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
         typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;

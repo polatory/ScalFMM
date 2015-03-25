@@ -73,12 +73,12 @@ public:
 template <class FReal>
 class GalaxyLoader : public FFmaGenericLoader<FReal> {
 public:
-    GalaxyLoader(const std::string & filename) : FFmaGenericLoader(filename) {
+    GalaxyLoader(const std::string & filename) : FFmaGenericLoader<FReal>(filename) {
     }
 
     void fillParticle(FPoint<FReal>* position, FReal* physivalValue, FPoint<FReal>* velocity){
         FReal x,y,z,data, vx, vy, vz;
-        (*this->file)  >> x >> y >> z >> data >> vx >> vy >> vz;
+        (*FFmaGenericLoader<FReal>::file)  >> x >> y >> z >> data >> vx >> vy >> vz;
         position->setPosition(x,y,z);
         *physivalValue = (data);
         velocity->setPosition(vx,vy,vz);
@@ -112,7 +112,7 @@ public:
         const FReal*const potentials = containers->getPotentials();
         FVector<FPoint<FReal>> velocites = containers->getVelocities();
 
-        TestParticle part;
+        TestParticle<FReal> part;
         part.position.setPosition( positionsX[idxExtract],positionsY[idxExtract],positionsZ[idxExtract]);
         part.physicalValue = physicalValues[idxExtract];
         part.forces[0] = forcesX[idxExtract];
@@ -141,7 +141,7 @@ int main(int argc, char ** argv){
 
     typedef double FReal;
     typedef FBasicCell              CellClass;
-    typedef VelocityContainer  ContainerClass;
+    typedef VelocityContainer<FReal>  ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
@@ -153,7 +153,7 @@ int main(int argc, char ** argv){
     const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 6);
     const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
 
-    GalaxyLoader loader(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/galaxy.fma"));
+    GalaxyLoader<FReal> loader(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/galaxy.fma"));
 
     // -----------------------------------------------------
 
@@ -177,14 +177,14 @@ int main(int argc, char ** argv){
     // -----------------------------------------------------
 
     {
-        FTreeMpiCsvSaver<OctreeClass, ContainerClass> saver("/tmp/test%d.csv", app.global() , false);
+        FTreeMpiCsvSaver<FReal, OctreeClass, ContainerClass> saver("/tmp/test%d.csv", app.global() , false);
         saver.exportTree(&tree);
     }
 
     // -----------------------------------------------------
 
     {
-        FTreeMpiCsvSaver<OctreeClass, ContainerClass> saver("/tmp/htest%d.csv", app.global() , true);
+        FTreeMpiCsvSaver<FReal, OctreeClass, ContainerClass> saver("/tmp/htest%d.csv", app.global() , true);
         saver.exportTree(&tree);
     }
 

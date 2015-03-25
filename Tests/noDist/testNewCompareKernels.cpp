@@ -312,11 +312,11 @@ int main(int argc, char* argv[])
 		std::cout << "\n FFmaBlas FMM ... P: "  <<DevP << std::endl;
 
 		// typedefs
-		typedef FSphericalCell                 CellClass;
+		typedef FSphericalCell<FReal>                 CellClass;
 		typedef FP2PParticleContainerIndexed<FReal>         ContainerClass;
 		typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 		typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
-		typedef FSphericalBlockBlasKernel< CellClass, ContainerClass > KernelClass;
+        typedef FSphericalBlockBlasKernel<FReal, CellClass, ContainerClass > KernelClass;
 		typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
 		// init cell class and oct-tree
@@ -380,11 +380,11 @@ int main(int argc, char* argv[])
 			std::cout << "\nFFmaBlas FMM ... P: " <<DevP << std::endl;
 
 			// typedefs
-			typedef FSphericalCell                 CellClass;
+			typedef FSphericalCell<FReal>                 CellClass;
 			typedef FP2PParticleContainerIndexed<FReal>         ContainerClass;
 			typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 			typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
-			typedef FSphericalBlasKernel< CellClass, ContainerClass > KernelClass;
+            typedef FSphericalBlasKernel<FReal, CellClass, ContainerClass > KernelClass;
 			typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
 			// init cell class and oct-tree
@@ -448,11 +448,11 @@ int main(int argc, char* argv[])
 			std::cout << "\nFFmaBlockBlas FMM ... P: " <<DevP << std::endl;
 
 			// typedefs
-			typedef FSphericalCell                 CellClass;
+			typedef FSphericalCell<FReal>                 CellClass;
 			typedef FP2PParticleContainerIndexed<FReal>         ContainerClass;
 			typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 			typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
-			typedef FSphericalBlockBlasKernel< CellClass, ContainerClass > KernelClass;
+            typedef FSphericalBlockBlasKernel< FReal, CellClass, ContainerClass > KernelClass;
 			typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
 			// init cell class and oct-tree
@@ -604,11 +604,11 @@ int main(int argc, char* argv[])
 	//
 	{
 		//const static int P = 10;
-		typedef FSphericalCell               CellClass;
+		typedef FSphericalCell<FReal>               CellClass;
 		typedef FP2PParticleContainerIndexed<FReal>          ContainerClass;
 		typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 		typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
-	    typedef FSphericalKernel< CellClass, ContainerClass >     KernelClass;
+        typedef FSphericalKernel< FReal, CellClass, ContainerClass >     KernelClass;
 		typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
 		OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
@@ -676,11 +676,11 @@ int main(int argc, char* argv[])
 	//
 	{
 		const static int P = 11;
-		typedef FRotationCell<P>               CellClass;
+		typedef FRotationCell<FReal,P>               CellClass;
 		typedef FP2PParticleContainerIndexed<FReal>          ContainerClass;
 		typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 		typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
-		typedef FRotationKernel< CellClass, ContainerClass , P>   KernelClass;
+        typedef FRotationKernel< FReal, CellClass, ContainerClass , P>   KernelClass;
 		typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
 		OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
@@ -750,13 +750,13 @@ int main(int argc, char* argv[])
 		const unsigned int ORDER = 10;
 
 		// typedefs
-		typedef FTaylorCell<ORDER,1>                                 CellClass;
+        typedef FTaylorCell<FReal,ORDER,1>                                 CellClass;
 		std::cout << "\nFFmaTaylor FMM ... ORDER: " << ORDER << std::endl;
 
 		typedef FP2PParticleContainerIndexed<FReal>                          ContainerClass;
 		typedef FSimpleLeaf<FReal, ContainerClass >                         LeafClass;
 		typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >      OctreeClass;
-		typedef FTaylorKernel<CellClass,ContainerClass,ORDER,1>       KernelClass;
+        typedef FTaylorKernel<FReal,CellClass,ContainerClass,ORDER,1>       KernelClass;
 		typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
 		// init cell class and oct-tree

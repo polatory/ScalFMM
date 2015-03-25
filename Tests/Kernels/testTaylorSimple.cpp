@@ -37,12 +37,12 @@ int main(int argc,char* argv[]){
     FPoint<FReal> rootCenter(FReal(0.0),FReal(0.0),FReal(0.0));
     FReal boxWidth = FReal(4);
 
-    typedef FTaylorCell<P,order> CellClass;
+    typedef FTaylorCell<FReal,P,order> CellClass;
     typedef FP2PParticleContainer<FReal> ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass > LeafClass;
     typedef FOctree<FReal, CellClass, ContainerClass , LeafClass > OctreeClass;
-    typedef FTaylorKernel<CellClass,ContainerClass,P,order> KernelClass;
+    typedef FTaylorKernel<FReal,CellClass,ContainerClass,P,order> KernelClass;
 
     typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 

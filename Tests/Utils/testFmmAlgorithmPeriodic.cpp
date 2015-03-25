@@ -56,7 +56,7 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
                          FParameterDefinitions::NbParticles, FParameterDefinitions::PeriodicityNbLevels);
 
-
+    typedef double FReal;
     typedef FTestCell                   CellClass;
     typedef FTestParticleContainer<FReal>      ContainerClass;
 
@@ -64,7 +64,7 @@ int main(int argc, char ** argv){
     typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
 
-    typedef FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+    typedef FFmmAlgorithmPeriodic<FReal, OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////

@@ -43,12 +43,12 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-    typedef FSphericalCell                 CellClass;
+    typedef FSphericalCell<FReal>                 CellClass;
     typedef FP2PParticleContainer<FReal>     ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass >                             LeafClass;
     typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FSphericalKernel< CellClass, ContainerClass >      KernelClass;
+    typedef FSphericalKernel< FReal, CellClass, ContainerClass >      KernelClass;
 
     typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
     //

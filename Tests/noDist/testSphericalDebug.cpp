@@ -83,7 +83,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
         Print("quarterDimLeaf:");
         Print(quarterDimLeaf);
 
-        FSphericalCell::Init(DevP, isBlasKernel);
+        FSphericalCell<FReal>::Init(DevP, isBlasKernel);
 
         TestParticle* const particles = new TestParticle[nbParticles];
         particles[0].position = FPoint<FReal>(quarterDimLeaf, quarterDimLeaf, quarterDimLeaf);
@@ -262,10 +262,10 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     void TestSpherical(){
         typedef double FReal;
 
-        typedef FSphericalCell            CellClass;
+        typedef FSphericalCell<FReal>            CellClass;
         typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
-        typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
+        typedef FSphericalKernel< FReal, CellClass, ContainerClass >          KernelClass;
 
         typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
         typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
@@ -276,7 +276,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
                   << " $$$$$$$$$                                                    TestSpherical                                             $$$$$$$$$$$$$$$$"<<std::endl
                   << " $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<<std::endl;
 
-        RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal,  CellClass, ContainerClass, KernelClass, LeafClass,
                 OctreeClass, FmmClass>(false);
     }
 
@@ -284,17 +284,17 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     void TestRotation(){
         typedef double FReal;
 
-        typedef FSphericalCell            CellClass;
+        typedef FSphericalCell<FReal>            CellClass;
         typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
-        typedef FSphericalRotationKernel< CellClass, ContainerClass >          KernelClass;
+        typedef FSphericalRotationKernel<  FReal, CellClass, ContainerClass >          KernelClass;
 
         typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
         typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
         typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
-        RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal, CellClass, ContainerClass, KernelClass, LeafClass,
                 OctreeClass, FmmClass>(false);
     }
 
@@ -303,17 +303,17 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     void TestSphericalBlas(){
         typedef double FReal;
 
-        typedef FSphericalCell            CellClass;
+        typedef FSphericalCell<FReal>            CellClass;
         typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
-        typedef FSphericalBlasKernel< CellClass, ContainerClass >          KernelClass;
+        typedef FSphericalBlasKernel<FReal, CellClass, ContainerClass >          KernelClass;
 
         typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
         typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
         typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
-        RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest< FReal,  CellClass, ContainerClass, KernelClass, LeafClass,
                 OctreeClass, FmmClass>(true);
     }
 
@@ -321,10 +321,10 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     void TestSphericalBlockBlas(){
         typedef double FReal;
 
-        typedef FSphericalCell            CellClass;
+        typedef FSphericalCell<FReal>            CellClass;
         typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
 
-        typedef FSphericalBlockBlasKernel< CellClass, ContainerClass >          KernelClass;
+        typedef FSphericalBlockBlasKernel< FReal, CellClass, ContainerClass >          KernelClass;
 
         typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
         typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
@@ -335,7 +335,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
                   << " $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<<std::endl
                   << " $$$$$$$$$                                                    TestSphericalBlockBlas                                $$$$$$$$$$$$$$$$"<<std::endl
                   << " $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$"<<std::endl;
-        RunTest< CellClass, ContainerClass, KernelClass, LeafClass,
+        RunTest<  FReal, CellClass, ContainerClass, KernelClass, LeafClass,
                 OctreeClass, FmmClass>(true);
     }
 #endif

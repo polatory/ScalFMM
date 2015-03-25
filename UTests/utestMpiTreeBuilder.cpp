@@ -123,9 +123,9 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
         //Copy from the file to the array that will be sorted
         FSize nbOfParticles = loaderSeq.getNumberOfParticles();
         printf("nbOfParticles : %lld \n",nbOfParticles);
-        struct TestParticle* arrayOfParticles = new TestParticle[nbOfParticles];
+        struct TestParticle<FReal>* arrayOfParticles = new TestParticle<FReal>[nbOfParticles];
 
-        memset(arrayOfParticles,0,sizeof(struct TestParticle)*nbOfParticles);
+        memset(arrayOfParticles,0,sizeof(struct TestParticle<FReal>)*nbOfParticles);
 
         for(FSize idxParts=0 ; idxParts<nbOfParticles ; ++idxParts){
 
@@ -144,8 +144,8 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
             arrayOfParticles[idxParts].index = host.getMortonIndex(TreeHeight - 1);
         }
         //Save the original array
-        struct TestParticle * originalArray   =  new TestParticle[nbOfParticles];
-        memcpy(originalArray,arrayOfParticles,sizeof(struct TestParticle)*nbOfParticles);
+        struct TestParticle<FReal> * originalArray   =  new TestParticle<FReal>[nbOfParticles];
+        memcpy(originalArray,arrayOfParticles,sizeof(struct TestParticle<FReal>)*nbOfParticles);
         //Sort the array
 
         std::sort(arrayOfParticles,arrayOfParticles+nbOfParticles);
@@ -173,16 +173,16 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
         //Now, we sort again the particles with MPI QuickSort
         int idxStart = loader.getStart();
 
-        FMpiTreeBuilder<TestParticle>::IndexedParticle * arrayToBeSorted = new FMpiTreeBuilder<TestParticle>::IndexedParticle[loader.getMyNumberOfParticles()];
+        FMpiTreeBuilder<FReal,TestParticle<FReal>>::IndexedParticle * arrayToBeSorted = new FMpiTreeBuilder<FReal,TestParticle<FReal>>::IndexedParticle[loader.getMyNumberOfParticles()];
         //Copy the TestParticles into an array of indexedParticle
         for(int i=0 ; i<loader.getMyNumberOfParticles() ; ++i){
             arrayToBeSorted[i].particle = originalArray[i+idxStart];
             arrayToBeSorted[i].index = arrayToBeSorted[i].particle.index;
         }
-        FMpiTreeBuilder<TestParticle>::IndexedParticle* outputArray = nullptr;
-        FQuickSortMpi<FMpiTreeBuilder<TestParticle>::IndexedParticle,MortonIndex,FSize>::QsMpi(arrayToBeSorted,loader.getMyNumberOfParticles(),&outputArray,&outputSize,app.global());
+        FMpiTreeBuilder<FReal,TestParticle<FReal>>::IndexedParticle* outputArray = nullptr;
+        FQuickSortMpi<FMpiTreeBuilder<FReal,TestParticle<FReal>>::IndexedParticle,MortonIndex,FSize>::QsMpi(arrayToBeSorted,loader.getMyNumberOfParticles(),&outputArray,&outputSize,app.global());
 
-        //FBitonicSort<FMpiTreeBuilder<TestParticle>::IndexedParticle,MortonIndex, FSize>::Sort(arrayToBeSorted,loader.getMyNumberOfParticles(),app.global());
+        //FBitonicSort<FMpiTreeBuilder<FReal,TestParticle<FReal>>::IndexedParticle,MortonIndex, FSize>::Sort(arrayToBeSorted,loader.getMyNumberOfParticles(),app.global());
         //Sum the outputSize of every body for knowing where to start inside the sorted array
         FSize starter = 0;
         //We use a prefix sum
@@ -192,7 +192,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 
         //We sort the output array relatvely to line number in origin file
         FSize inc = 0;
-        FMpiTreeBuilder<TestParticle>::IndexedParticle * saveForSort = outputArray;
+        FMpiTreeBuilder<FReal,TestParticle<FReal>>::IndexedParticle * saveForSort = outputArray;
         int nbOfPartsInLeaf = 0;
         while(inc < outputSize){
             while(outputArray[inc].index == saveForSort->index && inc < outputSize){
@@ -200,7 +200,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
                 nbOfPartsInLeaf++;
             }
             std::sort(saveForSort,saveForSort+nbOfPartsInLeaf,
-                      [&](FMpiTreeBuilder<TestParticle>::IndexedParticle a,FMpiTreeBuilder<TestParticle>::IndexedParticle b) -> bool {
+                      [&](FMpiTreeBuilder<FReal,TestParticle<FReal>>::IndexedParticle a,FMpiTreeBuilder<FReal,TestParticle<FReal>>::IndexedParticle b) -> bool {
                 return (a.particle.indexInFile)<(b.particle.indexInFile);
             });
             nbOfPartsInLeaf = 0;
@@ -269,11 +269,11 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
         bool resultMergeLeaves= true;
 
         //inputs needed
-        TestParticle * leavesArray = nullptr;
+        TestParticle<FReal> * leavesArray = nullptr;
         FSize * leavesIndices = nullptr;
         FSize leaveSize = 0;
 
-        FMpiTreeBuilder<TestParticle>::MergeSplitedLeaves(app.global(),outputArray,&outputSize,&leavesIndices,&leavesArray,&leaveSize);
+        FMpiTreeBuilder<FReal,TestParticle<FReal>>::MergeSplitedLeaves(app.global(),outputArray,&outputSize,&leavesIndices,&leavesArray,&leaveSize);
 
         //Compare again the results with the output of std::qsort
 
@@ -297,11 +297,11 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 
         //Test the Equalize and Fill tree
         FLeafBalance balancer;
-        FVector<TestParticle> finalParticles;
+        FVector<TestParticle<FReal>> finalParticles;
 
         bool resultEqualize = true;
 
-        FMpiTreeBuilder<TestParticle>::EqualizeAndFillContainer(app.global(),&finalParticles,leavesIndices,leavesArray,leaveSize,outputSize,&balancer);
+        FMpiTreeBuilder<FReal,TestParticle<FReal>>::EqualizeAndFillContainer(app.global(),&finalParticles,leavesIndices,leavesArray,leaveSize,outputSize,&balancer);
         //Ok now count the Particles at the end of the Equalize
         int finalNbPart = finalParticles.getSize();
         int finalStart = 0;

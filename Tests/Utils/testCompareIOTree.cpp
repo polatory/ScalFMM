@@ -46,7 +46,7 @@ int main(int argc, char ** argv){
                          );
 
     typedef double FReal;
-    typedef FSphericalCell                 CellClass;
+    typedef FSphericalCell<FReal>                 CellClass;
     typedef FP2PParticleContainer<FReal>         ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
@@ -66,8 +66,8 @@ int main(int argc, char ** argv){
     const char* const filename2 = FParameters::getStr(argc,argv,FParameterDefinitions::InputFileOne.options, "dtree.data");
     std::cout << "Compare tree " << filename1 << " and " << filename2 << std::endl;
 
-    FTreeIO::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(filename1, tree1);
-    FTreeIO::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(filename2, tree2);
+    FTreeIO<FReal>::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(filename1, tree1);
+    FTreeIO<FReal>::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(filename2, tree2);
 
     // -----------------------------------------------------
     std::cout << "Check Result\n";
@@ -130,7 +130,7 @@ int main(int argc, char ** argv){
                 const CellClass*const cell2 = octreeIterator2.getCurrentCell();
 
                 FReal cumul = 0;
-                for(int idx = 0; idx < FSphericalCell::GetPoleSize(); ++idx){
+                for(int idx = 0; idx < FSphericalCell<FReal>::GetPoleSize(); ++idx){
                     cumul += FMath::Abs( cell1->getMultipole()[idx].getImag() - cell2->getMultipole()[idx].getImag() );
                     cumul += FMath::Abs( cell1->getMultipole()[idx].getReal() - cell2->getMultipole()[idx].getReal() );
                 }
@@ -139,7 +139,7 @@ int main(int argc, char ** argv){
                               << " index is " << octreeIterator1.getCurrentGlobalIndex() << std::endl;
                 }
                 cumul = 0;
-                for(int idx = 0; idx < FSphericalCell::GetLocalSize(); ++idx){
+                for(int idx = 0; idx < FSphericalCell<FReal>::GetLocalSize(); ++idx){
                     cumul += FMath::Abs( cell1->getLocal()[idx].getImag() - cell2->getLocal()[idx].getImag() );
                     cumul += FMath::Abs( cell1->getLocal()[idx].getReal() - cell2->getLocal()[idx].getReal() );
                 }

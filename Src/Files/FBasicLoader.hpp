@@ -50,7 +50,7 @@
 * @endcode
 */
 template <class FReal>
-class FBasicLoader : public FAbstractLoader {
+class FBasicLoader : public FAbstractLoader<FReal> {
 protected:
     std::ifstream file;         //< The file to read
     FPoint<FReal> centerOfBox;         //< The center of box read from file

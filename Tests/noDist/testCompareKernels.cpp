@@ -213,11 +213,11 @@ int main(int argc, char* argv[])
         const int DevP = FParameters::getValue(argc, argv, FParameterDefinitions::SHDevelopment.options, 11);
 
         // typedefs
-        typedef FSphericalCell                 CellClass;
+        typedef FSphericalCell<FReal>                 CellClass;
         typedef FP2PParticleContainerIndexed<FReal>         ContainerClass;
         typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
         typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
-          typedef FSphericalBlockBlasKernel< CellClass, ContainerClass > KernelClass;
+          typedef FSphericalBlockBlasKernel<FReal, CellClass, ContainerClass > KernelClass;
          typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
         // init cell class and oct-tree

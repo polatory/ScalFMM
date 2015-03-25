@@ -63,7 +63,7 @@ int main(int argc, char ** argv){
 
     typedef double FReal;
 
-    typedef FInterpMatrixKernel_R_IJ MatrixKernelClass;
+    typedef FInterpMatrixKernel_R_IJ<FReal> MatrixKernelClass;
     const double a = 0.0; // core width (Beware! if diff from 0. then Kernel should be NON HOMOGENEOUS !!!)
 
     const unsigned int ncmp = MatrixKernelClass::NCMP;
@@ -71,7 +71,7 @@ int main(int argc, char ** argv){
     const unsigned int nlhs = MatrixKernelClass::NLHS;
     const unsigned int npot = MatrixKernelClass::NPOT;
 
-    typedef FP2PParticleContainer<nrhs,nlhs> ContainerClass;
+    typedef FP2PParticleContainer<FReal,nrhs,nlhs> ContainerClass;
     typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
 
     ///////////////////////What we do/////////////////////////////
@@ -129,7 +129,7 @@ int main(int argc, char ** argv){
     // approximative computation
     const unsigned int ORDER = 6;
     const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
-    typedef FUnifInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
+    typedef FUnifInterpolator<FReal,ORDER,MatrixKernelClass> InterpolatorClass;
     InterpolatorClass S;
     MatrixKernelClass MatrixKernel;
 
@@ -147,8 +147,8 @@ int main(int argc, char ** argv){
     time.tic();
     // Multipole to local: F_m = \sum_n^L K(\bar x_m, \bar y_n) * W_n
     FPoint<FReal> rootsX[nnodes], rootsY[nnodes];
-    FUnifTensor<ORDER>::setRoots(cx, width, rootsX);
-    FUnifTensor<ORDER>::setRoots(cy, width, rootsY);
+    FUnifTensor<FReal,ORDER>::setRoots(cx, width, rootsX);
+    FUnifTensor<FReal,ORDER>::setRoots(cy, width, rootsY);
 
     FReal F[nlhs*nnodes]; // local expansion
     for (unsigned int i=0; i<nnodes*nlhs; ++i) F[i] = FReal(0.);
@@ -220,7 +220,7 @@ int main(int argc, char ** argv){
     const unsigned int rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1);
     FReal C[ncmp*rc];
 
-    typedef FUnifTensor<ORDER> TensorType;
+    typedef FUnifTensor<FReal,ORDER> TensorType;
     unsigned int node_diff[nnodes*nnodes];
     TensorType::setNodeIdsDiff(node_diff);
     unsigned int node_ids_pairs[rc][2];
@@ -363,7 +363,7 @@ int main(int argc, char ** argv){
     const int dimfft = 1;
     const int steps[dimfft] = {rc};
     //FDft Dft(rc); // direct version
-    FFft<dimfft> Dft; // fast version
+    FFft<FReal,dimfft> Dft; // fast version
     Dft.buildDFT(steps);
 
     // Get first COLUMN of K and Store in T

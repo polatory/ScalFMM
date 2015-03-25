@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
     printf("Elapsed Time for Direct Computation: \t %f\n",time.elapsed());
   
     //Write results in output file
-	FFmaGenericWriter writer(fileresult) ;
+	FFmaGenericWriter<FReal> writer(fileresult) ;
   
     //Size of elements to be written
     

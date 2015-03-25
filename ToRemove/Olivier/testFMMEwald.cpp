@@ -79,13 +79,13 @@ int main(int argc, char ** argv){
 	typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
 
 #else
-	typedef FSphericalCell                                    CellClass;
+	typedef FSphericalCell<FReal>                                    CellClass;
 	typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
-	typedef FSphericalKernel< CellClass, ContainerClass >     KernelClass;
+	typedef FSphericalKernel< FReal, CellClass, ContainerClass >     KernelClass;
 	const int DevP          = FParameters::getValue(argc,argv,"-P", 9);
 #endif
 
-	typedef FFmmAlgorithmPeriodic<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+	typedef FFmmAlgorithmPeriodic<FReal,OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 	typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass >         FmmClassNoPer;
 	///////////////////////What we do/////////////////////////////
 	if( FParameters::existParameter(argc, argv, "-help")){

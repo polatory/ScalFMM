@@ -1632,7 +1632,7 @@ inline void FChebInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyL2PTot
         //FReal T_of_y[ORDER * (ORDER-1)];
         //for (unsigned int o=1; o<ORDER; ++o)
         //	for (unsigned int j=0; j<ORDER; ++j)
-        //		T_of_y[(o-1)*ORDER + j] = FReal(FChebRoots<ORDER>::T(o, FReal(FChebRoots<ORDER>::roots[j])));
+        //		T_of_y[(o-1)*ORDER + j] = FReal(FChebRoots<FReal,ORDER>::T(o, FReal(FChebRoots<FReal,ORDER>::roots[j])));
 
     //struct SumP2M {
     //	unsigned int f2[3][nnodes], f4[3][nnodes];

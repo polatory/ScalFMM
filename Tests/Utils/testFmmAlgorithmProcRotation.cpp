@@ -223,13 +223,14 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
                          FParameterDefinitions::InputFile);
 
+    const int P = 7;
     // For Rotation test ::
-    typedef FRotationCell<7>         CellClass;
+    typedef FRotationCell<FReal,P>         CellClass;
     typedef FP2PParticleContainer<FReal>         ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FRotationKernel< CellClass, ContainerClass,7 >     KernelClass;
+    typedef FRotationKernel< FReal, CellClass, ContainerClass,P >     KernelClass;
 
     typedef FFmmAlgorithmThreadProc<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 #ifdef VALIDATE_FMM

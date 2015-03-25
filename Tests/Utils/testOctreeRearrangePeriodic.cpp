@@ -57,8 +57,8 @@ int main(int argc, char ** argv){
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-    typedef FBasicParticleContainerIndexedMover<OctreeClass, ContainerClass> MoverClass;
-    typedef FArrangerPeriodic<OctreeClass, ContainerClass, MoverClass> ArrangerClassPeriodic;
+    typedef FBasicParticleContainerIndexedMover<FReal, OctreeClass, ContainerClass> MoverClass;
+    typedef FArrangerPeriodic<FReal, OctreeClass, ContainerClass, MoverClass> ArrangerClassPeriodic;
 
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
@@ -134,7 +134,7 @@ int main(int argc, char ** argv){
     std::cout << "Arrange ..." << std::endl;
     counter.tic();
 
-    //FOctreeArranger<OctreeClass, ContainerClass, TestParticle, Converter<TestParticle> > arrange(&tree);
+    //FOctreeArranger<FReal,OctreeClass, ContainerClass, TestParticle, Converter<TestParticle> > arrange(&tree);
     arrange.rearrange();
 
 

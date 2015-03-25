@@ -46,8 +46,9 @@ int main(int argc, char ** argv){
                          "Show how to use an octree functeur (only the code is interesting)",
                          FParameterDefinitions::NbParticles);
 
+    typedef double FReal;
     typedef FBasicCell CellClass;
-    typedef FBasicParticleContainer<0>      ContainerClass;
+    typedef FBasicParticleContainer<FReal,0,FReal>      ContainerClass;
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////

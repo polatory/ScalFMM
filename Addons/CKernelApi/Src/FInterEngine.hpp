@@ -51,7 +51,7 @@ private:
 
     //Typedef on Octree Arranger, in order to clarify following code
     typedef FBasicParticleContainerIndexedMover<OctreeClass, ContainerClass> MoverClass;
-    typedef FOctreeArranger<OctreeClass, ContainerClass, MoverClass> ArrangerClass;
+    typedef FOctreeArranger<FReal,OctreeClass, ContainerClass, MoverClass> ArrangerClass;
     typedef FArrangerPeriodic<OctreeClass, ContainerClass, MoverClass> ArrangerClassPeriodic;
 
     //Pointer to the kernel to be executed
@@ -553,7 +553,7 @@ public:
             }
         case 2:
             {
-                typedef FFmmAlgorithmPeriodic<OctreeClass,InterCell,ContainerClass,InterKernel,LeafClass> AlgoClassPeriodic;
+                typedef FFmmAlgorithmPeriodic<FReal,OctreeClass,InterCell,ContainerClass,InterKernel,LeafClass> AlgoClassPeriodic;
                 AlgoClassPeriodic algoPeriod(octree,2);
                 algoPeriod.setKernel(kernel);
                 algoPeriod.execute();

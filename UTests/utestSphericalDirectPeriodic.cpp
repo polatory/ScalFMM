@@ -37,15 +37,15 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
     /** Here we test only the P2P */
     void TestPeriodicFmm(){
         typedef double FReal;
-        typedef FSphericalCell            CellClass;
+        typedef FSphericalCell<FReal>            CellClass;
         typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
-        typedef FSphericalKernel<CellClass, ContainerClass >   KernelClass;
+        typedef FSphericalKernel<FReal, CellClass, ContainerClass >   KernelClass;
 
         typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
         typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-        typedef FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+        typedef FFmmAlgorithmPeriodic<FReal,OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
         // Parameters
         const int NbLevels        = 4;
@@ -54,7 +54,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         const int DevP              = 14;
         const int NbParticles     = 100;
 
-        FSphericalCell::Init(DevP);
+        FSphericalCell<FReal>::Init(DevP);
 
         FRandomLoader<FReal> loader(NbParticles);
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());

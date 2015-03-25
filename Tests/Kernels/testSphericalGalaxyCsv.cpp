@@ -81,17 +81,17 @@ public:
 
     void fillParticle(FPoint<FReal>* position, FReal* physivalValue, FPoint<FReal>* velocity){
         FReal x,y,z,data, vx, vy, vz;
-        *(FFmaGenericLoader<FReal>file) >> x >> y >> z >> data >> vx >> vy >> vz;
+        *(FFmaGenericLoader<FReal>::file) >> x >> y >> z >> data >> vx >> vy >> vz;
         position->setPosition(x,y,z);
         *physivalValue = (data);
         velocity->setPosition(vx,vy,vz);
     }
 };
 
-template<class OctreeClass>
-class GalaxyMover : public FAbstractMover<OctreeClass, VelocityContainer>{
+template<class FReal, class OctreeClass>
+class GalaxyMover : public FAbstractMover<FReal, OctreeClass, VelocityContainer<FReal>>{
 private:
-    VelocityContainer toStoreRemovedParts;
+    VelocityContainer<FReal> toStoreRemovedParts;
 
 public:
     GalaxyMover() {
@@ -101,14 +101,14 @@ public:
     }
 
     /** To get the position of the particle at idx idxPart in leaf lf */
-    void getParticlePosition(VelocityContainer* lf, const int idxPart, FPoint<FReal>* particlePos){
+    void getParticlePosition(VelocityContainer<FReal>* lf, const int idxPart, FPoint<FReal>* particlePos){
         (*particlePos) = FPoint<FReal>(lf->getPositions()[0][idxPart],lf->getPositions()[1][idxPart],lf->getPositions()[2][idxPart]);
     }
 
     /** Remove a particle but keep it to reinsert it later*/
-    void removeFromLeafAndKeep(VelocityContainer* lf, const FPoint<FReal>& particlePos, const int idxPart,FParticleType /*type*/){
-        std::array<typename VelocityContainer::AttributesClass, VelocityContainer::NbAttributes> particleValues;
-        for(int idxAttr = 0 ; idxAttr < VelocityContainer::NbAttributes ; ++idxAttr){
+    void removeFromLeafAndKeep(VelocityContainer<FReal>* lf, const FPoint<FReal>& particlePos, const int idxPart,FParticleType /*type*/){
+        std::array<typename VelocityContainer<FReal>::AttributesClass, VelocityContainer<FReal>::NbAttributes> particleValues;
+        for(int idxAttr = 0 ; idxAttr < VelocityContainer<FReal>::NbAttributes ; ++idxAttr){
             particleValues[idxAttr] = lf->getAttribute(idxAttr)[idxPart];
         }
 
@@ -120,10 +120,10 @@ public:
 
     /** Reinsert the previously saved particles */
     void insertAllParticles(OctreeClass* tree){
-        std::array<typename VelocityContainer::AttributesClass, VelocityContainer::NbAttributes> particleValues;
+        std::array<typename VelocityContainer<FReal>::AttributesClass, VelocityContainer<FReal>::NbAttributes> particleValues;
 
         for(int idxToInsert = 0; idxToInsert<toStoreRemovedParts.getNbParticles() ; ++idxToInsert){
-            for(int idxAttr = 0 ; idxAttr < VelocityContainer::NbAttributes ; ++idxAttr){
+            for(int idxAttr = 0 ; idxAttr < VelocityContainer<FReal>::NbAttributes ; ++idxAttr){
                 particleValues[idxAttr] = toStoreRemovedParts.getAttribute(idxAttr)[idxToInsert];
             }
             const FPoint<FReal> particlePos(toStoreRemovedParts.getPositions()[0][idxToInsert],
@@ -149,7 +149,7 @@ int main(int argc, char ** argv){
 
     typedef double FReal;
     typedef FSphericalCell<FReal>          CellClass;
-    typedef VelocityContainer  ContainerClass;
+    typedef VelocityContainer<FReal>  ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
@@ -157,8 +157,8 @@ int main(int argc, char ** argv){
 
     typedef FFmmAlgorithmThread<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
-    typedef GalaxyMover<OctreeClass> MoverClass;
-    typedef FOctreeArranger<OctreeClass, ContainerClass, MoverClass> ArrangerClass;
+    typedef GalaxyMover<FReal, OctreeClass> MoverClass;
+    typedef FOctreeArranger<FReal,OctreeClass, ContainerClass, MoverClass> ArrangerClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test Spherical algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -168,9 +168,9 @@ int main(int argc, char ** argv){
     const FReal DT          = FParameters::getValue(argc,argv,FParameterDefinitions::DeltaT.options, FReal(0.1));
     const int DevP          = FParameters::getValue(argc,argv,FParameterDefinitions::SHDevelopment.options, 5);
 
-    FSphericalCell::Init(DevP);
+    FSphericalCell<FReal>::Init(DevP);
 
-    GalaxyLoader loader(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/galaxy.fma.tmp"));
+    GalaxyLoader<FReal> loader(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/galaxy.fma.tmp"));
 
     // -----------------------------------------------------
 
@@ -196,7 +196,7 @@ int main(int argc, char ** argv){
     KernelClass kernels( DevP, NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
     FmmClass algo( &tree, &kernels);
     ArrangerClass arranger(&tree);
-    FTreeCsvSaver<OctreeClass, ContainerClass> saver(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options, "/tmp/test%d.csv"));
+    FTreeCsvSaver<FReal, OctreeClass, ContainerClass> saver(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options, "/tmp/test%d.csv"));
 
     for(int idx = 0; idx < 100 ; ++idx){
         algo.execute();

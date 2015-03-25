@@ -16,7 +16,7 @@
 #ifndef FABSTRACTLEAFINTERFACE_HPP
 #define FABSTRACTLEAFINTERFACE_HPP
 
-template<class OctreeClass,class ParticleClass>
+template<class FReal,class OctreeClass,class ParticleClass>
 class FAbstractMover{
 public:
     virtual void getParticlePosition(ParticleClass* lf, const int idxPart, FPoint<FReal>* particlePos) = 0;

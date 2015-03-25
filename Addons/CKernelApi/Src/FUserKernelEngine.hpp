@@ -210,7 +210,7 @@ private:
 
     //For arranger classes
     typedef FBasicParticleContainerIndexedMover<OctreeClass, ContainerClass> MoverClass;
-    typedef FOctreeArranger<OctreeClass, ContainerClass, MoverClass> ArrangerClass;
+    typedef FOctreeArranger<FReal,OctreeClass, ContainerClass, MoverClass> ArrangerClass;
     typedef FArrangerPeriodic<OctreeClass, ContainerClass, MoverClass> ArrangerClassPeriodic;
 
 
@@ -479,7 +479,7 @@ public:
             }
         case 2:
             {
-                typedef FFmmAlgorithmPeriodic<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassPeriodic;
+                typedef FFmmAlgorithmPeriodic<FReal,OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassPeriodic;
                 AlgoClassPeriodic algoPeriod(octree,2);
                 algoPeriod.setKernel(kernel);
                 algoPeriod.execute();

@@ -46,9 +46,9 @@ int main(int argc, char ** argv ){
                          FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight);
 
     typedef double FReal;
-    typedef FBasicParticleContainer<1>     ContainerClass;
-    typedef FTypedLeaf< ContainerClass >                     LeafClass;
-    typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
+    typedef FBasicParticleContainer<FReal,1,FReal>     ContainerClass;
+    typedef FTypedLeaf< FReal, ContainerClass >                     LeafClass;
+    typedef FOctree< FReal, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
     std::cout << ">> It is only interesting to wath the code to understand\n";
@@ -61,7 +61,7 @@ int main(int argc, char ** argv ){
     std::cout << "Opening : " << filename << "\n";
 
     // open basic particles loader
-    FFmaTsmLoader loader(filename);
+    FFmaTsmLoader<FReal> loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << "is missing\n";
         return 1;

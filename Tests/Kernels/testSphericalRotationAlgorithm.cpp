@@ -78,7 +78,7 @@ int main(int argc, char ** argv){
     const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     std::cout << "Opening : " << filename << "\n";
 
-    FFmaScanfLoader loader(filename);
+    FFmaScanfLoader<FReal> loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << " is missing\n";
         return 1;

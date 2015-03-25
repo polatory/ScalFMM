@@ -50,7 +50,8 @@ class MyCell : public FBasicCell {
 
 // My fack Container is simply saving the indexes of each
 // particles (nothing more!)
-class MyContainer : public FAbstractParticleContainer {
+template <class FReal>
+class MyContainer : public FAbstractParticleContainer<FReal> {
     FVector<int> indexes;
 public:
     template<typename... Args>
@@ -69,18 +70,19 @@ public:
 
 // My leaf process the particles and save only
 // those where keepIt is true (during the push method)
-class MyLeaf : public FAbstractLeaf< MyContainer > {
-    MyContainer particles;
+template <class FReal>
+class MyLeaf : public FAbstractLeaf< FReal, MyContainer<FReal> > {
+    MyContainer<FReal> particles;
 
 public:
     template<typename... Args>
     void push(const FPoint<FReal>& inParticlePosition, const bool keepIt, Args ... args){
         if(keepIt) particles.push(inParticlePosition, args...);
     }
-    MyContainer* getSrc(){
+    MyContainer<FReal>* getSrc(){
         return &particles;
     }
-    MyContainer* getTargets(){
+    MyContainer<FReal>* getTargets(){
         return &particles;
     }
 };
@@ -138,10 +140,11 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
                          FParameterDefinitions::NbParticles);
 
+    typedef double FReal;
     // Custom data structure here
     typedef MyCell            CellClass;
-    typedef MyContainer       ContainerClass;
-    typedef MyLeaf            LeafClass;
+    typedef MyContainer<FReal>       ContainerClass;
+    typedef MyLeaf<FReal>            LeafClass;
 
     // Standard things here
     typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;

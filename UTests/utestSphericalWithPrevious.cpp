@@ -38,10 +38,10 @@
  */
 
 typedef double FReal;
-typedef FSphericalCell           CellClass;
+typedef FSphericalCell<FReal>           CellClass;
 typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
-typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
+typedef FSphericalKernel< FReal, CellClass, ContainerClass >          KernelClass;
 
 typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
@@ -91,7 +91,7 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
 		//
 		// Create octree
 		//
-		FSphericalCell::Init(DevP);
+		FSphericalCell<FReal>::Init(DevP);
 		//
 		OctreeClass testTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 		//
@@ -115,7 +115,7 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
 
 		// Load previous result
 		OctreeClass goodTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-		FTreeIO::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(DataFile.c_str(), goodTree);
+        FTreeIO<FReal>::Load<OctreeClass, CellClass, LeafClass, ContainerClass >(DataFile.c_str(), goodTree);
 
 		// Compare the two simulations
 		Print("Check the particles...");

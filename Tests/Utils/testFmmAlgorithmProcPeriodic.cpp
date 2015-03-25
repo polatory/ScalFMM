@@ -60,6 +60,7 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
                          FParameterDefinitions::NbParticles);
 
+    typedef double FReal;
 
     typedef FTestCell                   CellClass;
     typedef FTestParticleContainer<FReal>      ContainerClass;
@@ -68,8 +69,8 @@ int main(int argc, char ** argv){
     typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
     typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
 
-    typedef FFmmAlgorithmThreadProcPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
-    typedef FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClassSeq;
+    typedef FFmmAlgorithmThreadProcPeriodic<FReal, OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+    typedef FFmmAlgorithmPeriodic<FReal, OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClassSeq;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to test the FMM algorithm.\n";
     //////////////////////////////////////////////////////////////
@@ -91,7 +92,6 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    typedef double FReal;
     FRandomLoader<FReal> loader(NbParticles,FReal(1.0),FPoint<FReal>(0,0,0), app.global().processId());
     OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 

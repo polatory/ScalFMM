@@ -91,7 +91,7 @@ public:
             return new FFmmAlgorithmThreadProc<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(FMpi::FComm(mpiComm), tree, kernel);
         }
         else{
-            auto algo = new FFmmAlgorithmThreadProcPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(FMpi::FComm(mpiComm), tree, periodicUpperlevel);
+            auto algo = new FFmmAlgorithmThreadProcPeriodic<FReal, OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(FMpi::FComm(mpiComm), tree, periodicUpperlevel);
             algo->setKernel(kernel);
             return algo;
         }
@@ -100,7 +100,7 @@ public:
             return new FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(tree, kernel);
         }
         else{
-            auto algo = new FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(tree, periodicUpperlevel);
+            auto algo = new FFmmAlgorithmPeriodic<FReal,OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(tree, periodicUpperlevel);
             algo->setKernel(kernel);
             return algo;
         }

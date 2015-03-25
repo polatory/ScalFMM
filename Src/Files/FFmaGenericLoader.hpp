@@ -511,7 +511,7 @@ private:
  *
  * \code
  * // Instanciate the writer with a binary fma file (extension .bfma).
- * FFmaGenericWriter writer ("data.bfma");
+ * FFmaGenericWriter<FReal> writer ("data.bfma");
  *
  * // Write the header of the file.
  * writer.writeHeader(loader.getCenterOfBox(), loader.getBoxWidth(), NbPoints, sizeof(FReal), nbData);
@@ -678,7 +678,7 @@ public:
      * FmaRParticle *  particles = new FmaRParticle[nbParticles];
      * memset(particles, 0, sizeof(FmaRParticle) * nbParticles) ;
      * ...
-     * FFmaGenericWriter writer(filenameOut) ;
+     * FFmaGenericWriter<FReal> writer(filenameOut) ;
      * Fwriter.writeHeader(Centre,BoxWith, nbParticles,*particles) ;
      * Fwriter.writeArrayOfParticles(particles, nbParticles);
      * \endcode
@@ -689,7 +689,7 @@ public:
      * memset(particles, 0, sizeof(FmaRParticle) * nbParticles) ;
      * ...
      * FmaBasicParticle *ppart = (FmaBasicParticle*)(&particles[0]);
-     * FFmaGenericWriter writer(filenameOut) ;
+     * FFmaGenericWriter<FReal> writer(filenameOut) ;
      * writer.writeHeader(Centre,BoxWith, nbParticles,*particles) ;
      * writer.writeArrayOfParticles(particles, nbParticles);
      *  \endcode
@@ -748,7 +748,7 @@ public:
      * FmaRParticle * const particles = new FmaRParticle[nbParticles];
      * memset(particles, 0, sizeof(FmaRParticle) * nbParticles) ;
      * ...
-     * FFmaGenericWriter writer(filenameOut) ;
+     * FFmaGenericWriter<FReal> writer(filenameOut) ;
      * Fwriter.writeHeader(Centre,BoxWith, nbParticles,*particles) ;
      * Fwriter.writeArrayOfReal(particles, nbParticles);
      * \endcode

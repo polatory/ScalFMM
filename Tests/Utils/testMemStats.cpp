@@ -55,14 +55,14 @@ int main(int argc, char ** argv){
                              FParameterDefinitions::NbParticles, FParameterDefinitions::SHDevelopment);
 
         typedef double FReal;
-        typedef FSphericalCell                 CellClass;
+        typedef FSphericalCell<FReal>                 CellClass;
 
         typedef FP2PParticleContainer<FReal>      ContainerClass;
 
         typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
         typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
         //typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
-        typedef FSphericalKernel< CellClass, ContainerClass >          KernelClass;
+        typedef FSphericalKernel<FReal, CellClass, ContainerClass >          KernelClass;
 
         typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
         ///////////////////////What we do/////////////////////////////

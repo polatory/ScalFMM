@@ -145,7 +145,7 @@ const std::array<FReal,ORDER> FUnifRoots<FReal,ORDER>::roots = FUnifRootsCore<OR
 template<>
 struct FUnifRootsCore<2>{
     template <class FReal>
-    std::array<FReal,2> Build(){
+    static std::array<FReal,2> Build(){
         return { -1., 1.};
     }
 };
@@ -154,7 +154,7 @@ struct FUnifRootsCore<2>{
 template<>
 struct FUnifRootsCore<3>{
     template <class FReal>
-    std::array<FReal,3> Build(){
+    static std::array<FReal,3> Build(){
         return {-1.,           0.0,          1.};
     }
 };
@@ -163,7 +163,7 @@ struct FUnifRootsCore<3>{
 template<>
 struct FUnifRootsCore<4>{
     template <class FReal>
-    std::array<FReal,4> Build(){
+    static std::array<FReal,4> Build(){
         return {-1.,            -0.333333333333333,            0.333333333333333,            1.};
     }
 };
@@ -172,7 +172,7 @@ struct FUnifRootsCore<4>{
 template<>
 struct FUnifRootsCore<5>{
     template <class FReal>
-    std::array<FReal,5> Build(){
+    static std::array<FReal,5> Build(){
         return {-1.,       -0.5,         0.,          0.5,           1.};
     }
 };
@@ -181,7 +181,7 @@ struct FUnifRootsCore<5>{
 template<>
 struct FUnifRootsCore<6>{
     template <class FReal>
-    std::array<FReal,6> Build(){
+    static std::array<FReal,6> Build(){
         return {-1.,           -0.6,          -0.2,            0.2,           0.6,            1.};
     }
 };
@@ -190,7 +190,7 @@ struct FUnifRootsCore<6>{
 template<>
 struct FUnifRootsCore<7>{
     template <class FReal>
-    std::array<FReal,7> Build(){
+    static std::array<FReal,7> Build(){
         return {-1.,         -0.666666666666666,         -0.333333333333333,          0.,
             0.333333333333333,          0.666666666666666,           1.};
     }
@@ -200,7 +200,7 @@ struct FUnifRootsCore<7>{
 template<>
 struct FUnifRootsCore<8>{
     template <class FReal>
-    std::array<FReal,8> Build(){
+    static std::array<FReal,8> Build(){
         return {-1.,
             -0.714285714285714,
             -0.428571428571429,
@@ -216,7 +216,7 @@ struct FUnifRootsCore<8>{
 template<>
 struct FUnifRootsCore<9>{
     template <class FReal>
-    std::array<FReal,9> Build(){
+    static std::array<FReal,9> Build(){
         return {-1.,
             -0.75,
             -0.5,
@@ -233,7 +233,7 @@ struct FUnifRootsCore<9>{
 template<>
 struct FUnifRootsCore<10>{
     template <class FReal>
-    std::array<FReal,10> Build(){
+    static std::array<FReal,10> Build(){
         return {-1.,
             -0.777777777777777,
             -0.555555555555555,
@@ -251,7 +251,7 @@ struct FUnifRootsCore<10>{
 template<>
 struct FUnifRootsCore<11>{
     template <class FReal>
-    std::array<FReal,11> Build(){
+    static std::array<FReal,11> Build(){
         return {-1.,
             -0.8,
             -0.6,
@@ -270,7 +270,7 @@ struct FUnifRootsCore<11>{
 template<>
 struct FUnifRootsCore<12>{
     template <class FReal>
-    std::array<FReal,12> Build(){
+    static std::array<FReal,12> Build(){
         return {-1.,
             -0.818181818181818,
             -0.636363636363636,
@@ -291,7 +291,7 @@ struct FUnifRootsCore<12>{
 template<>
 struct FUnifRootsCore<13>{
     template <class FReal>
-    std::array<FReal,13> Build(){
+    static std::array<FReal,13> Build(){
         return {-1.,
             -0.833333333333333,
             -0.666666666666666,
@@ -312,7 +312,7 @@ struct FUnifRootsCore<13>{
 template<>
 struct FUnifRootsCore<14>{
     template <class FReal>
-    std::array<FReal,14> Build(){
+    static std::array<FReal,14> Build(){
         return {-1.,
             -0.846153846153846,
             -0.692307692307692,
@@ -335,7 +335,7 @@ struct FUnifRootsCore<14>{
 template<>
 struct FUnifRootsCore<15>{
     template <class FReal>
-    std::array<FReal,15> Build(){
+    static std::array<FReal,15> Build(){
         return {-1.0,
             -0.857142857142857,
             -0.714285714285714,
@@ -359,7 +359,7 @@ struct FUnifRootsCore<15>{
 template<>
 struct FUnifRootsCore<16>{
     template <class FReal>
-    std::array<FReal,16> Build(){
+    static std::array<FReal,16> Build(){
         return {-1.0,
             -0.8947368421052632,
             -0.7894736842105263,

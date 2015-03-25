@@ -120,12 +120,12 @@ int main(int argc, char** argv){
 
     static const int P = 9;
 
-    typedef FRotationCell<P>               CellClass;
+    typedef FRotationCell<FReal,P>               CellClass;
     typedef FP2PParticleContainer<FReal>          ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    //typedef FRotationKernel< CellClass, ContainerClass , P>   KernelClass;
+    //typedef FRotationKernel< FReal, CellClass, ContainerClass , P>   KernelClass;
 
     //typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClassThread;
 
@@ -210,7 +210,7 @@ int main(int argc, char** argv){
 	parts.push(arrayOfParts[idxPart].getPosition(),arrayOfParts[idxPart].physicalValue);
     }
 
-    FTreeBuilder<OctreeClass,LeafClass>::BuildTreeFromArray(&tree,parts,false);
+    FTreeBuilder<FReal,OctreeClass,LeafClass>::BuildTreeFromArray(&tree,parts,false);
 
     return 0;
 }

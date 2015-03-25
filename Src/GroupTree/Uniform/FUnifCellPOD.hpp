@@ -8,7 +8,7 @@
 #include "../../Kernels/Uniform//FUnifTensor.hpp"
 #include "../../Utils/FComplex.hpp"
 
-typedef FBasicCellPOD FTestCellPODCore;
+typedef FBasicCellPOD FUnifCellPODCore;
 
 template <class FReal, int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 struct alignas(FStarPUDefaultAlign::StructAlign) FUnifCellPODPole {

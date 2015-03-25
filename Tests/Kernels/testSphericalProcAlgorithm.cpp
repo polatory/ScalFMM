@@ -80,9 +80,9 @@ bool isEqualPole(const CellClass& me, const CellClass& other, FReal*const cumul)
 }
 
 /** To compare data */
-bool isEqualLocal(const FSphericalCell& me, const FSphericalCell& other,FReal*const cumul){
+bool isEqualLocal(const FSphericalCell<FReal>& me, const FSphericalCell<FReal>& other,FReal*const cumul){
     FMath::FAccurater<FReal> accurate;
-    for(int idx = 0; idx < FSphericalCell::GetLocalSize(); ++idx){
+    for(int idx = 0; idx < FSphericalCell<FReal>::GetLocalSize(); ++idx){
         accurate.add(me.getLocal()[idx].getImag(),other.getLocal()[idx].getImag());
         accurate.add(me.getLocal()[idx].getReal(),other.getLocal()[idx].getReal());
     }

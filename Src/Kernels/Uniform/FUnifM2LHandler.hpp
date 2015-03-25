@@ -46,7 +46,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal Cel
     const unsigned int order = ORDER;
     const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
     const unsigned int ninteractions = 316;
-    typedef FUnifTensor<ORDER> TensorType;
+    typedef FUnifTensor<FReal,ORDER> TensorType;
 
     // interpolation points of source (Y) and target (X) cell
     FPoint<FReal> X[nnodes], Y[nnodes];
@@ -68,7 +68,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal Cel
     // init Discrete Fourier Transformator
     const int dimfft = 1; // unidim FFT since fully circulant embedding
     const int steps[dimfft] = {rc};
-    FFft<dimfft> Dft;
+    FFft<FReal,dimfft> Dft;
     Dft.buildDFT(steps);
     // get first column of K via permutation
     unsigned int perm[rc];
@@ -81,7 +81,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal Cel
                 if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
                     // set roots of source cell (Y)
                     const FPoint<FReal> cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
-                    FUnifTensor<order>::setRoots(cy, CellWidth, Y);
+                    FUnifTensor<FReal,order>::setRoots(cy, CellWidth, Y);
                     // evaluate m2l operator
                     unsigned int ido=0;
                     for(unsigned int l=0; l<2*order-1; ++l)
@@ -173,12 +173,12 @@ class FUnifM2LHandler<FReal, ORDER,HOMOGENEOUS>
     FSmartPointer< FComplex<FReal>,FSmartArrayMemory> FC;
 
     /// Utils
-    typedef FUnifTensor<ORDER> TensorType;
+    typedef FUnifTensor<FReal,ORDER> TensorType;
     unsigned int node_diff[nnodes*nnodes];
 
     /// DFT specific
     static const int dimfft = 1; // unidim FFT since fully circulant embedding
-    typedef FFft<dimfft> DftClass; // Fast Discrete Fourier Transformator
+    typedef FFft<FReal,dimfft> DftClass; // Fast Discrete Fourier Transformator
     DftClass Dft;
     const unsigned int opt_rc; // specific to real valued kernel
 
@@ -239,7 +239,7 @@ public:
         // Compute matrix of interactions
         const FReal ReferenceCellWidth = FReal(2.);
         FComplex<FReal>* pFC = NULL;
-        Compute<order>(MatrixKernel,ReferenceCellWidth,pFC);
+        Compute<FReal,order>(MatrixKernel,ReferenceCellWidth,pFC);
         FC.assign(pFC);
 
         // Compute memory usage
@@ -319,8 +319,8 @@ public:
 
 
 /*! Specialization for non-homogeneous kernel functions */
-template <int ORDER>
-class FUnifM2LHandler<ORDER,NON_HOMOGENEOUS>
+template <class FReal, int ORDER>
+class FUnifM2LHandler<FReal,ORDER,NON_HOMOGENEOUS>
 {
     enum {order = ORDER,
           nnodes = TensorTraits<ORDER>::nnodes,
@@ -333,11 +333,11 @@ class FUnifM2LHandler<ORDER,NON_HOMOGENEOUS>
     const unsigned int TreeHeight;
     const FReal RootCellWidth;
     /// Utils
-    typedef FUnifTensor<ORDER> TensorType;
+    typedef FUnifTensor<FReal,ORDER> TensorType;
     unsigned int node_diff[nnodes*nnodes];
     /// DFT specific
     static const int dimfft = 1; // unidim FFT since fully circulant embedding
-    typedef FFft<dimfft> DftClass; // Fast Discrete Fourier Transformator
+    typedef FFft<FReal,dimfft> DftClass; // Fast Discrete Fourier Transformator
     DftClass Dft;
     const unsigned int opt_rc; // specific to real valued kernel
 
@@ -416,7 +416,7 @@ public:
 
             // check if already set
             if (FC[l]) throw std::runtime_error("M2L operator already set");
-            Compute<order>(MatrixKernel,CellWidth,FC[l]);
+            Compute<FReal,order>(MatrixKernel,CellWidth,FC[l]);
             CellWidth /= FReal(2.);                    // at level l+1 
 
         }

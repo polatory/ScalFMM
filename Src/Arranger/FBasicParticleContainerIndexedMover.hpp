@@ -7,8 +7,8 @@
  * This class should be use with the octree arrange to move particles
  * that are stored in a FBasicParticleContainer
  */
-template<class OctreeClass, class ContainerClass >
-class FBasicParticleContainerIndexedMover : public FAbstractMover<OctreeClass, ContainerClass>{
+template<class FReal, class OctreeClass, class ContainerClass >
+class FBasicParticleContainerIndexedMover : public FAbstractMover<FReal,OctreeClass, ContainerClass>{
 private:
     ContainerClass toStoreRemovedParts;
 

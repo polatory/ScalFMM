@@ -53,6 +53,7 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
                          FParameterDefinitions::NbParticles);
 
+    typedef double FReal;
     typedef FTestCell                   CellClass;
     typedef FTestParticleContainer<FReal>      ContainerClass;
 

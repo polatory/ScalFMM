@@ -169,9 +169,9 @@ int main(int argc, char* argv[])
         const unsigned int ORDER = 5;
 
         // typedefs
-        typedef FP2PParticleContainerIndexed<1,1,NVALS> ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal,1,1,NVALS> ContainerClass;
         typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
-        typedef FUnifCell<ORDER,1,1,NVALS> CellClass;
+        typedef FUnifCell<FReal,ORDER,1,1,NVALS> CellClass;
         typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
         typedef FUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER,NVALS> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;

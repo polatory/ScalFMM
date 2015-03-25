@@ -269,14 +269,14 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
         typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
 
 
-        typedef FP2PParticleContainerIndexed<1,1,NVals> ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal,1,1,NVals> ContainerClass;
         typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
-        typedef FUnifCell<ORDER,1,1,NVals> CellClass;
+        typedef FUnifCell<FReal,ORDER,1,1,NVals> CellClass;
         typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
         typedef FUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER,NVals> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
-        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass, NVals>();
+        RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass, NVals>();
     }
 
     /** TestChebSymKernel */
@@ -284,15 +284,15 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
         typedef double FReal;
         const int NVals = 3;
         const unsigned int ORDER = 6;
-        typedef FP2PParticleContainerIndexed<1,1,NVals> ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal,1,1,NVals> ContainerClass;
         typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
         typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
-        typedef FChebCell<ORDER, 1, 1, NVals> CellClass;
+        typedef FChebCell<FReal,ORDER, 1, 1, NVals> CellClass;
         typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
         typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER, NVals> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
         // run test
-        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass, NVals>();
+        RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass, NVals>();
     }
 
     /** TestChebKernel */
@@ -300,15 +300,15 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
         typedef double FReal;
         const int NVals = 3;
         const unsigned int ORDER = 6;
-        typedef FP2PParticleContainerIndexed<1,1,NVals> ContainerClass;
+        typedef FP2PParticleContainerIndexed<FReal,1,1,NVals> ContainerClass;
         typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
         typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
-        typedef FChebCell<ORDER, 1, 1, NVals> CellClass;
+        typedef FChebCell<FReal,ORDER, 1, 1, NVals> CellClass;
         typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
         typedef FChebKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER, NVals> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
         // run test
-        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass, NVals>();
+        RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass, NVals>();
     }
 
     ///////////////////////////////////////////////////////////

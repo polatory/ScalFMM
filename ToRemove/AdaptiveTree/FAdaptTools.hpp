@@ -168,7 +168,7 @@ void   adaptiveTreeBuildLists(OctreeClass & tree) {
 	}
 };
 /////////////////////////////////////////////////////////////////////////////////////////
-//!  \fn   setGlobalID(FOctree< FAdaptCell,  FBasicParticleContainer<0> ,  FSimpleLeaf< FBasicParticleContainer<0>> >  & tree) {
+//!  \fn   setGlobalID(FOctree< FAdaptCell,  FBasicParticleContainer<FReal,0,FReal> ,  FSimpleLeaf< FBasicParticleContainer<FReal,0,FReal>> >  & tree) {
 /////////////////////////////////////////////////////////////////////////////////////////
 
 

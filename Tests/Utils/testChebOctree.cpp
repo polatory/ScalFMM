@@ -49,6 +49,7 @@ int main(int argc, char ** argv){
 
 	const int ORDER = 5;
 
+    typedef double FReal;
     typedef FP2PParticleContainer<FReal> ContainerClass;
     typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
 	typedef FChebCell<FReal,ORDER> CellClass;
@@ -64,8 +65,7 @@ int main(int argc, char ** argv){
 	FTic counter;
 	
     srand48( static_cast<unsigned int>(time(NULL)) );
-	
-    typedef double FReal;
+
 	const FReal BoxWidth = 1.;
     const FPoint<FReal> BoxCenter(.5, .5, .5);
 	const unsigned int TreeHeight = 10;

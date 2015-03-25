@@ -85,7 +85,7 @@ class FUnifInterpolator : FNoCopyable
     FPoint<FReal> ParentRoots[nnodes], ChildRoots[nnodes];
     const FReal ParentWidth(2.);
     const FPoint<FReal> ParentCenter(0., 0., 0.);
-    FUnifTensor<ORDER>::setRoots(ParentCenter, ParentWidth, ParentRoots);
+    FUnifTensor<FReal,ORDER>::setRoots(ParentCenter, ParentWidth, ParentRoots);
 
     FPoint<FReal> ChildCenter;
     const FReal ChildWidth(1.);
@@ -97,8 +97,8 @@ class FUnifInterpolator : FNoCopyable
       ChildParentInterpolator[child] = new FReal [nnodes * nnodes];
 
       // set child info
-      FUnifTensor<ORDER>::setRelativeChildCenter(child, ChildCenter);
-      FUnifTensor<ORDER>::setRoots(ChildCenter, ChildWidth, ChildRoots);
+      FUnifTensor<FReal,ORDER>::setRelativeChildCenter(child, ChildCenter);
+      FUnifTensor<FReal,ORDER>::setRoots(ChildCenter, ChildWidth, ChildRoots);
 
       // assemble child - parent - interpolator
       assembleInterpolator(nnodes, ChildRoots, ChildParentInterpolator[child]);

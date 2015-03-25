@@ -290,6 +290,8 @@ void print(OctreeClass* const valideTree){
 // Define the classes to use
 /////////////////////////////////////////////////////////////////////
 
+typedef double FReal;
+
 typedef FTestCell                  CellClass;
 typedef FTestParticleContainer<FReal>     ContainerClass;
 
@@ -316,7 +318,6 @@ int main(int argc, char ** argv){
 
     FMpi app( argc, argv);
 
-    typedef double FReal;
     const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
     FTic counter;

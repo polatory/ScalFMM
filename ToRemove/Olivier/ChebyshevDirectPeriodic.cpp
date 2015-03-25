@@ -174,7 +174,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 			energyD +=  particles[idx].potential*particles[idx].physicalValue ;
 		}
 
-		//		FFmaGenericWriter writer("dataDirect250-Per2.bfma") ;
+		//		FFmaGenericWriter<FReal> writer("dataDirect250-Per2.bfma") ;
 		//		writer.writeHeader( loader.getCenterOfBox(),loader.getBoxWidth(),
 		//				loader.getNumberOfParticles(),*particles1) ;
 		//		writer.writeArrayOfParticles(particles1, loader.getNumberOfParticles());
@@ -281,7 +281,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		typedef FChebCell<FReal,ORDER> CellClass;
 		typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 		typedef FChebKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-		typedef FFmmAlgorithmPeriodic<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+		typedef FFmmAlgorithmPeriodic<FReal,OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
 		std::cout <<" TEST 1  "<<std::endl;
 		RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>();
@@ -296,7 +296,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		typedef FChebCell<FReal,ORDER> CellClass;
 		typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 		typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-		typedef FFmmAlgorithmPeriodic<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+		typedef FFmmAlgorithmPeriodic<FReal,OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
 		std::cout <<std::endl<<" TEST 2 "<<std::endl;
 		RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>();

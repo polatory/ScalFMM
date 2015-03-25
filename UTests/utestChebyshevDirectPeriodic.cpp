@@ -53,7 +53,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 	// The tests!
 	///////////////////////////////////////////////////////////
 
-	template <class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
+    template <class FReal, class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
 	class LeafClass, class OctreeClass, class FmmClass>
 	void RunTest()	{
 		// Warning in make test the exec dir it Build/UTests
@@ -72,9 +72,8 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 		// Create octree
 		OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
-    // interaction kernel evaluator
-        typedef double FReal;
-    const MatrixKernelClass MatrixKernel;
+        // interaction kernel evaluator
+        const MatrixKernelClass MatrixKernel;
 
 		struct TestParticle{
             FPoint<FReal> position;
@@ -253,31 +252,33 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 	/** TestChebKernel */
 	void TestChebKernel(){
 		const unsigned int ORDER = 6;
+        typedef double FReal;
 		typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
 		typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
 		typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
 		typedef FChebCell<FReal,ORDER> CellClass;
 		typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 		typedef FChebKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-		typedef FFmmAlgorithmPeriodic<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+		typedef FFmmAlgorithmPeriodic<FReal,OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
 		std::cout <<" TEST 1  "<<std::endl;
-		RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>();
+        RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>();
 	}
 
 	/** TestChebSymKernel */
 	void TestChebSymKernel(){
 		const unsigned int ORDER = 7;
+        typedef double FReal;
 		typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
 		typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
 		typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
 		typedef FChebCell<FReal,ORDER> CellClass;
 		typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
 		typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-		typedef FFmmAlgorithmPeriodic<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+		typedef FFmmAlgorithmPeriodic<FReal,OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 		// run test
 		std::cout <<std::endl<<" TEST 2 "<<std::endl;
-		RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>();
+        RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>();
 	}
 
 

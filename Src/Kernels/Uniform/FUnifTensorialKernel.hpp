@@ -75,7 +75,7 @@ protected://PB: for OptiDis
     typedef FUnifTensorialM2LHandler<FReal, ORDER,MatrixKernelClass,MatrixKernelClass::Type> M2LHandlerClass;
 
     // using from
-    typedef FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+    typedef FAbstractUnifKernel< FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
     AbstractBaseClass;
 
     /// Needed for P2P and M2L operators
@@ -95,7 +95,7 @@ public:
                          const FPoint<FReal>& inBoxCenter,
                          const MatrixKernelClass *const inMatrixKernel,
                          const FReal inBoxWidthExtension)
-    : FAbstractUnifKernel< CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter,inBoxWidthExtension),
+    : FAbstractUnifKernel< FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter,inBoxWidthExtension),
       MatrixKernel(inMatrixKernel),
       M2LHandler(MatrixKernel,
                  inTreeHeight,
@@ -254,7 +254,7 @@ public:
              ContainerClass* const NeighborSourceParticles[27],
              const int /* size */)
     {
-        DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
+        DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
     }
 
 
@@ -262,7 +262,7 @@ public:
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                    ContainerClass* const inNeighbors[27], const int /*inSize*/)
     {
-        DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
+        DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
     }
 
 };

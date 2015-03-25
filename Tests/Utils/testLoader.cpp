@@ -51,9 +51,10 @@ int main(int argc, char ** argv){
     FHelpDescribeAndExit(argc, argv, "Load a file and put the particles in a tree",
                          FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight);
 
-    typedef FBasicParticleContainer<0>      ContainerClass;
+    typedef double FReal;
+    typedef FBasicParticleContainer<FReal,0,FReal>      ContainerClass;
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
-    typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
+    typedef FOctree< FReal, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
     std::cout << ">> It is only interesting to wath the code to understand\n";
@@ -67,7 +68,7 @@ int main(int argc, char ** argv){
     std::cout << "Opening : " << filename << "\n";
 
     // open basic particles loader
-    FBasicLoader loader(filename);
+    FBasicLoader<FReal> loader(filename);
     if(!loader.isOpen()){
         std::cout << "Loader Error, " << filename << "is missing\n";
         return 1;

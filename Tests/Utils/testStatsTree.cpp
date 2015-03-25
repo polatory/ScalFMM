@@ -58,9 +58,9 @@ int main(int argc, char ** argv){
 
     typedef double FReal;
 
-    typedef FBasicParticleContainer<0>      ContainerClass;
+    typedef FBasicParticleContainer<FReal,0,FReal>      ContainerClass;
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
-    typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
+    typedef FOctree<FReal, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable has to be used to show some stat about the tree.\n";
     //////////////////////////////////////////////////////////////

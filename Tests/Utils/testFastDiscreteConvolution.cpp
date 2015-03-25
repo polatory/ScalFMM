@@ -112,7 +112,7 @@ int main(int argc, char ** argv){
     const int dim = 1;
     const int steps[dim] = {N};
     //FDft<FReal> Dft(N);// direct version (Beware! Ordering of output differs from REAL valued-FFT)
-    FFft<dim> Dft;// fast version
+    FFft<FReal,dim> Dft;// fast version
     Dft.buildDFT(steps);// fast version
     std::cout << "took " << time.tacAndElapsed() << "sec." << std::endl;
 

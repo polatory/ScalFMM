@@ -284,7 +284,7 @@ int main(int argc, char* argv[])
 		FReal T_of_y[ORDER * (ORDER-1)];
     for (unsigned int o=1; o<ORDER; ++o)
       for (unsigned int j=0; j<ORDER; ++j)
-        T_of_y[(o-1)*ORDER + j] = FReal(FChebRoots<ORDER>::T(o, FReal(FChebRoots<ORDER>::roots[j])));
+        T_of_y[(o-1)*ORDER + j] = FReal(FChebRoots<FReal,ORDER>::T(o, FReal(FChebRoots<FReal,ORDER>::roots[j])));
 
 		for (unsigned int l=0; l<ORDER-1; ++l)
 			for (unsigned int i=0; i<ORDER; ++i) {
@@ -361,7 +361,7 @@ int main(int argc, char* argv[])
 		FReal T_of_y[ORDER * (ORDER-1)];
     for (unsigned int o=1; o<ORDER; ++o)
       for (unsigned int j=0; j<ORDER; ++j)
-        T_of_y[(o-1)*ORDER + j] = FReal(FChebRoots<ORDER>::T(o, FReal(FChebRoots<ORDER>::roots[j])));
+        T_of_y[(o-1)*ORDER + j] = FReal(FChebRoots<FReal,ORDER>::T(o, FReal(FChebRoots<FReal,ORDER>::roots[j])));
 		
 		// set everything to zero
 		f1 = FReal(0.);

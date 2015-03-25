@@ -21,7 +21,7 @@
 #include "Arranger/FOctreeArranger.hpp"
 
 template <class FReal, class OctreeClass, class ContainerClass, class LeafInterface >
-class FArrangerPeriodic : public FOctreeArranger<OctreeClass,ContainerClass,LeafInterface>{
+class FArrangerPeriodic : public FOctreeArranger<FReal,OctreeClass,ContainerClass,LeafInterface>{
 
     FReal getPeriodicPos(FReal pos, PeriodicCondition periodicPlus, PeriodicCondition periodicMinus,FReal maxDir,FReal minDir,const int dir){
         FReal res = pos;
@@ -41,7 +41,7 @@ class FArrangerPeriodic : public FOctreeArranger<OctreeClass,ContainerClass,Leaf
 
 public:
 
-    FArrangerPeriodic(OctreeClass * octree) : FOctreeArranger<OctreeClass,ContainerClass,LeafInterface>(octree){
+    FArrangerPeriodic(OctreeClass * octree) : FOctreeArranger<FReal,OctreeClass,ContainerClass,LeafInterface>(octree){
     }
 
     // To put in inhereed class

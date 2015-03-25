@@ -24,9 +24,9 @@
 * This class is the rotation spherical harmonic kernel
 */
 template<  class FReal, class CellClass, class ContainerClass>
-class FSphericalRotationKernel : public FAbstractSphericalKernel<CellClass,ContainerClass> {
+class FSphericalRotationKernel : public FAbstractSphericalKernel<FReal, CellClass,ContainerClass> {
 protected:
-    typedef FAbstractSphericalKernel<CellClass,ContainerClass> Parent;
+    typedef FAbstractSphericalKernel<FReal, CellClass,ContainerClass> Parent;
 
     /** This class define some information to use rotation computation
       */

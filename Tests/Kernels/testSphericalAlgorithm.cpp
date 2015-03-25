@@ -54,7 +54,7 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::TaskFmm);
 
     typedef double FReal;
-    typedef FSphericalCell                 CellClass;
+    typedef FSphericalCell<FReal>                 CellClass;
     typedef FP2PParticleContainer<FReal>         ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;

@@ -93,7 +93,7 @@ int main(int argc, char ** argv){
 	const int DevP          = FParameters::getValue(argc,argv,"-P", 9);
 #endif
 
-	typedef FFmmAlgorithmPeriodic<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
+	typedef FFmmAlgorithmPeriodic<FReal,OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 	typedef FFmmAlgorithm<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass >         FmmClassNoPer;
 	///////////////////////What we do/////////////////////////////
 	if( FParameters::existParameter(argc, argv, "-help")){
@@ -125,12 +125,12 @@ int main(int argc, char ** argv){
 	//  LOADER
 	//  -----------------------------------------------------
 	std::cout << "Opening : " << filename << "\n";
-	FDlpolyLoader  *loader = nullptr ;
+    FDlpolyLoader<FReal>  *loader = nullptr ;
 	if(FParameters::existParameter(argc, argv, "-bin")){
-		loader  = new FDlpolyBinLoader(filename);
+        loader  = new FDlpolyBinLoader<FReal>(filename);
 	}
 	else {
-		loader  = new FDlpolyAsciiLoader(filename);
+        loader  = new FDlpolyAsciiLoader<FReal>(filename);
 	}
 
 	if(! loader->isOpen()){
@@ -171,8 +171,8 @@ int main(int argc, char ** argv){
 
 	counter.tic();
     FPoint<FReal> electricMoment(0.0,0.0,0.0) ;
-	EwalParticle * const particles = new EwalParticle[loader->getNumberOfParticles()];
-	memset(particles, 0, sizeof(EwalParticle) * loader->getNumberOfParticles());
+    EwalParticle<FReal> * const particles = new EwalParticle<FReal>[loader->getNumberOfParticles()];
+    memset(particles, 0, sizeof(EwalParticle<FReal>) * loader->getNumberOfParticles());
 	double totalCharge = 0.0;
 	for(int idxPart = 0 ; idxPart < loader->getNumberOfParticles() ; ++idxPart){
 		//
@@ -229,7 +229,7 @@ int main(int argc, char ** argv){
 				<< std::endl ;
 	} while(octreeIterator.moveRight());
 	//
-	FIOVtk vtkfile ;
+    FIOVtk<FReal> vtkfile ;
 	vtkfile.writeOctree("octreeFile.vtk","Octree ", tree) ;
 	//
 	// ---------------------------------------------------------------------------------
@@ -274,7 +274,7 @@ int main(int argc, char ** argv){
 	// ----------------------------------------------------------------------------------------------------------
 	//                                  DIRECT COMPUTATION
 	// ----------------------------------------------------------------------------------------------------------
-	EwalParticle* particlesDirect = nullptr;
+    EwalParticle<FReal>* particlesDirect = nullptr;
 	FReal directEnergy = 0.0;
 
 	//
@@ -287,7 +287,7 @@ int main(int argc, char ** argv){
 		printf("Box [%d;%d][%d;%d][%d;%d]\n", min.getX(), max.getX(), min.getY(),
 				max.getY(), min.getZ(), max.getZ());
 
-		particlesDirect = new EwalParticle[loader->getNumberOfParticles()];
+        particlesDirect = new EwalParticle<FReal>[loader->getNumberOfParticles()];
 
 		FReal denergy = 0.0;
 		FMath::FAccurater<FReal> dfx, dfy, dfz ;
@@ -299,7 +299,7 @@ int main(int argc, char ** argv){
 		counter.tic();
 		for(int idxTarget = 0 ; idxTarget < loader->getNumberOfParticles() ; ++idxTarget){
 			particlesDirect[idxTarget] = particles[idxTarget];
-			EwalParticle & part        = particlesDirect[idxTarget];
+            EwalParticle<FReal> & part        = particlesDirect[idxTarget];
 			part.forces[0] = part.forces[1] = part.forces[2] = 0.0;
 			part.potential = 0.0;
 			//
@@ -337,7 +337,7 @@ int main(int argc, char ** argv){
 									loader->getBoxWidth() * FReal(idxZ));
 							//							std::cout <<" ( "<< idxX<<" , "<<idxY << " , "<< idxZ << " ) "<< offset <<std::endl;
 							for(int idxSource = 0 ; idxSource < loader->getNumberOfParticles() ; ++idxSource){
-								EwalParticle source = particles[idxSource];
+                                EwalParticle<FReal> source = particles[idxSource];
 								source.position += offset;
 								//								std::cout << "Part "<<idxSource<< " " <<source.position.getX()<< " " << source.position.getY()<< " " <<source.position.getZ()<< " " <<source.physicalValue <<std::endl ;
 								FP2P::NonMutualParticles(

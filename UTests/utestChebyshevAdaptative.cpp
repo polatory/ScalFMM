@@ -64,7 +64,7 @@ class TestChebyshevDirect : public FUKernelTester<TestChebyshevDirect> {
         typedef FFmmAlgorithm<OctreeClass, CellWrapperClass, ContainerClass, KernelWrapperClass, LeafClass >     FmmClass;
 
         // run test
-        RunTest<CellClass,ContainerClass,KernelWrapperClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(
+        RunTest<FReal,CellClass,ContainerClass,KernelWrapperClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(
                           [&](int NbLevels, FReal boxWidth, FPoint<FReal> centerOfBox, const MatrixKernelClass *const MatrixKernel){
              return std::unique_ptr<KernelWrapperClass>(new KernelWrapperClass(NbLevels, boxWidth, centerOfBox, MatrixKernel, 4, 4));
         });

@@ -98,11 +98,11 @@ int main(int argc, char* argv[])
         // open particle file
         ////////////////////////////////////////////////////////////////////
         //
+        typedef double FReal;
         FFmaGenericLoader<FReal> loader(filename);
         //
         ////////////////////////////////////////////////////////////////////
         // begin Lagrange kernel
-        typedef double FReal;
         // accuracy
         const unsigned int ORDER = 7;
         // typedefs
@@ -216,7 +216,7 @@ int main(int argc, char* argv[])
         // -----------------------------------------------------
         if(FParameters::existParameter(argc, argv, FParameterDefinitions::OutputFile.options)){
                 std::string name(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output.fma"));
-                FFmaGenericWriter writer(name) ;
+                FFmaGenericWriter<FReal> writer(name) ;
                 //
                 int NbPoints = loader.getNumberOfParticles();
                 FReal * particles ;

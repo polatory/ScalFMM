@@ -48,7 +48,7 @@ int main(int argc, char** argv){
 
     static const int P = 9;
 
-    typedef FRotationCell<P>               CellClass;
+    typedef FRotationCell<FReal,P>               CellClass;
     typedef FP2PParticleContainer<FReal>          ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
@@ -82,7 +82,7 @@ int main(int argc, char** argv){
             particles.push(particlePosition, physicalValue );
         }
 
-        FTreeBuilder<OctreeClass, LeafClass>::BuildTreeFromArray(&tree, particles);
+        FTreeBuilder<FReal,OctreeClass, LeafClass>::BuildTreeFromArray(&tree, particles);
     }
 
     // -----------------------------------------------------

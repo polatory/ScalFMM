@@ -46,9 +46,10 @@ int main(int argc, char ** argv){
                          "Show how to use an octree (only the code is interesting)",
                          FParameterDefinitions::NbParticles);
 
-    typedef FBasicParticleContainer<0>      ContainerClass;
+    typedef double FReal;
+    typedef FBasicParticleContainer<FReal,0,FReal>      ContainerClass;
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
-    typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
+    typedef FOctree<FReal, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
     ///////////////////////What we do/////////////////////////////
     std::cout << ">> This executable is useless to execute.\n";
     std::cout << ">> It is only interesting to wath the code to understand\n";

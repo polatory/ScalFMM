@@ -56,125 +56,125 @@
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
-	//
-	///////////////////////What we do/////////////////////////////
-    FHelpDescribeAndExit(argc, argv,
-                         "This executable has to be used to compute  interaction either for periodic or non periodic system.\n"
-                         "Example -fin filenameIN.{fma or bfma)\n"
-                         "Default input file : ../Data/unitCubeXYZQ20k.fma\n"
-                         "For the input file, the extension specifies if the file is binary or not.\n",
-                         FParameterDefinitions::InputFile);
+//    //
+//    ///////////////////////What we do/////////////////////////////
+//    FHelpDescribeAndExit(argc, argv,
+//                         "This executable has to be used to compute  interaction either for periodic or non periodic system.\n"
+//                         "Example -fin filenameIN.{fma or bfma)\n"
+//                         "Default input file : ../Data/unitCubeXYZQ20k.fma\n"
+//                         "For the input file, the extension specifies if the file is binary or not.\n",
+//                         FParameterDefinitions::InputFile);
 
-	//////////////////////////////////////////////////////////////
+//    //////////////////////////////////////////////////////////////
 
-	const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/unitCubeXYZQ20k.fma");
-    const std::string filenameIn(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,  defaultFile.c_str()));
+//    const std::string defaultFile(/*SCALFMMDataPath+*/"../Data/unitCubeXYZQ20k.fma");
+//    const std::string filenameIn(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,  defaultFile.c_str()));
 
-    typedef double FReal;
+//    typedef double FReal;
 
-	FTic counter;
+//    FTic counter;
 
-	// -----------------------------------------------------
-	//  LOADER
-	//  -----------------------------------------------------
-	// ---------------------------------------------------------------------------------
-	// Read  particles in the Octree
-	// ---------------------------------------------------------------------------------
-	std::cout << "Opening : " << filenameIn << "\n";
-	//
-	FFmaGenericLoader<FReal> loader(filenameIn);
-	//
-	int nbParticles = static_cast<int>(loader.getNumberOfParticles());
-	std::cout << "Read " << nbParticles << " particles ..." << std::endl;
-	double BoxWith=loader.getBoxWidth();
-    FPoint<FReal> Centre(loader.getCenterOfBox().getX(), loader.getCenterOfBox().getY() , loader.getCenterOfBox().getZ());
-	std::cout << "\tWidth : " <<BoxWith << " \t center x : " << loader.getCenterOfBox().getX()
-																		<< " y : " << loader.getCenterOfBox().getY() << " z : " << loader.getCenterOfBox().getZ() << std::endl;
+//    // -----------------------------------------------------
+//    //  LOADER
+//    //  -----------------------------------------------------
+//    // ---------------------------------------------------------------------------------
+//    // Read  particles in the Octree
+//    // ---------------------------------------------------------------------------------
+//    std::cout << "Opening : " << filenameIn << "\n";
+//    //
+//    FFmaGenericLoader<FReal> loader(filenameIn);
+//    //
+//    int nbParticles = static_cast<int>(loader.getNumberOfParticles());
+//    std::cout << "Read " << nbParticles << " particles ..." << std::endl;
+//    double BoxWith=loader.getBoxWidth();
+//    FPoint<FReal> Centre(loader.getCenterOfBox().getX(), loader.getCenterOfBox().getY() , loader.getCenterOfBox().getZ());
+//    std::cout << "\tWidth : " <<BoxWith << " \t center x : " << loader.getCenterOfBox().getX()
+//              << " y : " << loader.getCenterOfBox().getY() << " z : " << loader.getCenterOfBox().getZ() << std::endl;
 
-	counter.tic();
-	FmaRParticle *  particles = new FmaRParticle[nbParticles];
-	memset(particles, 0, sizeof(FmaRParticle) * nbParticles) ;
-	//
-	double totalCharge = 0.0;
-	//
-//	int nbDataToRead = particles[0].getReadDataNumber();
-	for(int idx = 0 ; idx<nbParticles ; ++idx){
-		//
-	    loader.fillParticle(particles[idx].getPtrFirstData(), particles[idx].getReadDataNumber());
-	    totalCharge += particles[idx].getPhysicalValue() ;
-	}
+//    counter.tic();
+//    FmaRParticle *  particles = new FmaRParticle[nbParticles];
+//    memset(particles, 0, sizeof(FmaRParticle) * nbParticles) ;
+//    //
+//    double totalCharge = 0.0;
+//    //
+//    //	int nbDataToRead = particles[0].getReadDataNumber();
+//    for(int idx = 0 ; idx<nbParticles ; ++idx){
+//        //
+//        loader.fillParticle(particles[idx].getPtrFirstData(), particles[idx].getReadDataNumber());
+//        totalCharge += particles[idx].getPhysicalValue() ;
+//    }
 
-	counter.tac();
+//    counter.tac();
 
-	std::cout << std::endl;
-	std::cout << "Total Charge         = "<< totalCharge <<std::endl;
-	std::cout << std::endl;
+//    std::cout << std::endl;
+//    std::cout << "Total Charge         = "<< totalCharge <<std::endl;
+//    std::cout << std::endl;
 
-	std::cout << "Done  " << "(@ reading Particles  " << counter.elapsed() << " s)." << std::endl;
-	//Need to copy particles to ContainerClass -> FP2PParticleContainer
-	typedef FBasicCell                 CellClass;
-	typedef FP2PParticleContainer<FReal>         ContainerClass;
+//    std::cout << "Done  " << "(@ reading Particles  " << counter.elapsed() << " s)." << std::endl;
+//    //Need to copy particles to ContainerClass -> FP2PParticleContainer
+//    typedef FBasicCell                 CellClass;
+//    typedef FP2PParticleContainer<FReal>         ContainerClass;
 
-	typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
-	typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
+//    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+//    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
-	OctreeClass tree(2, 1, loader.getBoxWidth(), loader.getCenterOfBox());
-	for(int idxP=0 ; idxP<nbParticles ; ++idxP){
-	    tree.insert(particles[idxP].getPosition(),particles[idxP].getPhysicalValue());
-	}
-	int k=0;
-	// tree.forEachLeaf([&](LeafClass * leaf){
-	//	printf("leaf : %d\n",k++ );
-	//     });
-	//
-	// ----------------------------------------------------------------------------------------------------------
-	//                                   COMPUTATION
-	// ----------------------------------------------------------------------------------------------------------
-	//
-	//  computation
-    //
-    printf("Precision, sizeof Real %lu\n", sizeof(FReal));
+//    OctreeClass tree(2, 1, loader.getBoxWidth(), loader.getCenterOfBox());
+//    for(int idxP=0 ; idxP<nbParticles ; ++idxP){
+//        tree.insert(particles[idxP].getPosition(),particles[idxP].getPhysicalValue());
+//    }
+//    int k=0;
+//    // tree.forEachLeaf([&](LeafClass * leaf){
+//    //	printf("leaf : %d\n",k++ );
+//    //     });
+//    //
+//    // ----------------------------------------------------------------------------------------------------------
+//    //                                   COMPUTATION
+//    // ----------------------------------------------------------------------------------------------------------
+//    //
+//    //  computation
+//    //
+//    printf("Precision, sizeof Real %lu\n", sizeof(FReal));
 
-#ifdef ScalFMM_USE_AVX
-	printf("AVX incomming .......\n\n");
-#endif
+//#ifdef ScalFMM_USE_AVX
+//    printf("AVX incomming .......\n\n");
+//#endif
 
-#ifdef ScalFMM_USE_SSE
-	printf("SSE incomming .......\n\n");
-#endif
+//#ifdef ScalFMM_USE_SSE
+//    printf("SSE incomming .......\n\n");
+//#endif
 
-#ifndef ScalFMM_USE_SSE
-#ifndef ScalFMM_USE_AVX
-	printf("Classic incomming ...\n\n");
-#endif
-#endif
-	counter.tic();
-	{
-	    typename OctreeClass::Iterator iterator(&tree);
-	    iterator.gotoBottomLeft();
+//#ifndef ScalFMM_USE_SSE
+//#ifndef ScalFMM_USE_AVX
+//    printf("Classic incomming ...\n\n");
+//#endif
+//#endif
+//    counter.tic();
+//    {
+//        typename OctreeClass::Iterator iterator(&tree);
+//        iterator.gotoBottomLeft();
 
-	    do{
-		FTreeCoordinate coord = iterator.getCurrentGlobalCoordinate();
-		ContainerClass** neighbors = new ContainerClass*[27];
-		tree.getLeafsNeighbors(neighbors,coord,1);
-        FP2PRT<FReal>::FullMutual<ContainerClass>(iterator.getCurrentLeaf()->getTargets(),neighbors,27);
+//        do{
+//            FTreeCoordinate coord = iterator.getCurrentGlobalCoordinate();
+//            ContainerClass** neighbors = new ContainerClass*[27];
+//            tree.getLeafsNeighbors(neighbors,coord,1);
+//            FP2PRT<FReal>::FullMutual<ContainerClass>(iterator.getCurrentLeaf()->getTargets(),neighbors,27);
 
-	    }while(iterator.moveRight());
-	}
-	counter.tac();
-	std::cout << "Done  " << "(@ Computation  " << counter.elapsed() << " s)." << std::endl;
-	FReal cumulPot = 0.0;
-	k=0;
-	tree.forEachLeaf([&](LeafClass * leaf){
-		int maxParts = leaf->getSrc()->getNbParticles();
-		FReal* datas = leaf->getSrc()->getPotentials();
-		for(int i=0 ; i<maxParts ; ++i){
-		    cumulPot += datas[i];
-		}
-		printf("leaf : %d --> cumul pot %e : \n",k++, cumulPot);
-	    });
+//        }while(iterator.moveRight());
+//    }
+//    counter.tac();
+//    std::cout << "Done  " << "(@ Computation  " << counter.elapsed() << " s)." << std::endl;
+//    FReal cumulPot = 0.0;
+//    k=0;
+//    tree.forEachLeaf([&](LeafClass * leaf){
+//        int maxParts = leaf->getSrc()->getNbParticles();
+//        FReal* datas = leaf->getSrc()->getPotentials();
+//        for(int i=0 ; i<maxParts ; ++i){
+//            cumulPot += datas[i];
+//        }
+//        printf("leaf : %d --> cumul pot %e : \n",k++, cumulPot);
+//    });
 
 
-	delete[] particles;
-	return 0;
+//    delete[] particles;
+    return 0;
 }

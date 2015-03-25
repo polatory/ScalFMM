@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
         FReal potential;
     };
     // open particle file
-    FFmaScanfLoader loader(filename);
+    FFmaScanfLoader<FReal> loader(filename);
     if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 
     TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
@@ -124,7 +124,7 @@ int main(int argc, char* argv[])
   typedef FP2PParticleContainerIndexed<FReal>                          ContainerClass;
         typedef FSimpleLeaf<FReal, ContainerClass >                         LeafClass;
         typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >      OctreeClass;
-	typedef FTaylorKernel<CellClass,ContainerClass,ORDER,1>       KernelClass;
+	typedef FTaylorKernel<FReal,CellClass,ContainerClass,ORDER,1>       KernelClass;
         typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 	//  typedef FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 

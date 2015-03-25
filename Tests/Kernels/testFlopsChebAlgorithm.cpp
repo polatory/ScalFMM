@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 	std::cout << ">> Testing the Chebyshev interpolation base FMM algorithm.\n";
 
 	// open particle file
-	FFmaScanfLoader loader(filename);
+    FFmaScanfLoader<FReal> loader(filename);
 	//
 	if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 

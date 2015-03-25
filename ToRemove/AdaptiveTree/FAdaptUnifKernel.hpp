@@ -132,7 +132,7 @@ public:
 //
 //    // set child info
 //    FPoint<FReal> ChildRoots[nnodes], localChildRoots[nnodes];
-//    FUnifTensor<ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
+//    FUnifTensor<FReal,ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
 //
 //    // map global position of roots to local position in parent cell
 //    const map_glob_loc map(poleCellCenter, poleCellWidth);
@@ -148,7 +148,7 @@ public:
 
     // Set sub-child coords
     FReal globalChildCoords[3][ORDER];
-    FUnifTensor<order>::setPolynomialsRoots(subCellCenter, subCellWidth, globalChildCoords);
+    FUnifTensor<FReal,order>::setPolynomialsRoots(subCellCenter, subCellWidth, globalChildCoords);
 
     // Map global position of sub-child nodes to [-1,1]
     FReal localChildCoords[3][ORDER];
@@ -222,7 +222,7 @@ public:
 
     // interpolation points of target (X) cell
     FPoint<FReal> X[nnodes];
-    FUnifTensor<order>::setRoots(localCellCenter, localCellWidth, X);
+    FUnifTensor<FReal,order>::setRoots(localCellCenter, localCellWidth, X);
 
     // read positions
     const FReal*const positionsX = particles->getPositions()[0];
@@ -262,8 +262,8 @@ public:
 
     // interpolation points of source (Y) and target (X) cell
     FPoint<FReal> X[nnodes], Y[nnodes];
-    FUnifTensor<order>::setRoots(poleCellCenter, poleCellWidth, Y);
-    FUnifTensor<order>::setRoots(localCellCenter, localCellWidth, X);
+    FUnifTensor<FReal,order>::setRoots(poleCellCenter, poleCellWidth, Y);
+    FUnifTensor<FReal,order>::setRoots(localCellCenter, localCellWidth, X);
 
 
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
@@ -287,7 +287,7 @@ public:
 
     // interpolation points of source (Y) cell
     FPoint<FReal> Y[nnodes];
-    FUnifTensor<order>::setRoots(poleCellCenter, poleCellWidth, Y);
+    FUnifTensor<FReal,order>::setRoots(poleCellCenter, poleCellWidth, Y);
 
     // read positions
     const FReal*const positionsX = particles->getPositions()[0];
@@ -336,7 +336,7 @@ public:
 //
 //    // set child info
 //    FPoint<FReal> ChildRoots[nnodes], localChildRoots[nnodes];
-//    FUnifTensor<ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
+//    FUnifTensor<FReal,ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
 //
 //    // map global position of roots to local position in parent cell
 //    const map_glob_loc map(localCenter, localWidth);
@@ -350,7 +350,7 @@ public:
     /// p^4 version
     // Set sub-child coords
     FReal globalChildCoords[3][ORDER];
-    FUnifTensor<order>::setPolynomialsRoots(subCellCenter, subCellWidth, globalChildCoords);
+    FUnifTensor<FReal,order>::setPolynomialsRoots(subCellCenter, subCellWidth, globalChildCoords);
 
     // Map global position of sub-child nodes to [-1,1]
     FReal localChildCoords[3][ORDER];

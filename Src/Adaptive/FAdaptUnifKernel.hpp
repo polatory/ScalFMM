@@ -135,10 +135,10 @@ public:
 //
 //    // set child info
 //    FPoint<FReal> ChildRoots[nnodes], localChildRoots[nnodes];
-//    FUnifTensor<ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
+//    FUnifTensor<FReal,ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
 //
 //    // map global position of roots to local position in parent cell
-//    const map_glob_loc map(poleCellCenter, poleCellWidth);
+//    const map_glob_loc<FReal> map(poleCellCenter, poleCellWidth);
 //    for (unsigned int n=0; n<nnodes; ++n)
 //      map(ChildRoots[n], localChildRoots[n]);
 //
@@ -151,11 +151,11 @@ public:
 
     // Set sub-child coords
     FReal globalChildCoords[3][ORDER];
-    FUnifTensor<order>::setPolynomialsRoots(subCellCenter, subCellWidth, globalChildCoords);
+    FUnifTensor<FReal,order>::setPolynomialsRoots(subCellCenter, subCellWidth, globalChildCoords);
 
     // Map global position of sub-child nodes to [-1,1]
     FReal localChildCoords[3][ORDER];
-    const map_glob_loc map(poleCellCenter, poleCellWidth);
+    const map_glob_loc<FReal> map(poleCellCenter, poleCellWidth);
     FPoint<FReal> localChildPoints;
     for (unsigned int n=0; n<ORDER; ++n) {
       map(FPoint<FReal>(globalChildCoords[0][n],globalChildCoords[1][n],globalChildCoords[2][n]), localChildPoints);
@@ -225,7 +225,7 @@ public:
  //   std::cout << "   call P2L  localLevel "<< localLevel << "  localCellCenter "<< localCellCenter <<std::endl;
     // interpolation points of target (X) cell
     FPoint<FReal> X[nnodes];
-    FUnifTensor<order>::setRoots(localCellCenter, localCellWidth, X);
+    FUnifTensor<FReal,order>::setRoots(localCellCenter, localCellWidth, X);
 
     // read positions
     const FReal*const positionsX = particles->getPositions()[0];
@@ -265,8 +265,8 @@ public:
 
     // interpolation points of source (Y) and target (X) cell
     FPoint<FReal> X[nnodes], Y[nnodes];
-    FUnifTensor<order>::setRoots(poleCellCenter, poleCellWidth, Y);
-    FUnifTensor<order>::setRoots(localCellCenter, localCellWidth, X);
+    FUnifTensor<FReal,order>::setRoots(poleCellCenter, poleCellWidth, Y);
+    FUnifTensor<FReal,order>::setRoots(localCellCenter, localCellWidth, X);
 
 
     for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
@@ -290,7 +290,7 @@ public:
 
     // interpolation points of source (Y) cell
     FPoint<FReal> Y[nnodes];
-    FUnifTensor<order>::setRoots(poleCellCenter, poleCellWidth, Y);
+    FUnifTensor<FReal,order>::setRoots(poleCellCenter, poleCellWidth, Y);
 
     // read positions
     const FReal*const positionsX = particles->getPositions()[0];
@@ -347,10 +347,10 @@ public:
 //
 //    // set child info
 //    FPoint<FReal> ChildRoots[nnodes], localChildRoots[nnodes];
-//    FUnifTensor<ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
+//    FUnifTensor<FReal,ORDER>::setRoots(subCellCenter, subCellWidth, ChildRoots);
 //
 //    // map global position of roots to local position in parent cell
-//    const map_glob_loc map(localCenter, localWidth);
+//    const map_glob_loc<FReal> map(localCenter, localWidth);
 //    for (unsigned int n=0; n<nnodes; ++n)
 //      map(ChildRoots[n], localChildRoots[n]);
 //
@@ -361,11 +361,11 @@ public:
     /// p^4 version
     // Set sub-child coords
     FReal globalChildCoords[3][ORDER];
-    FUnifTensor<order>::setPolynomialsRoots(subCellCenter, subCellWidth, globalChildCoords);
+    FUnifTensor<FReal,order>::setPolynomialsRoots(subCellCenter, subCellWidth, globalChildCoords);
 
     // Map global position of sub-child nodes to [-1,1]
     FReal localChildCoords[3][ORDER];
-    const map_glob_loc map(localCenter, localWidth);
+    const map_glob_loc<FReal> map(localCenter, localWidth);
     FPoint<FReal> localChildPoints;
     for (unsigned int n=0; n<ORDER; ++n) {
       map(FPoint<FReal>(globalChildCoords[0][n],globalChildCoords[1][n],globalChildCoords[2][n]), localChildPoints);
@@ -448,7 +448,7 @@ public:
 
 	void P2P(ContainerClass* target, const ContainerClass* sources)  override {
         ContainerClass* sourcesArray[27] = { const_cast<ContainerClass*> (sources) };
-        DirectInteractionComputer<MatrixKernelClass::NCMP, NVALS>::template P2PRemote(target,sourcesArray,1,MatrixKernel);
+        DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::template P2PRemote(target,sourcesArray,1,MatrixKernel);
 	}
 
 	bool preferP2M(const ContainerClass* const particles) override {

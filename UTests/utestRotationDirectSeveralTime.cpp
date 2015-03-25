@@ -198,17 +198,17 @@ class TestRotationDirectSeveralTime : public FUTester<TestRotationDirectSeveralT
 	/** Rotation */
 	void TestRotation(){
         typedef double FReal;
-		typedef FRotationCell<P>              CellClass;
+		typedef FRotationCell<FReal,P>              CellClass;
 		typedef FP2PParticleContainerIndexed<FReal>  ContainerClass;
 
-		typedef FRotationKernel<CellClass, ContainerClass, P >          KernelClass;
+        typedef FRotationKernel<FReal, CellClass, ContainerClass, P >          KernelClass;
 
 		typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 		typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
 
 		typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
-		RunTest<CellClass, ContainerClass, KernelClass, LeafClass, OctreeClass, FmmClass>();
+        RunTest<FReal, CellClass, ContainerClass, KernelClass, LeafClass, OctreeClass, FmmClass>();
 	}
 
 	///////////////////////////////////////////////////////////

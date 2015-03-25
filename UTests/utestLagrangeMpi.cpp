@@ -290,7 +290,7 @@ class TestLagrangeMpiDirect : public FUTesterMpi<TestLagrangeMpiDirect>{
         typedef FUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithmThreadProc<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClassProc;
         // run test
-        RunTest<CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClassProc>();
+        RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClassProc>();
     }
 
     ///////////////////////////////////////////////////////////

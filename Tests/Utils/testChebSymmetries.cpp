@@ -133,7 +133,7 @@ int main(int argc, char* argv[])
 
                     // permute
                     const unsigned int pidx = permuter.getPermutationArrayAndIndex(i, j, k, perm);
-                    permuteMatrix<order>(perm, K0);
+                    permuteMatrix<FReal,order>(perm, K0);
 
                     if (K[pidx]==NULL) std::cout << " - not existing index " << pidx << std::endl;
 

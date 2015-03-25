@@ -119,7 +119,7 @@ int main(int argc, char ** argv){
     // approximative computation
     const unsigned int ORDER = 4;
     const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
-    typedef FUnifInterpolator<ORDER,MatrixKernelClass> InterpolatorClass;
+    typedef FUnifInterpolator<FReal,ORDER,MatrixKernelClass> InterpolatorClass;
     InterpolatorClass S;
 
     std::cout << "\nCompute interactions approximatively, interpolation order = " << ORDER << " ..." << std::endl;
@@ -135,8 +135,8 @@ int main(int argc, char ** argv){
     time.tic();
     // Multipole to local: F_m = \sum_n^L K(\bar x_m, \bar y_n) * W_n
     FPoint<FReal> rootsX[nnodes], rootsY[nnodes];
-    FUnifTensor<ORDER>::setRoots(cx, width, rootsX);
-    FUnifTensor<ORDER>::setRoots(cy, width, rootsY);
+    FUnifTensor<FReal,ORDER>::setRoots(cx, width, rootsX);
+    FUnifTensor<FReal,ORDER>::setRoots(cy, width, rootsY);
 
     FReal F[nnodes]; // local expansion
     for (unsigned int i=0; i<nnodes; ++i) {
@@ -178,7 +178,7 @@ int main(int argc, char ** argv){
     const unsigned int rc = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1);
     FReal C[rc];
 
-    typedef FUnifTensor<ORDER> TensorType;
+    typedef FUnifTensor<FReal,ORDER> TensorType;
     unsigned int node_diff[nnodes*nnodes];
     TensorType::setNodeIdsDiff(node_diff);
     unsigned int node_ids[nnodes][3];
@@ -336,7 +336,7 @@ int main(int argc, char ** argv){
     const int dimfft = 1;
     const int steps[dimfft] = {rc};
     //FDft Dft(rc); // direct version
-    FFft<dimfft> Dft; // fast version
+    FFft<FReal,dimfft> Dft; // fast version
     Dft.buildDFT(steps);
 
     // Get first COLUMN of K and Store in T

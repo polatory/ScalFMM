@@ -46,13 +46,13 @@ class TestBuilder : public FUTester<TestBuilder> {
         KernelClass kernel;
 
         {
-            FAlgorithmBuilder::SimulationProperties properties = FAlgorithmBuilder::BuildKernelSimulationProperties(height,center,dim,false);
+            FAlgorithmBuilder<FReal>::SimulationProperties properties = FAlgorithmBuilder<FReal>::BuildKernelSimulationProperties(height,center,dim,false);
             uassert(properties.centerOfBox.getX() == center.getX() && properties.centerOfBox.getY() == center.getY() &&
                     properties.centerOfBox.getZ() == center.getZ() );
             uassert(properties.dimOfBox == dim);
             uassert(properties.height == height);
 
-            FAbstractAlgorithm*const algo = FAlgorithmBuilder::BuildAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(&tree, &kernel, 0, false);
+            FAbstractAlgorithm*const algo = FAlgorithmBuilder<FReal>::BuildAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(&tree, &kernel, 0, false);
 #ifndef ScalFMM_USE_MPI
             uassert(dynamic_cast<FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>*>(algo) != nullptr ||
                     dynamic_cast<FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>*>(algo) != nullptr);
@@ -62,15 +62,15 @@ class TestBuilder : public FUTester<TestBuilder> {
             delete algo;
         }
         {
-            FAlgorithmBuilder::SimulationProperties properties = FAlgorithmBuilder::BuildKernelSimulationProperties(height,center,dim,true);
+            FAlgorithmBuilder<FReal>::SimulationProperties properties = FAlgorithmBuilder<FReal>::BuildKernelSimulationProperties(height,center,dim,true);
             uassert(properties.dimOfBox != dim);
             uassert(properties.height      != height);
 
-            FAbstractAlgorithm*const algo = FAlgorithmBuilder::BuildAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(&tree, &kernel, 0, true);
+            FAbstractAlgorithm*const algo = FAlgorithmBuilder<FReal>::BuildAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(&tree, &kernel, 0, true);
 #ifndef ScalFMM_USE_MPI
-            uassert(dynamic_cast<FFmmAlgorithmPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>*>(algo) != nullptr );
+            uassert(dynamic_cast<FFmmAlgorithmPeriodic<FReal,OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>*>(algo) != nullptr );
 #else
-            uassert(dynamic_cast<FFmmAlgorithmThreadProcPeriodic<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>*>(algo) != nullptr);
+            uassert(dynamic_cast<FFmmAlgorithmThreadProcPeriodic<FReal, OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>*>(algo) != nullptr);
 #endif
 
             delete algo;

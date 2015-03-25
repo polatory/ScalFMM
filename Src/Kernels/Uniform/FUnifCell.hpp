@@ -180,7 +180,7 @@ public:
   }
 
  template <class StreamClass>
-	friend StreamClass& operator<<(StreamClass& output, const FUnifCell<ORDER, NRHS, NLHS, NVALS>&  cell){
+    friend StreamClass& operator<<(StreamClass& output, const FUnifCell<FReal,ORDER, NRHS, NLHS, NVALS>&  cell){
 		output <<"  Multipole exp NRHS " << NRHS <<" NVALS "  <<NVALS << " VectorSize "  << cell.getVectorSize() << std::endl;
 		for (int rhs= 0 ; rhs < NRHS ; ++rhs) {
 			const FReal* pole = cell.getMultipole(rhs);
@@ -197,21 +197,21 @@ public:
 
 };
 
-template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
-class FTypedUnifCell : public FUnifCell<ORDER,NRHS,NLHS,NVALS>, public FExtendCellType {
+template <class FReal, int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+class FTypedUnifCell : public FUnifCell<FReal,ORDER,NRHS,NLHS,NVALS>, public FExtendCellType {
 public:
   template <class BufferWriterClass>
   void save(BufferWriterClass& buffer) const{
-    FUnifCell<ORDER,NRHS,NLHS,NVALS>::save(buffer);
+    FUnifCell<FReal,ORDER,NRHS,NLHS,NVALS>::save(buffer);
     FExtendCellType::save(buffer);
   }
   template <class BufferReaderClass>
   void restore(BufferReaderClass& buffer){
-    FUnifCell<ORDER,NRHS,NLHS,NVALS>::restore(buffer);
+    FUnifCell<FReal,ORDER,NRHS,NLHS,NVALS>::restore(buffer);
     FExtendCellType::restore(buffer);
   }
   void resetToInitialState(){
-    FUnifCell<ORDER,NRHS,NLHS,NVALS>::resetToInitialState();
+    FUnifCell<FReal,ORDER,NRHS,NLHS,NVALS>::resetToInitialState();
     FExtendCellType::resetToInitialState();
   }
 };

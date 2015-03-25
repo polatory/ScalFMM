@@ -58,12 +58,13 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::SHDevelopment,
                          FParameterDefinitions::NbThreads);
 
-    typedef FSphericalCell         CellClass;
+    typedef double FReal;
+    typedef FSphericalCell<FReal>         CellClass;
     typedef FP2PParticleContainer<FReal>         ContainerClass;
 
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
     typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
-    typedef FSphericalBlasKernel< CellClass, ContainerClass >     KernelClass;
+    typedef FSphericalBlasKernel<FReal, CellClass, ContainerClass >     KernelClass;
 
     typedef FFmmAlgorithmThreadProc<OctreeClass,  CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
@@ -78,7 +79,6 @@ int main(int argc, char ** argv){
     const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
     FTic counter;
-    typedef double FReal;
     const char* const defaultFilename = (sizeof(FReal) == sizeof(float))?
                 "../Data/test20k.bin.fma.single":
                 "../Data/test20k.bin.fma.double";
