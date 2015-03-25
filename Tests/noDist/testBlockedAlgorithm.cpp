@@ -19,10 +19,10 @@
 #include "../../Src/Files/FRandomLoader.hpp"
 
 #include "../../Src/GroupTree/Core/FGroupSeqAlgorithm.hpp"
-#ifdef ScalFMM_USE_OMP4
+#ifdef SCALFMM_USE_OMP4
 #include "../../Src/GroupTree/Core/FGroupTaskDepAlgorithm.hpp"
 #endif
-#ifdef ScalFMM_USE_STARPU
+#ifdef SCALFMM_USE_STARPU
 #include "../../Src/GroupTree/Core/FGroupTaskStarpuAlgorithm.hpp"
 #include "../../Src/GroupTree/StarPUUtils/FStarPUKernelCapacities.hpp"
 
@@ -63,11 +63,11 @@ int main(int argc, char* argv[]){
     typedef FGroupTestParticleContainer<FReal>                                GroupContainerClass;
     typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass,
             GroupContainerClass, 0, 1, long long int>  GroupOctreeClass;
-#ifdef ScalFMM_USE_STARPU
+#ifdef SCALFMM_USE_STARPU
     typedef FStarPUAllCpuCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
-#elif defined(ScalFMM_USE_OMP4)
+#elif defined(SCALFMM_USE_OMP4)
     typedef FTestKernels< GroupCellClass, GroupContainerClass >  GroupKernelClass;
     // Set the number of threads
     omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));

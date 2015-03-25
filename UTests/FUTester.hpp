@@ -206,7 +206,7 @@ public :
 
 };
 
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
 
 #include "Utils/FMpi.hpp"
 

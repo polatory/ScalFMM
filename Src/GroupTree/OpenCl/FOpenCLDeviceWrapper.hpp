@@ -51,7 +51,7 @@ protected:
 
     cl_kernel kernel_upwardPassPerform;
     cl_command_queue queue_upwardPassPerform;
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
     cl_kernel kernel_transferInoutPassPerformMpi;
     cl_command_queue queue_transferInoutPassPerformMpi;
 #endif
@@ -63,7 +63,7 @@ protected:
 
     cl_kernel kernel_downardPassPerform;
     cl_command_queue queue_downardPassPerform;
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
     cl_kernel kernel_directInoutPassPerformMpi;
     cl_command_queue queue_directInoutPassPerformMpi;
 #endif
@@ -96,13 +96,13 @@ public:
 
             FAssertLF( starpu_opencl_load_kernel(&kernel_bottomPassPerform, &queue_bottomPassPerform, &opencl_code, "FOpenCL__bottomPassPerform", workerDevid) == CL_SUCCESS);
             FAssertLF( starpu_opencl_load_kernel(&kernel_upwardPassPerform, &queue_upwardPassPerform, &opencl_code, "FOpenCL__upwardPassPerform", workerDevid) == CL_SUCCESS);
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
             FAssertLF( starpu_opencl_load_kernel(&kernel_transferInoutPassPerformMpi, &queue_transferInoutPassPerformMpi, &opencl_code, "FOpenCL__transferInoutPassPerformMpi", workerDevid) == CL_SUCCESS);
 #endif
             FAssertLF( starpu_opencl_load_kernel(&kernel_transferInPassPerform, &queue_transferInPassPerform, &opencl_code, "FOpenCL__transferInPassPerform", workerDevid) == CL_SUCCESS);
             FAssertLF( starpu_opencl_load_kernel(&kernel_transferInoutPassPerform, &queue_transferInoutPassPerform, &opencl_code, "FOpenCL__transferInoutPassPerform", workerDevid) == CL_SUCCESS);
             FAssertLF( starpu_opencl_load_kernel(&kernel_downardPassPerform, &queue_downardPassPerform, &opencl_code, "FOpenCL__downardPassPerform", workerDevid) == CL_SUCCESS);
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
             FAssertLF( starpu_opencl_load_kernel(&kernel_directInoutPassPerformMpi, &queue_directInoutPassPerformMpi, &opencl_code, "FOpenCL__directInoutPassPerformMpi", workerDevid) == CL_SUCCESS);
 #endif
             FAssertLF( starpu_opencl_load_kernel(&kernel_directInoutPassPerform, &queue_directInoutPassPerform, &opencl_code, "FOpenCL__directInoutPassPerform", workerDevid) == CL_SUCCESS);
@@ -122,7 +122,7 @@ public:
 
         err = starpu_opencl_release_kernel(kernel_upwardPassPerform);
         if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
         err = starpu_opencl_release_kernel(kernel_transferInoutPassPerformMpi);
         if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
 #endif
@@ -134,7 +134,7 @@ public:
 
         err = starpu_opencl_release_kernel(kernel_downardPassPerform);
         if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
         err = starpu_opencl_release_kernel(kernel_directInoutPassPerformMpi);
         if(err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
 #endif
@@ -183,7 +183,7 @@ public:
                                                kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
     void transferInoutPassPerformMpi(cl_mem currentCellsPtr, size_t currentCellsSize, cl_mem currentCellsDownPtr,
                                      cl_mem externalCellsPtr,  size_t externalCellsSize, cl_mem externalCellsUpPtr,
                                      int idxLevel, cl_mem outsideInteractionsCl, size_t  outsideInteractionsSize){
@@ -231,7 +231,7 @@ public:
                                                kernelFilename.getNbGroups(), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
     void directInoutPassPerformMpi(cl_mem containersPtr, size_t containersSize, cl_mem containersDownPtr,
                                    cl_mem externalContainersPtr,  size_t externalContainersSize, cl_mem outsideInteractionsCl,
                                    size_t outsideInteractionsSize){

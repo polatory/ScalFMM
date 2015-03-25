@@ -15,7 +15,7 @@
 // ===================================================================================
 #include "FLog.hpp"
 
-#ifdef ScalFMM_USE_LOG
+#ifdef SCALFMM_USE_LOG
 
 /**
 * Singleton debug
@@ -24,5 +24,5 @@ FLog FLog::Controller;
 
 
 
-#endif // ScalFMM_USE_DEBUG
+#endif // SCALFMM_USE_DEBUG
 

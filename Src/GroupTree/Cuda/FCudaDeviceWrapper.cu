@@ -137,7 +137,7 @@ __host__ void FCuda__upwardPassCallback(unsigned char* currentCellsPtr, std::siz
 /////////////////////////////////////////////////////////////////////////////////////
 /// Transfer Pass Mpi
 /////////////////////////////////////////////////////////////////////////////////////
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
 template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__  void FCuda__transferInoutPassPerformMpi(unsigned char* currentCellsPtr, std::size_t currentCellsSize, unsigned char* currentCellsDownPtr,
@@ -382,7 +382,7 @@ __host__ void FCuda__downardPassCallback(unsigned char* currentCellsPtr, std::si
 /////////////////////////////////////////////////////////////////////////////////////
 /// Direct Pass MPI
 /////////////////////////////////////////////////////////////////////////////////////
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
 template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__directInoutPassPerformMpi(unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
@@ -618,7 +618,7 @@ template void FCuda__upwardPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroup
 FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t, 9> subCellGroupsSize,
 FCudaParams<unsigned char*,9> subCellGroupsUpPtr,
 int nbSubCellGroups, int idxLevel, FCudaEmptyKernel* kernel, cudaStream_t currentStream);
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
 template void FCuda__transferInoutPassCallbackMpi<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
                                         FCudaGroupOfParticles<0,0,int>, FCudaGroupAttachedLeaf<0,0,int>, FCudaEmptyKernel >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize, unsigned char* currentCellsDownPtr,
@@ -647,7 +647,7 @@ template void FCuda__downardPassCallback<FCudaEmptyCellSymb, int, int, FCudaGrou
     FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t,9> subCellGroupsSize,
     FCudaParams<unsigned char*,9> subCellGroupsDownPtr,
     int nbSubCellGroups, int idxLevel, FCudaEmptyKernel* kernel, cudaStream_t currentStream);
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
 template void FCuda__directInoutPassCallbackMpi<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
                                         FCudaGroupOfParticles<0,0,int>, FCudaGroupAttachedLeaf<0,0,int>, FCudaEmptyKernel >
     (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
@@ -695,7 +695,7 @@ template void FCuda__upwardPassCallback<FTestCellPODCore, FTestCellPODData, FTes
     FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t, 9> subCellGroupsSize,
     FCudaParams<unsigned char*,9> subCellGroupsUpPtr,
     int nbSubCellGroups, int idxLevel, FTestCudaKernels* kernel, cudaStream_t currentStream);
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
 template void FCuda__transferInoutPassCallbackMpi<FTestCellPODCore, FTestCellPODData, FTestCellPODData, FCudaGroupOfCells<FTestCellPODCore, FTestCellPODData, FTestCellPODData>,
                                         FCudaGroupOfParticles<0, 1, long long int>, FCudaGroupAttachedLeaf<0, 1, long long int>, FTestCudaKernels >
     (unsigned char* currentCellsPtr, std::size_t currentCellsSize, unsigned char* currentCellsDownPtr,
@@ -724,7 +724,7 @@ template void FCuda__downardPassCallback<FTestCellPODCore, FTestCellPODData, FTe
     FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t,9> subCellGroupsSize,
     FCudaParams<unsigned char*,9> subCellGroupsDownPtr,
     int nbSubCellGroups, int idxLevel, FTestCudaKernels* kernel, cudaStream_t currentStream);
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
 template void FCuda__directInoutPassCallbackMpi<FTestCellPODCore, FTestCellPODData, FTestCellPODData, FCudaGroupOfCells<FTestCellPODCore, FTestCellPODData, FTestCellPODData>,
                                         FCudaGroupOfParticles<0, 1, long long int>, FCudaGroupAttachedLeaf<0, 1, long long int>, FTestCudaKernels >
     (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,

@@ -1,64 +1,64 @@
 #-----------------------------------------------------------------------------
 #
-# ScalFMMConfig.cmake - ScalFMM CMake configuration file for external projects.
+# SCALFMMConfig.cmake - SCALFMM CMake configuration file for external projects.
 #
-# This file is configured by ScalFMM and used by the ScalFMM.cmake module
-# to load ScalFMM's settings for an external project.
+# This file is configured by SCALFMM and used by the SCALFMM.cmake module
+# to load SCALFMM's settings for an external project.
 #
-@ScalFMM_CONFIG_INSTALL_ONLY@
+@SCALFMM_CONFIG_INSTALL_ONLY@
 #
-SET(ScalFMM_VERSION_MAJOR "@ScalFMM_MAJOR_VERSION@")
-SET(ScalFMM_VERSION_MINOR "@ScalFMM_MINOR_VERSION@")
-SET(ScalFMM_VERSION_BUILD  "@ScalFMM_BUILD_VERSION@")
+SET(SCALFMM_VERSION_MAJOR "@SCALFMM_MAJOR_VERSION@")
+SET(SCALFMM_VERSION_MINOR "@SCALFMM_MINOR_VERSION@")
+SET(SCALFMM_VERSION_BUILD  "@SCALFMM_BUILD_VERSION@")
 #
-SET(ScalFMM_PREFIX        "@CMAKE_INSTALL_PREFIX@")
-SET(ScalFMM_INCLUDE_DIR   "@CMAKE_INSTALL_PREFIX@/include")
-SET(ScalFMM_LIBRARIES_DIR "@CMAKE_INSTALL_PREFIX@/lib")
-SET(ScalFMM_LIBRARIES_ADD "@SCALFMM_LIBRARIES@")
-SET(ScalFMM_LIBRARY_NAME  "@scalfmm_lib@")
+SET(SCALFMM_PREFIX        "@CMAKE_INSTALL_PREFIX@")
+SET(SCALFMM_INCLUDE_DIR   "@CMAKE_INSTALL_PREFIX@/include")
+SET(SCALFMM_LIBRARIES_DIR "@CMAKE_INSTALL_PREFIX@/lib")
+SET(SCALFMM_LIBRARIES_ADD "@SCALFMM_LIBRARIES@")
+SET(SCALFMM_LIBRARY_NAME  "@scalfmm_lib@")
 SET(ScaLFMM_CXX_FLAGS     "@ScaLFMM_CXX_FLAGS@")
 #
-SET(ScalFMM_SOURCE_DIR	   "@ScalFMM_SOURCE_DIR@")
-SET(ScalFMM_BUILD_SHARED_LIBS "@BUILD_SHARED_LIBS@")
-SET(ScalFMM_USE_FILE	   "@ScalFMM_USE_FILE@")
+SET(SCALFMM_SOURCE_DIR	   "@SCALFMM_SOURCE_DIR@")
+SET(SCALFMM_BUILD_SHARED_LIBS "@BUILD_SHARED_LIBS@")
+SET(SCALFMM_USE_FILE	   "@SCALFMM_USE_FILE@")
 #
-SET(ScalFMM_BUILD_TYPE     "@CMAKE_BUILD_TYPE@")
+SET(SCALFMM_BUILD_TYPE     "@CMAKE_BUILD_TYPE@")
 #
-# ScalFMM Options
+# SCALFMM Options
 #
-SET(ScalFMM_USE_MPI              "@ScalFMM_USE_MPI@")
-SET(ScalFMM_USE_BLAS             "@ScaLFMM_USE_BLAS@")
-SET(ScalFMM_USE_MKL              "@ScalFMM_USE_MKL_AS_BLAS@")
-SET(ScalFMM_USE_DOUBLE_PRECISION "@ScalFMM_USE_DOUBLE_PRECISION@")
-SET(ScalFMM_USE_MEM_STATS        "@ScalFMM_USE_MEM_STATS@") 
-SET(ScalFMM_USE_SSE              "@ScalFMM_USE_SSE@")
-SET(ScalFMM_FLAGS                "@ScaLFMM_FLAGS_OPTI@")
-SET(ScalFMM_USE_ADDONS           "@ScalFMM_USE_ADDONS@")
-SET(ScalFMM_USE_LOG              "@ScalFMM_USE_LOG@")
-SET(ScalFMM_USE_FFT              "@ScalFMM_USE_FFT@")
-SET(ScalFMM_USE_STARPU           "@ScalFMM_USE_STARPU@")
-SET(ScalFMM_USE_SSE 			  "@ScalFMM_USE_SSE@")
-SET(ScalFMM_USE_AVX             "@ScalFMM_USE_AVX@")
+SET(SCALFMM_USE_MPI              "@SCALFMM_USE_MPI@")
+SET(SCALFMM_USE_BLAS             "@ScaLFMM_USE_BLAS@")
+SET(SCALFMM_USE_MKL              "@SCALFMM_USE_MKL_AS_BLAS@")
+SET(SCALFMM_USE_DOUBLE_PRECISION "@SCALFMM_USE_DOUBLE_PRECISION@")
+SET(SCALFMM_USE_MEM_STATS        "@SCALFMM_USE_MEM_STATS@") 
+SET(SCALFMM_USE_SSE              "@SCALFMM_USE_SSE@")
+SET(SCALFMM_FLAGS                "@ScaLFMM_FLAGS_OPTI@")
+SET(SCALFMM_USE_ADDONS           "@SCALFMM_USE_ADDONS@")
+SET(SCALFMM_USE_LOG              "@SCALFMM_USE_LOG@")
+SET(SCALFMM_USE_FFT              "@SCALFMM_USE_FFT@")
+SET(SCALFMM_USE_STARPU           "@SCALFMM_USE_STARPU@")
+SET(SCALFMM_USE_SSE 			  "@SCALFMM_USE_SSE@")
+SET(SCALFMM_USE_AVX             "@SCALFMM_USE_AVX@")
 #
-SET(ScalFMM_DOC_TAGS           "@CMAKE_BINARY_DIR@/Doc/scalfmm.tag")
+SET(SCALFMM_DOC_TAGS           "@CMAKE_BINARY_DIR@/Doc/scalfmm.tag")
 
 #
-IF(ScalFMM_USE_ADDONS) 
-  SET(ScalFMM_LIBRARIES "-L${ScalFMM_LIBRARIES_DIR} -l${ScalFMM_LIBRARY_NAME} ${ScalFMM_LIBRARIES_ADD}" )
+IF(SCALFMM_USE_ADDONS) 
+  SET(SCALFMM_LIBRARIES "-L${SCALFMM_LIBRARIES_DIR} -l${SCALFMM_LIBRARY_NAME} ${SCALFMM_LIBRARIES_ADD}" )
 ELSE()
-  SET(ScalFMM_LIBRARIES "-L${ScalFMM_LIBRARIES_DIR} -l${ScalFMM_LIBRARY_NAME}" )
+  SET(SCALFMM_LIBRARIES "-L${SCALFMM_LIBRARIES_DIR} -l${SCALFMM_LIBRARY_NAME}" )
 ENDIF()
 
-SET(ScalFMM_INCLUDE_DIRS  ${ScalFMM_INCLUDE_DIR}
-                          ${ScalFMM_INCLUDE_DIR}/Utils 
-                          ${ScalFMM_INCLUDE_DIR}/Components 
-                          ${ScalFMM_INCLUDE_DIR}/Arranger
-                          ${ScalFMM_INCLUDE_DIR}/Containers
-                          ${ScalFMM_INCLUDE_DIR}/Core
-                          ${ScalFMM_INCLUDE_DIR}/Extensions
-                          ${ScalFMM_INCLUDE_DIR}/Files
-                          ${ScalFMM_INCLUDE_DIR}/Kernels
-                          ${ScalFMM_INCLUDE_DIR}/Chebyshev)
+SET(SCALFMM_INCLUDE_DIRS  ${SCALFMM_INCLUDE_DIR}
+                          ${SCALFMM_INCLUDE_DIR}/Utils 
+                          ${SCALFMM_INCLUDE_DIR}/Components 
+                          ${SCALFMM_INCLUDE_DIR}/Arranger
+                          ${SCALFMM_INCLUDE_DIR}/Containers
+                          ${SCALFMM_INCLUDE_DIR}/Core
+                          ${SCALFMM_INCLUDE_DIR}/Extensions
+                          ${SCALFMM_INCLUDE_DIR}/Files
+                          ${SCALFMM_INCLUDE_DIR}/Kernels
+                          ${SCALFMM_INCLUDE_DIR}/Chebyshev)
 
 #SCALFMM_BUILD_TESTS => OFF
 #SCALFMM_BUILD_UTESTS => OFF

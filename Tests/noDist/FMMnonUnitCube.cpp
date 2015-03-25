@@ -43,7 +43,7 @@
 //#include "Core/FFmmAlgorithmNoP2P.hpp"
 #include "Core/FFmmAlgorithm.hpp"
 
-#ifdef ScalFMM_USE_BLAS
+#ifdef SCALFMM_USE_BLAS
 // chebyshev kernel
 
 #include "Kernels/Chebyshev/FChebCell.hpp"
@@ -55,7 +55,7 @@
 #include "Components/FSimpleLeaf.hpp"
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#ifdef ScalFMM_USE_FFT
+#ifdef SCALFMM_USE_FFT
 // Uniform grid kernel
 #include "Kernels/Uniform/FUnifCell.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
@@ -191,7 +191,7 @@ int main(int argc, char* argv[])
 	std::cout << "Good eval: " << rr  <<  "     "  <<  MatrixKernel.evaluate(A,B) <<std::endl;
 	std::cout << " Coeff " <<  LX 	<<"  " <<  LY  <<"  " <<  LZ << std::endl;
 	//
-#ifdef  ScalFMM_USE_BLAS
+#ifdef  SCALFMM_USE_BLAS
 	{	// begin ChebSymKernel kernel
 
 		// accuracy
@@ -275,7 +275,7 @@ int main(int argc, char* argv[])
 	} // end Chebyshev kernel
 #endif
 
-#ifdef  ScalFMM_USE_FFT
+#ifdef  SCALFMM_USE_FFT
 	//
 	////////////////////////////////////////////////////////////////////
 	//

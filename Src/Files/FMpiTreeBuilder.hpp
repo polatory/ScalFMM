@@ -482,7 +482,7 @@ public:
         delete[] particlesArrayInLeafOrder;
         delete[] leavesOffsetInParticles;
 
-#ifdef ScalFMM_USE_LOG
+#ifdef SCALFMM_USE_LOG
         /** To produce stats after the Equalize phase  */
         {
             const int finalNbParticles = particleSaver->getSize();

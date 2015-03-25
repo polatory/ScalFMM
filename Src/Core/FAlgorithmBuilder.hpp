@@ -25,7 +25,7 @@
 #include "FFmmAlgorithmThread.hpp"
 #include "FFmmAlgorithmPeriodic.hpp"
 
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
 #include "../Utils/FMpi.hpp"
 #include "FFmmAlgorithmThreadProc.hpp"
 #include "FFmmAlgorithmThreadProcPeriodic.hpp"
@@ -86,7 +86,7 @@ public:
     static FAbstractAlgorithm* BuildAlgorithm(OctreeClass*const tree, KernelClass*const kernel,
                                        const MPI_Comm mpiComm = (MPI_Comm)0, const bool isPeriodic = false,
                                        const int periodicUpperlevel = 0){
-    #ifdef ScalFMM_USE_MPI
+    #ifdef SCALFMM_USE_MPI
         if(isPeriodic == false){
             return new FFmmAlgorithmThreadProc<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(FMpi::FComm(mpiComm), tree, kernel);
         }

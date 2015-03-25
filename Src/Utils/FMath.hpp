@@ -22,11 +22,11 @@
 
 #include "FGlobal.hpp"
 
-#ifdef ScalFMM_USE_SSE
+#ifdef SCALFMM_USE_SSE
 #include "FSse.hpp"
 #endif
 
-#ifdef ScalFMM_USE_AVX
+#ifdef SCALFMM_USE_AVX
 #include "FAvx.hpp"
 #endif
 
@@ -54,7 +54,7 @@ struct FMath{
         return (inV < 0 ? -inV : inV);
     }
 
-#ifdef ScalFMM_USE_SSE
+#ifdef SCALFMM_USE_SSE
     static __m128 Abs(const __m128 inV){
         return _mm_max_ps(_mm_sub_ps(_mm_setzero_ps(), inV), inV);
     }
@@ -63,7 +63,7 @@ struct FMath{
         return _mm_max_pd(_mm_sub_pd(_mm_setzero_pd(), inV), inV);
     }
 #endif
-#ifdef ScalFMM_USE_AVX
+#ifdef SCALFMM_USE_AVX
     static __m256 Abs(const __m256 inV){
         return _mm256_max_ps(_mm256_sub_ps(_mm256_setzero_ps(), inV), inV);
     }
@@ -85,7 +85,7 @@ struct FMath{
         return (inV1 < inV2 ? inV1 : inV2);
     }
 
-#ifdef ScalFMM_USE_SSE
+#ifdef SCALFMM_USE_SSE
     static __m128 Max(const __m128 inV1, const __m128 inV2){
         return _mm_max_ps(inV1, inV2);
     }
@@ -100,7 +100,7 @@ struct FMath{
         return _mm_min_pd(inV1, inV2);
     }
 #endif
-#ifdef ScalFMM_USE_AVX
+#ifdef SCALFMM_USE_AVX
     static __m256 Max(const __m256 inV1, const __m256 inV2){
         return _mm256_max_ps(inV1, inV2);
     }
@@ -147,7 +147,7 @@ struct FMath{
         return ceil(inValue);
     }
 
-#if  defined(ScalFMM_USE_SSE ) && defined(__SSSE4_1__)
+#if  defined(SCALFMM_USE_SSE ) && defined(__SSSE4_1__)
     static __m128 dfloor(const __m128 inV){
         return _mm_floor_ps(inV);
     }
@@ -164,7 +164,7 @@ struct FMath{
         return _mm_ceil_pd(inV);
     }
 #endif
-#ifdef ScalFMM_USE_AVX
+#ifdef SCALFMM_USE_AVX
     static __m256 dfloor(const __m256 inV){
         return _mm256_floor_ps(inV);
     }
@@ -231,7 +231,7 @@ struct FMath{
     static double Rsqrt(const double inValue){
         return 1.0/sqrt(inValue);
     }
-#ifdef ScalFMM_USE_SSE
+#ifdef SCALFMM_USE_SSE
     static __m128 Sqrt(const __m128 inV){
         return _mm_sqrt_ps(inV);
     }
@@ -248,7 +248,7 @@ struct FMath{
         return _mm_set_pd1(1.0) / _mm_sqrt_pd(inV);
     }
 #endif
-#ifdef ScalFMM_USE_AVX
+#ifdef SCALFMM_USE_AVX
     static __m256 Sqrt(const __m256 inV){
         return _mm256_sqrt_ps(inV);
     }
@@ -497,7 +497,7 @@ inline double FMath::ConvertTo<double,const double*>(const double* val){
     return *val;
 }
 
-#ifdef ScalFMM_USE_SSE
+#ifdef SCALFMM_USE_SSE
 template <>
 inline __m128 FMath::One<__m128>(){
     return _mm_set_ps1(1.0);
@@ -553,7 +553,7 @@ inline double FMath::ConvertTo<double,__m128d>(const __m128d val){
 }
 #endif
 
-#ifdef ScalFMM_USE_AVX
+#ifdef SCALFMM_USE_AVX
 template <>
 inline __m256 FMath::One<__m256>(){
     return _mm256_set1_ps(1.0);

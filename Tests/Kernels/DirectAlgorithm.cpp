@@ -50,7 +50,7 @@
 #include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
 
-#ifdef ScalFMM_USE_BLAS
+#ifdef SCALFMM_USE_BLAS
 // chebyshev kernel
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebKernel.hpp"
@@ -85,7 +85,7 @@ int main(int argc, char ** argv){
     typedef FInterpMatrixKernelR<FReal>                                              MatrixKernelClass;
   const MatrixKernelClass MatrixKernel;
 
-#ifdef  ScalFMM_USE_BLAS
+#ifdef  SCALFMM_USE_BLAS
 	// begin Chebyshev kernel
 	// accuracy
 	const unsigned int ORDER = 12;

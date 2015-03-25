@@ -1,6 +1,6 @@
 # add a target to generate API documentation with Doxygen
-OPTION( ScalFMM_BUILD_DOC "Set to ON to build the Doxygen documentation " OFF )
-IF(ScalFMM_BUILD_DOC)
+OPTION( SCALFMM_BUILD_DOC "Set to ON to build the Doxygen documentation " OFF )
+IF(SCALFMM_BUILD_DOC)
   find_package(Doxygen)
   if(DOXYGEN_FOUND)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
@@ -10,11 +10,11 @@ IF(ScalFMM_BUILD_DOC)
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       COMMENT "Generating API documentation with Doxygen" VERBATIM
       )
-#    INSTALL(FILES   ${ScalFMM_BINARY_DIR}/Doc/scalfmm.tag
+#    INSTALL(FILES   ${SCALFMM_BINARY_DIR}/Doc/scalfmm.tag
 #      DESTINATION doc/
 #      )
-#    INSTALL(DIRECTORY   ${ScalFMM_BINARY_DIR}/Doc/html
+#    INSTALL(DIRECTORY   ${SCALFMM_BINARY_DIR}/Doc/html
 #      DESTINATION doc/
 #      )
   endif(DOXYGEN_FOUND)
-endif(ScalFMM_BUILD_DOC)
+endif(SCALFMM_BUILD_DOC)

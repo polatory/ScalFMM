@@ -24,7 +24,7 @@
 
 #include "../../Src/Components/FBasicParticleContainer.hpp"
 
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
 #include "../../Src/Utils/FMpi.hpp"
 #endif
 
@@ -268,7 +268,7 @@ struct ScalFmmCoreHandle {
         int treeHeight;     // hombre de niveaux de l'arbre (int)
         FReal boxWidth;    // taille de la boîte racine (FReal)
         FReal boxCenter[3]; // position du centre de la boîte racine (FReal[3])
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
         MPI_Comm mpiCom;    // communicateur MPI (MPI_Comm)
 #endif
         int nbThreads;      // nombre de threads (int)
@@ -304,7 +304,7 @@ int FmmCore_isParameterUsed(void */*fmmCore*/, int *name, int *flag){
     case FMMCORE_ROOT_BOX_WIDTH :
     case FMMCORE_ROOT_BOX_CENTER :
     case FMMCORE_TREE_HEIGHT :
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
     case FMMCORE_MPI_COMMUNICATOR:
 #endif
     case FMMCORE_THREADS_NUMBER:
@@ -343,7 +343,7 @@ int FmmCore_setParameter(void *fmmCore, int *name, void*value){
     case FMMCORE_ROOT_BOX_CENTER :
         memcpy(corehandle->config.boxCenter, value, sizeof(FReal)*3);
         break;
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
     case FMMCORE_MPI_COMMUNICATOR:
         corehandle->config.mpiCom = *(MPI_Comm*)value;
         break;
@@ -388,7 +388,7 @@ int FmmCore_getParameter(void *fmmCore, int *name, void*value){
     case FMMCORE_ROOT_BOX_CENTER :
         memcpy(value,corehandle->config.boxCenter, sizeof(FReal)*3);
         break;
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
     case FMMCORE_MPI_COMMUNICATOR:
         *(MPI_Comm*)value = corehandle->config.mpiCom;
         break;

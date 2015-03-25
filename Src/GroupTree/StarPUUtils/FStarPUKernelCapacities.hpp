@@ -18,7 +18,7 @@ public:
     virtual bool supportL2P(const FStarPUTypes inPu) const = 0;
     virtual bool supportP2P(const FStarPUTypes inPu) const = 0;
     virtual bool supportP2PExtern(const FStarPUTypes inPu) const = 0;
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
     virtual bool supportM2LMpi(const FStarPUTypes inPu) const = 0;
     virtual bool supportP2PMpi(const FStarPUTypes inPu) const = 0;
 #endif
@@ -81,7 +81,7 @@ public:
     using BaseClass::BaseClass;
 };
 
-#ifdef ScalFMM_ENABLE_CUDA_KERNEL
+#ifdef SCALFMM_ENABLE_CUDA_KERNEL
 template <class BaseClass>
 class FStarPUAllCudaCapacities : public BaseClass, public FStarPUAbstractCapacities {
     bool check(const FStarPUTypes inPu) const override{
@@ -101,7 +101,7 @@ public:
 };
 #endif
 
-#ifdef ScalFMM_ENABLE_OPENCL_KERNEL
+#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
 template <class BaseClass>
 class FStarPUAllOpenCLCapacities : public BaseClass, public FStarPUAbstractCapacities {
     bool check(const FStarPUTypes inPu) const override{

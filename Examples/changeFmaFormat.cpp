@@ -92,6 +92,6 @@ int main(int argc, char ** argv){
         driverExportData(outfilename, particles , NbPoints,loader.getNbRecordPerline() );
     }
     //
-    delete particles ;
+    delete[] particles ;
     return 0;
 }

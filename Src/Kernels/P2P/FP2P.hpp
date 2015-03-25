@@ -580,7 +580,7 @@ template <class FReal>
 struct FP2PT{
 };
 
-#if defined(ScalFMM_USE_AVX)
+#if defined(SCALFMM_USE_AVX)
 template <>
 struct FP2PT<double>{
     template <class ContainerClass, class MatrixKernelClass>
@@ -610,7 +610,7 @@ struct FP2PT<float>{
         FP2P::GenericFullRemote<float, ContainerClass, MatrixKernelClass, __m256, 8>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
     }
 };
-#elif defined(ScalFMM_USE_SSE)
+#elif defined(SCALFMM_USE_SSE)
 template <>
 struct FP2PT<double>{
     template <class ContainerClass, class MatrixKernelClass>

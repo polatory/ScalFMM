@@ -21,7 +21,7 @@
 #include "FGlobal.hpp"
 #include "FNoCopyable.hpp"
 
-#ifndef ScalFMM_USE_LOG
+#ifndef SCALFMM_USE_LOG
 
 #define FLOG( ... )
 
@@ -179,7 +179,7 @@ public:
 
 };
 
-#endif //ScalFMM_USE_DEBUG
+#endif //SCALFMM_USE_DEBUG
 
 #endif //FDEBUG_HPP
 
