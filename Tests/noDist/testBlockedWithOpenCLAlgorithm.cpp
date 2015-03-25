@@ -79,7 +79,7 @@ int main(int argc, char* argv[]){
     #ifdef ScalFMM_ENABLE_CUDA_KERNEL
         , FStarPUCudaWrapper<KernelClass, FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<>>
     #endif
-        , FStarPUOpenClWrapper<GroupKernelClass, FOpenCLDeviceWrapper<GroupKernelClass, FTestOpenCLCode> >
+        , FStarPUOpenClWrapper<GroupKernelClass, FOpenCLDeviceWrapper<GroupKernelClass, FTestOpenCLCode<FReal> > >
          > GroupAlgorithm;
 
     typedef FTestCell                   CellClass;

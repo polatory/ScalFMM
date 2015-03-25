@@ -7,6 +7,7 @@
 #include "../OpenCl/FTextReplacer.hpp"
 
 // Initialize the types
+template <class FReal>
 class FTestOpenCLCode{
     FTextReplacer kernelfile;
     size_t dim;
@@ -14,7 +15,12 @@ class FTestOpenCLCode{
 public:
     //FTestOpenCLCode() : kernelfile("/home/berenger/Projets/ScalfmmGit/scalfmm/Src/GroupTree/OpenCl/FEmptyKernel.cl"){
     FTestOpenCLCode() : kernelfile("/home/berenger/Projets/ScalfmmGit/scalfmm/Src/GroupTree/TestKernel/FTestKernel.cl"){
-        kernelfile.replaceAll("___FReal___", "double");
+        if(sizeof(FReal) == sizeof(double)){
+            kernelfile.replaceAll("___FReal___", "double");
+        }
+        else{
+            kernelfile.replaceAll("___FReal___", "float");
+        }
         kernelfile.replaceAll("___FParticleValueClass___", "long long");
         kernelfile.replaceAll("___NbSymbAttributes___", 0);
         kernelfile.replaceAll("___NbAttributesPerParticle___", 1);
