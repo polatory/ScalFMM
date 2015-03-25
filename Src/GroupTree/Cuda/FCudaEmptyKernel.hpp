@@ -10,10 +10,11 @@
 /**
  * This class defines what should be a Cuda kernel.
  */
+template <class FReal>
 class FCudaEmptyKernel {
 protected:
 public:
-    typedef FCudaGroupAttachedLeaf<0,0,int> ContainerClass;
+    typedef FCudaGroupAttachedLeaf<FReal,0,0,int> ContainerClass;
     typedef FCudaCompositeCell<FCudaEmptyCellSymb,int,int> CellClass;
 
     __device__ void P2M(CellClass /*pole*/, const ContainerClass* const /*particles*/) {

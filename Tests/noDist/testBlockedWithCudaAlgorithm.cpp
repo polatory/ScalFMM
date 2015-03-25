@@ -53,10 +53,10 @@
 
 class FTestCudaKernels;
 
-template <unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass>
+template <class FReal, unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass>
 class FCudaGroupAttachedLeaf;
 
-template <unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass>
+template <class FReal, unsigned NbSymbAttributes, unsigned NbAttributesPerParticle, class AttributeClass>
 class FCudaGroupOfParticles;
 
 template <class SymboleCellClass, class PoleCellClass, class LocalCellClass>
@@ -86,7 +86,7 @@ int main(int argc, char* argv[]){
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
     typedef FStarPUCudaWrapper<GroupKernelClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass,
             FCudaGroupOfCells<GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass>,
-            FCudaGroupOfParticles<0, 1, long long int>, FCudaGroupAttachedLeaf<0, 1, long long int>, FTestCudaKernels> GroupCudaWrapper;
+            FCudaGroupOfParticles<FReal, 0, 1, long long int>, FCudaGroupAttachedLeaf<FReal, 0, 1, long long int>, FTestCudaKernels > GroupCudaWrapper;
 
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass,
             GroupCpuWrapper, GroupCudaWrapper> GroupAlgorithm;

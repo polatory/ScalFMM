@@ -41,7 +41,7 @@
 template <class OctreeClass, class CellContainerClass, class KernelClass, class ParticleGroupClass, class StarPUCpuWrapperClass
 #ifdef ScalFMM_ENABLE_CUDA_KERNEL
     , class StarPUCudaWrapperClass = FStarPUCudaWrapper<KernelClass, FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
-                                                        FCudaGroupOfParticles<0, 0, int>, FCudaGroupAttachedLeaf<0, 0, int>, FCudaEmptyKernel>
+                                                        FCudaGroupOfParticles<int, 0, 0, int>, FCudaGroupAttachedLeaf<int, 0, 0, int>, FCudaEmptyKernel<int> >
 #endif
 #ifdef ScalFMM_ENABLE_OPENCL_KERNEL
     , class StarPUOpenClWrapperClass = FStarPUOpenClWrapper<KernelClass, FOpenCLDeviceWrapper<KernelClass>>

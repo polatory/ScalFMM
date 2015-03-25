@@ -11,7 +11,7 @@
 class FTestCudaKernels {
 public:
     typedef FCudaCompositeCell<FTestCellPODCore, FTestCellPODData, FTestCellPODData> CellClass;
-    typedef FCudaGroupAttachedLeaf<0, 1, long long int>  ContainerClass;
+    typedef FCudaGroupAttachedLeaf<FReal, 0, 1, long long int>  ContainerClass;
 
     /** Before upward */
     __device__ void P2M(CellClass pole, const ContainerClass* const particles) {
