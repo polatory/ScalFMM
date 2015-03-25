@@ -23,6 +23,7 @@
 #include "../Utils/FTic.hpp"
 #include "../Utils/FAssert.hpp"
 #include "../Containers/FOctree.hpp"
+#include "../Containers/FTreeCoordinate.hpp"
 
 #include "../Components/FBasicParticleContainer.hpp"
 
@@ -47,20 +48,6 @@
 template<class FReal, class OctreeClass, class LeafClass>
 class FTreeBuilder{
 private:
-    /**
-     * This method has been taken from the octree class,
-     * it computes a tree coordinate (x or y or z) from real cartesian position
-     */
-    static int GetTreeCoordinate(const FReal inRelativePosition, const FReal boxWidthAtLeafLevel,
-                                 const FReal boxWidth, const int height) {
-        FAssertLF( (inRelativePosition >= 0 && inRelativePosition <= boxWidth), "inRelativePosition : ",inRelativePosition );
-        if(inRelativePosition == boxWidth){
-            return FMath::pow2(height-1)-1;
-        }
-        const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
-        return static_cast<int>(indexFReal);
-    }
-
     /** This class is the relation between particles and their morton idx */
     struct IndexedParticle{
         MortonIndex mindex;
@@ -112,12 +99,12 @@ public:
         for(int idxParts=0; idxParts<numberOfParticle ; ++idxParts ){
             // Get the Morton Index
             const FTreeCoordinate host(
-                     GetTreeCoordinate(particlesContainers.getPositions()[0][idxParts] - boxCorner.getX(),
-                                         boxWidthAtLeafLevel, boxWidth, NbLevels),
-                     GetTreeCoordinate(particlesContainers.getPositions()[1][idxParts] - boxCorner.getY(),
-                                         boxWidthAtLeafLevel, boxWidth, NbLevels ),
-                     GetTreeCoordinate(particlesContainers.getPositions()[2][idxParts] - boxCorner.getZ(),
-                                         boxWidthAtLeafLevel, boxWidth, NbLevels )
+                     FCoordinateComputer::GetTreeCoordinate<FReal>(particlesContainers.getPositions()[0][idxParts] - boxCorner.getX(),
+                                         boxWidth,boxWidthAtLeafLevel,  NbLevels),
+                     FCoordinateComputer::GetTreeCoordinate<FReal>(particlesContainers.getPositions()[1][idxParts] - boxCorner.getY(),
+                                          boxWidth,boxWidthAtLeafLevel, NbLevels ),
+                     FCoordinateComputer::GetTreeCoordinate<FReal>(particlesContainers.getPositions()[2][idxParts] - boxCorner.getZ(),
+                                          boxWidth,boxWidthAtLeafLevel, NbLevels )
             );
             // Store morton index and original idx
             particleIndexes[idxParts].mindex = host.getMortonIndex(NbLevels-1);

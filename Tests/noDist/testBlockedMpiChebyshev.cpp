@@ -44,37 +44,11 @@
 #include "../../Src/GroupTree/Core/FGroupTaskStarpuMpiAlgorithm.hpp"
 
 #include "../../Src/Files/FMpiFmaGenericLoader.hpp"
+#include "../../Src/Containers/FCoordinateComputer.hpp"
 
 #include "../../Src/GroupTree/StarPUUtils/FStarPUKernelCapacities.hpp"
 
 #include <memory>
-
-
-template <class FReal>
-int getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidth,
-                      const FReal boxWidthAtLeafLevel, const int treeHeight) {
-    FAssertLF( (inRelativePosition >= 0 && inRelativePosition <= boxWidth), "inRelativePosition : ",inRelativePosition );
-    if(inRelativePosition == boxWidth){
-        return FMath::pow2(treeHeight-1)-1;
-    }
-    const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
-    return static_cast<int>(indexFReal);
-}
-
-template <class FReal>
-FTreeCoordinate getCoordinateFromPosition(const FPoint<FReal>& centerOfBox, const FReal boxWidth, const int treeHeight,
-                                          const FPoint<FReal>& pos) {
-    const FPoint<FReal> boxCorner(centerOfBox,-(boxWidth/2));
-    const FReal boxWidthAtLeafLevel(boxWidth/FReal(1<<(treeHeight-1)));
-
-    // box coordinate to host the particle
-    FTreeCoordinate host;
-    // position has to be relative to corner not center
-    host.setX( getTreeCoordinate( pos.getX() - boxCorner.getX(), boxWidth, boxWidthAtLeafLevel, treeHeight));
-    host.setY( getTreeCoordinate( pos.getY() - boxCorner.getY(), boxWidth, boxWidthAtLeafLevel, treeHeight));
-    host.setZ( getTreeCoordinate( pos.getZ() - boxCorner.getZ(), boxWidth, boxWidthAtLeafLevel, treeHeight));
-    return host;
-}
 
 
 int main(int argc, char* argv[]){
@@ -147,7 +121,7 @@ int main(int argc, char* argv[]){
     std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
 
     // Each proc need to know the righest morton index
-    const FTreeCoordinate host = getCoordinateFromPosition(
+    const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPosition<FReal>(
                 loader.getCenterOfBox(),
                 loader.getBoxWidth(),
                 TreeHeight,

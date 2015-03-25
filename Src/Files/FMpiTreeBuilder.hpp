@@ -27,6 +27,8 @@
 #include "../BalanceTree/FLeafBalance.hpp"
 #include "../BalanceTree/FEqualize.hpp"
 
+#include "../Containers/FCoordinateComputer.hpp"
+
 /**
  * This class manage the loading of particles for the mpi version.
  * It work in several steps.
@@ -44,19 +46,6 @@ private:
         int nbParts;
         FSize startingPoint;
     };
-
-    /**
-     * This method has been taken from the octree class,
-     * it computes a tree coordinate (x or y or z) from real cartesian position
-     */
-    static int GetTreeCoordinate(const FReal inRelativePosition, const FReal boxWidthAtLeafLevel, const FReal boxWidth, const int height) {
-        FAssertLF( (inRelativePosition >= 0 && inRelativePosition <= boxWidth), "inRelativePosition : ",inRelativePosition );
-        if(inRelativePosition == boxWidth){
-            return FMath::pow2(height-1)-1;
-        }
-        const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
-        return static_cast<int>(indexFReal);
-    }
 
 public:
     /** What sorting algorithm to use */
@@ -101,12 +90,12 @@ public:
         // Fill the array and compute the morton index
         for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(originalParticlesUnsorted[idxPart].particle);
-            host.setX( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getX() - boxCorner.getX(), boxWidthAtLeafLevel,
-                                          loader.getBoxWidth(), TreeHeight ));
-            host.setY( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getY() - boxCorner.getY(), boxWidthAtLeafLevel,
-                                          loader.getBoxWidth(), TreeHeight ));
-            host.setZ( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getZ() - boxCorner.getZ(), boxWidthAtLeafLevel,
-                                          loader.getBoxWidth(), TreeHeight ));
+            host.setX( FCoordinateComputer::GetTreeCoordinate<FReal>( originalParticlesUnsorted[idxPart].particle.getPosition().getX() - boxCorner.getX(), loader.getBoxWidth(), boxWidthAtLeafLevel,
+                                           TreeHeight ));
+            host.setY( FCoordinateComputer::GetTreeCoordinate<FReal>( originalParticlesUnsorted[idxPart].particle.getPosition().getY() - boxCorner.getY(), loader.getBoxWidth(), boxWidthAtLeafLevel,
+                                           TreeHeight ));
+            host.setZ( FCoordinateComputer::GetTreeCoordinate<FReal>( originalParticlesUnsorted[idxPart].particle.getPosition().getZ() - boxCorner.getZ(), loader.getBoxWidth(), boxWidthAtLeafLevel,
+                                           TreeHeight ));
 
             originalParticlesUnsorted[idxPart].index = host.getMortonIndex(TreeHeight - 1);
         }
@@ -138,12 +127,12 @@ public:
         // Fill the array and compute the morton index
         for(int idxPart = 0 ; idxPart < originalNbParticles ; ++idxPart){
             originalParticlesUnsorted[idxPart].particle = inOriginalParticles[idxPart];
-            host.setX( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getX() - boxCorner.getX(), boxWidthAtLeafLevel,
-                                          boxWidth, TreeHeight ));
-            host.setY( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getY() - boxCorner.getY(), boxWidthAtLeafLevel,
-                                          boxWidth, TreeHeight ));
-            host.setZ( GetTreeCoordinate( originalParticlesUnsorted[idxPart].particle.getPosition().getZ() - boxCorner.getZ(), boxWidthAtLeafLevel,
-                                          boxWidth, TreeHeight ));
+            host.setX( FCoordinateComputer::GetTreeCoordinate<FReal>( originalParticlesUnsorted[idxPart].particle.getPosition().getX() - boxCorner.getX(), boxWidth, boxWidthAtLeafLevel,
+                                           TreeHeight ));
+            host.setY( FCoordinateComputer::GetTreeCoordinate<FReal>( originalParticlesUnsorted[idxPart].particle.getPosition().getY() - boxCorner.getY(), boxWidth, boxWidthAtLeafLevel,
+                                           TreeHeight ));
+            host.setZ( FCoordinateComputer::GetTreeCoordinate<FReal>( originalParticlesUnsorted[idxPart].particle.getPosition().getZ() - boxCorner.getZ(), boxWidth, boxWidthAtLeafLevel,
+                                           TreeHeight ));
 
             originalParticlesUnsorted[idxPart].index = host.getMortonIndex(TreeHeight - 1);
         }

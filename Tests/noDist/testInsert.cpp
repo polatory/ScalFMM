@@ -49,6 +49,7 @@
 #include "../../Src/Utils/FParameterNames.hpp"
 
 #include "Containers/FOctree.hpp"
+#include "Containers/FCoordinateComputer.hpp"
 
 #ifdef _OPENMP
 #include "Core/FFmmAlgorithmThread.hpp"
@@ -57,22 +58,6 @@
 #endif
 
 #include "Utils/FTemplate.hpp"
-
-
-
-/** This method has been tacken from the octree
- * it computes a tree coordinate (x or y or z) from real position
- */
-
-template <class FReal>
-static int getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidthAtLeafLevel) {
-    const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
-    const int index = int(FMath::dfloor(indexFReal));
-    if( index && FMath::LookEqual(inRelativePosition, boxWidthAtLeafLevel * FReal(index) ) ){
-	return index - 1;
-    }
-    return index;
-}
 
 
 /**
@@ -195,9 +180,9 @@ int main(int argc, char** argv){
     for(int idxPart = 0 ; idxPart < nbOfParticles ; ++idxPart){
 	loader.fillParticle(&arrayOfParts[idxPart].position,&arrayOfParts[idxPart].physicalValue);
 	//Build temporary TreeCoordinate
-	host.setX( getTreeCoordinate( arrayOfParts[idxPart].getPosition().getX() - boxCorner.getX(), boxWidthAtLeafLevel ));
-	host.setY( getTreeCoordinate( arrayOfParts[idxPart].getPosition().getY() - boxCorner.getY(), boxWidthAtLeafLevel ));
-	host.setZ( getTreeCoordinate( arrayOfParts[idxPart].getPosition().getZ() - boxCorner.getZ(), boxWidthAtLeafLevel ));
+    host.setX( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParts[idxPart].getPosition().getX() - boxCorner.getX(), boxWidth, boxWidthAtLeafLevel, NbLevels ));
+    host.setY( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParts[idxPart].getPosition().getY() - boxCorner.getY(), boxWidth, boxWidthAtLeafLevel, NbLevels ));
+    host.setZ( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParts[idxPart].getPosition().getZ() - boxCorner.getZ(), boxWidth, boxWidthAtLeafLevel, NbLevels ));
 
 	//Set Morton index from Tree Coordinate
 	arrayOfParts[idxPart].index = host.getMortonIndex(NbLevels - 1);

@@ -29,7 +29,7 @@
 #include "../Utils/FMath.hpp"
 #include "../Utils/FNoCopyable.hpp"
 #include "../Utils/FAssert.hpp"
-
+#include "FCoordinateComputer.hpp"
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -78,13 +78,7 @@ class FOctree : public FNoCopyable {
      * @return the morton index
      */
     FTreeCoordinate getCoordinateFromPosition(const FPoint<FReal>& inPosition) const {
-        // box coordinate to host the particle
-        FTreeCoordinate host;
-        // position has to be relative to corner not center
-        host.setX( getTreeCoordinate( inPosition.getX() - this->boxCorner.getX() ));
-        host.setY( getTreeCoordinate( inPosition.getY() - this->boxCorner.getY() ));
-        host.setZ( getTreeCoordinate( inPosition.getZ() - this->boxCorner.getZ() ));
-        return host;
+        return FCoordinateComputer::GetCoordinateFromPositionAndCorner<FReal>(this->boxCorner, this->boxWidth, height, inPosition);
     }
 
     /**
@@ -94,12 +88,7 @@ class FOctree : public FNoCopyable {
      * @return the box num at the leaf level that contains inRelativePosition
      */
     int getTreeCoordinate(const FReal inRelativePosition) const {
-        FAssertLF( (inRelativePosition >= 0 && inRelativePosition <= this->boxWidth), "inRelativePosition : ",inRelativePosition );
-        if(inRelativePosition == this->boxWidth){
-            return FMath::pow2(height-1)-1;
-        }
-        const FReal indexFReal = inRelativePosition / this->boxWidthAtLevel[this->leafIndex];
-        return static_cast<int>(indexFReal);
+        return FCoordinateComputer::GetTreeCoordinate<FReal>(inRelativePosition, this->boxWidth, this->boxWidthAtLevel[this->leafIndex], height);
     }
 
 public:
