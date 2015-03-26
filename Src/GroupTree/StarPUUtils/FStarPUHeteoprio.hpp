@@ -421,7 +421,7 @@ static struct starpu_task *pop_task_heteroprio_policy(unsigned sched_ctx_id)
             assert(bucket->valide_archs & worker->arch_type);
             /* Take nb_tasks_to_prefetch tasks if possible */
             while(_starpu_fifo_empty(bucket->tasks_queue) == 0 && nb_tasks_to_prefetch
-                 && (worker->arch_index == bucket->factor_base_arch_index
+                 && (bucket->factor_base_arch_index == 0 || worker->arch_index == bucket->factor_base_arch_index
                   || (float(_starpu_fifo_size(bucket->tasks_queue))/float(heteroprio->nb_workers_per_arch_index[bucket->factor_base_arch_index])
                         >= bucket->slow_factors_per_index[worker->arch_index]))){
                 struct starpu_task* task = _starpu_fifo_pop_local_task(bucket->tasks_queue);
