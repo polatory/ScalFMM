@@ -17,6 +17,9 @@
  */
 template<typename OctreeClass, typename CellClass>
 class CostZones {
+
+    const std::pair<int,int> _boundInit {-1,0};
+
     /// The iterator to move through the tree.
     typename OctreeClass::Iterator _it;
     /// The number of zones to create.
@@ -28,14 +31,19 @@ class CostZones {
     unsigned long long _currentCost = 0;
     /// The total tree cost.
     unsigned long long _totalCost = 0;
-    /// The vector containing the costzones.
+
+    /// The vector containing the costzone cells. Sorted by zone > (level, cell)
     std::vector< std::vector< std::pair<int, CellClass*> > > _zones;
 
-    /// The vector containing the Morton index boundaries of the zones by level
-    /// in the tree.
+    /**
+     * \brief The vector containing the Morton index boundaries of the zones.
+     * Sorted by zone > level > bounds.
+     * \details This means there are at most _treeHeight elements in the inner
+     * vectors.
+     */
     std::vector< std::vector< std::pair<int, int > > > _zonebounds;
 
-    /// Enumeration to specify the children to move to during the in-order
+    /// \brief Enumeration to specify the children to move to during the in-order
     /// traversal.
     enum ChildrenSide {LEFT, RIGHT};
 
@@ -51,10 +59,13 @@ public:
         _nbZones( nbZones ),
         _treeHeight( tree->getHeight() ),
         _zones( 1, std::vector< std::pair< int, CellClass*> >( )),
-        _zonebounds( 1, std::vector< std::pair< int, int> >(_treeHeight, {-1,-1} ))
+        _zonebounds( 1, std::vector< std::pair< int, int> >(_treeHeight, _boundInit ))
         {}
 
     /**
+     * \brief Gets the computed zones.
+     *
+     * See CostZones#_zones.
      * \return The computed zones.
      */
     const std::vector< std::vector< std::pair<int, CellClass*> > >& getZones() const {
@@ -62,6 +73,9 @@ public:
     }
 
     /**
+     * \brief Gets the computed zone bounds.
+     *
+     * See CostZones#_zonebounds.
      * \return The computed zone bounds.
      */
     const std::vector< std::vector< std::pair<int, int> > >& getZoneBounds() const {
@@ -90,7 +104,7 @@ public:
         
         // Compute costzones, we have to do the first level manualy
         for ( int i = 0; i < nbRootChildren; i++ ) {
-            costzones();
+            this->costzones();
             _it.moveRight();
         }
     }
@@ -112,13 +126,13 @@ private:
         int nbLeftChildren = 0, nbRightChildren = 0; 
         // Left children
         for ( int childIdx = 0; childIdx < 4; childIdx++) {
-            if ( children[childIdx] ) {
+            if ( children[childIdx] != nullptr ) {
                 ++ nbLeftChildren;
             }
         }
         // Right children
         for ( int childIdx = 4; childIdx < 8; childIdx++) {
-            if ( children[childIdx] ) {
+            if ( children[childIdx] != nullptr) {
                 ++ nbRightChildren;
             }
         }
@@ -160,7 +174,7 @@ private:
 
         // Call costzones
         for ( int childIdx = 0; childIdx < nbChildren; childIdx++ ) {
-            costzones();
+            this->costzones();
             if(childIdx < nbChildren -1) // nbChildren-1 to avoid changing tree
                 _it.moveRight();
         }
@@ -185,7 +199,7 @@ private:
                 // Zones update
                 _zones.back().push_back({_it.level(), cell});
                 // Zone bounds update
-                if( _zonebounds.back()[_it.level()] == std::pair<int,int>(-1,-1) ) {
+                if( _zonebounds.back()[_it.level()] == _boundInit ) {
                     _zonebounds.back()[_it.level()].first = _it.getCurrentGlobalIndex();
                     _zonebounds.back()[_it.level()].second = 1;
                 } else {
@@ -196,10 +210,13 @@ private:
                 
             } else {
                 // Add a new zone
-                _zones.push_back(std::vector< std::pair<int, CellClass*> >(1, {_it.level(), cell}));
+                _zones.push_back(
+                    std::vector< std::pair<int, CellClass*> >(1, {_it.level(), cell}));
                 // Add a new inferior bound
-                _zonebounds.push_back(std::vector< std::pair<int, int> >(_treeHeight, {-1, -1}));
+                _zonebounds.push_back(
+                    std::vector< std::pair<int, int> >(_treeHeight, _boundInit));
                 _zonebounds.back()[_it.level()].first = _it.getCurrentGlobalIndex();
+                _zonebounds.back()[_it.level()].second = 1;
             }
         }        
     }
@@ -236,9 +253,10 @@ private:
 // END DEBUG SECTION
 
         std::pair<int,int> childrenCount;
+        bool isNotLeaf = _it.canProgressToDown();
 
         // When not on a leaf, apply to left children first
-        if ( _it.canProgressToDown() ) {
+        if ( isNotLeaf ) {
             childrenCount = countLeftRightChildren();
             callCostZonesOnChildren(LEFT, childrenCount);
         }
@@ -246,7 +264,7 @@ private:
         addCurrentCell();
 
         // When not on a leaf, apply to right children
-        if ( _it.canProgressToDown() ) {
+        if ( isNotLeaf ) {
             callCostZonesOnChildren(RIGHT, childrenCount);
         }
     }
