@@ -22,8 +22,8 @@
  
  * \section prerequisite Prerequisite 
  
- * It is recommanded to have built the library or at minimum to have 
- * downloaded the sources code. The user needs to be comfortable with 'C++' 
+ * It is recommanded to have built the library or at least to have 
+ * downloaded the source code. The user needs to be comfortable with 'C++' 
  * language and if possible templates. 
 
  * If you want to browse the code, you may want to see first our \ref
@@ -36,16 +36,16 @@
  * \section data What Data 
  
  * In ScalFmm we proceed the Fast Multipole Method. New users should see 
- * this process has a way to estimate far interactions and compute 
+ * this process as a way to estimate far interactions and compute 
  * accurately the close interactions in a group of particles. We start 
  * with some particles that we insert in a octree. The octree stores the 
  * particles in its leaves. From the root to the leaves there are the 
  * cells. At this point we only express primitives classes which hold 
  * data or primitives classes. 
  
- * Then, we need a kernel which is computational part of the FMM. It is a 
+ * Then, we need a kernel which is the computational part of the FMM. It is a 
  * class that is able to compute the interactions between particles or 
- * cells, etc. There is several possible kernels depending on what we 
+ * cells, etc. There are several possible kernels depending on what we 
  * want to compute and it is easy to implement your own.
  
  * Finally, the FMM Core algorithm is a class that takes the primitives 
@@ -58,34 +58,35 @@
  * \subsection particles Particles
  
  * In order to put the particles in the right leaf, the octree needs to know its spatial position.
- * Then, then once the right leaf is found it is allocated (using the given template LeafClass of the octree),
+ * Then, once the right leaf is found, it is allocated (using the given template LeafClass of the octree),
  * and the particles is pushed into the leaf. If a basic leaf is used, this one only push to a particles container
- * what it has received. So a particles container is nothing more than a class that has a push method
- * which matches the one you call on the octree. To ensure that,
- * a particle container should inherit from FAbstractParticleContainer.
+ * what it has received. So a particle container is nothing more than a class that has a push method
+ * which matches the one you call on the octree. To ensure that, a particle container should inherit from FAbstractParticleContainer.
 
  * <pre class='brush: cpp'>
+ * template <class FReal>
  * class FAbstractParticleContainer{ 
- * template<typename... Args>
- * void push(const FPoint& , Args ... ){
- *      // This method should be specialed
- * };
+ *   template<typename... Args>
+ *   void push(const FPoint<FReal>& /*inParticlePosition*/, Args ... /*args*/){
+ *       
+ *   }
  * </pre>
  
- * Here is how we can print the index of the particles that is inserted from a particles containers :
+ * Here is how we can print the index of the particles that is inserted from a particle containers :
  
  
  * <pre class='brush: cpp'>
- * class MyCustomContainer : public FAbstractParticleContainer{ 
+ * template <class FReal>
+ * class MyCustomContainer : public FAbstractParticleContainer<FReal> { 
  * template<typename... Args>
- * void push(const FPoint& , int particleIndex, double anythingElse){
+ * void push(const FPoint<FReal>& , int particleIndex, double anythingElse){
  *      std::cout << "The particle " << particleIndex << " has just been inserted with " << anythingElse << "\n";
  * };
  *
  * // In the main
- *     typedef MyCustomContainer      ContainerClass;
- *     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
- *     typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
+ *     typedef MyCustomContainer<double>      ContainerClass;
+ *     typedef FSimpleLeaf<double, ContainerClass >                     LeafClass;
+ *     typedef FOctree<double, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
  * // From your system properties
  * OctreeClass tree(treeHeight, subHeight, loader.getBoxWidth(), loader.getCenterOfBox());
  *
@@ -97,19 +98,20 @@
  * In the same way you can sort your particles in different buffer by passing a flag which will be passed to your container:
  
   * <pre class='brush: cpp'>
- * class MyCustomContainer : public FAbstractParticleContainer{ 
+ * template <class FReal>
+ * class MyCustomContainer : public FAbstractParticleContainer<FReal>{ 
  * std::vector<int> bigParticles;
  * std::vector<int> smallParticles;
  * template<typename... Args>
- * void push(const FPoint& , bool isBig, int particleIndex){
+ * void push(const FPoint<FReal>& , bool isBig, int particleIndex){
  *      if(isBig) bigParticles.push_back(particleIndex);
  *      else smallParticles.push_back(particleIndex);        
  * };
  *
  * // In the main
- *     typedef MyCustomContainer      ContainerClass;
- *     typedef FSimpleLeaf< ContainerClass >                     LeafClass;
- *     typedef FOctree< FBasicCell, ContainerClass , LeafClass >  OctreeClass;
+ *     typedef MyCustomContainer<double>      ContainerClass;
+ *     typedef FSimpleLeaf<double, ContainerClass >                     LeafClass;
+ *     typedef FOctree<double, FBasicCell, ContainerClass , LeafClass >  OctreeClass;
  * // From your system properties
  * OctreeClass tree(treeHeight, subHeight, loader.getBoxWidth(), loader.getCenterOfBox());
  *
@@ -119,8 +121,8 @@
  * </pre>
 
  * The FBasicParticleContainer class is given for those who would like to store one or several data type
- * of the same kind per particles (and their position).
- * For example if some one want to store one (or several) integers for the particles or
+ * of the same kind per particles (and their positions).
+ * For example if some one wants to store one (or several) integers for the particles or
  * one (or several) double values per particles.
  
  
@@ -130,8 +132,8 @@
  * class FBasicParticleContainer : public FAbstractParticleContainer, public FAbstractSerializable;
   * </pre>
   
- * If for example you would like to store 2 doubles per particles (one intialized during the push
- * wherease the other if set to 0) you can use the following code: 
+ * If for example you would like to store 2 doubles per particles (one initialized during the push
+ * whereas the other if set to 0) you can use the following code: 
  
   * <pre class='brush: cpp'>
  *     typedef FBasicParticleContainer< 2, double>      ContainerClass;
