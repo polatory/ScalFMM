@@ -18,10 +18,10 @@ public:
     virtual bool supportL2P(const FStarPUTypes inPu) const = 0;
     virtual bool supportP2P(const FStarPUTypes inPu) const = 0;
     virtual bool supportP2PExtern(const FStarPUTypes inPu) const = 0;
-#ifdef SCALFMM_USE_MPI
+
     virtual bool supportM2LMpi(const FStarPUTypes inPu) const = 0;
     virtual bool supportP2PMpi(const FStarPUTypes inPu) const = 0;
-#endif
+
 };
 
 class FStarPUAbstractCapacities : public FStarPUKernelCapacities {

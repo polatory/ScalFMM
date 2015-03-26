@@ -20,6 +20,7 @@
 
 #include <starpu.h>
 #include "../StarPUUtils/FStarPUUtils.hpp"
+#include "../StarPUUtils/FStarPUFmmPriorities.hpp"
 
 #ifdef STARPU_USE_CPU
 #include "../StarPUUtils/FStarPUCpuWrapper.hpp"
@@ -130,7 +131,7 @@ public:
 
         struct starpu_conf conf;
         FAssertLF(starpu_conf_init(&conf) == 0);
-        // conf.ncpus = MaxThreads;
+        FStarPUFmmPriorities::Controller().init(&conf, tree->getHeight(), inKernels);
         FAssertLF(starpu_init(&conf) == 0);
 
         starpu_pthread_mutex_t initMutex;
@@ -694,6 +695,7 @@ protected:
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2m_cl,
                     STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioP2M(),
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
                     STARPU_RW, cellHandles[tree->getHeight()-1][idxGroup].up,
                     STARPU_R, particleHandles[idxGroup].symb,
@@ -755,6 +757,7 @@ protected:
                                          0);
                 task->cl_arg = arg_buffer;
                 task->cl_arg_size = arg_buffer_size;
+                task->priority = FStarPUFmmPriorities::Controller().getPrioM2M(idxLevel);
                 FAssertLF(starpu_task_submit(task) == 0);
             }
         }
@@ -774,6 +777,7 @@ protected:
                 starpu_insert_task(&m2l_cl_in,
                         STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                         STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                   STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioM2L(idxLevel),
                                    STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                    STARPU_R, cellHandles[idxLevel][idxGroup].up,
                                    (STARPU_RW|STARPU_COMMUTE), cellHandles[idxLevel][idxGroup].down,
@@ -791,6 +795,7 @@ protected:
                             STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                             STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                       STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioM2LExtern(idxLevel),
                                STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                STARPU_R, cellHandles[idxLevel][idxGroup].up,
                                (STARPU_RW|STARPU_COMMUTE), cellHandles[idxLevel][idxGroup].down,
@@ -857,6 +862,7 @@ protected:
                                          0);
                 task->cl_arg = arg_buffer;
                 task->cl_arg_size = arg_buffer_size;
+                task->priority = FStarPUFmmPriorities::Controller().getPrioL2L(idxLevel);
                 FAssertLF(starpu_task_submit(task) == 0);
             }
         }
@@ -875,6 +881,7 @@ protected:
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2p_cl_in,
                     STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                               STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioP2P(),
                                STARPU_R, particleHandles[idxGroup].symb,
                                (STARPU_RW|STARPU_COMMUTE), particleHandles[idxGroup].down,
                     0);
@@ -888,6 +895,7 @@ protected:
                 starpu_insert_task(&p2p_cl_inout,
                         STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                         STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                   STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioP2PExtern(),
                         STARPU_R, particleHandles[idxGroup].symb,
                                    (STARPU_RW|STARPU_COMMUTE), particleHandles[idxGroup].down,
                         STARPU_R, particleHandles[interactionid].symb,
@@ -911,6 +919,7 @@ protected:
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&l2p_cl,
                     STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                               STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioL2P(),
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].down,
                     STARPU_R, particleHandles[idxGroup].symb,
