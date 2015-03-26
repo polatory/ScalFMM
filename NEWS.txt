@@ -10,6 +10,8 @@ version 1.1
 -----
 - Add interpolation FMM based on uniform grid points.
 - Add blocked version of the algorithm to increase the granularity (task-based approach)
+- Fix bug with Chebyschev kernel and multi RHS.
+- Improvements in unit tests (works with Linux and MacOs X for intel and gcc)
 - 
 
 1.2.1
