@@ -30,10 +30,10 @@
 
 #include "../../Src/GroupTree/Core/FGroupSeqAlgorithm.hpp"
 #include "../../Src/GroupTree/Core/FGroupTaskAlgorithm.hpp"
-#ifdef ScalFMM_USE_OMP4
+#ifdef SCALFMM_USE_OMP4
 #include "../../Src/GroupTree/Core/FGroupTaskDepAlgorithm.hpp"
 #endif
-#ifdef ScalFMM_USE_STARPU
+#ifdef SCALFMM_USE_STARPU
 #include "../../Src/GroupTree/Core/FGroupTaskStarpuAlgorithm.hpp"
 #include "../../Src/GroupTree/StarPUUtils/FStarPUKernelCapacities.hpp"
 #endif
@@ -105,11 +105,11 @@ int main(int argc, char* argv[]){
     groupedTree3.printInfoBlocks();
 
 
-#ifdef ScalFMM_USE_STARPU
+#ifdef SCALFMM_USE_STARPU
     typedef FStarPUAllCpuCapacities<FRotationKernel< FReal, GroupCellClass, GroupContainerClass , P>>   GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
-#elif defined(ScalFMM_USE_OMP4)
+#elif defined(SCALFMM_USE_OMP4)
     typedef FRotationKernel< FReal, GroupCellClass, GroupContainerClass , P>  GroupKernelClass;
     // Set the number of threads
     omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));

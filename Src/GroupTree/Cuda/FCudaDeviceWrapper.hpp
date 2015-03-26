@@ -20,7 +20,7 @@ void FCuda__upwardPassCallback(
     FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t, 9> subCellGroupsSize,
     FCudaParams<unsigned char*,9> subCellGroupsUpPtr,
     int nbSubCellGroups, int idxLevel, CudaKernelClass* kernel, cudaStream_t 	currentStream);
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
 template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 void FCuda__transferInoutPassCallbackMpi(
@@ -53,7 +53,7 @@ void FCuda__downardPassCallback(
     FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t,9> subCellGroupsSize,
     FCudaParams<unsigned char*,9> subCellGroupsDownPtr,
     int nbSubCellGroups, int idxLevel, CudaKernelClass* kernel, cudaStream_t 	currentStream);
-#ifdef ScalFMM_USE_MPI
+#ifdef SCALFMM_USE_MPI
 template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 void FCuda__directInoutPassCallbackMpi(

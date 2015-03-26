@@ -39,7 +39,7 @@
 
 #include "Core/FFmmAlgorithmThread.hpp"
 
-#ifdef ScalFMM_USE_BLAS
+#ifdef SCALFMM_USE_BLAS
 // chebyshev kernel
 
 #include "Kernels/Chebyshev/FChebCell.hpp"
@@ -50,7 +50,7 @@
 //
 // spherical kernel
 #include "Kernels/Spherical/FSphericalCell.hpp"
-#ifdef ScalFMM_USE_BLAS
+#ifdef SCALFMM_USE_BLAS
 #include "Kernels/Spherical/FSphericalBlasKernel.hpp"
 #include "Kernels/Spherical/FSphericalBlockBlasKernel.hpp"
 #endif
@@ -70,7 +70,7 @@
 #include "Kernels/Rotation/FRotationKernel.hpp"
 #include "Kernels/Rotation/FRotationCell.hpp"
 
-#ifdef ScalFMM_USE_FFT
+#ifdef SCALFMM_USE_FFT
 // Uniform grid kernel
 #include "Kernels/Uniform/FUnifCell.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
@@ -154,7 +154,7 @@ int main(int argc, char* argv[])
 	std::cout << " Energy of the system: "<< energyD <<std::endl;
 	////////////////////////////////////////////////////////////////////
 
-#ifdef  ScalFMM_USE_BLAS
+#ifdef  SCALFMM_USE_BLAS
 	{	// begin Chebyshev kernel
 
 		// accuracy
@@ -515,7 +515,7 @@ int main(int argc, char* argv[])
 
 #endif
 
-#ifdef  ScalFMM_USE_FFT
+#ifdef  SCALFMM_USE_FFT
 	//
 	////////////////////////////////////////////////////////////////////
 	//

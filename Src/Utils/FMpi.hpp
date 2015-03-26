@@ -19,7 +19,12 @@
 
 #include <cstdio>
 
-//#include "FGlobal.hpp"
+#include "FGlobal.hpp"
+#ifndef SCALFMM_USE_MPI
+#error The MPI header is included while SCALFMM_USE_MPI is turned OFF
+#endif
+
+
 #include "FNoCopyable.hpp"
 #include "FMath.hpp"
 

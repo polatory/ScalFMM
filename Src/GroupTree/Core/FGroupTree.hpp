@@ -10,7 +10,7 @@
 #include "../../Utils/FPoint.hpp"
 #include "../../Utils/FQuickSort.hpp"
 #include "../../Containers/FTreeCoordinate.hpp"
-
+#include "../../Containers/FCoordinateComputer.hpp"
 #include "FGroupOfCells.hpp"
 #include "FGroupOfParticles.hpp"
 #include "FGroupAttachedLeaf.hpp"
@@ -46,27 +46,6 @@ protected:
     const FReal boxWidth;
     //< the width of a box at width level
     const FReal boxWidthAtLeafLevel;
-
-
-
-    int getTreeCoordinate(const FReal inRelativePosition) const {
-        FAssertLF( (inRelativePosition >= 0 && inRelativePosition <= this->boxWidth), "inRelativePosition : ",inRelativePosition );
-        if(inRelativePosition == this->boxWidth){
-            return FMath::pow2(treeHeight-1)-1;
-        }
-        const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
-        return static_cast<int>(indexFReal);
-    }
-
-    FTreeCoordinate getCoordinateFromPosition(const FReal xpos,const FReal ypos,const FReal zpos) const {
-        // box coordinate to host the particle
-        FTreeCoordinate host;
-        // position has to be relative to corner not center
-        host.setX( getTreeCoordinate( xpos - this->boxCorner.getX() ));
-        host.setY( getTreeCoordinate( ypos - this->boxCorner.getY() ));
-        host.setZ( getTreeCoordinate( zpos - this->boxCorner.getZ() ));
-        return host;
-    }
 
 public:
     typedef typename std::vector<CellGroupClass*>::iterator CellGroupIterator;
@@ -224,7 +203,9 @@ public:
                 const FReal* zpos = inParticlesContainer->getPositions()[2];
 
                 for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
-                    const FTreeCoordinate host = getCoordinateFromPosition( xpos[idxPart], ypos[idxPart], zpos[idxPart] );
+                    const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPositionAndCorner<FReal>(this->boxCorner, this->boxWidth,
+                                                                                                                treeHeight,
+                                                                                                                FPoint<FReal>(xpos[idxPart], ypos[idxPart], zpos[idxPart]) );
                     const MortonIndex particleIndex = host.getMortonIndex(treeHeight-1);
                     particlesToSort[idxPart].mindex = particleIndex;
                     particlesToSort[idxPart].originalIndex = idxPart;
@@ -401,7 +382,9 @@ public:
                 const FReal* zpos = inParticlesContainer->getPositions()[2];
 
                 for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
-                    const FTreeCoordinate host = getCoordinateFromPosition( xpos[idxPart], ypos[idxPart], zpos[idxPart] );
+                    const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPosition<FReal>(this->boxCorner, this->boxWidth,
+                                                                                                       treeHeight,
+                                                                                                       FPoint<FReal>(xpos[idxPart], ypos[idxPart], zpos[idxPart]) );
                     const MortonIndex particleIndex = host.getMortonIndex(treeHeight-1);
                     particlesToSort[idxPart].mindex = particleIndex;
                     particlesToSort[idxPart].originalIndex = idxPart;

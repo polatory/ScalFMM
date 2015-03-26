@@ -4,8 +4,8 @@ if(insource)
     MESSAGE(FATAL_ERROR "${PROJECT_NAME} requires an out of source build. Goto ./Build and tapes cmake ../")
 endif(insource)
 
-project(Addons_ckernelapi_scalfmm CXX C)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ScaLFMM_CXX_FLAGS}")
+project(ADDONS_CKERNELAPI_SCALFMM CXX C)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SCALFMM_CXX_FLAGS}")
 
 # Active language
 # -----------------------
@@ -14,7 +14,7 @@ MESSAGE(STATUS " CXX  ${CMAKE_CXX_COMPILER_ID}" )
 
 
 # if ask to build addon
-if(ScalFMM_ADDON_CKERNELAPI)
+if(SCALFMM_ADDON_CKERNELAPI)
         # first build lib scalfmmckernelapi
         set(LIBRARY_OUTPUT_PATH ../lib/${CMAKE_BUILD_TYPE})
 
@@ -58,7 +58,7 @@ if(ScalFMM_ADDON_CKERNELAPI)
             foreach(fuse_key ${FUSE_LIST})
                 file(STRINGS "${exec}" lines_fuse REGEX "@FUSE_${fuse_key}")
                 if(lines_fuse)
-                        if( NOT ScalFMM_USE_${fuse_key} )
+                        if( NOT SCALFMM_USE_${fuse_key} )
                                 MESSAGE( STATUS "This needs ${fuse_key} = ${exec}" )
                                 set(compile_exec "FALSE")
                         endif()

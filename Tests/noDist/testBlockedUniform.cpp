@@ -30,10 +30,10 @@
 
 #include "../../Src/GroupTree/Core/FGroupSeqAlgorithm.hpp"
 #include "../../Src/GroupTree/Core/FGroupTaskAlgorithm.hpp"
-#ifdef ScalFMM_USE_OMP4
+#ifdef SCALFMM_USE_OMP4
 #include "../../Src/GroupTree/Core/FGroupTaskDepAlgorithm.hpp"
 #endif
-#ifdef ScalFMM_USE_STARPU
+#ifdef SCALFMM_USE_STARPU
 #include "../../Src/GroupTree/Core/FGroupTaskStarpuAlgorithm.hpp"
 #include "../../Src/GroupTree/StarPUUtils/FStarPUKernelCapacities.hpp"
 #endif
@@ -71,11 +71,11 @@ int main(int argc, char* argv[]){
 
     typedef FP2PGroupParticleContainer<FReal>          GroupContainerClass;
     typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
-#ifdef ScalFMM_USE_STARPU
+#ifdef SCALFMM_USE_STARPU
     typedef FStarPUAllCpuCapacities<FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
-#elif defined(ScalFMM_USE_OMP4)
+#elif defined(SCALFMM_USE_OMP4)
     typedef FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
     // Set the number of threads
     omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));

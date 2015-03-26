@@ -18,34 +18,34 @@
 
 /////////////////////////////////////////////////////
 
-#if defined(STARPU_USE_CUDA) && defined(ScalFMM_USE_CUDA)
-#define ScalFMM_ENABLE_CUDA_KERNEL
+#if defined(STARPU_USE_CUDA) && defined(SCALFMM_USE_CUDA)
+#define SCALFMM_ENABLE_CUDA_KERNEL
 #else
     #if defined(STARPU_USE_CUDA)
         #warning CUDA is turned off because it is not supported by ScalFMM.
     #endif
-    #if defined(ScalFMM_USE_CUDA)
+    #if defined(SCALFMM_USE_CUDA)
         #warning CUDA is turned off because it is not supported by StarPU.
     #endif
 #endif
 
 /////////////////////////////////////////////////////
 
-#if defined(STARPU_USE_OPENCL) && defined(ScalFMM_USE_OPENCL)
-#define ScalFMM_ENABLE_OPENCL_KERNEL
+#if defined(STARPU_USE_OPENCL) && defined(SCALFMM_USE_OPENCL)
+#define SCALFMM_ENABLE_OPENCL_KERNEL
 #else
     #if defined(STARPU_USE_OPENCL)
         #warning OPENCL is turned off because it is not supported by ScalFMM.
     #endif
-    #if defined(ScalFMM_USE_OPENCL)
+    #if defined(SCALFMM_USE_OPENCL)
         #warning OPENCL is turned off because it is not supported by StarPU.
     #endif
 #endif
 
 /////////////////////////////////////////////////////
 
-#if defined(STARPU_USE_MPI) && defined(ScalFMM_USE_MPI)
-    #if !defined(ScalFMM_USE_MPI)
+#if defined(STARPU_USE_MPI) && defined(SCALFMM_USE_MPI)
+    #if !defined(SCALFMM_USE_MPI)
         #warning Cannot may not link because MPI is needed by starpu.
     #endif
 #endif

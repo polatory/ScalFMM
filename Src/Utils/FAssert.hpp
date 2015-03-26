@@ -63,7 +63,7 @@ public:
     }
 };
 
-#ifdef ScalFMM_USE_ASSERT
+#ifdef SCALFMM_USE_ASSERT
 
 //////////////////////////////////////////////////////////////
 // Sp error activated

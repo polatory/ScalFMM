@@ -76,7 +76,7 @@ int main(int argc, char* argv[]){
     typedef FStarPUAllCpuOpenCLCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper
-    #ifdef ScalFMM_ENABLE_CUDA_KERNEL
+    #ifdef SCALFMM_ENABLE_CUDA_KERNEL
         , FStarPUCudaWrapper<KernelClass, FCudaEmptyCell, FCudaGroupOfCells<FCudaEmptyCell>, FCudaGroupOfParticles<0, int>, FCudaGroupAttachedLeaf<0, int>, FCudaEmptyKernel<>>
     #endif
         , FStarPUOpenClWrapper<GroupKernelClass, FOpenCLDeviceWrapper<GroupKernelClass, FTestOpenCLCode<FReal> > >

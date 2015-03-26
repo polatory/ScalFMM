@@ -135,16 +135,16 @@ int main(int argc, char ** argv){
     //
     printf("Precision, sizeof Real %lu\n", sizeof(FReal));
 
-#ifdef ScalFMM_USE_AVX
+#ifdef SCALFMM_USE_AVX
     printf("AVX incomming .......\n\n");
 #endif
 
-#ifdef ScalFMM_USE_SSE
+#ifdef SCALFMM_USE_SSE
     printf("SSE incomming .......\n\n");
 #endif
 
-#ifndef ScalFMM_USE_SSE
-#ifndef ScalFMM_USE_AVX
+#ifndef SCALFMM_USE_SSE
+#ifndef SCALFMM_USE_AVX
     printf("Classic incomming ...\n\n");
 #endif
 #endif

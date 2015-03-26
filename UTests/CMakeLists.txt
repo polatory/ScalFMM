@@ -4,7 +4,7 @@ if(insource)
     MESSAGE(FATAL_ERROR "${PROJECT_NAME} requires an out of source build. Goto scalfmm/Build and tapes cmake ../")
 endif(insource)
 
-project(UTests_scalfmm CXX)
+project(UTESTS_SCALFMM CXX)
 
 FIND_PROGRAM( TESTS_GCOV_PATH gcov )
 FIND_PROGRAM( TESTS_LCOV_PATH lcov )
@@ -46,7 +46,7 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BUILD_TYPE})
 
 
 
-ADD_DEFINITIONS( ${ScaLFMM_CXX_FLAGS} ${TESTS_GCOV_CXX_FLAGS})
+ADD_DEFINITIONS( ${SCALFMM_CXX_FLAGS} ${TESTS_GCOV_CXX_FLAGS})
 
 # Find all code files
 file(	
@@ -74,7 +74,7 @@ foreach(exec ${source_tests_files})
 	foreach(fuse_key ${FUSE_LIST})
 	    file(STRINGS "${exec}" lines_fuse REGEX "@FUSE_${fuse_key}")
 	    if(lines_fuse)
-		    if( NOT ScalFMM_USE_${fuse_key} )
+		    if( NOT SCALFMM_USE_${fuse_key} )
 			    MESSAGE( STATUS "This needs ${fuse_key} = ${exec}" )
 			    set(compile_exec "FALSE")
 		    endif()

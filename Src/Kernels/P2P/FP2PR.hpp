@@ -308,7 +308,7 @@ template <class FReal>
 struct FP2PRT{
 };
 
-#if defined(ScalFMM_USE_AVX)
+#if defined(SCALFMM_USE_AVX)
 
 template <>
 struct FP2PRT<double>{
@@ -340,7 +340,7 @@ struct FP2PRT<float>{
     }
 };
 
-#elif defined(ScalFMM_USE_SSE)
+#elif defined(SCALFMM_USE_SSE)
 template <>
 struct FP2PRT<double>{
     template <class ContainerClass>

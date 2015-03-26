@@ -27,7 +27,7 @@
   * and give simple stats like max, total used, current used
   */
 
-#ifdef ScalFMM_USE_MEM_STATS
+#ifdef SCALFMM_USE_MEM_STATS
 #include <new>
 #include <stdexcept>
 #warning You are using mem stats
@@ -64,7 +64,7 @@ private:
         currentAllocated -= size;
     }
 
-#ifdef ScalFMM_USE_MEM_STATS
+#ifdef SCALFMM_USE_MEM_STATS
     friend void* operator new(std::size_t n);
     friend void operator delete(void* p) noexcept;
     friend void operator delete[](void* p) noexcept;
@@ -108,7 +108,7 @@ public:
 
     /** To know if mem stat has been enabled */
     bool isUsed() const {
-#ifdef ScalFMM_USE_MEM_STATS
+#ifdef SCALFMM_USE_MEM_STATS
         return true;
 #else
         return false;

@@ -18,6 +18,10 @@
 
 #include "FGlobal.hpp"
 
+#ifndef SCALFMM_USE_BLAS
+#error The BLAS header is included while SCALFMM_USE_BLAS is turned OFF
+#endif
+
 // This file interfaces the blas functions
 // to enable a generic use.
 // If no blas has been enabled in the cmake,
@@ -77,7 +81,7 @@ extern "C"
                double*, const unsigned*, int*);
     void dpotrf_(const char*, const unsigned*, double*, const unsigned*, int*);
 
-#ifdef ScalFMM_USE_MKL_AS_BLAS
+#ifdef SCALFMM_USE_MKL_AS_BLAS
   // mkl: hadamard product is not implemented in mkl_blas
   void vdmul_(const unsigned* n, const double*, const double*, double*);
   void vsmul_(const unsigned* n, const float*, const float*, float*);
@@ -162,7 +166,7 @@ extern "C"
 // NB: The following optimized routines are currently not used 
 // since they have not proved their efficiency in comparison 
 // with a naive application of the entrywise product.
-#ifdef ScalFMM_USE_MKL_AS_BLAS
+#ifdef SCALFMM_USE_MKL_AS_BLAS
 
 //#include "mkl_vml.h" 
 

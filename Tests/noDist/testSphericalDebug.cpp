@@ -298,7 +298,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
                 OctreeClass, FmmClass>(false);
     }
 
-#ifdef ScalFMM_USE_BLAS
+#ifdef SCALFMM_USE_BLAS
     /** Blas */
     void TestSphericalBlas(){
         typedef double FReal;
@@ -348,7 +348,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
     void SetTests(){
         //    AddTest(&TestSphericalDirect::TestSpherical,"Test Spherical Kernel");
         //AddTest(&TestSphericalDirect::TestRotation,"Test Rotation Spherical Kernel");
-#ifdef ScalFMM_USE_BLAS
+#ifdef SCALFMM_USE_BLAS
         AddTest(&TestSphericalDirect::TestSphericalBlas,"Test Spherical Blas Kernel");
         //        AddTest(&TestSphericalDirect::TestSphericalBlockBlas,"Test Spherical Block Blas Kernel");
 #endif

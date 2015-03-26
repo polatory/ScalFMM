@@ -34,7 +34,7 @@
 #include "Files/FMpiFmaGenericLoader.hpp"
 #include "BalanceTree/FLeafBalance.hpp"
 #include "Containers/FTreeCoordinate.hpp"
-
+#include "Containers/FCoordinateComputer.hpp"
 
 #include "Utils/FQuickSortMpi.hpp"
 #include "Utils/FBitonicSort.hpp"
@@ -46,18 +46,6 @@
 
 
 class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
-    /** This method has been tacken from the octree
-     * it computes a tree coordinate (x or y or z) from real position
-     */
-    template <class FReal>
-    static int getTreeCoordinate(const FReal inRelativePosition, const FReal boxWidthAtLeafLevel) {
-        const FReal indexFReal = inRelativePosition / boxWidthAtLeafLevel;
-        const int index = int(FMath::dfloor(indexFReal));
-        if( index && FMath::LookEqual(inRelativePosition, boxWidthAtLeafLevel * FReal(index) ) ){
-            return index - 1;
-        }
-        return index;
-    }
 
     template <class FReal>
     struct TestParticle{
@@ -136,9 +124,9 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
             arrayOfParticles[idxParts].indexInFile = idxParts;
 
             //Build temporary TreeCoordinate
-            host.setX( getTreeCoordinate( arrayOfParticles[idxParts].getPosition().getX() - boxCorner.getX(), boxWidthAtLeafLevel ));
-            host.setY( getTreeCoordinate( arrayOfParticles[idxParts].getPosition().getY() - boxCorner.getY(), boxWidthAtLeafLevel ));
-            host.setZ( getTreeCoordinate( arrayOfParticles[idxParts].getPosition().getZ() - boxCorner.getZ(), boxWidthAtLeafLevel ));
+            host.setX( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParticles[idxParts].getPosition().getX() - boxCorner.getX(), boxWidth, boxWidthAtLeafLevel, TreeHeight ));
+            host.setY( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParticles[idxParts].getPosition().getY() - boxCorner.getY(), boxWidth, boxWidthAtLeafLevel, TreeHeight ));
+            host.setZ( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParticles[idxParts].getPosition().getZ() - boxCorner.getZ(), boxWidth, boxWidthAtLeafLevel, TreeHeight ));
 
             //Set Morton index from Tree Coordinate
             arrayOfParticles[idxParts].index = host.getMortonIndex(TreeHeight - 1);

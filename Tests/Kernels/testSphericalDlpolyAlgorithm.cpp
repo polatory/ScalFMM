@@ -44,7 +44,7 @@
 #include "../../Src/Kernels/Spherical/FSphericalKernel.hpp"
 #include "../../Src/Kernels/Spherical/FSphericalCell.hpp"
 
-#ifdef ScalFMM_USE_BLAS
+#ifdef SCALFMM_USE_BLAS
 // chebyshev kernel
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
 #include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
@@ -76,7 +76,7 @@ int main(int argc, char ** argv){
 	typedef FP2PParticleContainerIndexed<FReal>                    ContainerClass;
     typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
 
-#ifdef  ScalFMM_USE_BLAS
+#ifdef  SCALFMM_USE_BLAS
 	// begin Chebyshev kernel
 	// accuracy
 	const unsigned int ORDER = 13;
@@ -153,7 +153,7 @@ int main(int argc, char ** argv){
 
 
 	//
-#ifndef  ScalFMM_USE_BLAS
+#ifndef  SCALFMM_USE_BLAS
 	CellClass::Init(DevP);
 	std::cout << " $$$$$$$$$$$$$$$  SPHERICAL VERSION $$$$$$$$$$$$"<<std::endl;
 	std::cout << " $$$$$$$$$$$$$$$  Order "<< DevP <<" $$$$$$$$$$$$"<<std::endl;
@@ -242,7 +242,7 @@ int main(int argc, char ** argv){
 	FTreeCoordinate min, max;
 
 	if( FParameters::existParameter(argc, argv, "-noper") ){
-#ifndef  ScalFMM_USE_BLAS
+#ifndef  SCALFMM_USE_BLAS
 		KernelClass kernels( DevP, NbLevels, loader->getBoxWidth(), loader->getCenterOfBox());
 #else
 		KernelClass kernels( NbLevels, loader->getBoxWidth(), loader->getCenterOfBox(),&MatrixKernel);
@@ -255,7 +255,7 @@ int main(int argc, char ** argv){
 		std::cout << "The simulation box is repeated " << algo.theoricalRepetition() << " in X/Y/Z" << std::endl;
 		std::cout << "Simulated box: " << algo.extendedBoxWidth()<<std::endl;
 
-#ifndef  ScalFMM_USE_BLAS
+#ifndef  SCALFMM_USE_BLAS
 		KernelClass kernels( DevP, algo.extendedTreeHeight(), algo.extendedBoxWidth(),algo.extendedBoxCenter());
 #else
 		KernelClass kernels(algo.extendedTreeHeight(), algo.extendedBoxWidth(),algo.extendedBoxCenter(),&MatrixKernel);

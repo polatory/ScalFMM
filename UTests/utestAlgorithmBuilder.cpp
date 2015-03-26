@@ -53,7 +53,7 @@ class TestBuilder : public FUTester<TestBuilder> {
             uassert(properties.height == height);
 
             FAbstractAlgorithm*const algo = FAlgorithmBuilder<FReal>::BuildAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(&tree, &kernel, 0, false);
-#ifndef ScalFMM_USE_MPI
+#ifndef SCALFMM_USE_MPI
             uassert(dynamic_cast<FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>*>(algo) != nullptr ||
                     dynamic_cast<FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>*>(algo) != nullptr);
 #else
@@ -67,7 +67,7 @@ class TestBuilder : public FUTester<TestBuilder> {
             uassert(properties.height      != height);
 
             FAbstractAlgorithm*const algo = FAlgorithmBuilder<FReal>::BuildAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(&tree, &kernel, 0, true);
-#ifndef ScalFMM_USE_MPI
+#ifndef SCALFMM_USE_MPI
             uassert(dynamic_cast<FFmmAlgorithmPeriodic<FReal,OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>*>(algo) != nullptr );
 #else
             uassert(dynamic_cast<FFmmAlgorithmThreadProcPeriodic<FReal, OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>*>(algo) != nullptr);

@@ -20,7 +20,7 @@ FMemStats FMemStats::controler;
 #include <cstdio>
 #include <cstdlib>
 
-#ifdef ScalFMM_USE_MEM_STATS
+#ifdef SCALFMM_USE_MEM_STATS
     // Regular scalar new
     void* operator new(std::size_t n) {
         void* const allocated = std::malloc(n + 8);

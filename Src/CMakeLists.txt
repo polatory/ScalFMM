@@ -18,7 +18,7 @@ file(
 )
 
 # Add CUDA files once they are compiled from cu to .o
-if(ScalFMM_USE_CUDA)
+if(SCALFMM_USE_CUDA)
     # Find all the CU files in my project
     file(GLOB_RECURSE source_cu_files ./*.cu)
  
