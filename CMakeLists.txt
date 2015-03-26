@@ -156,7 +156,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     set(CMAKE_BUILD_TYPE Debug)
     ADD_DEFINITIONS(-O0)
     if( APPLE )
-      set(SCALFMM_FLAGS_OPTI_DEBUG "-m64  -funroll-loops" CACHE STRING
+      set(SCALFMM_FLAGS_OPTI_DEBUG "-funroll-loops" CACHE STRING
         "Set your optimization flags for debug mode.")
     else(APPLE)
       if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
@@ -187,7 +187,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     endif()
     # Compile optimization
     if(APPLE)
-      set(SCALFMM_FLAGS_OPTI_RELEASE "-m64  -funroll-loops" CACHE STRING
+      set(SCALFMM_FLAGS_OPTI_RELEASE "-funroll-loops" CACHE STRING
         "Set your optimization flags for release mode.")
     else(APPLE)
       # Not apple system - Check the compiler flags
@@ -338,7 +338,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
       # Default is DOUBLE and without THREADS|OMP
       find_package(FFTW) # not REQUIRED
 
-      set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your MKL flags")
+     set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your MKL flags")
       foreach (fft_lib ${FFTW_LIBRARIES_DEP})
         set(FFT_LIBRARIES "${FFT_LIBRARIES} ${fft_lib};")
       endforeach()
@@ -361,6 +361,9 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     endif()
   endif(SCALFMM_USE_FFT)
   list(APPEND FUSE_LIST "FFT")
+         message(STATUS "         SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
+        message(STATUS "         SCALFMM_INCLUDES          = ${SCALFMM_INCLUDES}")
+  
 
   # Compile option
   #ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic )
@@ -562,7 +565,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   # Generate  ScalFmmConfig.h
   #
   set(SCALFMM_COMPILE_FLAGS "${SCALFMM_CXX_FLAGS} ${CMAKE_CXX_FLAGS_TYPE} ${CMAKE_CXX_FLAGS}")
-  set(CMAKE_CXX_FLAGS "${SCALFMM_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS_TYPE} ${CMAKE_CXX_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${SCALFMM_COMPILE_FLAGS}")
+#  set(CMAKE_CXX_FLAGS "${SCALFMM_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS_TYPE} ${CMAKE_CXX_FLAGS}")
   set(SCALFMM_COMPILE_LIBS   "${SCALFMM_LIBRARIES}")
   configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake
                   ${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
