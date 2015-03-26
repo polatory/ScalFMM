@@ -120,11 +120,6 @@ public:
         flopsL2P = 0,
         flopsP2P = 0;
 
-    /// Flops count for operators of the FMM by level. 
-    unsigned long long *flopsPerLevelM2M = nullptr,
-        *flopsPerLevelM2L = nullptr,
-        *flopsPerLevelL2L = nullptr;
-
     /// Operators count.
     unsigned long long countP2M = 0,
         countM2M = 0,
@@ -175,11 +170,6 @@ public:
           _treeHeight(_tree->getHeight())
         {
             countExp = new unsigned int [343];
-            flopsPerLevelM2M = new unsigned long long [_treeHeight];
-            flopsPerLevelM2L = new unsigned long long [_treeHeight];
-            flopsPerLevelL2L = new unsigned long long [_treeHeight];
-            for (unsigned int level = 0; level<_treeHeight; ++level)
-                flopsPerLevelM2M[level] = flopsPerLevelM2L[level] = flopsPerLevelL2L[level] = 0;
         }
     
 
@@ -197,9 +187,6 @@ public:
     ~FChebBalanceSymKernel() {
         delete [] countExp;
 
-        if (flopsPerLevelM2M) delete [] flopsPerLevelM2M;
-        if (flopsPerLevelM2L) delete [] flopsPerLevelM2L;
-        if (flopsPerLevelL2L) delete [] flopsPerLevelL2L;
     }
     
     void printResults(std::ostream& os) const {
@@ -214,31 +201,6 @@ public:
             + flopsL2L + flopsL2P + flopsP2P
            << "\n==================================================\n"
            << std::endl;
-
-        os << "\n==================================================" 
-           << "\n- Flops for P2M/M2M" << std::endl;
-        for (unsigned int level=0; level<_treeHeight; ++level)
-            if (level < _treeHeight-1)
-                os << "  |- at level " << level 
-                   << " flops = " << flopsPerLevelM2M[level] << std::endl;
-            else
-                os << "  |- at level " << level 
-                   << " flops = " << flopsP2M << std::endl;
-        os << "==================================================" 
-           << "\n- Flops for M2L" << std::endl;
-        for (unsigned int level=0; level<_treeHeight; ++level)
-            os << "  |- at level " << level 
-               << " flops = " << flopsPerLevelM2L[level] << std::endl;
-        os << "==================================================" 
-           << "\n- Flops for L2L/L2P" << std::endl;
-        for (unsigned int level=0; level<_treeHeight; ++level)
-            if (level < _treeHeight-1)
-                os << "  |- at level " << level
-                   << " flops = " << flopsPerLevelL2L[level] << std::endl;
-            else
-                os << "  |- at level " << level
-                   << " flops = " << flopsL2P << std::endl;
-        os << "==================================================" << std::endl; 
 
         os << "P2P count: " << countP2P << std::endl;
         os << "P2M count: " << countP2M << std::endl;
@@ -266,7 +228,6 @@ public:
         for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex)
             if (ChildCells[ChildIndex])    flops += countFlopsM2MorL2L();
         flopsM2M += flops;
-        flopsPerLevelM2M[TreeLevel] += flops;
         cell->addCost(flops);
         countM2M++;
     }
@@ -287,9 +248,9 @@ public:
             // multiply (mat-mat-mul)
             for (unsigned int pidx=0; pidx<343; ++pidx)
                 if (countExp[pidx])
-                    flops += countFlopsM2L(countExp[pidx], SymHandler->LowRank[pidx]) + countExp[pidx]*nnodes;
+                    flops += countFlopsM2L(countExp[pidx], SymHandler->LowRank[pidx])
+                        + countExp[pidx]*nnodes;
             flopsM2L += flops;
-            flopsPerLevelM2L[TreeLevel] += flops;
             cell->addCost(flops);
             countM2L++;
         }
@@ -307,8 +268,6 @@ public:
                 ChildCells[ChildIndex]->addCost(flops);
             }
         flopsL2L += flops;
-        flopsPerLevelL2L[TreeLevel] += flops;
-
 
         countL2L++;
     }
