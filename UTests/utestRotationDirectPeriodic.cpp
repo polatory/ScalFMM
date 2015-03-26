@@ -134,6 +134,7 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
                 }
             }
         }
+        delete kernel ;
 		FReal energy= 0.0 , energyD = 0.0 ;
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		// Compute direct energy
@@ -225,8 +226,8 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
 		Print("Test10 - Relative error Energy ");
 		uassert(FMath::Abs(energy-energyD)< coerr*MaximumDiffPotential);                     //10  Total Energy
 
+		//
 
-        delete[] particles;
     }
 
     /** After check the memory if needed */
