@@ -53,17 +53,48 @@
 /////////////////////////////////////////////////////
 
 enum FStarPUTypes{
+    // First will be zero
 #ifdef STARPU_USE_CPU
-    FSTARPU_CPU_IDX = 0,
+    FSTARPU_CPU_IDX, // = 0
 #endif
 #ifdef STARPU_USE_CUDA
-    FSTARPU_CUDA_IDX = 1,
+    FSTARPU_CUDA_IDX,
 #endif
 #ifdef STARPU_USE_OPENCL
-    FSTARPU_OPENCL_IDX = 2,
+    FSTARPU_OPENCL_IDX,
 #endif
-    FSTARPU_NB_TYPES = 3
+    // This will be the number of archs
+    FSTARPU_NB_TYPES
 };
+
+const unsigned FStarPUTypesToArch[FSTARPU_NB_TYPES+1] = {
+    #ifdef STARPU_USE_CPU
+        STARPU_CPU,
+    #endif
+    #ifdef STARPU_USE_CUDA
+        STARPU_CUDA,
+    #endif
+    #ifdef STARPU_USE_OPENCL
+        STARPU_OPENCL,
+    #endif
+        0
+};
+
+inline FStarPUTypes FStarPUArchToTypes(const unsigned arch){
+    switch(arch){
+#ifdef STARPU_USE_CPU
+    case STARPU_CPU: return FSTARPU_CPU_IDX;
+#endif
+#ifdef STARPU_USE_CUDA
+    case STARPU_CUDA: return FSTARPU_CUDA_IDX;
+#endif
+#ifdef STARPU_USE_OPENCL
+    case STARPU_OPENCL: return FSTARPU_OPENCL_IDX;
+#endif
+    default:;
+    }
+    return FSTARPU_NB_TYPES;
+}
 
 /////////////////////////////////////////////////////
 
