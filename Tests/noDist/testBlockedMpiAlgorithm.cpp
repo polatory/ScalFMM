@@ -52,8 +52,8 @@ int main(int argc, char* argv[]){
         "The size of the block of the blocked tree"
     };
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
-                         FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbThreads,
-                         FParameterDefinitions::NbParticles, FParameterDefinitions::NbThreads,
+                         FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::NbParticles,
                          LocalOptionBlocSize);
     typedef double FReal;
     // Initialize the types
@@ -72,7 +72,6 @@ int main(int argc, char* argv[]){
 
     FMpi mpiComm(argc, argv);
     // Get params
-    const int maxThreads    = FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, -1);
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
     const int NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 20);
     const int groupSize      = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 250);
@@ -141,7 +140,7 @@ int main(int argc, char* argv[]){
 
     // Run the algorithm
     GroupKernelClass groupkernel;
-    GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel,maxThreads);
+    GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
     groupalgo.execute();
 
     groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass cell, GroupContainerClass* leaf){

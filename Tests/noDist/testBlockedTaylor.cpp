@@ -43,7 +43,6 @@ int main(int argc, char* argv[]){
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight,FParameterDefinitions::InputFile,
-                          FParameterDefinitions::NbThreads,
                          FParameterDefinitions::NbParticles, LocalOptionBlocSize, LocalOptionNoValidate);
 
     // Initialize the types
@@ -62,8 +61,6 @@ int main(int argc, char* argv[]){
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
 #elif defined(SCALFMM_USE_OMP4)
     typedef FTaylorKernel< FReal,GroupCellClass, GroupContainerClass , P,1>  GroupKernelClass;
-    // Set the number of threads
-    omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
     typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass,
             GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #else
