@@ -41,8 +41,14 @@ public:
         FAssertLF(inKernels, "kernels cannot be null");
 
         kernels = new KernelClass*[MaxThreads];
+        #pragma omp parallel for schedule(static) num_threads(MaxThreads)
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            this->kernels[idxThread] = new KernelClass(*inKernels);
+            // We want to ensure that each thread allocate data close to him
+            // and that only one thread at a time call the copy constructor
+            #pragma omp critical (FGroupTaskDepAlgorithm_InitKernels)
+            {
+                this->kernels[idxThread] = new KernelClass(*inKernels);
+            }
         }
 
         FLOG(FLog::Controller << "FGroupTaskAlgorithm (Max Thread " << MaxThreads << ")\n");
@@ -58,7 +64,7 @@ public:
     void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
         FLOG( FLog::Controller << "\tStart FGroupTaskAlgorithm\n" );
 
-        #pragma omp parallel
+        #pragma omp parallel num_threads(MaxThreads)
         {
             #pragma omp single nowait
             {
@@ -67,7 +73,7 @@ public:
             }
         }
 
-        #pragma omp parallel
+        #pragma omp parallel num_threads(MaxThreads)
         {
             #pragma omp single nowait
             {

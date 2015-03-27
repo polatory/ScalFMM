@@ -95,7 +95,6 @@ protected:
     std::vector< std::vector< std::vector<BlockInteractions<CellContainerClass>>>> externalInteractionsAllLevel;
     std::vector< std::vector<BlockInteractions<ParticleGroupClass>>> externalInteractionsLeafLevel;
 
-    int MaxThreads;         //< The number of threads
     OctreeClass*const tree;       //< The Tree
     KernelClass*const originalCpuKernel;
 
@@ -129,8 +128,8 @@ protected:
     FStarPUPtrInterface* wrapperptr;
 
 public:
-    FGroupTaskStarPUMpiAlgorithm(const FMpi::FComm& inComm, OctreeClass*const inTree, KernelClass* inKernels, const int inMaxThreads = -1)
-        :   comm(inComm), MaxThreads(inMaxThreads), tree(inTree), originalCpuKernel(inKernels),
+    FGroupTaskStarPUMpiAlgorithm(const FMpi::FComm& inComm, OctreeClass*const inTree, KernelClass* inKernels)
+        :   comm(inComm), tree(inTree), originalCpuKernel(inKernels),
           cellHandles(nullptr),
 #ifdef STARPU_USE_CPU
             cpuWrapper(tree->getHeight()),
@@ -144,7 +143,6 @@ public:
             wrapperptr(&wrappers){
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(inKernels, "kernels cannot be null");
-        FAssertLF(MaxThreads <= STARPU_MAXCPUS, "number of threads to high");
 
         struct starpu_conf conf;
         FAssertLF(starpu_conf_init(&conf) == 0);
@@ -181,8 +179,6 @@ public:
         starpu_pthread_mutex_destroy(&initMutex);
 
         starpu_pause();
-
-        MaxThreads = starpu_worker_get_count();//starpu_cpu_worker_get_count();
 
         cellHandles   = new std::vector<CellHandles>[tree->getHeight()];
 

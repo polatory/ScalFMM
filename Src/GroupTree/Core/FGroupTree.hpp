@@ -384,6 +384,9 @@ public:
             boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth),
             boxWidthAtLeafLevel(inBoxWidth/FReal(1<<(inTreeHeight-1))){
 
+        FAssertLF(inCoverRatio == 0.0 || oneParent == true, "If a ratio is choosen oneParent should be turned on");
+        const bool userCoverRatio = (inCoverRatio != 0.0);
+
         cellBlocksPerLevel = new std::vector<CellGroupClass*>[treeHeight];
 
         MortonIndex* currentBlockIndexes = new MortonIndex[nbElementsPerBlock];
@@ -430,7 +433,11 @@ public:
                 int sizeOfBlock = 0;
                 int lastParticle = firstParticle;
                 // Count until end of sub group is reached or we have enough cells
-                while(sizeOfBlock < nbElementsPerBlock && lastParticle < nbParticles){
+                while(sizeOfBlock < nbElementsPerBlock && lastParticle < nbParticles
+                      && (userCoverRatio == false
+                          || sizeOfBlock == 0
+                          || currentBlockIndexes[sizeOfBlock-1] == particlesToSort[lastParticle].mindex
+                          || (FReal(sizeOfBlock+1)/FReal(particlesToSort[lastParticle].mindex-particlesToSort[firstParticle].mindex)) >= inCoverRatio)){
                     if(sizeOfBlock == 0 || currentBlockIndexes[sizeOfBlock-1] != particlesToSort[lastParticle].mindex){
                         currentBlockIndexes[sizeOfBlock] = particlesToSort[lastParticle].mindex;
                         nbParticlesPerLeaf[sizeOfBlock]  = 1;
@@ -581,7 +588,7 @@ public:
                             }
                         }
                         // If we are at the end of the sub group, move to next (otherwise we have consume a part of it)
-                        if((*iterChildCells)->getEndingIndex() <= currentCellIndex){
+                        while(iterChildCells != iterChildEndCells && (*iterChildCells)->getEndingIndex() <= currentCellIndex){
                             ++iterChildCells;
                             // Update morton index
                             if(iterChildCells != iterChildEndCells && currentCellIndex < (*iterChildCells)->getStartingIndex()){
@@ -611,9 +618,6 @@ public:
                         cellBlocksPerLevel[idxLevel].push_back(newBlock);
 
                         sizeOfBlock = 0;
-                    }
-                    else{
-                        assert(iterChildCells == iterChildEndCells);
                     }
                 }
             }

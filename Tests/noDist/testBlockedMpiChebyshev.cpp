@@ -56,7 +56,7 @@ int main(int argc, char* argv[]){
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight,FParameterDefinitions::InputFile,
-                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::NbThreads,
+                         FParameterDefinitions::OctreeSubHeight,
                          LocalOptionBlocSize, LocalOptionNoValidate);
 
     typedef double FReal;
@@ -86,7 +86,6 @@ int main(int argc, char* argv[]){
     const char* const filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
-    const unsigned int NbThreads     = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, 1);
 
     // init particles position and physical value
     struct TestParticle{
@@ -164,7 +163,7 @@ int main(int argc, char* argv[]){
         const MatrixKernelClass MatrixKernel;
         GroupKernelClass groupkernel(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
         // Run the algorithm
-        GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel,NbThreads);
+        GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
         groupalgo.execute();
 
         timer.tac();

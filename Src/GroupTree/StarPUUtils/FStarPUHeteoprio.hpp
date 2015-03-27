@@ -192,6 +192,7 @@ static void initialize_heteroprio_center_policy(unsigned sched_ctx_id)
 #endif
     /* Alloc the scheduler data  */
     struct _starpu_heteroprio_center_policy_heteroprio* heteroprio = (struct _starpu_heteroprio_center_policy_heteroprio*)malloc(sizeof(struct _starpu_heteroprio_center_policy_heteroprio));
+    memset(heteroprio, 0, sizeof(*heteroprio));
     heteroprio->waiters = starpu_bitmap_create();
     starpu_sched_ctx_set_policy_data(sched_ctx_id, (void*)heteroprio);
     STARPU_PTHREAD_MUTEX_INIT(&heteroprio->policy_mutex, NULL);
@@ -407,6 +408,10 @@ static struct starpu_task *pop_task_heteroprio_policy(unsigned sched_ctx_id)
     if( heteroprio->nb_remaining_tasks_per_arch_index[worker->arch_index] != 0 ){
         /* Ideally we would like to fill the prefetch array */
         unsigned nb_tasks_to_prefetch = (HETEROPRIO_MAX_PREFETCH-worker->tasks_queue_size);
+        /* But there are maybe less tasks than that! */
+        if(nb_tasks_to_prefetch > heteroprio->nb_remaining_tasks_per_arch_index[worker->arch_index]){
+            nb_tasks_to_prefetch = heteroprio->nb_remaining_tasks_per_arch_index[worker->arch_index];
+        }
         /* But in case there are less tasks than worker we take the minimum */
         if(heteroprio->nb_remaining_tasks_per_arch_index[worker->arch_index] < heteroprio->nb_workers){
             if(worker->tasks_queue_size == 0) nb_tasks_to_prefetch = 1;

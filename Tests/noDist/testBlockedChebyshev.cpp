@@ -54,7 +54,6 @@ int main(int argc, char* argv[]){
 #else
                          FParameterDefinitions::InputFile,
 #endif
-                         FParameterDefinitions::NbThreads,
                          LocalOptionBlocSize, LocalOptionNoValidate);
 
     // Initialize the types
@@ -76,8 +75,6 @@ int main(int argc, char* argv[]){
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
 #elif defined(SCALFMM_USE_OMP4)
     typedef FChebSymKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
-    // Set the number of threads
-    omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
     typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass,
             GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #else

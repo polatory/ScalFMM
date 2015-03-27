@@ -43,13 +43,13 @@
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 
 int main(int argc, char* argv[]){
+    setenv("STARPU_NCPU","1",1);
     const FParameterNames LocalOptionBlocSize {
         {"-bs"},
         "The size of the block of the blocked tree"
     };
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
-                         FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbThreads,
-                         FParameterDefinitions::NbParticles, LocalOptionBlocSize);
+                         FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbParticles, LocalOptionBlocSize);
 
     typedef double FReal;
 
@@ -69,8 +69,6 @@ int main(int argc, char* argv[]){
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
 #elif defined(SCALFMM_USE_OMP4)
     typedef FTestKernels< GroupCellClass, GroupContainerClass >  GroupKernelClass;
-    // Set the number of threads
-    omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
     typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass,
             GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #else
@@ -121,8 +119,9 @@ int main(int argc, char* argv[]){
 
     // Put the data into the tree
     //GroupOctreeClass groupedTree(NbLevels, groupSize, &tree);
-    GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles);
+    //GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles);
     //GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false, true);
+    GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false, true, 0.2);
     groupedTree.printInfoBlocks();
 
     // Check tree structure at leaf level
