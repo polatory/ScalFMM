@@ -407,6 +407,10 @@ static struct starpu_task *pop_task_heteroprio_policy(unsigned sched_ctx_id)
     if( heteroprio->nb_remaining_tasks_per_arch_index[worker->arch_index] != 0 ){
         /* Ideally we would like to fill the prefetch array */
         unsigned nb_tasks_to_prefetch = (HETEROPRIO_MAX_PREFETCH-worker->tasks_queue_size);
+        /* But there are maybe less tasks than that! */
+        if(nb_tasks_to_prefetch > heteroprio->nb_remaining_tasks_per_arch_index[worker->arch_index]){
+            nb_tasks_to_prefetch = heteroprio->nb_remaining_tasks_per_arch_index[worker->arch_index];
+        }
         /* But in case there are less tasks than worker we take the minimum */
         if(heteroprio->nb_remaining_tasks_per_arch_index[worker->arch_index] < heteroprio->nb_workers){
             if(worker->tasks_queue_size == 0) nb_tasks_to_prefetch = 1;
