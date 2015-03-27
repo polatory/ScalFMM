@@ -192,6 +192,7 @@ static void initialize_heteroprio_center_policy(unsigned sched_ctx_id)
 #endif
     /* Alloc the scheduler data  */
     struct _starpu_heteroprio_center_policy_heteroprio* heteroprio = (struct _starpu_heteroprio_center_policy_heteroprio*)malloc(sizeof(struct _starpu_heteroprio_center_policy_heteroprio));
+    memset(heteroprio, 0, sizeof(*heteroprio));
     heteroprio->waiters = starpu_bitmap_create();
     starpu_sched_ctx_set_policy_data(sched_ctx_id, (void*)heteroprio);
     STARPU_PTHREAD_MUTEX_INIT(&heteroprio->policy_mutex, NULL);
