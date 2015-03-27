@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -33,7 +33,7 @@ int main(int argc, char ** argv){
 	FLOG( FLog::Controller << "Hello Wordl\n");
 
 	// Print a variable (formated print)
-	int i = 50;
+	FLOG( int i = 50;)
 	FLOG( FLog::Controller.writeVariableFromLine( "i", i, __LINE__, __FILE__););
 
 	// Write a developer information

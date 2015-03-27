@@ -92,6 +92,8 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
         KernelClass *kernels = new KernelClass( algo.extendedTreeHeight(), algo.extendedBoxWidth(), algo.extendedBoxCenter());
         algo.setKernel(kernels);
         algo.execute();
+        //
+        delete kernels ;
 
         // Run Direct
         Print("Run direct...");
@@ -134,7 +136,6 @@ class TestRotationDirectPeriodic : public FUTester<TestRotationDirectPeriodic> {
                 }
             }
         }
-        delete kernel ;
 		FReal energy= 0.0 , energyD = 0.0 ;
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		// Compute direct energy
