@@ -204,7 +204,7 @@ public:
                 const FReal* zpos = inParticlesContainer->getPositions()[2];
 
                 for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
-                    const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPosition<FReal>(this->boxCorner, this->boxWidth,
+                    const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPositionAndCorner<FReal>(this->boxCorner, this->boxWidth,
                                                                                                        treeHeight,
                                                                                                        FPoint<FReal>(xpos[idxPart], ypos[idxPart], zpos[idxPart]) );
                     const MortonIndex particleIndex = host.getMortonIndex(treeHeight-1);
