@@ -364,6 +364,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
          message(STATUS "         SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
         message(STATUS "         SCALFMM_INCLUDES          = ${SCALFMM_INCLUDES}")
   
+  message(STATUS "SCALFMM_USE_FFT       =  ${SCALFMM_USE_FFT}")
 
   # Compile option
   #ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic )
@@ -376,6 +377,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   endif()
   #
   ##################################################################
+  #              STARPU Section
   ##################################################################
   #
   message( STATUS "SCALFMM_USE_STARPU             = ${SCALFMM_USE_STARPU}" )
@@ -710,7 +712,10 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   #
   #message(STATUS "CMAKE_CXX_FLAGS   =  ${CMAKE_CXX_FLAGS}")
   #set(CMAKE_CXX_FLAGS "${SCALFMM_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
-
+  message(STATUS "SCALFMM_USE_BLAS     =  ${SCALFMM_USE_BLAS}")
+  message(STATUS "SCALFMM_USE_FFT       =  ${SCALFMM_USE_FFT}")
+  message(STATUS "SCALFMM_USE_MKL      =  TODO")
+# 
   message(STATUS "CMAKE_CXX_FLAGS     =  ${CMAKE_CXX_FLAGS}")
   message(STATUS "SCALFMM_CXX_FLAGS   =  ${SCALFMM_CXX_FLAGS}")
   message(STATUS "SCALFMM_LIBRARIES   =  ${SCALFMM_LIBRARIES}")
