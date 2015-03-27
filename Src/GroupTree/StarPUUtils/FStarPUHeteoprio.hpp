@@ -129,17 +129,20 @@ struct _starpu_heteroprio_worker{
     struct starpu_task* tasks_queue[HETEROPRIO_MAX_PREFETCH];
     unsigned tasks_queue_size;
     unsigned tasks_queue_index;
+    starpu_pthread_mutex_t ws_prefetch_mutex;
 };
 
 /* Init a worker by setting every thing to zero */
 static void _starpu_heteroprio_worker_init(struct _starpu_heteroprio_worker* worker){
     memset(worker, 0, sizeof(*worker));
     worker->tasks_queue_index = 0;
+    STARPU_PTHREAD_MUTEX_INIT(&worker->ws_prefetch_mutex, NULL);
 }
 
 /* Release a worker */
 static void _starpu_heteroprio_worker_release(struct _starpu_heteroprio_worker* worker){
     assert(worker->tasks_queue_size == 0);
+    STARPU_PTHREAD_MUTEX_DESTROY(&worker->ws_prefetch_mutex);
 }
 
 /* HETEROPRIO_MAX_PRIO is the maximum prio/buckets available */
@@ -385,7 +388,7 @@ static int push_task_heteroprio_policy(struct starpu_task *task)
 
 static struct starpu_task *pop_task_heteroprio_policy(unsigned sched_ctx_id)
 {
-    unsigned workerid = starpu_worker_get_id();
+    const unsigned workerid = starpu_worker_get_id();
     struct _starpu_heteroprio_center_policy_heteroprio *heteroprio = (struct _starpu_heteroprio_center_policy_heteroprio*)starpu_sched_ctx_get_policy_data(sched_ctx_id);
     struct _starpu_heteroprio_worker* worker = &heteroprio->workers_heteroprio[workerid];
 
@@ -404,6 +407,9 @@ static struct starpu_task *pop_task_heteroprio_policy(unsigned sched_ctx_id)
 
     STARPU_PTHREAD_MUTEX_LOCK(&heteroprio->policy_mutex);
 
+    /* keep track of the new added task to perfom real prefetch on node */
+    unsigned nb_added_tasks = 0;
+
     /* Check that some tasks are available for the current worker arch */
     if( heteroprio->nb_remaining_tasks_per_arch_index[worker->arch_index] != 0 ){
         /* Ideally we would like to fill the prefetch array */
@@ -417,6 +423,8 @@ static struct starpu_task *pop_task_heteroprio_policy(unsigned sched_ctx_id)
             if(worker->tasks_queue_size == 0) nb_tasks_to_prefetch = 1;
             else nb_tasks_to_prefetch = 0;
         }
+
+        nb_added_tasks = nb_tasks_to_prefetch;
 
         /* We iterate until we found all the tasks we need */
         for(unsigned idx_prio = 0 ; nb_tasks_to_prefetch && idx_prio < heteroprio->nb_prio_per_arch_index[worker->arch_index] ; ++idx_prio){
@@ -467,14 +475,25 @@ static struct starpu_task *pop_task_heteroprio_policy(unsigned sched_ctx_id)
         /* Each worker starts from its own index and do a turn */
         for(unsigned idx_worker_it = 1 ; idx_worker_it < heteroprio->nb_workers ; ++idx_worker_it){
             const unsigned idx_worker = ((workerid+idx_worker_it)%heteroprio->nb_workers);
+            /* we must never test on ourself */
+            assert(idx_worker != workerid);
             /* If it is the same arch and there is a task to steal */
             if(heteroprio->workers_heteroprio[idx_worker].arch_index == worker->arch_index
                     && heteroprio->workers_heteroprio[idx_worker].tasks_queue_size){
-                task = heteroprio->workers_heteroprio[idx_worker].tasks_queue[heteroprio->workers_heteroprio[idx_worker].tasks_queue_index];
-                heteroprio->workers_heteroprio[idx_worker].tasks_queue_index = (heteroprio->workers_heteroprio[idx_worker].tasks_queue_index+1)%HETEROPRIO_MAX_PREFETCH;
-                heteroprio->workers_heteroprio[idx_worker].tasks_queue_size -= 1;
-                heteroprio->nb_prefetched_tasks_per_arch_index[heteroprio->workers_heteroprio[idx_worker].arch_index] -= 1;
-                break;
+                /* ensure the worker is not currently prefetching its data */
+                STARPU_PTHREAD_MUTEX_LOCK(&heteroprio->workers_heteroprio[idx_worker].ws_prefetch_mutex);
+                if(heteroprio->workers_heteroprio[idx_worker].arch_index == worker->arch_index
+                        && heteroprio->workers_heteroprio[idx_worker].tasks_queue_size){
+                    /* steal the last added task */
+                    task = heteroprio->workers_heteroprio[idx_worker].tasks_queue[(heteroprio->workers_heteroprio[idx_worker].tasks_queue_index+heteroprio->workers_heteroprio[idx_worker].tasks_queue_size-1)
+                                                                                    % HETEROPRIO_MAX_PREFETCH];
+                    /* update the worker by saying we steal a task */
+                    heteroprio->workers_heteroprio[idx_worker].tasks_queue_size -= 1;
+                    /* we steal a task update global counter */
+                    heteroprio->nb_prefetched_tasks_per_arch_index[heteroprio->workers_heteroprio[idx_worker].arch_index] -= 1;
+                    break;
+                }
+                STARPU_PTHREAD_MUTEX_UNLOCK(&heteroprio->workers_heteroprio[idx_worker].ws_prefetch_mutex);
             }
         }
     }
@@ -495,6 +514,23 @@ static struct starpu_task *pop_task_heteroprio_policy(unsigned sched_ctx_id)
         }
     }
     /* End copy of eager */
+
+    /* if we have task (task) me way have some in the queue (worker->tasks_queue_size) that was freshly addeed (nb_added_tasks) */
+    if(task && worker->tasks_queue_size && nb_added_tasks && starpu_get_prefetch_flag()){
+        const unsigned memory_node = starpu_worker_get_memory_node(workerid);
+
+        /* prefetch the new task that I own but protecte my node from work stealing during the prefetch */
+        STARPU_PTHREAD_MUTEX_LOCK(&worker->ws_prefetch_mutex);
+
+        /* prefetch task but stop in case we now some one may steal a task from us */
+        while(nb_added_tasks && heteroprio->nb_remaining_tasks_per_arch_index[worker->arch_index] != 0){
+            /* prefetch from closest to end task */
+            starpu_prefetch_task_input_on_node(worker->tasks_queue[(worker->tasks_queue_index+worker->tasks_queue_size-nb_added_tasks)%HETEROPRIO_MAX_PREFETCH], memory_node);
+            nb_added_tasks -= 1;
+        }
+
+        STARPU_PTHREAD_MUTEX_UNLOCK(&worker->ws_prefetch_mutex);
+    }
 
     return task;
 }
