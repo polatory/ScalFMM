@@ -122,6 +122,7 @@ int main(int argc, char* argv[]){
     // Put the data into the tree
     //GroupOctreeClass groupedTree(NbLevels, groupSize, &tree);
     GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles);
+    //GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false, true);
     groupedTree.printInfoBlocks();
 
     // Check tree structure at leaf level
