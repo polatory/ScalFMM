@@ -55,23 +55,30 @@ public:
                 initialize_heteroprio_center_policy_callback = &InitSchedulerCallback;
 
         treeHeight  = inTreeHeight;
-        prioP2MSend = 0;
-        prioP2M     = prioP2MSend+1;
 
-        prioM2MSend = prioP2M+1;
-        prioM2M     = prioM2MSend+1;
+        int incPrio = 0;
 
-        prioM2L     = prioM2M+1;
-        prioM2LExtern = prioM2L;
-        prioM2LMpi  = prioM2L;
+        prioP2MSend = incPrio++;
+        prioP2M     = incPrio++;
 
-        prioL2L     = prioM2L+1;
+        prioM2MSend = incPrio++;
+        prioM2M     = incPrio++;
 
-        prioP2P     = prioL2L + (treeHeight-3)*2+1 +1;
-        prioP2PExtern = prioP2P;
-        prioP2PMpi  = prioP2P;
+        prioM2L     = incPrio;
+        prioM2LExtern = incPrio;
+        prioM2LMpi  = incPrio++;
 
-        prioL2P     = prioP2PMpi+1;
+        prioL2L     = incPrio++;
+
+        incPrio += (treeHeight-2)-1 // M2L is done treeHeight-2 times
+                   +(treeHeight-3)-1; // L2L is done treeHeight-3 times
+
+        prioP2P     = incPrio;
+        prioP2PExtern = incPrio;
+        prioP2PMpi  = incPrio++;
+
+        prioL2P     = incPrio++;
+        assert(incPrio == 6 + (treeHeight-2) + (treeHeight-3));
     }
 
     void initSchedulerCallback(unsigned /*sched_ctx_id*/,
@@ -296,7 +303,7 @@ public:
         return prioM2LExtern + (inLevel - 2)*2;
     }
     int getPrioL2L(const int inLevel) const {
-        return prioL2L + (inLevel - 2)*2 + 1;
+        return prioL2L + (inLevel - 2)*2;
     }
     int getPrioL2P() const {
         return prioL2P;
@@ -308,7 +315,7 @@ public:
         return prioP2PExtern;
     }
     int getPrioM2LMpi(const int inLevel) const {
-        return prioM2LMpi + inLevel - 2;
+        return prioM2LMpi + (inLevel - 2)*2;
     }
     int getPrioP2PMpi() const {
         return prioP2PMpi;
