@@ -314,6 +314,9 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
         unset(FFT_LIBRARIES CACHE)
         message(STATUS "         SCALFMM USE MKL already defined")
         set(FFT_INCLUDES "$ENV{MKLROOT}/include/fftw" CACHE STRING "Set your MKL flags")
+        if (BLAS_FOUND)
+            set(FFTW_FOUND ON)
+        endif()
 
       else(SCALFMM_USE_MKL_AS_BLAS)
 
@@ -350,7 +353,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     if (FFT_INCLUDES)
         set(SCALFMM_INCLUDES "${SCALFMM_INCLUDES}; ${FFT_INCLUDES}")
     endif()
-    
+
     if(FFTW_FOUND)
         message(STATUS "         SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
         message(STATUS "         SCALFMM_INCLUDES          = ${SCALFMM_INCLUDES}")
