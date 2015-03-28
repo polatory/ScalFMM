@@ -2,6 +2,143 @@
 #ifndef FSTARPUHETEOPRIO_HPP
 #define FSTARPUHETEOPRIO_HPP
 
+/* Heteroprio, Berenger Bramas (berenger.bramas@inria.fr), Copyright INRIA
+ *  This software is governed by the CeCILL-C and LGPL licenses and
+ *  abiding by the rules of distribution of free software.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public and CeCILL-C Licenses for more details.
+ *  "http://www.cecill.info".
+ *  "http://www.gnu.org/licenses".
+ *
+ * Heteroprio is a scheduler wich support different priorities for the
+ * different architectures and with a critical end management based on
+ * the speedup of one architecture over the others.
+ * However the user needs to provide some information using a callback:
+ * initialize_heteroprio_center_policy_callback
+ * (this callbacj should set before any scheduler creation)
+ * The scheduler propose also prefetching and work stealing.
+ *
+ * The scheduler has HETEROPRIO_MAX_PRIO different buckets.
+ * A bucket (_starpu_heteroprio_bucket) here is a n-uple of priorities,
+ * and has a queue of tasks.
+ * The architectures that access a bucket must be flaged in valide_archs.
+ * And any task pushed to a bucket must be computable by these architectures.
+ * For example this is not allowed :
+ * a_bucket.valide_archs = STARPU_CPU | STARPU_CUDA
+ * and push a task to this bucket that does not support STARPU_CUDA.
+ * But it is possible to push a task that may be computed by more architecture,
+ * like pushing a task that has a support on STARPU_CPU | STARPU_CUDA | STARPU_OPENCL.
+ *
+ * To enable the critical end support one a bucket, the user should say
+ * which architecture is the fastest by setting factor_base_arch_index.
+ * For example factor_base_arch_index = STARPU_CPU
+ * Then for all the architectures related to this bucket (valide_archs)
+ * the user should tell how slow are each architectures compare to the fastest one
+ * in slow_factors_per_index.
+ * For example slow_factors_per_index[FSTARPU_CUDA_IDX] = 10.0f if it is 10 times slower.
+ * Then Heteroprio may forbid some tasks if the requested that ask for it may not be
+ * the best one to compute it.
+ *
+ * The mapping between priorities of the different architectures:
+ * the prio_mapping_per_arch_index array should contains the mapping
+ * for the priorities and nb_prio_per_arch_index should tells how many
+ * priorities there are per architectures.
+ *
+ * Finally Heteroprio is prefetching HETEROPRIO_MAX_PREFETCH tasks per worker.
+ * Remark if HETEROPRIO_MAX_PREFETCH=1 then there is no prefetching
+ * because the single task will be consummed directly.
+ * When no tasks are found a worker will try to steal one but this will
+ * happen only on the worker of the same type.
+ * For example, Cuda workers will steal work to Cuda workers only.
+ *
+ *
+ * Example of callback function that set the correct variables:
+ * #include "../../Src/GroupTree/StarPUUtils/FStarPUHeteoprio.hpp"
+ *
+ * void initSchedulerCallback(unsigned sched_ctx_id,
+ *                            struct _starpu_heteroprio_center_policy_heteroprio *heteroprio){
+ *     // CPU uses 3 buckets
+ *     heteroprio->nb_prio_per_arch_index[FSTARPU_CPU_IDX] = 3;
+ *     // It uses direct mapping idx => idx
+ *     for(unsigned idx = 0 ; idx < 3 ; ++idx){
+ *         heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][idx] = idx;
+ *         // We say CPU is faster
+ *         heteroprio->buckets[idx].factor_base_arch_index = FSTARPU_CPU_IDX;
+ *         // We must say that CPU uses these buckets
+ *         heteroprio->buckets[idx].valide_archs |= STARPU_CPU;
+ *     }
+ * #ifdef STARPU_USE_OPENCL
+ *     // OpenCL is enabled and uses 2 buckets
+ *     heteroprio->nb_prio_per_arch_index[FSTARPU_OPENCL_IDX] = 2;
+ *     // OpenCL will first look to priority 2
+ *     heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][0] = 2;
+ *     // We tell the scheduler that OpenCL uses this bucket
+ *     heteroprio->buckets[2].valide_archs |= STARPU_OPENCL;
+ *     // For this bucket OpenCL is the fastest
+ *     heteroprio->buckets[2].factor_base_arch_index = FSTARPU_OPENCL_IDX;
+ *     // And CPU is 4 times slower
+ *     heteroprio->buckets[2].slow_factors_per_index[FSTARPU_CPU_IDX] = 4.0f;
+ *
+ *     heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][1] = 1;
+ *     // We tell the scheduler that OpenCL uses this bucket
+ *     heteroprio->buckets[1].valide_archs |= STARPU_OPENCL;
+ *     // We let the CPU as the fastest and tell that OpenCL is 1.7 times slower
+ *     heteroprio->buckets[1].slow_factors_per_index[FSTARPU_OPENCL_IDX] = 1.7f;
+ * #endif
+ * }
+ *
+ * In this example, the CPU can compute 3 buckets and its mapping is
+ * {0,1,2} => {0,1,2} so nb_prio_per_arch_index = 3
+ * So it will compute the tasks with priority 0, then with 1, and finally with 2.
+ * We inform that the CPU is involve in these buckets by setting valide_archs.
+ *
+ * The Opencl workers use 2 buckets (numbers 1 and 2).
+ * So the mapping is {0,1} => {2,1},
+ * the opencl workers will compute first the tasks with priority 2 and then 1.
+ * We set valide_archs to tell that OpenCL workers use these buckets.
+ * We say that for the bucket with index 2, the OpenCL is faster:
+ *     heteroprio->buckets[2].factor_base_arch_index = FSTARPU_OPENCL_IDX;
+ * And we say that the CPU is 4 times slower.
+ * For the bucket one we keep the CPU has being the fastest but tell that the OpenCL
+ * is 1.7 slower.
+ *
+ * It is advised to run the scheduler in debug first (to enable assert)
+ * since an important number of checks are done and a wrong configuration
+ * or priorities is directly fired to the user.
+ *
+ * In case of using this code outside ScalFMM, notice that we use:
+ * enum FStarPUTypes{
+ *     // First will be zero
+ * #ifdef STARPU_USE_CPU
+ *     FSTARPU_CPU_IDX, // = 0
+ * #endif
+ * #ifdef STARPU_USE_CUDA
+ *     FSTARPU_CUDA_IDX,
+ * #endif
+ * #ifdef STARPU_USE_OPENCL
+ *     FSTARPU_OPENCL_IDX,
+ * #endif
+ *     // This will be the number of archs
+ *     FSTARPU_NB_TYPES
+ * };
+ *
+ * const unsigned FStarPUTypesToArch[FSTARPU_NB_TYPES+1] = {
+ *     #ifdef STARPU_USE_CPU
+ *         STARPU_CPU,
+ *     #endif
+ *     #ifdef STARPU_USE_CUDA
+ *         STARPU_CUDA,
+ *     #endif
+ *     #ifdef STARPU_USE_OPENCL
+ *         STARPU_OPENCL,
+ *     #endif
+ *         0
+ * };
+ */
+
 #include "../../Utils/FGlobal.hpp"
 #include "FStarPUUtils.hpp"
 
@@ -15,6 +152,8 @@ extern "C"
 
 #include <assert.h>
 
+/********************************************************************************/
+/********************************************************************************/
 
 /* Out of starpu build, cannot access : #include <sched_policies/fifo_queues.h> */
 struct _starpu_fifo_taskq_node{
@@ -80,6 +219,9 @@ int _starpu_fifo_size(struct _starpu_fifo_taskq *fifo){
     return fifo->ntasks;
 }
 
+/********************************************************************************/
+/********************************************************************************/
+
 /* A bucket corresponds to a Pair of priorities
  * When a task is pushed with a priority X, it will be stored
  * into the bucket X.
@@ -110,6 +252,10 @@ static void _starpu_heteroprio_bucket_release(struct _starpu_heteroprio_bucket* 
     assert(_starpu_fifo_empty(bucket->tasks_queue) != 0);
     _starpu_destroy_fifo(bucket->tasks_queue);
 }
+
+/********************************************************************************/
+/********************************************************************************/
+
 
 /* HETEROPRIO_MAX_PREFETCH Represent the number of task stored in each worker queue if possible */
 #define HETEROPRIO_MAX_PREFETCH 2
@@ -144,6 +290,10 @@ static void _starpu_heteroprio_worker_release(struct _starpu_heteroprio_worker* 
     assert(worker->tasks_queue_size == 0);
     STARPU_PTHREAD_MUTEX_DESTROY(&worker->ws_prefetch_mutex);
 }
+
+/********************************************************************************/
+/********************************************************************************/
+
 
 /* HETEROPRIO_MAX_PRIO is the maximum prio/buckets available */
 #define HETEROPRIO_MAX_PRIO 100
@@ -534,6 +684,9 @@ static struct starpu_task *pop_task_heteroprio_policy(unsigned sched_ctx_id)
 
     return task;
 }
+
+/********************************************************************************/
+/********************************************************************************/
 
 
 struct starpu_sched_policy _starpu_sched_heteroprio_policy_build(){
