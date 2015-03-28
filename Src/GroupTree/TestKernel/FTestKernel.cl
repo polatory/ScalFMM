@@ -221,8 +221,15 @@ struct FOpenCLGroupAttachedLeaf BuildFOpenCLGroupAttachedLeaf(const int inNbPart
     }
 
     // Redirect pointers to data
-    for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
-        leaf.attributes[idxAttribute+NbSymbAttributes] = (__global FParticleValueClass*)(((__global unsigned char*)inAttributesBuffer) + idxAttribute*inLeadingAttributes);
+    if(inAttributesBuffer){
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
+            leaf.attributes[idxAttribute+NbSymbAttributes] = (__global FParticleValueClass*)(((__global unsigned char*)inAttributesBuffer) + idxAttribute*inLeadingAttributes);
+        }
+    }
+    else{
+        for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
+            leaf.attributes[idxAttribute+NbSymbAttributes] = NULLPTR;
+        }
     }
     return leaf;
 }
@@ -360,7 +367,7 @@ struct FOpenCLGroupAttachedLeaf FOpenCLGroupOfParticles_getLeaf(struct FOpenCLGr
         return BuildFOpenCLGroupAttachedLeaf(group->leafHeader[id].nbParticles,
                                       group->particlePosition[0] + group->leafHeader[id].offSet,
                                         group->blockHeader->positionOffset,
-                                        group->particleAttributes[NbSymbAttributes] + group->leafHeader[id].offSet,
+                                      (group.attributesBuffer?group->particleAttributes[NbSymbAttributes] + group->leafHeader[id].offSet:NULLPTR),
                                         group->blockHeader->attributeOffset);
     }
     return EmptyFOpenCLGroupAttachedLeaf();

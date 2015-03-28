@@ -291,7 +291,7 @@ public:
                 ParticlesAttachedClass leaf(leafHeader[id].nbParticles,
                                             particlePosition[0] + leafHeader[id].offSet,
                         blockHeader->positionOffset,
-                        particleAttributes[NbSymbAttributes] + leafHeader[id].offSet,
+                        (attributesBuffer?particleAttributes[NbSymbAttributes] + leafHeader[id].offSet:nullptr),
                         blockHeader->attributeOffset);
                 function(&leaf);
             }
@@ -307,7 +307,7 @@ public:
             return ParticlesAttachedClass(leafHeader[id].nbParticles,
                                           particlePosition[0] + leafHeader[id].offSet,
                                             blockHeader->positionOffset,
-                                            particleAttributes[NbSymbAttributes] + leafHeader[id].offSet,
+                                            (attributesBuffer?particleAttributes[NbSymbAttributes] + leafHeader[id].offSet:nullptr),
                                             blockHeader->attributeOffset);
         }
         return ParticlesAttachedClass();
