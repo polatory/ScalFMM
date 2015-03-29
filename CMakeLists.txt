@@ -369,14 +369,15 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   
   message(STATUS "SCALFMM_USE_FFT       =  ${SCALFMM_USE_FFT}")
 
-  # Compile option
-  #ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -fpic )
   #
   # C++ 2011
   message( STATUS "CMAKE_SYSTEM:   ${CMAKE_SYSTEM}  CMAKE_CXX_COMPILER_ID ${CMAKE_CXX_COMPILER_ID}  CMAKE_CXX_COMPILER ${NAME}")
   if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE INTEL_VERSION)
     message( STATUS "Intel:   ${INTEL_VERSION}")
+  else()
+    # Compile option valid on GCC/G++
+    ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -Wcast-qual -Wcast-align -Woverloaded-virtual)
   endif()
   #
   ##################################################################
