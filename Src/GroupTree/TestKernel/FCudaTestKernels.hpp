@@ -8,6 +8,7 @@
 // We need to describe this cell
 #include "FTestCellPOD.hpp"
 
+template <class FReal>
 class FTestCudaKernels {
 public:
     typedef FCudaCompositeCell<FTestCellPODCore, FTestCellPODData, FTestCellPODData> CellClass;
@@ -61,7 +62,7 @@ public:
     __device__ void L2P(const CellClass local, ContainerClass*const particles){
         if(threadIdx.x == 0) {
             // The particles is impacted by the parent cell
-            long long int*const particlesAttributes = particles->getAttribute<0>();
+            long long int*const particlesAttributes = particles->template getAttribute<0>();
             for(int idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
                 particlesAttributes[idxPart] += *local.down;
             }
@@ -85,7 +86,7 @@ public:
                 }
             }
 
-            long long int*const particlesAttributes = targets->getAttribute<0>();
+            long long int*const particlesAttributes = targets->template getAttribute<0>();
             for(int idxPart = 0 ; idxPart < targets->getNbParticles() ; ++idxPart){
                 particlesAttributes[idxPart] += inc;
             }
@@ -105,7 +106,7 @@ public:
                 }
             }
 
-            long long int*const particlesAttributes = targets->getAttribute<0>();
+            long long int*const particlesAttributes = targets->template getAttribute<0>();
             for(int idxPart = 0 ; idxPart < targets->getNbParticles() ; ++idxPart){
                 particlesAttributes[idxPart] += inc;
             }
@@ -118,6 +119,14 @@ public:
 
     __host__ static void ReleaseKernel(FTestCudaKernels* /*todealloc*/){
         // nothing to do
+    }
+
+    __host__ static dim3 GetGridSize(const int /*intervalSize*/){
+        return 1;
+    }
+
+    __host__ static dim3 GetBlocksSize(){
+        return 1;
     }
 };
 

@@ -43,7 +43,7 @@ public:
         return 1;
     }
 
-    const size_t* getNbGroups() const {
+    const size_t* getNbGroups(const int /*inSizeInterval*/) const {
         // We return 1
         return &dim;
     }

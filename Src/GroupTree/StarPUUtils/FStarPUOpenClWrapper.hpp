@@ -77,10 +77,12 @@ public:
         size_t containersSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]);
 
         FStarPUPtrInterface* worker = nullptr;
-        starpu_codelet_unpack_args(cl_arg, &worker);
+        int intervalSize;
+        starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize);
         OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
 
-        kernel->bottomPassPerform(leafCellsPtr, leafCellsSize, leafCellsUpPtr, containersPtr, containersSize);
+        kernel->bottomPassPerform(leafCellsPtr, leafCellsSize, leafCellsUpPtr, containersPtr, containersSize,
+                                  intervalSize);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -95,7 +97,8 @@ public:
         FStarPUPtrInterface* worker = nullptr;
         int nbSubCellGroups = 0;
         int idxLevel = 0;
-        starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel);
+        int intervalSize;
+        starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel, &intervalSize);
 
         cl_mem subCellGroupsPtr[9];
         memset(subCellGroupsPtr, 0, 9*sizeof(cl_mem));
@@ -112,7 +115,8 @@ public:
         OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
         kernel->upwardPassPerform(currentCellsPtr, currentCellsSize, currentCellsUpPtr,
                                   subCellGroupsPtr, subCellGroupsSize, subCellGroupsUpPtr,
-                                  nbSubCellGroups, idxLevel);
+                                  nbSubCellGroups, idxLevel,
+                                  intervalSize);
     }
 
 
@@ -132,7 +136,8 @@ public:
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
         const std::vector<OutOfBlockInteraction>* outsideInteractions;
-        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions);
+        int intervalSize;
+        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions, &intervalSize);
 
         OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
         cl_int errcode_ret;
@@ -145,7 +150,8 @@ public:
         kernel->transferInoutPassPerformMpi(currentCellsPtr,
                     currentCellsSize, currentCellsDownPtr,
                     externalCellsPtr, externalCellsSize, externalCellsUpPtr,
-                    idxLevel, outsideInteractionsCl, outsideInteractions->size());
+                    idxLevel, outsideInteractionsCl, outsideInteractions->size(),
+                                            intervalSize);
 
         clReleaseMemObject(outsideInteractionsCl);
     }
@@ -163,10 +169,12 @@ public:
 
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
-        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel);
+        int intervalSize;
+        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &intervalSize);
 
         OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
-        kernel->transferInPassPerform(currentCellsPtr, currentCellsSize, currentCellsUpPtr, currentCellsDownPtr, idxLevel);
+        kernel->transferInPassPerform(currentCellsPtr, currentCellsSize, currentCellsUpPtr, currentCellsDownPtr, idxLevel,
+                                      intervalSize);
     }
 
     static void transferInoutPassCallback(void *buffers[], void *cl_arg){
@@ -183,7 +191,8 @@ public:
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
         const std::vector<OutOfBlockInteraction>* outsideInteractions;
-        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions);
+        int intervalSize;
+        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions, &intervalSize);
 
         OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
         cl_int errcode_ret;
@@ -195,7 +204,8 @@ public:
 
         kernel->transferInoutPassPerform(currentCellsPtr, currentCellsSize, currentCellsUpPtr, currentCellsDownPtr,
                                          externalCellsPtr, externalCellsSize, externalCellsUpPtr, externalCellsDownPtr,
-                                         idxLevel, outsideInteractionsCl, outsideInteractions->size());
+                                         idxLevel, outsideInteractionsCl, outsideInteractions->size(),
+                                         intervalSize);
 
         clReleaseMemObject(outsideInteractionsCl);
     }
@@ -212,7 +222,8 @@ public:
         FStarPUPtrInterface* worker = nullptr;
         int nbSubCellGroups = 0;
         int idxLevel = 0;
-        starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel);
+        int intervalSize;
+        starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel, &intervalSize);
 
         cl_mem subCellGroupsPtr[9];
         memset(subCellGroupsPtr, 0, 9*sizeof(cl_mem));
@@ -229,7 +240,8 @@ public:
         OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
         kernel->downardPassPerform(currentCellsPtr, currentCellsSize, currentCellsDownPtr,
                                    subCellGroupsPtr, subCellGroupsSize, subCellGroupsDownPtr,
-                                   nbSubCellGroups, idxLevel);
+                                   nbSubCellGroups, idxLevel,
+                                   intervalSize);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -247,7 +259,8 @@ public:
 
         FStarPUPtrInterface* worker = nullptr;
         const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
-        starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions);
+        int intervalSize;
+        starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions, &intervalSize);
 
         OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
         cl_int errcode_ret;
@@ -258,7 +271,8 @@ public:
         FAssertLF(outsideInteractionsCl && errcode_ret == CL_SUCCESS);
 
         kernel->directInoutPassPerformMpi(containersPtr, containersSize, containersDownPtr,
-              externalContainersPtr, externalContainersSize, outsideInteractionsCl, outsideInteractions->size());
+              externalContainersPtr, externalContainersSize, outsideInteractionsCl, outsideInteractions->size(),
+                                          intervalSize);
 
         clReleaseMemObject(outsideInteractionsCl);
     }
@@ -273,9 +287,11 @@ public:
         cl_mem containersDownPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[1]));
 
         FStarPUPtrInterface* worker = nullptr;
-        starpu_codelet_unpack_args(cl_arg, &worker);
+        int intervalSize;
+        starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize);
         OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
-        kernel->directInPassPerform(containersPtr, containerSize, containersDownPtr);
+        kernel->directInPassPerform(containersPtr, containerSize, containersDownPtr,
+                                    intervalSize);
     }
 
     static void directInoutPassCallback(void *buffers[], void *cl_arg){
@@ -289,7 +305,8 @@ public:
 
         FStarPUPtrInterface* worker = nullptr;
         const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
-        starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions);
+        int intervalSize;
+        starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions, &intervalSize);
 
         OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
         cl_int errcode_ret;
@@ -301,7 +318,8 @@ public:
 
         kernel->directInoutPassPerform(containersPtr, containerSize, containersDownPtr,
                                        externalContainersPtr, externalContainersSize, externalContainersDownPtr,
-                                       outsideInteractionsCl, outsideInteractions->size());
+                                       outsideInteractionsCl, outsideInteractions->size(),
+                                       intervalSize);
 
         clReleaseMemObject(outsideInteractionsCl);
     }
@@ -320,10 +338,12 @@ public:
         cl_mem containersDownPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[3]));
 
         FStarPUPtrInterface* worker = nullptr;
-        starpu_codelet_unpack_args(cl_arg, &worker);
+        int intervalSize;
+        starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize);
         OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[starpu_worker_get_id()];
         kernel->mergePassPerform(leafCellsPtr, leafCellsSize, leafCellsDownPtr,
-                                 containersPtr, containersSize, containersDownPtr);
+                                 containersPtr, containersSize, containersDownPtr,
+                                 intervalSize);
     }
 };
 

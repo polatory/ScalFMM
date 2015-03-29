@@ -83,7 +83,7 @@ public:
         return 0;
     }
 
-    const size_t* getNbGroups() const {
+    const size_t* getNbGroups(const int /*inSizeInterval*/) const {
         return nullptr;
     }
 

@@ -50,6 +50,14 @@ public:
     __host__ static void ReleaseKernel(FCudaEmptyKernel* /*todealloc*/){
         // nothing to do
     }
+
+    __host__ static dim3 GetGridSize(const int /*intervalSize*/){
+        return 0;
+    }
+
+    __host__ static dim3 GetBlocksSize(){
+        return 0;
+    }
 };
 
 #endif // FCUDAEMPTYKERNEL_HPP

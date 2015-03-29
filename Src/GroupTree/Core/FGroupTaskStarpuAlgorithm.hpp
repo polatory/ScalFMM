@@ -70,11 +70,13 @@ protected:
         starpu_data_handle_t symb;
         starpu_data_handle_t up;
         starpu_data_handle_t down;
+        int intervalSize;
     };
 
     struct ParticleHandles{
         starpu_data_handle_t symb;
         starpu_data_handle_t down;
+        int intervalSize;
     };
 
     std::vector< std::vector< std::vector<BlockInteractions<CellContainerClass>>>> externalInteractionsAllLevel;
@@ -492,6 +494,7 @@ protected:
                                               (uintptr_t)currentCells->getRawMultipoleBuffer(), currentCells->getMultipoleBufferSizeInByte());
                 starpu_variable_data_register(&cellHandles[idxLevel][idxGroup].down, 0,
                                               (uintptr_t)currentCells->getRawLocalBuffer(), currentCells->getLocalBufferSizeInByte());
+                cellHandles[idxLevel][idxGroup].intervalSize = int(currentCells->getEndingIndex() - currentCells->getStartingIndex());
             }
         }
         {
@@ -502,6 +505,7 @@ protected:
                                               (uintptr_t)containers->getRawBuffer(), containers->getBufferSizeInByte());
                 starpu_variable_data_register(&particleHandles[idxGroup].down, 0,
                                               (uintptr_t)containers->getRawAttributesBuffer(), containers->getAttributesBufferSizeInByte());
+                particleHandles[idxGroup].intervalSize = int(containers->getEndingIndex() - containers->getStartingIndex());
             }
         }
     }
@@ -691,6 +695,7 @@ protected:
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2m_cl,
                     STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                    STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
                     STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioP2M(),
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
                     STARPU_RW, cellHandles[tree->getHeight()-1][idxGroup].up,
@@ -750,6 +755,7 @@ protected:
                                          STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                          STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
                                          STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                         STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                          0);
                 task->cl_arg = arg_buffer;
                 task->cl_arg_size = arg_buffer_size;
@@ -773,6 +779,7 @@ protected:
                 starpu_insert_task(&m2l_cl_in,
                         STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                         STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                        STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioM2L(idxLevel),
                                    STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                    STARPU_R, cellHandles[idxLevel][idxGroup].up,
@@ -791,6 +798,7 @@ protected:
                             STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                             STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                            STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                        STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioM2LExtern(idxLevel),
                                STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                STARPU_R, cellHandles[idxLevel][idxGroup].up,
@@ -855,6 +863,7 @@ protected:
                                          STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                          STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
                                          STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                         STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                          0);
                 task->cl_arg = arg_buffer;
                 task->cl_arg_size = arg_buffer_size;
@@ -877,6 +886,7 @@ protected:
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2p_cl_in,
                     STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                    STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
                                STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioP2P(),
                                STARPU_R, particleHandles[idxGroup].symb,
                                (STARPU_RW|STARPU_COMMUTE), particleHandles[idxGroup].down,
@@ -891,6 +901,7 @@ protected:
                 starpu_insert_task(&p2p_cl_inout,
                         STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                         STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                        STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
                                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioP2PExtern(),
                         STARPU_R, particleHandles[idxGroup].symb,
                                    (STARPU_RW|STARPU_COMMUTE), particleHandles[idxGroup].down,
@@ -915,6 +926,7 @@ protected:
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&l2p_cl,
                     STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                    STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
                                STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioL2P(),
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].down,
