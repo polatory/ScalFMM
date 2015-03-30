@@ -4,19 +4,20 @@
 #include <vector>
 
 /**
- * \author Quentin Khan
  * \brief Cell with a cost memory for balance computations.
+ * \author Quentin Khan
  *
  * This class extends BaseClass to add simple computation cost memory.
  *
  * \tparam BaseClass The base cell class to extend. The constructors are
  * inherited automatically.
+ * \tparam The type to use in order to store the cost. Defaults to FSize.
  */
-template<typename BaseClass>
+template<typename BaseClass, typename CostType = FSize>
 class FCostCell : public BaseClass {
     /// The cost of the cell. It is declared mutable because the existing
     /// algorithms use const cells.
-    mutable long int _cost = 0;
+    mutable CostType _cost = 0;
 public:
     using BaseClass::BaseClass;
 
@@ -27,22 +28,23 @@ public:
      * \brief Gets the cost of the cell.
      * \return The cost of the cell
      */
-    long int getCost() const {
+    CostType getCost() const {
         return _cost;
     }
+
     /**
-     * Sets the cost of the cell.
-     * \return The cost of the cell
+     * \brief Sets the cost of the cell.
      */
-    long int setCost(int newCost) {
+    void setCost(CostType newCost) {
         _cost = newCost;
-        return _cost;
     }
+
     /** 
-     * Add a cost to the cell.
+     * \brief Add a cost to the cell.
+     * \return The cost of the cell
      * \warning Can be used on const cells !
      */
-    long int addCost(int cost) const {
+    CostType addCost(CostType cost) const {
         _cost += cost;
         return _cost;
     }
