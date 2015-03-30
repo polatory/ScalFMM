@@ -17,7 +17,7 @@ template <class FReal, unsigned NbSymbAttributes, unsigned NbAttributesPerPartic
 class FGroupAttachedLeaf {
 protected:
     //< Nb of particles in the current leaf
-    int nbParticles;
+    FSize nbParticles;
     //< Pointers to the positions of the particles
     FReal* positionsPointers[3];
     //< Pointers to the attributes of the particles
@@ -38,7 +38,7 @@ public:
      * @param inAttributesBuffer the memory address of the first attribute
      * @param inLeadingAttributes each attribute is access by inAttributesBuffer + in bytes inLeadingAttributes*idx
      */
-    FGroupAttachedLeaf(const int inNbParticles, FReal* inPositionBuffer, const size_t inLeadingPosition,
+    FGroupAttachedLeaf(const FSize inNbParticles, FReal* inPositionBuffer, const size_t inLeadingPosition,
                        AttributeClass* inAttributesBuffer, const size_t inLeadingAttributes)
         : nbParticles(inNbParticles){
         // Redirect pointers to position
@@ -93,7 +93,7 @@ public:
      * @brief getNbParticles
      * @return the number of particles in the leaf
      */
-    int getNbParticles() const{
+    FSize getNbParticles() const{
         return nbParticles;
     }
 
@@ -156,7 +156,7 @@ public:
 
     /** Allocate a new leaf by calling its constructor */
     template<class ParticleClassContainer>
-    void copyFromContainer(const ParticleClassContainer* particles, const int offsetInSrcContainer){
+    void copyFromContainer(const ParticleClassContainer* particles, const FSize offsetInSrcContainer){
         FAssertLF(isAttachedToSomething());
         // Copy position
         memcpy(positionsPointers[0], particles->getPositions()[0] + offsetInSrcContainer, nbParticles*sizeof(FReal));
@@ -172,7 +172,7 @@ public:
 
     /** Copy data for one particle (from the ParticleClassContainer into the attached buffer) */
     template<class ParticleClassContainer>
-    void setParticle(const int destPartIdx, const int srcPartIdx, const ParticleClassContainer* particles){
+    void setParticle(const FSize destPartIdx, const FSize srcPartIdx, const ParticleClassContainer* particles){
         // Copy position
         positionsPointers[0][destPartIdx] = particles->getPositions()[0][srcPartIdx];
         positionsPointers[1][destPartIdx] = particles->getPositions()[1][srcPartIdx];

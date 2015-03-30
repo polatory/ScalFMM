@@ -91,11 +91,11 @@ void checkResAndPrint(OctreeClass * tree, FmaRWParticle<FReal, 8,8> * const part
                 const FReal*const forcesX            = leaf->getTargets()->getForcesX();
                 const FReal*const forcesY            = leaf->getTargets()->getForcesY();
                 const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
-                const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
-                const FVector<int>& indexes       = leaf->getTargets()->getIndexes();
+                const FSize nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+                const FVector<FSize>& indexes       = leaf->getTargets()->getIndexes();
 
-                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                    const int indexPartOrig = indexes[idxPart];
+                for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                    const FSize indexPartOrig = indexes[idxPart];
                     potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
                     fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
                     fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
@@ -168,7 +168,7 @@ struct ChebMainStruct{
                     FReal epsilon = FMath::pow(10.0,static_cast<FReal>(-powerOf10));
                     const MatrixKernelClass MatrixKernel;
                     { // -----------------------------------------------------
-                        for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
+                        for(FSize idxPart = 0 ; idxPart < nbParticles; ++idxPart){
                             // put in tree
                             tree.insert(particles[idxPart].getPosition(), idxPart, particles[idxPart].getPhysicalValue());
                         }
@@ -228,7 +228,7 @@ int main(int argc, char** argv){
     FReal energyD =0.0, totPhysicalValue =0.0;
 
 #pragma omp parallel for reduction(+:energyD,totPhysicalValue)
-    for(int idx = 0 ; idx <  loader.getNumberOfParticles()  ; ++idx){
+    for(FSize idx = 0 ; idx <  loader.getNumberOfParticles()  ; ++idx){
         energyD             +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
         totPhysicalValue += particles[idx].getPhysicalValue() ;
     }

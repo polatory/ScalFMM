@@ -59,7 +59,7 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    int nbPart = (int)loader.getNumberOfParticles();
+    FSize r.getNumberOfParticles();
     FReal* potentials = new FReal[nbPart];
     FReal* positions = new FReal[nbPart*3];
 

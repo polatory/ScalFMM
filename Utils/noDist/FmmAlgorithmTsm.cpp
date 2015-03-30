@@ -147,13 +147,13 @@ struct TempMainStruct{
 
         FPoint<FReal> particlePosition;
 		double physicalValue = 1.0;
-		int nbSRC = loader.getNumberOfParticles();
+        FSize nbSRC = loader.getNumberOfParticles();
         sourcePart<FReal> *tabSrc =  new sourcePart<FReal>[nbSRC ];
 
 		{
 			// Insert sources
 			FParticleType particleType, source = FParticleTypeSource;
-			for(int idxPart = 0 ; idxPart < nbSRC ; ++idxPart){
+			for(FSize idxPart = 0 ; idxPart < nbSRC ; ++idxPart){
 				loader.fillParticle(&particlePosition, &particleType);
 //				std::cout << idxPart << "  " << particlePosition << "  type " << particleType
 //						<<  "  physicalValue: " << physicalValue<< std::endl;
@@ -171,13 +171,13 @@ struct TempMainStruct{
 			double dx = boxSize/(nbTargets-1) ;
 //
 			std::cout << "   TARGETS "  <<std::endl;
-            FPoint<FReal> particlePosition(-dx,dimLeaf+quarterDimLeaf,quarterDimLeaf);
+            FPoint<FReal> particlePosition2(-dx,dimLeaf+quarterDimLeaf,quarterDimLeaf);
 			//		int nbTargets = 256;
-			for(int idxPart = 0 ; idxPart < nbTargets; ++idxPart){
-				particlePosition.incX(dx);
-				std::cout << idxPart << "  " <<particlePosition.getX()/dimLeaf<< "   " <<  particlePosition << "  type " << FParticleTypeTarget
+			for(FSize idxPart = 0 ; idxPart < nbTargets; ++idxPart){
+                particlePosition2.incX(dx);
+                std::cout << idxPart << "  " <<particlePosition2.getX()/dimLeaf<< "   " <<  particlePosition2 << "  type " << FParticleTypeTarget
 						<< "  " <<physicalValue<<std::endl;
-				tree.insert(particlePosition, FParticleTypeTarget,idxPart,physicalValue );
+                tree.insert(particlePosition2, FParticleTypeTarget,idxPart,physicalValue );
 
 			}
 		}
@@ -217,9 +217,9 @@ struct TempMainStruct{
 			const FReal*const forcesX = leaf->getTargets()->getForcesX();
 			const FReal*const forcesY = leaf->getTargets()->getForcesY();
 			const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-			const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+			const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
             //
-			for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+			for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 				double pot = 0.0 , xx,yy,zz;
                 FPoint<FReal>  FF ;
 				for(int idxSrc = 0 ; idxSrc < nbSRC ; ++idxSrc){

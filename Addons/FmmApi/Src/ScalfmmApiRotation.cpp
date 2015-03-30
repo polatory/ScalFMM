@@ -216,7 +216,7 @@ int FmmKernel_P2M(void *fmmCore, void* boxId){
     FmmCore_getSource(fmmCore, boxId, &positions, (void**)&physicalValues, &number);
 
     FP2PParticleContainer<FReal> sources;
-    for(int idxPart = 0 ; idxPart < number ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < number ; ++idxPart){
         sources.push(FPoint<FReal>(positions[idxPart*3],positions[idxPart*3+1],positions[idxPart*3+2]),physicalValues[idxPart]);
     }
 
@@ -251,7 +251,7 @@ int FmmKernel_L2P(void *fmmCore, void* boxId){
     FmmCore_getTargetField(fmmCore, boxId, fields);
 
     FP2PParticleContainer<FReal> targets;
-    for(int idxPart = 0 ; idxPart < number ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < number ; ++idxPart){
         targets.push(FPoint<FReal>(&positions[idxPart*3]),physicalValues[idxPart],
                 fields[idxPart*kernelhandle->fieldDataSize],
                 fields[idxPart*kernelhandle->fieldDataSize+1],
@@ -266,7 +266,7 @@ int FmmKernel_L2P(void *fmmCore, void* boxId){
     const FReal*const forcesY = targets.getForcesY();
     const FReal*const forcesZ = targets.getForcesZ();
 
-    for(int idxPart = 0 ; idxPart < number ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < number ; ++idxPart){
         fields[idxPart*kernelhandle->fieldDataSize] += potentials[idxPart];
         fields[idxPart*kernelhandle->fieldDataSize+1] += forcesX[idxPart];
         fields[idxPart*kernelhandle->fieldDataSize+2] += forcesY[idxPart];
@@ -409,7 +409,7 @@ int FmmKernel_P2P_inner(void *fmmCore, void *boxIdSrcDest){
     FTreeCoordinate treecoord(coordTargets[0], coordTargets[1], coordTargets[2]);
 
     FP2PParticleContainer<FReal> targets;
-    for(int idxPart = 0 ; idxPart < numberTargets ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < numberTargets ; ++idxPart){
         targets.push(FPoint<FReal>(positionsTargets[idxPart*3],positionsTargets[idxPart*3+1],positionsTargets[idxPart*3+2]),
                 potentialsTargets[idxPart],
                 fieldsTargets[idxPart*kernelhandle->fieldDataSize],
@@ -428,7 +428,7 @@ int FmmKernel_P2P_inner(void *fmmCore, void *boxIdSrcDest){
     const FReal*const forcesY = targets.getForcesY();
     const FReal*const forcesZ = targets.getForcesZ();
 
-    for(int idxPart = 0 ; idxPart < numberTargets ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < numberTargets ; ++idxPart){
         fieldsTargets[idxPart*kernelhandle->fieldDataSize] = potentials[idxPart];
         fieldsTargets[idxPart*kernelhandle->fieldDataSize+1] = forcesX[idxPart];
         fieldsTargets[idxPart*kernelhandle->fieldDataSize+2] = forcesY[idxPart];
@@ -461,7 +461,7 @@ int FmmKernel_P2P(void *fmmCore, void *boxIdSrc, void *boxIdDest){ //return FMMA
     FTreeCoordinate treecoord(coordTargets[0], coordTargets[1], coordTargets[2]);
 
     FP2PParticleContainer<FReal> targets;
-    for(int idxPart = 0 ; idxPart < numberTargets ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < numberTargets ; ++idxPart){
         targets.push(FPoint<FReal>(positionsTargets[idxPart*3],positionsTargets[idxPart*3+1],positionsTargets[idxPart*3+2]),
                 potentialsTargets[idxPart],
                 fieldsTargets[idxPart*kernelhandle->fieldDataSize],
@@ -476,7 +476,7 @@ int FmmKernel_P2P(void *fmmCore, void *boxIdSrc, void *boxIdDest){ //return FMMA
     FmmCore_getSource(fmmCore, boxIdSrc, &positionsSrc, (void**)&potentialsSrc, &numberSources);
 
     FP2PParticleContainer<FReal> sources;
-    for(int idxPart = 0 ; idxPart < numberSources ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < numberSources ; ++idxPart){
         sources.push(FPoint<FReal>(positionsSrc[idxPart*3],positionsSrc[idxPart*3+1],positionsSrc[idxPart*3+2]),potentialsSrc[idxPart]);
     }
 
@@ -490,7 +490,7 @@ int FmmKernel_P2P(void *fmmCore, void *boxIdSrc, void *boxIdDest){ //return FMMA
     const FReal*const forcesY = targets.getForcesY();
     const FReal*const forcesZ = targets.getForcesZ();
 
-    for(int idxPart = 0 ; idxPart < numberTargets ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < numberTargets ; ++idxPart){
         fieldsTargets[idxPart*kernelhandle->fieldDataSize] = potentials[idxPart];
         fieldsTargets[idxPart*kernelhandle->fieldDataSize+1] = forcesX[idxPart];
         fieldsTargets[idxPart*kernelhandle->fieldDataSize+2] = forcesY[idxPart];

@@ -217,7 +217,7 @@ void FIOVtk<FReal>::writeXMLParticles( const std::string& VTKname,const std::str
 	VTKfile << "  <PolyData>" << std::endl;
 	//
 	typename  OctreeClass::Iterator  octreeIterator(&tree);
-	int nbNodes=0;
+    FSize nbNodes=0;
 	octreeIterator.gotoBottomLeft();
 	do{
 		//ContainerClass* const FRestrict segments = octreeIterator.getCurrentListTargets();
@@ -237,8 +237,8 @@ void FIOVtk<FReal>::writeXMLParticles( const std::string& VTKname,const std::str
 	do{
 		auto * leaf = octreeIterator.getCurrentLeaf()	;
 		auto * const physicalValues = leaf->getTargets()->getPhysicalValues();
-		int nbParticlesInLeaf       = leaf->getTargets()->getNbParticles();
-		for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+        FSize nbParticlesInLeaf       = leaf->getTargets()->getNbParticles();
+		for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 			VTKfile << "  " << physicalValues[idxPart]  ;
 		}
 	} while(octreeIterator.moveRight());
@@ -248,8 +248,8 @@ void FIOVtk<FReal>::writeXMLParticles( const std::string& VTKname,const std::str
 	do{
 		auto * leaf = octreeIterator.getCurrentLeaf()	;
 		auto * const potentials = leaf->getTargets()->getPotentials();
-		int nbParticlesInLeaf       = leaf->getTargets()->getNbParticles();
-		for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+        FSize nbParticlesInLeaf       = leaf->getTargets()->getNbParticles();
+		for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 			VTKfile << "  " << potentials[idxPart]  ;
 		}
 	} while(octreeIterator.moveRight());
@@ -261,8 +261,8 @@ void FIOVtk<FReal>::writeXMLParticles( const std::string& VTKname,const std::str
 		FReal*const forcesX = leaf->getTargets()->getForcesX();
 		FReal*const forcesY = leaf->getTargets()->getForcesY();
 		FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-		int nbParticlesInLeaf       = leaf->getTargets()->getNbParticles();
-		for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+        FSize nbParticlesInLeaf       = leaf->getTargets()->getNbParticles();
+		for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 			VTKfile << "  " << forcesX[idxPart] << "  " << forcesY[idxPart] << "  " << forcesZ[idxPart]  ;
 		}
 	} while(octreeIterator.moveRight());
@@ -277,8 +277,8 @@ void FIOVtk<FReal>::writeXMLParticles( const std::string& VTKname,const std::str
 		const FReal* const positionsX = leaf->getTargets()->getPositions()[0];
 		const FReal* const positionsY = leaf->getTargets()->getPositions()[1];
 		const FReal* const positionsZ = leaf->getTargets()->getPositions()[2];
-		int nbParticlesInLeaf  = leaf->getTargets()->getNbParticles();
-		for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+        FSize nbParticlesInLeaf  = leaf->getTargets()->getNbParticles();
+		for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 			VTKfile << "  " << positionsX[idxPart] << "  " << positionsY[idxPart] << "  " << positionsZ[idxPart]  ;
 		}
 	} while(octreeIterator.moveRight());

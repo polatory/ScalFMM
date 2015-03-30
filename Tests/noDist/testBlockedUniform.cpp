@@ -101,7 +101,7 @@ int main(int argc, char* argv[]){
     FTic timer;
 
     FP2PParticleContainer<FReal> allParticles;
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         FPoint<FReal> particlePosition;
         FReal physicalValue;
 #ifdef RANDOM_PARTICLES
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]){
 
     // Validate the result
     if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
-        int offsetParticles = 0;
+        FSize offsetParticles = 0;
         FReal*const allPhysicalValues = allParticles.getPhysicalValues();
         FReal*const allPosX = const_cast<FReal*>( allParticles.getPositions()[0]);
         FReal*const allPosY = const_cast<FReal*>( allParticles.getPositions()[1]);
@@ -142,9 +142,9 @@ int main(int argc, char* argv[]){
             const FReal*const posX = leafTarget->getPositions()[0];
             const FReal*const posY = leafTarget->getPositions()[1];
             const FReal*const posZ = leafTarget->getPositions()[2];
-            const int nbPartsInLeafTarget = leafTarget->getNbParticles();
+            const FSize nbPartsInLeafTarget = leafTarget->getNbParticles();
 
-            for(int idxPart = 0 ; idxPart < nbPartsInLeafTarget ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < nbPartsInLeafTarget ; ++idxPart){
                 allPhysicalValues[offsetParticles + idxPart] = physicalValues[idxPart];
                 allPosX[offsetParticles + idxPart] = posX[idxPart];
                 allPosY[offsetParticles + idxPart] = posY[idxPart];
@@ -180,7 +180,7 @@ int main(int argc, char* argv[]){
             const FReal*const forcesX = leafTarget->getForcesX();
             const FReal*const forcesY = leafTarget->getForcesY();
             const FReal*const forcesZ = leafTarget->getForcesZ();
-            const int nbPartsInLeafTarget = leafTarget->getNbParticles();
+            const FSize nbPartsInLeafTarget = leafTarget->getNbParticles();
 
             for(int idxTgt = 0 ; idxTgt < nbPartsInLeafTarget ; ++idxTgt){
                 potentialDiff.add(allDirectPotentials[idxTgt + offsetParticles], potentials[idxTgt]);

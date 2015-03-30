@@ -216,13 +216,13 @@ int main(int argc, char ** argv){
 	{ // start direct computation
 		unsigned int counter = 0;
 		
-    for(int idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
+    for(FSize idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
       const FPoint<FReal> x = FPoint<FReal>(X.getSrc()->getPositions()[0][idxPartX],
                               X.getSrc()->getPositions()[1][idxPartX],
                               X.getSrc()->getPositions()[2][idxPartX]);
       const FReal  wx = X.getSrc()->getPhysicalValues()[idxPartX];
 			
-      for(int idxPartY = 0 ; idxPartY < Y.getSrc()->getNbParticles() ; ++idxPartY){
+      for(FSize idxPartY = 0 ; idxPartY < Y.getSrc()->getNbParticles() ; ++idxPartY){
         const FPoint<FReal> y = FPoint<FReal>(Y.getSrc()->getPositions()[0][idxPartY],
                                 Y.getSrc()->getPositions()[1][idxPartY],
                                 Y.getSrc()->getPositions()[2][idxPartY]);
@@ -250,7 +250,7 @@ int main(int argc, char ** argv){
 
   ////////////////////////////////////////////////////////////////////
 	unsigned int counter = 0;
-  for(int idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
+  for(FSize idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
     approx_p[counter] = X.getSrc()->getPotentials()[idxPartX];
     const FPoint<FReal> force = FPoint<FReal>(X.getSrc()->getForcesX()[idxPartX],
                                 X.getSrc()->getForcesY()[idxPartX],

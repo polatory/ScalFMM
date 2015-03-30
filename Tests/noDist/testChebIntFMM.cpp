@@ -161,7 +161,7 @@ static void Run(int argc, char* argv[])
 		std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
 		time.tic();
 		//
-		for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
+		for(FSize idxPart = 0 ; idxPart < nbParticles; ++idxPart){
 			//
 			// Read particle per particle from file
 			//
@@ -217,11 +217,11 @@ static void Run(int argc, char* argv[])
 				const FReal*const forcesX            = leaf->getTargets()->getForcesX();
 				const FReal*const forcesY            = leaf->getTargets()->getForcesY();
 				const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
-				const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
-				const FVector<int>& indexes      = leaf->getTargets()->getIndexes();
+				const FSize nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+				const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-					const int indexPartOrig = indexes[idxPart];
+				for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+					const FSize indexPartOrig = indexes[idxPart];
 					potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
 					fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
 					fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);

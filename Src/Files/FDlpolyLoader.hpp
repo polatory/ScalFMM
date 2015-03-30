@@ -265,7 +265,7 @@ protected:
     FILE* const file;         //< The file to read
 //    FPoint<FReal> centerOfBox;    //< The center of box read from file
 //    double boxWidth;             //< the box width read from file
-//    int nbParticles;            //< the number of particles read from file
+//    FSize nbParticles;            //< the number of particles read from file
 //    double energy;
     size_t removeWarning;
 

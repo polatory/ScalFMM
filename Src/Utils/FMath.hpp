@@ -360,9 +360,9 @@ struct FMath{
 
 
     /** A class to compute accuracy */
-    template <class FReal>
+    template <class FReal, class IndexType = FSize>
     class FAccurater {
-        int    nbElements;
+        IndexType    nbElements;
         FReal l2Dot;
         FReal l2Diff;
         FReal max;
@@ -371,7 +371,7 @@ struct FMath{
         FAccurater() : nbElements(0),l2Dot(0.0), l2Diff(0.0), max(0.0), maxDiff(0.0) {
         }
         /** with inital values */
-        FAccurater(const FReal inGood[], const FReal inBad[], const int nbValues)
+        FAccurater(const FReal inGood[], const FReal inBad[], const IndexType nbValues)
             :  nbElements(0),l2Dot(0.0), l2Diff(0.0), max(0.0), maxDiff(0.0)  {
             add(inGood, inBad, nbValues);
         }
@@ -386,8 +386,8 @@ struct FMath{
             nbElements += 1 ;
         }
         /** Add array of values */
-        void add(const FReal inGood[], const FReal inBad[], const int nbValues){
-            for(int idx = 0 ; idx < nbValues ; ++idx){
+        void add(const FReal inGood[], const FReal inBad[], const IndexType nbValues){
+            for(IndexType idx = 0 ; idx < nbValues ; ++idx){
                 add(inGood[idx],inBad[idx]);
             }
             nbElements += nbValues ;
@@ -411,10 +411,10 @@ struct FMath{
         FReal getmax() const{
             return max;
         }
-        int getNbElements() const{
+        IndexType getNbElements() const{
             return nbElements;
         }
-        void  setNbElements(const int & n) {
+        void  setNbElements(const IndexType & n) {
             nbElements = n;
         }
 

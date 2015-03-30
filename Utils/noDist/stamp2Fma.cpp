@@ -74,7 +74,7 @@ int main(int argc, char ** argv){
     typedef double FReal;
 	FReal	 * particles = nullptr ;
     FFmaGenericLoader<FReal> * loader;
-	unsigned int nbData;
+    FSize nbData;
 	bool stampFile = false ;
 	if (FParameters::existParameter(argc, argv, "-fstamp")) {
 		stampFile  = true ;
@@ -92,14 +92,14 @@ int main(int argc, char ** argv){
 		//
 		NbPoints                              = loader->getNumberOfParticles();
 		nbData                                = loader->getNbRecordPerline() ;
-		const unsigned int arraySize =nbData*NbPoints;
+        const FSize arraySize =nbData*NbPoints;
 		//
 		particles = new FReal[arraySize] ;
 		std::memset(particles,0,arraySize*sizeof(FReal));
 		//
 		// Read Data
-		int j = 0 ;
-		for(int idxPart = 0 ; idxPart < NbPoints ;++idxPart, j+=nbData){
+        FSize j = 0 ;
+		for(FSize idxPart = 0 ; idxPart < NbPoints ;++idxPart, j+=nbData){
 			//		//
 			loader->fillParticle(&particles[j],nbData);
 			//		std::cout << "idxPart "<< idxPart << "  ";
@@ -111,7 +111,7 @@ int main(int argc, char ** argv){
 		if(stampFile) {
 			j=0 ;
 			FReal D= loader->getBoxWidth();
-			for(int idxPart = 0 ; idxPart < NbPoints ;++idxPart, j+=nbData){
+			for(FSize idxPart = 0 ; idxPart < NbPoints ;++idxPart, j+=nbData){
 				particles[j]	         *= D ;
 				particles[j+1]	 *= D ;
 				particles[j+2]	 *= D ;
@@ -128,7 +128,7 @@ int main(int argc, char ** argv){
 		//			//				NbPoints = loader->getNumberOfParticles()  ;
 		//			//				particles = new FReal[arraySize] ;
 		//			//				std::memset(particles,0,arraySize*sizeof(FReal));
-		//			//				for(int idxPart = 0 ; idxPart < NbPoints ; ++idxPart){
+		//			//				for(FSize idxPart = 0 ; idxPart < NbPoints ; ++idxPart){
 		//				//
 		//			//					int index ;
         //			//				FPoint<FReal> P ; FReal t[3];
@@ -166,7 +166,7 @@ int main(int argc, char ** argv){
 	        driverExportData(outfilename, particles , NbPoints);
 	   }
 	//
-	delete particles ;
+    delete[] particles ;
 
 	//
 	return 1;

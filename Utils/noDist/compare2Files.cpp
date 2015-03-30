@@ -62,7 +62,7 @@ int main(int argc, char ** argv){
 	// Allocation
 	//
 	FSize nbParticles          = loader1.getNumberOfParticles();
-	const unsigned int nbData   = loader1.getNbRecordPerline() ;
+    const FSize nbData   = loader1.getNbRecordPerline() ;
 	if(nbParticles !=  loader2.getNumberOfParticles()){
 		std::cerr << "Number of points is different in the two files."<<std::endl ;
 		return -1 ;
@@ -80,12 +80,12 @@ int main(int argc, char ** argv){
 	loader2.fillParticle(particles2,nbParticles);
 
  
-    const int error = compareTwoArrays<FReal, FmaRWParticle<FReal,8,8>* >("TAG", nbParticles, particles1, particles2);
+    const FSize error = compareTwoArrays<FReal, FmaRWParticle<FReal,8,8>* >("TAG", nbParticles, particles1, particles2);
 
 	//
     delete[] particles1 ;
     delete[] particles2 ;
 
 	//
-	return error;
+    return int(error);
 }

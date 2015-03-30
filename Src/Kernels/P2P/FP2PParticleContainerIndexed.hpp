@@ -25,22 +25,22 @@ template<class FReal, int NRHS = 1, int NLHS = 1, int NVALS = 1>
 class FP2PParticleContainerIndexed : public FP2PParticleContainer<FReal, NRHS,NLHS,NVALS> {
     typedef FP2PParticleContainer<FReal, NRHS,NLHS,NVALS> Parent;
 
-    FVector<int> indexes;
+    FVector<FSize> indexes;
 
 public:
     template<typename... Args>
-    void push(const FPoint<FReal>& inParticlePosition, const int index, Args... args){
+    void push(const FPoint<FReal>& inParticlePosition, const FSize index, Args... args){
         Parent::push(inParticlePosition, args... );
         indexes.push(index);
     }
 
     template<typename... Args>
-    void push(const FPoint<FReal>& inParticlePosition, const FParticleType particleType, const int index, Args... args){
+    void push(const FPoint<FReal>& inParticlePosition, const FParticleType particleType, const FSize index, Args... args){
         Parent::push(inParticlePosition, particleType, args... );
         indexes.push(index);
     }
 
-    const FVector<int>& getIndexes() const{
+    const FVector<FSize>& getIndexes() const{
         return indexes;
     }
 
@@ -49,14 +49,14 @@ public:
         Parent::clear();
     }
 
-    void removeParticles(const int indexesToRemove[], const int nbParticlesToRemove){
+    void removeParticles(const FSize indexesToRemove[], const FSize nbParticlesToRemove){
         if(nbParticlesToRemove == 0 || indexesToRemove == nullptr){
             return;
         }
 
         int offset     = 1;
         int idxIndexes = 1;
-        int idxIns = indexesToRemove[0] + 1;
+        FSize idxIns = indexesToRemove[0] + 1;
         for( ; idxIns < indexes.getSize() && idxIndexes < nbParticlesToRemove ; ++idxIns){
             if( idxIns == indexesToRemove[idxIndexes] ){
                 idxIndexes += 1;

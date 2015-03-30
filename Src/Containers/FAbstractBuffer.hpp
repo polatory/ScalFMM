@@ -27,9 +27,9 @@ public:
 
     virtual char*       data()      = 0;
     virtual const char* data()      const  = 0;
-    virtual int         getSize()   const = 0;
-    virtual void        seek(const int inIndex) = 0;
-    virtual int         tell()      const  = 0;
+    virtual FSize         getSize()   const = 0;
+    virtual void        seek(const FSize inIndex) = 0;
+    virtual FSize         tell()      const  = 0;
 
     template <class ClassType>
     ClassType getValue(){
@@ -41,7 +41,7 @@ public:
         static_assert(sizeof(ClassType) == 0, "Your Buffer should implement fillValue.");
     }
     template <class ClassType>
-    void fillArray(ClassType* const , const int ){
+    void fillArray(ClassType* const , const FSize ){
         static_assert(sizeof(ClassType) == 0, "Your Buffer should implement fillArray.");
     }
     template <class ClassType>
@@ -63,7 +63,7 @@ public:
 
     virtual char*       data()  = 0;
     virtual const char* data()  const = 0;
-    virtual int         getSize() const = 0;
+    virtual FSize         getSize() const = 0;
     virtual void        reset() = 0;
 
     template <class ClassType>
@@ -71,11 +71,11 @@ public:
         static_assert(sizeof(ClassType) == 0, "Your Buffer should implement write.");
     }
     template <class ClassType>
-    void writeAt(const int position, const ClassType& object){
+    void writeAt(const FSize position, const ClassType& object){
         static_assert(sizeof(ClassType) == 0, "Your Buffer should implement writeAt.");
     }
     template <class ClassType>
-    void write(const ClassType* const objects, const int inSize){
+    void write(const ClassType* const objects, const FSize inSize){
         static_assert(sizeof(ClassType) == 0, "Your Buffer should implement write.");
     }
     template <class ClassType>

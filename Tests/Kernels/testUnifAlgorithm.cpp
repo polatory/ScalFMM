@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
     if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 
     TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         FPoint<FReal> position;
         FReal physicalValue = 0.0;
         loader.fillParticle(&position,&physicalValue);
@@ -116,8 +116,8 @@ int main(int argc, char* argv[])
         std::cout << "\nDirect computation ... " << std::endl;
         time.tic();
         {
-            for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
-                for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
+            for(FSize idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
+                for(FSize idxOther =  idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
                     FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                           particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
                                           &particles[idxTarget].forces[0], &particles[idxTarget].forces[1],
@@ -162,7 +162,7 @@ int main(int argc, char* argv[])
             std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
             time.tic();
 
-            for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
                 // put in tree
                 tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
             }
@@ -197,11 +197,11 @@ int main(int argc, char* argv[])
                     const FReal*const forcesX = leaf->getTargets()->getForcesX();
                     const FReal*const forcesY = leaf->getTargets()->getForcesY();
                     const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-                    const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-                    const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+                    const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                    const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-                    for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                        const int indexPartOrig = indexes[idxPart];
+                    for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                        const FSize indexPartOrig = indexes[idxPart];
                         //PB: store potential in nbParticles array
                         checkPotential[indexPartOrig]=potentials[idxPart];
 

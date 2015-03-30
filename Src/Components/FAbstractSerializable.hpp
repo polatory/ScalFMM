@@ -45,7 +45,7 @@ protected:
         static_assert(sizeof(BufferReaderClass) == 0 , "Your class should implement restore");
     }
 
-    virtual int getSavedSize() const = 0;
+    virtual FSize getSavedSize() const = 0;
 };
 
 #endif // FABSTRACTSERIALIZABLE_HPP

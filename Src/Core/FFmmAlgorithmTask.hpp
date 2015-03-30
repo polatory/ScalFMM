@@ -330,8 +330,8 @@ protected:
                 FLOG( computationCounter.tic() );
 
                 for( int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-                    const int nbLeaf = shapes[idxShape].getSize();
-                    for(int iterLeaf = 0 ; iterLeaf < nbLeaf ; ++iterLeaf ){
+                    const FSize nbLeaf = (shapes[idxShape].getSize());
+                    for(FSize iterLeaf = 0 ; iterLeaf < nbLeaf ; ++iterLeaf ){
                         typename OctreeClass::Iterator toWork = shapes[idxShape][iterLeaf];
                         #pragma omp task firstprivate(neighbors, toWork, l2pEnabled, p2pEnabled)
                         {

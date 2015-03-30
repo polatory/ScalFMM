@@ -31,7 +31,7 @@ class FAdaptiveCell : public FBasicCell {
 	FVector<ContainerClass*> subLeaves;
 	//
 	// Global Index of the cell in the octree (This id is unique)
-	long int gID;
+    FSize gID;
 
 public:
 	/** Set has not Adaptive by default */
@@ -117,7 +117,7 @@ public:
 	}
 
 	int getNbSubLeaves() const {
-		return subLeaves.getSize();
+        return int(subLeaves.getSize());
 	}
 
 	ContainerClass* const * getSubLeaves() {
@@ -162,14 +162,14 @@ public:
 	/// Manage a global IG DEBUG PURPOSE
 	////////////////////////////////////////////////////////////////////////////////
 	//! Return the global Id of the cell in the octree
-	const long int  getGlobalId(){
+    const FSize  getGlobalId(){
 		return this->gID ;
 	}
-	const long int  getGlobalId( ) const{
+    const FSize  getGlobalId( ) const{
 		return this->gID ;
 	}
 	//!  Set he global Id of the cell in the octree to id
-	void setGlobalId(const long int & id){
+    void setGlobalId(const FSize & id){
 		this->gID = id;  ;
 	}
 	//#endif

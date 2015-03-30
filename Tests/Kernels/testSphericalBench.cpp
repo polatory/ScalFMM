@@ -82,7 +82,7 @@ void doATest(const int NbParticles, const int minP, const int maxP, const int mi
 
     const bool computeDirectAndDiff = timeForDirect || allAbsoluteDiff || allPotentialDiff;
     {
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&particles[idxPart].position);
             if((idxPart & 1) && neutral){
                 particles[idxPart].physicalValue = -physicalValue;
@@ -96,8 +96,8 @@ void doATest(const int NbParticles, const int minP, const int maxP, const int mi
         if(computeDirectAndDiff){
             printf("Compute direct!\n");
             counter.tic();
-            for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
-                for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
+            for(FSize idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
+                for(FSize idxOther =  idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
                     FP2PR::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                           particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
                                           &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
@@ -127,7 +127,7 @@ void doATest(const int NbParticles, const int minP, const int maxP, const int mi
             std::cout << "\tHeight : " << idxH << " \t sub-height : " << SizeSubLevels << std::endl;
             counter.tic();
 
-            for(int idxPart = 0 ; idxPart < NbParticles ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < NbParticles ; ++idxPart){
                 tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
             }
 
@@ -168,11 +168,11 @@ void doATest(const int NbParticles, const int minP, const int maxP, const int mi
                     const FReal*const forcesX = leaf->getTargets()->getForcesX();
                     const FReal*const forcesY = leaf->getTargets()->getForcesY();
                     const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-                    const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-                    const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+                    const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                    const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-                    for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                        const int indexPartOrig = indexes[idxPart];
+                    for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                        const FSize indexPartOrig = indexes[idxPart];
                         potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
                         fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
                         fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
@@ -320,11 +320,11 @@ int main(int argc, char ** argv){
 
                     tree.forEachLeaf([&](LeafClass* leaf){
                         const FReal*const potentials = leaf->getTargets()->getPotentials();
-                        const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-                        const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+                        const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                        const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-                        for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                            const int indexPartOrig = indexes[idxPart];
+                        for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                            const FSize indexPartOrig = indexes[idxPart];
                             const Particle<FReal>& other = (indexPartOrig==0?centeredParticle:otherParticle);
                             potentialDiff[idxP].add(other.potential,potentials[idxPart]);
                         }
@@ -423,7 +423,7 @@ int main(int argc, char ** argv){
 
         FReal timeCounter[3][NbSteps];
 
-        for(int idxPart = 0 ; idxPart < NbSteps ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < NbSteps ; ++idxPart){
              for(int idxP = 0 ; idxP < 3 ; ++idxP){
                  doATest(ParticlesNumbers[idxPart],DevsP[idxP],DevsP[idxP],AllLevels[idxPart],AllLevels[idxPart],
                          physicalValue, neutral, nullptr, nullptr,
@@ -437,7 +437,7 @@ int main(int argc, char ** argv){
             fprintf(fres, "\t%d\t%d\t%d", DevsP[0],DevsP[1],DevsP[2]);
 
             fprintf(fres, "\n");
-            for(int idxPart = 0 ; idxPart < NbSteps ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < NbSteps ; ++idxPart){
                 fprintf(fres, "%d", ParticlesNumbers[idxPart]);
                 for(int idxP = 0 ; idxP < 3 ; ++idxP){
                     fprintf(fres, "\t%e", timeCounter[idxP][idxPart]);

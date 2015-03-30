@@ -200,14 +200,14 @@ void FSetToNullptr343(struct FWrappeCell ptrs[343]){
 
 struct FOpenCLGroupAttachedLeaf {
     //< Nb of particles in the current leaf
-    int nbParticles;
+    FSize nbParticles;
     //< Pointers to the positions of the particles
     __global FReal* positionsPointers[3];
     //< Pointers to the attributes of the particles
     __global FParticleValueClass* attributes[NbSymbAttributes+NbAttributesPerParticle];
 };
 
-struct FOpenCLGroupAttachedLeaf BuildFOpenCLGroupAttachedLeaf(const int inNbParticles, __global FReal* inPositionBuffer, const size_t inLeadingPosition,
+struct FOpenCLGroupAttachedLeaf BuildFOpenCLGroupAttachedLeaf(const FSize inNbParticles, __global FReal* inPositionBuffer, const size_t inLeadingPosition,
                        __global FParticleValueClass* inAttributesBuffer, const size_t inLeadingAttributes){
     struct FOpenCLGroupAttachedLeaf leaf;
     leaf.nbParticles = (inNbParticles);
@@ -265,18 +265,18 @@ struct FOpenCLGroupOfParticlesBlockHeader{
     int blockIndexesTableSize;
 
     //< The real number of particles allocated
-    int nbParticlesAllocatedInGroup;
+    FSize nbParticlesAllocatedInGroup;
     //< Bytes difference/offset between position
     size_t positionOffset;
     //< Bytes difference/offset between attributes
     size_t attributeOffset;
     //< The total number of particles in the group
-    int nbParticlesInGroup;
+    FSize nbParticlesInGroup;
 }__attribute__ ((aligned (DefaultStructAlign)));
 
 /** Information about a leaf */
 struct FOpenCLGroupOfParticlesLeafHeader {
-    int nbParticles;
+    FSize nbParticles;
     size_t offSet;
 }__attribute__ ((aligned (DefaultStructAlign)));
 
@@ -294,7 +294,7 @@ struct FOpenCLGroupOfParticles {
     //< Pointer to leaves information
     __global struct FOpenCLGroupOfParticlesLeafHeader*     leafHeader;
     //< The total number of particles in the group
-    const int nbParticlesInGroup;
+    const FSize nbParticlesInGroup;
 
     //< Pointers to particle position x, y, z
     __global FReal* particlePosition[3];
@@ -384,7 +384,7 @@ struct FOpenCLGroupOfCellsBlockHeader{
 
 struct FOpenCLGroupOfCells {
     //< The size of the memoryBuffer
-    int allocatedMemoryInByte;
+    size_t allocatedMemoryInByte;
     //< Pointer to a block memory
     __global unsigned char* memoryBuffer;
 
@@ -509,7 +509,7 @@ void L2L(const struct FWrappeCell localCell, struct FWrappeCell child[8], const 
 
 void L2P(const struct FWrappeCell localCell, struct FOpenCLGroupAttachedLeaf particles, __global void* user_data){
     __global long long* partdown = particles.attributes[0];
-    for(int idxPart = 0 ; idxPart < particles.nbParticles ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < particles.nbParticles ; ++idxPart){
         partdown[idxPart] += *localCell.down;
     }
 }
@@ -526,7 +526,7 @@ void P2P(const int3 pos,
     }
     
     __global long long* partdown = targets.attributes[0];
-    for(int idxPart = 0 ; idxPart < targets.nbParticles ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < targets.nbParticles ; ++idxPart){
         partdown[idxPart] += cumul;
     }
 }
@@ -535,7 +535,7 @@ void P2PRemote(const int3 pos,
              struct FOpenCLGroupAttachedLeaf  targets, const struct FOpenCLGroupAttachedLeaf  sources,
              struct FOpenCLGroupAttachedLeaf directNeighborsParticles, const int position, __global void* user_data){
     __global long long* partdown = targets.attributes[0];
-    for(int idxPart = 0 ; idxPart < targets.nbParticles ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < targets.nbParticles ; ++idxPart){
         partdown[idxPart] += directNeighborsParticles.nbParticles;
     }
 }

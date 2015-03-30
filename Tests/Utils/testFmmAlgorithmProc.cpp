@@ -211,7 +211,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
 
             do {
                 if(octreeIterator.getCurrentListSrc()->getNbParticles() != octreeIterator.getCurrentCell()->getDataUp()){
-                    printf("P2M Problem nb part %d data up %lld \n",
+                    printf("P2M Problem nb part %lld data up %lld \n",
                            octreeIterator.getCurrentListSrc()->getNbParticles(), octreeIterator.getCurrentCell()->getDataUp());
                 }
             } while( octreeIterator.moveRight() );
@@ -237,7 +237,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
             }
 
             if(octreeIterator.getCurrentListTargets()->getNbParticles() != valideOctreeIterator.getCurrentListTargets()->getNbParticles()){
-                printf("Problem Do not have the same number of particle at leaf id %lld, valide %d invalide %d \n",
+                printf("Problem Do not have the same number of particle at leaf id %lld, valide %lld invalide %lld \n",
                        octreeIterator.getCurrentGlobalIndex(), valideOctreeIterator.getCurrentListTargets()->getNbParticles(),
                        octreeIterator.getCurrentListTargets()->getNbParticles());
             }
@@ -248,7 +248,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
                 ContainerClass* containerValide = (valideOctreeIterator.getCurrentListTargets());
                 const long long int*const dataDownValide = containerValide->getDataDown();
 
-                for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
                     // If a particles has been impacted by less than NbPart - 1 (the current particle)
                     // there is a problem
                     if( dataDown[idxPart] != dataDownValide[idxPart]){
@@ -330,7 +330,7 @@ int main(int argc, char ** argv){
     FMpiFmaGenericLoader<FReal> loader(filename,app.global());
     if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 
-    const int nbPartsForMe = loader.getMyNumberOfParticles();
+    const FSize nbPartsForMe = loader.getMyNumberOfParticles();
     const FReal boxWidth = loader.getBoxWidth();
     const FPoint<FReal> centerOfBox = loader.getCenterOfBox();
 
@@ -358,7 +358,7 @@ int main(int argc, char ** argv){
 
         TestParticle* particles = new TestParticle[nbPartsForMe];
         memset(particles, 0, sizeof(TestParticle) * nbPartsForMe);
-        for(int idxPart = 0 ; idxPart < nbPartsForMe ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < nbPartsForMe ; ++idxPart){
             FPoint<FReal> position;
             FReal physicalValue;
             loader.fillParticle(&position, &physicalValue);
@@ -403,7 +403,7 @@ int main(int argc, char ** argv){
         FFmaGenericLoader<FReal> loaderValide(filename);
         if(!loaderValide.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 
-        const int nbPartsValide = loaderValide.getNumberOfParticles();
+        const FSize nbPartsValide = loaderValide.getNumberOfParticles();
         const FReal boxWidthValide = loaderValide.getBoxWidth();
         const FPoint<FReal> centerOfBoxValide = loaderValide.getCenterOfBox();
 

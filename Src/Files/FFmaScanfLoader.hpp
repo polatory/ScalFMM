@@ -42,7 +42,7 @@
 * <br>
 *    FOctree<FBasicParticle, TestCell, FSimpleLeaf> tree(loader.getBoxWidth(),loader.getCenterOfBox()); <br>
 * <br>
-*    for(int idx = 0 ; idx < loader.getNumberOfParticles() ; ++idx){ <br>
+*    for(FSize r.getNumberOfParticles() ; ++idx){ <br>
 *        FBasicParticle* const part = new FBasicParticle(); <br>
 *        loader.fillParticle(part); <br>
 *        tree.insert(part); <br>
@@ -57,7 +57,7 @@ protected:
     FILE* file;                 //< The file to read
     FPoint<FReal> centerOfBox;    //< The center of box read from file
     FReal boxWidth;             //< the box width read from file
-    int nbParticles;            //< the number of particles read from file
+    FSize nbParticles;            //< the number of particles read from file
 
 public:
     /**
@@ -70,7 +70,7 @@ public:
         // test if open
         if(this->file){
             float x,y,z, fBoxWidth;
-            const int nbReadElements = fscanf(file,"%d %f %f %f %f",&this->nbParticles,&fBoxWidth,&x,&y,&z);
+            const int nbReadElements = fscanf(file,"%lld %f %f %f %f",&this->nbParticles,&fBoxWidth,&x,&y,&z);
             if(nbReadElements == 5){
                 this->boxWidth = fBoxWidth * 2;
                 this->centerOfBox.setPosition(x,y,z);

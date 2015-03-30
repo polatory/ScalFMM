@@ -160,7 +160,7 @@ int main(int argc, char ** argv){
             ContainerClass* container = (octreeIterator.getCurrentListTargets());
             const long long int*const dataDown = container->getDataDown();
 
-            for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
                 if( NbParticlesEntireSystem - 1 != dataDown[idxPart]){
                     std::cout << "P2P probleme, should be " << NbParticlesEntireSystem - 1 <<
                                  " iter.data().getDataDown() "<< dataDown[idxPart] << std::endl;
@@ -177,7 +177,7 @@ int main(int argc, char ** argv){
         for(int idx = 0 ; idx < app.global().processCount() ; ++idx ){
             FPoint<FReal> position;
             FRandomLoader<FReal> loaderSeq(NbParticles,FReal(1.0),FPoint<FReal>(0,0,0), idx);
-            for(int idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < loaderSeq.getNumberOfParticles() ; ++idxPart){
                 loaderSeq.fillParticle(&position);
                 treeSeq.insert(position);
             }
@@ -256,7 +256,7 @@ int main(int argc, char ** argv){
                     std::cout << "\t Not Correct is " << container->getNbParticles() << "\n";
                 }
 
-                for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
                     // If a particles has been impacted by less than NbPart - 1 (the current particle)
                     // there is a problem
                     if( dataDown[idxPart] != dataDownValide[idxPart]){

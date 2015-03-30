@@ -12,7 +12,7 @@ class FGroupTestParticleContainer : public FGroupAttachedLeaf<FReal, 0, 1, long 
 
 public:
     FGroupTestParticleContainer(){}
-    FGroupTestParticleContainer(const int inNbParticles, FReal* inPositionBuffer, const size_t inLeadingPosition,
+    FGroupTestParticleContainer(const FSize inNbParticles, FReal* inPositionBuffer, const size_t inLeadingPosition,
                                 long long int* inAttributesBuffer, const size_t inLeadingAttributes)
         : Parent(inNbParticles, inPositionBuffer, inLeadingPosition, inAttributesBuffer, inLeadingAttributes) {
 

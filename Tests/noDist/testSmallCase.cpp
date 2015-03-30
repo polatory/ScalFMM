@@ -175,7 +175,7 @@ int main(int argc, char ** argv){
     //////////////////////////////////////////////////////////////////////////////////
 
     tree.forEachLeaf([&](LeafClass* leaf){
-        const int nbParticles = leaf->getSrc()->getNbParticles();
+        const FSize nbParticles = leaf->getSrc()->getNbParticles();
         const FReal* posx = leaf->getSrc()->getPositions()[0];
         const FReal* posy = leaf->getSrc()->getPositions()[1];
         const FReal* posz = leaf->getSrc()->getPositions()[2];
@@ -183,8 +183,8 @@ int main(int argc, char ** argv){
         const FReal* fy = leaf->getSrc()->getForcesY();
         const FReal* fz = leaf->getSrc()->getForcesZ();
         const FReal* pot = leaf->getSrc()->getPotentials();
-        const FVector<int>& indexes = leaf->getSrc()->getIndexes();
-        for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+        const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
+        for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
             std::cout << "[FMM] Particle pos " << posx[idxPart] << " " << posy[idxPart] << " " << posz[idxPart] << "\n";
             std::cout << "\t>> res pot " << pot[idxPart] << " forces " << fx[idxPart] << " " << fy[idxPart] << " " << fz[idxPart] << "\n";
             std::cout << "[Direct] Particle pos " << particles[indexes[idxPart]].pos.getX() << " " << particles[indexes[idxPart]].pos.getY() << " " << particles[indexes[idxPart]].pos.getZ() << "\n";

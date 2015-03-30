@@ -48,36 +48,36 @@
 template <class FReal, unsigned NbAttributesPerParticle, class AttributeClass >
 class FBasicParticleContainer : public FAbstractParticleContainer<FReal>, public FAbstractSerializable {
 protected:
-    static const int MemoryAlignement   = FP2PDefaultAlignement;
-    static const int DefaultNbParticles = int(MemoryAlignement/sizeof(FReal));
+    static const FSize MemoryAlignement   = FP2PDefaultAlignement;
+    static const FSize DefaultNbParticles = FSize(MemoryAlignement/sizeof(FReal));
 
     /** The number of particles in the container */
-    int nbParticles;
+    FSize nbParticles;
     /** 3 pointers to 3 arrays of real to store the position */
     FReal* positions[3];
     /** The attributes requested by the user */
     AttributeClass* attributes[NbAttributesPerParticle];
 
     /** The allocated memory */
-    int allocatedParticles;
+    FSize allocatedParticles;
 
     /////////////////////////////////////////////////////
     /////////////////////////////////////////////////////
 
     /** Ending call for pushing the attributes */
     template<int index>
-    void addParticleValue(const int /*insertPosition*/){
+    void addParticleValue(const FSize /*insertPosition*/){
     }
 
     /** Ending call for pushing array of attributes */
     template<int index>
-    void addParticleValueS(const int /*insertPosition*/,const int /*nbParticles*/){
+    void addParticleValueS(const FSize /*insertPosition*/,const FSize /*nbParticles*/){
     }
 
 
     /** Filling call for each attributes values */
     template<int index, typename... Args>
-    void addParticleValue(const int insertPosition, const AttributeClass value, Args... args){
+    void addParticleValue(const FSize insertPosition, const AttributeClass value, Args... args){
         // Compile test to ensure indexing
         static_assert(index < NbAttributesPerParticle, "Index to get attributes is out of scope.");
         // insert the value
@@ -90,10 +90,10 @@ protected:
      * add multiples attributes from arrays
      */
     template<int index, typename... Args>
-    void addParticleValueS(const int insertPosition, const int nbParts, const AttributeClass* value, Args... args){
+    void addParticleValueS(const FSize insertPosition, const FSize nbParts, const AttributeClass* value, Args... args){
         // Compile test to ensure indexing
         static_assert(index < NbAttributesPerParticle, "Index to get attributes is out of scope.");
-        for(int idxPart = 0; idxPart<nbParts ; ++idxPart){
+        for(FSize idxPart = 0; idxPart<nbParts ; ++idxPart){
             // insert the value
             attributes[index][insertPosition+idxPart] = value[idxPart];
             // Continue for reamining values
@@ -109,8 +109,8 @@ protected:
     void increaseSizeIfNeeded(FSize sizeInput = 1){
         if( nbParticles+(sizeInput-1) >= allocatedParticles ){
             // allocate memory
-            const int moduloParticlesNumber = (MemoryAlignement/sizeof(FReal));
-            allocatedParticles = (FMath::Max(DefaultNbParticles,int(FReal(nbParticles+sizeInput)*1.5)) + moduloParticlesNumber - 1) & ~(moduloParticlesNumber-1);
+            const FSize moduloParticlesNumber = (MemoryAlignement/sizeof(FReal));
+            allocatedParticles = (FMath::Max(DefaultNbParticles,FSize(FReal(nbParticles+sizeInput)*1.5)) + moduloParticlesNumber - 1) & ~(moduloParticlesNumber-1);
             // init with 0
             const size_t allocatedBytes = (sizeof(FReal)*3 + sizeof(AttributeClass)*NbAttributesPerParticle)*allocatedParticles;
             FReal* newData  = reinterpret_cast<FReal*>(FAlignedMemory::AllocateBytes<MemoryAlignement>(allocatedBytes));
@@ -158,7 +158,7 @@ public:
    * @brief getNbParticles
    * @return  the number of particles
    */
-    int getNbParticles() const{
+    FSize getNbParticles() const{
         return nbParticles;
     }
     /**
@@ -232,10 +232,10 @@ public:
    */
     template<typename... Args>
     void pushArray(const FPoint<FReal> * inParticlePosition, FSize numberOfParts, Args... args){
-        const int positionToInsert = nbParticles;
+        const FSize positionToInsert = nbParticles;
         //Tests if enough space
         increaseSizeIfNeeded(numberOfParts);
-        for(int idxPart = 0; idxPart<numberOfParts ; ++idxPart){
+        for(FSize idxPart = 0; idxPart<numberOfParts ; ++idxPart){
             // insert particle data
             positions[0][positionToInsert + idxPart] = inParticlePosition[idxPart].getX();
             positions[1][positionToInsert + idxPart] = inParticlePosition[idxPart].getY();
@@ -322,10 +322,10 @@ public:
    * indexesToRemove must be sorted
    * it removes all the particles at position indexesToRemove
    */
-    void removeParticles(const int indexesToRemove[], const int nbParticlesToRemove){
-        int offset = 1;
-        int idxIndexes = 1;
-        int idxIns = indexesToRemove[0] + 1;
+    void removeParticles(const FSize indexesToRemove[], const FSize nbParticlesToRemove){
+        FSize offset = 1;
+        FSize idxIndexes = 1;
+        FSize idxIns = indexesToRemove[0] + 1;
         for( ; idxIns < nbParticles && idxIndexes < nbParticlesToRemove ; ++idxIns){
             if( idxIns == indexesToRemove[idxIndexes] ){
                 idxIndexes += 1;
@@ -362,7 +362,7 @@ public:
         return reinterpret_cast<AttributeClass*>(positions[2] + allocatedParticles);
     }
 
-    int getLeadingRawData() const {
+    FSize getLeadingRawData() const {
         return allocatedParticles;
     }
 
@@ -370,8 +370,8 @@ public:
     /////////////////////////////////////////////////////
 
     /** The size to send a leaf */
-    int getSavedSize() const{
-        return int(sizeof(nbParticles) + nbParticles * (3 * sizeof(FReal) + NbAttributesPerParticle * sizeof(AttributeClass)));
+    FSize getSavedSize() const{
+        return FSize(sizeof(nbParticles) + nbParticles * (3 * sizeof(FReal) + NbAttributesPerParticle * sizeof(AttributeClass)));
     }
 
     /** Save the current cell in a buffer */
@@ -391,7 +391,7 @@ public:
         buffer >> nbParticles;
         if( nbParticles >= allocatedParticles ){
             // allocate memory
-            const int moduloParticlesNumber = (MemoryAlignement/sizeof(FReal));
+            const FSize moduloParticlesNumber = (MemoryAlignement/sizeof(FReal));
             allocatedParticles = (nbParticles + moduloParticlesNumber - 1) & ~(moduloParticlesNumber-1);
             // init with 0
             const size_t allocatedBytes = (sizeof(FReal)*3 + sizeof(AttributeClass)*NbAttributesPerParticle)*allocatedParticles;

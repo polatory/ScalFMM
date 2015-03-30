@@ -64,7 +64,7 @@ public:
         return velocities;
     }
 
-    void fillToCsv(const int partIdx, FReal values[4]) const {
+    void fillToCsv(const FSize partIdx, FReal values[4]) const {
         values[0] = Parent::getPositions()[0][partIdx];
         values[1] = Parent::getPositions()[1][partIdx];
         values[2] = Parent::getPositions()[2][partIdx];
@@ -101,12 +101,12 @@ public:
     }
 
     /** To get the position of the particle at idx idxPart in leaf lf */
-    void getParticlePosition(VelocityContainer<FReal>* lf, const int idxPart, FPoint<FReal>* particlePos){
+    void getParticlePosition(VelocityContainer<FReal>* lf, const FSize idxPart, FPoint<FReal>* particlePos){
         (*particlePos) = FPoint<FReal>(lf->getPositions()[0][idxPart],lf->getPositions()[1][idxPart],lf->getPositions()[2][idxPart]);
     }
 
     /** Remove a particle but keep it to reinsert it later*/
-    void removeFromLeafAndKeep(VelocityContainer<FReal>* lf, const FPoint<FReal>& particlePos, const int idxPart,FParticleType /*type*/){
+    void removeFromLeafAndKeep(VelocityContainer<FReal>* lf, const FPoint<FReal>& particlePos, const FSize idxPart,FParticleType /*type*/){
         std::array<typename VelocityContainer<FReal>::AttributesClass, VelocityContainer<FReal>::NbAttributes> particleValues;
         for(int idxAttr = 0 ; idxAttr < VelocityContainer<FReal>::NbAttributes ; ++idxAttr){
             particleValues[idxAttr] = lf->getAttribute(idxAttr)[idxPart];
@@ -122,7 +122,7 @@ public:
     void insertAllParticles(OctreeClass* tree){
         std::array<typename VelocityContainer<FReal>::AttributesClass, VelocityContainer<FReal>::NbAttributes> particleValues;
 
-        for(int idxToInsert = 0; idxToInsert<toStoreRemovedParts.getNbParticles() ; ++idxToInsert){
+        for(FSize idxToInsert = 0; idxToInsert<toStoreRemovedParts.getNbParticles() ; ++idxToInsert){
             for(int idxAttr = 0 ; idxAttr < VelocityContainer<FReal>::NbAttributes ; ++idxAttr){
                 particleValues[idxAttr] = toStoreRemovedParts.getAttribute(idxAttr)[idxToInsert];
             }
@@ -185,7 +185,7 @@ int main(int argc, char ** argv){
         FPoint<FReal> position, velocity;
         FReal physicalValue;
 
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&position, &physicalValue, &velocity);
             tree.insert(position, velocity, physicalValue);
         }

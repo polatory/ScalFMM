@@ -86,8 +86,8 @@ public:
         coordinate.restore(buffer);
     }
 
-    int getSavedSize() const {
-        return int(sizeof(mortonIndex)) +  coordinate.getSavedSize();
+    FSize getSavedSize() const {
+        return FSize(sizeof(mortonIndex)) +  coordinate.getSavedSize();
     }
 
     /** Do nothing */

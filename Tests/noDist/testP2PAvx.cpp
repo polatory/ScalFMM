@@ -84,7 +84,7 @@ int main(int argc, char ** argv){
     //
     FFmaGenericLoader<FReal> loader(filenameIn);
     //
-    int nbParticles = static_cast<int>(loader.getNumberOfParticles());
+    FSize nbParticles = static_cast<int>(loader.getNumberOfParticles());
     std::cout << "Read " << nbParticles << " particles ..." << std::endl;
     double BoxWith=loader.getBoxWidth();
     FPoint<FReal> Centre(loader.getCenterOfBox().getX(), loader.getCenterOfBox().getY() , loader.getCenterOfBox().getZ());
@@ -166,7 +166,7 @@ int main(int argc, char ** argv){
     FReal cumulPot = 0.0;
     k=0;
     tree.forEachLeaf([&](LeafClass * leaf){
-        int maxParts = leaf->getSrc()->getNbParticles();
+        FSize maxParts = leaf->getSrc()->getNbParticles();
         FReal* datas = leaf->getSrc()->getPotentials();
         for(int i=0 ; i<maxParts ; ++i){
             cumulPot += datas[i];

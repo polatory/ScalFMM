@@ -64,7 +64,7 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 		const FReal physicalValue = 0.10;
 		//
 		FmaRWParticle<FReal, 8,8>* const particlesTargets = new FmaRWParticle<FReal, 8,8>[nbTargets];
-		for(int idxPart = 0 ; idxPart < nbTargets ; ++idxPart){
+		for(FSize idxPart = 0 ; idxPart < nbTargets ; ++idxPart){
             FPoint<FReal> position;
 			loader.fillParticle(&position);
 			// put in tree
@@ -79,7 +79,7 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 		}
 
 		FmaRWParticle<FReal, 8,8>* const particlesSources = new FmaRWParticle<FReal, 8,8>[nbSources];
-		for(int idxPart = 0 ; idxPart < nbSources ; ++idxPart){
+		for(FSize idxPart = 0 ; idxPart < nbSources ; ++idxPart){
             FPoint<FReal> position;
 			loader.fillParticle(&position);
 			// put in tree
@@ -137,11 +137,11 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 					const FReal*const forcesX = leaf->getTargets()->getForcesX();
 					const FReal*const forcesY = leaf->getTargets()->getForcesY();
 					const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-					const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-					const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+					const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+					const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-					for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-						const int indexPartOrig = indexes[idxPart];
+					for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+						const FSize indexPartOrig = indexes[idxPart];
 						potentialDiff.add(particlesTargets[indexPartOrig].getPotential(),potentials[idxPart]);
 						fx.add(particlesTargets[indexPartOrig].getForces()[0],forcesX[idxPart]);
 						fy.add(particlesTargets[indexPartOrig].getForces()[1],forcesY[idxPart]);

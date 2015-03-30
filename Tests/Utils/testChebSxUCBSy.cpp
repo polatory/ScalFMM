@@ -179,7 +179,7 @@ int main(int argc, char* argv[])
         const FReal*const positionsZ = Y.getSrc()->getPositions()[2];
         const FReal*const physicalValues = Y.getSrc()->getPhysicalValues();
 
-        for(int idxPart = 0 ; idxPart < Y.getSrc()->getNbParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < Y.getSrc()->getNbParticles() ; ++idxPart){
             const FPoint<FReal> y = FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
             const FReal        w = physicalValues[idxPart];
 
@@ -187,7 +187,7 @@ int main(int argc, char* argv[])
             const FReal*const xpositionsY = X.getSrc()->getPositions()[1];
             const FReal*const xpositionsZ = X.getSrc()->getPositions()[2];
 
-            for(int idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
+            for(FSize idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
                 const FPoint<FReal> x = FPoint<FReal>(xpositionsX[idxPart],xpositionsY[idxPart],xpositionsZ[idxPart]);
                 f[idxPartX] += MatrixKernel.evaluate(x,y) * w;
             }
@@ -199,7 +199,7 @@ int main(int argc, char* argv[])
 
 	////////////////////////////////////////////////////////////////////
     const FReal*const potentials = X.getSrc()->getPotentials();
-    for(int idxPart = 0 ; idxPart < X.getSrc()->getNbParticles() ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < X.getSrc()->getNbParticles() ; ++idxPart){
         approx_f[idxPart] = potentials[idxPart];
 	}
 

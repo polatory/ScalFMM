@@ -28,18 +28,18 @@ class FGroupOfParticles {
         int blockIndexesTableSize;
 
         //< The real number of particles allocated
-        int nbParticlesAllocatedInGroup;
+        FSize nbParticlesAllocatedInGroup;
         //< Bytes difference/offset between position
         size_t positionOffset;
         //< Bytes difference/offset between attributes
         size_t attributeOffset;
         //< The total number of particles in the group
-        int nbParticlesInGroup;
+        FSize nbParticlesInGroup;
     };
 
     /** Information about a leaf */
     struct alignas(FStarPUDefaultAlign::StructAlign) LeafHeader {
-        int nbParticles;
+        FSize nbParticles;
         size_t offSet;
     };
 
@@ -73,7 +73,7 @@ protected:
     //< Pointer to leaves information
     LeafHeader*     leafHeader;
     //< The total number of particles in the group
-    const int nbParticlesInGroup;
+    const FSize nbParticlesInGroup;
 
     //< Pointers to particle position x, y, z
     FReal* particlePosition[3];
@@ -129,13 +129,13 @@ public:
  * @param inEndingIndex last leaf morton index + 1
  * @param inNumberOfLeaves total number of leaves in the interval (should be <= inEndingIndex-inEndingIndex)
  */
-    FGroupOfParticles(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfLeaves, const int inNbParticles)
+    FGroupOfParticles(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfLeaves, const FSize inNbParticles)
         : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), blockIndexesTable(nullptr), leafHeader(nullptr), nbParticlesInGroup(inNbParticles),
           deleteBuffer(true){
         memset(particlePosition, 0, sizeof(particlePosition));
         memset(particleAttributes, 0, sizeof(particleAttributes));
 
-        const int nbParticlesAllocatedInGroup = RoundToUpperParticles(nbParticlesInGroup+(MemoryAlignementParticles-1)*inNumberOfLeaves);
+        const FSize nbParticlesAllocatedInGroup = RoundToUpperParticles(nbParticlesInGroup+(MemoryAlignementParticles-1)*inNumberOfLeaves);
 
         // Find the number of leaf to allocate in the blocks
         const int blockIndexesTableSize = int(inEndingIndex-inStartingIndex);
@@ -248,7 +248,7 @@ public:
     }
 
     /** Get the total number of particles in the group */
-    int getNbParticlesInGroup() const {
+    FSize getNbParticlesInGroup() const {
         return nbParticlesInGroup;
     }
 
@@ -268,7 +268,7 @@ public:
     }
 
     /** Allocate a new leaf by calling its constructor */
-    size_t newLeaf(const MortonIndex inIndex, const int id, const int nbParticles, const size_t offsetInGroup){
+    size_t newLeaf(const MortonIndex inIndex, const int id, const FSize nbParticles, const size_t offsetInGroup){
         FAssertLF(isInside(inIndex));
         FAssertLF(!exists(inIndex));
         FAssertLF(id < blockHeader->blockIndexesTableSize);

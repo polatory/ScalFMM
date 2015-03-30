@@ -121,7 +121,6 @@ int main(int argc, char* argv[])
     typedef FOctree<FReal,CellClass,ContainerClass,LeafClass>  OctreeClass;
     //
     typedef FInterpMatrixKernelR<FReal>                                       MatrixKernelClass;
-    const MatrixKernelClass MatrixKernel;
     typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
     //
     typedef FFmmAlgorithmPeriodic<FReal, OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
@@ -139,7 +138,7 @@ int main(int argc, char* argv[])
         //
         loader.fillParticle(particles,nbParticles);
 
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             tree.insert(particles[idxPart].getPosition(), idxPart, particles[idxPart].getPhysicalValue() );
         }
 
@@ -178,7 +177,7 @@ int main(int argc, char* argv[])
         // Compute direct energy
         /////////////////////////////////////////////////////////////////////////////////////////////////
 
-        for(int idx = 0 ; idx <  loader.getNumberOfParticles()  ; ++idx){
+        for(FSize idx = 0 ; idx < loader.getNumberOfParticles()  ; ++idx){
             energyD +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
         }
         //
@@ -201,13 +200,13 @@ int main(int argc, char* argv[])
             const FReal*const forcesX = leaf->getTargets()->getForcesX();
             const FReal*const forcesY = leaf->getTargets()->getForcesY();
             const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-            const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+            const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
             const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
 
-            const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+            const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-            for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                const int indexPartOrig = indexes[idxPart];
+            for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                const FSize indexPartOrig = indexes[idxPart];
                 //
                 particlesOut[indexPartOrig].setPosition(posX[idxPart],posY[idxPart],posZ[idxPart]) ;
                 particlesOut[indexPartOrig].setPhysicalValue(physicalValues[idxPart]) ;

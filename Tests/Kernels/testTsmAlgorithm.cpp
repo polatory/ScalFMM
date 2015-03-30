@@ -76,7 +76,7 @@ int testFunction(int argc, char ** argv, Args ... kernelPreArgs){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         FPoint<FReal> particlePosition;
         FReal physicalValue = 0.0;
         FParticleType particleType;
@@ -118,9 +118,9 @@ int testFunction(int argc, char ** argv, Args ... kernelPreArgs){
             const FReal*const forcesX = leaf->getTargets()->getForcesX();
             const FReal*const forcesY = leaf->getTargets()->getForcesY();
             const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-            const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+            const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
 
-            for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
                 potential += potentials[idxPart];
                 fx += forcesX[idxPart];
                 fy += forcesY[idxPart];

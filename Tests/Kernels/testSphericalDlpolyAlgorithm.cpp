@@ -174,7 +174,7 @@ int main(int argc, char ** argv){
     EwalParticle<FReal> * const particles = new EwalParticle<FReal>[loader->getNumberOfParticles()];
     memset(particles, 0, sizeof(EwalParticle<FReal>) * loader->getNumberOfParticles());
 	double totalCharge = 0.0;
-	for(int idxPart = 0 ; idxPart < loader->getNumberOfParticles() ; ++idxPart){
+	for(FSize idxPart = 0 ; idxPart < loader->getNumberOfParticles() ; ++idxPart){
 		//
 		loader->fillParticle(&particles[idxPart].position, particles[idxPart].forces,
 				&particles[idxPart].physicalValue,&particles[idxPart].index);
@@ -297,7 +297,7 @@ int main(int argc, char ** argv){
 		// particlesDirect : Direct results
 		//
 		counter.tic();
-		for(int idxTarget = 0 ; idxTarget < loader->getNumberOfParticles() ; ++idxTarget){
+		for(FSize idxTarget = 0 ; idxTarget < loader->getNumberOfParticles() ; ++idxTarget){
 			particlesDirect[idxTarget] = particles[idxTarget];
             EwalParticle<FReal> & part        = particlesDirect[idxTarget];
 			part.forces[0] = part.forces[1] = part.forces[2] = 0.0;
@@ -307,7 +307,7 @@ int main(int argc, char ** argv){
 			//
 			// Compute force and potential between  particles[idxTarget] and particles inside the box
 			//
-			for(int idxOther = 0; idxOther < loader->getNumberOfParticles() ; ++idxOther){
+			for(FSize idxOther = 0; idxOther < loader->getNumberOfParticles() ; ++idxOther){
 				if( idxOther != idxTarget ){
 					FP2P::NonMutualParticles(
 							particles[idxOther].position.getX(), particles[idxOther].position.getY(),
@@ -336,7 +336,7 @@ int main(int argc, char ** argv){
 									loader->getBoxWidth() * FReal(idxY),
 									loader->getBoxWidth() * FReal(idxZ));
 							//							std::cout <<" ( "<< idxX<<" , "<<idxY << " , "<< idxZ << " ) "<< offset <<std::endl;
-							for(int idxSource = 0 ; idxSource < loader->getNumberOfParticles() ; ++idxSource){
+							for(FSize idxSource = 0 ; idxSource < loader->getNumberOfParticles() ; ++idxSource){
                                 EwalParticle<FReal> source = particles[idxSource];
 								source.position += offset;
 								//								std::cout << "Part "<<idxSource<< " " <<source.position.getX()<< " " << source.position.getY()<< " " <<source.position.getZ()<< " " <<source.physicalValue <<std::endl ;
@@ -437,11 +437,11 @@ int main(int argc, char ** argv){
 			const FReal*const positionsX = leaf->getTargets()->getPositions()[0];
 			const FReal*const positionsY = leaf->getTargets()->getPositions()[1];
 			const FReal*const positionsZ = leaf->getTargets()->getPositions()[2];
-			const int nbParticlesInLeaf  = leaf->getTargets()->getNbParticles();
-			const FVector<int>& indexes  = leaf->getTargets()->getIndexes();
+			const FSize nbParticlesInLeaf  = leaf->getTargets()->getNbParticles();
+			const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 			//
-			for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-				const int indexPartOrig = indexes[idxPart];
+			for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+				const FSize indexPartOrig = indexes[idxPart];
 				if(scale){
 					//
 					// remove dipole correction for DL_POLY

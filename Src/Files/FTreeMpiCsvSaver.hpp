@@ -92,7 +92,7 @@ public:
         MPI_Offset disp = 0;
         {
             // Each procs count its particles
-            int mypart = 0;
+            FSize mypart = 0;
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
             do{
@@ -102,9 +102,9 @@ public:
             } while(octreeIterator.moveRight());
 
             // Gather particles number
-            int*const particlesPerProcs = new int[comm.processCount()];
-            MPI_Allgather(&mypart, 1, MPI_INT, particlesPerProcs, 1, MPI_INT, comm.getComm());
-            int previousPart = 0;
+            FSize*const particlesPerProcs = new FSize[comm.processCount()];
+            FMpi::Assert( MPI_Allgather(&mypart, 1, FMpi::GetType(mypart), particlesPerProcs, 1, FMpi::GetType(mypart), comm.getComm()), __LINE__);
+            FSize previousPart = 0;
             for(int idxProc = 0 ; idxProc < comm.processId() ; ++idxProc){
                 previousPart += particlesPerProcs[idxProc];
             }
@@ -134,7 +134,7 @@ public:
         do{
             {
                 const ContainerClass* container = octreeIterator.getCurrentListTargets();
-                for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
                     FReal values[4];
                     container->fillToCsv(idxPart, values);
                     sprintf(line, lineFormat, values[0],values[1],
@@ -149,7 +149,7 @@ public:
             const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
             if( isUsingTsm ){
                 const ContainerClass* container = octreeIterator.getCurrentListSrc();
-                for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
                     FReal values[4];
                     container->fillToCsv(idxPart, values);
                     sprintf(line, lineFormat, values[0],values[1],

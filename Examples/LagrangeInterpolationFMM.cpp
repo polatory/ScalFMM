@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
         FPoint<FReal> position;
         FReal physicalValue = 0.0;
         //
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             //
             // Read particle per particle from file
             loader.fillParticle(&position,&physicalValue);
@@ -178,7 +178,7 @@ int main(int argc, char* argv[])
     //
     //
     { // -----------------------------------------------------
-        long int N1=0, N2= loader.getNumberOfParticles()/2, N3= loader.getNumberOfParticles() -1; ;
+        FSize N1=0, N2= loader.getNumberOfParticles()/2, N3= loader.getNumberOfParticles() -1; ;
         FReal energy =0.0 ;
         //
         //   Loop over all leaves
@@ -196,13 +196,13 @@ int main(int argc, char* argv[])
             const FReal*const forcesX = leaf->getTargets()->getForcesX();
             const FReal*const forcesY = leaf->getTargets()->getForcesY();
             const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-            const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+            const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
             const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
 
-            const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+            const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-            for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                const int indexPartOrig = indexes[idxPart];
+            for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                const FSize indexPartOrig = indexes[idxPart];
                 if ((indexPartOrig == N1) || (indexPartOrig == N2) || (indexPartOrig == N3)  ) {
                     std::cout << "Index "<< indexPartOrig <<"  potential  " << potentials[idxPart]
                                  << " Pos "<<posX[idxPart]<<" "<<posY[idxPart]<<" "<<posZ[idxPart]
@@ -220,11 +220,11 @@ int main(int argc, char* argv[])
         std::string name(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output.fma"));
         FFmaGenericWriter<FReal> writer(name) ;
         //
-        int NbPoints = loader.getNumberOfParticles();
+        FSize NbPoints = loader.getNumberOfParticles();
         FReal * particles ;
         particles = new FReal[8*NbPoints] ;
         memset(particles,0,8*NbPoints*sizeof(FReal));
-        int j = 0 ;
+        FSize j = 0 ;
         tree.forEachLeaf([&](LeafClass* leaf){
             //
             // Input
@@ -232,7 +232,7 @@ int main(int argc, char* argv[])
             const FReal*const posY = leaf->getTargets()->getPositions()[1];
             const FReal*const posZ = leaf->getTargets()->getPositions()[2];
             const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
-            const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+            const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
             //
             // Computed data
             const FReal*const potentials = leaf->getTargets()->getPotentials();
@@ -240,8 +240,8 @@ int main(int argc, char* argv[])
             const FReal*const forcesY = leaf->getTargets()->getForcesY();
             const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
             //
-            const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-            for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+            const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+            for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
                 j = 8*indexes[idxPart];
                 particles[j]      = posX[idxPart] ;
                 particles[j+1]  = posY[idxPart] ;

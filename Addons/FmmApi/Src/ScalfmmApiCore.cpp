@@ -539,7 +539,7 @@ int FmmCore_setPositions(void *fmmCore, int *nb, FReal *position)  {
         omp_set_num_threads(corehandle->config.nbThreads);
     }
 
-    for(int idxPart = 0 ; idxPart < (*nb) ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < (*nb) ; ++idxPart){
         const FReal* pos = &position[idxPart * 3];
         corehandle->octree->insert(FPoint<FReal>(pos[0], pos[1], pos[2]),idxPart);
     }

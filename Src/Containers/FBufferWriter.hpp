@@ -32,7 +32,7 @@ private:
 
 public:
     /** Constructor with a default capacity of 512 bytes */
-    explicit FBufferWriter(const int inCapacity = 512) : buffer(inCapacity) {
+    explicit FBufferWriter(const FSize inCapacity = 512) : buffer(inCapacity) {
     }
 
     /** Destructor */
@@ -50,26 +50,26 @@ public:
     }
 
     /** Get the filled space */
-    int getSize() const {
+    FSize getSize() const {
         return buffer.getSize();
     }
 
     /** Write data by mem cpy */
     template <class ClassType>
     void write(const ClassType& object){
-        buffer.memocopy(reinterpret_cast<const char*>(&object), int(sizeof(ClassType)));
+        buffer.memocopy(reinterpret_cast<const char*>(&object), FSize(sizeof(ClassType)));
     }
 
     /** Write back, position + sizeof(object) has to be < size */
     template <class ClassType>
-    void writeAt(const int position, const ClassType& object){
+    void writeAt(const FSize position, const ClassType& object){
         (*reinterpret_cast<ClassType*>(&buffer[position])) = object;
     }
 
     /** Write an array */
     template <class ClassType>
-    void write(const ClassType* const objects, const int inSize){
-        buffer.memocopy(reinterpret_cast<const char*>(objects), int(sizeof(ClassType)) * inSize);
+    void write(const ClassType* const objects, const FSize inSize){
+        buffer.memocopy(reinterpret_cast<const char*>(objects), FSize(sizeof(ClassType)) * inSize);
     }
 
     /** Equivalent to write */

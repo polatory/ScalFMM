@@ -145,17 +145,17 @@ public:
         buffer.fillArray(local_exp, LocalSize);
     }
 
-    int getSavedSize() const {
-        return ((int) sizeof(FComplex<FReal>)) * (MultipoleSize + LocalSize)
-                + FBasicCell::getSavedSize();
+    FSize getSavedSize() const {
+        return FSize(((int) sizeof(FComplex<FReal>)) * (MultipoleSize + LocalSize)
+                + FBasicCell::getSavedSize());
     }
 
-    int getSavedSizeUp() const {
-        return ((int) sizeof(FComplex<FReal>)) * (MultipoleSize);
+    FSize getSavedSizeUp() const {
+        return ((FSize) sizeof(FComplex<FReal>)) * (MultipoleSize);
     }
 
-    int getSavedSizeDown() const {
-        return ((int) sizeof(FComplex<FReal>)) * (LocalSize);
+    FSize getSavedSizeDown() const {
+        return ((FSize) sizeof(FComplex<FReal>)) * (LocalSize);
     }
 };
 
@@ -177,7 +177,7 @@ public:
         FExtendCellType::resetToInitialState();
     }
 
-    int getSavedSize() const {
+    FSize getSavedSize() const {
         return FExtendCellType::getSavedSize() + FRotationCell<FReal, P>::getSavedSize();
     }
 };

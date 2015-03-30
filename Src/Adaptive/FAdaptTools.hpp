@@ -40,7 +40,7 @@ void   adaptiveTreeBuilSminC(OctreeClass & tree,const int sminM, const int sminL
 	typename OctreeClass::Iterator octreeIterator(&tree) ;
 	int NbLevels = tree.getHeight();
 
-	int  nbPart ;
+    FSize  nbPart ;
 	//
 	octreeIterator.gotoBottomLeft();
 	// Set s on the cells at leave level

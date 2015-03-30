@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
 	loader.fillParticle(particles,nbParticles);
 	FReal LL = loader.getBoxWidth() ;
     FPoint<FReal> maxPos(-LL,-LL,-LL),minPos(LL,LL,LL), BoxWidth;
-	for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
+	for(FSize idxPart = 0 ; idxPart < nbParticles; ++idxPart){
         const FPoint<FReal> PP(particles[idxPart].getPosition() ) ;
 		//
 		minPos.setX(FMath::Min(minPos.getX(),PP.getX())) ;
@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
 	FReal energyD =0.0, totPhysicalValue =0.0;
 
 	//#pragma omp parallel for reduction(+:energyD,totPhysicalValue)
-	for(int idx = 0 ; idx <  loader.getNumberOfParticles()  ; ++idx){
+    for(FSize idx = 0 ; idx < loader.getNumberOfParticles()  ; ++idx){
 		energyD             +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
 		totPhysicalValue += particles[idx].getPhysicalValue() ;
 	}
@@ -169,7 +169,7 @@ int main(int argc, char* argv[])
 	FReal   boxWidth = 1.0 ;// BoxWidth.getX();
 	//
 	// Scale the Points
-	for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
+	for(FSize idxPart = 0 ; idxPart < nbParticles; ++idxPart){
 		// put in tree
 		//	std::cout << idxPart<< " "<< particles[idxPart].getPosition()<< "  ";
         FPoint<FReal> PP(particles[idxPart].getPosition()/= BoxWidth) ;
@@ -216,7 +216,7 @@ int main(int argc, char* argv[])
 		{ // -----------------------------------------------------
 			time.tic();
 			// Insert and scale the Points
-			for(int idxPart = 0 ; idxPart < nbParticles; ++idxPart){
+			for(FSize idxPart = 0 ; idxPart < nbParticles; ++idxPart){
 				// put in tree
 				tree.insert(particles[idxPart].getPosition(), idxPart, particles[idxPart].getPhysicalValue());
 			}
@@ -246,11 +246,11 @@ int main(int argc, char* argv[])
 				FReal*const forcesX            = leaf->getTargets()->getForcesX();
 				FReal*const forcesY            = leaf->getTargets()->getForcesY();
 				FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
-				const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
-				const FVector<int>& indexes       = leaf->getTargets()->getIndexes();
+				const FSize nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-					const int indexPartOrig = indexes[idxPart];
+				for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+					const FSize indexPartOrig = indexes[idxPart];
 					// Rescale the forces
 				 	forcesX[idxPart] /= LX;
 					forcesY[idxPart] /= LY;
@@ -305,7 +305,7 @@ int main(int argc, char* argv[])
 		{ // -----------------------------------------------------
 			time.tic();
 
-			for(int idxPart = 0 ; idxPart <nbParticles ; ++idxPart){
+			for(FSize idxPart = 0 ; idxPart <nbParticles ; ++idxPart){
 				// put in tree
 				tree.insert(particles[idxPart].getPosition(), idxPart, particles[idxPart].getPhysicalValue());
 			}
@@ -334,11 +334,11 @@ int main(int argc, char* argv[])
 				FReal*const forcesX            = leaf->getTargets()->getForcesX();
 				FReal*const forcesY            = leaf->getTargets()->getForcesY();
 				FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
-				const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
-				const FVector<int>& indexes       = leaf->getTargets()->getIndexes();
+				const FSize nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-				for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-					const int indexPartOrig = indexes[idxPart];
+				for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+					const FSize indexPartOrig = indexes[idxPart];
 					forcesX[idxPart] /= LX;
 					forcesY[idxPart] /= LY;
 					forcesZ[idxPart] /= LZ;

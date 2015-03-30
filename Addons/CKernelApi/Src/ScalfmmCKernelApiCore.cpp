@@ -226,9 +226,9 @@ extern "C" void Scalfmm_dealloc_handle(Scalfmm_Handle handle, Callback_free_cell
 }
 
 // Insert a full array of particles. Posisions are xyz.xyz.xyz...
-extern "C" void Scalfmm_insert_array_of_particles(Scalfmm_Handle handle, int nbParticles, int* particleIndexes, double* particleXYZ){
+extern "C" void Scalfmm_insert_array_of_particles(Scalfmm_Handle handle, FSize nbParticles, int* particleIndexes, double* particleXYZ){
     ScalFmmCoreHandle* corehandle = (ScalFmmCoreHandle*)handle;
-    for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
         corehandle->octree->insert(FPoint<FReal>(particleXYZ[idxPart*3],particleXYZ[idxPart*3+1],particleXYZ[idxPart*3+2]),
                                 particleIndexes[idxPart]);
     }

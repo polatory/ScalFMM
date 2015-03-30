@@ -25,7 +25,7 @@ namespace FP2P {
   inline void FullMutualMultiRhs(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                                  const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
 
-    const int nbParticlesTargets = inTargets->getNbParticles();
+    const FSize nbParticlesTargets = inTargets->getNbParticles();
     const FReal*const targetsPhysicalValues = inTargets->getPhysicalValuesArray();
     const FReal*const targetsX = inTargets->getPositions()[0];
     const FReal*const targetsY = inTargets->getPositions()[1];
@@ -35,12 +35,12 @@ namespace FP2P {
     FReal*const targetsForcesZ = inTargets->getForcesZArray();
     FReal*const targetsPotentials = inTargets->getPotentialsArray();
     const int NVALS = inTargets->getNVALS();
-    const int targetsLD  = inTargets->getLeadingDimension();
+    const FSize targetsLD  = inTargets->getLeadingDimension();
 
-    for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-        for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+    for(FSize idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
+        for(FSize idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
             if( inNeighbors[idxNeighbors] ){
-                const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
+                const FSize nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
                 const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValuesArray();
                 const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
                 const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
@@ -49,9 +49,9 @@ namespace FP2P {
                 FReal*const sourcesForcesY = inNeighbors[idxNeighbors]->getForcesYArray();
                 FReal*const sourcesForcesZ = inNeighbors[idxNeighbors]->getForcesZArray();
                 FReal*const sourcesPotentials = inNeighbors[idxNeighbors]->getPotentialsArray();
-                const int sourcesLD  = inNeighbors[idxNeighbors]->getLeadingDimension();
+                const FSize sourcesLD  = inNeighbors[idxNeighbors]->getLeadingDimension();
 
-                for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                for(FSize idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
 
                     // Compute kernel of interaction and its derivative
                     const FPoint<FReal> sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
@@ -63,8 +63,8 @@ namespace FP2P {
 
                     for(int idxVals = 0 ; idxVals < NVALS ; ++idxVals){
                       
-                        const int idxTargetValue = idxVals*targetsLD+idxTarget;
-                        const int idxSourceValue = idxVals*sourcesLD+idxSource;
+                        const FSize idxTargetValue = idxVals*targetsLD+idxTarget;
+                        const FSize idxSourceValue = idxVals*sourcesLD+idxSource;
                         
                         FReal coef = (targetsPhysicalValues[idxTargetValue] * sourcesPhysicalValues[idxSourceValue]);
                         
@@ -85,8 +85,8 @@ namespace FP2P {
         }
     }
 
-    for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-        for(int idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){
+    for(FSize idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+        for(FSize idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){
 
             // Compute kernel of interaction...
             const FPoint<FReal> sourcePoint(targetsX[idxSource],targetsY[idxSource],targetsZ[idxSource]);
@@ -98,8 +98,8 @@ namespace FP2P {
 
             for(int idxVals = 0 ; idxVals < NVALS ; ++idxVals){
                       
-                const int idxTargetValue = idxVals*targetsLD+idxTarget;
-                const int idxSourceValue = idxVals*targetsLD+idxSource;
+                const FSize idxTargetValue = idxVals*targetsLD+idxTarget;
+                const FSize idxSourceValue = idxVals*targetsLD+idxSource;
                 
                 FReal coef = (targetsPhysicalValues[idxTargetValue] * targetsPhysicalValues[idxSourceValue]);
                 
@@ -127,7 +127,7 @@ template <class FReal, class ContainerClass, typename MatrixKernelClass>
 inline void FullRemoteMultiRhs(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                        const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
 
-    const int nbParticlesTargets = inTargets->getNbParticles();
+    const FSize nbParticlesTargets = inTargets->getNbParticles();
     const FReal*const targetsPhysicalValues = inTargets->getPhysicalValuesArray();
     const FReal*const targetsX = inTargets->getPositions()[0];
     const FReal*const targetsY = inTargets->getPositions()[1];
@@ -137,19 +137,19 @@ inline void FullRemoteMultiRhs(ContainerClass* const FRestrict inTargets, Contai
     FReal*const targetsForcesZ = inTargets->getForcesZArray();
     FReal*const targetsPotentials = inTargets->getPotentialsArray();
     const int NVALS = inTargets->getNVALS();
-    const int targetsLD  = inTargets->getLeadingDimension();
+    const FSize targetsLD  = inTargets->getLeadingDimension();
 
-    for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-        for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+    for(FSize idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
+        for(FSize idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
             if( inNeighbors[idxNeighbors] ){
-                const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
+                const FSize nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
                 const FReal*const sourcesPhysicalValues = inNeighbors[idxNeighbors]->getPhysicalValuesArray();
                 const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
                 const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
                 const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
-                const int sourcesLD  = inNeighbors[idxNeighbors]->getLeadingDimension();
+                const FSize sourcesLD  = inNeighbors[idxNeighbors]->getLeadingDimension();
 
-                for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                for(FSize idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
 
                     // Compute kernel of interaction...
                     const FPoint<FReal> sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
@@ -161,8 +161,8 @@ inline void FullRemoteMultiRhs(ContainerClass* const FRestrict inTargets, Contai
 
                     for(int idxVals = 0 ; idxVals < NVALS ; ++idxVals){
 
-                        const int idxTargetValue = idxVals*targetsLD+idxTarget;
-                        const int idxSourceValue = idxVals*sourcesLD+idxSource;
+                        const FSize idxTargetValue = idxVals*targetsLD+idxTarget;
+                        const FSize idxSourceValue = idxVals*sourcesLD+idxSource;
                         
                         FReal coef = (targetsPhysicalValues[idxTargetValue] * sourcesPhysicalValues[idxSourceValue]);
                         

@@ -63,7 +63,7 @@ public:
         if(threadIdx.x == 0) {
             // The particles is impacted by the parent cell
             long long int*const particlesAttributes = particles->template getAttribute<0>();
-            for(int idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
                 particlesAttributes[idxPart] += *local.down;
             }
         }
@@ -87,7 +87,7 @@ public:
             }
 
             long long int*const particlesAttributes = targets->template getAttribute<0>();
-            for(int idxPart = 0 ; idxPart < targets->getNbParticles() ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < targets->getNbParticles() ; ++idxPart){
                 particlesAttributes[idxPart] += inc;
             }
         }
@@ -107,7 +107,7 @@ public:
             }
 
             long long int*const particlesAttributes = targets->template getAttribute<0>();
-            for(int idxPart = 0 ; idxPart < targets->getNbParticles() ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < targets->getNbParticles() ; ++idxPart){
                 particlesAttributes[idxPart] += inc;
             }
         }

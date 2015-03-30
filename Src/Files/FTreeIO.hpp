@@ -89,8 +89,8 @@ public:
                     octreeIterator.getCurrentListSrc()->save(buffer);
                     octreeIterator.getCurrentListTargets()->save(buffer);
 
-                    const int sizeOfLeaf = buffer.getSize();
-                    file.write((const char*) &sizeOfLeaf, sizeof(int));
+                    const FSize sizeOfLeaf = buffer.getSize();
+                    file.write((const char*) &sizeOfLeaf, sizeof(FSize));
                     file.write(buffer.data(), buffer.getSize());
 
                     ++nbLeaf;
@@ -106,8 +106,8 @@ public:
                     buffer.reset();
                     octreeIterator.getCurrentListSrc()->save(buffer);
 
-                    const int sizeOfLeaf = buffer.getSize();
-                    file.write((const char*) &sizeOfLeaf, sizeof(int));
+                    const FSize sizeOfLeaf = buffer.getSize();
+                    file.write((const char*) &sizeOfLeaf, sizeof(FSize));
                     file.write(buffer.data(), buffer.getSize());
 
                     ++nbLeaf;
@@ -138,8 +138,8 @@ public:
 
                 buffer.reset();
                 octreeIterator.getCurrentCell()->save(buffer);
-                const int sizeOfCell = buffer.getSize();
-                file.write((const char*) &sizeOfCell, sizeof(int));
+                const FSize sizeOfCell = buffer.getSize();
+                file.write((const char*) &sizeOfCell, sizeof(FSize));
                 file.write(buffer.data(), buffer.getSize());
 
                 ++nbCells;
@@ -203,8 +203,8 @@ public:
                 MortonIndex mindex = 0;
                 file.read((char*)&mindex, sizeof(mindex));
 
-                int sizeOfLeaf = 0;
-                file.read((char*)&sizeOfLeaf, sizeof(int));
+                FSize sizeOfLeaf = 0;
+                file.read((char*)&sizeOfLeaf, sizeof(FSize));
 
                 buffer.reserve(sizeOfLeaf);
                 file.read((char*)buffer.data(), sizeOfLeaf);
@@ -237,8 +237,8 @@ public:
                     return false;
                 }
 
-                int sizeOfCell = 0;
-                file.read((char*)&sizeOfCell, sizeof(int));
+                FSize sizeOfCell = 0;
+                file.read((char*)&sizeOfCell, sizeof(FSize));
 
                 buffer.reserve(sizeOfCell);
                 file.read((char*)buffer.data(), sizeOfCell);

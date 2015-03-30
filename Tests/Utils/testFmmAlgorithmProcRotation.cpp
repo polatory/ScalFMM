@@ -171,7 +171,7 @@ void ValidateFMMAlgoProc(OctreeClass* const badTree,
             const FReal*const valideForcesY = valideLeaf->getForcesY();
             const FReal*const valideForcesZ = valideLeaf->getForcesZ();
 
-            for(int idxLeaf = 0 ; idxLeaf < firstLeaf->getNbParticles() ; ++idxLeaf){
+            for(FSize idxLeaf = 0 ; idxLeaf < firstLeaf->getNbParticles() ; ++idxLeaf){
 
                 int idxValideLeaf = 0;
                 for(; idxValideLeaf < valideLeaf->getNbParticles() ; ++idxValideLeaf){
@@ -287,7 +287,7 @@ int main(int argc, char ** argv){
         TestParticle* particles = new TestParticle[loader.getMyNumberOfParticles()];
         memset(particles, 0, (unsigned int) (sizeof(TestParticle) * loader.getMyNumberOfParticles()));
 
-        for(int idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&particles[idxPart].position,&particles[idxPart].physicalValue);
         }
 
@@ -353,9 +353,9 @@ int main(int argc, char ** argv){
                     const FReal*const forcesX = leaf->getTargets()->getForcesX();
                     const FReal*const forcesY = leaf->getTargets()->getForcesY();
                     const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-                    const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                    const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
 
-                    for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                    for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
                         potential += potentials[idxPart];
                         fx += forcesX[idxPart];
                         fy += forcesY[idxPart];
@@ -405,9 +405,9 @@ int main(int argc, char ** argv){
                     const FReal*const forcesX = leaf->getTargets()->getForcesX();
                     const FReal*const forcesY = leaf->getTargets()->getForcesY();
                     const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-                    const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                    const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
 
-                    for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                    for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
                         potential += potentials[idxPart];
                         fx += forcesX[idxPart];
                         fy += forcesY[idxPart];

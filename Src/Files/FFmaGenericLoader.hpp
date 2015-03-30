@@ -44,7 +44,7 @@
  * \tparam READ  number of items to read (UNUSED, see WRITE)
  * \tparam WRITE number of items to write (must be >= 4)
  */
-template<class FReal, int READ, int WRITE>
+template<class FReal, FSize READ, FSize WRITE>
 class FmaRWParticle {
     /// Data stored
     FReal data[WRITE];
@@ -135,22 +135,22 @@ public:
     }
 
     /// Get READ
-    unsigned int getReadDataNumber() const{
-        return (unsigned int) (READ);
+    FSize getReadDataNumber() const{
+        return FSize(READ);
     }
 
     /// Get WRITE
-    unsigned int getWriteDataNumber() const{
+    FSize getWriteDataNumber() const{
         return WRITE;
     }
 
     /// Get size of Class Particle
-    unsigned int getWriteDataSize() const {
+    FSize getWriteDataSize() const {
         return sizeof(FmaRWParticle<FReal, READ,WRITE>);
     }
 
     /// Get Size of array (should be same as above...)
-    long unsigned int getClassSize() const {
+    FSize getClassSize() const {
         return WRITE*sizeof(FReal);
     }
 };
@@ -178,7 +178,7 @@ public:
  * memset(particles, 0, sizeof(FmaRParticle) * nbParticles) ;
  *
  * // Read the file via the loader.
- * for(int idx = 0 ; idx < nbParticles ; ++idx){
+ * for(FSize idx = 0 ; idx < nbParticles ; ++idx){
  *     loader.fillParticle(particles[idx]);
  * }
  * \endcode
@@ -209,10 +209,10 @@ protected:
     FPoint<FReal>     centerOfBox;    ///< The center of box (read from file)
     FReal boxWidth;            ///< the box width (read from file)
     FSize    nbParticles;      ///< the number of particles (read from file)
-    unsigned int typeData[2];  ///< Size of the data to read, number of data on 1 line
+    FSize typeData[2];  ///< Size of the data to read, number of data on 1 line
 private:
     FReal   *tmpVal ;          ///< Temporary array to read data
-    int  otherDataToRead  ;    ///< number of other data (>4) to read in a particle record
+    FSize  otherDataToRead  ;    ///< number of other data (>4) to read in a particle record
 public:
     /**
      * This constructor opens a file using the given mode and reads its
@@ -321,13 +321,13 @@ public:
      * The box width from the simulation file opened by the loader
      * @return the number of data per record (Particle)
      */
-    unsigned int getNbRecordPerline(){
+    FSize getNbRecordPerline(){
         return typeData[1]; }
     /**
      * To know if the data are in float or in double type
      * @return the type of the values float (4) or double (8)
      */
-    unsigned int getDataType(){
+    FSize getDataType(){
         return typeData[0]; }
 
     /**
@@ -349,7 +349,7 @@ public:
             outParticlePositions->setPosition(x,y,z);
 
             if(otherDataToRead> 0){
-                for (int 	i = 0 ; i <otherDataToRead; ++i){
+                for (FSize 	i = 0 ; i <otherDataToRead; ++i){
                     (*this->file) >> x ;
                 }
             }
@@ -364,7 +364,7 @@ public:
      *
      * @param nbDataToRead number of value to read (I.e. size of the array)
      */
-    void fillParticle(FReal* dataToRead, const unsigned int nbDataToRead){
+    void fillParticle(FReal* dataToRead, const FSize nbDataToRead){
         if(binaryFile){
             file->read((char*)(dataToRead), sizeof(FReal)*nbDataToRead);
             if(nbDataToRead< typeData[1]){
@@ -373,12 +373,12 @@ public:
         }
         else{
 
-            for (unsigned int i = 0 ; i <nbDataToRead; ++i){
+            for (FSize i = 0 ; i <nbDataToRead; ++i){
                 (*this->file)  >>dataToRead[i];
             }
             if(nbDataToRead< typeData[1]){
                 FReal x;
-                for (unsigned int 	i = 0 ; i <typeData[1]-nbDataToRead; ++i){
+                for (FSize 	i = 0 ; i <typeData[1]-nbDataToRead; ++i){
                     (*this->file) >> x ;
                 }
             }
@@ -395,7 +395,7 @@ public:
      */
     template <class dataPart>
     void fillParticle(dataPart& dataToRead){
-        int otherDataRead = typeData[1] - dataToRead.getReadDataNumber() ;
+        FSize otherDataRead = typeData[1] - dataToRead.getReadDataNumber() ;
         if(binaryFile){
             file->read((char*)(dataToRead.getPtrFirstData()), sizeof(FReal)*(dataToRead.getReadDataNumber()));
             if( otherDataRead > 0){
@@ -404,13 +404,13 @@ public:
         }
         else{
             FReal * val = dataToRead.getPtrFirstData();
-            for (unsigned int i = 0 ; i <dataToRead.getReadDataNumber(); ++i){
+            for (FSize i = 0 ; i <dataToRead.getReadDataNumber(); ++i){
                 (*this->file)  >>*val;
                 ++val;
             }
             if( otherDataRead > 0){
                 FReal x;
-                for (int i = 0 ; i <otherDataRead ;++i){
+                for (FSize i = 0 ; i <otherDataRead ;++i){
                     (*this->file)  >>x;
                 }
             }
@@ -430,10 +430,10 @@ public:
      * @param N          the number of particles.
      */
     template <class dataPart>
-    void fillParticle(dataPart *dataToRead, const int N){
-        int otherDataRead = typeData[1] - (*dataToRead).getReadDataNumber() ;
+    void fillParticle(dataPart *dataToRead, const FSize N){
+        FSize otherDataRead = typeData[1] - (*dataToRead).getReadDataNumber() ;
         if (otherDataRead < 0){
-            std::cerr << "Error in fFFmaGenericLoader::fillParticle(dataPart *dataToRead, const int N)." 
+            std::cerr << "Error in fFFmaGenericLoader::fillParticle(dataPart *dataToRead, const FSize N)."
                       << std::endl
                       << "Wrong number of values to read:" << std::endl
                       << "expected " << typeData[1] << " from file\n"
@@ -446,7 +446,7 @@ public:
                        sizeof(FReal)*(N*(*dataToRead).getReadDataNumber()));
         }
         else {
-            for (int i = 0 ; i <N; ++i) {
+            for (FSize i = 0 ; i <N; ++i) {
                 this->fillParticle(dataToRead[i]) ;
             }
         }
@@ -478,7 +478,7 @@ private:
     void readBinaryHeader(){
         std::cout << " File open in binary mode "<< std::endl;
         file->seekg (std::ios::beg);
-        file->read((char*)&typeData,2*sizeof(unsigned int));
+        file->read((char*)&typeData,2*sizeof(FSize));
         std::cout << "   Datatype "<< typeData[0] << " "<< typeData[1] << std::endl;
         if(typeData[0] != sizeof(FReal)){
             std::cerr << "Size of elements in part file " << typeData[0] << " is different from size of FReal " << sizeof(FReal)<<std::endl;
@@ -625,8 +625,8 @@ public:
      */
     template <class typePart>
     void writeHeader(const FPoint<FReal> &centerOfBox,const FReal &boxWidth, const FSize &nbParticles, const typePart  data) {
-        unsigned int typeFReal[2]  = {sizeof(FReal) , sizeof(typePart) / sizeof(FReal) };
-        const unsigned int ndata  = data.getWriteDataNumber();
+        FSize typeFReal[2]  = {sizeof(FReal) , sizeof(typePart) / sizeof(FReal) };
+        const FSize ndata  = data.getWriteDataNumber();
         std::cout <<"    WriteHeader: typeFReal: " << typeFReal[0]  << "  nb Elts: " << typeFReal[1]  <<"   NData to write "<< ndata<< "\n";
         if (ndata != typeFReal[1]){
             typeFReal[1] = ndata;
@@ -652,8 +652,8 @@ public:
      * @param nbDataPerRecord  Number of record/value per particle
      */
     void writeHeader(const FPoint<FReal> &centerOfBox,const FReal &boxWidth, const FSize &nbParticles,
-                     const unsigned int  dataType, const unsigned int  nbDataPerRecord) {
-        unsigned int typeFReal[2]  = {dataType , nbDataPerRecord };
+                     const FSize  dataType, const FSize  nbDataPerRecord) {
+        FSize typeFReal[2]  = {dataType , nbDataPerRecord };
         FReal x = boxWidth *0.5;
         if(this->binaryFile) {
             this->writerBinaryHeader(centerOfBox,x,nbParticles,typeFReal);
@@ -698,21 +698,21 @@ public:
     void writeArrayOfParticles(const dataPart *dataToWrite, const FSize N){
         //		std::cout << "NB points to write: "<< N <<std::endl;
         if(binaryFile){
-            unsigned int recordSize=  dataToWrite[0].getWriteDataSize() ;
-            unsigned int typeFReal[2]      = {sizeof(FReal) , sizeof(dataPart) / sizeof(FReal) };
+            FSize recordSize=  dataToWrite[0].getWriteDataSize() ;
+            FSize typeFReal[2]      = {sizeof(FReal) , sizeof(dataPart) / sizeof(FReal) };
             // std::cout << "typeData "<< typeFReal[0] << " "<< typeFReal[1] <<"  "<< std::endl;
 
             if (sizeof(dataPart) == recordSize){
                 // std::cout << "Size to write:  "<<N*dataToWrite[0].getWriteDataSize() <<std::endl;
-                file->write((char*)(dataToWrite[0].getPtrFirstData()), N*recordSize);
+                file->write((const char*)(dataToWrite[0].getPtrFirstData()), N*recordSize);
             } else {
-                file->write((char* )&typeFReal[0],2*sizeof(unsigned int));
+                file->write((const char* )&typeFReal[0],2*sizeof(FSize));
                 // std::cout << "Size to write:   N* "<<typeFReal[0] *typeFReal[1]  <<std::endl;
-                for (int i = 0 ; i <N ; ++i){
-                    file->write((char*)(dataToWrite[i].getPtrFirstData()), recordSize );
+                for (FSize i = 0 ; i <N ; ++i){
+                    file->write((const char*)(dataToWrite[i].getPtrFirstData()), recordSize );
                     // const FReal * val = dataToWrite[i].getPtrFirstData() ;
                     // std::cout << i <<"   ";
-                    // for( int j=0; j<typeFReal[1] ; ++j){
+                    // for( FSize j=0; j<typeFReal[1] ; ++j){
                     // 	std::cout << *val << "   ";++val;
                     // }
                     // std::cout <<std::endl;
@@ -720,13 +720,13 @@ public:
             }
         }
         else{ // ASCII part
-            const int ndata = dataToWrite[0].getWriteDataNumber();
+            const FSize ndata = dataToWrite[0].getWriteDataNumber();
             // std::cout << "typeData "<< sizeof(FReal) << " "<<ndata << std::endl;
             this->file->precision(10);
 
-            for (int i = 0 ; i <N ; ++i){
+            for (FSize i = 0 ; i <N ; ++i){
                 const FReal * val = dataToWrite[i].getPtrFirstData() ;
-                for (int j= 0 ; j <ndata ; ++j){
+                for (FSize j= 0 ; j <ndata ; ++j){
                     (*this->file)  << *val << "    "; ++val;
                 }
                 (*this->file)  <<std::endl;
@@ -753,18 +753,18 @@ public:
      * Fwriter.writeArrayOfReal(particles, nbParticles);
      * \endcode
      */
-    void writeArrayOfReal(const FReal *dataToWrite, const unsigned int nbData, const FSize N){
+    void writeArrayOfReal(const FReal *dataToWrite, const FSize nbData, const FSize N){
         if(binaryFile){
-            file->write((char*)(dataToWrite), N*nbData*sizeof(FReal));
+            file->write((const char*)(dataToWrite), N*nbData*sizeof(FReal));
         }
         else{
             this->file->precision(10);
             //			std::cout << "N "<< N << " nbData "<< nbData<<std::endl;
             //			exit(-1);
-            int k = 0;
-            for (int i = 0 ; i <N ; ++i){
+            FSize k = 0;
+            for (FSize i = 0 ; i <N ; ++i){
                 //				std::cout << "i "<< i << "  ";
-                for (unsigned int jj= 0 ; jj<nbData ; ++jj, ++k){
+                for (FSize jj= 0 ; jj<nbData ; ++jj, ++k){
                     (*this->file)  << dataToWrite[k] << "    ";
                     //					std::cout      << dataToWrite[k]<< "  ";
                 }
@@ -777,7 +777,7 @@ public:
 
 private:
     void writerAscciHeader( const FPoint<FReal> &centerOfBox,const FReal &boxWidth,
-                            const FSize &nbParticles, const unsigned int *typeFReal) {
+                            const FSize &nbParticles, const FSize *typeFReal) {
         this->file->precision(10);
         (*this->file) << typeFReal[0] <<"   "<<typeFReal[1]<<std::endl;
         (*this->file) << nbParticles << "   "<<  boxWidth << "   "
@@ -785,18 +785,18 @@ private:
                       << std::endl;
     }
     void writerBinaryHeader(const FPoint<FReal> &centerOfBox,const FReal &boxWidth,
-                            const FSize &nbParticles, const unsigned int *typeFReal) {
+                            const FSize &nbParticles, const FSize *typeFReal) {
         file->seekg (std::ios::beg);
-        file->write((char*)typeFReal,2*sizeof(unsigned int));
+        file->write((const char*)typeFReal,2*sizeof(FSize));
         if(typeFReal[0]  != sizeof(FReal)){
             std::cout << "Size of elements in part file " << typeFReal[0] << " is different from size of FReal " << sizeof(FReal)<<std::endl;
             std::exit( EXIT_FAILURE);
         }
         else{
-            file->write( (char*)&(nbParticles), sizeof(FSize) );
+            file->write( (const char*)&(nbParticles), sizeof(FSize) );
             //			std::cout << "nbParticles "<< nbParticles<<std::endl;
-            file->write( (char*)&(boxWidth) ,sizeof(boxWidth) );
-            file->write( (char*)(centerOfBox.getDataValue()),sizeof(FReal)*3);
+            file->write( (const char*)&(boxWidth) ,sizeof(boxWidth) );
+            file->write( (const char*)(centerOfBox.getDataValue()),sizeof(FReal)*3);
         }
     }
 };
@@ -827,17 +827,17 @@ private:
 // 	/**
 // 	 *  return The number of data to read. it is used in FMAGenericLoader  (here 4)
 // 	 */
-// 	int getReadDataNumber()
+// 	FSize getReadDataNumber()
 // 	{ return 4;}
 // 	/**
 // 	 *  return The number of data to write. it is used in FMAGenericWriter (here 4)
 // 	 */
-// 	int getWriteDataNumber() const
+// 	FSize getWriteDataNumber() const
 // 	{ return 4;}
 // 	/**
 // 	 *  return size in byte of the structure. it is used in FMAGenericWriter
 // 	 */
-// 	unsigned int getWriteDataSize() const
+// 	FSize getWriteDataSize() const
 // 	{ return sizeof(FmaR4W4Particle);}
 // };
 
@@ -866,17 +866,17 @@ private:
 // 	/**
 // 	 *  return The number of data to read. it is used in FMAGenericLoader  (here 4)
 // 	 */
-// 	int getReadDataNumber()
+// 	FSize getReadDataNumber()
 // 	{ return 4;}
 // 	/**
 // 	 *  return The number of data to write. it is used in FMAGenericWriter (here 8)
 // 	 */
-// 	int getWriteDataNumber() const
+// 	FSize getWriteDataNumber() const
 // 	{ return 8;}
 // 	/**
 // 	 *  return size in byte of the structure. it is used in FMAGenericWriter
 // 	 */
-// 	unsigned int getWriteDataSize() const
+// 	FSize getWriteDataSize() const
 // 	{ return sizeof(FmaR4W8Particle);}
 // };
 //
@@ -895,7 +895,7 @@ private:
 // 	 *  Useful to read the result of the output of DirectComputation and to compare the potential and the force
 // 	 *  with the FMM computation
 // 	 */
-// 	int getReadDataNumber()
+// 	FSize getReadDataNumber()
 // 	{ return 8;}
 // };
 //\typedef FmaBasicParticle an alias of FmaR4W4Particle

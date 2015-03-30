@@ -35,7 +35,7 @@
 template <class FReal>
 class FRandomLoader : public FAbstractLoader<FReal> {
 protected:
-    const size_t nbParticles;            //< the number of particles
+    const FSize nbParticles;            //< the number of particles
     const FReal boxWidth;             //< the box width
     const FPoint<FReal> centerOfBox;    //< The center of box
 
@@ -48,9 +48,9 @@ public:
     *  @param  inSeed The seed for the random generator (default value time(nullptr))
     *
     */
-    FRandomLoader(const size_t inNbParticles, const FReal inBoxWidth = 1.0,
+    FRandomLoader(const FSize inNbParticles, const FReal inBoxWidth = 1.0,
                   const FPoint<FReal>& inCenterOfBox = FPoint<FReal>(0,0,0),
-                  const unsigned int inSeed = static_cast<long int>(time(nullptr)))
+                  const unsigned int inSeed = static_cast<unsigned int>(time(nullptr)))
         : nbParticles(inNbParticles), boxWidth(inBoxWidth), centerOfBox(inCenterOfBox) {
         srand48(inSeed);
     }
@@ -116,7 +116,7 @@ public:
 template <class FReal>
 class FRandomLoaderTsm : public FRandomLoader<FReal> {
 public:
-    FRandomLoaderTsm(const size_t inNbParticles, const FReal inBoxWidth = 1.0,
+    FRandomLoaderTsm(const FSize inNbParticles, const FReal inBoxWidth = 1.0,
                   const FPoint<FReal>& inCenterOfBox = FPoint<FReal>(0,0,0), const unsigned int inSeed = static_cast<unsigned int>(time(nullptr)))
         : FRandomLoader<FReal>(inNbParticles,inBoxWidth,inCenterOfBox,inSeed) {
     }

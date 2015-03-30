@@ -88,13 +88,13 @@ struct MyData {
 
 
 // Our P2M
-void my_Callback_P2M(void* cellData, int nbParticlesInLeaf, const int* particleIndexes, void* userData){
+void my_Callback_P2M(void* cellData, FSize nbParticlesInLeaf, const int* particleIndexes, void* userData){
     struct MyData* my_data = (struct MyData*)userData;
     my_data->countP2M += 1;
 
     struct MyCellDescriptor* my_cell = (struct MyCellDescriptor*) cellData;
     VerbosePrint("Cell morton %lld is doing P2M with %d particles :\n", my_cell->mortonIndex, nbParticlesInLeaf);
-    int idxPart;
+    FSize idxPart;
     for(idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
         double* position = &my_data->insertedPositions[particleIndexes[idxPart]*3];
         VerbosePrint("\t particle idx %d position %e/%e%e\n", particleIndexes[idxPart],
@@ -152,13 +152,13 @@ void my_Callback_L2L(int level, void* cellData, int childPosition, void* childDa
     // JUST-PUT-HERE: Your L2L
 }
 
-void my_Callback_L2P(void* cellData, int nbParticlesInLeaf, const int* particleIndexes, void* userData){
+void my_Callback_L2P(void* cellData, FSize nbParticlesInLeaf, const int* particleIndexes, void* userData){
     struct MyData* my_data = (struct MyData*)userData;
     my_data->countL2P += 1;
 
     struct MyCellDescriptor* my_cell = (struct MyCellDescriptor*) cellData;
     VerbosePrint("Cell morton %lld is doing L2P with %d particles :\n", my_cell->mortonIndex, nbParticlesInLeaf);
-    int idxPart;
+    FSize idxPart;
     for(idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
         double* position = &my_data->insertedPositions[particleIndexes[idxPart]*3];
         VerbosePrint("\t particle idx %d position %e/%e%e\n", particleIndexes[idxPart],
@@ -167,12 +167,12 @@ void my_Callback_L2P(void* cellData, int nbParticlesInLeaf, const int* particleI
     }
 }
 
-void my_Callback_P2P(int nbParticlesInLeaf, const int* particleIndexes, int nbParticlesInSrc, const int* particleIndexesSrc, void* userData){
+void my_Callback_P2P(FSize nbParticlesInLeaf, const int* particleIndexes, FSize nbParticlesInSrc, const int* particleIndexesSrc, void* userData){
     struct MyData* my_data = (struct MyData*)userData;
     my_data->countP2P += 1;
 
     VerbosePrint("Doing P2P between two leaves of %d particles and %d particles :\n", nbParticlesInLeaf, nbParticlesInSrc);
-    int idxPart;
+    FSize idxPart;
     for(idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
         double* position = &my_data->insertedPositions[particleIndexes[idxPart]*3];
         VerbosePrint("\t Target >> particle idx %d position %e/%e%e\n", particleIndexes[idxPart],
@@ -189,12 +189,12 @@ void my_Callback_P2P(int nbParticlesInLeaf, const int* particleIndexes, int nbPa
     // interacting with the target particles
 }
 
-void my_Callback_P2PInner(int nbParticlesInLeaf, const int* particleIndexes, void* userData){
+void my_Callback_P2PInner(FSize nbParticlesInLeaf, const int* particleIndexes, void* userData){
     struct MyData* my_data = (struct MyData*)userData;
     my_data->countP2PInner += 1;
 
     VerbosePrint("Doing P2P inside a leaf of %d particles :\n", nbParticlesInLeaf);
-    int idxPart;
+    FSize idxPart;
     for(idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
         double* position = &my_data->insertedPositions[particleIndexes[idxPart]*3];
         VerbosePrint("\t particle idx %d position %e/%e%e\n", particleIndexes[idxPart],
@@ -217,12 +217,12 @@ int main(int argc, char ** argv){
     boxCenter[0] = boxCenter[1] = boxCenter[2] = 0.0;
 
     // Create random particles
-    int nbParticles = 10;
+    FSize nbParticles = 10;
     int particleIndexes[nbParticles];
     double particleXYZ[nbParticles*3];
     {
         printf("Creating Particles:\n");
-        int idxPart;
+        FSize idxPart;
         for(idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
             particleIndexes[idxPart] = idxPart;
             particleXYZ[idxPart*3]   = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[0];
