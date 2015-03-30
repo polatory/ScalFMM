@@ -169,9 +169,9 @@ public:
  *
  * \code 
  * // Instanciate the loader with the particle file. 
- * FFmaGenericLoader<FReal> loader("../Data/unitCubeXYZQ20k.fma"); // extension fma -> ascii format //
- * Retrieve the number of particles FSize nbParticles =
- * loader.getNumberOfParticles();
+ * FFmaGenericLoader<FReal> loader("../Data/unitCubeXYZQ20k.fma"); // extension fma -> ascii format 
+ * // Retrieve the number of particles 
+ * FSize nbParticles = loader.getNumberOfParticles();
  *
  * // Create an array of particles, initialize to 0.
  * FmaRParticle * const particles = new FmaRParticle[nbParticles];
