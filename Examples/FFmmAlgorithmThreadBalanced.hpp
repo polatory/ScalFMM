@@ -377,45 +377,63 @@ protected:
         {
             FLOG(FTic counterTimeLevel);
 
+            std::vector< std::pair<TreeIterator, int> > iterVector;
+            // Find iterators to leaf portion of each zone.
+            for( std::vector<ZoneBoundClass> zone : costzones ) {
+                iterVector.push_back(
+                    std::pair<TreeIterator,int>(
+                        octreeIterator,          // Iterator to the current cell
+                        zone[idxLevel].second)); // Cell count in zone
+                // Get iterator to end of zone (which is the first of the next zone)
+                for( int idx = 0; idx < zone[idxLevel].second; idx++) {
+                    octreeIterator.moveRight();
+                }
 
+            }
 
-////////////////////////////////////////////////////////
-            int numberOfCells = 0;
-            // for each cells
-            do{
-                iterArray[numberOfCells] = octreeIterator;
-                ++numberOfCells;
-            } while(octreeIterator.moveRight());
-            avoidGotoLeftIterator.moveDown();
-            octreeIterator = avoidGotoLeftIterator;
-            
-            const int chunkSize = FMath::Max(1 , numberOfCells/(omp_get_max_threads()*omp_get_max_threads()));
-            
+            octreeIterator.moveDown();
+            octreeIterator.gotoLeft();
+
             FLOG(computationCounter.tic());
+
             #pragma omp parallel
             {
-                KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                const CellClass* neighbors[343];
+                const int threadNum = omp_get_thread_num();
+                KernelClass * const myThreadkernels = kernels[threadNum];
+                const CellClass* neighbours[343];
+                TreeIterator zoneIterator = iterVector[threadNum].first;
+                int zoneCellCount = iterVector[threadNum].second;
                 
-                #pragma omp for  schedule(dynamic, chunkSize) nowait
-                for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
-                    const int counter = tree->getInteractionNeighbors(neighbors,  iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
-                    if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
+                while(zoneCellCount-- > 0) {
+                    const int counter =
+                        tree->getInteractionNeighbors(
+                            neighbours,
+                            zoneIterator.getCurrentGlobalCoordinate(),
+                            idxLevel);
+                    if(counter)
+                        myThreadkernels->M2L(
+                            zoneIterator.getCurrentCell(),
+                            neighbours,
+                            counter,
+                            idxLevel);
+                    zoneIterator.moveRight();
                 }
-                
+
                 myThreadkernels->finishedLevelM2L(idxLevel);
+
             }
-            FLOG(computationCounter.tac());
-            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
-////////////////////////////////////////////////////////////
 
-
-
-
+            FLOG( computationCounter.tac() );
+            FLOG( FLog::Controller << "\t\t>> Level " 
+                                   << idxLevel << " = "  
+                                   << counterTimeLevel.tacAndElapsed()
+                                   << "s\n" );
         }
                 
-        FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "
+              << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : "
+              << computationCounter.cumulated() << " s\n" );
     }
 
     /////////////////////////////////////////////////////////////////////////////
