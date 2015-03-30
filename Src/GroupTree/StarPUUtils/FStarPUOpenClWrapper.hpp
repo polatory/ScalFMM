@@ -144,7 +144,7 @@ public:
         cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
            outsideInteractions->size()*sizeof(OutOfBlockInteraction),
-           (void*)outsideInteractions->data(), &errcode_ret);
+           const_cast<OutOfBlockInteraction*>(outsideInteractions->data()), &errcode_ret);
         FAssertLF(outsideInteractionsCl && errcode_ret == CL_SUCCESS);
 
         kernel->transferInoutPassPerformMpi(currentCellsPtr,
@@ -199,7 +199,7 @@ public:
         cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
            outsideInteractions->size()*sizeof(OutOfBlockInteraction),
-           (void*)outsideInteractions->data(), &errcode_ret);
+           const_cast<OutOfBlockInteraction*>(outsideInteractions->data()), &errcode_ret);
         FAssertLF(outsideInteractionsCl && errcode_ret == CL_SUCCESS);
 
         kernel->transferInoutPassPerform(currentCellsPtr, currentCellsSize, currentCellsUpPtr, currentCellsDownPtr,
@@ -267,7 +267,7 @@ public:
         cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
            outsideInteractions->size()*sizeof(OutOfBlockInteraction),
-           (void*)outsideInteractions->data(), &errcode_ret);
+           const_cast<OutOfBlockInteraction*>(outsideInteractions->data()), &errcode_ret);
         FAssertLF(outsideInteractionsCl && errcode_ret == CL_SUCCESS);
 
         kernel->directInoutPassPerformMpi(containersPtr, containersSize, containersDownPtr,
@@ -313,7 +313,7 @@ public:
         cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
            outsideInteractions->size()*sizeof(OutOfBlockInteraction),
-           (void*)outsideInteractions->data(), &errcode_ret);
+           const_cast<OutOfBlockInteraction*>(outsideInteractions->data()), &errcode_ret);
         FAssertLF(outsideInteractionsCl && errcode_ret == CL_SUCCESS);
 
         kernel->directInoutPassPerform(containersPtr, containerSize, containersDownPtr,

@@ -4,13 +4,16 @@
 
 #include "../../Utils/FGlobal.hpp"
 
-#include "FStarPUHeteoprio.hpp"
 #include "FStarPUKernelCapacities.hpp"
 
 /**
  * @brief The FStarPUFmmPriorities class
  * This class should have an static method to be called by hetero getPrio.
  */
+#ifdef STARPU_SUPPORT_COMMUTE
+
+#include "FStarPUHeteoprio.hpp"
+
 class FStarPUFmmPriorities{
     int prioP2M;
     int prioM2M;
@@ -321,6 +324,66 @@ public:
         return prioP2PMpi;
     }
 };
+
+#else // STARPU_SUPPORT_COMMUTE
+
+class FStarPUFmmPriorities{
+    static FStarPUFmmPriorities controller;
+
+
+    FStarPUFmmPriorities(){
+    }
+
+public:
+    static FStarPUFmmPriorities& Controller(){
+        return controller;
+    }
+
+
+    void init(struct starpu_conf* /*conf*/, const int /*inTreeHeight*/,
+              FStarPUKernelCapacities* /*inCapacities*/){
+
+    }
+
+    int getPrioP2M() const {
+        return 0;
+    }
+    int getPrioM2M(const int /*inLevel*/) const {
+        return 0;
+    }
+    int getPrioP2M(bool willBeSend) const {
+        return 0;
+    }
+    int getPrioM2M(const int /*inLevel*/, bool willBeSend) const {
+        return 0;
+    }
+    int getPrioM2L(const int inLevel) const {
+        return 0;
+    }
+    int getPrioM2LExtern(const int inLevel) const {
+        return 0;
+    }
+    int getPrioL2L(const int inLevel) const {
+        return 0;
+    }
+    int getPrioL2P() const {
+        return 0;
+    }
+    int getPrioP2P() const {
+        return 0;
+    }
+    int getPrioP2PExtern() const {
+        return 0;
+    }
+    int getPrioM2LMpi(const int inLevel) const {
+        return 0;
+    }
+    int getPrioP2PMpi() const {
+        return 0;
+    }
+};
+
+#endif // STARPU_SUPPORT_COMMUTE
 
 FStarPUFmmPriorities FStarPUFmmPriorities::controller;
 

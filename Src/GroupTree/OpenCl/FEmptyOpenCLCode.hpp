@@ -79,7 +79,7 @@ public:
     void releaseKernelCode(){
     }
 
-    size_t getNbDims() const {
+    unsigned int getNbDims() const {
         return 0;
     }
 

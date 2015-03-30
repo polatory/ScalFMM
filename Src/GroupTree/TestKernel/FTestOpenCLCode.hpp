@@ -39,7 +39,7 @@ public:
         kernelfile.clear();
     }
 
-    size_t getNbDims() const {
+    unsigned int getNbDims() const {
         return 1;
     }
 
