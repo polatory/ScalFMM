@@ -188,14 +188,14 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
                 MPI_Request currentRequest;
                 const int nbBytesInMessage = int(FMath::Min(IndexType(FQS_MAX_MPI_BYTES), totalByteToRecv-idxSize));
                 FMpi::Assert( MPI_Irecv(&ptrDataToRecv[idxSize], nbBytesInMessage, MPI_BYTE, pack.idProc,
-                              FMpi::TagQuickSort + idxSize, currentComm.getComm(), &currentRequest) , __LINE__);
+                              int(FMpi::TagQuickSort + idxSize), currentComm.getComm(), &currentRequest) , __LINE__);
 
                 requests.push_back(currentRequest);
             }
         }
         FAssertLF(whatToRecvFromWho.size() <= requests.size());
         // Wait to complete
-        FMpi::Assert( MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE),  __LINE__ );
+        FMpi::Assert( MPI_Waitall(int(requests.size()), requests.data(), MPI_STATUSES_IGNORE),  __LINE__ );
         ////FLOG( FLog::Controller << currentComm.processId() << "] Recv Done \n"; )
         // Copy to ouput variables
         (*inPartRecv) = recvBuffer;
@@ -221,19 +221,19 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
             // Work per max size
             const IndexType nbElementsInPack = (pack.toElement - pack.fromElement);
             const IndexType totalByteToSend  = nbElementsInPack*sizeof(SortType);
-            unsigned char*const ptrDataToSend = (unsigned char*)&inPartToSend[pack.fromElement];
+            unsigned char*const ptrDataToSend = (unsigned char*)const_cast<SortType*>(&inPartToSend[pack.fromElement]);
             for(IndexType idxSize = 0 ; idxSize < totalByteToSend ; idxSize += FQS_MAX_MPI_BYTES){
                 MPI_Request currentRequest;
                 const int nbBytesInMessage = int(FMath::Min(IndexType(FQS_MAX_MPI_BYTES), totalByteToSend-idxSize));
                 FMpi::Assert( MPI_Isend((SortType*)&ptrDataToSend[idxSize], nbBytesInMessage, MPI_BYTE , pack.idProc,
-                              FMpi::TagQuickSort + idxSize, currentComm.getComm(), &currentRequest) , __LINE__);
+                              int(FMpi::TagQuickSort + idxSize), currentComm.getComm(), &currentRequest) , __LINE__);
 
                 requests.push_back(currentRequest);
             }
         }
         FAssertLF(whatToSendToWho.size() <= requests.size());
         // Wait to complete
-        FMpi::Assert( MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE),  __LINE__ );
+        FMpi::Assert( MPI_Waitall(int(requests.size()), requests.data(), MPI_STATUSES_IGNORE),  __LINE__ );
         ////FLOG( FLog::Controller << currentComm.processId() << "] Send Done \n"; )
     }
 
@@ -370,8 +370,8 @@ public:
             int procInTheMiddle;
             if(globalNumberOfElementsLower == 0)        procInTheMiddle = -1;
             else if(globalNumberOfElementsGreater == 0) procInTheMiddle = currentNbProcs-1;
-            else procInTheMiddle = FMath::Min(IndexType(currentNbProcs-2), (currentNbProcs*globalNumberOfElementsLower)
-                                              /(globalNumberOfElementsGreater + globalNumberOfElementsLower));
+            else procInTheMiddle = int(FMath::Min(IndexType(currentNbProcs-2), (currentNbProcs*globalNumberOfElementsLower)
+                                              /(globalNumberOfElementsGreater + globalNumberOfElementsLower)));
 
             ////FLOG( FLog::Controller << currentComm.processId() << "] procInTheMiddle = " << procInTheMiddle << "\n"; )
 

@@ -27,7 +27,7 @@ class FGroupOfCells {
 
 protected:
     //< The size of the memoryBuffer
-    int allocatedMemoryInByte;
+    size_t allocatedMemoryInByte;
     //< Pointer to a block memory
     unsigned char* memoryBuffer;
 
@@ -168,7 +168,7 @@ public:
     }
 
     /** The the size of the allocated buffer */
-    int getBufferSizeInByte() const {
+    size_t getBufferSizeInByte() const {
         return allocatedMemoryInByte;
     }
 
@@ -183,7 +183,7 @@ public:
     }
 
     /** The the size of the allocated buffer */
-    int getMultipoleBufferSizeInByte() const {
+    size_t getMultipoleBufferSizeInByte() const {
         return sizeof(PoleCellClass)*blockHeader->numberOfCellsInBlock;
     }
 
@@ -198,7 +198,7 @@ public:
     }
 
     /** The the size of the allocated buffer */
-    int getLocalBufferSizeInByte() const {
+    size_t getLocalBufferSizeInByte() const {
         return sizeof(LocalCellClass)*blockHeader->numberOfCellsInBlock;
     }
 

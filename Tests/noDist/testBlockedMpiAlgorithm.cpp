@@ -106,7 +106,7 @@ int main(int argc, char* argv[]){
                                                                 &myParticles,
                                                                 &balancer);
 
-    FP2PParticleContainer<FReal> allParticles;
+    FTestParticleContainer<FReal> allParticles;
     for(int idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
         allParticles.push(myParticles[idxPart].position);
     }
@@ -125,7 +125,7 @@ int main(int argc, char* argv[]){
                               mpiComm.global().getComm(), MPI_STATUS_IGNORE), __LINE__);
     }
     if(mpiComm.global().processId() != mpiComm.global().processCount()-1){
-        FMpi::Assert(MPI_Send((void*)&myLeftLimite, sizeof(myLeftLimite), MPI_BYTE,
+        FMpi::Assert(MPI_Send(const_cast<MortonIndex*>(&myLeftLimite), sizeof(myLeftLimite), MPI_BYTE,
                               mpiComm.global().processId()+1, 0,
                               mpiComm.global().getComm()), __LINE__);
     }

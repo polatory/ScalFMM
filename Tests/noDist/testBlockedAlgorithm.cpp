@@ -104,7 +104,7 @@ int main(int argc, char* argv[]){
     // Usual octree
     OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());
 
-    FP2PParticleContainer<FReal> allParticles;
+    FTestParticleContainer<FReal> allParticles;
     for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         FPoint<FReal> particlePosition;
 #ifndef LOAD_FILE

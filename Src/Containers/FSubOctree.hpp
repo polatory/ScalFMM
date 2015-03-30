@@ -616,14 +616,14 @@ public:
     /** To get access to leafs elements (child suboctree)
       * @param index the position of the leaf/child suboctree
       * @return child at this index */
-    FAbstractSubOctree<FReal,CellClass,ContainerClass,LeafClass,CellAllocatorClass>* leafs(const int index) {
+    FAbstractSubOctree<FReal,CellClass,ContainerClass,LeafClass,CellAllocatorClass>* leafs(const size_t index) {
         return this->subleafs[index];
     }
 
     /** To get access to leafs elements (child suboctree)
       * @param index the position of the leaf/child suboctree
       * @return child at this index */
-    const FAbstractSubOctree<FReal,CellClass,ContainerClass,LeafClass,CellAllocatorClass>* leafs(const int index) const {
+    const FAbstractSubOctree<FReal,CellClass,ContainerClass,LeafClass,CellAllocatorClass>* leafs(const size_t index) const {
         return this->subleafs[index];
     }
 };

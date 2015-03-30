@@ -326,7 +326,7 @@ public:
         else{
             // We need to know the number of leaves per procs
             std::unique_ptr<FSize[]> numberOfLeavesPerProc(new FSize[nbProcs]);
-            FMpi::MpiAssert(MPI_Allgather((FSize*)&currentNbLeaves, 1, MPI_LONG_LONG_INT, numberOfLeavesPerProc.get(),
+            FMpi::MpiAssert(MPI_Allgather(const_cast<FSize*>(&currentNbLeaves), 1, MPI_LONG_LONG_INT, numberOfLeavesPerProc.get(),
                                           1, MPI_LONG_LONG_INT, communicator.getComm()), __LINE__);
 
             //prefix sum
@@ -366,9 +366,9 @@ public:
                     for(FSize idxMess = 0 ; idxMess < nbPartsPerPackToSend[idxPack]; idxMess += MAX_PARTICLES_PER_MPI_MESS){
                         const int nbElementsInMessage = int(FMath::Min(nbPartsPerPackToSend[idxPack]-idxMess, MAX_PARTICLES_PER_MPI_MESS));
                         requestsParts.emplace_back();
-                        FMpi::MpiAssert(MPI_Isend((ParticleClass*)&particlesArrayInLeafOrder[leavesOffsetInParticles[pack.elementFrom]+idxMess],
-                                sizeof(ParticleClass)*nbElementsInMessage,
-                                MPI_BYTE, pack.idProc, FMpi::TagExchangeIndexs + 2 + idxMess, communicator.getComm(), &requestsParts.back()), __LINE__);
+                        FMpi::MpiAssert(MPI_Isend(const_cast<ParticleClass*>(&particlesArrayInLeafOrder[leavesOffsetInParticles[pack.elementFrom]+idxMess]),
+                                int(sizeof(ParticleClass)*nbElementsInMessage),
+                                MPI_BYTE, pack.idProc, int(FMpi::TagExchangeIndexs + 2 + idxMess), communicator.getComm(), &requestsParts.back()), __LINE__);
                     }
                 }
                 else {
@@ -411,7 +411,7 @@ public:
                 }
             }
 
-            FMpi::MpiAssert(MPI_Waitall(requestsNbParts.size(), requestsNbParts.data(), MPI_STATUSES_IGNORE), __LINE__);
+            FMpi::MpiAssert(MPI_Waitall(int(requestsNbParts.size()), requestsNbParts.data(), MPI_STATUSES_IGNORE), __LINE__);
 
             // Count the number of leaf to receive
             FSize totalPartsToReceive = 0;
@@ -431,8 +431,8 @@ public:
                             const int nbElementsInMessage = int(FMath::Min(nbPartsPerPackToRecv[idxPack]-idxMess, MAX_PARTICLES_PER_MPI_MESS));
                             requestsParts.emplace_back();
                             FMpi::MpiAssert( MPI_Irecv(&particlesRecvBuffer[offsetToRecv+idxMess],
-                                             sizeof(ParticleClass)*nbElementsInMessage, MPI_BYTE, pack.idProc,
-                                             FMpi::TagExchangeIndexs + 2 + idxMess, communicator.getComm(), &requestsParts.back()), __LINE__);
+                                             int(sizeof(ParticleClass)*nbElementsInMessage), MPI_BYTE, pack.idProc,
+                                             int(FMpi::TagExchangeIndexs + 2 + idxMess), communicator.getComm(), &requestsParts.back()), __LINE__);
                         }
                     }
                     else if(pack.idProc == myRank){
@@ -446,7 +446,7 @@ public:
             }
 
             // Finalize communication
-            FMpi::MpiAssert(MPI_Waitall(requestsParts.size(), requestsParts.data(), MPI_STATUSES_IGNORE), __LINE__);
+            FMpi::MpiAssert(MPI_Waitall(int(requestsParts.size()), requestsParts.data(), MPI_STATUSES_IGNORE), __LINE__);
 
             // Insert in the particle saver
             for(FSize idPartsToStore = 0 ; idPartsToStore < int(particlesRecvBuffer.size()) ; ++idPartsToStore){
@@ -488,13 +488,13 @@ public:
             const int finalNbParticles = particleSaver->getSize();
 
             if(communicator.processId() != 0){
-                FMpi::MpiAssert(MPI_Gather((int*)&finalNbParticles,1,MPI_INT,nullptr,1,MPI_INT,0,communicator.getComm()), __LINE__);
+                FMpi::MpiAssert(MPI_Gather(const_cast<int*>(&finalNbParticles),1,MPI_INT,nullptr,1,MPI_INT,0,communicator.getComm()), __LINE__);
             }
             else{
                 const int nbProcs = communicator.processCount();
                 std::unique_ptr<int[]> nbPartsPerProc(new int[nbProcs]);
 
-                FMpi::MpiAssert(MPI_Gather((int*)&finalNbParticles,1,MPI_INT,nbPartsPerProc.get(),1,MPI_INT,0,communicator.getComm()), __LINE__);
+                FMpi::MpiAssert(MPI_Gather(const_cast<int*>(&finalNbParticles),1,MPI_INT,nbPartsPerProc.get(),1,MPI_INT,0,communicator.getComm()), __LINE__);
 
                 FReal averageNbParticles = 0;
                 int minNbParticles = finalNbParticles;

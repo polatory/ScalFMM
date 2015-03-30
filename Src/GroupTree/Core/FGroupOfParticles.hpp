@@ -62,7 +62,7 @@ protected:
     static const int LeafIsEmptyFlag = -1;
 
     //< The size of memoryBuffer in byte
-    int allocatedMemoryInByte;
+    size_t allocatedMemoryInByte;
     //< Pointer to a block memory
     unsigned char* memoryBuffer;
 
@@ -208,7 +208,7 @@ public:
     }
 
     /** The the size of the allocated buffer */
-    int getBufferSizeInByte() const {
+    size_t getBufferSizeInByte() const {
         return allocatedMemoryInByte;
     }
 
@@ -223,7 +223,7 @@ public:
     }
 
     /** The the size of the allocated buffer */
-    int getAttributesBufferSizeInByte() const {
+    size_t getAttributesBufferSizeInByte() const {
         return blockHeader->attributeOffset*NbAttributesPerParticle;
     }
 

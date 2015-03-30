@@ -99,7 +99,7 @@ protected:
     starpu_codelet p2p_cl_in;
     starpu_codelet p2p_cl_inout;
 
-#ifdef STARPU_USE_CPU    
+#ifdef STARPU_USE_CPU
     StarPUCpuWrapperClass cpuWrapper;
 #endif
 #ifdef SCALFMM_ENABLE_CUDA_KERNEL
@@ -569,15 +569,15 @@ protected:
                     int currentOutInteraction = 0;
                     for(int idxLeftGroup = 0 ; idxLeftGroup < idxGroup && currentOutInteraction < int(outsideInteractions.size()) ; ++idxLeftGroup){
                         ParticleGroupClass* leftContainers = tree->getParticleGroup(idxLeftGroup);
-                        const MortonIndex blockStartIdx    = leftContainers->getStartingIndex();
-                        const MortonIndex blockEndIdx      = leftContainers->getEndingIndex();
+                        const MortonIndex blockStartIdxOther    = leftContainers->getStartingIndex();
+                        const MortonIndex blockEndIdxOther      = leftContainers->getEndingIndex();
 
-                        while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdx){
+                        while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther){
                             currentOutInteraction += 1;
                         }
 
                         int lastOutInteraction = currentOutInteraction;
-                        while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdx){
+                        while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdxOther){
                             lastOutInteraction += 1;
                         }
 
@@ -645,15 +645,15 @@ protected:
                         int currentOutInteraction = 0;
                         for(int idxLeftGroup = 0 ; idxLeftGroup < idxGroup && currentOutInteraction < int(outsideInteractions.size()) ; ++idxLeftGroup){
                             CellContainerClass* leftCells   = tree->getCellGroup(idxLevel, idxLeftGroup);
-                            const MortonIndex blockStartIdx = leftCells->getStartingIndex();
-                            const MortonIndex blockEndIdx   = leftCells->getEndingIndex();
+                            const MortonIndex blockStartIdxOther = leftCells->getStartingIndex();
+                            const MortonIndex blockEndIdxOther   = leftCells->getEndingIndex();
 
-                            while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdx){
+                            while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther){
                                 currentOutInteraction += 1;
                             }
 
                             int lastOutInteraction = currentOutInteraction;
-                            while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdx){
+                            while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdxOther){
                                 lastOutInteraction += 1;
                             }
 

@@ -48,7 +48,7 @@
 template <class OctreeClass, class CellContainerClass, class KernelClass, class ParticleGroupClass, class StarPUCpuWrapperClass
 #ifdef SCALFMM_ENABLE_CUDA_KERNEL
     , class StarPUCudaWrapperClass = FStarPUCudaWrapper<KernelClass, FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
-                                                        FCudaGroupOfParticles<0, 0, int>, FCudaGroupAttachedLeaf<0, 0, int>, FCudaEmptyKernel>
+                                                        FCudaGroupOfParticles<int, 0, 0, int>, FCudaGroupAttachedLeaf<int, 0, 0, int>, FCudaEmptyKernel<int> >
 #endif
 #ifdef SCALFMM_ENABLE_OPENCL_KERNEL
     , class StarPUOpenClWrapperClass = FStarPUOpenClWrapper<KernelClass, FOpenCLDeviceWrapper<KernelClass>>
@@ -69,7 +69,7 @@ protected:
         int shift = 0;
         int height = tree->getHeight();
         while(height) { shift += 1; height >>= 1; }
-        return (((mindex<<shift) + inLevel) << 5) + mode;
+        return int((((mindex<<shift) + inLevel) << 5) + mode);
     }
 
     const FMpi::FComm& comm;
@@ -593,6 +593,8 @@ protected:
         starpu_data_handle_t handleUp;
         unsigned char * ptrDown;
         starpu_data_handle_t handleDown;
+
+        int intervalSize;
     };
 
     std::vector<std::vector<RemoteHandle>> remoteCellGroups;
@@ -740,15 +742,15 @@ protected:
                             FAssertLF(idxOtherGroup < int(processesBlockInfos[idxLevel].size()));
                         }
 
-                        const MortonIndex blockStartIdx = processesBlockInfos[idxLevel][idxOtherGroup].firstIndex;
-                        const MortonIndex blockEndIdx   = processesBlockInfos[idxLevel][idxOtherGroup].lastIndex;
+                        const MortonIndex blockStartIdxOther = processesBlockInfos[idxLevel][idxOtherGroup].firstIndex;
+                        const MortonIndex blockEndIdxOther   = processesBlockInfos[idxLevel][idxOtherGroup].lastIndex;
 
-                        while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdx){
+                        while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther){
                             currentOutInteraction += 1;
                         }
 
                         int lastOutInteraction = currentOutInteraction;
-                        while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdx){
+                        while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdxOther){
                             lastOutInteraction += 1;
                         }
 
@@ -759,12 +761,12 @@ protected:
                                 #pragma omp critical(CreateM2LRemotes)
                                 {
                                     if(remoteCellGroups[idxLevel][idxOtherGroup].ptrSymb == nullptr){
-                                        const int nbBytesInBlockSymb = processesBlockInfos[idxLevel][idxOtherGroup].bufferSizeSymb;
+                                        const size_t nbBytesInBlockSymb = processesBlockInfos[idxLevel][idxOtherGroup].bufferSizeSymb;
                                         unsigned char* memoryBlockSymb = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlockSymb);
                                         remoteCellGroups[idxLevel][idxOtherGroup].ptrSymb = memoryBlockSymb;
                                         starpu_variable_data_register(&remoteCellGroups[idxLevel][idxOtherGroup].handleSymb, 0,
                                                                       (uintptr_t)remoteCellGroups[idxLevel][idxOtherGroup].ptrSymb, nbBytesInBlockSymb);
-                                        const int nbBytesInBlockUp = processesBlockInfos[idxLevel][idxOtherGroup].bufferSizeUp;
+                                        const size_t nbBytesInBlockUp = processesBlockInfos[idxLevel][idxOtherGroup].bufferSizeUp;
                                         unsigned char* memoryBlockUp = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlockUp);
                                         remoteCellGroups[idxLevel][idxOtherGroup].ptrUp = memoryBlockUp;
                                         starpu_variable_data_register(&remoteCellGroups[idxLevel][idxOtherGroup].handleUp, 0,
@@ -844,15 +846,15 @@ protected:
                             FAssertLF(idxOtherGroup < int(processesBlockInfos[tree->getHeight()-1].size()));
                         }
 
-                        const MortonIndex blockStartIdx = processesBlockInfos[tree->getHeight()-1][idxOtherGroup].firstIndex;
-                        const MortonIndex blockEndIdx   = processesBlockInfos[tree->getHeight()-1][idxOtherGroup].lastIndex;
+                        const MortonIndex blockStartIdxOther = processesBlockInfos[tree->getHeight()-1][idxOtherGroup].firstIndex;
+                        const MortonIndex blockEndIdxOther   = processesBlockInfos[tree->getHeight()-1][idxOtherGroup].lastIndex;
 
-                        while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdx){
+                        while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther){
                             currentOutInteraction += 1;
                         }
 
                         int lastOutInteraction = currentOutInteraction;
-                        while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdx){
+                        while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdxOther){
                             lastOutInteraction += 1;
                         }
 
@@ -862,7 +864,7 @@ protected:
                                 #pragma omp critical(CreateM2LRemotes)
                                 {
                                     if(remoteParticleGroupss[idxOtherGroup].ptrSymb == nullptr){
-                                        const int nbBytesInBlock = processesBlockInfos[tree->getHeight()-1][idxOtherGroup].leavesBufferSize;
+                                        const size_t nbBytesInBlock = processesBlockInfos[tree->getHeight()-1][idxOtherGroup].leavesBufferSize;
                                         unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlock);
                                         remoteParticleGroupss[idxOtherGroup].ptrSymb = memoryBlock;
                                         starpu_variable_data_register(&remoteParticleGroupss[idxOtherGroup].handleSymb, 0,
@@ -963,15 +965,15 @@ protected:
 
                 std::unique_ptr<int[]> displs(new int[comm.processCount()]);
                 displs[0] = 0;
-                for(int idxProc = 1 ; idxProc < comm.processCount() ; ++idxProc){
-                    displs[idxProc] = displs[idxProc-1] + nbBlocksToSendToEach[idxProc-1];
+                for(int idxProcOther = 1 ; idxProcOther < comm.processCount() ; ++idxProcOther){
+                    displs[idxProcOther] = displs[idxProcOther-1] + nbBlocksToSendToEach[idxProcOther-1];
                 }
                 toSend.resize(displs[comm.processCount()-1] + nbBlocksToSendToEach[comm.processCount()-1]);
 
                 // We work in bytes
-                for(int idxProc = 0 ; idxProc < comm.processCount() ; ++idxProc){
-                    nbBlocksToSendToEach[idxProc] *= sizeof(MpiDependency);
-                    displs[idxProc] *= sizeof(MpiDependency);
+                for(int idxProcOther = 0 ; idxProcOther < comm.processCount() ; ++idxProcOther){
+                    nbBlocksToSendToEach[idxProcOther] *= int(sizeof(MpiDependency));
+                    displs[idxProcOther] *= int(sizeof(MpiDependency));
                 }
 
                 FMpi::Assert(MPI_Gatherv( nullptr, 0, MPI_BYTE,
@@ -1156,15 +1158,15 @@ protected:
                     int currentOutInteraction = 0;
                     for(int idxLeftGroup = 0 ; idxLeftGroup < idxGroup && currentOutInteraction < int(outsideInteractions.size()) ; ++idxLeftGroup){
                         ParticleGroupClass* leftContainers = tree->getParticleGroup(idxLeftGroup);
-                        const MortonIndex blockStartIdx    = leftContainers->getStartingIndex();
-                        const MortonIndex blockEndIdx      = leftContainers->getEndingIndex();
+                        const MortonIndex blockStartIdxOther    = leftContainers->getStartingIndex();
+                        const MortonIndex blockEndIdxOther      = leftContainers->getEndingIndex();
 
-                        while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdx){
+                        while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther){
                             currentOutInteraction += 1;
                         }
 
                         int lastOutInteraction = currentOutInteraction;
-                        while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdx){
+                        while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdxOther){
                             lastOutInteraction += 1;
                         }
 
@@ -1232,15 +1234,15 @@ protected:
                         int currentOutInteraction = 0;
                         for(int idxLeftGroup = 0 ; idxLeftGroup < idxGroup && currentOutInteraction < int(outsideInteractions.size()) ; ++idxLeftGroup){
                             CellContainerClass* leftCells   = tree->getCellGroup(idxLevel, idxLeftGroup);
-                            const MortonIndex blockStartIdx = leftCells->getStartingIndex();
-                            const MortonIndex blockEndIdx   = leftCells->getEndingIndex();
+                            const MortonIndex blockStartIdxOther = leftCells->getStartingIndex();
+                            const MortonIndex blockEndIdxOther   = leftCells->getEndingIndex();
 
-                            while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdx){
+                            while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther){
                                 currentOutInteraction += 1;
                             }
 
                             int lastOutInteraction = currentOutInteraction;
-                            while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdx){
+                            while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdxOther){
                                 lastOutInteraction += 1;
                             }
 
@@ -1370,13 +1372,13 @@ protected:
                       myLastIdx == (processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex >> 3)){
 
                     if(remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptrSymb == nullptr){
-                        const int nbBytesInBlockSymb = processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].bufferSizeSymb;
+                        const size_t nbBytesInBlockSymb = processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].bufferSizeSymb;
                         unsigned char* memoryBlockSymb = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlockSymb);
                         remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptrSymb = memoryBlockSymb;
                         starpu_variable_data_register(&remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handleSymb, 0,
                                                       (uintptr_t)remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptrSymb, nbBytesInBlockSymb);
 
-                        const int nbBytesInBlockUp = processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].bufferSizeUp;
+                        const size_t nbBytesInBlockUp = processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].bufferSizeUp;
                         unsigned char* memoryBlockUp = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlockUp);
                         remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptrUp = memoryBlockUp;
                         starpu_variable_data_register(&remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handleUp, 0,
@@ -1620,14 +1622,14 @@ protected:
                     FAssertLF(processesBlockInfos[idxLevel][firstOtherBlock].lastIndex-1 == missingParentIdx);
 
                     if(remoteCellGroups[idxLevel][firstOtherBlock].ptrSymb == nullptr){
-                        const int nbBytesInBlock = processesBlockInfos[idxLevel][firstOtherBlock].bufferSizeSymb;
+                        const size_t nbBytesInBlock = processesBlockInfos[idxLevel][firstOtherBlock].bufferSizeSymb;
                         unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlock);
                         remoteCellGroups[idxLevel][firstOtherBlock].ptrSymb = memoryBlock;
                         starpu_variable_data_register(&remoteCellGroups[idxLevel][firstOtherBlock].handleSymb, 0,
                                                       (uintptr_t)remoteCellGroups[idxLevel][firstOtherBlock].ptrSymb, nbBytesInBlock);
                     }
                     if(remoteCellGroups[idxLevel][firstOtherBlock].ptrDown == nullptr){
-                        const int nbBytesInBlock = processesBlockInfos[idxLevel][firstOtherBlock].bufferSizeDown;
+                        const size_t nbBytesInBlock = processesBlockInfos[idxLevel][firstOtherBlock].bufferSizeDown;
                         unsigned char* memoryBlock = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlock);
                         remoteCellGroups[idxLevel][firstOtherBlock].ptrDown = memoryBlock;
                         starpu_variable_data_register(&remoteCellGroups[idxLevel][firstOtherBlock].handleDown, 0,
