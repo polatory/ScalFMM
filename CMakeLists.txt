@@ -375,9 +375,10 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE INTEL_VERSION)
     message( STATUS "Intel:   ${INTEL_VERSION}")
+    set(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS} -Wall")
   else()
     # Compile option valid on GCC/G++
-    ADD_DEFINITIONS(-Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -Wcast-qual -Wcast-align -Woverloaded-virtual)
+    set(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS} -Wall -Wshadow -Wpointer-arith -Wcast-qual -Wconversion -Wcast-qual -Wcast-align -Woverloaded-virtual")
   endif()
   #
   ##################################################################
