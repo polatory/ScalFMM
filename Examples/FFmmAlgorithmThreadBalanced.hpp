@@ -28,8 +28,6 @@
 
 #include "../Src/Core/FCoreCommon.hpp"
 
-#include "CostZones.hpp"
-
 #include <vector>
 
 #include <omp.h>
@@ -69,7 +67,10 @@
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThreadBalanced : public FAbstractAlgorithm, public FAlgorithmTimers{
 
-    typedef typename OctreeClass::Iterator TreeIterator;
+    /// Shortened tree iterator class.
+    using TreeIterator   = typename OctreeClass::Iterator;
+    /// Factorisation of the class holding the zone bounds.
+    using ZoneBoundClass = std::pair<MortonIndex, int>;
 
     OctreeClass* const tree;  ///< The octree to work on.
     KernelClass** kernels;    ///< The kernels.
@@ -84,11 +85,8 @@ class FFmmAlgorithmThreadBalanced : public FAbstractAlgorithm, public FAlgorithm
     const int MaxThreads;     ///< The maximum number of threads.
     const int OctreeHeight;   ///< The height of the given tree.
 
-
-    using ZoneBoundClass = typename CostZones<OctreeClass, CellClass>::BoundClass;
     /// The vector containing the costzones
     const std::vector<std::vector<ZoneBoundClass>>& costzones;
-
     
 public:
     /** 
