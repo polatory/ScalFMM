@@ -14,43 +14,54 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
-#include <fstream>
-#include <memory>
 #include <string>
 
-
-//#include "Utils/FMath.hpp"
-//#include "Utils/FParameters.hpp"
-//#include "Utils/FParameterNames.hpp"
 #include "Files/FFmaGenericLoader.hpp"
-#include "Core/FFmmAlgorithm.hpp"
-#include "Kernels/Chebyshev/FChebSymKernel.hpp"
-
+#include "Files/FRandomLoader.hpp"
 #include "Containers/FOctree.hpp"
-#include "Components/FBasicCell.hpp"
+
+// Cell
+//#include "Components/FBasicCell.hpp"
+//#include "Kernels/Chebyshev/FChebCell.hpp"
+#include "Components/FTestCell.hpp"
+
+// Particle Container
+//#include "Components/FBasicParticleContainer.hpp"
+#include "Components/FTestParticleContainer.hpp"
+
+// Leaf
 #include "Components/FSimpleLeaf.hpp"
-#include "Components/FBasicParticleContainer.hpp"
 
-#include "FFmmAlgorithmThreadBalanced.hpp"
-#include "loadFMAAndRunFMMArgs.hpp"
-#include "loadFMAAndRunFMMUtils.hpp"
+// Kernel
+//#include "Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "Components/FTestKernels.hpp"
 #include "FChebBalanceSymKernel.hpp"
-#include "CostZones.hpp"
 
-using CellClass         = FCostCell;
-using ContainerClass    = FBasicParticleContainer<0>;
+// Algorithm
+#include "Core/FFmmAlgorithm.hpp"
+#include "FFmmAlgorithmThreadBalanced.hpp"
+
+// Other
+#include "CostZones.hpp"
+#include "loadFMAAndRunFMMArgs.hpp"
+#include "loadFMAAndRunFMMUtils.hpp" // last include, to shorten main file
+
+#define ORDER 7
+
+using CellClass         = FCostCell<FTestCell>;
+using ContainerClass    = FTestParticleContainer;
 using LeafClass         = FSimpleLeaf< ContainerClass >;
 using OctreeClass       = FOctree< CellClass, ContainerClass, LeafClass >;
+
 using MatrixKernelClass = FInterpMatrixKernelR;
 using BalanceKernelClass= FChebBalanceSymKernel<CellClass, ContainerClass,
-                                                MatrixKernelClass, 5,
+                                                MatrixKernelClass, ORDER,
                                                 OctreeClass>;
-// using KernelClass       = FChebSymKernel<CellClass, ContainerClass,
-//                                          MatrixKernelClass, 5,
-//                                          OctreeClass>;
 
-template < template <typename...> class T>
-using AlgoClass = T <OctreeClass, CellClass, ContainerClass, BalanceKernelClass, LeafClass >;
+using KernelClass       = FTestKernels<CellClass, ContainerClass>;
+
+template < template <typename...> class T, class KernelClassT>
+using FmmClass = T <OctreeClass, CellClass, ContainerClass, KernelClassT, LeafClass >;
 
 
 const FReal epsilon = 1e-4;
@@ -58,33 +69,56 @@ const FReal epsilon = 1e-4;
 
 int main(int argc, char** argv)
 {
+    // Handle arguments
     loadFMAAndRunFMMArgs args(argc, argv);
 
+
+    /* Creating tree and insterting particles *********************************/
     FFmaGenericLoader loader(args.inFileName().c_str());
+    //FRandomLoader loader(20, 1, FPoint(0.5,0.5,0.5), 1);
     OctreeClass tree(args.treeHeight(),
                      args.subTreeHeight(),
                      loader.getBoxWidth(),
                      loader.getCenterOfBox());
 
     loadTree(tree, loader);
-   
-    BalanceKernelClass kernel(&tree, epsilon);
-    AlgoClass<FFmmAlgorithm> costAlgo(&tree, &kernel);
+    /**************************************************************************/
+
+
+    /* Compute the cost of each tree cell *************************************/
+    BalanceKernelClass balanceKernel(&tree, epsilon);
+    FmmClass<FFmmAlgorithm, BalanceKernelClass> costAlgo(&tree, &balanceKernel);
 
     costAlgo.execute();
 
     if (args.verboseLevel() > 1) {
-        kernel.printResults(std::cout);
+        balanceKernel.printResults(std::cout);
     }
+    /**************************************************************************/
 
+
+    /* Run the costzone algorithm *********************************************/
     CostZones<OctreeClass, CellClass> costzones(&tree, args.zoneCount());
     costzones.run();
 
     writeZones(args, costzones);
+    /**************************************************************************/
+
+
+    /* Run the balanced algorithm *********************************************/
+
+    std::cout << "Running kernel" << std::endl;
+    KernelClass computeKernel;
+    FmmClass<FFmmAlgorithmThreadBalanced, KernelClass> fmmAlgo(&tree, &computeKernel, costzones.getZoneBounds());
+    //FmmClass<FFmmAlgorithm, KernelClass> fmmAlgo(&tree, &computeKernel);
     
-    AlgoClass<FFmmAlgorithmThreadBalanced> fmmAlgo(&tree, &kernel, costzones.getZoneBounds());
-    
-    
+    fmmAlgo.execute();
+    /**************************************************************************/
+
+
+    /* Check the results ******************************************************/
+    ValidateFMMAlgo<OctreeClass, CellClass, ContainerClass, LeafClass>(&tree);
+
 
     return EXIT_SUCCESS;
 }

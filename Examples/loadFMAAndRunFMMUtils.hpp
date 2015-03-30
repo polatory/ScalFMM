@@ -1,7 +1,8 @@
 #ifndef _LOADFMAANDRUNFMMUTILS_HPP_
 #define _LOADFMAANDRUNFMMUTILS_HPP_
 
-#include "CostZones.hpp"
+#include <fstream>
+#include <memory>
 #include <assert.h>
 
 /**
@@ -16,10 +17,10 @@
 template<class OctreeClass, class CellClass>
 void writeZones(const loadFMAAndRunFMMArgs& args, const CostZones <OctreeClass,CellClass>& costzones)
 {
-    std::string outFileBaseName = args.outFileName();
-    std::string outFileExt = args.outFileExt();
-    int verboseLevel = args.verboseLevel();
-    int treeHeight = args.treeHeight();
+    const std::string outFileBaseName = args.outFileName();
+    const std::string outFileExt = args.outFileExt();
+    const int verboseLevel = args.verboseLevel();
+    const int treeHeight = args.treeHeight();
 
     auto zones = costzones.getZones();
     int zoneCount = zones.size();//args.zoneCount();
@@ -65,6 +66,7 @@ void writeZones(const loadFMAAndRunFMMArgs& args, const CostZones <OctreeClass,C
     }
 }
 
+
 /**
  * \brief Loads a tree from a loader.
  * \param tree The the to load into.
@@ -78,7 +80,19 @@ void loadTree(OctreeClass& tree, FFmaGenericLoader& loader)
     // insertion
     for ( int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart ) {
         loader.fillParticle(&particlePosition, &physicalValue);
-        tree.insert(particlePosition, idxPart);
+        tree.insert(particlePosition);
+    }
+}
+
+
+template <class OctreeClass>
+void loadTree(OctreeClass& tree, FRandomLoader& loader)
+{
+    FPoint particlePosition;
+    // insertion
+    for ( int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart ) {
+        loader.fillParticle(&particlePosition);
+        tree.insert(particlePosition);
     }
 }
 

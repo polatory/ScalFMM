@@ -24,7 +24,11 @@ class loadFMAAndRunFMMArgs {
     
     TCLAP::LinuxOutput _cmdFormat;
     
-    TCLAP::BashCompletion::Visitor _compVistor;
+    TCLAP::BashCompletion::Visitor
+    _compVistor { &_cmd, 
+        { {  &_inFileName, {TCLAP::BashCompletion::FILE, "!*.fma" }},
+            {&_outFileExt, {"csv"}}}};
+
     TCLAP::SwitchArg
     _compArg { "",
             "completion",
@@ -82,11 +86,7 @@ public:
         return ext;
     } 
 
-    loadFMAAndRunFMMArgs(int argc, char** argv) 
-        : _compVistor(argc, argv, &_cmd, {
-                { &_inFileName,{TCLAP::BashCompletion::FILE, "!*.fma" }},
-                {&_outFileExt, {"csv"}}}
-            ){
+    loadFMAAndRunFMMArgs(int argc, char** argv) {
         int columns = 80;
         struct winsize w;
         if (ioctl(0, TIOCGWINSZ, &w) == 0)
