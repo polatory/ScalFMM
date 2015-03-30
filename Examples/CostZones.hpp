@@ -1,6 +1,8 @@
 #ifndef _COSTZONES_HPP_
 #define _COSTZONES_HPP_
 
+#include <vector>
+
 /**
  * \author Quentin Khan
  * \brief Cell with a cost memory for balance computations.
@@ -40,8 +42,8 @@ public:
      * Add a cost to the cell.
      * \warning Can be used on const cells !
      */
-    long int addCost(int addCost) const {
-        _cost += addCost;
+    long int addCost(int cost) const {
+        _cost += cost;
         return _cost;
     }
 };
@@ -61,8 +63,10 @@ public:
 template<typename OctreeClass, typename CellClass>
 class CostZones {
 public:
+
+    using BoundClass = std::pair<MortonIndex, int>;
     /// Initial value for empty bounds.
-    const std::pair<int,int> _boundInit {-1,0};
+    const BoundClass _boundInit {-1,0};
 
 protected:
     /// The iterator to move through the tree.
@@ -86,7 +90,7 @@ protected:
      * \details This means there are at most _treeHeight elements in the inner
      * vectors.
      */
-    std::vector< std::vector< std::pair<int, int > > > _zonebounds;
+    std::vector< std::vector< BoundClass > > _zonebounds;
 
     /// \brief Enumeration to specify the children to move to during the in-order
     /// traversal.
@@ -104,7 +108,7 @@ public:
         _nbZones( nbZones ),
         _treeHeight( tree->getHeight() ),
         _zones( 1, std::vector< std::pair< int, CellClass*> >( )),
-        _zonebounds( 1, std::vector< std::pair< int, int> >(_treeHeight, _boundInit ))
+        _zonebounds( 1, std::vector< BoundClass >(_treeHeight, _boundInit ))
         {}
 
     /**
@@ -123,7 +127,7 @@ public:
      * See CostZones#_zonebounds.
      * \return The computed zone bounds.
      */
-    const std::vector< std::vector< std::pair<int, int> > >& getZoneBounds() const {
+    const std::vector< std::vector< BoundClass > >& getZoneBounds() const {
         return _zonebounds;
     }
 
@@ -236,7 +240,7 @@ private:
      */
     void addCurrentCell() {
         CellClass* cell = _it.getCurrentCell();
-        int cellCost = cell->getCost();
+        long int cellCost = cell->getCost();
 
         if ( cellCost != 0) {
             if ( _currentCost + cellCost < _zones.size() * _totalCost / _nbZones + 1 ) {
@@ -259,7 +263,7 @@ private:
                     std::vector< std::pair<int, CellClass*> >(1, {_it.level(), cell}));
                 // Add a new inferior bound
                 _zonebounds.push_back(
-                    std::vector< std::pair<int, int> >(_treeHeight, _boundInit));
+                    std::vector< BoundClass >(_treeHeight, _boundInit));
                 _zonebounds.back()[_it.level()].first = _it.getCurrentGlobalIndex();
                 _zonebounds.back()[_it.level()].second = 1;
             }

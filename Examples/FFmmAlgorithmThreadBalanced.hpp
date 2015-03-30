@@ -28,6 +28,8 @@
 
 #include "../Src/Core/FCoreCommon.hpp"
 
+#include "CostZones.hpp"
+
 #include <vector>
 
 #include <omp.h>
@@ -82,8 +84,10 @@ class FFmmAlgorithmThreadBalanced : public FAbstractAlgorithm, public FAlgorithm
     const int MaxThreads;     ///< The maximum number of threads.
     const int OctreeHeight;   ///< The height of the given tree.
 
+
+    using ZoneBoundClass = typename CostZones<OctreeClass, CellClass>::BoundClass;
     /// The vector containing the costzones
-    const std::vector<std::vector<std::pair<int,int>>>& costzones;
+    const std::vector<std::vector<ZoneBoundClass>>& costzones;
 
     
 public:
@@ -104,7 +108,7 @@ public:
      */
     FFmmAlgorithmThreadBalanced(OctreeClass* const inTree,
                                 KernelClass* const inKernel,
-                                const std::vector<std::vector<std::pair<int,int>>>&
+                                const std::vector<std::vector<ZoneBoundClass>>&
                                 inCostzones) :
         tree(inTree) , 
         kernels(nullptr),
@@ -217,7 +221,7 @@ protected:
 
         std::cerr << "Defining iterators" << std::endl;
         // Find iterators to leaf portion of each zone.
-        for( std::vector<std::pair<int,int>> zone : costzones ) {
+        for( std::vector<ZoneBoundClass> zone : costzones ) {
             iterVector.push_back(
                 std::pair<TreeIterator,int>(
                     octreeIterator,       // Iterator to the current cell
@@ -295,7 +299,7 @@ protected:
         {
             std::vector< std::pair<TreeIterator, int> > tempVect;
             // Find iterators to leaf portion of each zone.
-            for( std::vector<std::pair<int,int>> zone : costzones ) {
+            for( std::vector<ZoneBoundClass> zone : costzones ) {
                 tempVect.push_back(
                     std::pair<TreeIterator,int>(
                         octreeIterator,          // Iterator to the current cell

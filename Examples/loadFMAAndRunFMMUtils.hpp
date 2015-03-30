@@ -23,7 +23,7 @@ void writeZones(const loadFMAAndRunFMMArgs& args, const CostZones <OctreeClass,C
     const int treeHeight = args.treeHeight();
 
     auto zones = costzones.getZones();
-    int zoneCount = zones.size();//args.zoneCount();
+    long unsigned int zoneCount = zones.size();//args.zoneCount();
 
     std::cout << "Writing " << zoneCount << " zones." << std::endl;
 
@@ -73,10 +73,10 @@ void writeZones(const loadFMAAndRunFMMArgs& args, const CostZones <OctreeClass,C
  * \param loader The loader to load from.
  */
 template <class OctreeClass>
-void loadTree(OctreeClass& tree, FFmaGenericLoader& loader)
+void loadTree(OctreeClass& tree, FFmaGenericLoader<FReal>& loader)
 {
     FReal  physicalValue;
-    FPoint particlePosition;
+    FPoint<FReal> particlePosition;
     // insertion
     for ( int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart ) {
         loader.fillParticle(&particlePosition, &physicalValue);
@@ -86,9 +86,9 @@ void loadTree(OctreeClass& tree, FFmaGenericLoader& loader)
 
 
 template <class OctreeClass>
-void loadTree(OctreeClass& tree, FRandomLoader& loader)
+void loadTree(OctreeClass& tree, FRandomLoader<FReal>& loader)
 {
-    FPoint particlePosition;
+    FPoint<FReal> particlePosition;
     // insertion
     for ( int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart ) {
         loader.fillParticle(&particlePosition);

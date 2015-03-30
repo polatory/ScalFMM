@@ -16,6 +16,7 @@
 
 #include <string>
 
+using FReal = double;
 #include "Files/FFmaGenericLoader.hpp"
 #include "Files/FRandomLoader.hpp"
 #include "Containers/FOctree.hpp"
@@ -49,16 +50,16 @@
 #define ORDER 7
 
 using CellClass         = FCostCell<FTestCell>;
-using ContainerClass    = FTestParticleContainer;
-using LeafClass         = FSimpleLeaf< ContainerClass >;
-using OctreeClass       = FOctree< CellClass, ContainerClass, LeafClass >;
+using ContainerClass    = FTestParticleContainer<FReal>;
+using LeafClass         = FSimpleLeaf< FReal, ContainerClass >;
+using OctreeClass       = FOctree< FReal, CellClass, ContainerClass, LeafClass >;
 
-using MatrixKernelClass = FInterpMatrixKernelR;
+using MatrixKernelClass = FInterpMatrixKernelR<FReal>;
 using BalanceKernelClass= FChebBalanceSymKernel<CellClass, ContainerClass,
                                                 MatrixKernelClass, ORDER,
                                                 OctreeClass>;
 
-using KernelClass       = FTestKernels<CellClass, ContainerClass>;
+using KernelClass       = FTestKernels< CellClass, ContainerClass>;
 
 template < template <typename...> class T, class KernelClassT>
 using FmmClass = T <OctreeClass, CellClass, ContainerClass, KernelClassT, LeafClass >;
@@ -74,7 +75,7 @@ int main(int argc, char** argv)
 
 
     /* Creating tree and insterting particles *********************************/
-    FFmaGenericLoader loader(args.inFileName().c_str());
+    FFmaGenericLoader<FReal> loader(args.inFileName().c_str());
     //FRandomLoader loader(20, 1, FPoint(0.5,0.5,0.5), 1);
     OctreeClass tree(args.treeHeight(),
                      args.subTreeHeight(),
