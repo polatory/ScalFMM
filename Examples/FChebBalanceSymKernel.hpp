@@ -31,48 +31,6 @@
 class FTreeCoordinate;
 
 /**
- * \author Quentin Khan
- * \brief Cell with a cost memory for balance computations.
- *
- * This class extends FBasicCell to add simple computation cost memory. 
- */
-template<typename BaseClass>
-class FCostCell : public BaseClass {
-    /// The cost of the cell. It is declared mutable because the existing
-    /// algorithms use const cells.
-    mutable long int _cost = 0;
-public:
-    using BaseClass::BaseClass;
-
-    /// Debug member, used to check whether the cell was already visited.
-    bool _visited = false;
-
-    /**
-     * \brief Gets the cost of the cell.
-     * \return The cost of the cell
-     */
-    long int getCost() const {
-        return _cost;
-    }
-    /**
-     * Sets the cost of the cell.
-     * \return The cost of the cell
-     */
-    long int setCost(int newCost) {
-        _cost = newCost;
-        return _cost;
-    }
-    /** 
-     * Add a cost to the cell.
-     * \warning Can be used on const cells !
-     */
-    long int addCost(int addCost) const {
-        _cost += addCost;
-        return _cost;
-    }
-};
-
-/**
  * \author Quentin Khan, Matthias Messner (original file: FChebFlopsSymKernel)
  * \brief Cost computation of Chebyshev interpolation based FMM.
  *
@@ -223,7 +181,7 @@ public:
 
     void M2M(CellClass* const FRestrict cell,
              const CellClass*const FRestrict *const FRestrict ChildCells,
-             const int TreeLevel) {
+             const int /*TreeLevel*/) {
         unsigned int flops = 0;
         for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex)
             if (ChildCells[ChildIndex])    flops += countFlopsM2MorL2L();
@@ -238,7 +196,7 @@ public:
     void M2L(CellClass* const FRestrict cell,
              const CellClass* SourceCells[343],
              const int /* not needed */,
-             const int TreeLevel)
+             const int /* TreeLevel */)
         {
             unsigned int flops = 0;
             // count how ofter each of the 16 interactions is used
@@ -258,7 +216,7 @@ public:
 
     void L2L(const CellClass* const FRestrict /* not needed */,
              CellClass* FRestrict *const FRestrict ChildCells,
-             const int TreeLevel) {
+             const int /* TreeLevel*/) {
         unsigned int flops = 0;
         unsigned int tmpCost = 0;
         for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex)

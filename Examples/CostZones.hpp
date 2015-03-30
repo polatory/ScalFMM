@@ -1,7 +1,50 @@
 #ifndef _COSTZONES_HPP_
 #define _COSTZONES_HPP_
 
-#include "FChebBalanceSymKernel.hpp"
+/**
+ * \author Quentin Khan
+ * \brief Cell with a cost memory for balance computations.
+ *
+ * This class extends BaseClass to add simple computation cost memory.
+ *
+ * \tparam BaseClass The base cell class to extend. The constructors are
+ * inherited automatically.
+ */
+template<typename BaseClass>
+class FCostCell : public BaseClass {
+    /// The cost of the cell. It is declared mutable because the existing
+    /// algorithms use const cells.
+    mutable long int _cost = 0;
+public:
+    using BaseClass::BaseClass;
+
+    /// Debug member, used to check whether the cell was already visited.
+    bool _visited = false;
+
+    /**
+     * \brief Gets the cost of the cell.
+     * \return The cost of the cell
+     */
+    long int getCost() const {
+        return _cost;
+    }
+    /**
+     * Sets the cost of the cell.
+     * \return The cost of the cell
+     */
+    long int setCost(int newCost) {
+        _cost = newCost;
+        return _cost;
+    }
+    /** 
+     * Add a cost to the cell.
+     * \warning Can be used on const cells !
+     */
+    long int addCost(int addCost) const {
+        _cost += addCost;
+        return _cost;
+    }
+};
 
 /**
  * \brief The costzones algorithm implementation.
@@ -17,14 +60,16 @@
  */
 template<typename OctreeClass, typename CellClass>
 class CostZones {
-
+public:
+    /// Initial value for empty bounds.
     const std::pair<int,int> _boundInit {-1,0};
 
+protected:
     /// The iterator to move through the tree.
     typename OctreeClass::Iterator _it;
     /// The number of zones to create.
     int _nbZones;
-    /// The tree height
+    /// The tree height.
     int _treeHeight;
 
     /// The current cumulative cost of visited cells.
@@ -32,7 +77,7 @@ class CostZones {
     /// The total tree cost.
     unsigned long long _totalCost = 0;
 
-    /// The vector containing the costzone cells. Sorted by zone > (level, cell)
+    /// The vector containing the costzone cells. Sorted by zone > (level, cell).
     std::vector< std::vector< std::pair<int, CellClass*> > > _zones;
 
     /**
