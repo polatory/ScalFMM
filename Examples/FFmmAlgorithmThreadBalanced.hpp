@@ -50,7 +50,7 @@
  * All leaves of a given colour are separated by a least 2 leaves. This means
  * that all threads can work on the same colour at the same time.
  *
- * For example, in 2D, e would have a grid looking like the following, where
+ * For example, in 2D, one would have a grid looking like the following, where
  * each number represents a coloured cell. The grid has been cut to work on
  * cells which have a colour value of 4.
  *
@@ -66,6 +66,9 @@
  */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThreadBalanced : public FAbstractAlgorithm, public FAlgorithmTimers{
+
+    typedef typename OctreeClass::Iterator TreeIterator;
+
     OctreeClass* const tree;  ///< The octree to work on.
     KernelClass** kernels;    ///< The kernels.
 
@@ -81,6 +84,7 @@ class FFmmAlgorithmThreadBalanced : public FAbstractAlgorithm, public FAlgorithm
 
     /// The vector containing the costzones
     const std::vector<std::vector<std::pair<int,int>>>& costzones;
+
     
 public:
     /** 
@@ -98,7 +102,8 @@ public:
      *
      * \except An exception is thrown if one of the arguments is NULL.
      */
-    FFmmAlgorithmThreadBalanced(OctreeClass* const inTree, KernelClass* const inKernel,
+    FFmmAlgorithmThreadBalanced(OctreeClass* const inTree,
+                                KernelClass* const inKernel,
                                 const std::vector<std::vector<std::pair<int,int>>>&
                                 inCostzones) :
         tree(inTree) , 
@@ -111,7 +116,10 @@ public:
         
         FAssertLF(tree, "Tree cannot be null.");
         FAssertLF(inCostzones.size() <= static_cast<unsigned int>(MaxThreads),
-                  "Thread count is inferior to cost zone count.");
+                  std::string("Thread count is inferior to cost zone count.") +
+                  std::to_string(MaxThreads) +
+                  std::string(" / ") +
+                  std::to_string(inCostzones.size()));
 
         this->kernels = new KernelClass*[MaxThreads];
 
@@ -139,6 +147,8 @@ public:
 protected:
     /**
      * \brief Runs the complete algorithm.
+     *
+     * \param operationsToProceed A flag combinaison to specifiy the operators to use. See FFmmOperations in FCoreCommon.hpp.
      */
     void executeCore(const unsigned operationsToProceed) override {
 
@@ -152,7 +162,8 @@ protected:
         octreeIterator.gotoBottomLeft();
         do{
             ++leafCount;
-            const FTreeCoordinate& coord = octreeIterator.getCurrentCell()->getCoordinate();
+            const FTreeCoordinate& coord =
+                octreeIterator.getCurrentCell()->getCoordinate();
             ++this->colorsLeafCount[(coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3)];
 
         } while(octreeIterator.moveRight());
@@ -196,39 +207,52 @@ protected:
     /** \brief Runs the P2M kernel. */
     void bottomPass(){
         FLOG( FLog::Controller.write("\tStart Bottom Pass\n").write(FLog::Flush) );
-        FLOG(FTic counterTime);
+        FLOG( FTic counterTime );
 
-        typename OctreeClass::Iterator octreeIterator(tree);
-        int leafs = 0;
-        // Iterate on leafs
+        TreeIterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
-        do{
-            iterArray[leafs] = octreeIterator;
-            ++leafs;
-        } while(octreeIterator.moveRight());
 
-        const int chunkSize = FMath::Max(1 , leafs/(omp_get_max_threads()*omp_get_max_threads()));
+        // One pair per zone.
+        std::vector< std::pair<TreeIterator, int> > iterVector(0);
 
-        FLOG(FTic computationCounter);
-        #pragma omp parallel
-        {
-            KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-// TODO replace for by iteration from first element of zone to last 
-            #pragma omp for nowait schedule(dynamic, chunkSize)
-            for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
-                // We need the current cell that represent the leaf
-                // and the list of particles
-                myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell(),
-                                      iterArray[idxLeafs].getCurrentListSrc());
+        std::cerr << "Defining iterators" << std::endl;
+        // Find iterators to leaf portion of each zone.
+        for( std::vector<std::pair<int,int>> zone : costzones ) {
+            iterVector.push_back(
+                std::pair<TreeIterator,int>(
+                    octreeIterator,       // Iterator to the current cell
+                    zone.back().second)); // Cell count in zone
+
+            // Move iterator to end of zone (which is the first of the next zone)
+            for( int idx = 0; idx < zone.back().second; idx++) {
+                octreeIterator.moveRight();
             }
         }
-        FLOG(computationCounter.tac() );
-        
+
+        FLOG( FTic computationCounter );
+
+        #pragma omp parallel
+        {
+            const int threadIdx = omp_get_thread_num();
+            KernelClass * const myThreadkernels = kernels[threadIdx];
+            TreeIterator zoneIterator = iterVector.at(threadIdx).first;
+            int zoneCellCount = iterVector[threadIdx].second;
+
+            // Call P2M on cells
+            while ( zoneCellCount-- > 0 ) {
+                myThreadkernels->P2M(zoneIterator.getCurrentCell(),     // Cell
+                                     zoneIterator.getCurrentListSrc()); // Particles
+                zoneIterator.moveRight();
+            }
+        }
+
+        FLOG( computationCounter.tac() );
+
         FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "
               << counterTime.tacAndElapsed() << "s)\n" );
         FLOG( FLog::Controller << "\t\t Computation : "
               << computationCounter.elapsed() << " s\n" );
-        
+
     }
     
     /////////////////////////////////////////////////////////////////////////////
@@ -236,15 +260,15 @@ protected:
     /////////////////////////////////////////////////////////////////////////////
     
     /** \brief Runs the M2M kernel. */
-    void upwardPass(){
+    void upwardPass() {
         FLOG( FLog::Controller.write("\tStart Upward Pass\n").write(FLog::Flush); );
-        FLOG(FTic counterTime);
-        FLOG(FTic computationCounter);
+        FLOG( FTic counterTime );
+        FLOG( FTic computationCounter );
 
         // Start from leaf level - 1
-        typename OctreeClass::Iterator octreeIterator(tree);
+        TreeIterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
-        octreeIterator.moveUp();
+        octreeIterator.moveUp(); // Avoid leaf level
 
         for(int idxLevel = OctreeHeight - 2 ;
             idxLevel > FAbstractAlgorithm::lowerWorkingLevel-1 ;
@@ -253,46 +277,75 @@ protected:
             octreeIterator.moveUp();
         }
 
-        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+        // Avoids jumping to the left of the tree when changing levels
+        TreeIterator avoidGotoLeftIterator(octreeIterator);
 
-        // for each levels
-        for( int idxLevel = FMath::Min(OctreeHeight - 2, 
-                                       FAbstractAlgorithm::lowerWorkingLevel - 1) ;
+
+        // Stores the iterators to the beginning of zones *per level* in REVERSE order!
+        // ie. level in REVERSE ORDER > zones > (iterator,cell_count)
+        std::vector< std::vector< std::pair<TreeIterator, int> > >
+            reverseLevelIterVector(0);
+
+        const int startIdx =
+            FMath::Min(OctreeHeight - 2,
+                       FAbstractAlgorithm::lowerWorkingLevel - 1);
+        for( int idxLevel = startIdx ;
              idxLevel >= FAbstractAlgorithm::upperWorkingLevel ;
              --idxLevel )
         {
-            FLOG(FTic counterTimeLevel);
-            int numberOfCells = 0;
-            // for each cells
-            do{
-                iterArray[numberOfCells] = octreeIterator;
-                ++numberOfCells;
-            } while(octreeIterator.moveRight());
-            avoidGotoLeftIterator.moveUp();
-            octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
+            std::vector< std::pair<TreeIterator, int> > tempVect;
+            // Find iterators to leaf portion of each zone.
+            for( std::vector<std::pair<int,int>> zone : costzones ) {
+                tempVect.push_back(
+                    std::pair<TreeIterator,int>(
+                        octreeIterator,          // Iterator to the current cell
+                        zone[idxLevel].second)); // Cell count in zone
+                // Get iterator to end of zone (which is the first of the next zone)
+                for( int idx = 0; idx < zone[idxLevel].second; idx++) {
+                    octreeIterator.moveRight();
+                }
 
-            const int chunkSize = FMath::Max(1 , numberOfCells/(omp_get_max_threads()*omp_get_max_threads()));
+            }
+            reverseLevelIterVector.emplace_back(tempVect);
+
+            octreeIterator.moveUp();
+            octreeIterator.gotoLeft();
+        }
+
+        // for each level from bottom to top
+        for( std::vector< std::pair<TreeIterator, int> > levelIterVector :
+                 reverseLevelIterVector ) {
+
+            int idxLevel = -1;
+            FLOG(FTic counterTimeLevel);
 
             FLOG(computationCounter.tic());
-#pragma omp parallel
+            #pragma omp parallel
             {
-                KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-#pragma omp for nowait  schedule(dynamic, chunkSize)
-                for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
+                const int threadNum = omp_get_thread_num();
+                KernelClass * const myThreadkernels = kernels[threadNum];
+                TreeIterator zoneIterator = levelIterVector[threadNum].first;
+                int zoneCellCount = levelIterVector[threadNum].second;
+
+                while(zoneCellCount-- > 0) {
                     // We need the current cell and the child
                     // child is an array (of 8 child) that may be null
-                    myThreadkernels->M2M( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
+                    myThreadkernels->M2M( zoneIterator.getCurrentCell(),
+                                          zoneIterator.getCurrentChild(),
+                                          zoneIterator.level());
+                    zoneIterator.moveRight();
                 }
+
+                idxLevel = zoneIterator.level();
             }
 
             FLOG(computationCounter.tac());
             FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
-        }
 
+        }
 
         FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
-
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -306,18 +359,25 @@ protected:
         FLOG(FTic counterTime);
         FLOG(FTic computationCounter);
 
-        typename OctreeClass::Iterator octreeIterator(tree);
+        TreeIterator octreeIterator(tree);
         octreeIterator.moveDown();
 
         for(int idxLevel = 2 ; idxLevel < FAbstractAlgorithm::upperWorkingLevel ; ++idxLevel){
             octreeIterator.moveDown();
         }
 
-        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+        TreeIterator avoidGotoLeftIterator(octreeIterator);
 
         // for each levels
-        for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
+        for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ;
+            idxLevel < FAbstractAlgorithm::lowerWorkingLevel ;
+            ++idxLevel )
+        {
             FLOG(FTic counterTimeLevel);
+
+
+
+////////////////////////////////////////////////////////
             int numberOfCells = 0;
             // for each cells
             do{
@@ -326,27 +386,32 @@ protected:
             } while(octreeIterator.moveRight());
             avoidGotoLeftIterator.moveDown();
             octreeIterator = avoidGotoLeftIterator;
-
+            
             const int chunkSize = FMath::Max(1 , numberOfCells/(omp_get_max_threads()*omp_get_max_threads()));
-
+            
             FLOG(computationCounter.tic());
-#pragma omp parallel
+            #pragma omp parallel
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                 const CellClass* neighbors[343];
-
-#pragma omp for  schedule(dynamic, chunkSize) nowait
+                
+                #pragma omp for  schedule(dynamic, chunkSize) nowait
                 for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                     const int counter = tree->getInteractionNeighbors(neighbors,  iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
                     if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
                 }
-
+                
                 myThreadkernels->finishedLevelM2L(idxLevel);
             }
             FLOG(computationCounter.tac());
             FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
-        }
+////////////////////////////////////////////////////////////
 
+
+
+
+        }
+                
         FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
         FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
     }
@@ -386,10 +451,10 @@ protected:
 
             FLOG(computationCounter.tic());
             const int chunkSize = FMath::Max(1 , numberOfCells/(omp_get_max_threads()*omp_get_max_threads()));
-#pragma omp parallel
+            #pragma omp parallel
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-#pragma omp for nowait schedule(dynamic, chunkSize)
+                #pragma omp for nowait schedule(dynamic, chunkSize)
                 for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                     myThreadkernels->L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }
@@ -441,7 +506,7 @@ protected:
             startPosAtColor[idxColor] = startPosAtColor[idxColor-1] + this->colorsLeafCount[idxColor-1];
         }
 
-#pragma omp parallel
+        #pragma omp parallel
         {
 
             const float step = float(this->leafCount) / float(omp_get_num_threads());
@@ -475,7 +540,7 @@ protected:
                 octreeIterator.moveRight();
             }
 
-#pragma omp barrier
+            #pragma omp barrier
 
             FLOG(if(!omp_get_thread_num()) computationCounter.tic());
 
@@ -490,7 +555,7 @@ protected:
                 #pragma omp for schedule(dynamic, chunkSize)
                 for(int idxLeafs = previous ; idxLeafs < endAtThisColor ; ++idxLeafs){
                     LeafData& currentIter = leafsDataArray[idxLeafs];
-                    if(l2pEnabled){
+                    if(l2pEnabled) {
                         myThreadkernels.L2P(currentIter.cell, currentIter.targets);
                     }
                     if(p2pEnabled){
