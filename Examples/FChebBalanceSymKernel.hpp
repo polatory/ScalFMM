@@ -89,27 +89,32 @@ public:
 
 
     /// start flop counters 
-    unsigned int countFlopsM2MorL2L() const
+    FSize countFlopsM2MorL2L() const
         { return 3 * nnodes * (2*ORDER-1); }
-    unsigned int countFlopsM2L(const unsigned int nexp, const unsigned int rank) const
+
+    FSize countFlopsM2L(const unsigned int nexp, const unsigned int rank) const
         { return nexp * (4*nnodes*rank - rank - nnodes); }
-    unsigned int countFlopsP2P() const
+
+    FSize countFlopsP2P() const
         { return 34; }
-    unsigned int countFlopsP2Pmutual() const
+
+    FSize countFlopsP2Pmutual() const
         { return 39; }
-    unsigned int countFlopsP2M(const unsigned int N) const    {
-        const unsigned first  = N * (18 + (ORDER-2) * 6 + (ORDER-1) * (6 + (ORDER-1) * (6 + (ORDER-1) * 2)));
-        const unsigned W2 = 3 * ORDER*(2*(ORDER-1)-1);
-        const unsigned W4 = 3 * (ORDER*(ORDER-1)*(2*(ORDER-1)-1) + ORDER*ORDER*(2*(ORDER-1)-1));
-        const unsigned W8 = 3 * (2*(ORDER-1)-1) * (ORDER*(ORDER-1)*(ORDER-1) + ORDER*ORDER*(ORDER-1) + nnodes);
+
+    FSize countFlopsP2M(const FSize N) const    {
+        const FSize first  = N * (18 + (ORDER-2) * 6 + (ORDER-1) * (6 + (ORDER-1) * (6 + (ORDER-1) * 2)));
+        const FSize W2 = 3 * ORDER*(2*(ORDER-1)-1);
+        const FSize W4 = 3 * (ORDER*(ORDER-1)*(2*(ORDER-1)-1) + ORDER*ORDER*(2*(ORDER-1)-1));
+        const FSize W8 = 3 * (2*(ORDER-1)-1) * (ORDER*(ORDER-1)*(ORDER-1) + ORDER*ORDER*(ORDER-1) + nnodes);
         return first + W2 + W4 + W8 + nnodes*11;
     }
-    unsigned int countFlopsL2PTotal(const unsigned int N) const    {
+
+    FSize countFlopsL2PTotal(const FSize N) const    {
         const unsigned W0 = nnodes;
         const unsigned W2 = 3 * (ORDER-1)*ORDER*ORDER * 2*ORDER;
         const unsigned W4 = 3 * ORDER*(ORDER-1)*(ORDER-1) * 2*ORDER;
         const unsigned W8 = (ORDER-1)*(ORDER-1)*(ORDER-1) * (2*ORDER-1);
-        const unsigned second = N * (38 + (ORDER-2)*15 + (ORDER-1)*((ORDER-1) * (27 + (ORDER-1) * 16))) + 6;
+        const FSize second = N * (38 + (ORDER-2)*15 + (ORDER-1)*((ORDER-1) * (27 + (ORDER-1) * 16))) + 6;
         return W0 + W2 + W4 + W8 + second;
     }
     // end flop counters
@@ -171,7 +176,7 @@ public:
     
     
     void P2M(CellClass* const cell, const ContainerClass* const SourceParticles) {
-        unsigned int tmpCost = countFlopsP2M(SourceParticles->getNbParticles());
+        FSize tmpCost = countFlopsP2M(SourceParticles->getNbParticles());
         flopsP2M += tmpCost;
         cell->addCost(tmpCost);
         countP2M++;
@@ -182,7 +187,7 @@ public:
     void M2M(CellClass* const FRestrict cell,
              const CellClass*const FRestrict *const FRestrict ChildCells,
              const int /*TreeLevel*/) {
-        unsigned int flops = 0;
+        FSize flops = 0;
         for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex)
             if (ChildCells[ChildIndex])    flops += countFlopsM2MorL2L();
         flopsM2M += flops;
@@ -198,7 +203,7 @@ public:
              const int /* not needed */,
              const int /* TreeLevel */)
         {
-            unsigned int flops = 0;
+            FSize flops = 0;
             // count how ofter each of the 16 interactions is used
             memset(countExp, 0, sizeof(int) * 343);
             for (unsigned int idx=0; idx<343; ++idx)
@@ -217,8 +222,8 @@ public:
     void L2L(const CellClass* const FRestrict /* not needed */,
              CellClass* FRestrict *const FRestrict ChildCells,
              const int /* TreeLevel*/) {
-        unsigned int flops = 0;
-        unsigned int tmpCost = 0;
+        FSize flops = 0;
+        FSize tmpCost = 0;
         for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex)
             if (ChildCells[ChildIndex]) {
                 tmpCost = countFlopsM2MorL2L() + nnodes;
@@ -242,7 +247,7 @@ public:
         // or
         
         // 2) apply Sx and Px (grad Sx)
-        unsigned int tmpCost = 0;
+        FSize tmpCost = 0;
         tmpCost =  countFlopsL2PTotal(TargetParticles->getNbParticles()) + 4 * TargetParticles->getNbParticles();
         flopsL2P += tmpCost;
         cell->addCost(tmpCost);
@@ -256,9 +261,9 @@ public:
              const ContainerClass* const FRestrict SourceParticles,
              ContainerClass* const NeighborSourceParticles[27],
              const int /* size */) {
-        unsigned int tmpCost = 0;
-        int srcPartCount = SourceParticles->getNbParticles();
-        int tgtPartCount = TargetParticles->getNbParticles();
+        FSize tmpCost = 0;
+        FSize srcPartCount = SourceParticles->getNbParticles();
+        FSize tgtPartCount = TargetParticles->getNbParticles();
 
         if ( TargetParticles != SourceParticles ) {
             tmpCost +=  countFlopsP2P() * tgtPartCount * srcPartCount;
