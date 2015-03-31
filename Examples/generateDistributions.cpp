@@ -189,12 +189,24 @@ int main(int argc, char ** argv){
 		pos = aspectRatio.find(":");		aspectRatio.replace(pos,1," ");
 		std::stringstream ss(aspectRatio); ss >>A >> B >> C ;
 		if(A != B){
-			std::cerr << " A /= B in prolate sllipsoide A =B. Your aspect ratio: "<< aspectRatio<<std::endl;
+			std::cerr << " A /= B in prolate ellipsoide A =B. Your aspect ratio: "<< aspectRatio<<std::endl;
 		}
-		std::cout << "A: "<<A<<" B "<< B << " C: " << C<<std::endl;
+		std::cout << "A: "<<A<<" B: "<< B << " C: " << C<<std::endl;
 		unifRandonPointsOnProlate(NbPoints,A,C,particles);
 		BoxWith =  2.0*C;
-    }    //const FSize NbPoints  = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options,   FSize(20000));
+	}    //const FSize NbPoints  = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options,   FSize(20000));
+    else if(FParameters::existParameter(argc, argv, "-hyperpara")){
+        std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-ar",  "1:1:2");
+        FReal A,B,C ;
+        size_t pos = aspectRatio.find(":");     aspectRatio.replace(pos,1," ");
+        pos = aspectRatio.find(":");        aspectRatio.replace(pos,1," ");
+        std::stringstream ss(aspectRatio); ss >>A >> B >> C ;
+        std::cout << "A: "<<A<<" B: "<< B << " C: " << C<<std::endl;
+        unifRandonPointsOnHyperPara(NbPoints,A,B,C,particles);
+        BoxWith =  2.0*FMath::Max( A,FMath::Max( B,C)) ;
+        std::cout << "BoxWith: " << BoxWith<<std::endl;
+
+    }
 	else if(FParameters::existParameter(argc, argv, "-ellipsoid")){
 //		else if(FParameters::existParameter(argc, argv, "-ellipsoid")){
 		std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-ar",  "1:1:2");
@@ -203,7 +215,7 @@ int main(int argc, char ** argv){
 		size_t pos = aspectRatio.find(":");		aspectRatio.replace(pos,1," ");
 		pos = aspectRatio.find(":");		aspectRatio.replace(pos,1," ");
 		std::stringstream ss(aspectRatio); ss >>A >> B >> C ;
-			std::cout << "A: "<<A<<" B "<< B << " C: " << C<<std::endl;
+			std::cout << "A: "<<A<<" B: "<< B << " C: " << C<<std::endl;
 		nonunifRandonPointsOnElipsoid(NbPoints,A,B,C,particles);
 		BoxWith =  2.0*FMath::Max( A,FMath::Max( B,C)) ;
 	}
