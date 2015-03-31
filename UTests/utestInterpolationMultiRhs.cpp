@@ -17,6 +17,7 @@
 // ==== CMAKE =====
 // @FUSE_BLAS
 // @FUSE_FFT
+// @SCALFMM_PRIVATE
 // ==============
 #include <array>
 
