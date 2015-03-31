@@ -7,6 +7,7 @@
 /************************CHANGE THINGS HERE*********************************/
 /***************************************************************************/
 
+typedef ___FSize___ FSize;
 typedef ___FReal___ FReal;
 typedef ___FParticleValueClass___ FParticleValueClass;
 typedef long long int MortonIndex;
@@ -283,7 +284,7 @@ struct FOpenCLGroupOfParticlesLeafHeader {
 
 struct FOpenCLGroupOfParticles {
     //< The size of memoryBuffer in byte
-    int allocatedMemoryInByte;
+    size_t allocatedMemoryInByte;
     //< Pointer to a block memory
     __global unsigned char* memoryBuffer;
 
