@@ -787,7 +787,7 @@ private:
     void writerBinaryHeader(const FPoint<FReal> &centerOfBox,const FReal &boxWidth,
                             const FSize &nbParticles, const unsigned int *typeFReal) {
         file->seekg (std::ios::beg);
-        file->write((const char*)typeFReal,2*sizeof(FSize));
+        file->write((const char*)typeFReal,2*sizeof(unsigned int));
         if(typeFReal[0]  != sizeof(FReal)){
             std::cout << "Size of elements in part file " << typeFReal[0] << " is different from size of FReal " << sizeof(FReal)<<std::endl;
             std::exit( EXIT_FAILURE);
