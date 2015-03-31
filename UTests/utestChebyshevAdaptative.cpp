@@ -16,6 +16,7 @@
 
 // ==== CMAKE =====
 // @FUSE_BLAS
+// @SCALFMM_PRIVATE
 // ================
 
 #include "FUKernelTester.hpp"
