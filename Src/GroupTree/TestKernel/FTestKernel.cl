@@ -368,7 +368,7 @@ struct FOpenCLGroupAttachedLeaf FOpenCLGroupOfParticles_getLeaf(struct FOpenCLGr
         return BuildFOpenCLGroupAttachedLeaf(group->leafHeader[id].nbParticles,
                                       group->particlePosition[0] + group->leafHeader[id].offSet,
                                         group->blockHeader->positionOffset,
-                                      (group.attributesBuffer?group->particleAttributes[NbSymbAttributes] + group->leafHeader[id].offSet:NULLPTR),
+                                      (group->attributesBuffer?group->particleAttributes[NbSymbAttributes] + group->leafHeader[id].offSet:NULLPTR),
                                         group->blockHeader->attributeOffset);
     }
     return EmptyFOpenCLGroupAttachedLeaf();

@@ -38,8 +38,8 @@ protected:
                 if(keyLength < valueLength){
                     const size_t shift = valueLength-keyLength;
                     content.resize(content.size() + shift, '\0');
-                    for(size_t idxCopy = content.size()-1 ; idxCopy > iter+shift ; --idxCopy){
-                        content[idxCopy-shift] = content[idxCopy];
+                    for(size_t idxCopy = content.size()-1 ; idxCopy >= iter+shift ; --idxCopy){
+                        content[idxCopy] = content[idxCopy-shift];
                     }
                 }
 
