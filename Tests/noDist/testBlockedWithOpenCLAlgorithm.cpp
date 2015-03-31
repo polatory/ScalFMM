@@ -11,7 +11,6 @@
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Containers/FVector.hpp"
 
-#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 #include "../../Src/Utils/FMath.hpp"
 #include "../../Src/Utils/FMemUtils.hpp"
@@ -109,7 +108,7 @@ int main(int argc, char* argv[]){
     // Usual octree
     OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());
 
-    FP2PParticleContainer<FReal> allParticles;
+    FTestParticleContainer<FReal> allParticles;
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         FPoint<FReal> particlePosition;
 #ifndef LOAD_FILE

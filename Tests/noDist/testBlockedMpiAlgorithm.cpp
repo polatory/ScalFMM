@@ -12,7 +12,6 @@
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Containers/FVector.hpp"
 
-#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 #include "../../Src/Utils/FMath.hpp"
 #include "../../Src/Utils/FMemUtils.hpp"
