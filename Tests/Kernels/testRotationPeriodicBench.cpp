@@ -79,8 +79,8 @@ int main(int argc, char** argv){
     const int MinLevelAbove  = FParameters::getValue(argc, argv, LocalOptionMinPer.options,-1);
     const int MaxLevelAbove  = FParameters::getValue(argc, argv, LocalOptionMaxPer.options,3);
     const int IncLevelAbove  = 1;
-    const int NbParticles    = FParameters::getValue(argc, argv, FParameterDefinitions::NbParticles.options,6);
-    const int NbParticlesPrint    = FParameters::getValue(argc, argv, LocalOptionNbPrint.options, FMath::Min(6, NbParticles));
+    const FSize NbParticles    = FParameters::getValue(argc, argv, FParameterDefinitions::NbParticles.options,FSize(6));
+    const int NbParticlesPrint    = FParameters::getValue(argc, argv, LocalOptionNbPrint.options, 6);
     FAssertLF(NbParticlesPrint <= NbParticles , "The number of printer particles cannot be higer than the number of particles.");
 
     std::cout << "The application will use " << NbParticles << " but studies only " << NbParticlesPrint << " of them." << std::endl;

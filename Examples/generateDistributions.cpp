@@ -114,7 +114,7 @@ int main(int argc, char ** argv){
 
     typedef double FReal;
 	 FReal       extraRadius = 0.000 ;
-    const int NbPoints  = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options,   20000);
+    const FSize NbPoints  = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options,   FSize(20000));
     const std::string genericFileName(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,   "unifPointDist"));
 	FReal BoxWith = 0.0;
     FPoint<FReal> Centre(0.0, 0.0,0.0);
@@ -145,14 +145,14 @@ int main(int argc, char ** argv){
 		particles[j]       = phyVal ;
 	}
 	if(FParameters::existParameter(argc, argv, "-zeromean")){
-		FReal  rm = sum/NbPoints ; sum = 0.0 ;
+        FReal  rm = FReal(sum)/FReal(NbPoints) ; sum = 0.0 ;
 		j = 3 ;
 		for(int i = 0 ; i< NbPoints; ++i, j+=4){
 			particles[j]    -= rm ;
 			sum              += particles[j]   ;
 		}
 	}
-	std::cout << "Sum physical value "<< sum << "   Mean Value " << sum/NbPoints<<std::endl ;
+    std::cout << "Sum physical value "<< sum << "   Mean Value " << sum/FReal(NbPoints)<<std::endl ;
 	//
 	// Point  generation
 	//
@@ -194,7 +194,7 @@ int main(int argc, char ** argv){
 		std::cout << "A: "<<A<<" B "<< B << " C: " << C<<std::endl;
 		unifRandonPointsOnProlate(NbPoints,A,C,particles);
 		BoxWith =  2.0*C;
-	}    //const int NbPoints  = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options,   20000);
+    }    //const FSize NbPoints  = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options,   FSize(20000));
 	else if(FParameters::existParameter(argc, argv, "-ellipsoid")){
 //		else if(FParameters::existParameter(argc, argv, "-ellipsoid")){
 		std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-ar",  "1:1:2");

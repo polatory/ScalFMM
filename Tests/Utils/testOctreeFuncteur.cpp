@@ -56,7 +56,7 @@ int main(int argc, char ** argv){
     std::cout << ">> It is only interesting to wath the code to understand\n";
     std::cout << ">> how to use the Octree\n";
     //////////////////////////////////////////////////////////////
-    const int NbPart = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000);
+    const FSize NbPart = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(2000));
     FTic counter;
 
     FRandomLoader<FReal> loader(NbPart, 1, FPoint<FReal>(0.5,0.5,0.5), 1);
