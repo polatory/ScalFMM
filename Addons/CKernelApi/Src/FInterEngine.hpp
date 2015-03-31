@@ -38,21 +38,21 @@
  * @class FInterEngine implements API for Interpolations kernels, its
  * templates can be ChebCell/ChebKernel or UnifCell/UnifKernel
  */
-template<class InterCell,class InterKernel,
+template<class FReal, class InterCell,class InterKernel,
          class ContainerClass = FP2PParticleContainerIndexed<FReal>,
          class LeafClass = FSimpleLeaf<FReal, FP2PParticleContainerIndexed<FReal> >,
-         class MatrixKernelClass = FInterpMatrixKernelR>
+         class MatrixKernelClass = FInterpMatrixKernelR<FReal> >
 class FInterEngine : public FScalFMMEngine{
 private:
     //Typedef on the octree class, in order to clarify following code
-    typedef FOctree<InterCell,ContainerClass,LeafClass> OctreeClass;
+    typedef FOctree<FReal,InterCell,ContainerClass,LeafClass> OctreeClass;
     //typedef FP2PLeafInterface<OctreeClass>            LeafInterface;
 
 
     //Typedef on Octree Arranger, in order to clarify following code
-    typedef FBasicParticleContainerIndexedMover<OctreeClass, ContainerClass> MoverClass;
+    typedef FBasicParticleContainerIndexedMover<FReal,OctreeClass, ContainerClass> MoverClass;
     typedef FOctreeArranger<FReal,OctreeClass, ContainerClass, MoverClass> ArrangerClass;
-    typedef FArrangerPeriodic<OctreeClass, ContainerClass, MoverClass> ArrangerClassPeriodic;
+    typedef FArrangerPeriodic<FReal,OctreeClass, ContainerClass, MoverClass> ArrangerClassPeriodic;
 
     //Pointer to the kernel to be executed
     InterKernel * kernel;

@@ -112,7 +112,7 @@ void my_Callback_M2M(int level, void* cellData, int childPosition, void* childDa
     struct MyCellDescriptor* my_child = (struct MyCellDescriptor*) childData;
 
     int childFullPosition[3];
-    Scalfmm_utils_parentChildPosition(childPosition, childFullPosition);
+    scalfmm_utils_parentChildPosition(childPosition, childFullPosition);
 
     VerbosePrint("Doing a M2M at level %d, between cells %lld and %lld (position %d/%d/%d)\n",
            level, my_cell->mortonIndex, my_child->mortonIndex,
@@ -128,7 +128,7 @@ void my_Callback_M2L(int level, void* cellData, int srcPosition, void* srcData, 
     struct MyCellDescriptor* my_src_cell = (struct MyCellDescriptor*) srcData;
 
     int interactionFullPosition[3];
-    Scalfmm_utils_interactionPosition(srcPosition, interactionFullPosition);
+    scalfmm_utils_interactionPosition(srcPosition, interactionFullPosition);
 
     VerbosePrint("Doing a M2L at level %d, between cells %lld and %lld (position %d/%d/%d)\n",
            level, my_cell->mortonIndex, my_src_cell->mortonIndex,
@@ -144,7 +144,7 @@ void my_Callback_L2L(int level, void* cellData, int childPosition, void* childDa
     struct MyCellDescriptor* my_child = (struct MyCellDescriptor*) childData;
 
     int childFullPosition[3];
-    Scalfmm_utils_parentChildPosition(childPosition, childFullPosition);
+    scalfmm_utils_parentChildPosition(childPosition, childFullPosition);
 
     VerbosePrint("Doing a L2L at level %d, between cells %lld and %lld (position %d/%d/%d)\n",
            level, my_cell->mortonIndex, my_child->mortonIndex,
@@ -246,6 +246,7 @@ int main(int argc, char ** argv){
     // Insert particles
     printf("Inserting particles...\n");
     scalfmm_tree_insert_particles_xyz(handle, nbParticles, particleXYZ);
+    printf("Particles Inserted ...\n");
 
     // Init our callback struct
     struct User_Scalfmm_Kernel_Descriptor kernel;
@@ -263,7 +264,7 @@ int main(int argc, char ** argv){
     my_data.insertedPositions = particleXYZ;
     //Set my datas before calling fmm (this will set as well the kernel)
     scalfmm_user_kernel_config(handle,kernel,&my_data);
-
+    printf("Kernel set ... \n");
     //loop to multiples runs of the fmm
     int nb_ite = 1;
     int curr_ite = 0;
@@ -272,8 +273,10 @@ int main(int argc, char ** argv){
     memset(new_positions,0,3*nbParticles*sizeof(double));
 
     while(curr_ite < nb_ite){
+        printf("Start FMM number %d/%d ... \n", curr_ite,nb_ite);
         // Execute the FMM
         scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
+        printf("FMM finished ... \n");
         scalfmm_get_positions_xyz(handle,nbParticles,new_positions);
         //Computation on those positions
         //Here it's a random
