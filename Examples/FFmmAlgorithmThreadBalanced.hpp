@@ -447,38 +447,56 @@ protected:
         FLOG(FTic counterTime);
         FLOG(FTic computationCounter);
 
-        typename OctreeClass::Iterator octreeIterator(tree);
+        TreeIterator octreeIterator(tree);
         octreeIterator.moveDown();
 
         for(int idxLevel = 2 ; idxLevel < FAbstractAlgorithm::upperWorkingLevel ; ++idxLevel){
             octreeIterator.moveDown();
         }
 
-        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+        TreeIterator avoidGotoLeftIterator(octreeIterator);
 
         const int heightMinusOne = FAbstractAlgorithm::lowerWorkingLevel - 1;
         // for each levels excepted leaf level
-        for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < heightMinusOne ; ++idxLevel ){
+        for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; 
+            idxLevel < heightMinusOne ;
+            ++idxLevel ) 
+        {
             FLOG(FTic counterTimeLevel);
-            int numberOfCells = 0;
-            // for each cells
-            do{
-                iterArray[numberOfCells] = octreeIterator;
-                ++numberOfCells;
-            } while(octreeIterator.moveRight());
-            avoidGotoLeftIterator.moveDown();
-            octreeIterator = avoidGotoLeftIterator;
 
-            FLOG(computationCounter.tic());
-            const int chunkSize = FMath::Max(1 , numberOfCells/(omp_get_max_threads()*omp_get_max_threads()));
-            #pragma omp parallel
-            {
-                KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                #pragma omp for nowait schedule(dynamic, chunkSize)
-                for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
-                    myThreadkernels->L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
+            std::vector< std::pair<TreeIterator, int> > iterVector;
+            // Find iterators to leaf portion of each zone.
+            for( std::vector<ZoneBoundClass> zone : costzones ) {
+                iterVector.push_back(
+                    std::pair<TreeIterator,int>(
+                        octreeIterator,          // Iterator to the current cell
+                        zone[idxLevel].second)); // Cell count in zone
+                // Get iterator to end of zone (which is the first of the next zone)
+                for( int idx = 0; idx < zone[idxLevel].second; idx++) {
+                    octreeIterator.moveRight();
                 }
             }
+            octreeIterator.gotoLeft();
+            octreeIterator.moveDown();
+
+            FLOG(computationCounter.tic());
+
+            #pragma omp parallel
+            {
+                const int threadNum = omp_get_thread_num();
+                KernelClass * const myThreadkernels = kernels[threadNum];
+                TreeIterator zoneIterator = iterVector[threadNum].first;
+                int zoneCellCount = iterVector[threadNum].second;
+                
+                while( zoneCellCount-- > 0 ) {
+                    myThreadkernels->L2L(
+                        zoneIterator.getCurrentCell(),
+                        zoneIterator.getCurrentChild(),
+                        idxLevel);
+                    zoneIterator.moveRight();
+                }
+            }
+
             FLOG(computationCounter.tac());
             FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }
