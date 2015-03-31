@@ -74,7 +74,7 @@ int main(int argc, char ** argv){
     typedef double FReal;
 	FReal	 * particles = nullptr ;
     FFmaGenericLoader<FReal> * loader;
-    FSize nbData;
+    unsigned int nbData;
 	bool stampFile = false ;
 	if (FParameters::existParameter(argc, argv, "-fstamp")) {
 		stampFile  = true ;

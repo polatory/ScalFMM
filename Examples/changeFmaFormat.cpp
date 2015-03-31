@@ -60,7 +60,7 @@ int main(int argc, char ** argv){
     FFmaGenericLoader<FReal> loader(filename);
 
     const FSize NbPoints  = loader.getNumberOfParticles();
-    const FSize nbData   = loader.getNbRecordPerline() ;
+    const unsigned int nbData   = loader.getNbRecordPerline() ;
     const FSize arraySize =nbData*NbPoints;
 
     FReal * particles = new FReal[arraySize] ;
