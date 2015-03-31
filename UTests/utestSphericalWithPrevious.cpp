@@ -95,7 +95,7 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
 		//
 		OctreeClass testTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 		//
-		for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+		for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
             FPoint<FReal> position;
 			FReal physicalValue = 0.0;
 			loader.fillParticle(&position,&physicalValue);
@@ -140,7 +140,7 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
 				const ContainerClass* testLeaf = testOctreeIterator.getCurrentListSrc();
 				const ContainerClass* goodLeaf = goodOctreeIterator.getCurrentListSrc();
 
-				for(int idxPart = 0 ; idxPart < testLeaf->getNbParticles() ; ++idxPart ){
+				for(FSize idxPart = 0 ; idxPart < testLeaf->getNbParticles() ; ++idxPart ){
 					uassert( IsSimilar(goodLeaf->getPotentials()[idxPart], testLeaf->getPotentials()[idxPart]) );
 					uassert( IsSimilar(goodLeaf->getForcesX()[idxPart], testLeaf->getForcesX()[idxPart]) );
 					uassert( IsSimilar(goodLeaf->getForcesY()[idxPart], testLeaf->getForcesY()[idxPart]) );

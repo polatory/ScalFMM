@@ -52,18 +52,18 @@ class MyCell : public FBasicCell {
 // particles (nothing more!)
 template <class FReal>
 class MyContainer : public FAbstractParticleContainer<FReal> {
-    FVector<int> indexes;
+    FVector<FSize> indexes;
 public:
     template<typename... Args>
-    void push(const FPoint<FReal>& /*inParticlePosition*/, const int newParticleIndex, Args ... /*args*/){
+    void push(const FPoint<FReal>& /*inParticlePosition*/, const FSize newParticleIndex, Args ... /*args*/){
         indexes.push(newParticleIndex);
     }
 
-    int getSize() const {
+    FSize getSize() const {
         return indexes.getSize();
     }
 
-    const FVector<int>& getIndexes() const{
+    const FVector<FSize>& getIndexes() const{
         return indexes;
     }
 };
@@ -102,7 +102,7 @@ public:
     }
 
     void P2M(CellClass* const cell, const ContainerClass* const particles) {
-        for(int idxPart = 0 ; idxPart < particles->getSize() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < particles->getSize() ; ++idxPart){
             // save the current morton index for each particles
             indexForEachParticle[ particles->getIndexes()[idxPart] ] = cell->getMortonIndex();
         }
@@ -181,7 +181,7 @@ int main(int argc, char ** argv){
     {
         FPoint<FReal> particlePosition;
         bool keepIt;
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             // get a random position
             loader.fillParticle(&particlePosition);
             // let say we remove 1/5 particles
@@ -205,7 +205,7 @@ int main(int argc, char ** argv){
     OctreeClass::Iterator octreeIterator(&tree);
     octreeIterator.gotoBottomLeft();
     do{
-        FVector<int>::ConstBasicIterator iter(octreeIterator.getCurrentListTargets()->getIndexes());
+        FVector<FSize>::ConstBasicIterator iter(octreeIterator.getCurrentListTargets()->getIndexes());
         const MortonIndex indexAtThisLeaf = octreeIterator.getCurrentGlobalIndex();
 
         while( iter.hasNotFinished() ){

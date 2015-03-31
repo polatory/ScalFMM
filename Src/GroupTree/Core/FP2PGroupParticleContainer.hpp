@@ -12,7 +12,7 @@ class FP2PGroupParticleContainer : public FGroupAttachedLeaf<FReal, NVALS*NRHS, 
 
 public:
     FP2PGroupParticleContainer(){}
-    FP2PGroupParticleContainer(const int inNbParticles, FReal* inPositionBuffer, const size_t inLeadingPosition,
+    FP2PGroupParticleContainer(const FSize inNbParticles, FReal* inPositionBuffer, const size_t inLeadingPosition,
                        FReal* inAttributesBuffer, const size_t inLeadingAttributes)
         : Parent(inNbParticles, inPositionBuffer, inLeadingPosition, inAttributesBuffer, inLeadingAttributes) {
 

@@ -39,7 +39,7 @@ public:
 
     void M2P(const CellClass* const pole, const int /*poleLevel*/, ContainerClass* const particles) override {
         long long int*const particlesAttributes = particles->getDataDown();
-        for(int idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
             particlesAttributes[idxPart] += pole->getDataUp();
         }
     }
@@ -50,14 +50,14 @@ public:
 
     void L2P(const CellClass* const local, const int /*cellLevel*/, ContainerClass* const particles)  override {
         long long int*const particlesAttributes = particles->getDataDown();
-        for(int idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
             particlesAttributes[idxPart] += local->getDataDown();
         }
     }
 
     void P2P(ContainerClass* target, const ContainerClass* sources)  override {
         long long int*const particlesAttributes = target->getDataDown();
-        for(int idxPart = 0 ; idxPart < target->getNbParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < target->getNbParticles() ; ++idxPart){
             particlesAttributes[idxPart] += sources->getNbParticles();
         }
     }
@@ -66,7 +66,7 @@ public:
         return particles->getNbParticles() > p2mThresh;
     }
     bool preferP2M(const int /*atLevel*/, const ContainerClass*const particles[], const int nbContainers) override {
-        int counterParticles = 0;
+        FSize counterParticles = 0;
         for(int idxContainer = 0 ; idxContainer < nbContainers ; ++idxContainer){
             counterParticles += particles[idxContainer]->getNbParticles();
         }

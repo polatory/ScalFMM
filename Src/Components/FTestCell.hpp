@@ -76,8 +76,8 @@ public:
 		buffer >> dataDown >> dataUp;
 	}
 
-    int getSavedSize() const {
-        return int(sizeof(long long int))*2 + FBasicCell::getSavedSize();
+    FSize getSavedSize() const {
+        return FSize(sizeof(long long int))*2 + FBasicCell::getSavedSize();
     }
 
 	/////////////////////////////////////////////////

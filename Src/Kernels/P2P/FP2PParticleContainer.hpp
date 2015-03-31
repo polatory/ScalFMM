@@ -42,7 +42,7 @@ public:
         return Parent::getRawData() + ((0+idxRhs)*NVALS+idxVals)*Parent::getLeadingRawData();
     }
 
-    int getLeadingDimension(){
+    FSize getLeadingDimension(){
         return Parent::getLeadingRawData();
     }
 

@@ -48,7 +48,7 @@ void Scalfmm_dealloc_handle(Scalfmm_Handle handle, Callback_free_cell cellDestro
 //< The indexes are the one used on the particles operator
 //< The position of the particles should be composed of one triple per particle:
 //< xyzxyzxyz...
-void Scalfmm_insert_array_of_particles(Scalfmm_Handle handle, int nbParticles, int* particleIndexes, double* particleXYZ);
+void Scalfmm_insert_array_of_particles(Scalfmm_Handle handle, FSize nbParticles, int* particleIndexes, double* particleXYZ);
 //< To insert one particle only
 void Scalfmm_one_particle(Scalfmm_Handle handle, int particleIndexe, double x, double y, double z);
 
@@ -62,13 +62,13 @@ void Scalfmm_init_cell(Scalfmm_Handle handle, Callback_init_cell cellInitializer
 ///////////////////////////////////////////////////////////////////////////
 
 //< These function are the callbacks of the FMM operators
-typedef void (*Callback_P2M)(void* leafCell, int nbParticles, const int* particleIndexes, void* userData);
+typedef void (*Callback_P2M)(void* leafCell, FSize nbParticles, const int* particleIndexes, void* userData);
 typedef void (*Callback_M2M)(int level, void* parentCell, int childPosition, void* childCell, void* userData);
 typedef void (*Callback_M2L)(int level, void* targetCell, int sourceCellPosition, void* sourceCell, void* userData);
 typedef void (*Callback_L2L)(int level, void* parentCell, int childPosition, void* childCell, void* userData);
-typedef void (*Callback_L2P)(void* leafCell, int nbParticles, int* particleIndexes, void* userData);
-typedef void (*Callback_P2P)(int nbParticles, const int* particleIndexes, int nbSourceParticles, const int* sourceParticleIndexes, void* userData);
-typedef void (*Callback_P2PInner)(int nbParticles, int* particleIndexes, void* userData);
+typedef void (*Callback_L2P)(void* leafCell, FSize nbParticles, int* particleIndexes, void* userData);
+typedef void (*Callback_P2P)(FSize nbParticles, const int* particleIndexes, int nbSourceParticles, const int* sourceParticleIndexes, void* userData);
+typedef void (*Callback_P2PInner)(FSize nbParticles, int* particleIndexes, void* userData);
 
 //< This structure should be filled (or filled with null) to call the FMM
 struct Scalfmm_Kernel_Descriptor {

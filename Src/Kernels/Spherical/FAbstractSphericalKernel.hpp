@@ -153,7 +153,7 @@ public:
         const FReal*const positionsX = inParticles->getPositions()[0];
         const FReal*const positionsY = inParticles->getPositions()[1];
         const FReal*const positionsZ = inParticles->getPositions()[2];
-        for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
             // P2M
             particleToMultiPole(cellMultiPole, polePosition,
                                 FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]),
@@ -202,7 +202,7 @@ public:
         FReal*const forcesX = inParticles->getForcesX();
         FReal*const forcesY = inParticles->getForcesY();
         FReal*const forcesZ = inParticles->getForcesZ();
-        for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
             // L2P
             localToParticle(localPosition, cellLocal,
                             FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]),
@@ -636,7 +636,7 @@ public:
         FReal*const forcesZ = inParticles->getForcesZ();
         FVector<FPoint<FReal>>& velocities = inParticles->getVelocities();
 
-        for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
             const FReal physicalValue = physicalValues[idxPart];
             // Coef = 1/m * time/2
             const FReal coef = (FReal(1.0)/physicalValue) * (DT/FReal(2.0));
@@ -657,7 +657,7 @@ public:
         FReal*const positionsZ = inParticles->getWPositions()[2];
         FVector<FPoint<FReal>>& velocities = inParticles->getVelocities();
 
-        for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
             FPoint<FReal> velocity_dt( velocities[idxPart] );
             velocity_dt *= DT;
             positionsX[idxPart] += velocity_dt.getX();

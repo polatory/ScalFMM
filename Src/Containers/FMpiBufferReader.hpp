@@ -30,13 +30,13 @@
  */
 class FMpiBufferReader : public FAbstractBufferReader {
     MPI_Comm comm;            //< Communicator needed by MPI_Pack functions
-    int arrayCapacity;        //< Allocated space
+    FSize arrayCapacity;        //< Allocated space
     std::unique_ptr<char[]> array;  //< Allocated Array
-    int currentIndex;
+    FSize currentIndex;
 
 public :
     /*Constructor with a default arrayCapacity of 512 bytes */
-    explicit FMpiBufferReader(const MPI_Comm inComm = MPI_COMM_WORLD, const int inDefaultCapacity = 512):
+    explicit FMpiBufferReader(const MPI_Comm inComm = MPI_COMM_WORLD, const FSize inDefaultCapacity = 512):
         comm(inComm),
         arrayCapacity(inDefaultCapacity),
         array(new char[inDefaultCapacity]),
@@ -50,7 +50,7 @@ public :
     }
 
     /** To change the capacity (but reset the head to 0) */
-    void cleanAndResize(const int newCapacity){
+    void cleanAndResize(const FSize newCapacity){
         if(newCapacity != arrayCapacity){
             arrayCapacity = newCapacity;
             array.reset(new char[newCapacity]);
@@ -64,71 +64,79 @@ public :
     }
 
     /** Get allocated memory pointer */
-    char* data(){
+    char* data() override {
         return array.get();
     }
 
     /** Get allocated memory pointer */
-    const char* data() const {
+    const char* data() const override  {
         return array.get();
     }
 
     /** get the filled space */
-    int getSize() const{
+    FSize getSize() const override {
         return currentIndex;
     }
 
     /** Size of the memory initialized */
-    int getCapacity() const{
+    FSize getCapacity() const{
         return arrayCapacity;
     }
 
     /** Move the read index to a position */
-    void seek(const int inIndex){
-      
-      FAssertLF(inIndex <= arrayCapacity, "FMpiBufferReader :: Aborting :: Can't move index because buffer isn't long enough ",inIndex," ",arrayCapacity);
+    void seek(const FSize inIndex) override {
+        FAssertLF(inIndex <= arrayCapacity, "FMpiBufferReader :: Aborting :: Can't move index because buffer isn't long enough ",inIndex," ",arrayCapacity);
         currentIndex = inIndex;
     }
 
     /** Get the read position */
-    int tell() const {
+    FSize tell() const override  {
         return currentIndex;
     }
 
     /** Get a value with memory cast */
     template <class ClassType>
     ClassType getValue(){
+        FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
+        FAssertLF(currentIndex < std::numeric_limits<int>::max());
+        int previousIndex = int(currentIndex);
         ClassType value;
-        int previousIndex = currentIndex;
-        seek(int(sizeof(value) + previousIndex));
-        FMpi::Assert(MPI_Unpack(array.get(),arrayCapacity,&previousIndex,&value,1,FMpi::GetType(value),comm), __LINE__);
+        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,&value,1,FMpi::GetType(value),comm), __LINE__);
+        seek(FSize(sizeof(value) + previousIndex));
         return value;
     }
 
     /** Get a value with memory cast at a specified index */
     template <class ClassType>
-    ClassType getValue(const int ind){
+    ClassType getValue(const FSize ind){
         ClassType value;
-        int previousIndex = ind;
-        seek(int(sizeof(value)+ind));
-        FMpi::Assert(MPI_Unpack(array.get(),arrayCapacity,&previousIndex,&value,1,FMpi::GetType(value),comm), __LINE__);
+        FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
+        FAssertLF(ind < std::numeric_limits<int>::max());
+        int previousIndex = int(ind);
+        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,&value,1,FMpi::GetType(value),comm), __LINE__);
+        seek(FSize(sizeof(value)+ind));
         return value;
     }
 
     /** Fill a value with memory cast */
     template <class ClassType>
     void fillValue(ClassType* const inValue){
-        int previousIndex = currentIndex;
-        seek(int(sizeof(ClassType) + previousIndex));
-        FMpi::Assert(MPI_Unpack(array.get(),arrayCapacity,&previousIndex,inValue,1,FMpi::GetType(*inValue),comm), __LINE__);
+        FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
+        FAssertLF(currentIndex < std::numeric_limits<int>::max());
+        int previousIndex = int(currentIndex);
+        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,inValue,1,FMpi::GetType(*inValue),comm), __LINE__);
+        seek(FSize(sizeof(ClassType) + previousIndex));
     }
 
     /** Fill one/many value(s) with memcpy */
     template <class ClassType>
-    void fillArray(ClassType* const inArray, const int inSize){
-        int previousIndex = currentIndex;
-        seek(int(sizeof(ClassType) * inSize + previousIndex));
-        FMpi::Assert(MPI_Unpack(array.get(),arrayCapacity,&previousIndex,inArray,inSize,FMpi::GetType(*inArray),comm), __LINE__);
+    void fillArray(ClassType* const inArray, const FSize inSize){
+        FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
+        FAssertLF(currentIndex < std::numeric_limits<int>::max());
+        FAssertLF(inSize < std::numeric_limits<int>::max());
+        int previousIndex = int(currentIndex);
+        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,inArray,int(inSize),FMpi::GetType(*inArray),comm), __LINE__);
+        seek(FSize(sizeof(ClassType) * inSize + previousIndex));
     }
 
     /** Same as fillValue */

@@ -69,34 +69,34 @@ int main(int argc, char** argv){
 
     typedef double FReal;
     struct TestParticle{
-	MortonIndex index;
-	FSize indexInFile;
-    FPoint<FReal> position;
-	FReal physicalValue;
-    const FPoint<FReal>& getPosition()const{
-	    return position;
-	}
-	TestParticle& operator=(const TestParticle& other){
-	    index=other.index;
-	    indexInFile=other.indexInFile;
-	    position=other.position;
-	    physicalValue=other.physicalValue;
-	    return *this;
-	}
-	bool operator<=(const TestParticle& rhs)const{
-	    if(rhs.index < this->index){return false;}
-	    else{
-		if(rhs.index > this->index){return true;}
-		else{
-		    if(rhs.indexInFile == this->indexInFile){
-			return true;
-		    }
-		    else {
-			return rhs.indexInFile> this->indexInFile ;
-		    }
-		}
-	    }
-	}
+        MortonIndex index;
+        FSize indexInFile;
+        FPoint<FReal> position;
+        FReal physicalValue;
+        const FPoint<FReal>& getPosition()const{
+            return position;
+        }
+        TestParticle& operator=(const TestParticle& other){
+            index=other.index;
+            indexInFile=other.indexInFile;
+            position=other.position;
+            physicalValue=other.physicalValue;
+            return *this;
+        }
+        bool operator<=(const TestParticle& rhs)const{
+            if(rhs.index < this->index){return false;}
+            else{
+                if(rhs.index > this->index){return true;}
+                else{
+                    if(rhs.indexInFile == this->indexInFile){
+                        return true;
+                    }
+                    else {
+                        return rhs.indexInFile> this->indexInFile ;
+                    }
+                }
+            }
+        }
     };
 
 
@@ -122,29 +122,29 @@ int main(int argc, char** argv){
 
     FFmaGenericLoader<FReal> loaderRef(filename);
     if(!loaderRef.isOpen()){
-	std::cout << "LoaderRef Error, " << filename << " is missing\n";
-	return 1;
+        std::cout << "LoaderRef Error, " << filename << " is missing\n";
+        return 1;
     }
     FTic regInsert;
     // -----------------------------------------------------
     {
-	OctreeClass treeRef(NbLevels, SizeSubLevels, loaderRef.getBoxWidth(), loaderRef.getCenterOfBox());
+        OctreeClass treeRef(NbLevels, SizeSubLevels, loaderRef.getBoxWidth(), loaderRef.getCenterOfBox());
 
 
-	std::cout << "Creating & Inserting " << loaderRef.getNumberOfParticles() << " particles ..." << std::endl;
-	std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
+        std::cout << "Creating & Inserting " << loaderRef.getNumberOfParticles() << " particles ..." << std::endl;
+        std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
 
-	regInsert.tic();
+        regInsert.tic();
 
-	for(int idxPart = 0 ; idxPart < loaderRef.getNumberOfParticles() ; ++idxPart){
-        FPoint<FReal> particlePosition;
-	    FReal physicalValue;
-	    loaderRef.fillParticle(&particlePosition,&physicalValue);
-	    treeRef.insert(particlePosition, physicalValue );
-	}
+        for(FSize idxPart = 0 ; idxPart < loaderRef.getNumberOfParticles() ; ++idxPart){
+            FPoint<FReal> particlePosition;
+            FReal physicalValue;
+            loaderRef.fillParticle(&particlePosition,&physicalValue);
+            treeRef.insert(particlePosition, physicalValue );
+        }
 
-	regInsert.tac();
-	std::cout << "Time needed for regular insert : " << regInsert.elapsed() << " secondes" << std::endl;
+        regInsert.tac();
+        std::cout << "Time needed for regular insert : " << regInsert.elapsed() << " secondes" << std::endl;
     }
     //Second solution, parts must be sorted for that
 
@@ -159,8 +159,8 @@ int main(int argc, char** argv){
 
     FFmaGenericLoader<FReal> loader(filename);
     if(!loader.isOpen()){
-	std::cout << "Loader Error, " << filename << " is missing\n";
-	return 1;
+        std::cout << "Loader Error, " << filename << " is missing\n";
+        return 1;
     }
 
     //Get the needed informations
@@ -177,16 +177,16 @@ int main(int argc, char** argv){
 
     fillTimer.tic();
 
-    for(int idxPart = 0 ; idxPart < nbOfParticles ; ++idxPart){
-	loader.fillParticle(&arrayOfParts[idxPart].position,&arrayOfParts[idxPart].physicalValue);
-	//Build temporary TreeCoordinate
-    host.setX( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParts[idxPart].getPosition().getX() - boxCorner.getX(), boxWidth, boxWidthAtLeafLevel, NbLevels ));
-    host.setY( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParts[idxPart].getPosition().getY() - boxCorner.getY(), boxWidth, boxWidthAtLeafLevel, NbLevels ));
-    host.setZ( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParts[idxPart].getPosition().getZ() - boxCorner.getZ(), boxWidth, boxWidthAtLeafLevel, NbLevels ));
+    for(FSize idxPart = 0 ; idxPart < nbOfParticles ; ++idxPart){
+        loader.fillParticle(&arrayOfParts[idxPart].position,&arrayOfParts[idxPart].physicalValue);
+        //Build temporary TreeCoordinate
+        host.setX( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParts[idxPart].getPosition().getX() - boxCorner.getX(), boxWidth, boxWidthAtLeafLevel, NbLevels ));
+        host.setY( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParts[idxPart].getPosition().getY() - boxCorner.getY(), boxWidth, boxWidthAtLeafLevel, NbLevels ));
+        host.setZ( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParts[idxPart].getPosition().getZ() - boxCorner.getZ(), boxWidth, boxWidthAtLeafLevel, NbLevels ));
 
-	//Set Morton index from Tree Coordinate
-	arrayOfParts[idxPart].index = host.getMortonIndex(NbLevels - 1);
-	arrayOfParts[idxPart].indexInFile = idxPart;
+        //Set Morton index from Tree Coordinate
+        arrayOfParts[idxPart].index = host.getMortonIndex(NbLevels - 1);
+        arrayOfParts[idxPart].indexInFile = idxPart;
 
     }
 
@@ -206,30 +206,30 @@ int main(int argc, char** argv){
     unsigned int numberOfLeaves = 0;
     enumTimer.tic();
 
-    for(int idxParts = 1 ; idxParts < nbOfParticles ; ++idxParts){
-	if(arrayOfParts[idxParts].index != arrayOfParts[idxParts-1].index){
-	    numberOfLeaves++;
-	}
+    for(FSize idxParts = 1 ; idxParts < nbOfParticles ; ++idxParts){
+        if(arrayOfParts[idxParts].index != arrayOfParts[idxParts-1].index){
+            numberOfLeaves++;
+        }
     }
     enumTimer.tac();
     std::cout << "Time needed for enumerate the leaves : "<< enumTimer.elapsed() << " secondes !" << std::endl;
     std::cout << "Found " << numberOfLeaves << " leaves differents." << std::endl;
 
     //Store the size of each subOctree
-    int * arrayOfSizeNbLeaves = new int[numberOfLeaves];
-    memset(arrayOfSizeNbLeaves,0,sizeof(int)*(numberOfLeaves));
+    FSize * arrayOfSizeNbLeaves = new FSize[numberOfLeaves];
+    memset(arrayOfSizeNbLeaves,0,sizeof(FSize)*(numberOfLeaves));
     //Init
     int indexInLeafArray = 0;
     arrayOfSizeNbLeaves[0] = 1;
 
     leavesOffset.tic();
-    for(int idxParts = 1 ; idxParts < nbOfParticles ; ++idxParts){
-	if(arrayOfParts[idxParts].index == arrayOfParts[idxParts-1].index){
-	    arrayOfSizeNbLeaves[indexInLeafArray]++;
-	}
-	else{
-	    indexInLeafArray++;
-	}
+    for(FSize idxParts = 1 ; idxParts < nbOfParticles ; ++idxParts){
+        if(arrayOfParts[idxParts].index == arrayOfParts[idxParts-1].index){
+            arrayOfSizeNbLeaves[indexInLeafArray]++;
+        }
+        else{
+            indexInLeafArray++;
+        }
     }
     leavesOffset.tac();
 
@@ -240,11 +240,11 @@ int main(int argc, char** argv){
     //Then, we create the leaves inside the tree
 
     //Idx of the first part in this leaf in the array of part
-    int idxOfFirstPartInLeaf =	0;
+    FSize idxOfFirstPartInLeaf =	0;
 
     struct LeafToFill{
-	LeafClass * leaf;
-	FSize idxOfLeafInPartArray;
+        LeafClass * leaf;
+        FSize idxOfLeafInPartArray;
     };
 
     leavesPtr.tic();
@@ -255,21 +255,21 @@ int main(int argc, char** argv){
 
 
     for(FSize idxLeaf = 0; idxLeaf < numberOfLeaves ; ++idxLeaf){
-	leavesToFill[idxLeaf].leaf = tree.createLeaf(arrayOfParts[idxOfFirstPartInLeaf].index);
-	idxOfFirstPartInLeaf += arrayOfSizeNbLeaves[idxLeaf];
-	leavesToFill[idxLeaf].idxOfLeafInPartArray += idxOfFirstPartInLeaf;
+        leavesToFill[idxLeaf].leaf = tree.createLeaf(arrayOfParts[idxOfFirstPartInLeaf].index);
+        idxOfFirstPartInLeaf += arrayOfSizeNbLeaves[idxLeaf];
+        leavesToFill[idxLeaf].idxOfLeafInPartArray += idxOfFirstPartInLeaf;
     }
 
     leavesPtr.tac();
     std::cout << "Time needed for creating empty leaves : "<< leavesPtr.elapsed() << " secondes !" << std::endl;
 
 
-#pragma omp parallel for schedule(auto)
+    #pragma omp parallel for schedule(auto)
     for(FSize idxLeaf=0 ; idxLeaf<numberOfLeaves ; ++idxLeaf ){
-	//Task consists in copy the parts inside the leaf
-	leavesToFill[idxLeaf].leaf->pushArray(&arrayOfParts[leavesToFill[idxLeaf].idxOfLeafInPartArray].position,
-					      arrayOfSizeNbLeaves[idxLeaf],
-					      &arrayOfParts[leavesToFill[idxLeaf].idxOfLeafInPartArray].physicalValue);
+        //Task consists in copy the parts inside the leaf
+        leavesToFill[idxLeaf].leaf->pushArray(&arrayOfParts[leavesToFill[idxLeaf].idxOfLeafInPartArray].position,
+                arrayOfSizeNbLeaves[idxLeaf],
+                &arrayOfParts[leavesToFill[idxLeaf].idxOfLeafInPartArray].physicalValue);
 
     }
 
@@ -278,8 +278,8 @@ int main(int argc, char** argv){
 
     std::cout << "Time needed for inserting the parts " << insertTimer.elapsed() << " secondes !" << std::endl;
     double totalTimeForThatStrat = insertTimer.elapsed() + sortTimer.elapsed()
-	+ fillTimer.elapsed() + enumTimer.elapsed()
-	+ leavesPtr.elapsed() + leavesOffset.elapsed();
+            + fillTimer.elapsed() + enumTimer.elapsed()
+            + leavesPtr.elapsed() + leavesOffset.elapsed();
     std::cout << "Total time for that strat : " << totalTimeForThatStrat << " secondes !" << std::endl;
     std::cout << "---------Total------------> Difference : " << regInsert.elapsed() - totalTimeForThatStrat << " secondes !" << std::endl;
     std::cout << "-------On Insert----------> Difference : " << regInsert.elapsed() - insertTimer.elapsed() << " secondes !" << std::endl;

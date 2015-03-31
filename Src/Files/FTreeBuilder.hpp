@@ -51,7 +51,7 @@ private:
     /** This class is the relation between particles and their morton idx */
     struct IndexedParticle{
         MortonIndex mindex;
-        int particlePositionInArray;
+        FSize particlePositionInArray;
 
         // To sort according to the mindex
         bool operator<=(const IndexedParticle& rhs) const {
@@ -63,7 +63,7 @@ private:
     struct LeafDescriptor{
         LeafClass* leafPtr;
         FSize offsetInArray;
-        int nbParticlesInLeaf;
+        FSize nbParticlesInLeaf;
     };
 
 public:
@@ -96,7 +96,7 @@ public:
         std::unique_ptr<IndexedParticle[]> particleIndexes(new IndexedParticle[numberOfParticle]);
 
         FLOG(copyTimer.tic());
-        for(int idxParts=0; idxParts<numberOfParticle ; ++idxParts ){
+        for(FSize idxParts=0; idxParts<numberOfParticle ; ++idxParts ){
             // Get the Morton Index
             const FTreeCoordinate host(
                      FCoordinateComputer::GetTreeCoordinate<FReal>(particlesContainers.getPositions()[0][idxParts] - boxCorner.getX(),
@@ -138,7 +138,7 @@ public:
         {
             MortonIndex previousIndex = -1;
 
-            for(int idxParts = 0 ; idxParts < numberOfParticle ; ++idxParts){
+            for(FSize idxParts = 0 ; idxParts < numberOfParticle ; ++idxParts){
                 // If not the same leaf, inc the counter
                 if(particleIndexes[idxParts].mindex != previousIndex){
                     previousIndex   = particleIndexes[idxParts].mindex;
@@ -166,7 +166,7 @@ public:
             int currentLeafIndex = -1;
             MortonIndex currentMortonIndex = -1;
 
-            for(int idxParts = 0 ; idxParts < numberOfParticle ; ++idxParts){
+            for(FSize idxParts = 0 ; idxParts < numberOfParticle ; ++idxParts){
                 // If not the same leaf
                 if(particleIndexes[idxParts].mindex != currentMortonIndex){
                     FAssertLF(FSize(currentLeafIndex) < numberOfLeaves);
@@ -205,14 +205,14 @@ public:
 
             #pragma omp for schedule(static)
             for(FSize idxLeaf = 0 ; idxLeaf < numberOfLeaves ; ++idxLeaf ){
-                const int nbParticlesAlreadyInLeaf = leavesDescriptor[idxLeaf].leafPtr->getSrc()->getNbParticles();
+                const FSize nbParticlesAlreadyInLeaf = leavesDescriptor[idxLeaf].leafPtr->getSrc()->getNbParticles();
                 // Reserve the space needed for the new particles
                 leavesDescriptor[idxLeaf].leafPtr->getSrc()->reserve(nbParticlesAlreadyInLeaf + leavesDescriptor[idxLeaf].nbParticlesInLeaf);
 
                 // For all particles
-                for(int idxPart = 0 ; idxPart < leavesDescriptor[idxLeaf].nbParticlesInLeaf ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart < leavesDescriptor[idxLeaf].nbParticlesInLeaf ; ++idxPart){
                     // Get position in the original container
-                    const int particleOriginalPos = particleIndexes[leavesDescriptor[idxLeaf].offsetInArray + idxPart].particlePositionInArray;
+                    const FSize particleOriginalPos = particleIndexes[leavesDescriptor[idxLeaf].offsetInArray + idxPart].particlePositionInArray;
                     // Get the original position
                     FPoint<FReal> particlePos( partX[particleOriginalPos],
                                         partY[particleOriginalPos],

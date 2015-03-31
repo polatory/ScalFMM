@@ -107,7 +107,7 @@ public:
             const FPoint<FReal> min(tree->getBoxCenter(),-boxWidth/2);
             const FPoint<FReal> max(tree->getBoxCenter(),boxWidth/2);
 
-            FVector<int> indexesToExtract;
+            FVector<FSize> indexesToExtract;
 
             typename OctreeClass::Iterator octreeIterator(tree);
             octreeIterator.gotoBottomLeft();
@@ -115,7 +115,7 @@ public:
                 const MortonIndex currentIndex = octreeIterator.getCurrentGlobalIndex();
                 ContainerClass* particles = octreeIterator.getCurrentLeaf()->getSrc();
                 //IdxPart is incremented at the end of the loop
-                for(int idxPart = 0 ; idxPart < particles->getNbParticles(); /*++idxPart*/){
+                for(FSize idxPart = 0 ; idxPart < particles->getNbParticles(); /*++idxPart*/){
                     FPoint<FReal> partPos( particles->getPositions()[0][idxPart],
                             particles->getPositions()[1][idxPart],
                             particles->getPositions()[2][idxPart] );
@@ -205,26 +205,27 @@ public:
         ParticleClass* toReceive = nullptr;
         MPI_Request*const requests = new MPI_Request[comm.processCount()*2];
         memset(requests, 0, sizeof(MPI_Request) * comm.processCount() * 2);
-        long long int*const indexToReceive = new long long int[comm.processCount() + 1];
-        memset(indexToReceive, 0, sizeof(long long int) * comm.processCount() + 1);
+        FSize*const indexToReceive = new FSize[comm.processCount() + 1];
+        memset(indexToReceive, 0, sizeof(FSize) * comm.processCount() + 1);
 
         int iterRequests = 0;
         int limitRecvSend = 0;
         int hasToRecvFrom = 0;
 
         { // gather what to send to who + isend data
-            int*const counter = new int[comm.processCount()];
-            memset(counter, 0, sizeof(int) * comm.processCount());
+            FSize*const counter = new FSize[comm.processCount()];
+            memset(counter, 0, sizeof(FSize) * comm.processCount());
 
             for(int idxProc = 0 ; idxProc < comm.processCount() ; ++idxProc){
                 counter[idxProc] = toMove[idxProc].getSize();
             }
             // say who send to who
-            int*const allcounter = new int[comm.processCount()*comm.processCount()];
-            FMpi::MpiAssert( MPI_Allgather( counter, comm.processCount(), MPI_INT, allcounter, comm.processCount(), MPI_INT, comm.getComm()),  __LINE__ );
+            FSize*const allcounter = new FSize[comm.processCount()*comm.processCount()];
+            FMpi::MpiAssert( MPI_Allgather( counter, comm.processCount(), FMpi::GetType(*counter), allcounter, comm.processCount(),
+                                            FMpi::GetType(*counter), comm.getComm()),  __LINE__ );
 
             // prepare buffer to receive
-            long long int sumToRecv = 0;
+            FSize sumToRecv = 0;
             indexToReceive[0] = 0;
             for(int idxProc = 0 ; idxProc < comm.processCount() ; ++idxProc){
                 if( idxProc != comm.processId()){
@@ -237,7 +238,8 @@ public:
             // send
             for(int idxProc = 0 ; idxProc < comm.processCount() ; ++idxProc){
                 if(idxProc != comm.processId() && allcounter[idxProc * comm.processCount() + comm.processId()]){
-                    FMpi::MpiAssert( MPI_Irecv(&toReceive[indexToReceive[idxProc]], allcounter[idxProc * comm.processCount() + comm.processId()] * int(sizeof(ParticleClass)), MPI_BYTE,
+                    FAssertLF( allcounter[idxProc * comm.processCount() + comm.processId()] * sizeof(ParticleClass) < std::numeric_limits<int>::max());
+                    FMpi::MpiAssert( MPI_Irecv(&toReceive[indexToReceive[idxProc]], int(allcounter[idxProc * comm.processCount() + comm.processId()] * sizeof(ParticleClass)), MPI_BYTE,
                               idxProc, 0, comm.getComm(), &requests[iterRequests++]),  __LINE__ );
                     hasToRecvFrom += 1;
                 }
@@ -248,7 +250,8 @@ public:
             // recv
             for(int idxProc = 0 ; idxProc < comm.processCount() ; ++idxProc){
                 if(idxProc != comm.processId() && toMove[idxProc].getSize()){
-                    FMpi::MpiAssert( MPI_Isend(toMove[idxProc].data(), toMove[idxProc].getSize() * int(sizeof(ParticleClass)), MPI_BYTE,
+                    FAssertLF( toMove[idxProc].getSize() * sizeof(ParticleClass) < std::numeric_limits<int>::max());
+                    FMpi::MpiAssert( MPI_Isend(toMove[idxProc].data(), int(toMove[idxProc].getSize() * sizeof(ParticleClass)), MPI_BYTE,
                               idxProc, 0, comm.getComm(), &requests[iterRequests++]),  __LINE__ );
                 }
             }
@@ -258,7 +261,7 @@ public:
         }
 
         { // insert particles that moved
-            for(int idxPart = 0 ; idxPart < toMove[comm.processId()].getSize() ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < toMove[comm.processId()].getSize() ; ++idxPart){
                 ConverterClass::Insert( tree , toMove[comm.processId()][idxPart]);
             }
         }
@@ -271,7 +274,7 @@ public:
                 FMpi::MpiAssert( MPI_Waitany( iterRequests, requests, &done, &status ),  __LINE__ );
                 if( done < limitRecvSend ){
                     const int source = status.MPI_SOURCE;
-                    for(long long int idxPart = indexToReceive[source] ; idxPart < indexToReceive[source+1] ; ++idxPart){
+                    for(FSize idxPart = indexToReceive[source] ; idxPart < indexToReceive[source+1] ; ++idxPart){
                         ConverterClass::Insert( tree , toReceive[idxPart]);
                     }
                     hasToRecvFrom -= 1;

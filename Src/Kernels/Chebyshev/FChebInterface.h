@@ -48,12 +48,12 @@ ChebKernelStruct * ChebKernelStruct_create(int inTreeHeight,
 void ChebKernelStruct_free(void * kernel);
 //To access kernel member function
 
-void ChebKernel_P2M(void * leafCell, int nbParticles,const int* particleIndexes, void* kernel);
+void ChebKernel_P2M(void * leafCell, FSize nbParticles,const int* particleIndexes, void* kernel);
 void ChebKernel_M2M(int level, void* parentCell, int childPosition, void* childCell, void* kernel);
 void ChebKernel_M2L(int level, void* targetCell, void* sourceCell[343], void* kernel);
 void ChebKernel_L2L(int level, void* parentCell, int childPosition, void* childCell, void* kernel);
-void ChebKernel_L2P(void* leafCell, int nbParticles, const int* particleIndexes, void* kernel);
-void ChebKernel_P2P(int nbParticles, const int* particleIndexes,
+void ChebKernel_L2P(void* leafCell, FSize nbParticles, const int* particleIndexes, void* kernel);
+void ChebKernel_P2P(FSize nbParticles, const int* particleIndexes,
                     const int * sourceParticleIndexes[27], int sourceNbPart[27],void* userData);
 
 typedef struct myUserDatas{

@@ -78,61 +78,6 @@ public:
         (*up)   = 0;
     }
 
-    /////////////////////////////////////////////////
-
-    /** Save the current cell in a buffer */
-    template <class BufferWriterClass>
-    void save(BufferWriterClass& buffer) const{
-        buffer << symb->mortonIndex << symb->coordinates[0]
-               << symb->coordinates[1] << symb->coordinates[2];
-        buffer << (*down) << (*up);
-    }
-
-    /** Restore the current cell from a buffer */
-    template <class BufferReaderClass>
-    void restore(BufferReaderClass& buffer){
-        buffer >> symb->mortonIndex >> symb->coordinates[0]
-               >> symb->coordinates[1] >> symb->coordinates[2];
-        buffer >> (*down) >> (*up);
-    }
-
-    int getSavedSize() const {
-        return int(sizeof(symb->mortonIndex) + sizeof(symb->coordinates[0]) +
-                sizeof(symb->coordinates[1]) + sizeof(symb->coordinates[2]) +
-                sizeof((*down)) + sizeof((*up)));
-    }
-
-    /////////////////////////////////////////////////
-
-    /** Serialize only up data in a buffer */
-    template <class BufferWriterClass>
-    void serializeUp(BufferWriterClass& buffer) const {
-        buffer << (*up);
-    }
-    /** Deserialize only up data in a buffer */
-    template <class BufferReaderClass>
-    void deserializeUp(BufferReaderClass& buffer){
-        buffer >> (*up);
-    }
-
-    /** Serialize only down data in a buffer */
-    template <class BufferWriterClass>
-    void serializeDown(BufferWriterClass& buffer) const {
-        buffer << (*down);
-    }
-    /** Deserialize only up data in a buffer */
-    template <class BufferReaderClass>
-    void deserializeDown(BufferReaderClass& buffer){
-        buffer >> (*down);
-    }
-
-    int getSavedSizeDown() {
-        return int(sizeof(FTestCellPODData));
-    }
-
-    int getSavedSizeUp() {
-        return int(sizeof(FTestCellPODData));
-    }
 };
 
 

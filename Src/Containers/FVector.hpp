@@ -34,12 +34,12 @@
 template<class ObjectType>
 class FVector {
 protected:
-    static const int DefaultSize = 10;      /**< Default size */
+    static const FSize DefaultSize = 10;      /**< Default size */
 
     ObjectType* array;        /**< memory area*/
 
-    int capacity;             /**< memory capacity, the size of array */
-    int index;                /**< index in array, the current position to insert */
+    FSize capacity;             /**< memory capacity, the size of array */
+    FSize index;                /**< index in array, the current position to insert */
 
 public:
     typedef ObjectType ValueType; /**< data type of data in FVector */
@@ -56,7 +56,7 @@ public:
     * @brief Constructor
     * @param inCapacity the memory to allocate
     */
-    explicit FVector(const int inCapacity): array(nullptr), capacity(inCapacity), index(0) {
+    explicit FVector(const FSize inCapacity): array(nullptr), capacity(inCapacity), index(0) {
         if( inCapacity ){
             array = reinterpret_cast< ObjectType* >( new char[sizeof(ObjectType) * inCapacity]);
         }
@@ -71,7 +71,7 @@ public:
         if( other.capacity ){
             array = reinterpret_cast< ObjectType* >( new char[sizeof(ObjectType) * other.capacity]);
             // Copy each element
-            for(int idx = 0 ; idx < other.index ; ++idx){
+            for(FSize idx = 0 ; idx < other.index ; ++idx){
                 new((void*)&array[idx]) ObjectType(other.array[idx]);
             }
         }
@@ -105,12 +105,12 @@ public:
             // alloc bigger if needed
             if(capacity < other.getSize()){
                 delete [] reinterpret_cast< char* >(array);
-                capacity = int(other.getSize() * 1.5);
+                capacity = FSize(double(other.getSize()) * 1.5);
                 array = reinterpret_cast< ObjectType* >( new char[sizeof(ObjectType) * capacity]);
             }
 
             index = other.index;
-            for(int idx = 0 ; idx < other.index ; ++idx){
+            for(FSize idx = 0 ; idx < other.index ; ++idx){
                 new((void*)&array[idx]) ObjectType(other.array[idx]);
             }
         }
@@ -147,7 +147,7 @@ public:
     * @return the buffer capacity
     * The capacity is the current memory size allocated.
     */
-    int getCapacity() const{
+    FSize getCapacity() const{
         return capacity;
     }
 
@@ -156,7 +156,7 @@ public:
     *@param inCapacity to change the capacity
     * If capacity given is lower than size elements after capacity are removed
     */
-    void setCapacity(const int inCapacity) {
+    void setCapacity(const FSize inCapacity) {
         if( inCapacity != capacity ){
             while(inCapacity < index){
                 (&array[--index])->~ObjectType();
@@ -164,7 +164,7 @@ public:
 
             // Copy elements
             ObjectType* const nextArray = reinterpret_cast< ObjectType* >( inCapacity ? new char[sizeof(ObjectType) * inCapacity] : nullptr);
-            for(int idx = 0 ; idx < index ; ++idx){
+            for(FSize idx = 0 ; idx < index ; ++idx){
                 new((void*)&nextArray[idx]) ObjectType(std::move(array[idx]));
                 (&array[idx])->~ObjectType();
             }
@@ -177,10 +177,10 @@ public:
 
     /** Resize the vector (and change the capacity if needed) */
     template <typename... Args>
-    void resize(const int newSize, Args... args){
+    void resize(const FSize newSize, Args... args){
         if(index < newSize){
             if(capacity < newSize){
-                setCapacity(int(newSize*1.5));
+                setCapacity(FSize(double(newSize)*1.5));
             }
             while(index != newSize){
                 new((void*)&array[index]) ObjectType(args...);
@@ -221,7 +221,7 @@ public:
     * @return The number of element added into the vector
     * This is not the capcity
     */
-    int getSize() const{
+    FSize getSize() const{
         return index;
     }
 
@@ -241,7 +241,7 @@ public:
     void push( const ObjectType & inValue ){
         // if needed, increase the vector
         if( index == capacity ){
-            setCapacity(int((capacity+1) * 1.5));
+            setCapacity(static_cast<FSize>(double(capacity+1) * 1.5));
         }
         // add the new element
         new((void*)&array[index++]) ObjectType(inValue);
@@ -254,7 +254,7 @@ public:
     void pushNew(Args... args){
         // if needed, increase the vector
         if( index == capacity ){
-            setCapacity(int((capacity+1) * 1.5));
+            setCapacity(static_cast<FSize>(double(capacity+1) * 1.5));
         }
         // add the new element
         new((void*)&array[index++]) ObjectType(args...);
@@ -265,13 +265,13 @@ public:
     * @param inValue the new value
     * @param inRepeat the number of time the value is inserted
     */
-    void set( const ObjectType & inValue, const int inRepeat){
+    void set( const ObjectType & inValue, const FSize inRepeat){
         // if needed, increase the vector
         if( capacity < index + inRepeat ){
-            setCapacity(int((index + inRepeat) * 1.5));
+            setCapacity(FSize(double(index + inRepeat) * 1.5));
         }
         // add the new element
-        for( int idx = 0 ; idx < inRepeat ; ++idx){
+        for( FSize idx = 0 ; idx < inRepeat ; ++idx){
             new((void*)&array[index++]) ObjectType(inValue);
         }
     }
@@ -281,7 +281,7 @@ public:
     *@param inPosition the query position
     *@return the value
     */
-    ObjectType& operator[](const int inPosition ) {
+    ObjectType& operator[](const FSize inPosition ) {
             return array[inPosition];
     }
 
@@ -290,7 +290,7 @@ public:
     * @param inPosition the query position
     * @return the value
     */
-    const ObjectType& operator[](const int inPosition ) const {
+    const ObjectType& operator[](const FSize inPosition ) const {
             return array[inPosition];
     }
 
@@ -312,13 +312,13 @@ public:
       * @param inArray the array to copy values
       * @param inSize the size of the array
       */
-    void extractValues(const ObjectType*const inArray, const int inSize){
+    void extractValues(const ObjectType*const inArray, const FSize inSize){
         // Check available memory
         if(capacity < index + inSize){
-            setCapacity( int((index + inSize) * 1.5) );
+            setCapacity( FSize(double(index + inSize) * 1.5) );
         }
         // Copy values
-        for(int idx = 0 ; idx < inSize ; ++idx){
+        for(FSize idx = 0 ; idx < inSize ; ++idx){
             new((void*)&array[index++]) ObjectType(inArray[idx]);
         }
     }
@@ -327,10 +327,10 @@ public:
       * @param inArray the array to copie values
       * @param inSize the size of the array
       */
-    void memocopy(const ObjectType*const inArray, const int inSize){
+    void memocopy(const ObjectType*const inArray, const FSize inSize){
         // Check available memory
         if(capacity < index + inSize){
-            setCapacity( int((index + inSize) * 1.5) );
+            setCapacity( FSize(double(index + inSize) * 1.5) );
         }
         // Copy values
         memcpy(&array[index], inArray, inSize * sizeof(ObjectType));
@@ -338,8 +338,8 @@ public:
     }
 
     /** Remove a values by shifting all the next values */
-    void removeOne(const int idxToRemove){
-        for(int idxMove = idxToRemove + 1; idxMove < index ; ++idxMove){
+    void removeOne(const FSize idxToRemove){
+        for(FSize idxMove = idxToRemove + 1; idxMove < index ; ++idxMove){
             array[idxMove - 1] = array[idxMove];
         }
         index -= 1;
@@ -347,7 +347,7 @@ public:
 
     /** This class is a basic iterator
       * <code>
-      *  typename FVector<int>::ConstBasicIterator iter(myVector);<br>
+      *  typename FVector<FSize>::ConstBasicIterator iter(myVector);<br>
       *  while( iter.hasNotFinished() ){<br>
       *      printf("%d\n",iter.data());<br>
       *      iter.gotoNext();<br>
@@ -357,7 +357,7 @@ public:
     class BasicIterator {
     protected:
         FVector* const vector;  /**< the vector to work on*/
-        int index;              /**< the current node*/
+        FSize index;              /**< the current node*/
 
     public:
         /** Empty destructor */
@@ -398,7 +398,7 @@ public:
           */
         void remove(){
             if( hasNotFinished() ){
-                for(int idxMove = index + 1; idxMove < vector->index ; ++idxMove){
+                for(FSize idxMove = index + 1; idxMove < vector->index ; ++idxMove){
                     vector->array[idxMove - 1] = vector->array[idxMove];
                 }
                 vector->index -= 1;
@@ -414,7 +414,7 @@ public:
     class ConstBasicIterator {
     protected:
         const FVector* const vector;  /**< the vector to work on*/
-        int index;                    /**< the current node*/
+        FSize index;                    /**< the current node*/
 
     public:
         /** Empty destructor */

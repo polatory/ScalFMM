@@ -96,7 +96,7 @@ class TestLagrange : public FUTester<TestLagrange> {
         //
         //   Insert particle in the tree
         //
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             tree.insert(particles[idxPart].getPosition() , idxPart, particles[idxPart].getPhysicalValue() );
         }
         //
@@ -113,7 +113,7 @@ class TestLagrange : public FUTester<TestLagrange> {
         // Compute direct energy
         /////////////////////////////////////////////////////////////////////////////////////////////////
 
-        for(int idx = 0 ; idx <  loader.getNumberOfParticles()  ; ++idx){
+        for(FSize idx = 0 ; idx < loader.getNumberOfParticles()  ; ++idx){
             energyD +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
         }
         /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -130,11 +130,11 @@ class TestLagrange : public FUTester<TestLagrange> {
                 const FReal*const forcesX            = leaf->getTargets()->getForcesX();
                 const FReal*const forcesY            = leaf->getTargets()->getForcesY();
                 const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
-                const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
-                const FVector<int>& indexes      = leaf->getTargets()->getIndexes();
+                const FSize nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                    const int indexPartOrig = indexes[idxPart];
+                for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                    const FSize indexPartOrig = indexes[idxPart];
                     potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
                     fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
                     fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);

@@ -45,7 +45,7 @@ int main(int argc, char ** argv){
                          ">> This executable test the efficiency of the computation of the P2P",
                          FParameterDefinitions::NbParticles);
 
-    const int nbParticles = FParameters::getValue(argc, argv, FParameterDefinitions::NbParticles.options, 1000);
+    const FSize nbParticles = FParameters::getValue(argc, argv, FParameterDefinitions::NbParticles.options, 1000);
     std::cout << "Test with " << nbParticles << " particles." << std::endl;
 
     //////////////////////////////////////////////////////////
@@ -56,14 +56,14 @@ int main(int argc, char ** argv){
 
     FTic timer;
     FP2PParticleContainer<FReal> leaf1;
-    for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
         FPoint<FReal> pos;
         loader.fillParticle(&pos);
         leaf1.push(pos, 1.0);
     }
 
     FP2PParticleContainer<FReal> leaf2;
-    for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
         FPoint<FReal> pos;
         loader.fillParticle(&pos);
         leaf2.push(pos, 1.0);

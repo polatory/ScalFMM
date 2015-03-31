@@ -23,14 +23,14 @@
 #include "Files/FFmaGenericLoader.hpp"
 
 template <class FReal, class classArrayType>
-int compareTwoArrays(const std::string &tag,  const int &nbParticles, const classArrayType &array1,
+FSize compareTwoArrays(const std::string &tag,  const FSize &nbParticles, const classArrayType &array1,
 		const classArrayType &array2){
 	//
     FMath::FAccurater<FReal> potentialDiff;
     FMath::FAccurater<FReal> fx, fy, fz;
 	double energy1= 0.0, energy2= 0.0;
-	int error = 0 ;
-	for(int idxPart = 0 ; idxPart < nbParticles ;++idxPart){
+    FSize error = 0 ;
+	for(FSize idxPart = 0 ; idxPart < nbParticles ;++idxPart){
 		if(array1[idxPart].getPosition() != array2[idxPart].getPosition() ){
 			std::cerr <<"Wrong positions  " <<std::endl
 					<< "   P1: " <<array1[idxPart].getPosition()<<std::endl
@@ -56,12 +56,12 @@ int compareTwoArrays(const std::string &tag,  const int &nbParticles, const clas
 }
 //
 template <class FReal, class classArrayType>
-void computeFirstMoment( const int &nbParticles, const classArrayType &particles,  FPoint<FReal> &FirstMoment){
+void computeFirstMoment( const FSize &nbParticles, const classArrayType &particles,  FPoint<FReal> &FirstMoment){
 
     FReal mx,my,mz ;
 	//
 #pragma omp parallel  for shared(nbParticles,particles) reduction(+:mx,my,mz)
-	for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+	for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
 		//
 		mx += particles[idxPart].getPhysicalValue()*particles[idxPart].getPosition().getX() ;
 		my += particles[idxPart].getPhysicalValue()*particles[idxPart].getPosition().getY() ;
@@ -71,7 +71,7 @@ void computeFirstMoment( const int &nbParticles, const classArrayType &particles
 } ;
 
 template < class FReal, class classArrayType>
-void removeFirstMoment( const std::string& TYPE, const int &nbParticles, const classArrayType &particles,  FReal &volume) {
+void removeFirstMoment( const std::string& TYPE, const FSize &nbParticles, const classArrayType &particles,  FReal &volume) {
     FPoint<FReal> FirstMoment ;
     computeFirstMoment<FReal, classArrayType>( nbParticles, particles,  FirstMoment);
 	std::cout << std::endl;
@@ -98,7 +98,7 @@ void removeFirstMoment( const std::string& TYPE, const int &nbParticles, const c
 	}
       //
 	double tmp;
-	for(int idx = 0 ; idx < nbParticles ; ++idx){
+    for(FSize idx = 0 ; idx < nbParticles ; ++idx){
 		tmp = particles[idx].getPosition().getX()*FirstMoment.getX()  + particles[idx].getPosition().getY()*FirstMoment.getY()
 								+ particles[idx].getPosition().getZ()*FirstMoment.getZ()  ;
 		FReal Q =  particles[idx].getPhysicalValue(), P = particles[idx].getPotential();

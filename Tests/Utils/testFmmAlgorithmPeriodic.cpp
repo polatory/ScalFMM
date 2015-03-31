@@ -91,7 +91,7 @@ int main(int argc, char ** argv){
 
     {
         FPoint<FReal> particlePosition;
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&particlePosition);
             tree.insert(particlePosition);
         }
@@ -146,7 +146,7 @@ int main(int argc, char ** argv){
         std::cout << "Min is " << min << " Max is " << max << std::endl;
 
         tree.forEachLeaf([&](LeafClass* leaf){
-            for(int idxPart = 0 ; idxPart < leaf->getSrc()->getNbParticles() ; ++idxPart ){
+            for(FSize idxPart = 0 ; idxPart < leaf->getSrc()->getNbParticles() ; ++idxPart ){
                 if( NbParticlesEntireSystem - 1 != leaf->getSrc()->getDataDown()[idxPart]){
                     std::cout << "P2P probleme, should be " << NbParticlesEntireSystem - 1 <<
                                  " iter.data().getDataDown() "<< leaf->getSrc()->getDataDown()[idxPart] << std::endl;

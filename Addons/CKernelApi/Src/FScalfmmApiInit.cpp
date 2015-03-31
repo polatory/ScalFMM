@@ -126,7 +126,7 @@ extern "C" void ChebKernelStruct_free(void *inKernel){
 }
 
 
-extern "C" void ChebKernel_P2M(void * leafCell, int nbParticles, const int *particleIndexes, void * inKernel){
+extern "C" void ChebKernel_P2M(void * leafCell, FSize nbParticles, const int *particleIndexes, void * inKernel){
     //make temporary array of parts
     FP2PParticleContainerIndexed<double>* tempContainer = new FP2PParticleContainerIndexed<double>();
     tempContainer->reserve(nbParticles);
@@ -215,7 +215,7 @@ extern "C" void ChebKernel_L2L(int level, void* parentCell, int childPosition, v
                                                              childChebCell->getLocal(0));
 }
 
-extern "C" void ChebKernel_L2P(void* leafCell, int nbParticles, const int* particleIndexes, void* inKernel){
+extern "C" void ChebKernel_L2P(void* leafCell, FSize nbParticles, const int* particleIndexes, void* inKernel){
     //Create temporary FSimpleLeaf
     FP2PParticleContainerIndexed<double>* tempContainer = new FP2PParticleContainerIndexed<double>();
     tempContainer->reserve(nbParticles);
@@ -242,8 +242,8 @@ extern "C" void ChebKernel_L2P(void* leafCell, int nbParticles, const int* parti
 
     //Then retrieve the results
     double * forcesToFill = reinterpret_cast<UserData *>(inKernel)->forcesComputed[id_thread];
-    const FVector<int>& indexes = tempContainer->getIndexes();
-    for(int idxPart = 0 ; idxPart<nbParticles ; ++idxPart){
+    const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
+    for(FSize idxPart = 0 ; idxPart<nbParticles ; ++idxPart){
     forcesToFill[indexes[idxPart]*3+0] += tempContainer->getForcesX()[idxPart];
     forcesToFill[indexes[idxPart]*3+1] += tempContainer->getForcesY()[idxPart];
     forcesToFill[indexes[idxPart]*3+2] += tempContainer->getForcesZ()[idxPart];
@@ -254,7 +254,7 @@ extern "C" void ChebKernel_L2P(void* leafCell, int nbParticles, const int* parti
 }
 
 
-    void ChebKernel_P2P(int nbParticles, const int* particleIndexes,
+    void ChebKernel_P2P(FSize nbParticles, const int* particleIndexes,
                     const int * sourceParticleIndexes[27],int sourceNbPart[27],void* inKernel){
 
     //Create temporary FSimpleLeaf for target
@@ -306,8 +306,8 @@ extern "C" void ChebKernel_L2P(void* leafCell, int nbParticles, const int* parti
 
     //get back forces
     double * forcesToFill = reinterpret_cast<UserData *>(inKernel)->forcesComputed[id_thread];
-    const FVector<int>& indexes = tempContTarget->getIndexes();
-    for(int idxPart = 0 ; idxPart<nbParticles ; ++idxPart){
+    const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
+    for(FSize idxPart = 0 ; idxPart<nbParticles ; ++idxPart){
         forcesToFill[indexes[idxPart]*3+0] += tempContTarget->getForcesX()[idxPart];
         forcesToFill[indexes[idxPart]*3+1] += tempContTarget->getForcesY()[idxPart];
         forcesToFill[indexes[idxPart]*3+2] += tempContTarget->getForcesZ()[idxPart];
@@ -316,7 +316,7 @@ extern "C" void ChebKernel_L2P(void* leafCell, int nbParticles, const int* parti
     //Note that sources are also modified.
     //get back sources forces
     for(int idSource = 0 ; idSource < 27 ; ++idSource){
-        const FVector<int>& indexes = tempContSources[idSource]->getIndexes();
+        const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
         const int nbPartInSource = sourceNbPart[idSource];
         for(int idxSourcePart = 0; idxSourcePart < nbPartInSource ; ++idxSourcePart){
             forcesToFill[indexes[idxSourcePart]*3+0] += tempContSources[idSource]->getForcesX()[idxSourcePart];

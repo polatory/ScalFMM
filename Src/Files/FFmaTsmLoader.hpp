@@ -43,7 +43,7 @@
 * <br>
 *    FOctree<FBasicParticle, TestCell, FSimpleLeaf> tree(loader.getBoxWidth(),loader.getCenterOfBox()); <br>
 * <br>
-*    for(int idx = 0 ; idx < loader.getNumberOfParticles() ; ++idx){ <br>
+*    for(FSize r.getNumberOfParticles() ; ++idx){ <br>
 *        FBasicParticle* const part = new FBasicParticle(); <br>
 *        loader.fillParticle(part); <br>
 *        tree.insert(part); <br>
@@ -58,7 +58,7 @@ protected:
     std::ifstream file;         //< The file to read
     FPoint<FReal> centerOfBox;    //< The center of box read from file
     FReal boxWidth;             //< the box width read from file
-    int nbParticles;           //< the number of particles read from file
+    FSize nbParticles;           //< the number of particles read from file
 
 public:
     /**

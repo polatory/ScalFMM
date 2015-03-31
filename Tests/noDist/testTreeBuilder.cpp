@@ -143,7 +143,7 @@ int main(int argc, char** argv){
 
 	regInsert.tic();
 
-	for(int idxPart = 0 ; idxPart < loaderRef.getNumberOfParticles() ; ++idxPart){
+	for(FSize idxPart = 0 ; idxPart < loaderRef.getNumberOfParticles() ; ++idxPart){
         FPoint<FReal> particlePosition;
 	    FReal physicalValue;
 	    loaderRef.fillParticle(&particlePosition,&physicalValue);
@@ -173,7 +173,7 @@ int main(int argc, char** argv){
     TestParticle * arrayOfParts = new TestParticle[nbOfParticles];
     memset(arrayOfParts,0,sizeof(TestParticle)*nbOfParticles);
 
-    for(int idxPart = 0 ; idxPart < nbOfParticles ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < nbOfParticles ; ++idxPart){
 	loader.fillParticle(&arrayOfParts[idxPart].position,&arrayOfParts[idxPart].physicalValue);
 	//Build temporary TreeCoordinate
     host.setX( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParts[idxPart].getPosition().getX() - boxCorner.getX(), boxWidth, boxWidthAtLeafLevel, NbLevels ));

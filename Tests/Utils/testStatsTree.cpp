@@ -88,7 +88,7 @@ int main(int argc, char ** argv){
     std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
     counter.tic();
 
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         FPoint<FReal> particlePosition;
         FReal physicalValue;
         loader.fillParticle(&particlePosition,&physicalValue);

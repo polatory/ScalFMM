@@ -144,7 +144,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
         MortonIndex ref = -1;
         int numMort = 0;
         if(app.global().processId()==0){
-            for(int i=0 ; i<loaderSeq.getNumberOfParticles() ; ++i){
+            for(FSize i=0 ; i<loaderSeq.getNumberOfParticles() ; ++i){
                 if (arrayOfParticles[i].index !=ref){
                     numMort++;
                     ref = arrayOfParticles[i].index;
@@ -159,11 +159,11 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
         FMpiFmaGenericLoader<FReal> loader(filename,app.global());
         if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
         //Now, we sort again the particles with MPI QuickSort
-        int idxStart = loader.getStart();
+        FSize idxStart = loader.getStart();
 
         FMpiTreeBuilder<FReal,TestParticle<FReal>>::IndexedParticle * arrayToBeSorted = new FMpiTreeBuilder<FReal,TestParticle<FReal>>::IndexedParticle[loader.getMyNumberOfParticles()];
         //Copy the TestParticles into an array of indexedParticle
-        for(int i=0 ; i<loader.getMyNumberOfParticles() ; ++i){
+        for(FSize i=0 ; i<loader.getMyNumberOfParticles() ; ++i){
             arrayToBeSorted[i].particle = originalArray[i+idxStart];
             arrayToBeSorted[i].index = arrayToBeSorted[i].particle.index;
         }
@@ -200,17 +200,17 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 
         //Gather size of output
         int * nbPartPerProcess = new int[app.global().processCount()];
-        nbPartPerProcess[app.global().processId()] = outputSize;
-        MPI_Gather(&nbPartPerProcess[app.global().processId()],1,MPI_INT,nbPartPerProcess,1,MPI_INT,0,app.global().getComm());
+        nbPartPerProcess[app.global().processId()] = int(outputSize);
+        MPI_Gather(&nbPartPerProcess[app.global().processId()],1,FMpi::GetType(*nbPartPerProcess),nbPartPerProcess,1,FMpi::GetType(*nbPartPerProcess),0,app.global().getComm());
 
-        int * toSend = new int[outputSize];
+        FSize * toSend = new FSize[outputSize];
         int * displ = nullptr;
         int * recvParts = nullptr;
-        int * myPart = nullptr;
+        FSize * myPart = nullptr;
 
         //Prepare the indexInFile to send
         for(int idPart=0 ; idPart<outputSize ; ++idPart){
-            toSend[idPart] = int(outputArray[idPart].particle.indexInFile);
+            toSend[idPart] = FSize(outputArray[idPart].particle.indexInFile);
         }
 
         if(app.global().processId() == 0){
@@ -218,20 +218,21 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
             displ = new int[app.global().processCount()];
             displ[0] = 0;
             for(int idProc = 1 ; idProc < app.global().processCount() ; ++idProc){
-                displ[idProc] = nbPartPerProcess[idProc-1] + displ[idProc-1];
+                displ[idProc] = int( nbPartPerProcess[idProc-1] + displ[idProc-1]);
             }
             //Buffer to recv into
             recvParts = new int[loader.getNumberOfParticles()];
-            MPI_Gatherv(toSend,outputSize,MPI_INT,recvParts,nbPartPerProcess,displ,MPI_INT,0,app.global().getComm());
+            FAssertLF(outputSize < std::numeric_limits<int>::max());
+            MPI_Gatherv(toSend,int(outputSize),FMpi::GetType(*toSend),recvParts,nbPartPerProcess,displ,FMpi::GetType(*toSend),0,app.global().getComm());
 
             //Buffer to put result into
-            myPart = new int[loader.getNumberOfParticles()];
-            memset(myPart,0,sizeof(int)*loader.getNumberOfParticles());
-            for(int idP = 0 ; idP < loader.getNumberOfParticles() ; ++idP){
+            myPart = new FSize[loader.getNumberOfParticles()];
+            memset(myPart,0,sizeof(FSize)*loader.getNumberOfParticles());
+            for(FSize idP = 0 ; idP < loader.getNumberOfParticles() ; ++idP){
                 myPart[recvParts[idP]] += 1;
             }
             //Check if everything is set to 1
-            for(int idP = 0 ; idP < loader.getNumberOfParticles() ; ++idP){
+            for(FSize idP = 0 ; idP < loader.getNumberOfParticles() ; ++idP){
                 if(myPart[idP] != 1){
                     std::cout << "Part number "<< idP << " in file is lost or duplicated : "<< myPart[idP]<< std::endl;
                     resultQsMpi = false;
@@ -239,7 +240,8 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
             }
         }
         else{
-            MPI_Gatherv(toSend,outputSize,MPI_INT,recvParts,nbPartPerProcess,displ,MPI_INT,0,app.global().getComm());
+            FAssertLF(outputSize < std::numeric_limits<int>::max());
+            MPI_Gatherv(toSend,int(outputSize),FMpi::GetType(*toSend),recvParts,nbPartPerProcess,displ,FMpi::GetType(*toSend),0,app.global().getComm());
         }
 
 
@@ -268,7 +270,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
         //we need to know how many parts still remains
         FSize CounterStart = 0;
         //We use a prefix sum
-        MPI_Exscan(&outputSize,&CounterStart,1,MPI_LONG_LONG_INT,MPI_SUM,app.global().getComm());
+        MPI_Exscan(&outputSize,&CounterStart,1,FMpi::GetType(outputSize),MPI_SUM,app.global().getComm());
 
         //Test if no problems
         for(FSize k=0 ; k<outputSize ; ++k){
@@ -291,13 +293,13 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
 
         FMpiTreeBuilder<FReal,TestParticle<FReal>>::EqualizeAndFillContainer(app.global(),&finalParticles,leavesIndices,leavesArray,leaveSize,outputSize,&balancer);
         //Ok now count the Particles at the end of the Equalize
-        int finalNbPart = finalParticles.getSize();
-        int finalStart = 0;
+        FSize finalNbPart = finalParticles.getSize();
+        FSize finalStart = 0;
 
-        MPI_Exscan(&finalNbPart,&finalStart,1,MPI_INT,MPI_SUM,app.global().getComm());
+        MPI_Exscan(&finalNbPart,&finalStart,1,FMpi::GetType(finalNbPart),MPI_SUM,app.global().getComm());
         for (int k=0; k<finalNbPart ; k++){
             if(finalParticles[k].indexInFile != arrayOfParticles[k+finalStart].indexInFile){
-                printf("Equalize :: Proc %d, k=[%d+%d] finalParticles : %lld,%lld, sortedArray %lld,%lld \n",
+                printf("Equalize :: Proc %d, k=[%d+%lld] finalParticles : %lld,%lld, sortedArray %lld,%lld \n",
                        app.global().processId(),k,finalStart,
                        finalParticles[k].index,finalParticles[k].indexInFile,
                        arrayOfParticles[k+finalStart].index,arrayOfParticles[k+finalStart].indexInFile);

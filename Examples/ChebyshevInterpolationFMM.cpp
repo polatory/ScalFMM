@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
                 FPoint<FReal> position;
                 FReal physicalValue = 0.0;
                 //
-                for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
                         //
                         // Read particle per particle from file
                         loader.fillParticle(&position,&physicalValue);
@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
         //
         //
         { // -----------------------------------------------------
-                long int N1=0, N2= loader.getNumberOfParticles()/2, N3= loader.getNumberOfParticles() -1; ;
+                FSize N1=0, N2= loader.getNumberOfParticles()/2, N3= loader.getNumberOfParticles() -1; ;
                 FReal energy =0.0 ;
                 //
                 //   Loop over all leaves
@@ -190,13 +190,13 @@ int main(int argc, char* argv[])
                         const FReal*const forcesX = leaf->getTargets()->getForcesX();
                         const FReal*const forcesY = leaf->getTargets()->getForcesY();
                         const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-                        const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                        const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
                         const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
 
-                        const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+                        const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-                        for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                                const int indexPartOrig = indexes[idxPart];
+                        for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                                const FSize indexPartOrig = indexes[idxPart];
                                 if ((indexPartOrig == N1) || (indexPartOrig == N2) || (indexPartOrig == N3)  ) {
                                         std::cout << "Index "<< indexPartOrig <<"  potential  " << potentials[idxPart]
                                                   << " Pos "<<posX[idxPart]<<" "<<posY[idxPart]<<" "<<posZ[idxPart]

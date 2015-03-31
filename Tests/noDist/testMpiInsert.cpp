@@ -75,34 +75,34 @@ int main(int argc, char** argv){
     typedef double FReal;
 
     struct TestParticle{
-	MortonIndex index;
-	FSize indexInFile;
-    FPoint<FReal> position;
-	FReal physicalValue;
-    const FPoint<FReal>& getPosition()const{
-	    return position;
-	}
-	TestParticle& operator=(const TestParticle& other){
-	    index=other.index;
-	    indexInFile=other.indexInFile;
-	    position=other.position;
-	    physicalValue=other.physicalValue;
-	    return *this;
-	}
-	bool operator<=(const TestParticle& rhs)const{
-	    if(rhs.index < this->index){return false;}
-	    else{
-		if(rhs.index > this->index){return true;}
-		else{
-		    if(rhs.indexInFile == this->indexInFile){
-			return true;
-		    }
-		    else {
-			return rhs.indexInFile> this->indexInFile ;
-		    }
-		}
-	    }
-	}
+        MortonIndex index;
+        FSize indexInFile;
+        FPoint<FReal> position;
+        FReal physicalValue;
+        const FPoint<FReal>& getPosition()const{
+            return position;
+        }
+        TestParticle& operator=(const TestParticle& other){
+            index=other.index;
+            indexInFile=other.indexInFile;
+            position=other.position;
+            physicalValue=other.physicalValue;
+            return *this;
+        }
+        bool operator<=(const TestParticle& rhs)const{
+            if(rhs.index < this->index){return false;}
+            else{
+                if(rhs.index > this->index){return true;}
+                else{
+                    if(rhs.indexInFile == this->indexInFile){
+                        return true;
+                    }
+                    else {
+                        return rhs.indexInFile> this->indexInFile ;
+                    }
+                }
+            }
+        }
     };
 
     FMpi app( argc, argv);
@@ -128,8 +128,8 @@ int main(int argc, char** argv){
 
     FMpiFmaGenericLoader<FReal> loaderRef(filename,app.global());
     if(!loaderRef.isOpen()){
-	std::cout << "LoaderRef Error, " << filename << " is missing\n";
-	return 1;
+        std::cout << "LoaderRef Error, " << filename << " is missing\n";
+        return 1;
     }
     FTic regInsert;
     OctreeClass treeRef(NbLevels, SizeSubLevels, loaderRef.getBoxWidth(), loaderRef.getCenterOfBox());
@@ -138,35 +138,35 @@ int main(int argc, char** argv){
     {
 
 
-	std::cout << "Creating & Inserting " << loaderRef.getNumberOfParticles() << " particles ..." << std::endl;
-	std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
+        std::cout << "Creating & Inserting " << loaderRef.getNumberOfParticles() << " particles ..." << std::endl;
+        std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SizeSubLevels << std::endl;
 
 
-	//Store the parts
-    FmaRWParticle<FReal, 4,4>* particles = new FmaRWParticle<FReal,4,4>[loaderRef.getNumberOfParticles()];
-    memset(particles, 0, sizeof(FmaRWParticle<FReal,4,4>) * loaderRef.getNumberOfParticles());
+        //Store the parts
+        FmaRWParticle<FReal, 4,4>* particles = new FmaRWParticle<FReal,4,4>[loaderRef.getNumberOfParticles()];
+        memset(particles, 0, sizeof(FmaRWParticle<FReal,4,4>) * loaderRef.getNumberOfParticles());
 
-	for(int idxPart = 0 ; idxPart < loaderRef.getNumberOfParticles() ; ++idxPart){
-        FPoint<FReal> pos;
-	    loaderRef.fillParticle(&pos,particles[idxPart].setPhysicalValue());
-	    particles[idxPart].setPosition(pos);
-	}
+        for(FSize idxPart = 0 ; idxPart < loaderRef.getNumberOfParticles() ; ++idxPart){
+            FPoint<FReal> pos;
+            loaderRef.fillParticle(&pos,particles[idxPart].setPhysicalValue());
+            particles[idxPart].setPosition(pos);
+        }
 
-    FVector<FmaRWParticle<FReal,4,4>> finalParticles;
-	FLeafBalance balancer;
-    FMpiTreeBuilder< FReal,FmaRWParticle<FReal,4,4> >::DistributeArrayToContainer(app.global(),particles,
-									  loaderRef.getMyNumberOfParticles(),
-									  treeRef.getBoxCenter(),
-									  treeRef.getBoxWidth(),treeRef.getHeight(),
-									  &finalParticles, &balancer);
+        FVector<FmaRWParticle<FReal,4,4>> finalParticles;
+        FLeafBalance balancer;
+        FMpiTreeBuilder< FReal,FmaRWParticle<FReal,4,4> >::DistributeArrayToContainer(app.global(),particles,
+                                                                                      loaderRef.getMyNumberOfParticles(),
+                                                                                      treeRef.getBoxCenter(),
+                                                                                      treeRef.getBoxWidth(),treeRef.getHeight(),
+                                                                                      &finalParticles, &balancer);
 
-	regInsert.tic();
-	for(int idxPart = 0 ; idxPart < finalParticles.getSize() ; ++idxPart){
-	    treeRef.insert(finalParticles[idxPart].getPosition(),finalParticles[idxPart].getPhysicalValue() );
-	}
+        regInsert.tic();
+        for(FSize idxPart = 0 ; idxPart < finalParticles.getSize() ; ++idxPart){
+            treeRef.insert(finalParticles[idxPart].getPosition(),finalParticles[idxPart].getPhysicalValue() );
+        }
 
-	regInsert.tac();
-	std::cout << "Time needed for regular insert : " << regInsert.elapsed() << " secondes" << std::endl;
+        regInsert.tac();
+        std::cout << "Time needed for regular insert : " << regInsert.elapsed() << " secondes" << std::endl;
     }
     //Second solution, parts must be sorted for that
 
@@ -181,8 +181,8 @@ int main(int argc, char** argv){
 
     FMpiFmaGenericLoader<FReal> loader(filename,app.global());
     if(!loader.isOpen()){
-	std::cout << "Loader Error, " << filename << " is missing\n";
-	return 1;
+        std::cout << "Loader Error, " << filename << " is missing\n";
+        return 1;
     }
 
     //Get the needed informations
@@ -195,10 +195,10 @@ int main(int argc, char** argv){
 
     fillTimer.tic();
 
-    for(int idxPart = 0 ; idxPart < nbOfParticles ; ++idxPart){
-    FPoint<FReal> pos;
-	loader.fillParticle(&pos,arrayOfParts[idxPart].setPhysicalValue());
-	arrayOfParts[idxPart].setPosition(pos);
+    for(FSize idxPart = 0 ; idxPart < nbOfParticles ; ++idxPart){
+        FPoint<FReal> pos;
+        loader.fillParticle(&pos,arrayOfParts[idxPart].setPhysicalValue());
+        arrayOfParts[idxPart].setPosition(pos);
     }
 
 
@@ -211,10 +211,10 @@ int main(int argc, char** argv){
     FTic paraSort;
     paraSort.tic();
     FMpiTreeBuilder< FReal,FmaRWParticle<FReal,4,4> >::DistributeArrayToContainer(app.global(),arrayOfParts,
-								      loader.getMyNumberOfParticles(),
-								      tree.getBoxCenter(),
-								      tree.getBoxWidth(),tree.getHeight(),
-								      &finalParticles, &balancer);
+                                                                                  loader.getMyNumberOfParticles(),
+                                                                                  tree.getBoxCenter(),
+                                                                                  tree.getBoxWidth(),tree.getHeight(),
+                                                                                  &finalParticles, &balancer);
     paraSort.tac();
     std::cout << "Time needed for FMpiTreeBuilder part : "<< paraSort.elapsed() << " secondes !" << std::endl;
 
@@ -222,9 +222,9 @@ int main(int argc, char** argv){
     parts.reserve(finalParticles.getSize());
 
     //Convert ouput of DistributeArrayToContainer to a ContainerClass
-    for(int idxPart = 0; idxPart < finalParticles.getSize(); ++idxPart){
+    for(FSize idxPart = 0; idxPart < finalParticles.getSize(); ++idxPart){
 
-	parts.push(finalParticles[idxPart].getPosition(),finalParticles[idxPart].getPhysicalValue());
+        parts.push(finalParticles[idxPart].getPosition(),finalParticles[idxPart].getPhysicalValue());
     }
 
     FTic treeBuilder;
@@ -237,47 +237,47 @@ int main(int argc, char** argv){
 #ifdef CHECK_TREE
 
     FILE * fd = fopen("Tree","a+");
-    int acc = 0;
+    FSize acc = 0;
     int accL = 0;
     tree.forEachLeaf([&](LeafClass* leaf){
-	    ContainerClass * parts = leaf->getSrc();
-	    int nbPa = parts->getNbParticles();
-	    acc += nbPa;
-	    accL++;
-	    const FReal * xPos = parts->getPositions()[0];
-	    const FReal * yPos = parts->getPositions()[1];
-	    const FReal * zPos = parts->getPositions()[2];
-	    const FReal * phyVal = parts->getAttribute(0);
-	    fprintf(fd,"Proc : %d, containing %d \n",
-		    app.global().processId(),nbPa);
-	    for(int idP = 0 ; idP < nbPa ; ++idP){
-		fprintf(fd,"[%d] : %e,%e,%e, phy : %e\n",
-			app.global().processId(), xPos[idP],yPos[idP],zPos[idP],phyVal[idP]);
-	    }
-	});
-    printf("Number of parts in MY Tree : %d, Number of leaves : %d \n",acc,accL);
+        ContainerClass * partSrc = leaf->getSrc();
+        FSize nbPa = partSrc->getNbParticles();
+        acc += nbPa;
+        accL++;
+        const FReal * xPos = partSrc->getPositions()[0];
+        const FReal * yPos = partSrc->getPositions()[1];
+        const FReal * zPos = partSrc->getPositions()[2];
+        const FReal * phyVal = partSrc->getAttribute(0);
+        fprintf(fd,"Proc : %d, containing %lld \n",
+                app.global().processId(),nbPa);
+        for(int idP = 0 ; idP < nbPa ; ++idP){
+            fprintf(fd,"[%d] : %e,%e,%e, phy : %e\n",
+                    app.global().processId(), xPos[idP],yPos[idP],zPos[idP],phyVal[idP]);
+        }
+    });
+    printf("Number of parts in MY Tree : %lld, Number of leaves : %d \n",acc,accL);
     fclose(fd);
 
-    int accRef = 0;
+    FSize accRef = 0;
     int accRefL = 0;
     FILE * fd2 = fopen("TreeRef","a+");
     treeRef.forEachLeaf([&](LeafClass* leaf){
-	    ContainerClass * parts = leaf->getSrc();
-	    int nbPa = parts->getNbParticles();
-	    accRef+=nbPa;
-	    accRefL++;
-	    const FReal * xPos = parts->getPositions()[0];
-	    const FReal * yPos = parts->getPositions()[1];
-	    const FReal * zPos = parts->getPositions()[2];
-	    const FReal * phyVal = parts->getAttribute(0);
-	    fprintf(fd2,"Proc : %d, containing %d \n",
-		   app.global().processId(),nbPa);
-	    for(int idP = 0 ; idP < nbPa ; ++idP){
-		fprintf(fd2,"[%d] : %e,%e,%e, phy : %e\n",app.global().processId(), xPos[idP],yPos[idP],zPos[idP],phyVal[idP]);
-	    }
-	});
+        ContainerClass * partSrc = leaf->getSrc();
+        FSize nbPa = partSrc->getNbParticles();
+        accRef+=nbPa;
+        accRefL++;
+        const FReal * xPos = partSrc->getPositions()[0];
+        const FReal * yPos = partSrc->getPositions()[1];
+        const FReal * zPos = partSrc->getPositions()[2];
+        const FReal * phyVal = partSrc->getAttribute(0);
+        fprintf(fd2,"Proc : %d, containing %lld \n",
+                app.global().processId(),nbPa);
+        for(int idP = 0 ; idP < nbPa ; ++idP){
+            fprintf(fd2,"[%d] : %e,%e,%e, phy : %e\n",app.global().processId(), xPos[idP],yPos[idP],zPos[idP],phyVal[idP]);
+        }
+    });
     fclose(fd2);
-    printf("Number of parts in REG Tree : %d, number of leaves %d\n",accRef,accRefL);
+    printf("Number of parts in REG Tree : %lld, number of leaves %d\n",accRef,accRefL);
 #endif //CHECK_TREE
     delete [] arrayOfParts;
 

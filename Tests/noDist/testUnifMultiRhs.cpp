@@ -116,10 +116,10 @@ int main(int argc, char* argv[])
     FFmaGenericLoader<FReal> loader(filename);
     if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!");
 
-    const int nbParticles = loader.getNumberOfParticles();
+    const FSize nbParticles = loader.getNumberOfParticles();
 
     TestParticle* const particles = new TestParticle[nbParticles];
-    for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
         FPoint<FReal> position;
         FReal physicalValue = 0.0;
         loader.fillParticle(&position,&physicalValue);
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
         time.tic();
         for(int idxVals = 0 ; idxVals < 1 ; ++idxVals){
             for(int idxTarget = 0 ; idxTarget < nbParticles ; ++idxTarget){
-                for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
+                for(FSize idxOther =  idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
                     FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                           particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue[idxVals],
                                           &particles[idxTarget].forces[idxVals][0], &particles[idxTarget].forces[idxVals][1],
@@ -187,7 +187,7 @@ int main(int argc, char* argv[])
             std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
             time.tic();
 
-            for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
                 // Convert FReal[NVALS] to std::array<FReal,NVALS>
                 std::array<FReal, (1+4*1)*NVALS> physicalState;
                 for(int idxVals = 0 ; idxVals < NVALS ; ++idxVals){
@@ -232,11 +232,11 @@ int main(int argc, char* argv[])
                         const FReal*const forcesX = leaf->getTargets()->getForcesX(idxVals);
                         const FReal*const forcesY = leaf->getTargets()->getForcesY(idxVals);
                         const FReal*const forcesZ = leaf->getTargets()->getForcesZ(idxVals);
-                        const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-                        const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+                        const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                        const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-                        for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                            const int indexPartOrig = indexes[idxPart];
+                        for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                            const FSize indexPartOrig = indexes[idxPart];
 
                             potentialDiff.add(particles[indexPartOrig].potential[0],potentials[idxPart]);
                             fx.add(particles[indexPartOrig].forces[0][0],forcesX[idxPart]);

@@ -669,7 +669,7 @@ inline void FChebInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyP2M(co
     const FReal*const positionsY = inParticles->getPositions()[1];
     const FReal*const positionsZ = inParticles->getPositions()[2];
 
-    for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
         // map global position to [-1,1]
         map(FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition); // 15 flops
 
@@ -913,7 +913,7 @@ inline void FChebInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyL2P(co
     const FReal*const positionsY = inParticles->getPositions()[1];
     const FReal*const positionsZ = inParticles->getPositions()[2];
 
-    for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
+    for(FSize idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
 
       // map global position to [-1,1]
       map(FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition); // 15 flops
@@ -1108,7 +1108,7 @@ inline void FChebInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyL2PGra
     const FReal*const positionsY = inParticles->getPositions()[1];
     const FReal*const positionsZ = inParticles->getPositions()[2];
 
-    for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
+    for(FSize idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
 
         // map global position to [-1,1]
         map(FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition);
@@ -1321,7 +1321,7 @@ inline void FChebInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyL2PTot
     const FReal*const positionsY = inParticles->getPositions()[1];
     const FReal*const positionsZ = inParticles->getPositions()[2];
 
-    for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
+    for(FSize idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
 
         // map global position to [-1,1]
         map(FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition); // 15 flops

@@ -87,8 +87,8 @@ public:
         containsSources = false;
     }
 
-    int getSavedSize() const {
-        return sizeof(containsTargets) + sizeof(containsSources);
+    FSize getSavedSize() const {
+        return FSize(sizeof(containsTargets) + sizeof(containsSources));
     }
 };
 

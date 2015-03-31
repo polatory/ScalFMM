@@ -105,7 +105,7 @@ int main(int argc, char ** argv){
 
     {
         FPoint<FReal> particlePosition;
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             FReal pv;
             loader.fillParticle(&particlePosition, &pv);
             //loader.fillParticle(&particlePosition);
@@ -139,7 +139,7 @@ int main(int argc, char ** argv){
 
     tree.forEachCellLeaf([&](CellWrapperClass*, LeafClass* leaf){
         long long int*const particlesAttributes = leaf->getTargets()->getDataDown();
-        for(int idxPart = 0 ; idxPart < leaf->getTargets()->getNbParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < leaf->getTargets()->getNbParticles() ; ++idxPart){
             if(particlesAttributes[idxPart] != (loader.getNumberOfParticles()-1)){
                 std::cout << "Incorrect " << particlesAttributes[idxPart] << " instead of " << (loader.getNumberOfParticles()-1) << "\n";
             }

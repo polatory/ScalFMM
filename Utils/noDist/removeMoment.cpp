@@ -169,7 +169,7 @@ int main(int argc, char ** argv){
         particlesIn  = new FmaRWParticle<FReal, 8,8>[numberofParticles];
         memset(particlesIn, 0, sizeof( FmaRWParticle<FReal, 8,8>) * numberofParticles) ;
 
-		for(int idxPart = 0 ; idxPart < numberofParticles; ++idxPart){
+		for(FSize idxPart = 0 ; idxPart < numberofParticles; ++idxPart){
 			//
             FPoint<FReal> position;
 			FReal  forces[3];
@@ -209,7 +209,7 @@ int main(int argc, char ** argv){
 	//
     double totalCharge = 0.0, readEnergy = 0.0;
 	//
-	for(int idxPart = 0 ; idxPart < numberofParticles; ++idxPart){
+	for(FSize idxPart = 0 ; idxPart < numberofParticles; ++idxPart){
 		//
 		totalCharge += particlesIn[idxPart].getPhysicalValue() ;
 		readEnergy  += particlesIn[idxPart].getPhysicalValue() *particlesIn[idxPart].getPotential() ;

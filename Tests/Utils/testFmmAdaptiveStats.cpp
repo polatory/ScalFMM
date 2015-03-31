@@ -237,7 +237,7 @@ public:
 
     bool preferP2M(const int /*atLevel*/, const ContainerClass*const particles[], const int nbContainers) override {
         nbAdaptiveFmmOperations += 1;
-        int counterParticles = 0;
+        FSize counterParticles = 0;
         for(int idxContainer = 0 ; idxContainer < nbContainers ; ++idxContainer){
             counterParticles += particles[idxContainer]->getNbParticles();
         }
@@ -292,7 +292,7 @@ int main(int argc, char ** argv){
 
     {
         FPoint<FReal> particlePosition;
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&particlePosition);
             tree.insert(particlePosition);
         }

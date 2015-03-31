@@ -21,6 +21,8 @@ public:
         else{
             kernelfile.replaceAll("___FReal___", "float");
         }
+        FAssertLF((typeid(FSize) == typeid(long long int)));
+        kernelfile.replaceAll("___FSize___", "long long int");
         kernelfile.replaceAll("___FParticleValueClass___", "long long");
         kernelfile.replaceAll("___NbSymbAttributes___", 0);
         kernelfile.replaceAll("___NbAttributesPerParticle___", 1);
@@ -39,7 +41,7 @@ public:
         kernelfile.clear();
     }
 
-    size_t getNbDims() const {
+    unsigned int getNbDims() const {
         return 1;
     }
 

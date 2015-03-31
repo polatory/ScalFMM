@@ -56,7 +56,7 @@ template <class FReal, class ParticleClass>
 class Converter {
 public:
     template <class ContainerClass>
-    static ParticleClass GetParticleAndRemove(ContainerClass* container, const int idxExtract){
+    static ParticleClass GetParticleAndRemove(ContainerClass* container, const FSize idxExtract){
         TestParticle<FReal> part;
         part.position.setPosition(
                     container->getPositions()[0][idxExtract],
@@ -122,7 +122,7 @@ int main(int argc, char ** argv){
 
     {
         TestParticle<FReal>* particles = new TestParticle<FReal>[NbPart];
-        for(int idxPart = 0 ; idxPart < NbPart ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < NbPart ; ++idxPart){
             particles[idxPart].position.setPosition(
                         (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/FReal(2.0))),
                         (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/FReal(2.0))),
@@ -160,7 +160,7 @@ int main(int argc, char ** argv){
         octreeIterator.gotoBottomLeft();
         do{
             ContainerClass* particles = octreeIterator.getCurrentListTargets();
-            for(int idxPart = 0; idxPart < particles->getNbParticles() ; ++idxPart){
+            for(FSize idxPart = 0; idxPart < particles->getNbParticles() ; ++idxPart){
                 particles->getWPositions()[0][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
                 particles->getWPositions()[1][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
                 particles->getWPositions()[2][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
@@ -202,7 +202,7 @@ int main(int argc, char ** argv){
             const MortonIndex leafIndex = octreeIterator.getCurrentGlobalIndex();
 
             ContainerClass* particles = octreeIterator.getCurrentListTargets();
-            for(int idxPart = 0; idxPart < particles->getNbParticles() ; ++idxPart){
+            for(FSize idxPart = 0; idxPart < particles->getNbParticles() ; ++idxPart){
                 const FPoint<FReal> particlePosition( particles->getWPositions()[0][idxPart],
                         particles->getWPositions()[1][idxPart],
                         particles->getWPositions()[2][idxPart]);

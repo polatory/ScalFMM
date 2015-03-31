@@ -28,47 +28,47 @@
   */
 class FBufferReader : public FAbstractBufferReader {
     FVector<char> buffer;   //< The memory buffer
-    int index;              //< The current index reading position
+    FSize index;              //< The current index reading position
 
 public:
     /** Construct with a memory size init to 0 */
-    explicit FBufferReader(const int inCapacity = 0) : buffer(inCapacity), index(0) {
+    explicit FBufferReader(const FSize inCapacity = 0) : buffer(inCapacity), index(0) {
         if(inCapacity){
             reserve(inCapacity);
         }
     }
 
     /** Destructor */
-    virtual ~FBufferReader(){
+    virtual ~FBufferReader() override {
     }
 
     /** Get the memory area */
-    char* data(){
+    char* data() override {
         return buffer.data();
     }
 
     /** Get the memory area */
-    const char* data() const {
+    const char* data() const  override {
         return buffer.data();
     }
 
     /** Size of the meomry initialzed */
-    int getSize() const{
+    FSize getSize() const override {
         return buffer.getSize();
     }
 
     /** Move the read index to a position */
-    void seek(const int inIndex){
+    void seek(const FSize inIndex) override {
         index = inIndex;
     }
 
     /** Get the read position */
-    int tell() const {
+    FSize tell() const  override {
         return index;
     }
 
     /** Reset and allocate nbBytes memory filled with 0 */
-    void reserve(const int nbBytes){
+    void reserve(const FSize nbBytes){
         reset();
         buffer.set( 0, nbBytes);
     }
@@ -83,7 +83,7 @@ public:
     template <class ClassType>
     ClassType getValue(){
         ClassType value = (*reinterpret_cast<ClassType*>(&buffer[index]));
-        index += int(sizeof(ClassType));
+        index += FSize(sizeof(ClassType));
         return value;
     }
 
@@ -91,14 +91,14 @@ public:
     template <class ClassType>
     void fillValue(ClassType* const inValue){
         (*inValue) = (*reinterpret_cast<ClassType*>(&buffer[index]));
-        index += int(sizeof(ClassType));
+        index += FSize(sizeof(ClassType));
     }
 
     /** Fill one/many value(s) with memcpy */
     template <class ClassType>
-    void fillArray(ClassType* const inArray, const int inSize){
+    void fillArray(ClassType* const inArray, const FSize inSize){
         memcpy( inArray, &buffer[index], sizeof(ClassType) * inSize);
-        index += int(sizeof(ClassType) * inSize);
+        index += FSize(sizeof(ClassType) * inSize);
     }
 
     /** Same as fillValue */

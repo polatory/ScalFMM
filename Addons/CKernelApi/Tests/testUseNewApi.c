@@ -37,7 +37,7 @@ int main(int argc, char ** av){
     scalfmm_algorithm_config(handle,periodic);
     //Creation of an array of particles
     int nb_of_parts = 2;
-    int idxPart;
+    FSize idxPart;
     double * positionsXYZ = malloc(sizeof(double)*3*nb_of_parts);
     memset(positionsXYZ,0,sizeof(double)*3*nb_of_parts);
 

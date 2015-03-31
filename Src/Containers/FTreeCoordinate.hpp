@@ -259,8 +259,8 @@ public:
     }
 
     /** To know the size when we save it */
-    int getSavedSize() const {
-        return int(sizeof(data[0]) + sizeof(data[1]) + sizeof(data[2]));
+    FSize getSavedSize() const {
+        return FSize(sizeof(data[0]) + sizeof(data[1]) + sizeof(data[2]));
     }
 
 

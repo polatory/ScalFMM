@@ -429,7 +429,7 @@ inline void FUnifInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyP2M(co
   const FReal*const positionsY = inParticles->getPositions()[1];
   const FReal*const positionsZ = inParticles->getPositions()[2];
 
-  for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
+  for(FSize idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++idxPart){
     // map global position to [-1,1]
     map(FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition); // 15 flops
     // evaluate Lagrange polynomial at local position
@@ -490,9 +490,9 @@ inline void FUnifInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyL2P(co
   const FReal*const positionsY = inParticles->getPositions()[1];
   const FReal*const positionsZ = inParticles->getPositions()[2];
 
-  const  int nParticles = inParticles->getNbParticles();
+  const  FSize nParticles = inParticles->getNbParticles();
 
-  for(int idxPart = 0 ; idxPart < nParticles ; ++ idxPart){
+  for(FSize idxPart = 0 ; idxPart < nParticles ; ++ idxPart){
 
     // map global position to [-1,1]
     map(FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition); // 15 flops
@@ -578,9 +578,9 @@ inline void FUnifInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyL2PGra
   const FReal*const positionsY = inParticles->getPositions()[1];
   const FReal*const positionsZ = inParticles->getPositions()[2];
 
-//  const unsigned int nParticles = inParticles->getNbParticles();
+//  const FSize nParticles = inParticles->getNbParticles();
 
-  for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
+  for(FSize idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
 
     // map global position to [-1,1]
     map(FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]), localPosition);

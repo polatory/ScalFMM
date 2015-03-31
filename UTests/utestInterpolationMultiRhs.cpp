@@ -103,7 +103,7 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
         // Create octree
         OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
         // Insert particle in the tree
-        for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
             // Convert FReal[NVALS] to std::array<FReal,NVALS>
             std::array<FReal, (1+4*1)*NVals> physicalState;
             for(int idxVals = 0 ; idxVals < NVals ; ++idxVals){
@@ -125,7 +125,7 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
         algo.execute();
         //
         FReal energy= 0.0 , energyD = 0.0 ;
-        for(int idx = 0 ; idx <  loader.getNumberOfParticles()  ; ++idx){
+        for(FSize idx = 0 ; idx < loader.getNumberOfParticles()  ; ++idx){
             energyD +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
         }
         //
@@ -142,12 +142,12 @@ class TestInterpolationKernel : public FUTester<TestInterpolationKernel> {
                     const FReal*const forcesX = leaf->getTargets()->getForcesX(idxVals);
                     const FReal*const forcesY = leaf->getTargets()->getForcesY(idxVals);
                     const FReal*const forcesZ = leaf->getTargets()->getForcesZ(idxVals);
-                    const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-                    const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+                    const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                    const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-                    for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                    for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 
-                        const int indexPartOrig = indexes[idxPart];
+                        const FSize indexPartOrig = indexes[idxPart];
                         //					std::cout << " index "<< indexPartOrig << "   "  << particles[indexPartOrig].getPotential() << "   " << potentials[idxPart] << std::endl;
                         potentialDiff[idxVals].add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
                         //

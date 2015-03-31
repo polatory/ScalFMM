@@ -12,7 +12,6 @@
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Containers/FVector.hpp"
 
-#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 #include "../../Src/Utils/FMath.hpp"
 #include "../../Src/Utils/FMemUtils.hpp"
@@ -91,7 +90,7 @@ int main(int argc, char* argv[]){
 
     std::unique_ptr<TestParticle[]> particles(new TestParticle[loader.getNumberOfParticles()]);
     memset(particles.get(), 0, sizeof(TestParticle) * loader.getNumberOfParticles());
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         loader.fillParticle(&particles[idxPart].position);
     }
     // Sort in parallel
@@ -107,7 +106,7 @@ int main(int argc, char* argv[]){
                                                                 &balancer);
 
     FTestParticleContainer<FReal> allParticles;
-    for(int idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
         allParticles.push(myParticles[idxPart].position);
     }
 
@@ -144,9 +143,9 @@ int main(int argc, char* argv[]){
     groupalgo.execute();
 
     groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass cell, GroupContainerClass* leaf){
-        const int nbPartsInLeaf = leaf->getNbParticles();
+        const FSize nbPartsInLeaf = leaf->getNbParticles();
         const long long int* dataDown = leaf->getDataDown();
-        for(int idxPart = 0 ; idxPart < nbPartsInLeaf ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < nbPartsInLeaf ; ++idxPart){
             if(dataDown[idxPart] != totalNbParticles-1){
                 std::cout << "[Full] Error a particle has " << dataDown[idxPart] << " (it should be " << (totalNbParticles-1) << ") at index " << cell.getMortonIndex() << "\n";
             }
@@ -166,7 +165,7 @@ int main(int argc, char* argv[]){
         OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());
         for(int idxProc = 0 ; idxProc < mpiComm.global().processCount() ; ++idxProc){
             FRandomLoader<FReal> loaderAll(NbParticles, 1.0, FPoint<FReal>(0,0,0), idxProc);
-            for(int idxPart = 0 ; idxPart < loaderAll.getNumberOfParticles() ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < loaderAll.getNumberOfParticles() ; ++idxPart){
                 FPoint<FReal> pos;
                 loaderAll.fillParticle(&pos);
                 tree.insert(pos);

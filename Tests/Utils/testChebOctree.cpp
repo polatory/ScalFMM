@@ -99,7 +99,7 @@ int main(int argc, char ** argv){
             const FReal*const positionsY = Particles->getPositions()[1];
             const FReal*const positionsZ = Particles->getPositions()[2];
 
-            for(int idxPart = 0 ; idxPart < Particles->getNbParticles() ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < Particles->getNbParticles() ; ++idxPart){
                 const FPoint<FReal> distance(LeafCellCenter-FPoint<FReal>(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]));
 				if (std::abs(distance.getX())>BoxWidthLeaf/FReal(2.) ||
 						std::abs(distance.getY())>BoxWidthLeaf/FReal(2.) ||

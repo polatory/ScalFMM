@@ -87,7 +87,7 @@ public:
     void L2P(const CellClass* const  local, ContainerClass*const particles){
         // The particles is impacted by the parent cell      
         long long int*const particlesAttributes = particles->getDataDown();
-        for(int idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
             particlesAttributes[idxPart] += local->getDataDown();
         }
     }
@@ -109,14 +109,14 @@ public:
         }
 
         long long int*const particlesAttributes = targets->getDataDown();
-        for(int idxPart = 0 ; idxPart < targets->getNbParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < targets->getNbParticles() ; ++idxPart){
             particlesAttributes[idxPart] += inc;
         }
     }
 
     /** After Downward */
     void P2PRemote(const FTreeCoordinate& ,
-                 ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
+                   ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
                  ContainerClass* const directNeighborsParticles[27], const int ){
         // Each particles targeted is impacted by the particles sources
         long long int inc = 0;
@@ -127,7 +127,7 @@ public:
         }
 
         long long int*const particlesAttributes = targets->getDataDown();
-        for(int idxPart = 0 ; idxPart < targets->getNbParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < targets->getNbParticles() ; ++idxPart){
             particlesAttributes[idxPart] += inc;
         }
     }
@@ -183,7 +183,7 @@ void ValidateFMMAlgo(OctreeClass* const tree){
         do{
             const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
             const long long int* dataDown = octreeIterator.getCurrentListTargets()->getDataDown();
-            for(int idxPart = 0 ; idxPart < octreeIterator.getCurrentListTargets()->getNbParticles() ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < octreeIterator.getCurrentListTargets()->getNbParticles() ; ++idxPart){
                 if( (!isUsingTsm && dataDown[idxPart] != NbPart - 1) ||
                     (isUsingTsm && dataDown[idxPart] != NbPart) ){
                     std::cout << "Problem L2P + P2P : " << dataDown[idxPart] << ", " <<

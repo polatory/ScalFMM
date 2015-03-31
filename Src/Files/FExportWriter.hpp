@@ -23,7 +23,7 @@
 #include <fstream>
 #include <string>
 
-//! \fn void exportCVS(std::ofstream& file, const FReal * particles , const int N, const int nbDataPerParticle=4)
+//! \fn void exportCVS(std::ofstream& file, const FReal * particles , const FSize N, const FSize nbDataPerParticle=4)
 
 //! \brief  Export particles in CVS Format
 //!
@@ -37,24 +37,24 @@
 //!  @param  nbDataPerParticle number of values per particles (default value 4)
 //!
 template <class FReal>
-void exportCVS(std::ofstream& file, const FReal * particles , const int N, const int nbDataPerParticle=4){
-	int j = 0;
+void exportCVS(std::ofstream& file, const FReal * particles , const FSize N, const FSize nbDataPerParticle=4){
+    FSize j = 0;
 	if (nbDataPerParticle==4){
 		file << " x ,  y , z, q  " <<std::endl;
 	}
 	else {
 		file << " x ,  y , z, q P FX FY FZ" <<std::endl;
 	}
-	for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
+    for(FSize i = 0 ; i< N; ++i, j+=nbDataPerParticle){
 		file <<    particles[j]   ;
-		for (int k = 1 ; k< nbDataPerParticle ; ++k) {
+        for (FSize k = 1 ; k< nbDataPerParticle ; ++k) {
 			file   << "  , "  <<    particles[j+k]     ;
 		}
 		file   << std::endl;
 	}
 }
 //
-//! \fn void exportCOSMOS(std::ofstream& file,  const FReal * particles, const int N )
+//! \fn void exportCOSMOS(std::ofstream& file,  const FReal * particles, const FSize N )
 
 //! \brief  Export particles in COSMOS Format
 //!
@@ -66,16 +66,16 @@ void exportCVS(std::ofstream& file, const FReal * particles , const int N, const
 //!  @param  N number of particles
 //!
 template <class FReal>
-void exportCOSMOS(std::ofstream& file, const FReal * particles , const int N){
-	int j = 0;
+void exportCOSMOS(std::ofstream& file, const FReal * particles , const FSize N){
+    FSize j = 0;
 	file << " x ,  y , z, q " <<std::endl;
-	for(int i = 0 ; i< N; ++i, j+=4){
+    for(FSize i = 0 ; i< N; ++i, j+=4){
 		file <<    particles[j]    << "  "    <<   particles[j+1]    << "  "   <<   particles[j+2]    << "  0.0 0.0 0.0  "   <<   particles[j+3]   <<"  " << i << std::endl;
 	}
 }
 //
 //
-//! \fn void exportVTK(std::ofstream& file,  const FReal * particles, const int N )
+//! \fn void exportVTK(std::ofstream& file,  const FReal * particles, const FSize N )
 
 //! \brief  Export particles in CVS Format
 //!
@@ -87,8 +87,8 @@ void exportCOSMOS(std::ofstream& file, const FReal * particles , const int N){
 //!  @param  particles array of particles of type FReal (float or double) Its size is 4*N (X,Y,Z,M)
 //!  @param  N number of particles
 template <class FReal>
-void exportVTK(std::ofstream& VTKfile, const FReal * particles, const int N, const int nbDataPerParticle=4 ){
-	int j = 0;
+void exportVTK(std::ofstream& VTKfile, const FReal * particles, const FSize N, const FSize nbDataPerParticle=4 ){
+    FSize j = 0;
 	//---------------------------
 	// print generic information
 	//---------------------------
@@ -103,27 +103,27 @@ void exportVTK(std::ofstream& VTKfile, const FReal * particles, const int N, con
 	//---------------------------------
 	VTKfile << "POINTS " << N << "  float" << "\n";
 	//
-	for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
+    for(FSize i = 0 ; i< N; ++i, j+=nbDataPerParticle){
 		VTKfile <<    particles[j]    << "  "    <<   particles[j+1]    << "   "   <<   particles[j+2]      <<std::endl;
 	}
 	// ------------------------------------------
 	VTKfile << "\n";
 	VTKfile << "VERTICES  " <<  N << " " << 2*N << "\n";
-	for(int i = 0 ; i< N; ++i){
+    for(FSize i = 0 ; i< N; ++i){
 		VTKfile <<    "  1 "    << " "    <<i<<std::endl;
 	}
 	VTKfile << "POINT_DATA  " <<  N << "\n";
 	VTKfile << "SCALARS PhysicalValue  float 1" << "\n"
 			<< "LOOKUP_TABLE default" << "\n" ;
 	j = 0 ;
-	for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
+    for(FSize i = 0 ; i< N; ++i, j+=nbDataPerParticle){
 		VTKfile <<    particles[j+3]    << " "    <<std::endl;
 	}
 	VTKfile << "\n";
 };
 //
 //
-//! \fn void exportVTKxml(std::ofstream& file,  const FReal * particles, const int N )
+//! \fn void exportVTKxml(std::ofstream& file,  const FReal * particles, const FSize N )
 
 //! \brief  Export particles in xml polydata VTK  Format
 //!
@@ -135,8 +135,8 @@ void exportVTK(std::ofstream& VTKfile, const FReal * particles, const int N, con
 //!  @param  particles array of particles of type FReal (float or double) Its size is 4*N (X,Y,Z,M)
 //!  @param  N number of particles
 template <class FReal>
-void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N ){
-	int j = 0;
+void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const FSize N ){
+    FSize j = 0;
 
 	VTKfile << "<?xml version=\"1.0\"?>" <<std::endl
 			<< "<VTKFile type=\"PolyData\" version=\"0.1\" byte_order=\"LittleEndian\"> "<<std::endl
@@ -145,7 +145,7 @@ void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N )
 			<< "<Points>"<<std::endl
 			<< "<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\"> "<<std::endl ;
 	j = 0 ;
-	for(int i = 0 ; i< N; ++i, j+=4){
+    for(FSize i = 0 ; i< N; ++i, j+=4){
 		VTKfile <<    particles[j]    << "  "    <<   particles[j+1]    << "   "   <<   particles[j+2]      << "   "   ;
 	}
 	VTKfile <<std::endl<< "</DataArray> "<<std::endl
@@ -153,7 +153,7 @@ void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N )
 			<< "<PointData Scalars=\"PhysicalValue\" > "<<std::endl
 			<< "<DataArray type=\"Float64\" Name=\"PhysicalValue\"  format=\"ascii\">"<<std::endl ;
 	j = 0 ;
-	for(int i = 0 ; i< N; ++i, j+=4){
+    for(FSize i = 0 ; i< N; ++i, j+=4){
 		VTKfile <<    particles[j+3]    << " "   ;
 	}
 	VTKfile <<std::endl << "</DataArray>"<<std::endl
@@ -161,12 +161,12 @@ void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N )
 			<< "	<CellData>"<<" </CellData>"<<std::endl
 			<< "	<Verts>"<<std::endl
 			<< "	<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">"<<std::endl ;
-	for(int i = 0 ; i< N; ++i){
+    for(FSize i = 0 ; i< N; ++i){
 		VTKfile <<   i   << " "   ;
 	}
 	VTKfile<<std::endl << "</DataArray>" <<std::endl
 			<< "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">"<<std::endl ;
-	for(int i = 1 ; i< N+1; ++i){
+    for(FSize i = 1 ; i< N+1; ++i){
 		VTKfile <<   i   << " "   ;
 	}
 	VTKfile<<std::endl  << "</DataArray>"<<std::endl
@@ -181,7 +181,7 @@ void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N )
 //
 //
 //
-//! \fn void exportVTKxml(std::ofstream& file,  const FReal * particles, const int N, const int nbDataPerParticle )
+//! \fn void exportVTKxml(std::ofstream& file,  const FReal * particles, const FSize N, const FSize nbDataPerParticle )
 
 //! \brief  Export particles in CVS Format
 //!
@@ -194,8 +194,8 @@ void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N )
 //!  @param  N number of particles
 //!  @param  nbDataPerParticle number of values per particles (default value 4)
 template <class FReal>
-void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N, const int nbDataPerParticle ){
-	int j = 0;
+void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const FSize N, const FSize nbDataPerParticle ){
+    FSize j = 0;
 
 	VTKfile << "<?xml version=\"1.0\"?>" <<std::endl
 			<< "<VTKFile type=\"PolyData\" version=\"0.1\" byte_order=\"LittleEndian\"> "<<std::endl
@@ -204,7 +204,7 @@ void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N, 
 			<< "<Points>"<<std::endl
 			<< "<DataArray type=\"Float64\" NumberOfComponents=\"3\" format=\"ascii\"> "<<std::endl ;
 	j = 0 ;
-	for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
+    for(FSize i = 0 ; i< N; ++i, j+=nbDataPerParticle){
 		VTKfile <<    particles[j]    << "  "    <<   particles[j+1]    << "   "   <<   particles[j+2]      << "   "   ;
 	}
 	VTKfile <<std::endl<< "</DataArray> "<<std::endl
@@ -213,19 +213,19 @@ void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N, 
 		VTKfile<< "<PointData Scalars=\"PhysicalValue\" > "<<std::endl
 				<< "<DataArray type=\"Float64\" Name=\"PhysicalValue\"  format=\"ascii\">"<<std::endl ;
 		j = 0 ;
-		for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
+        for(FSize i = 0 ; i< N; ++i, j+=nbDataPerParticle){
 			VTKfile <<    particles[j+3]    << " "   ;
 		}
 		VTKfile <<std::endl << "</DataArray>"<<std::endl ;
 		VTKfile  << "<DataArray type=\"Float64\" Name=\"Potential\"  format=\"ascii\">"<<std::endl ;
 		j = 0 ;
-		for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
+        for(FSize i = 0 ; i< N; ++i, j+=nbDataPerParticle){
 			VTKfile <<    particles[j+4]    << " "   ;
 		}
 		VTKfile <<std::endl << "</DataArray>"<<std::endl ;
 		VTKfile<< "<DataArray type=\"Float64\"  Name=\"Force\" NumberOfComponents=\"3\" format=\"ascii\"> "<<std::endl ;
 		j = 0 ;
-		for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
+        for(FSize i = 0 ; i< N; ++i, j+=nbDataPerParticle){
 			VTKfile <<    particles[j+5]    << "  "    <<   particles[j+6]    << "   "   <<   particles[j+7]      << "   "   ;
 		}
 		VTKfile <<std::endl<< "</DataArray> "<<std::endl;
@@ -234,7 +234,7 @@ void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N, 
 		VTKfile		<< "<PointData Scalars=\"PhysicalValue\" > "<<std::endl
 				<< "<DataArray type=\"Float64\" Name=\"PhysicalValue\"  format=\"ascii\">"<<std::endl ;
 		j = 0 ;
-		for(int i = 0 ; i< N; ++i, j+=nbDataPerParticle){
+        for(FSize i = 0 ; i< N; ++i, j+=nbDataPerParticle){
 			VTKfile <<    particles[j+3]    << " "   ;
 		}
 		VTKfile <<std::endl << "</DataArray>"<<std::endl ;
@@ -244,12 +244,12 @@ void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N, 
 			<< "	<CellData>"<<" </CellData>"<<std::endl
 			<< "	<Verts>"<<std::endl
 			<< "	<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">"<<std::endl ;
-	for(int i = 0 ; i< N; ++i){
+    for(FSize i = 0 ; i< N; ++i){
 		VTKfile <<   i   << " "   ;
 	}
 	VTKfile<<std::endl << "</DataArray>" <<std::endl
 			<< "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">"<<std::endl ;
-	for(int i = 1 ; i< N+1; ++i){
+    for(FSize i = 1 ; i< N+1; ++i){
 		VTKfile <<   i   << " "   ;
 	}
 	VTKfile<<std::endl  << "</DataArray>"<<std::endl
@@ -266,7 +266,7 @@ void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N, 
 //                           The Driver
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-//! \fn void driverExportData(std::ofstream& file, const FReal * particles , const int N, const int nbDataPerParticle=4)
+//! \fn void driverExportData(std::ofstream& file, const FReal * particles , const FSize N, const FSize nbDataPerParticle=4)
 //! \brief  The driver to select the right format to write the data
 //!
 //!  The driver select the right format (CVS, COSMOS, VTK, VTP,, ...) according to the extention of the filename
@@ -281,7 +281,7 @@ void exportVTKxml(std::ofstream& VTKfile, const FReal * particles, const int N, 
 //!  @param  particles array of particles of type FReal (float or double) Its size is N*nbDataPerParticle
 //!  @param  nbDataPerParticle number of values per particles (default value 4)
 template <class FReal>
-void driverExportData(std::string & filename, const FReal * particles , const int NbPoints, const int nbDataPerParticle=4){
+void driverExportData(std::string & filename, const FReal * particles , const FSize NbPoints, const FSize nbDataPerParticle=4){
 	//
 	std::ofstream file( filename.c_str(), std::ofstream::out);
 	// open particle file

@@ -266,7 +266,7 @@ public:
         FBlas::c_gemm(
                     FF_MATRIX_ROW_DIM,
                     FF_MATRIX_COLUMN_DIM,
-                    interactions[interactionIndex].getSize(),
+                    int(interactions[interactionIndex].getSize()),
                     one,
                     FComplex<FReal>::ToFReal(preM2LTransitions[inLevel][interactionIndex]),
                     FF_MATRIX_ROW_DIM,

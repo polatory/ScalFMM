@@ -77,7 +77,7 @@ public:
                 typename OctreeClass::Iterator blockIteratorInOctree = octreeIterator;
                 // Move the iterator per nbElementsPerBlock (or until it cannot move right)
                 int sizeOfBlock = 1;
-                int nbParticlesInGroup = octreeIterator.getCurrentLeaf()->getSrc()->getNbParticles();
+                FSize nbParticlesInGroup = octreeIterator.getCurrentLeaf()->getSrc()->getNbParticles();
                 while(sizeOfBlock < nbElementsPerBlock && octreeIterator.moveRight()){
                     sizeOfBlock += 1;
                     nbParticlesInGroup += octreeIterator.getCurrentLeaf()->getSrc()->getNbParticles();
@@ -192,18 +192,18 @@ public:
         {
             // Build morton index for particles
             struct ParticleSortingStruct{
-                int originalIndex;
+                FSize originalIndex;
                 MortonIndex mindex;
             };
             // Convert position to morton index
-            const int nbParticles = inParticlesContainer->getNbParticles();
+            const FSize nbParticles = inParticlesContainer->getNbParticles();
             ParticleSortingStruct* particlesToSort = new ParticleSortingStruct[nbParticles];
             {
                 const FReal* xpos = inParticlesContainer->getPositions()[0];
                 const FReal* ypos = inParticlesContainer->getPositions()[1];
                 const FReal* zpos = inParticlesContainer->getPositions()[2];
 
-                for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
                     const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPositionAndCorner<FReal>(this->boxCorner, this->boxWidth,
                                                                                                        treeHeight,
                                                                                                        FPoint<FReal>(xpos[idxPart], ypos[idxPart], zpos[idxPart]) );
@@ -215,7 +215,7 @@ public:
 
             // Sort if needed
             if(particlesAreSorted == false){
-                FQuickSort<ParticleSortingStruct, int>::QsOmp(particlesToSort, nbParticles, [](const ParticleSortingStruct& v1, const ParticleSortingStruct& v2){
+                FQuickSort<ParticleSortingStruct, FSize>::QsOmp(particlesToSort, nbParticles, [](const ParticleSortingStruct& v1, const ParticleSortingStruct& v2){
                     return v1.mindex <= v2.mindex;
                 });
             }
@@ -224,12 +224,12 @@ public:
 
             // Convert to block
             const int idxLevel = (treeHeight - 1);
-            int* nbParticlesPerLeaf = new int[nbElementsPerBlock];
-            int firstParticle = 0;
+            FSize* nbParticlesPerLeaf = new FSize[nbElementsPerBlock];
+            FSize firstParticle = 0;
             // We need to proceed each group in sub level
             while(firstParticle != nbParticles){
                 int sizeOfBlock = 0;
-                int lastParticle = firstParticle;
+                FSize lastParticle = firstParticle;
                 // Count until end of sub group is reached or we have enough cells
                 while(sizeOfBlock < nbElementsPerBlock && lastParticle < nbParticles){
                     if(sizeOfBlock == 0 || currentBlockIndexes[sizeOfBlock-1] != particlesToSort[lastParticle].mindex){
@@ -257,7 +257,7 @@ public:
 
                 // Init cells
                 size_t nbParticlesOffsetBeforeLeaf = 0;
-                int offsetParticles = firstParticle;
+                FSize offsetParticles = firstParticle;
                 for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
                     newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock);
 
@@ -273,7 +273,7 @@ public:
 
                     BasicAttachedClass attachedLeaf = newParticleBlock->template getLeaf<BasicAttachedClass>(currentBlockIndexes[cellIdInBlock]);
                     // Copy each particle from the original position
-                    for(int idxPart = 0 ; idxPart < nbParticlesPerLeaf[cellIdInBlock] ; ++idxPart){
+                    for(FSize idxPart = 0 ; idxPart < nbParticlesPerLeaf[cellIdInBlock] ; ++idxPart){
                         attachedLeaf.setParticle(idxPart, particlesToSort[idxPart + offsetParticles].originalIndex, inParticlesContainer);
                     }
                     offsetParticles += nbParticlesPerLeaf[cellIdInBlock];
@@ -394,18 +394,18 @@ public:
         {
             // Build morton index for particles
             struct ParticleSortingStruct{
-                int originalIndex;
+                FSize originalIndex;
                 MortonIndex mindex;
             };
             // Convert position to morton index
-            const int nbParticles = inParticlesContainer->getNbParticles();
+            const FSize nbParticles = inParticlesContainer->getNbParticles();
             ParticleSortingStruct* particlesToSort = new ParticleSortingStruct[nbParticles];
             {
                 const FReal* xpos = inParticlesContainer->getPositions()[0];
                 const FReal* ypos = inParticlesContainer->getPositions()[1];
                 const FReal* zpos = inParticlesContainer->getPositions()[2];
 
-                for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
                     const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPositionAndCorner<FReal>(this->boxCorner, this->boxWidth,
                                                                                                        treeHeight,
                                                                                                        FPoint<FReal>(xpos[idxPart], ypos[idxPart], zpos[idxPart]) );
@@ -417,7 +417,7 @@ public:
 
             // Sort if needed
             if(particlesAreSorted == false){
-                FQuickSort<ParticleSortingStruct, int>::QsOmp(particlesToSort, nbParticles, [](const ParticleSortingStruct& v1, const ParticleSortingStruct& v2){
+                FQuickSort<ParticleSortingStruct, FSize>::QsOmp(particlesToSort, nbParticles, [](const ParticleSortingStruct& v1, const ParticleSortingStruct& v2){
                     return v1.mindex <= v2.mindex;
                 });
             }
@@ -479,7 +479,7 @@ public:
 
                     BasicAttachedClass attachedLeaf = newParticleBlock->template getLeaf<BasicAttachedClass>(currentBlockIndexes[cellIdInBlock]);
                     // Copy each particle from the original position
-                    for(int idxPart = 0 ; idxPart < nbParticlesPerLeaf[cellIdInBlock] ; ++idxPart){
+                    for(FSize idxPart = 0 ; idxPart < nbParticlesPerLeaf[cellIdInBlock] ; ++idxPart){
                         attachedLeaf.setParticle(idxPart, particlesToSort[idxPart + offsetParticles].originalIndex, inParticlesContainer);
                     }
                     offsetParticles += nbParticlesPerLeaf[cellIdInBlock];
@@ -733,7 +733,7 @@ public:
 
         std::cout << "There are " << particleBlocks.size() << " leaf-groups.\n";
         int idxGroup = 0;
-        int totalNbParticles = 0;
+        FSize totalNbParticles = 0;
         for (const ParticleGroupClass* block: particleBlocks){
             std::cout << "\t Group " << (idxGroup++);
             std::cout << "\t Size = " << block->getNumberOfLeavesInBlock();

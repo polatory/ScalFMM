@@ -60,14 +60,14 @@ int main(int argc, char ** argv){
     FFmaGenericLoader<FReal> loader(filename);
 
     const FSize NbPoints  = loader.getNumberOfParticles();
-    const unsigned int nbData   = loader.getNbRecordPerline() ;
-    const unsigned int arraySize =nbData*NbPoints;
+    const FSize nbData   = loader.getNbRecordPerline() ;
+    const FSize arraySize =nbData*NbPoints;
 
     FReal * particles = new FReal[arraySize] ;
     std::memset(particles,0,arraySize*sizeof(FReal));
 
-    int j = 0 ;
-    for(int idxPart = 0 ; idxPart < NbPoints ;++idxPart, j+=nbData){
+    FSize j = 0 ;
+    for(FSize idxPart = 0 ; idxPart < NbPoints ;++idxPart, j+=nbData){
         loader.fillParticle(&particles[j],nbData);
     }
 

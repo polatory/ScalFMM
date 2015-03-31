@@ -206,9 +206,9 @@ public:
 
         for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
             if(cellsOther->exists((*outsideInteractions)[outInterIdx].outIndex)){
-                CellClass interCell = cellsOther->getDownCell((*outsideInteractions)[outInterIdx].outIndex);
+                CellClass interCell = cellsOther->getUpCell((*outsideInteractions)[outInterIdx].outIndex);
                 FAssertLF(interCell.getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
-                CellClass cell = currentCells->getUpCell((*outsideInteractions)[outInterIdx].insideIndex);
+                CellClass cell = currentCells->getDownCell((*outsideInteractions)[outInterIdx].insideIndex);
                 FAssertLF(cell.getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
 
                 const CellClass* interactions[343];
@@ -407,7 +407,7 @@ public:
         int intervalSize;
         starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions, &intervalSize);
 
-        worker->get<ThisClass>(FSTARPU_CPU_IDX)->directInoutPassPerform(&containers, &externalContainers, outsideInteractions);
+        worker->get<ThisClass>(FSTARPU_CPU_IDX)->directInoutPassPerformMpi(&containers, &externalContainers, outsideInteractions);
     }
 
     void directInoutPassPerformMpi(ParticleGroupClass* containers, ParticleGroupClass* containersOther,

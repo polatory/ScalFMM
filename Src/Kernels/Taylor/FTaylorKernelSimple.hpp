@@ -471,7 +471,7 @@ public:
     FReal multipole2[SizeVector] ;
     
     // Iterator over Particles
-    int nbPart = particles->getNbParticles(), i;
+    FSize nbPart = particles->getNbParticles(), i;
     const FReal* const * positions = particles->getPositions();
     const FReal* posX = positions[0];
     const FReal* posY = positions[1];
@@ -482,7 +482,7 @@ public:
     // Iterating over Particles
     FReal xc = cellCenter.getX(), yc = cellCenter.getY(), zc = cellCenter.getZ() ;
     FReal dx[3] ; 
-    for(int idPart=0 ; idPart<nbPart ; ++idPart){
+    for(FSize idPart=0 ; idPart<nbPart ; ++idPart){
       dx[0]         = xc - posX[idPart] ;
       dx[1]         = yc - posY[idPart] ;   
       dx[2]         = zc - posZ[idPart] ;
@@ -812,7 +812,7 @@ public:
     {
       FPoint<FReal> locCenter = getLeafCenter(local->getCoordinate());
       //Iterator over particles
-      int nbPart = particles->getNbParticles();
+      FSize nbPart = particles->getNbParticles();
       
       //Iteration over Local array
       //
@@ -829,7 +829,7 @@ public:
       FReal * phyValues = particles->getPhysicalValues();
 
       //Iteration over particles
-      for(int i=0 ; i<nbPart ; ++i){
+      for(FSize i=0 ; i<nbPart ; ++i){
 	//	
 	FReal dx =  posX[i] - locCenter.getX();
 	FReal dy =  posY[i] - locCenter.getY();

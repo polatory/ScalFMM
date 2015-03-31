@@ -69,7 +69,7 @@ public:
             FReal values[4];
             {
                 const ContainerClass* container = octreeIterator.getCurrentListTargets();
-                for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
                     container->fillToCsv(idxPart, values);
                     file << values[0] << "," << values[1] << "," <<
                             values[2] << "," << values[3] << "\n";
@@ -79,7 +79,7 @@ public:
             const bool isUsingTsm = (octreeIterator.getCurrentListTargets() != octreeIterator.getCurrentListSrc());
             if( isUsingTsm ){
                 const ContainerClass* container = octreeIterator.getCurrentListSrc();
-                for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
                     container->fillToCsv(idxPart, values);
                     file << values[0] << "," << values[1] << "," <<
                             values[2] << "," << values[3] << "\n";

@@ -148,10 +148,10 @@ int main(int argc, char ** argv){
     particlesDirect = new MDParticle<FReal>[loader->getNumberOfParticles()];
     std::memset(particlesDirect, 0, sizeof(MDParticle<FReal>) * loader->getNumberOfParticles()) ;
 	//
-	int nbParticles = static_cast<int>(loader->getNumberOfParticles());
+	FSize nbParticles = (loader->getNumberOfParticles());
 	double totalCharge = 0.0;
 	//
-	for(int idxPart = 0 ; idxPart < loader->getNumberOfParticles() ; ++idxPart){
+	for(FSize idxPart = 0 ; idxPart < loader->getNumberOfParticles() ; ++idxPart){
 		//
 		loader->fillParticle(&particles[idxPart].position, particles[idxPart].forces,
 				&particles[idxPart].physicalValue,&particles[idxPart].index);

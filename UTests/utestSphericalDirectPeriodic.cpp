@@ -66,7 +66,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         };
         FReal coeff = -1.0, value = 0.10, sum = 0.0, a= 0.0;
        TestParticle* const particles = new TestParticle[loader.getNumberOfParticles()];
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             FPoint<FReal> position;
             loader.fillParticle(&position);
             value *= coeff ;
@@ -94,8 +94,8 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
         Print("Run direct...");
         FTreeCoordinate min, max;
         algo.repetitionsIntervals(&min, &max);
-        for(int idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
-            for(int idxOther = idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
+        for(FSize idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
+            for(FSize idxOther =  idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
                 FP2PR::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                       particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
                                       &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
@@ -145,11 +145,11 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
                 const FReal*const forcesX     = leaf->getTargets()->getForcesX();
                 const FReal*const forcesY     = leaf->getTargets()->getForcesY();
                 const FReal*const forcesZ     = leaf->getTargets()->getForcesZ();
-                const int nbParticlesInLeaf    = leaf->getTargets()->getNbParticles();
-                const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+                const FSize nbParticlesInLeaf    = leaf->getTargets()->getNbParticles();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                    const int indexPartOrig = indexes[idxPart];
+                for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                    const FSize indexPartOrig = indexes[idxPart];
                     potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
                     fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
                     fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);

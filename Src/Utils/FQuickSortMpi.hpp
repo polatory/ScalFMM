@@ -182,7 +182,7 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
             ////              FMpi::TagQuickSort, currentComm.getComm(), &requests[idxPack]) , __LINE__);
             // Work per max size
             const IndexType nbElementsInPack = (pack.toElement - pack.fromElement);
-            const IndexType totalByteToRecv  = nbElementsInPack*sizeof(SortType);
+            const IndexType totalByteToRecv  = IndexType(nbElementsInPack*sizeof(SortType));
             unsigned char*const ptrDataToRecv = (unsigned char*)&recvBuffer[pack.fromElement];
             for(IndexType idxSize = 0 ; idxSize < totalByteToRecv ; idxSize += FQS_MAX_MPI_BYTES){
                 MPI_Request currentRequest;
@@ -220,7 +220,7 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
             ////              FMpi::TagQuickSort, currentComm.getComm(), &requests[idxPack]) , __LINE__);
             // Work per max size
             const IndexType nbElementsInPack = (pack.toElement - pack.fromElement);
-            const IndexType totalByteToSend  = nbElementsInPack*sizeof(SortType);
+            const IndexType totalByteToSend  = IndexType(nbElementsInPack*sizeof(SortType));
             unsigned char*const ptrDataToSend = (unsigned char*)const_cast<SortType*>(&inPartToSend[pack.fromElement]);
             for(IndexType idxSize = 0 ; idxSize < totalByteToSend ; idxSize += FQS_MAX_MPI_BYTES){
                 MPI_Request currentRequest;

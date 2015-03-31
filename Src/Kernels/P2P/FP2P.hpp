@@ -205,20 +205,20 @@ inline void FullMutualKIJ(ContainerClass* const FRestrict inTargets, ContainerCl
                              1,3,4,
                              2,4,5};
 
-    const int nbParticlesTargets = inTargets->getNbParticles();
+    const FSize nbParticlesTargets = inTargets->getNbParticles();
     const FReal*const targetsX = inTargets->getPositions()[0];
     const FReal*const targetsY = inTargets->getPositions()[1];
     const FReal*const targetsZ = inTargets->getPositions()[2];
 
-    for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-        for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+    for(FSize idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
+        for(FSize idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
             if( inNeighbors[idxNeighbors] ){
-                const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
+                const FSize nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
                 const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
                 const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
                 const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
 
-                for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                for(FSize idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
 
                     // evaluate kernel and its partial derivatives
                     const FPoint<FReal> sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
@@ -264,8 +264,8 @@ inline void FullMutualKIJ(ContainerClass* const FRestrict inTargets, ContainerCl
         }
     }
 
-    for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-        for(int idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){
+    for(FSize idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+        for(FSize idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){
 
             // evaluate kernel and its partial derivatives
             const FPoint<FReal> sourcePoint(targetsX[idxSource],targetsY[idxSource],targetsZ[idxSource]);
@@ -318,20 +318,20 @@ inline void FullRemoteKIJ(ContainerClass* const FRestrict inTargets, ContainerCl
                              1,3,4,
                              2,4,5};
 
-    const int nbParticlesTargets = inTargets->getNbParticles();
+    const FSize nbParticlesTargets = inTargets->getNbParticles();
     const FReal*const targetsX = inTargets->getPositions()[0];
     const FReal*const targetsY = inTargets->getPositions()[1];
     const FReal*const targetsZ = inTargets->getPositions()[2];
 
-    for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
-        for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+    for(FSize idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
+        for(FSize idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
             if( inNeighbors[idxNeighbors] ){
-                const int nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
+                const FSize nbParticlesSources = inNeighbors[idxNeighbors]->getNbParticles();
                 const FReal*const sourcesX = inNeighbors[idxNeighbors]->getPositions()[0];
                 const FReal*const sourcesY = inNeighbors[idxNeighbors]->getPositions()[1];
                 const FReal*const sourcesZ = inNeighbors[idxNeighbors]->getPositions()[2];
 
-                for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                for(FSize idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
 
                     // evaluate kernel and its partial derivatives
                     const FPoint<FReal> sourcePoint(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource]);
@@ -375,7 +375,7 @@ template <class FReal, class ContainerClass, class MatrixKernelClass, class Comp
 static void GenericFullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                               const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
 
-    const int nbParticlesTargets = inTargets->getNbParticles();
+    const FSize nbParticlesTargets = inTargets->getNbParticles();
     const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
     const FReal*const targetsX = inTargets->getPositions()[0];
     const FReal*const targetsY = inTargets->getPositions()[1];
@@ -385,9 +385,9 @@ static void GenericFullMutual(ContainerClass* const FRestrict inTargets, Contain
     FReal*const targetsForcesZ = inTargets->getForcesZ();
     FReal*const targetsPotentials = inTargets->getPotentials();
 
-    for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
+    for(FSize idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
         if( inNeighbors[idxNeighbors] ){
-            const int nbParticlesSources = (inNeighbors[idxNeighbors]->getNbParticles()+NbFRealInComputeClass-1)/NbFRealInComputeClass;
+            const FSize nbParticlesSources = (inNeighbors[idxNeighbors]->getNbParticles()+NbFRealInComputeClass-1)/NbFRealInComputeClass;
             const ComputeClass*const sourcesPhysicalValues = (const ComputeClass*)inNeighbors[idxNeighbors]->getPhysicalValues();
             const ComputeClass*const sourcesX = (const ComputeClass*)inNeighbors[idxNeighbors]->getPositions()[0];
             const ComputeClass*const sourcesY = (const ComputeClass*)inNeighbors[idxNeighbors]->getPositions()[1];
@@ -397,7 +397,7 @@ static void GenericFullMutual(ContainerClass* const FRestrict inTargets, Contain
             ComputeClass*const sourcesForcesZ = (ComputeClass*)inNeighbors[idxNeighbors]->getForcesZ();
             ComputeClass*const sourcesPotentials = (ComputeClass*)inNeighbors[idxNeighbors]->getPotentials();
 
-            for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+            for(FSize idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
                 const ComputeClass tx = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsX[idxTarget]);
                 const ComputeClass ty = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsY[idxTarget]);
                 const ComputeClass tz = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsZ[idxTarget]);
@@ -407,7 +407,7 @@ static void GenericFullMutual(ContainerClass* const FRestrict inTargets, Contain
                 ComputeClass  tfz = FMath::Zero<ComputeClass>();
                 ComputeClass  tpo = FMath::Zero<ComputeClass>();
 
-                for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                for(FSize idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
                     ComputeClass Kxy[1];
                     ComputeClass dKxy[3];
                     MatrixKernel->evaluateBlockAndDerivative(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource],
@@ -440,7 +440,7 @@ static void GenericFullMutual(ContainerClass* const FRestrict inTargets, Contain
     {//In this part, we compute (vectorially) the interaction
         //within the target leaf.
 
-        const int nbParticlesSources = (nbParticlesTargets+NbFRealInComputeClass-1)/NbFRealInComputeClass;
+        const FSize nbParticlesSources = (nbParticlesTargets+NbFRealInComputeClass-1)/NbFRealInComputeClass;
         const ComputeClass*const sourcesPhysicalValues = (const ComputeClass*)targetsPhysicalValues;
         const ComputeClass*const sourcesX = (const ComputeClass*)targetsX;
         const ComputeClass*const sourcesY = (const ComputeClass*)targetsY;
@@ -450,7 +450,7 @@ static void GenericFullMutual(ContainerClass* const FRestrict inTargets, Contain
         ComputeClass*const sourcesForcesZ = (ComputeClass*)targetsForcesZ;
         ComputeClass*const sourcesPotentials = (ComputeClass*)targetsPotentials;
 
-        for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+        for(FSize idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
             const ComputeClass tx = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsX[idxTarget]);
             const ComputeClass ty = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsY[idxTarget]);
             const ComputeClass tz = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsZ[idxTarget]);
@@ -460,7 +460,7 @@ static void GenericFullMutual(ContainerClass* const FRestrict inTargets, Contain
             ComputeClass  tfz = FMath::Zero<ComputeClass>();
             ComputeClass  tpo = FMath::Zero<ComputeClass>();
 
-            for(int idxSource = (idxTarget+NbFRealInComputeClass)/NbFRealInComputeClass ; idxSource < nbParticlesSources ; ++idxSource){
+            for(FSize idxSource = (idxTarget+NbFRealInComputeClass)/NbFRealInComputeClass ; idxSource < nbParticlesSources ; ++idxSource){
                 ComputeClass Kxy[1];
                 ComputeClass dKxy[3];
                 MatrixKernel->evaluateBlockAndDerivative(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource],
@@ -489,10 +489,10 @@ static void GenericFullMutual(ContainerClass* const FRestrict inTargets, Contain
         }
     }
 
-    for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
-        const int limitForTarget = NbFRealInComputeClass-(idxTarget%NbFRealInComputeClass);
-        for(int idxS = 1 ; idxS < limitForTarget ; ++idxS){
-            const int idxSource = idxTarget + idxS;
+    for(FSize idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+        const FSize limitForTarget = NbFRealInComputeClass-(idxTarget%NbFRealInComputeClass);
+        for(FSize idxS = 1 ; idxS < limitForTarget ; ++idxS){
+            const FSize idxSource = idxTarget + idxS;
             FReal Kxy[1];
             FReal dKxy[3];
             MatrixKernel->evaluateBlockAndDerivative(targetsX[idxSource],targetsY[idxSource],targetsZ[idxSource],
@@ -520,7 +520,7 @@ static void GenericFullMutual(ContainerClass* const FRestrict inTargets, Contain
 template <class FReal, class ContainerClass, class MatrixKernelClass, class ComputeClass, int NbFRealInComputeClass>
 static void GenericFullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                               const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
-    const int nbParticlesTargets = inTargets->getNbParticles();
+    const FSize nbParticlesTargets = inTargets->getNbParticles();
     const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
     const FReal*const targetsX = inTargets->getPositions()[0];
     const FReal*const targetsY = inTargets->getPositions()[1];
@@ -530,15 +530,15 @@ static void GenericFullRemote(ContainerClass* const FRestrict inTargets, Contain
     FReal*const targetsForcesZ = inTargets->getForcesZ();
     FReal*const targetsPotentials = inTargets->getPotentials();
 
-    for(int idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
+    for(FSize idxNeighbors = 0 ; idxNeighbors < limiteNeighbors ; ++idxNeighbors){
         if( inNeighbors[idxNeighbors] ){
-            const int nbParticlesSources = (inNeighbors[idxNeighbors]->getNbParticles()+NbFRealInComputeClass-1)/NbFRealInComputeClass;
+            const FSize nbParticlesSources = (inNeighbors[idxNeighbors]->getNbParticles()+NbFRealInComputeClass-1)/NbFRealInComputeClass;
             const ComputeClass*const sourcesPhysicalValues = (const ComputeClass*)inNeighbors[idxNeighbors]->getPhysicalValues();
             const ComputeClass*const sourcesX = (const ComputeClass*)inNeighbors[idxNeighbors]->getPositions()[0];
             const ComputeClass*const sourcesY = (const ComputeClass*)inNeighbors[idxNeighbors]->getPositions()[1];
             const ComputeClass*const sourcesZ = (const ComputeClass*)inNeighbors[idxNeighbors]->getPositions()[2];
 
-            for(int idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
+            for(FSize idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
                 const ComputeClass tx = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsX[idxTarget]);
                 const ComputeClass ty = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsY[idxTarget]);
                 const ComputeClass tz = FMath::ConvertTo<ComputeClass, const FReal*>(&targetsZ[idxTarget]);
@@ -548,7 +548,7 @@ static void GenericFullRemote(ContainerClass* const FRestrict inTargets, Contain
                 ComputeClass  tfz = FMath::Zero<ComputeClass>();
                 ComputeClass  tpo = FMath::Zero<ComputeClass>();
 
-                for(int idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
+                for(FSize idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
                     ComputeClass Kxy[1];
                     ComputeClass dKxy[3];
                     MatrixKernel->evaluateBlockAndDerivative(sourcesX[idxSource],sourcesY[idxSource],sourcesZ[idxSource],

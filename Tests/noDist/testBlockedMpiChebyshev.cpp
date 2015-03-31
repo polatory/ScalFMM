@@ -103,7 +103,7 @@ int main(int argc, char* argv[]){
 
     TestParticle* allParticles = new TestParticle[loader.getMyNumberOfParticles()];
     memset(allParticles,0,(unsigned int) (sizeof(TestParticle)* loader.getMyNumberOfParticles()));
-    for(int idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
         loader.fillParticle(&allParticles[idxPart].position,&allParticles[idxPart].physicalValue);
     }
 
@@ -133,7 +133,7 @@ int main(int argc, char* argv[]){
                               mpiComm.global().getComm(), MPI_STATUS_IGNORE), __LINE__);
     }
     if(mpiComm.global().processId() != mpiComm.global().processCount()-1){
-        FMpi::Assert(MPI_Send((void*)&myLeftLimite, sizeof(myLeftLimite), MPI_BYTE,
+        FMpi::Assert(MPI_Send(const_cast<MortonIndex*>(&myLeftLimite), sizeof(myLeftLimite), MPI_BYTE,
                               mpiComm.global().processId()+1, 0,
                               mpiComm.global().getComm()), __LINE__);
     }
@@ -143,7 +143,7 @@ int main(int argc, char* argv[]){
 
     // Put the data into the tree
     FP2PParticleContainer<FReal> myParticlesInContainer;
-    for(int idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
         myParticlesInContainer.push(myParticles[idxPart].position,
                                     myParticles[idxPart].physicalValue);
     }
@@ -159,8 +159,8 @@ int main(int argc, char* argv[]){
         std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ") ... " << std::endl;
         timer.tic();
 
+        MatrixKernelClass MatrixKernel;
         // Create Matrix Kernel
-        const MatrixKernelClass MatrixKernel;
         GroupKernelClass groupkernel(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
         // Run the algorithm
         GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
@@ -174,7 +174,6 @@ int main(int argc, char* argv[]){
     if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
         typedef FP2PParticleContainer<FReal> ContainerClass;
         typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
-        typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
         typedef FChebCell<FReal,ORDER> CellClass;
         typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
         typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
@@ -184,13 +183,13 @@ int main(int argc, char* argv[]){
 
         OctreeClass treeCheck(TreeHeight, SubTreeHeight,loader.getBoxWidth(),loader.getCenterOfBox());
 
-        for(int idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
             // put in tree
             treeCheck.insert(myParticles[idxPart].position,
                              myParticles[idxPart].physicalValue);
         }
 
-        const MatrixKernelClass MatrixKernel;
+        MatrixKernelClass MatrixKernel;
         KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
         FmmClass algorithm(mpiComm.global(),&treeCheck, &kernels);
         algorithm.execute();
@@ -224,7 +223,7 @@ int main(int argc, char* argv[]){
                 const FReal*const gposX = leafTarget->getPositions()[0];
                 const FReal*const gposY = leafTarget->getPositions()[1];
                 const FReal*const gposZ = leafTarget->getPositions()[2];
-                const int gnbPartsInLeafTarget = leafTarget->getNbParticles();
+                const FSize gnbPartsInLeafTarget = leafTarget->getNbParticles();
                 const FReal*const gforceX = leafTarget->getForcesX();
                 const FReal*const gforceY = leafTarget->getForcesY();
                 const FReal*const gforceZ = leafTarget->getForcesZ();
@@ -233,7 +232,7 @@ int main(int argc, char* argv[]){
                 const FReal*const posX = targets->getPositions()[0];
                 const FReal*const posY = targets->getPositions()[1];
                 const FReal*const posZ = targets->getPositions()[2];
-                const int nbPartsInLeafTarget = targets->getNbParticles();
+                const FSize nbPartsInLeafTarget = targets->getNbParticles();
                 const FReal*const forceX = targets->getForcesX();
                 const FReal*const forceY = targets->getForcesY();
                 const FReal*const forceZ = targets->getForcesZ();
@@ -246,7 +245,7 @@ int main(int argc, char* argv[]){
                 else{
                     FMath::FAccurater<FReal> potentialDiff;
                     FMath::FAccurater<FReal> fx, fy, fz;
-                    for(int idxPart = 0 ; idxPart < nbPartsInLeafTarget ; ++idxPart){
+                    for(FSize idxPart = 0 ; idxPart < nbPartsInLeafTarget ; ++idxPart){
                         if(gposX[idxPart] != posX[idxPart] || gposY[idxPart] != posY[idxPart]
                                 || gposZ[idxPart] != posZ[idxPart]){
                             std::cout << "[Empty] Not the same particlea at " << gcell.getMortonIndex() << " idx " << idxPart

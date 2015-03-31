@@ -10,7 +10,6 @@
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Containers/FVector.hpp"
 
-#include "../../Src/Kernels/P2P/FP2PParticleContainer.hpp"
 
 #include "../../Src/Utils/FMath.hpp"
 #include "../../Src/Utils/FMemUtils.hpp"
@@ -105,7 +104,7 @@ int main(int argc, char* argv[]){
     OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());
 
     FTestParticleContainer<FReal> allParticles;
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         FPoint<FReal> particlePosition;
 #ifndef LOAD_FILE
         loader.fillParticle(&particlePosition);
@@ -149,15 +148,15 @@ int main(int argc, char* argv[]){
 
     // Validate the result
     groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass cell, GroupContainerClass* leaf){
-        const int nbPartsInLeaf = leaf->getNbParticles();
+        const FSize nbPartsInLeaf = leaf->getNbParticles();
         if(cell.getDataUp() != nbPartsInLeaf){
             std::cout << "[P2M] Error a Cell has " << cell.getDataUp() << " (it should be " << nbPartsInLeaf << ")\n";
         }
     });
     groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass cell, GroupContainerClass* leaf){
-        const int nbPartsInLeaf = leaf->getNbParticles();
+        const FSize nbPartsInLeaf = leaf->getNbParticles();
         const long long int* dataDown = leaf->getDataDown();
-        for(int idxPart = 0 ; idxPart < nbPartsInLeaf ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < nbPartsInLeaf ; ++idxPart){
             if(dataDown[idxPart] != loader.getNumberOfParticles()-1){
                 std::cout << "[Full] Error a particle has " << dataDown[idxPart] << " (it should be " << (loader.getNumberOfParticles()-1) << ") at index " << cell.getMortonIndex() << "\n";
             }

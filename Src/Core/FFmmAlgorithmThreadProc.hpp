@@ -356,10 +356,10 @@ protected:
         MPI_Request requestsSize[8];
         MPI_Status statusSize[8];
 
-        int bufferSize;
+        FSize bufferSize;
         FMpiBufferWriter sendBuffer(comm.getComm(), 1);// Max = 1 + sizeof(cell)*7
         std::unique_ptr<FMpiBufferReader[]> recvBuffer(new FMpiBufferReader[7]);
-        int recvBufferSize[7];
+        FSize recvBufferSize[7];
         CellClass recvBufferCells[7];
 
         // The first proc that send to me a cell
@@ -447,7 +447,8 @@ protected:
                             bufferSize = sendBuffer.getSize();
                             MPI_Isend(&bufferSize, 1, MPI_INT, currentProcIdToSendTo,
                                       FMpi::TagFmmM2MSize + idxLevel, comm.getComm(), &requestsSize[iterMpiRequestsSize++]);
-                            MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, currentProcIdToSendTo,
+                            FAssertLF(sendBuffer.getSize() < std::numeric_limits<int>::max());
+                            MPI_Isend(sendBuffer.data(), int(sendBuffer.getSize()), MPI_PACKED, currentProcIdToSendTo,
                                       FMpi::TagFmmM2M + idxLevel, comm.getComm(), &requests[iterMpiRequests++]);
                         }
                     }
@@ -487,7 +488,8 @@ protected:
                                && ( !procHasWorkAtLevel(idxLevel+1, idProcSource) || procCoversMyRightBorderCell(idxLevel, idProcSource) )){
                             if(procHasWorkAtLevel(idxLevel+1, idProcSource) && procCoversMyRightBorderCell(idxLevel, idProcSource)){
                                 recvBuffer[nbProcThatSendToMe].cleanAndResize(recvBufferSize[nbProcThatSendToMe]);
-                                MPI_Irecv(recvBuffer[nbProcThatSendToMe].data(), recvBufferSize[nbProcThatSendToMe], MPI_PACKED,
+                                FAssertLF(recvBufferSize[nbProcThatSendToMe] < std::numeric_limits<int>::max());
+                                MPI_Irecv(recvBuffer[nbProcThatSendToMe].data(), int(recvBufferSize[nbProcThatSendToMe]), MPI_PACKED,
                                         idProcSource, FMpi::TagFmmM2M + idxLevel, comm.getComm(), &requests[iterMpiRequests++]);
                                 nbProcThatSendToMe += 1;
                                 FAssertLF(nbProcThatSendToMe <= 7);
@@ -725,8 +727,9 @@ protected:
 
                             FAssertLF(sendBuffer[idxLevel * nbProcess + idxProc]->getSize() == toSendAtProcAtLevel);
 
+                            FAssertLF(sendBuffer[idxLevel * nbProcess + idxProc]->getSize() < std::numeric_limits<int>::max());
                             FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc]->data(),
-                                             sendBuffer[idxLevel * nbProcess + idxProc]->getSize(),MPI_PACKED, idxProc,
+                                             int(sendBuffer[idxLevel * nbProcess + idxProc]->getSize()),MPI_PACKED, idxProc,
                                     FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
                         }
 
@@ -734,8 +737,9 @@ protected:
                         if(toReceiveFromProcAtLevel){
                             recvBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferReader(comm.getComm(),int(toReceiveFromProcAtLevel));
 
+                            FAssertLF(recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity() < std::numeric_limits<int>::max());
                             FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc]->data(),
-                                             recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity(), MPI_PACKED,idxProc,
+                                             int(recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity()), MPI_PACKED,idxProc,
                                     FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
                         }
                     }
@@ -1027,8 +1031,8 @@ protected:
                     FLOG(prepareCounter.tic());
                     int iterRequests = 0;
                     int iterRequestsSize = 0;
-                    int recvBufferSize = 0;
-                    int sendBufferSize;
+                    FSize recvBufferSize = 0;
+                    FSize sendBufferSize;
                     // Post the receive
                     if(hasToReceive){
                         FMpi::MpiAssert( MPI_Irecv( &recvBufferSize, 1, MPI_INT, idxProcToReceive,
@@ -1053,7 +1057,8 @@ protected:
                                 // Post the send message
                                 FMpi::MpiAssert( MPI_Isend(&sendBufferSize, 1, MPI_INT, idxProcSend,
                                                            FMpi::TagFmmL2LSize + idxLevel, comm.getComm(), &requestsSize[iterRequestsSize++]), __LINE__);
-                                FMpi::MpiAssert( MPI_Isend(sendBuffer.data(), sendBuffer.getSize(), MPI_PACKED, idxProcSend,
+                                FAssertLF(sendBuffer.getSize() < std::numeric_limits<int>::max());
+                                FMpi::MpiAssert( MPI_Isend(sendBuffer.data(), int(sendBuffer.getSize()), MPI_PACKED, idxProcSend,
                                                            FMpi::TagFmmL2L + idxLevel, comm.getComm(), &requests[iterRequests++]), __LINE__);
                                 // Inc and check the counter
                                 nbMessageSent += 1;
@@ -1075,7 +1080,8 @@ protected:
 
                     if(hasToReceive){
                         recvBuffer.cleanAndResize(recvBufferSize);
-                        FMpi::MpiAssert( MPI_Irecv( recvBuffer.data(), recvBuffer.getCapacity(), MPI_PACKED, idxProcToReceive,
+                        FAssertLF(recvBuffer.getCapacity() < std::numeric_limits<int>::max());
+                        FMpi::MpiAssert( MPI_Irecv( recvBuffer.data(), int(recvBuffer.getCapacity()), MPI_PACKED, idxProcToReceive,
                                                     FMpi::TagFmmL2L + idxLevel, comm.getComm(), &requests[iterRequests++]), __LINE__ );
                     }
 
@@ -1165,8 +1171,8 @@ protected:
      * let U and V be id of processes :
      * globalReceiveMap[U*nbProcess + V] == size of information needed by V and own by U
      */
-        int*const globalReceiveMap = new int[nbProcess * nbProcess];
-        memset(globalReceiveMap, 0, sizeof(int) * nbProcess * nbProcess);
+        FSize*const globalReceiveMap = new FSize[nbProcess * nbProcess];
+        memset(globalReceiveMap, 0, sizeof(FSize) * nbProcess * nbProcess);
 
         FBoolArray leafsNeedOther(this->numberOfLeafs);
         int countNeedOther = 0;
@@ -1186,8 +1192,8 @@ protected:
         FVector<LeafData> leafsNeedOtherData(countNeedOther);
 
         FVector<typename OctreeClass::Iterator>*const toSend = new FVector<typename OctreeClass::Iterator>[nbProcess];
-        int partsToSend[nbProcess];
-        memset(partsToSend, 0, sizeof(int) * nbProcess);
+        FSize partsToSend[nbProcess];
+        memset(partsToSend, 0, sizeof(FSize) * nbProcess);
 
 #pragma omp parallel
         {
@@ -1267,7 +1273,8 @@ protected:
                     if(globalReceiveMap[idxProc * nbProcess + idProcess]){ //if idxProc has sth for me.
                         //allocate buffer of right size
                         recvBuffer[idxProc] = new FMpiBufferReader(comm.getComm(),globalReceiveMap[idxProc * nbProcess + idProcess]);
-                        FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), recvBuffer[idxProc]->getCapacity(), MPI_PACKED,
+                        FAssertLF(recvBuffer[idxProc]->getCapacity() < std::numeric_limits<int>::max());
+                        FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), int(recvBuffer[idxProc]->getCapacity()), MPI_PACKED,
                                                    idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
                     }
                 }
@@ -1284,7 +1291,8 @@ protected:
                             toSend[idxProc][idxLeaf].getCurrentListSrc()->save(*sendBuffer[idxProc]);
                         }
 
-                        FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), sendBuffer[idxProc]->getSize() , MPI_PACKED ,
+                        FAssertLF(sendBuffer[idxProc]->getSize() < std::numeric_limits<int>::max());
+                        FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), int(sendBuffer[idxProc]->getSize()) , MPI_PACKED ,
                                                     idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
 
                     }
@@ -1428,7 +1436,8 @@ protected:
                 MortonIndex indexesNeighbors[27];
                 int indexArray[26];
                 // Box limite
-                const int nbLeafToProceed = leafsNeedOtherData.getSize();
+                FAssertLF(leafsNeedOtherData.getSize() < std::numeric_limits<int>::max());
+                const int nbLeafToProceed = int(leafsNeedOtherData.getSize());
 
 #pragma omp for schedule(static)
                 for(int idxLeafs = 0 ; idxLeafs < nbLeafToProceed ; ++idxLeafs){

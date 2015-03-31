@@ -92,7 +92,7 @@ int main(int argc, char** argv){
     FRandomLoader<FReal> loader(NbParticles);
     FPoint<FReal>* const particlePositions = new FPoint<FReal>[NbParticles];
 
-    for(int idxPart = 0 ; idxPart < NbParticles ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < NbParticles ; ++idxPart){
         loader.fillParticle(&particlePositions[idxPart]);
     }
 
@@ -105,7 +105,7 @@ int main(int argc, char** argv){
         OctreeClass treePer(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
 
         // insert in tree
-        for(int idxPart = 0 ; idxPart < NbParticles ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < NbParticles ; ++idxPart){
             // put in tree
             treePer.insert(particlePositions[idxPart], idxPart, (idxPart&1?0.00010:-0.00010));
         }
@@ -130,8 +130,8 @@ int main(int argc, char** argv){
 
         treePer.forEachLeaf([&](LeafClass* leaf){
             const FReal*const potentials = leaf->getTargets()->getPotentials();
-            const FVector<int>& indexes =  leaf->getTargets()->getIndexes();
-            for(int idxPart = 0 ; idxPart < leaf->getTargets()->getNbParticles() ; ++idxPart){
+            const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
+            for(FSize idxPart = 0 ; idxPart < leaf->getTargets()->getNbParticles() ; ++idxPart){
                 if( indexes[idxPart] < NbParticlesPrint){
                     allPotential[(idxLevelAbove - MinLevelAbove)*NbParticlesPrint + indexes[idxPart]] = potentials[idxPart];
                 }
@@ -149,7 +149,7 @@ int main(int argc, char** argv){
         std::cout << idxLevelAbove << "\t";
     }
     std::cout << "\n";
-    for(int idxPart = 0 ; idxPart < NbParticlesPrint ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < NbParticlesPrint ; ++idxPart){
         std::cout << idxPart << "\t";
         for(int idxLevelAbove = MinLevelAbove; idxLevelAbove < MaxLevelAbove ; idxLevelAbove += IncLevelAbove){
             std::cout << allPotential[(idxLevelAbove - MinLevelAbove)*NbParticlesPrint + idxPart] << "\t";
@@ -163,7 +163,7 @@ int main(int argc, char** argv){
         std::cout << idxLevelAbove << "/" << idxLevelAbove-1 << "\t";
     }
     std::cout << "\n";
-    for(int idxPart = 0 ; idxPart < NbParticlesPrint ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < NbParticlesPrint ; ++idxPart){
         std::cout << idxPart << "\t";
         for(int idxLevelAbove = MinLevelAbove +1; idxLevelAbove < MaxLevelAbove ; idxLevelAbove += IncLevelAbove){
             std::cout << FMath::Abs((allPotential[(idxLevelAbove - MinLevelAbove)*NbParticlesPrint + idxPart]

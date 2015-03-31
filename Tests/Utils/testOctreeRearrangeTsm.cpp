@@ -93,7 +93,7 @@ int main(int argc, char ** argv){
     {
 
         FPoint<FReal> particleToFill;
-        for(int idxPart = 0 ; idxPart < NbPart_Source; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < NbPart_Source; ++idxPart){
             particleToFill.setPosition(
                                        (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2)),
                                        (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2)),
@@ -101,7 +101,7 @@ int main(int argc, char ** argv){
             tree.insert(particleToFill,FParticleTypeSource,idxPart);
         }
 
-        for(int idxPart = 0 ; idxPart < NbPart_Target; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < NbPart_Target; ++idxPart){
             particleToFill.setPosition(
                                        (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2)),
                                        (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2)),
@@ -130,12 +130,12 @@ int main(int argc, char ** argv){
         do{
             ContainerClass* particles_sources = octreeIterator.getCurrentListTargets();
             ContainerClass* particles_targets = octreeIterator.getCurrentListSrc();
-            for(int idxPart = 0; idxPart < particles_sources->getNbParticles() ; ++idxPart){
+            for(FSize idxPart = 0; idxPart < particles_sources->getNbParticles() ; ++idxPart){
                 particles_sources->getWPositions()[0][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
                 particles_sources->getWPositions()[1][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
                 particles_sources->getWPositions()[2][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
             }
-            for(int idxPart = 0; idxPart < particles_targets->getNbParticles() ; ++idxPart){
+            for(FSize idxPart = 0; idxPart < particles_targets->getNbParticles() ; ++idxPart){
                 particles_targets->getWPositions()[0][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
                 particles_targets->getWPositions()[1][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
                 particles_targets->getWPositions()[2][idxPart] = (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2));
@@ -177,7 +177,7 @@ int main(int argc, char ** argv){
             ContainerClass* particles_targets = octreeIterator.getCurrentLeaf()->getTargets();
             ContainerClass* particles_sources = octreeIterator.getCurrentLeaf()->getSrc();;
             //Check for current sources
-            for(int idxPart = 0; idxPart < particles_sources->getNbParticles() ; ++idxPart){
+            for(FSize idxPart = 0; idxPart < particles_sources->getNbParticles() ; ++idxPart){
                 const FPoint<FReal> particlePosition( particles_sources->getWPositions()[0][idxPart],
                                                particles_sources->getWPositions()[1][idxPart],
                                                particles_sources->getWPositions()[2][idxPart]);
@@ -189,7 +189,7 @@ int main(int argc, char ** argv){
 
             }
             //Check for current targets
-            for(int idxPart = 0; idxPart < particles_targets->getNbParticles() ; ++idxPart){
+            for(FSize idxPart = 0; idxPart < particles_targets->getNbParticles() ; ++idxPart){
                 const FPoint<FReal> particlePosition( particles_targets->getWPositions()[0][idxPart],
                                                particles_targets->getWPositions()[1][idxPart],
                                                particles_targets->getWPositions()[2][idxPart]);

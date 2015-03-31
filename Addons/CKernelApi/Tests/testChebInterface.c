@@ -34,7 +34,7 @@ void cheb_free_cell(void * inCell){
  * @brief Wrapper to FMM operators (refer to CScalfmmApi.h to get the
  * detailed descriptions)
  */
-void cheb_p2m(void* cellData, int nbParticlesInLeaf, const int* particleIndexes, void* userData){
+void cheb_p2m(void* cellData, FSize nbParticlesInLeaf, const int* particleIndexes, void* userData){
     ChebKernel_P2M(cellData,nbParticlesInLeaf,particleIndexes,userData);
 }
 void cheb_m2m(int level, void* parentCell, int childPosition, void* childCell, void* userData){
@@ -46,10 +46,10 @@ void cheb_m2l_full(int level, void* targetCell, void* sourceCell[343], void* use
 void cheb_l2l(int level, void* parentCell, int childPosition, void* childCell, void* userData){
     ChebKernel_L2L( level, parentCell, childPosition, childCell,  userData);
 }
-void cheb_l2p(void* leafCell, int nbParticles, const int* particleIndexes, void* userData){
+void cheb_l2p(void* leafCell, FSize nbParticles, const int* particleIndexes, void* userData){
     ChebKernel_L2P( leafCell, nbParticles, particleIndexes, userData);
 }
-void cheb_p2pFull(int nbParticles, const int* particleIndexes,
+void cheb_p2pFull(FSize nbParticles, const int* particleIndexes,
                   const int * sourceParticleIndexes[27], int sourceNbPart[27],void* userData) {
     ChebKernel_P2P(nbParticles, particleIndexes, sourceParticleIndexes, sourceNbPart, userData);
 }
@@ -131,7 +131,7 @@ int main(int argc, char ** av){
 
     {
         printf("Creating Particles:\n");
-        int idxPart;
+        FSize idxPart;
         for(idxPart = 0 ; idxPart < nbPart ; ++idxPart){
             particleXYZ[idxPart*3]   = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[0];
             particleXYZ[idxPart*3+1] = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[1];
@@ -146,7 +146,7 @@ int main(int argc, char ** av){
      //format in order to verify numercal results
         /* FILE * fd = fopen("input.fma","w"); */
         /* fprintf(fd,"8\t 4\n %d\n %f\t %f\t %f\t %f\n",nbPart,boxWidth/2.0, boxCenter[0],boxCenter[1],boxCenter[2]); */
-        /* int idxPart; */
+        /* FSize idxPart; */
         /* for(idxPart=0 ; idxPart<nbPart ; ++idxPart){ */
         /*     fprintf(fd,"%e\t %e\t %e\t %e \n", */
         /*             particleXYZ[idxPart*3], */
@@ -238,7 +238,7 @@ int main(int argc, char ** av){
 
     //Reduction on forces array
     {
-        int idxPart;
+        FSize idxPart;
         for(idThreads=1 ; idThreads<nb_threads ; ++idThreads){
             for(idxPart=0 ; idxPart<nbPart*3 ; ++idxPart){
                 //Everything is stored in first array
@@ -265,7 +265,7 @@ int main(int argc, char ** av){
     memset(forcesRef,0,sizeof(double)*3*nbPart);
     scalfmm_get_forces_xyz(handle_ref,nbPart,forcesRef);
     {//Comparison part
-        int idxPart;
+        FSize idxPart;
         int nbPartOkay = 0;
         for(idxPart=0 ; idxPart<nbPart ; ++idxPart ){
             double diffX,diffY,diffZ;

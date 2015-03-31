@@ -30,14 +30,14 @@
  */
 class FMpiBufferWriter : public FAbstractBufferWriter {
     MPI_Comm mpiComm;         //< Communicator needed by MPI_Pack functions
-    int arrayCapacity;              //< Allocated Space
+    FSize arrayCapacity;              //< Allocated Space
     std::unique_ptr<char[]> array;  //< Allocated Array
-    int currentIndex;               //< Currently filled space
+    FSize currentIndex;               //< Currently filled space
 
     /** Test and exit if not enought space */
     void expandIfNeeded(const size_t requestedSpace) {
-        if( arrayCapacity < int(currentIndex + requestedSpace) ){
-            arrayCapacity = int(double(currentIndex + requestedSpace + 1) * 1.5);
+        if( arrayCapacity < FSize(currentIndex + requestedSpace) ){
+            arrayCapacity = FSize(double(currentIndex + requestedSpace + 1) * 1.5);
             char* arrayTmp = new char[arrayCapacity];
             memcpy(arrayTmp, array.get(), sizeof(char)*currentIndex);
             array.reset(arrayTmp);
@@ -46,7 +46,7 @@ class FMpiBufferWriter : public FAbstractBufferWriter {
 
 public:
     /** Constructor with a default arrayCapacity of 512 bytes */
-    explicit FMpiBufferWriter(const MPI_Comm inComm, const int inDefaultCapacity = 1024):
+    explicit FMpiBufferWriter(const MPI_Comm inComm, const FSize inDefaultCapacity = 1024):
         mpiComm(inComm),
         arrayCapacity(inDefaultCapacity),
         array(new char[inDefaultCapacity]),
@@ -60,7 +60,7 @@ public:
     }
 
     /** To change the capacity (but reset the head to 0 if size if lower) */
-    void resize(const int newCapacity){
+    void resize(const FSize newCapacity){
         if(newCapacity != arrayCapacity){
             arrayCapacity = newCapacity;
             char* arrayTmp = new char[arrayCapacity];
@@ -75,22 +75,22 @@ public:
     }
 
     /** Get allocated memory pointer */
-    char* data(){
+    char* data() override {
         return array.get();
     }
 
     /** Get allocated memory pointer */
-    const char* data() const {
+    const char* data() const override  {
         return array.get();
     }
 
     /** Get the filled space */
-    int getSize() const {
+    FSize getSize() const override  {
         return currentIndex;
     }
 
     /** Get the allocated space */
-    int getCapacity() const {
+    FSize getCapacity() const {
         return arrayCapacity;
     }
 
@@ -98,7 +98,10 @@ public:
     template <class ClassType>
     void write(const ClassType& object){
         expandIfNeeded(sizeof(ClassType));
-        FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &currentIndex, mpiComm), __LINE__);
+        FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
+        int intCurrentIndex = int(currentIndex);
+        FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), int(arrayCapacity), &intCurrentIndex, mpiComm), __LINE__);
+        currentIndex = intCurrentIndex;
     }
 
     /**
@@ -107,24 +110,33 @@ public:
     template <class ClassType>
     void write(const ClassType&& object){
         expandIfNeeded(sizeof(ClassType));
-        FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &currentIndex, mpiComm), __LINE__);
+        FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
+        int intCurrentIndex = int(currentIndex);
+        FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), int(arrayCapacity), &intCurrentIndex, mpiComm), __LINE__);
+        currentIndex = intCurrentIndex;
     }
 
     /** Write back, position + sizeof(object) has to be < size */
     template <class ClassType>
-    void writeAt(const int position, const ClassType& object){
-        FAssertLF(int(position + sizeof(ClassType)) <= currentIndex)
-        int noConstPosition = position;
-        FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), arrayCapacity, &noConstPosition, mpiComm), __LINE__);
+    void writeAt(const FSize position, const ClassType& object){
+        FAssertLF(FSize(position + sizeof(ClassType)) <= currentIndex);
+        FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
+        FAssertLF(position < std::numeric_limits<int>::max());
+        int noConstPosition = int(position);
+        FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), int(arrayCapacity), &noConstPosition, mpiComm), __LINE__);
     }
 
     /** Write an array
    * Warning : inSize is a number of ClassType object to write, not a size in bytes
    */
     template <class ClassType>
-    void write(const ClassType* const objects, const int inSize){
+    void write(const ClassType* const objects, const FSize inSize){
         expandIfNeeded(sizeof(ClassType) * inSize);
-        FMpi::Assert(MPI_Pack( const_cast<ClassType*>(objects), inSize, FMpi::GetType(*objects), array.get(), arrayCapacity, &currentIndex, mpiComm), __LINE__);
+        FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
+        FAssertLF(inSize < std::numeric_limits<int>::max());
+        int intCurrentIndex = int(currentIndex);
+        FMpi::Assert(MPI_Pack( const_cast<ClassType*>(objects), int(inSize), FMpi::GetType(*objects), array.get(), int(arrayCapacity), &intCurrentIndex, mpiComm), __LINE__);
+        currentIndex = intCurrentIndex;
     }
 
     /** Equivalent to write */
@@ -135,7 +147,7 @@ public:
     }
 
     /** Reset the writing index, but do not change the arrayCapacity */
-    void reset(){
+    void reset() override {
         currentIndex = 0;
     }
 };

@@ -16,18 +16,18 @@ class FCudaGroupOfParticles {
         int blockIndexesTableSize;
 
         //< The real number of particles allocated
-        int nbParticlesAllocatedInGroup;
+        FSize nbParticlesAllocatedInGroup;
         //< Bytes difference/offset between position
         size_t positionOffset;
         //< Bytes difference/offset between attributes
         size_t attributeOffset;
         //< The total number of particles in the group
-        int nbParticlesInGroup;
+        FSize nbParticlesInGroup;
     };
 
     /** Information about a leaf */
     struct alignas(FStarPUDefaultAlign::StructAlign) LeafHeader {
-        int nbParticles;
+        FSize nbParticles;
         size_t offSet;
     };
 
@@ -61,7 +61,7 @@ protected:
     //< Pointer to leaves information
     LeafHeader*     leafHeader;
     //< The total number of particles in the group
-    const int nbParticlesInGroup;
+    const FSize nbParticlesInGroup;
 
     //< Pointers to particle position x, y, z
     FReal* particlePosition[3];
@@ -124,7 +124,7 @@ public:
     }
 
     /** Get the total number of particles in the group */
-    __device__ int getNbParticlesInGroup() const {
+    __device__ FSize getNbParticlesInGroup() const {
         return nbParticlesInGroup;
     }
 

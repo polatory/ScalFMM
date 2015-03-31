@@ -534,7 +534,7 @@ int main(int argc, char ** argv){
     { // start direct computation
         unsigned int counter = 0;
 
-        for(int idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
+        for(FSize idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
             const FPoint<FReal> x = FPoint<FReal>(X.getSrc()->getPositions()[0][idxPartX],
                     X.getSrc()->getPositions()[1][idxPartX],
                     X.getSrc()->getPositions()[2][idxPartX]);
@@ -542,7 +542,7 @@ int main(int argc, char ** argv){
                                     X.getSrc()->getPhysicalValues(1)[idxPartX],
                                     X.getSrc()->getPhysicalValues(2)[idxPartX]};
 
-            for(int idxPartY = 0 ; idxPartY < Y.getSrc()->getNbParticles() ; ++idxPartY){
+            for(FSize idxPartY = 0 ; idxPartY < Y.getSrc()->getNbParticles() ; ++idxPartY){
                 const FPoint<FReal> y = FPoint<FReal>(Y.getSrc()->getPositions()[0][idxPartY],
                         Y.getSrc()->getPositions()[1][idxPartY],
                         Y.getSrc()->getPositions()[2][idxPartY]);
@@ -593,7 +593,7 @@ int main(int argc, char ** argv){
 
     ////////////////////////////////////////////////////////////////////
     unsigned int counter = 0;
-    for(int idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
+    for(FSize idxPartX = 0 ; idxPartX < X.getSrc()->getNbParticles() ; ++idxPartX){
         for (unsigned int i=0; i<npot; ++i){
             approx_p[i][counter] = X.getSrc()->getPotentials(i)[idxPartX];
             const FPoint<FReal> force = FPoint<FReal>(X.getSrc()->getForcesX(i)[idxPartX],
@@ -609,7 +609,7 @@ int main(int argc, char ** argv){
     //  std::cout << "Check Potential, forceX, forceY, forceZ " << std::endl;
     //  for (unsigned int i=0; i<npot; ++i){
     //    std::cout<< "idxLhs="<< i << std::endl;
-    //    for(int idxPart = 0 ; idxPart < 20 ; ++idxPart){
+    //    for(FSize idxPart = 0 ; idxPart < 20 ; ++idxPart){
     //      std::cout << approx_p[i][idxPart]     << ", "<< p[i][idxPart] << "|| ";
     //      std::cout << approx_f[i][idxPart]     << ", "<< f[i][idxPart] << "|| ";
     //      std::cout << approx_f[i][idxPart+M]   << ", "<< f[i][idxPart+M] << "|| ";

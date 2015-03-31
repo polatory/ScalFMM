@@ -111,7 +111,7 @@ int main(int argc, char ** argv)
         maxPos(0., 0., 0.);
 
     // Insertion of particles in the tree.
-    for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         // read next particle in file
         loader.fillParticle(&particlePosition,&physicalValue);
         // insert particle into tree
@@ -136,8 +136,8 @@ int main(int argc, char ** argv)
 
         long int allLeaves =  (1 << (3 * (TreeHeight-1) )); // maximum number of leaves
         FReal averageParticles = 0.0,  varianceParticles = 0.0;
-        int nbLeafs = 0, nbPart = 0, nbTPart = 0; // number of particles, total number of particles
-        int minParticles = std::numeric_limits<int>::max(),
+        FSize nbLeafs = 0, nbPart = 0, nbTPart = 0; // number of particles, total number of particles
+        FSize minParticles = std::numeric_limits<FSize>::max(),
             maxParticles = 0;
 
         // Compute statistics on particles
@@ -154,7 +154,7 @@ int main(int argc, char ** argv)
             ++ nbLeafs;
         } while(octreeIterator.moveRight()); // advancing through the level
 
-        averageParticles  = nbTPart/FReal(nbLeafs);
+        averageParticles  = FReal(nbTPart)/FReal(nbLeafs);
         varianceParticles = varianceParticles/FReal(nbLeafs) - averageParticles*averageParticles;
 
 
@@ -175,7 +175,7 @@ int main(int argc, char ** argv)
 
         //  Histogram of particles per leaf
         if( FParameters::existParameter(argc, argv, LocalOptionHist.options) ) {
-            std::vector<int> hist(maxParticles + 1, 0);
+            std::vector<FSize> hist(maxParticles + 1, 0);
 
             octreeIterator.gotoBottomLeft();
             do {
@@ -190,14 +190,14 @@ int main(int argc, char ** argv)
                 exit(EXIT_FAILURE);
             }
             outfile << "# Particle per leaf histogram. " << hist.size() << " chunk" << std::endl;
-            for(unsigned int i = 0 ; i < hist.size() ; ++i){
+            for(size_t i = 0 ; i < hist.size() ; ++i){
                 outfile << i << "  " << hist[i] << std::endl;
             }
         }
         // Statistics on particles done
 
         FReal averageNeighbors = 0.0, varianceNeighbors = 0.0 ;
-        int nbBox, minBox = 100000, maxBox=0;
+        FSize nbBox, minBox = 100000, maxBox=0;
         ContainerClass*  neighborsP2P[27];
 
         octreeIterator.gotoBottomLeft();
@@ -213,7 +213,7 @@ int main(int argc, char ** argv)
         } while(octreeIterator.moveRight());
 
         averageNeighbors  /= FReal(nbLeafs) ;
-        varianceNeighbors  = varianceNeighbors/nbLeafs-averageNeighbors*averageNeighbors;
+        varianceNeighbors  = varianceNeighbors/FReal(nbLeafs)-averageNeighbors*averageNeighbors;
 
 
         std::cout << lhead

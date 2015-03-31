@@ -84,7 +84,7 @@ int main(int argc, char ** argv){
         counter.tic();
 
         FPoint<FReal> particlePosition;
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&particlePosition);
             tree.insert(particlePosition);
         }

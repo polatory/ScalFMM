@@ -61,7 +61,7 @@ public:
         return velocities;
     }
 
-    void fillToCsv(const int partIdx, FReal values[4]) const {
+    void fillToCsv(const FSize partIdx, FReal values[4]) const {
         values[0] = Parent::getPositions()[0][partIdx];
         values[1] = Parent::getPositions()[1][partIdx];
         values[2] = Parent::getPositions()[2][partIdx];
@@ -168,7 +168,7 @@ int main(int argc, char ** argv){
         FPoint<FReal> position, velocity;
         FReal physicalValue;
 
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(&position, &physicalValue, &velocity);
             if( (idxPart+1) % (app.global().processId()+1) == 0) tree.insert(position,velocity,physicalValue);
         }

@@ -51,7 +51,7 @@ public:
     * and the other parameters given by the user
     */
     template<typename... Args>
-    void pushArray(const FPoint<FReal>* inParticlePosition, int numberOfParts, Args ...  args){
+    void pushArray(const FPoint<FReal>* inParticlePosition, FSize numberOfParts, Args ...  args){
 	// We pass every thing to the container and let it manage
 	this->particles.pushArray(inParticlePosition,numberOfParts, args...);
     }

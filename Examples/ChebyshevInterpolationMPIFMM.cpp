@@ -133,7 +133,7 @@ int main(int argc, char* argv[])
         };
 
         TestParticle* particles = new TestParticle[loader.getMyNumberOfParticles()];
-        memset(particles, 0, (unsigned int) (sizeof(TestParticle) * loader.getMyNumberOfParticles()));
+        memset(particles, 0, (sizeof(TestParticle) * loader.getMyNumberOfParticles()));
 
         //idx (in file) of the first part that will be used by this proc.
         FSize idxStart = loader.getStart();
@@ -158,10 +158,10 @@ int main(int argc, char* argv[])
                                                                            tree.getBoxWidth(),tree.getHeight(),
                                                                            &finalParticles, &balancer);
 
-        for(int idx = 0 ; idx < finalParticles.getSize(); ++idx){
+        for(FSize idx = 0 ; idx < finalParticles.getSize(); ++idx){
             tree.insert(finalParticles[idx].position,finalParticles[idx].index,finalParticles[idx].physicalValue);
         }
-        printf("%d parts have been inserted in Tree \n",finalParticles.getSize());
+        printf("%lld parts have been inserted in Tree \n",finalParticles.getSize());
         delete[] particles;
 
         time.tac();
@@ -206,7 +206,7 @@ int main(int argc, char* argv[])
     //
     //
     { // -----------------------------------------------------
-        long int N1=0, N2= loader.getNumberOfParticles()/2, N3= (loader.getNumberOfParticles()-1); ;
+        FSize N1=0, N2= loader.getNumberOfParticles()/2, N3= (loader.getNumberOfParticles()-1); ;
         FReal energy =0.0 ;
         //
         //   Loop over all leaves
@@ -224,13 +224,13 @@ int main(int argc, char* argv[])
             const FReal*const forcesX = leaf->getTargets()->getForcesX();
             const FReal*const forcesY = leaf->getTargets()->getForcesY();
             const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-            const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+            const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
             const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
 
-            const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+            const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-            for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                const int indexPartOrig = indexes[idxPart];
+            for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                const FSize indexPartOrig = indexes[idxPart];
                 if ((indexPartOrig == N1) || (indexPartOrig == N2) || (indexPartOrig == N3)  ) {
                     std::cout << "Proc "<< app.global().processId() << " Index "<< indexPartOrig <<"  potential  " << potentials[idxPart]
                                  << " Pos "<<posX[idxPart]<<" "<<posY[idxPart]<<" "<<posZ[idxPart]

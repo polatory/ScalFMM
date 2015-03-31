@@ -94,7 +94,7 @@ int main(int argc, char ** argv){
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
 
     FFmaGenericLoader<FReal> loader(fileName);
-    const long int NbPart  = loader.getNumberOfParticles() ;
+    const FSize NbPart = loader.getNumberOfParticles() ;
     //////////////////////////////////////////////////////////////////////////////////
 
     OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
@@ -111,7 +111,7 @@ int main(int argc, char ** argv){
     FmaRWParticle<FReal, 8,8>* const particles = new FmaRWParticle<FReal, 8,8>[NbPart];
     loader.fillParticle(particles,NbPart);
 
-    for(int idxPart = 0 ; idxPart < NbPart; ++idxPart){
+    for(FSize idxPart = 0 ; idxPart < NbPart; ++idxPart){
         const FPoint<FReal> PP(particles[idxPart].getPosition() ) ;
         tree.insert(PP, idxPart, particles[idxPart].getPhysicalValue());
     }
@@ -138,7 +138,7 @@ int main(int argc, char ** argv){
     // Compute direct energy
     /////////////////////////////////////////////////////////////////////////////////////////////////
     FReal energyD = 0.0 ;
-    for(int idx = 0 ; idx <  loader.getNumberOfParticles()  ; ++idx){
+    for(FSize idx = 0 ; idx < loader.getNumberOfParticles()  ; ++idx){
         energyD +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
     }
 
@@ -159,11 +159,11 @@ int main(int argc, char ** argv){
                 const FReal*const forcesX            = leaf->getTargets()->getForcesX();
                 const FReal*const forcesY            = leaf->getTargets()->getForcesY();
                 const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
-                const int nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
-                const FVector<int>& indexes      = leaf->getTargets()->getIndexes();
+                const FSize nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                    const int indexPartOrig = indexes[idxPart];
+                for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                    const FSize indexPartOrig = indexes[idxPart];
                     potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
                     fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
                     fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);

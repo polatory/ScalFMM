@@ -926,7 +926,7 @@ public:
 	const FReal*const positionsY = inParticles->getPositions()[1];
 	const FReal*const positionsZ = inParticles->getPositions()[2];
 
-	for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
+	for(FSize idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
 	    // P2M
         const FPoint<FReal> position(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
         const FSpherical<FReal> sph(position - cellPosition);
@@ -1165,7 +1165,7 @@ public:
 	FReal*const forcesZ = inParticles->getForcesZ();
 	FReal*const potentials = inParticles->getPotentials();
 
-	for(int idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
+	for(FSize idxPart = 0 ; idxPart < inParticles->getNbParticles() ; ++ idxPart){
 	    // L2P
         const FPoint<FReal> position(positionsX[idxPart],positionsY[idxPart],positionsZ[idxPart]);
         const FSpherical<FReal> sph(position - cellPosition);

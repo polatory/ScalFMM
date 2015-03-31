@@ -43,7 +43,7 @@ private:
     /** To keep the leaves information after the sort */
     struct LeafInfo {
         MortonIndex mindex;
-        int nbParts;
+        FSize nbParts;
         FSize startingPoint;
     };
 
@@ -88,7 +88,7 @@ public:
         const FReal boxWidthAtLeafLevel = loader.getBoxWidth() / FReal(1 << (TreeHeight - 1) );
 
         // Fill the array and compute the morton index
-        for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             loader.fillParticle(originalParticlesUnsorted[idxPart].particle);
             host.setX( FCoordinateComputer::GetTreeCoordinate<FReal>( originalParticlesUnsorted[idxPart].particle.getPosition().getX() - boxCorner.getX(), loader.getBoxWidth(), boxWidthAtLeafLevel,
                                            TreeHeight ));
@@ -125,7 +125,7 @@ public:
         const FReal boxWidthAtLeafLevel = boxWidth / FReal(1 << (TreeHeight - 1) );
 
         // Fill the array and compute the morton index
-        for(int idxPart = 0 ; idxPart < originalNbParticles ; ++idxPart){
+        for(FSize idxPart = 0 ; idxPart < originalNbParticles ; ++idxPart){
             originalParticlesUnsorted[idxPart].particle = inOriginalParticles[idxPart];
             host.setX( FCoordinateComputer::GetTreeCoordinate<FReal>( originalParticlesUnsorted[idxPart].particle.getPosition().getX() - boxCorner.getX(), boxWidth, boxWidthAtLeafLevel,
                                            TreeHeight ));
@@ -205,7 +205,8 @@ public:
                 if(idProcToSendTo != myRank && allProcFirstLeafStates[(idProcToSendTo)*2 + 1].mindex == borderLeavesState[0].mindex){
                     // Post and send message for the first leaf
                     requests.push((MPI_Request)0);
-                    FMpi::MpiAssert(MPI_Isend(&workingArray[0], borderLeavesState[0].nbParts, MPI_BYTE, idProcToSendTo,
+                    FAssertLF(borderLeavesState[0].nbParts < std::numeric_limits<int>::max());
+                    FMpi::MpiAssert(MPI_Isend(&workingArray[0], int(borderLeavesState[0].nbParts), MPI_BYTE, idProcToSendTo,
                             FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]),__LINE__);
                     hasSentFirstLeaf = true;
                 }
@@ -234,7 +235,8 @@ public:
                         // If there are some on this proc
                         if(allProcFirstLeafStates[(postRecvIdx)*2].mindex != noDataFlag){
                             requests.push((MPI_Request)0);
-                            FMpi::MpiAssert(MPI_Irecv(&receivedParticles[postPositionRecv], allProcFirstLeafStates[(postRecvIdx)*2].nbParts, MPI_BYTE, postRecvIdx,
+                            FAssertLF(allProcFirstLeafStates[(postRecvIdx)*2].nbParts < std::numeric_limits<int>::max());
+                            FMpi::MpiAssert(MPI_Irecv(&receivedParticles[postPositionRecv], int(allProcFirstLeafStates[(postRecvIdx)*2].nbParts), MPI_BYTE, postRecvIdx,
                                             FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]),__LINE__);
                             // Inc the write position
                             postPositionRecv += allProcFirstLeafStates[(postRecvIdx)*2].nbParts;
@@ -245,13 +247,13 @@ public:
             }
 
             // Finalize communication
-            FMpi::MpiAssert(MPI_Waitall(requests.getSize(), requests.data(), MPI_STATUSES_IGNORE),__LINE__);
+            FMpi::MpiAssert(MPI_Waitall(int(requests.getSize()), requests.data(), MPI_STATUSES_IGNORE),__LINE__);
 
             // IF we sent we need to remove the first leaf
             if(hasSentFirstLeaf){
-                const int offsetParticles = borderLeavesState[0].nbParts;
+                const FSize offsetParticles = borderLeavesState[0].nbParts;
                 // Move all the particles
-                for(int idxPart = offsetParticles ; idxPart < (*workingSize) ; ++idxPart){
+                for(FSize idxPart = offsetParticles ; idxPart < (*workingSize) ; ++idxPart){
                     workingArray[idxPart - offsetParticles] = workingArray[idxPart];
                 }
                 // Move all the leaf
@@ -485,20 +487,22 @@ public:
 #ifdef SCALFMM_USE_LOG
         /** To produce stats after the Equalize phase  */
         {
-            const int finalNbParticles = particleSaver->getSize();
+            const FSize finalNbParticles = particleSaver->getSize();
 
             if(communicator.processId() != 0){
-                FMpi::MpiAssert(MPI_Gather(const_cast<int*>(&finalNbParticles),1,MPI_INT,nullptr,1,MPI_INT,0,communicator.getComm()), __LINE__);
+                FMpi::MpiAssert(MPI_Gather(const_cast<FSize*>(&finalNbParticles),1,FMpi::GetType(finalNbParticles),nullptr,
+                                           1,FMpi::GetType(finalNbParticles),0,communicator.getComm()), __LINE__);
             }
             else{
                 const int nbProcs = communicator.processCount();
-                std::unique_ptr<int[]> nbPartsPerProc(new int[nbProcs]);
+                std::unique_ptr<FSize[]> nbPartsPerProc(new FSize[nbProcs]);
 
-                FMpi::MpiAssert(MPI_Gather(const_cast<int*>(&finalNbParticles),1,MPI_INT,nbPartsPerProc.get(),1,MPI_INT,0,communicator.getComm()), __LINE__);
+                FMpi::MpiAssert(MPI_Gather(const_cast<FSize*>(&finalNbParticles),1,FMpi::GetType(finalNbParticles),nbPartsPerProc.get(),
+                                           1,FMpi::GetType(finalNbParticles),0,communicator.getComm()), __LINE__);
 
                 FReal averageNbParticles = 0;
-                int minNbParticles = finalNbParticles;
-                int maxNbParticles = finalNbParticles;
+                FSize minNbParticles = finalNbParticles;
+                FSize maxNbParticles = finalNbParticles;
 
                 for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc){
                     maxNbParticles = FMath::Max(maxNbParticles, nbPartsPerProc[idxProc]);
@@ -507,7 +511,7 @@ public:
                 }
                 averageNbParticles /= float(nbProcs);
 
-                printf("End of Equalize Phase : \n \t Min number of parts : %d \n \t Max number of parts : %d \n \t Average number of parts : %e \n",
+                printf("End of Equalize Phase : \n \t Min number of parts : %lld \n \t Max number of parts : %lld \n \t Average number of parts : %e \n",
                        minNbParticles,maxNbParticles,averageNbParticles);
             }
         }

@@ -83,7 +83,7 @@ int main(int argc, char ** argv){
 	std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
 	counter.tic();
 
-	for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+	for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         FPoint<FReal> particlePosition;
 		FReal physicalValue = 0.0;
 		loader.fillParticle(&particlePosition,&physicalValue);

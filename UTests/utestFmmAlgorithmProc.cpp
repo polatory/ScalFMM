@@ -201,7 +201,7 @@ class TestFmmAlgoProc : public FUTesterMpi<TestFmmAlgoProc> {
                     ContainerClass* containerValide = (valideOctreeIterator.getCurrentListTargets());
                     const long long int*const dataDownValide = containerValide->getDataDown();
 
-                    for(int idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
+                    for(FSize idxPart = 0 ; idxPart < container->getNbParticles() ; ++idxPart){
                         uassert(dataDown[idxPart] == dataDownValide[idxPart]);
                     }
                 }
@@ -241,7 +241,7 @@ class TestFmmAlgoProc : public FUTesterMpi<TestFmmAlgoProc> {
             TestParticle* particles = new TestParticle[loader.getNumberOfParticles()];
             memset(particles, 0, sizeof(TestParticle) * loader.getNumberOfParticles());
             FReal physicalValue;
-            for(int idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
                 loader.fillParticle(&particles[idxPart].position,&physicalValue);
             }
 

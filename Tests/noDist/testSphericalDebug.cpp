@@ -58,7 +58,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
         const int DevP = 2;
         // Warning in make test the exec dir it Build/UTests
         // Load particles
-        const int nbParticles = 2;
+        const FSize nbParticles = 2;
         const FReal boxWidth = 1.0;
         const FPoint<FReal> boxCenter(boxWidth/2.0,boxWidth/2.0,boxWidth/2.0);
 
@@ -115,7 +115,7 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
 
                     // Create octree
                     OctreeClass tree(NbLevels, SizeSubLevels, boxWidth, boxCenter);
-                    for(int idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
+                    for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
                         // put in tree
                         tree.insert(particles[idxPart].position, idxPart, particles[idxPart].physicalValue);
                         // get copy
@@ -160,11 +160,11 @@ class TestSphericalDirect : public FUTester<TestSphericalDirect> {
                             const FReal*const forcesX = leaf->getTargets()->getForcesX();
                             const FReal*const forcesY = leaf->getTargets()->getForcesY();
                             const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-                            const int nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-                            const FVector<int>& indexes = leaf->getTargets()->getIndexes();
+                            const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                            const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-                            for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                                const int indexPartOrig = indexes[idxPart];
+                            for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                                const FSize indexPartOrig = indexes[idxPart];
                                 potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
                                 fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
                                 fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);

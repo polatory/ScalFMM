@@ -112,9 +112,9 @@ public:
     void set_physical_values(int nbPhysicalValues,double * physicalValues){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     sources->getPhysicalValues()[idxPart] = physicalValues[indexes[idxPart]];
                 }
             });
@@ -126,9 +126,9 @@ public:
     void set_physical_values_npart( int nbPhysicalValues, int* idxOfParticles, double * physicalValues){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     int iterPart = 0;
                     bool notFoundYet = true;
                     while(iterPart < nbPhysicalValues && notFoundYet){
@@ -148,9 +148,9 @@ public:
     void get_physical_values( int nbPhysicalValues, double * physicalValues){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     physicalValues[indexes[idxPart]] = sources->getPhysicalValues()[idxPart];
                 }
             });
@@ -160,9 +160,9 @@ public:
     void get_physical_values_npart( int nbPhysicalValues, int* idxOfParticles, double * physicalValues){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     int iterPart = 0;
                     bool notFoundYet = true;
                     while(iterPart < nbPhysicalValues && notFoundYet){
@@ -181,9 +181,9 @@ public:
     void get_forces_xyz( int nbParts, double * forcesToFill){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     forcesToFill[indexes[idxPart]*3+0] = sources->getForcesX()[idxPart];
                     forcesToFill[indexes[idxPart]*3+1] = sources->getForcesY()[idxPart];
                     forcesToFill[indexes[idxPart]*3+2] = sources->getForcesZ()[idxPart];
@@ -194,9 +194,9 @@ public:
     void get_forces_xyz_npart(int nbParts, int* idxOfParticles , double * forcesToFill){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     int iterPart = 0;
                     bool notFoundYet = true;
                     while(iterPart < nbParts && notFoundYet){
@@ -217,9 +217,9 @@ public:
     void get_forces( int nbParts, double * fX, double* fY, double* fZ){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     fX[indexes[idxPart]] = sources->getForcesX()[idxPart];
                     fY[indexes[idxPart]] = sources->getForcesY()[idxPart];
                     fZ[indexes[idxPart]] = sources->getForcesZ()[idxPart];
@@ -230,9 +230,9 @@ public:
     void get_forces_npart(int nbParts, int* idxOfParticles ,double * fX, double* fY, double* fZ){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     int iterPart = 0;
                     bool notFoundYet = true;
                     while(iterPart < nbParts && notFoundYet){
@@ -254,9 +254,9 @@ public:
     void set_forces_xyz( int nbParts, double * forcesToRead){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     sources->getForcesX()[idxPart] = forcesToRead[indexes[idxPart]*3+0];
                     sources->getForcesY()[idxPart] = forcesToRead[indexes[idxPart]*3+1];
                     sources->getForcesZ()[idxPart] = forcesToRead[indexes[idxPart]*3+2];
@@ -266,9 +266,9 @@ public:
     void set_forces_xyz_npart( int nbParts, int* idxOfParticles, double * forcesToRead){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     int iterPart = 0;
                     bool notFoundYet = true;
                     while(iterPart < nbParts && notFoundYet){
@@ -288,9 +288,9 @@ public:
     void set_forces( int nbParts, double * fX, double* fY, double* fZ){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     sources->getForcesX()[idxPart] = fX[indexes[idxPart]];
                     sources->getForcesY()[idxPart] = fY[indexes[idxPart]];
                     sources->getForcesZ()[idxPart] = fZ[indexes[idxPart]];
@@ -300,9 +300,9 @@ public:
     void set_forces_npart( int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     int iterPart = 0;
                     bool notFoundYet = true;
                     while(iterPart < nbParts && notFoundYet){
@@ -324,9 +324,9 @@ public:
     void set_potentials(int nbPotentials,double * potentialsToRead){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     sources->getPotentials()[idxPart] = potentialsToRead[indexes[idxPart]];
                 }
             });
@@ -338,9 +338,9 @@ public:
     void set_potentials_npart( int nbPotentials, int* idxOfParticles, double * potentialsToRead){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     int iterPart = 0;
                     bool notFoundYet = true;
                     while(iterPart < nbPotentials && notFoundYet){
@@ -360,9 +360,9 @@ public:
     void get_potentials( int nbPotentials, double * potentialsToFill){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     potentialsToFill[indexes[idxPart]] = sources->getPotentials()[idxPart];
                 }
             });
@@ -372,9 +372,9 @@ public:
     void get_potentials_npart( int nbPotentials, int* idxOfParticles, double * potentialsToFill){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     int iterPart = 0;
                     bool notFoundYet = true;
                     while(iterPart < nbPotentials && notFoundYet){
@@ -393,9 +393,9 @@ public:
     void get_positions_xyz(int NbPositions, double * positionsToFill){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     positionsToFill[indexes[idxPart]*3+0] = sources->getPositions()[0][idxPart];
                     positionsToFill[indexes[idxPart]*3+1] = sources->getPositions()[1][idxPart];
                     positionsToFill[indexes[idxPart]*3+2] = sources->getPositions()[2][idxPart];
@@ -406,9 +406,9 @@ public:
     void get_positions_xyz_npart(int NbPositions, int * idxOfParticles, double * positionsToFill){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     int iterPart = 0;
                     bool notFoundYet = true;
                     while(iterPart < NbPositions && notFoundYet){
@@ -429,9 +429,9 @@ public:
     void get_positions( int NbPositions, double * X, double * Y , double * Z){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     X[indexes[idxPart]] = sources->getPositions()[0][idxPart];
                     Y[indexes[idxPart]] = sources->getPositions()[1][idxPart];
                     Z[indexes[idxPart]] = sources->getPositions()[2][idxPart];
@@ -442,9 +442,9 @@ public:
     void get_positions_npart(int NbPositions, int * idxOfParticles,double * X, double * Y , double * Z){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     int iterPart = 0;
                     bool notFoundYet = true;
                     while(iterPart < NbPositions && notFoundYet){
@@ -468,9 +468,9 @@ public:
     void add_to_positions_xyz(int NbPositions,double * updatedXYZ){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     sources->getWPositions()[0][idxPart] += updatedXYZ[indexes[idxPart]*3+0];
                     sources->getWPositions()[1][idxPart] += updatedXYZ[indexes[idxPart]*3+1];
                     sources->getWPositions()[2][idxPart] += updatedXYZ[indexes[idxPart]*3+2];
@@ -481,9 +481,9 @@ public:
     void add_to_positions(int NbPositions,double * X, double * Y , double * Z){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     sources->getWPositions()[0][idxPart] += X[indexes[idxPart]];
                     sources->getWPositions()[1][idxPart] += Y[indexes[idxPart]];
                     sources->getWPositions()[2][idxPart] += Z[indexes[idxPart]];
@@ -495,9 +495,9 @@ public:
     void set_positions_xyz(int NbPositions, double * updatedXYZ){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     sources->getWPositions()[0][idxPart] = updatedXYZ[indexes[idxPart]*3+0];
                     sources->getWPositions()[1][idxPart] = updatedXYZ[indexes[idxPart]*3+1];
                     sources->getWPositions()[2][idxPart] = updatedXYZ[indexes[idxPart]*3+2];
@@ -508,9 +508,9 @@ public:
     void set_positions(int NbPositions, double * X, double * Y, double * Z){
         octree->forEachLeaf([&](LeafClass* leaf){
                 ContainerClass * sources = leaf->getSrc();
-                const FVector<int>& indexes = sources->getIndexes();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 int nbPartThere = sources->getNbParticles();
-                for(int idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
                     sources->getWPositions()[0][idxPart] = X[indexes[idxPart]];
                     sources->getWPositions()[1][idxPart] = Y[indexes[idxPart]];
                     sources->getWPositions()[2][idxPart] = Z[indexes[idxPart]];

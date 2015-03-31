@@ -128,10 +128,10 @@ class TestLagrangeMpiDirect : public FUTesterMpi<TestLagrangeMpiDirect>{
                 const FReal*const forcesX           = leaf->getTargets()->getForcesX();
                 const FReal*const forcesY           = leaf->getTargets()->getForcesY();
                 const FReal*const forcesZ           = leaf->getTargets()->getForcesZ();
-                const int nbParticlesInLeaf         = leaf->getTargets()->getNbParticles();
-                const FVector<int>& indexes         = leaf->getTargets()->getIndexes();
+                const FSize nbParticlesInLeaf         = leaf->getTargets()->getNbParticles();
+                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-                for(int idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
                     const FSize indexPartOrig = FSize(indexes[idxPart])-idxStart;
                     //It's a proc on my left that used to keep this part
                     if(indexPartOrig < 0){
@@ -153,7 +153,7 @@ class TestLagrangeMpiDirect : public FUTesterMpi<TestLagrangeMpiDirect>{
                             fz.add(datas[7],forcesZ[idxPart]);
                             energy   += potentials[idxPart]*physicalValues[idxPart];
                             if(datas[0] != leaf->getTargets()->getPositions()[0][idxPart]){
-                                printf("- %d - Problem %d !! \t [%e,%e,%e,%e] [%e,%e,%e,%e] \n",
+                                printf("- %d - Problem %lld !! \t [%e,%e,%e,%e] [%e,%e,%e,%e] \n",
                                        app.global().processId(),indexes[idxPart],
                                        datas[0],datas[1],datas[2],datas[3],
                                         potentials[idxPart],forcesX[idxPart],
@@ -182,7 +182,7 @@ class TestLagrangeMpiDirect : public FUTesterMpi<TestLagrangeMpiDirect>{
 
             //Compute Direct Energy
             FReal energyD = 0.0;
-            for(int idx = 0 ; idx <  loader.getMyNumberOfParticles()  ; ++idx){
+            for(FSize idx = 0 ; idx <  loader.getMyNumberOfParticles()  ; ++idx){
                 energyD +=  particles[idx].getPotential()*particles[idx].getPhysicalValue() ;
             }
 
