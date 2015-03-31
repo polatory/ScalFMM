@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright SCALFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -337,6 +337,36 @@ struct FP2PRT<float>{
     static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                const int limiteNeighbors){
         FP2PR::GenericFullRemote<float, ContainerClass, __m256, 8>(inTargets, inNeighbors, limiteNeighbors);
+    }
+};
+#elif defined(SCALFMM_USE_AVX2)
+template <>
+struct FP2PRT<double>{
+    template <class ContainerClass>
+    static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors){
+        FP2PR::GenericFullMutual<double, ContainerClass, __m512d, 8>(inTargets, inNeighbors, limiteNeighbors);
+    }
+
+    template <class ContainerClass>
+    static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+               const int limiteNeighbors){
+        FP2PR::GenericFullRemote<double, ContainerClass, __m512d, 8>(inTargets, inNeighbors, limiteNeighbors);
+    }
+};
+
+template <>
+struct FP2PRT<float>{
+    template <class ContainerClass>
+    static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors){
+        FP2PR::GenericFullMutual<float, ContainerClass, __m512, 16>(inTargets, inNeighbors, limiteNeighbors);
+    }
+
+    template <class ContainerClass>
+    static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+               const int limiteNeighbors){
+        FP2PR::GenericFullRemote<float, ContainerClass, __m512, 16>(inTargets, inNeighbors, limiteNeighbors);
     }
 };
 

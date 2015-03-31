@@ -72,6 +72,17 @@ struct FMath{
         return _mm256_max_pd(_mm256_sub_pd(_mm256_setzero_pd(), inV), inV);
     }
 #endif
+#ifdef SCALFMM_USE_AVX2
+#ifdef __MIC__
+    static __m512 Abs(const __m512 inV){
+        return _mm512_max_ps(_mm512_sub_ps(_mm512_setzero_ps(), inV), inV);
+    }
+
+    static __m512d Abs(const __m512d inV){
+        return _mm512_max_pd(_mm512_sub_pd(_mm512_setzero_pd(), inV), inV);
+    }
+#endif
+#endif
 
     /** To get max between 2 values */
     template <class NumType>
@@ -115,7 +126,23 @@ struct FMath{
         return _mm256_min_pd(inV1, inV2);
     }
 #endif
+#ifdef SCALFMM_USE_AVX2
+#ifdef __MIC__
+    static __m512 Max(const __m512 inV1, const __m512 inV2){
+        return _mm512_max_ps(inV1, inV2);
+    }
+    static __m512 Min(const __m512 inV1, const __m512 inV2){
+        return _mm512_min_ps(inV1, inV2);
+    }
 
+    static __m512d Max(const __m512d inV1, const __m512d inV2){
+        return _mm512_max_pd(inV1, inV2);
+    }
+    static __m512d Min(const __m512d inV1, const __m512d inV2){
+        return _mm512_min_pd(inV1, inV2);
+    }
+#endif
+#endif
     /** To know if 2 values seems to be equal */
     template <class NumType>
     static bool LookEqual(const NumType inV1, const NumType inV2){
@@ -181,7 +208,25 @@ struct FMath{
         return _mm256_ceil_pd(inV);
     }
 #endif
+#ifdef SCALFMM_USE_AVX2
+#ifdef __MIC__
+    static __m512 dfloor(const __m512 inV){
+        return _mm512_floor_ps(inV);
+    }
 
+    static __m512d dfloor(const __m512d inV){
+        return _mm512_floor_pd(inV);
+    }
+
+    static __m512 Ceil(const __m512 inV){
+        return _mm512_ceil_ps(inV);
+    }
+
+    static __m512d Ceil(const __m512d inV){
+        return _mm512_ceil_pd(inV);
+    }
+#endif
+#endif
     /** To get pow */
     static double pow(double x, double y){
         return ::pow(x,y);
@@ -217,7 +262,46 @@ struct FMath{
     static bool Between(const NumType inValue, const NumType inMin, const NumType inMax){
         return ( inMin <= inValue && inValue < inMax );
     }
+    /** To compute fmadd operations **/
+    template <class NumType>
+    static NumType FMAdd(const NumType a, const NumType b, const NumType c){
+	return a * b + c;
+    }
 
+
+#if  defined(SCALFMM_USE_SSE ) && defined(__SSSE4_1__)
+    static __m128 FMAdd(const __m128 inV1, const __m128 inV2, const __m128 inV3){
+        return _mm_add_ps( _mm_mul_ps(inV1,inV2), inV3);
+    }
+
+    static __m128d FMAdd(const __m128d inV1, const __m128d inV2, const __m128d inV3){
+        return _mm_add_pd( _mm_mul_pd(inV1,inV2), inV3);
+    }
+
+#endif
+#ifdef SCALFMM_USE_AVX
+    static __m256 FMAdd(const __m256 inV1, const __m256 inV2, const __m256 inV3){
+        return _mm256_add_ps( _mm256_mul_ps(inV1,inV2), inV3);
+    }
+
+    static __m256d FMAdd(const __m256d inV1, const __m256d inV2, const __m256d inV3){
+        return _mm256_add_pd( _mm256_mul_pd(inV1,inV2), inV3);
+    }
+
+#endif
+#ifdef SCALFMM_USE_AVX2
+#ifdef __MIC__
+    static __m512 FMAdd(const __m512 inV1, const __m512 inV2, const __m512 inV3){
+        //return _mm512_add_ps( _mm512_mul_ps(inV1,inV2), inV3);
+        return _mm512_fmadd_ps(inV1, inV2, inV3);
+    }
+
+    static __m512d FMAdd(const __m512d inV1, const __m512d inV2, const __m512d inV3){
+        //return _mm512_add_pd( _mm512_mul_pd(inV1,inV2), inV3);
+        return _mm512_fmadd_pd(inV1, inV2, inV3);
+    }
+#endif
+#endif
     /** To get sqrt of a FReal */
     static float Sqrt(const float inValue){
         return sqrtf(inValue);
@@ -265,7 +349,25 @@ struct FMath{
         return _mm256_set1_pd(1.0) / _mm256_sqrt_pd(inV);
     }
 #endif
+#ifdef SCALFMM_USE_AVX2
+#ifdef __MIC__
+    static __m512 Sqrt(const __m512 inV){
+        return _mm512_sqrt_ps(inV);
+    }
 
+    static __m512d Sqrt(const __m512d inV){
+        return _mm512_sqrt_pd(inV);
+    }
+
+    static __m512 Rsqrt(const __m512 inV){
+        return _mm512_rsqrt_ps(inV);
+    }
+
+    static __m512d Rsqrt(const __m512d inV){
+        return _mm512_set1_pd(1.0) / _mm512_sqrt_pd(inV);
+    }
+#endif
+#endif
     /** To get Log of a FReal */
     static float Log(const float inValue){
         return logf(inValue);
@@ -607,7 +709,63 @@ inline double FMath::ConvertTo<double,__m256d>(const __m256d val){
     _mm256_store_pd(buffer, val);
     return buffer[0] + buffer[1] + buffer[2] + buffer[3];
 }
+#endif
+#ifdef SCALFMM_USE_AVX2
+#ifdef __MIC__
+template <>
+inline __m512 FMath::One<__m512>(){
+    return _mm512_set1_ps(1.0);
+}
 
+template <>
+inline __m512d FMath::One<__m512d>(){
+    return _mm512_set1_pd(1.0);
+}
+
+template <>
+inline __m512 FMath::Zero<__m512>(){
+    return _mm512_setzero_ps();
+}
+
+template <>
+inline __m512d FMath::Zero<__m512d>(){
+    return _mm512_setzero_pd();
+}
+
+template <>
+inline __m512 FMath::ConvertTo<__m512,__attribute__((aligned(64))) float>(const float val){
+    return _mm512_set1_ps(val);
+}
+
+template <>
+inline __m512d FMath::ConvertTo<__m512d,__attribute__((aligned(64))) double>(const double val){
+    return _mm512_set1_pd(val);
+}
+
+template <>
+inline __m512 FMath::ConvertTo<__m512,const __attribute__((aligned(64))) float*>(const float* val){
+    return _mm512_set1_ps(val[0]);
+}
+
+template <>
+inline __m512d FMath::ConvertTo<__m512d,const __attribute__((aligned(64))) double*>(const double* val){
+    return _mm512_set1_pd(val[0]);
+}
+
+template <>
+inline float FMath::ConvertTo<float,__m512>(const __m512 val){
+    __attribute__((aligned(64))) float buffer[16];
+    _mm512_store_ps(buffer, val);
+    return buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] + buffer[6] + buffer[7] + buffer[8] + buffer[9] + buffer[10] + buffer[11] + buffer[12] + buffer[13] + buffer[14] + buffer[15];
+}
+
+template <>
+inline double FMath::ConvertTo<double,__m512d>(const __m512d val){
+    __attribute__((aligned(64))) double buffer[8];
+    _mm512_store_pd(buffer, val);
+    return buffer[0] + buffer[1] + buffer[2] + buffer[3] + buffer[4] + buffer[5] + buffer[6] + buffer[7];
+}
+#endif
 #endif
 
 #endif //FMATH_HPP

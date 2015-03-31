@@ -80,8 +80,13 @@ typedef long long MortonIndex;
     #define Prefetch_Write(X) __builtin_prefetch(X,1,1)
 #else
     #ifdef __INTEL_COMPILER
-        #define Prefetch_Read(X)  _mm_prefetch(X,_MM_HINT_T0)
-        #define Prefetch_Write(X) _mm_prefetch(X,_MM_HINT_T0)
+	#ifdef ScalFMM_USE_AVX2
+                #define Prefetch_Read(X)  _mm512_prefetch(X,_MM_HINT_T0)
+                #define Prefetch_Write(X) _mm512_prefetch(X,_MM_HINT_T0)
+        #else
+        	#define Prefetch_Read(X)  _mm_prefetch(X,_MM_HINT_T0)
+	        #define Prefetch_Write(X) _mm_prefetch(X,_MM_HINT_T0)
+	#endif
     #else
         #warning compiler is not defined
         #define Prefetch_Read(X)

@@ -65,6 +65,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   option( SCALFMM_USE_ADDONS           "Set to ON to compile add ons"                OFF )
   option( SCALFMM_USE_SSE              "Set to ON to compile with SSE support (and use intrinsec SSE P2P)"  ON  )
   option( SCALFMM_USE_AVX              "Set to ON to compile with AVX support (and use intrinsec AVX P2P)" OFF  )
+  option( SCALFMM_USE_AVX2             "Set to ON to compile with AVX support (and use intrinsec AVXZ P2P)" OFF )
   option( SCALFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
   option( SCALFMM_USE_MIC_NATIVE       "Set to ON to compile in native mode for MIC" OFF  )
   option( SCALFMM_ONLY_DEVEL           "Set to ON to compile Development tools (only scalfmm team)" ON )
@@ -112,6 +113,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
       set(SSE_FLAGS  "-msse4  -mfpmath=sse")   # -mtune=native -march=native
     else(APPLE)
       set(AVX_FLAGS  "-mavx")
+      set(AVX2_FLAGS  "-mavx2")
       set(SSE_FLAGS  "-axSSE4.2")
     endif(APPLE)
     #-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
@@ -131,6 +133,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
       endif()
     endif()
     set(AVX_FLAGS "-mtune=native -march=native")
+    set(AVX2_FLAGS "-mtune=native -march=native -mmic")
     IF (APPLE)
       set(SSE_FLAGS  "-msse3  -mfpmath=sse")   # -mtune=native -march=native
     else(APPLE)
@@ -544,6 +547,42 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   if( SCALFMM_USE_AVX AND SCALFMM_USE_SSE)
     message(FATAL_ERROR "Check SCALFMM_USE_SSE or SCALFMM_USE_AVX BUT NOT BOTH. ")
   endif(SCALFMM_USE_AVX AND SCALFMM_USE_SSE)
+  ##################################################################
+  #                           Use AVX2                             #
+  ##################################################################
+
+  message(STATUS "SCALFMM_USE_AVX2               = ${SCALFMM_USE_AVX2}")
+  if(SCALFMM_USE_AVX2)
+    if(NOT EXISTS ${SCALFMM_CMAKE_MODULE_PATH}/compileTestAvx2.cpp)
+      message(FATAL_ERROR "The CompileTestSseFile does not exist (${SCALFMM_CMAKE_MODULE_PATH}/compileTestAvx.cpp)" )
+    endif()
+
+    try_compile(COMPILE_AVX2 ${CMAKE_CURRENT_BINARY_DIR}
+                ${SCALFMM_CMAKE_MODULE_PATH}/compileTestAvx2.cpp
+                COMPILE_DEFINITIONS "${CMAKE_CXX_FLAGS} ${AVX2_FLAGS}"
+                OUTPUT_VARIABLE COMPILE_AVX2_OUTPUT)
+    if(${COMPILE_AVX2})
+      set(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS}   ${AVX2_FLAGS}")
+      #set( SCALFMM_USE_SSE   OFF   FORCE) # ne marche pas
+      try_compile(COMPILE_RESULT_AVSPE ${CMAKE_CURRENT_BINARY_DIR}
+                  ${SCALFMM_CMAKE_MODULE_PATH}/checkAVX2pe.cpp
+                  COMPILE_DEFINITIONS "${CMAKE_CXX_FLAGS} ${AVX2_FLAGS}")
+      if( NOT ${COMPILE_RESULT_AVSPE})
+        set(__AVX2PE_INTEL_COMPILER ON)
+      endif()
+
+      message(STATUS ${CMAKE_CXX_FLAGS} )
+    else(${COMPILE_AVX2})
+      message(FATAL_ERROR "AVX2 NOT SUPPORTED ; Set SCALFMM_USE_AVX2  to OFF \n Output from test is : ${COMPILE_AVX_OUTPUT} ")
+    endif(${COMPILE_AVX2})
+  endif(SCALFMM_USE_AVX2)
+  list(APPEND FUSE_LIST "AVX2")
+  #
+  # Error if both SCALFMM_USE_AVX2 AND SCALFMM_USE_SSE are set
+  #
+  if( SCALFMM_USE_AVX2 AND SCALFMM_USE_SSE)
+    message(FATAL_ERROR "Check SCALFMM_USE_SSE or SCALFMM_USE_AVX2 BUT NOT BOTH. ")
+  endif(SCALFMM_USE_AVX2 AND SCALFMM_USE_SSE)
   ##################################################################
   #                     Use  native MIC compilation                #
   ##################################################################
