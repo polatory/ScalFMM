@@ -20,7 +20,7 @@
 
 #include <cstdlib>
 #include <cstring>
-
+#include <cstdio>
 
 /** Memstat has to be enabled in the cmake,
   * then it will use the know each allocate and deallocate
@@ -43,17 +43,28 @@ void operator delete[]( void* ptr, const std::nothrow_t& tag);
   */
 class FMemStats {
 private:
+    unsigned long long numberOfAllocations;
     unsigned long long maxAllocated;
     unsigned long long totalAllocated;
     std::size_t currentAllocated;
 
     FMemStats()
-        : maxAllocated(0), totalAllocated(0), currentAllocated(0) {
+        : numberOfAllocations(0), maxAllocated(0), totalAllocated(0), currentAllocated(0) {
     }
 
+#ifdef SCALFMM_USE_MEM_STATS
+    ~FMemStats(){
+        printf("[SCALFMM-MEMSTAT] Total number of allocations %lld \n", numberOfAllocations);
+        printf("[SCALFMM-MEMSTAT] Memory used at the end %lu Bytes (%f MB)\n", FMemStats::controler.getCurrentAllocated(), FMemStats::controler.getCurrentAllocatedMB());
+        printf("[SCALFMM-MEMSTAT] Max memory used %lld Bytes (%f MB)\n", FMemStats::controler.getMaxAllocated(), FMemStats::controler.getMaxAllocatedMB());
+        printf("[SCALFMM-MEMSTAT] Total memory used %lld Bytes (%f MB)\n", FMemStats::controler.getTotalAllocated(), FMemStats::controler.getTotalAllocatedMB());
+    }
+#endif
+
     void allocate(const std::size_t size){
+        numberOfAllocations += 1;
         currentAllocated += size;
-        totalAllocated += size;
+        totalAllocated   += size;
 
         if(maxAllocated < currentAllocated){
             maxAllocated = currentAllocated;
@@ -75,6 +86,11 @@ private:
 public:
     /** Singleton */
     static FMemStats controler;
+
+    /** return the max that has been allocated */
+    unsigned long long getNumberOfAllocations() const{
+        return numberOfAllocations;
+    }
 
     /** return the max that has been allocated */
     unsigned long long getMaxAllocated() const{
