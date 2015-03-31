@@ -197,7 +197,7 @@ public:
 
 };
 
-
+template<class FReal>
 class FUserKernelEngine : public FScalFMMEngine{
 
 private:
@@ -205,13 +205,13 @@ private:
     //Typedefs :
     typedef FP2PParticleContainerIndexed<FReal>           ContainerClass;
     typedef FSimpleLeaf<FReal, ContainerClass>                   LeafClass;
-    typedef FOctree<CoreCell,ContainerClass,LeafClass>  OctreeClass;
+    typedef FOctree<FReal,CoreCell,ContainerClass,LeafClass>  OctreeClass;
     typedef CoreKernel<CoreCell,ContainerClass>     CoreKernelClass;
 
     //For arranger classes
-    typedef FBasicParticleContainerIndexedMover<OctreeClass, ContainerClass> MoverClass;
+    typedef FBasicParticleContainerIndexedMover<FReal, OctreeClass, ContainerClass> MoverClass;
     typedef FOctreeArranger<FReal,OctreeClass, ContainerClass, MoverClass> ArrangerClass;
-    typedef FArrangerPeriodic<OctreeClass, ContainerClass, MoverClass> ArrangerClassPeriodic;
+    typedef FArrangerPeriodic<FReal,OctreeClass, ContainerClass, MoverClass> ArrangerClassPeriodic;
 
 
     //Attributes
