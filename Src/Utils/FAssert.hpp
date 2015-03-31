@@ -26,6 +26,9 @@
  * @brief The FError class
  * It is recommendede to use the macro:
  * FAssertLF( aTest , "some data ", "to ", plot);
+ * Assertion are enabled or disabled during the compilation.
+ * If disabled, the test instruction is still used (but the return will be optimized out by
+ * the compiler).
  */
 class FError {
 protected:

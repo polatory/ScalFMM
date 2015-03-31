@@ -13,7 +13,7 @@
 * <li> Declare index inside the for loop where they are used (and their names should start with "idx" if appropriate) </li>
 * <li> Use pre-inc if possible (even if the compiler will optimized post-inc for native type) </li>
 * <li> If a parameter is changed by a function use pointer else use const ref (if the size of object is less than 20 Bytes you can pass it by value, moreover if it is intensively used!)</li>
-* <li> Please do not name variables with one letter (except if it is related to a mathematical formula but then this one should be in the comment in latex format)</li>
+* <li> Please do not name variables with one letter difference (except if it is related to a mathematical formula but then this one should be in the comment in latex format)</li>
 * <li> Try not to have function bigger than 100 lines</li>
 * <li> Be consistent</li>
 * <li> Methods should start with a verb or an action (get, compute, print, etc...)</li>
@@ -43,7 +43,7 @@
 
 * \subsection pros Pros
   <ul>
-* <li> It is closed to recent languages.</li>
+* <li> It is closed to modern languages.</li>
 * <li> It is easy to maintains (you do not have to change the cpp and then the hpp).</li>
 * <li> You do not have to put you comment twice or to have an header with comments and a implementation without some.</li>
 * <li> It is directly global optimizations to object file and inline is performed directly.</li>
@@ -59,6 +59,6 @@
 * In our project we have plenty of templates.
 * Our project is not that big and many people arrived to work on it, and for now, all of them finally like to have all in the hpp when they discovered the project.
 
-* If someone wants to know what a class is proposing, then he can do as it is usual, he looks to the doc (who looks to Qt header to know QVector methods??).
+* If someone wants to know what a class is proposing, then he can do as it is usual, he looks to the doc (who looks to Qt header to know QVector methods??) or let his IDE propose the correct methods.
 
 **/
