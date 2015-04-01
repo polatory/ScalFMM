@@ -8,6 +8,8 @@
 #include "FCostCell.hpp"
 
 #include <vector>
+#include <stdexcept>
+#include <sstream>
 
 /**
  * \brief The costzones algorithm implementation.
@@ -28,6 +30,7 @@ public:
     using BoundClass = std::pair<MortonIndex, int>;
     /// Initial value for empty bounds.
     const BoundClass _boundInit {-1,0};
+
 
 protected:
     /// The iterator to move through the tree.
@@ -57,6 +60,11 @@ protected:
     /// traversal.
     enum ChildrenSide {LEFT, RIGHT};
 
+    /// The highest level in the tree in which to consider cells (inclusive)
+    int _topMostLevel = 0;
+    /// The lowest level in the tree in which to consider cells (exclusive)
+    int _bottomMostLevel = 1;
+
 public:
 
     /**
@@ -69,7 +77,9 @@ public:
         _nbZones( nbZones ),
         _treeHeight( tree->getHeight() ),
         _zones( 1, std::vector< std::pair< int, CellClass*> >( )),
-        _zonebounds( 1, std::vector< BoundClass >(_treeHeight, _boundInit ))
+        _zonebounds( 1, std::vector< BoundClass >(_treeHeight, _boundInit )),
+        _topMostLevel(0),
+        _bottomMostLevel(_treeHeight)
         {}
 
     /**
@@ -92,6 +102,35 @@ public:
         return _zonebounds;
     }
 
+    int getTopMostLevel() const {
+        return _topMostLevel;
+    }
+
+    void setTopMostLevel(unsigned int level) {
+        if( level > _treeHeight-1 ) {
+            std::stringstream msgstream;
+            msgstream << __FUNCTION__ << ": level is to deep. level=" << level
+                      << " tree height=" << _treeHeight;
+            //throw std::out_of_range(msgstream.str());
+        }
+            
+        _topMostLevel = level;
+    }
+
+    int getBottomMostLevel() const {
+        return _bottomMostLevel;
+    }
+
+    void setBottomMostLevel(unsigned int level) {
+        if( level > _treeHeight-1 ) {
+            std::stringstream msgstream;
+            msgstream << __FUNCTION__ << ": level is to deep. level=" << level
+                      << " tree height=" << _treeHeight;
+            //throw std::out_of_range(msgstream.str());
+        }
+            
+        _bottomMostLevel = level;
+    }
 
     /**
      * \brief Runs the costzones algorithm.
@@ -119,7 +158,7 @@ public:
         }
     }
 
-private:
+protected:
 
     /**
      * \brief Counts the left and right children of the current cell.
@@ -263,18 +302,24 @@ private:
 // END DEBUG SECTION
 
         std::pair<int,int> childrenCount;
-        bool isNotLeaf = _it.canProgressToDown();
+        const int level = _it.level();
+        const bool progressDown = _it.canProgressToDown()
+            && (level < _bottomMostLevel);
+        const bool useCell = (level < _bottomMostLevel)
+            && (level >= _topMostLevel);
+
 
         // When not on a leaf, apply to left children first
-        if ( isNotLeaf ) {
+        if ( progressDown ) {
             childrenCount = countLeftRightChildren();
             callCostZonesOnChildren(LEFT, childrenCount);
         }
 
-        addCurrentCell();
+        if( useCell )
+            addCurrentCell();
 
         // When not on a leaf, apply to right children
-        if ( isNotLeaf ) {
+        if ( progressDown ) {
             callCostZonesOnChildren(RIGHT, childrenCount);
         }
     }
