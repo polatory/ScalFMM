@@ -11,6 +11,7 @@
 
 #include "../../Src/Kernels/Chebyshev/FChebInterface.h"
 
+
 /**
  * This file is an example of the user defined kernel API, with link
  * to our Chebyshev Kernel
@@ -34,7 +35,7 @@ void cheb_free_cell(void * inCell){
  * @brief Wrapper to FMM operators (refer to CScalfmmApi.h to get the
  * detailed descriptions)
  */
-void cheb_p2m(void* cellData, FSize nbParticlesInLeaf, const int* particleIndexes, void* userData){
+void cheb_p2m(void* cellData, FSize nbParticlesInLeaf, const FSize* particleIndexes, void* userData){
     ChebKernel_P2M(cellData,nbParticlesInLeaf,particleIndexes,userData);
 }
 void cheb_m2m(int level, void* parentCell, int childPosition, void* childCell, void* userData){
@@ -46,11 +47,11 @@ void cheb_m2l_full(int level, void* targetCell, void* sourceCell[343], void* use
 void cheb_l2l(int level, void* parentCell, int childPosition, void* childCell, void* userData){
     ChebKernel_L2L( level, parentCell, childPosition, childCell,  userData);
 }
-void cheb_l2p(void* leafCell, FSize nbParticles, const int* particleIndexes, void* userData){
+void cheb_l2p(void* leafCell, FSize nbParticles, const FSize* particleIndexes, void* userData){
     ChebKernel_L2P( leafCell, nbParticles, particleIndexes, userData);
 }
-void cheb_p2pFull(FSize nbParticles, const int* particleIndexes,
-                  const int * sourceParticleIndexes[27], int sourceNbPart[27],void* userData) {
+void cheb_p2pFull(FSize nbParticles, const FSize* particleIndexes,
+                  const FSize * sourceParticleIndexes[27], FSize sourceNbPart[27],void* userData) {
     ChebKernel_P2P(nbParticles, particleIndexes, sourceParticleIndexes, sourceNbPart, userData);
 }
 
@@ -276,15 +277,15 @@ int main(int argc, char ** av){
                 nbPartOkay++;
             }
             else{
-                printf("id : %d : %e, %e, %e\n",idxPart,diffX,diffY,diffZ);
+                printf("id : %lld : %e, %e, %e\n",idxPart,diffX,diffY,diffZ);
             }
             //That part is to verify with our usual exec' if everything is alright
             if(idxPart == 0 || idxPart == nbPart/2 || idxPart == nbPart-1){
-                printf("User one's id : %d : %e, %e, %e\n",idxPart,
+                printf("User one's id : %lld : %e, %e, %e\n",idxPart,
                        forcesToStore[0][idxPart*3+0],
                        forcesToStore[0][idxPart*3+1],
                        forcesToStore[0][idxPart*3+2]);
-                printf("Chebyshev one's id : %d : %e, %e, %e\n",idxPart,
+                printf("Chebyshev one's id : %lld : %e, %e, %e\n",idxPart,
                        forcesRef[idxPart*3+0],
                        forcesRef[idxPart*3+1],
                        forcesRef[idxPart*3+2]);

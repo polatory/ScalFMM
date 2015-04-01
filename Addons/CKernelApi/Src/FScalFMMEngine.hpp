@@ -222,8 +222,8 @@ struct ScalFmmCoreHandle {
     struct ScalFmmCoreConfig {
         // Read/Write parameter
         int treeHeight;     //  Number of level in the octree
-        FReal boxWidth;    // Simulation box size (root level)
-        FPoint<FReal> boxCenter; // Center position of the box simulation(FReal[3])
+        double boxWidth;    // Simulation box size (root level)
+        FPoint<double> boxCenter; // Center position of the box simulation(FReal[3])
     };
 
     ScalFmmCoreConfig config;
@@ -390,6 +390,28 @@ extern "C" void scalfmm_execute_fmm(scalfmm_handle Handle){
 extern "C" void scalfmm_user_kernel_config(scalfmm_handle Handle, Scalfmm_Kernel_Descriptor userKernel, void * userDatas){
     ((ScalFmmCoreHandle * ) Handle)->engine->user_kernel_config(userKernel,userDatas);
 }
+
+/**
+ * These functions are just translating functions.
+ */
+
+//< This function fill the childFullPosition[3] with [-1;1] to know the position of a child relatively to
+//< its position from its parent
+extern "C" void scalfmm_utils_parentChildPosition(int childPosition, int* childFullPosition){
+    childFullPosition[2] = (childPosition%2 ? 1 : -1);
+    childFullPosition[1] = ((childPosition/2)%2 ? 1 : -1);
+    childFullPosition[0] = ((childPosition/4)%2 ? 1 : -1);
+}
+
+//< This function fill the childFullPosition[3] with [-3;3] to know the position of a interaction
+//< cell relatively to its position from the target
+extern "C" void scalfmm_utils_interactionPosition(int interactionPosition, int* srcPosition){
+    srcPosition[2] = interactionPosition%7 - 3;
+    srcPosition[1] = (interactionPosition/7)%7 - 3;
+    srcPosition[0] = (interactionPosition/49)%7 - 3;
+}
+
+
 
 
 #endif

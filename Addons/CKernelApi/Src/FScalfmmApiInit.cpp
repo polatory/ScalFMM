@@ -9,6 +9,7 @@ extern "C" {
 extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,double* BoxCenter, */scalfmm_kernel_type KernelType){
     ScalFmmCoreHandle * handle = new ScalFmmCoreHandle();
     typedef double FReal;
+
     switch(KernelType){
     case 0:
         handle->engine = new FUserKernelEngine<FReal>(/*TreeHeight, BoxWidth, BoxCenter, */KernelType);
@@ -24,16 +25,16 @@ extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,double* 
 
         handle->engine = new FInterEngine<FReal,ChebCell,ChebKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
         break;
-    // case 2:
-    //     //TODO typedefs
-    //     typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
-    //     typedef FUnifCell<7>                                                         UnifCell;
+        // case 2:
+        //     //TODO typedefs
+        //     typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
+        //     typedef FUnifCell<7>                                                         UnifCell;
 
-    //     typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
-    //     typedef FUnifKernel<UnifCell,ContainerClass,MatrixKernelClass,7>           UnifKernel;
+        //     typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
+        //     typedef FUnifKernel<UnifCell,ContainerClass,MatrixKernelClass,7>           UnifKernel;
 
-    //     handle->engine = new FInterEngine<UnifCell,UnifKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
-    //     break;
+        //     handle->engine = new FInterEngine<UnifCell,UnifKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
+        //     break;
 
     default:
         std::cout<< "Kernel type unsupported" << std::endl;
@@ -126,15 +127,15 @@ extern "C" void ChebKernelStruct_free(void *inKernel){
 }
 
 
-extern "C" void ChebKernel_P2M(void * leafCell, FSize nbParticles, const int *particleIndexes, void * inKernel){
+extern "C" void ChebKernel_P2M(void * leafCell, FSize nbParticles, const FSize *particleIndexes, void * inKernel){
     //make temporary array of parts
     FP2PParticleContainerIndexed<double>* tempContainer = new FP2PParticleContainerIndexed<double>();
     tempContainer->reserve(nbParticles);
     FPoint<double> pos;
     for(int i=0 ; i<nbParticles ; ++i){
         pos = FPoint<double>(reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3  ],
-                     reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+1],
-                     reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+2]);
+                             reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+1],
+                             reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+2]);
         double Phi = reinterpret_cast<UserData *>(inKernel)->myPhyValues[particleIndexes[i]];
 
         tempContainer->push(pos,particleIndexes[i],Phi);
@@ -168,8 +169,8 @@ extern "C" void  ChebKernel_M2M(int level, void* parentCell, int childPosition, 
     //Get the kernel
     ChebKernelStruct * inKernelStruct = reinterpret_cast<UserData*>(inKernel)->kernelStruct;
     inKernelStruct->kernel[id_thread]->getPtrToInterpolator()->applyM2M(childPosition,
-                                                             childChebCell->getMultipole(0),
-                                                             parentChebCell->getMultipole(0));
+                                                                        childChebCell->getMultipole(0),
+                                                                        parentChebCell->getMultipole(0));
 }
 
 extern "C" void ChebKernel_M2L(int level, void* targetCell,  void* sourceCell[343], void* inKernel){
@@ -198,7 +199,7 @@ extern "C" void ChebKernel_M2L(int level, void* targetCell,  void* sourceCell[34
 }
 
 extern "C" void ChebKernel_L2L(int level, void* parentCell, int childPosition, void* childCell, void* inKernel){
-   //Get our structures
+    //Get our structures
     ChebCellStruct * parentCellStruct = reinterpret_cast<ChebCellStruct *>(parentCell);
     ChebCellStruct * childCellStruct = reinterpret_cast<ChebCellStruct *>(childCell);
     //get real cheb cell
@@ -211,22 +212,22 @@ extern "C" void ChebKernel_L2L(int level, void* parentCell, int childPosition, v
     //Get the kernel
     ChebKernelStruct * inKernelStruct = reinterpret_cast<UserData*>(inKernel)->kernelStruct;
     inKernelStruct->kernel[id_thread]->getPtrToInterpolator()->applyL2L(childPosition,
-                                                             parentChebCell->getLocal(0),
-                                                             childChebCell->getLocal(0));
+                                                                        parentChebCell->getLocal(0),
+                                                                        childChebCell->getLocal(0));
 }
 
-extern "C" void ChebKernel_L2P(void* leafCell, FSize nbParticles, const int* particleIndexes, void* inKernel){
+extern "C" void ChebKernel_L2P(void* leafCell, FSize nbParticles, const FSize* particleIndexes, void* inKernel){
     //Create temporary FSimpleLeaf
     FP2PParticleContainerIndexed<double>* tempContainer = new FP2PParticleContainerIndexed<double>();
     tempContainer->reserve(nbParticles);
     FPoint<double> pos;
     for(int i=0 ; i<nbParticles ; ++i){
-    pos = FPoint<double>(reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3  ],
-        reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+1],
-        reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+2]);
-    double Phi = reinterpret_cast<UserData *>(inKernel)->myPhyValues[particleIndexes[i]];
-    tempContainer->push(pos,particleIndexes[i],Phi);
-}
+        pos = FPoint<double>(reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3  ],
+                             reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+1],
+                             reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+2]);
+        double Phi = reinterpret_cast<UserData *>(inKernel)->myPhyValues[particleIndexes[i]];
+        tempContainer->push(pos,particleIndexes[i],Phi);
+    }
     //Get our structures
     ChebCellStruct * leafCellStruct = reinterpret_cast<ChebCellStruct *>(leafCell);
     //get real cheb cell
@@ -242,28 +243,28 @@ extern "C" void ChebKernel_L2P(void* leafCell, FSize nbParticles, const int* par
 
     //Then retrieve the results
     double * forcesToFill = reinterpret_cast<UserData *>(inKernel)->forcesComputed[id_thread];
-    const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
+    const FVector<FSize>& indexes = tempContainer->getIndexes();
     for(FSize idxPart = 0 ; idxPart<nbParticles ; ++idxPart){
-    forcesToFill[indexes[idxPart]*3+0] += tempContainer->getForcesX()[idxPart];
-    forcesToFill[indexes[idxPart]*3+1] += tempContainer->getForcesY()[idxPart];
-    forcesToFill[indexes[idxPart]*3+2] += tempContainer->getForcesZ()[idxPart];
-}
+        forcesToFill[indexes[idxPart]*3+0] += tempContainer->getForcesX()[idxPart];
+        forcesToFill[indexes[idxPart]*3+1] += tempContainer->getForcesY()[idxPart];
+        forcesToFill[indexes[idxPart]*3+2] += tempContainer->getForcesZ()[idxPart];
+    }
 
     delete tempContainer;
     tempContainer=nullptr;
 }
 
 
-    void ChebKernel_P2P(FSize nbParticles, const int* particleIndexes,
-                    const int * sourceParticleIndexes[27],int sourceNbPart[27],void* inKernel){
+void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes,
+                    const FSize * sourceParticleIndexes[27],FSize sourceNbPart[27],void* inKernel){
 
     //Create temporary FSimpleLeaf for target
     FP2PParticleContainerIndexed<double>* tempContTarget = new FP2PParticleContainerIndexed<double>();
     tempContTarget->reserve(nbParticles);
     for(int i=0 ; i<nbParticles ; ++i){
         FPoint<double> pos = FPoint<double>(reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3  ],
-                            reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+1],
-                            reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+2]);
+                                            reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+1],
+                                            reinterpret_cast<UserData *>(inKernel)->insertedPositions[particleIndexes[i]*3+2]);
         double Phi = reinterpret_cast<UserData *>(inKernel)->myPhyValues[particleIndexes[i]];
         tempContTarget->push(pos,particleIndexes[i],Phi);
     }
@@ -277,12 +278,12 @@ extern "C" void ChebKernel_L2P(void* leafCell, FSize nbParticles, const int* par
             //Allocate memory
             tempContSources[idSource]->reserve(sourceNbPart[idSource]);
             //Store a ptr to the indices of that source leaf
-            const int * indSource = sourceParticleIndexes[idSource];
+            const FSize * indSource = sourceParticleIndexes[idSource];
             //Then, for each part in this source
             for(int i=0 ; i<sourceNbPart[idSource] ; ++i){
                 FPoint<double> pos = FPoint<double>(reinterpret_cast<UserData *>(inKernel)->insertedPositions[indSource[i]*3  ],
-                                    reinterpret_cast<UserData *>(inKernel)->insertedPositions[indSource[i]*3+1],
-                                    reinterpret_cast<UserData *>(inKernel)->insertedPositions[indSource[i]*3+2]);
+                                                    reinterpret_cast<UserData *>(inKernel)->insertedPositions[indSource[i]*3+1],
+                                                    reinterpret_cast<UserData *>(inKernel)->insertedPositions[indSource[i]*3+2]);
                 double Phi = reinterpret_cast<UserData *>(inKernel)->myPhyValues[indSource[i]];
                 tempContSources[idSource]->push(pos,indSource[i],Phi);
             }
@@ -306,7 +307,7 @@ extern "C" void ChebKernel_L2P(void* leafCell, FSize nbParticles, const int* par
 
     //get back forces
     double * forcesToFill = reinterpret_cast<UserData *>(inKernel)->forcesComputed[id_thread];
-    const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
+    const FVector<FSize>& indexes = tempContTarget->getIndexes();
     for(FSize idxPart = 0 ; idxPart<nbParticles ; ++idxPart){
         forcesToFill[indexes[idxPart]*3+0] += tempContTarget->getForcesX()[idxPart];
         forcesToFill[indexes[idxPart]*3+1] += tempContTarget->getForcesY()[idxPart];
@@ -316,12 +317,12 @@ extern "C" void ChebKernel_L2P(void* leafCell, FSize nbParticles, const int* par
     //Note that sources are also modified.
     //get back sources forces
     for(int idSource = 0 ; idSource < 27 ; ++idSource){
-        const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
-        const int nbPartInSource = sourceNbPart[idSource];
+        const FVector<FSize>& indexesSource = tempContSources[idSource]->getIndexes();
+        const FSize nbPartInSource = sourceNbPart[idSource];
         for(int idxSourcePart = 0; idxSourcePart < nbPartInSource ; ++idxSourcePart){
-            forcesToFill[indexes[idxSourcePart]*3+0] += tempContSources[idSource]->getForcesX()[idxSourcePart];
-            forcesToFill[indexes[idxSourcePart]*3+1] += tempContSources[idSource]->getForcesY()[idxSourcePart];
-            forcesToFill[indexes[idxSourcePart]*3+2] += tempContSources[idSource]->getForcesZ()[idxSourcePart];
+            forcesToFill[indexesSource[idxSourcePart]*3+0] += tempContSources[idSource]->getForcesX()[idxSourcePart];
+            forcesToFill[indexesSource[idxSourcePart]*3+1] += tempContSources[idSource]->getForcesY()[idxSourcePart];
+            forcesToFill[indexesSource[idxSourcePart]*3+2] += tempContSources[idSource]->getForcesZ()[idxSourcePart];
         }
     }
 
