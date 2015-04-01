@@ -96,7 +96,7 @@ int main(int argc, char* argv[]){
 
 //#define LOAD_FILE
 #ifndef LOAD_FILE
-    const int NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 20);
+    const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
     FRandomLoader<FReal> loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), 0);
 #else
     // Load the particles

@@ -72,9 +72,9 @@ int main(int argc, char* argv[]){
     FMpi mpiComm(argc, argv);
     // Get params
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
-    const int NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 20);
+    const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
     const int groupSize      = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 250);
-    const int totalNbParticles = (NbParticles*mpiComm.global().processCount());
+    const FSize totalNbParticles = (NbParticles*mpiComm.global().processCount());
 
     // Load the particles
     FRandomLoader<FReal> loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), mpiComm.global().processId());

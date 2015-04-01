@@ -82,7 +82,7 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
             particles[idxPart].forces[1] = 0.0;
             particles[idxPart].forces[2] = 0.0;
         }
-        double CorErr = loader.getNumberOfParticles()*value/a;
+        FReal CorErr = FReal(loader.getNumberOfParticles())*value/a;
         // Run FMM
         Print("Fmm...");
         FmmClass algo(&tree,PeriodicDeep);

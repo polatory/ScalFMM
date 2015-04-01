@@ -40,10 +40,10 @@ protected:
     /** Retrieve your data */
     template <class BufferReaderClass>
     void deserializeUp(BufferReaderClass&){
-        static_assert(sizeof(BufferWriterClass) == 0 , "Your class should implement deserializeUp");
+        static_assert(sizeof(BufferReaderClass) == 0 , "Your class should implement deserializeUp");
     }
 
-    virtual FSize getSavedSizeUp() = 0;
+    virtual FSize getSavedSizeUp() const = 0;
 
     ///////////////////////////////////////////////
     // For Downward pass
@@ -57,10 +57,10 @@ protected:
     /** Retrieve your data */
     template <class BufferReaderClass>
     void deserializeDown(BufferReaderClass&){
-        static_assert(sizeof(BufferWriterClass) == 0 , "Your class should implement deserializeDown");
+        static_assert(sizeof(BufferReaderClass) == 0 , "Your class should implement deserializeDown");
     }
 
-    virtual FSize getSavedSizeDown() = 0;
+    virtual FSize getSavedSizeDown() const = 0;
 };
 
 

@@ -105,7 +105,7 @@ struct TempMainStruct{
 
 		const int TreeHeight          = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
 		const int SubTreeHeight    = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
-		const int NbPart                = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 20);
+        const FSize NbPart                = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
 		const std::string filename  = FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,  "output");
 		const int nbTargets           = FParameters::getValue(argc,argv,LocalOptionPoints.options,  100);
 

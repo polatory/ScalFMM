@@ -71,7 +71,7 @@ int main(int argc, char ** argv){
 
         const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
         const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
-        const int NbPart       = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000000);
+        const FSize NbPart       = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(2000000));
         const int DevP         = FParameters::getValue(argc,argv,FParameterDefinitions::SHDevelopment.options, 5);
         const FPoint<FReal> centerOfBox = FPoint<FReal>(0.5,0.5,0.5);
         FTic counter;

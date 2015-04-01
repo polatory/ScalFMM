@@ -35,7 +35,6 @@ method</b> based on interpolation ( Chebyshev or Lagrange).
  * and new paradigm of parallelization. </li> 
  * </ul>
  *
- *
  * To download build and install the application, please see \ref
  * install.
  *

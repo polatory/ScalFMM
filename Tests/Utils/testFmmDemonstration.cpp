@@ -93,7 +93,7 @@ template< class CellClass, class ContainerClass>
 class MyKernel : public FAbstractKernels<CellClass,ContainerClass>{
     MortonIndex* indexForEachParticle;
 public:
-    MyKernel(const int inNbParticles): indexForEachParticle(new MortonIndex[inNbParticles]) {
+    MyKernel(const FSize inNbParticles): indexForEachParticle(new MortonIndex[inNbParticles]) {
         memset(indexForEachParticle,0,sizeof(MortonIndex)*inNbParticles);
     }
 
@@ -161,7 +161,7 @@ int main(int argc, char ** argv){
 
     const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
     const int SizeSubLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
-    const int NbPart = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 20);
+    const FSize NbPart = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
     FTic counter;
 
     //////////////////////////////////////////////////////////////////////////////////

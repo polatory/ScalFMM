@@ -27,7 +27,7 @@
 * @author Berenger Bramas (berenger.bramas@inria.fr)
 */
 template <class FReal>
-class FSphericalCell : public FBasicCell {
+class FSphericalCell : public FBasicCell, public FAbstractSendable {
 protected:
     static int DevP;
     static int LocalSize;

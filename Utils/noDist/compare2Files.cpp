@@ -62,7 +62,7 @@ int main(int argc, char ** argv){
 	// Allocation
 	//
 	FSize nbParticles          = loader1.getNumberOfParticles();
-    const FSize nbData   = loader1.getNbRecordPerline() ;
+    const unsigned int nbData   = loader1.getNbRecordPerline() ;
 	if(nbParticles !=  loader2.getNumberOfParticles()){
 		std::cerr << "Number of points is different in the two files."<<std::endl ;
 		return -1 ;

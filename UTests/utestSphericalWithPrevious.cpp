@@ -111,7 +111,7 @@ class TestSphericalWithPrevious : public FUTester<TestSphericalWithPrevious> {
 		algo.execute();
 
 		// If needed save the result
-		//FTreeIO::Save<OctreeClass, CellClass, LeafClass, ContainerClass >(DataFile.c_str(), testTree);
+        //FTreeIO<FReal>::Save<OctreeClass, CellClass, LeafClass, ContainerClass >(DataFile.c_str(), testTree);
 
 		// Load previous result
 		OctreeClass goodTree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());

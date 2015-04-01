@@ -31,19 +31,29 @@
  * @author Berenger Bramas (berenger.bramas@inria.fr)
  * Please read the license
  *
- * This class defines a container which can holds one type (AttributeClass)
- * for each particle.
- * The memory is allocated for all informations, the positions and the
- * request type.
+ * This class defines a container which can holds one type (AttributeClass) for each particle.
+ * The memory is allocated in one block and stores the positions and the request type.
  * For example if one wants to store a struct for each particle:
  * \code
  * struct AStruct{ ... };
- * FBasicParticleContainer<1, AStruct> container;
+ * FBasicParticleContainer<FReal, 1, AStruct> container;
  * \endcode
  * And then access is done using:
  * \code
  * AStruct* strucs = container.getAttributes<0>();
  * \endcode
+ * For example if one wants to store 4 doubles for each particles:
+ * \code
+ * FBasicParticleContainer<FReal, 4, double> container;
+ * \endcode
+ * And then access is done using:
+ * \code
+ * double* v1 = container.getAttributes<0>();
+ * double* v2 = container.getAttributes<1>();
+ * double* v3 = container.getAttributes<2>();
+ * double* v4 = container.getAttributes<3>();
+ * \endcode
+ * The memory is aligned to FP2PDefaultAlignement value.
  */
 template <class FReal, unsigned NbAttributesPerParticle, class AttributeClass >
 class FBasicParticleContainer : public FAbstractParticleContainer<FReal>, public FAbstractSerializable {

@@ -31,7 +31,7 @@
  * @param NVALS is the number of right hand side.
  */
 template <class FReal, int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
-class FChebCell : public FBasicCell
+class FChebCell : public FBasicCell, public FAbstractSendable
 {
     // nnodes = ORDER^3
     // we multiply by 2 because we store the  Multipole expansion end the compressed one.

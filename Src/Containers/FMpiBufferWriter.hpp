@@ -98,7 +98,7 @@ public:
     template <class ClassType>
     void write(const ClassType& object){
         expandIfNeeded(sizeof(ClassType));
-        FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
+        FAssertLF(currentIndex < std::numeric_limits<int>::max());
         int intCurrentIndex = int(currentIndex);
         FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), int(arrayCapacity), &intCurrentIndex, mpiComm), __LINE__);
         currentIndex = intCurrentIndex;

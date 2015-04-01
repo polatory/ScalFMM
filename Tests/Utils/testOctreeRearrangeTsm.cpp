@@ -67,7 +67,7 @@ int main(int argc, char ** argv){
 
     const int NbLevels          = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 7);
     const int SizeSubLevels     = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 3);
-    const int NbPart_Source     = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 200000);
+    const FSize NbPart_Source     = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(200000));
     const int NbPart_Target     = 10000;
 
     FTic counter;

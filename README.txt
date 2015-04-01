@@ -11,7 +11,7 @@ cd scalfmm/Build
 # Use cmake first by
 cmake ..
 # Or if you want to use MPI
-cmake .. -DScalFMM_USE_MPI=ON
+cmake .. -DSCALFMM_USE_MPI=ON
 
 
 # Configure, for example with:
@@ -32,6 +32,7 @@ the implementation, kernels and data structure.
 
 # The developer documentation is generated using DOxygen: 
 cd scalfmm/Build
+cmake .. -DSCALFMM_BUILD_DOC=ON
 # Tape 
 make doc
 # This will create a Html dir

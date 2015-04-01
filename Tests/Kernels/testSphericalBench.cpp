@@ -69,7 +69,7 @@ typedef FSphericalKernel< FReal, CellClass, ContainerClass >     KernelClass;
 typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass > FmmClass;
 
 
-void doATest(const int NbParticles, const int minP, const int maxP, const int minH, const int maxH,
+void doATest(const FSize NbParticles, const int minP, const int maxP, const int minH, const int maxH,
              const FReal physicalValue, const bool neutral ,
              FMath::FAccurater<FReal>* allPotentialDiff, FReal* allAbsoluteDiff, FReal* timing,
              const int SizeSubLevels = 3, FReal* timeForDirect = nullptr){
@@ -221,7 +221,7 @@ int main(int argc, char ** argv){
         FHelpDescribeAndExit(argc, argv, "Please read the code to know more, sorry");
     }
 
-    const int NbParticles = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 60000);
+    const FSize NbParticles = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(60000));
     const int NbLevels = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 6);
     const int DevP = FParameters::getValue(argc,argv,FParameterDefinitions::SHDevelopment.options, 30);
     const FReal physicalValue = FParameters::getValue(argc,argv,"-pv", 1.0);
@@ -259,7 +259,7 @@ int main(int argc, char ** argv){
             fprintf(fplot, "# H and P test\n");
             fprintf(fplot, "set terminal svg\n");
             fprintf(fplot, "set output \"test-hp.svg\"\n");
-            fprintf(fplot, "set title \"Precision for different H and P (NbParticles = %d)\n", NbParticles);
+            fprintf(fplot, "set title \"Precision for different H and P (NbParticles = %lld)\n", NbParticles);
             fprintf(fplot, "set xlabel \"H\"\n");
             fprintf(fplot, "set ylabel \"P\"\n");
             fprintf(fplot, "set zlabel \"Accuracy\"\n");
@@ -281,7 +281,7 @@ int main(int argc, char ** argv){
         const FReal stepValue = FParameters::getValue(argc,argv,"-sep", 0.1);
         const int nbStep = int((endPosition-startPosition)/stepValue);
 
-        const FReal boxWidth = FParameters::getValue(argc,argv,"-bw", 10.0);
+        const FReal boxWidth = FParameters::getValue(argc,argv,"-bw", FReal(10.0));
         const FPoint<FReal> boxCenter(0,0,0);
 
 
@@ -399,7 +399,7 @@ int main(int argc, char ** argv){
             fprintf(fplot, "# several height test\n");
             fprintf(fplot, "set terminal svg\n");
             fprintf(fplot, "set output \"test-h.svg\"\n");
-            fprintf(fplot, "set title \"Time for 3 different P and different H (NbParticles = %d)\"\n", NbParticles);
+            fprintf(fplot, "set title \"Time for 3 different P and different H (NbParticles = %lld)\"\n", NbParticles);
             fprintf(fplot, "set xlabel \"Height of the tree\"\n");
             fprintf(fplot, "set ylabel \"Time\"\n");
             fprintf(fplot, "set size ratio 0.5\n");
@@ -492,7 +492,7 @@ int main(int argc, char ** argv){
             fprintf(fplot, "# several height test\n");
             fprintf(fplot, "set terminal svg\n");
             fprintf(fplot, "set output \"test-p.svg\"\n");
-            fprintf(fplot, "set title \"Accuracy for different P (NbParticles = %d)\"\n", NbParticles);
+            fprintf(fplot, "set title \"Accuracy for different P (NbParticles = %lld)\"\n", NbParticles);
             fprintf(fplot, "set xlabel \"P\"\n");
             fprintf(fplot, "set ylabel \"Accuracy\"\n");
             fprintf(fplot, "set y2label \"Absolute Error\"\n");
