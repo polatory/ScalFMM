@@ -19,6 +19,7 @@
 #include "../Utils/FGlobal.hpp"
 #include "../Containers/FTreeCoordinate.hpp"
 #include "FAbstractSerializable.hpp"
+#include "FAbstractSendable.hpp"
 
 
 /**
