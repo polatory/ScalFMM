@@ -124,6 +124,8 @@ public:
         FTreeCoordinate host;
         const FReal boxWidthAtLeafLevel = boxWidth / FReal(1 << (TreeHeight - 1) );
 
+        FLOG(FTic counterTime);
+
         // Fill the array and compute the morton index
         for(FSize idxPart = 0 ; idxPart < originalNbParticles ; ++idxPart){
             originalParticlesUnsorted[idxPart].particle = inOriginalParticles[idxPart];
@@ -136,6 +138,8 @@ public:
 
             originalParticlesUnsorted[idxPart].index = host.getMortonIndex(TreeHeight - 1);
         }
+
+        FLOG( FLog::Controller << "\tPrepare particles ("  << counterTime.tacAndElapsed() << "s)\n" );
 
         // Sort particles
         if(sortingType == QuickSort){
@@ -466,11 +470,16 @@ public:
                                            const FPoint<FReal>& boxCenter, const FReal boxWidth, const int treeHeight,
                                            ContainerClass* particleSaver, FAbstractBalanceAlgorithm* balancer, const SortingType sortingType = QuickSort){
 
+        FLOG( FLog::Controller << "Enter DistributeArrayToContainer\n" );
+        FLOG( FTic timer );
+
         IndexedParticle* sortedParticlesArray = nullptr;
         FSize nbParticlesInArray = 0;
         // From ParticleClass get array of IndexedParticle sorted
         GetSortedParticlesFromArray(communicator, originalParticlesArray, originalNbParticles, sortingType, boxCenter, boxWidth, treeHeight,
                                     &sortedParticlesArray, &nbParticlesInArray);
+        FLOG( FLog::Controller << "\t GetSortedParticlesFromArray is over (" << timer.tacAndElapsed() << "s)\n" );
+        FLOG( timer.tic() );
 
         ParticleClass* particlesArrayInLeafOrder = nullptr;
         FSize * leavesOffsetInParticles = nullptr;
@@ -478,11 +487,19 @@ public:
         // Merge the leaves
         MergeSplitedLeaves(communicator, sortedParticlesArray, &nbParticlesInArray, &leavesOffsetInParticles, &particlesArrayInLeafOrder, &nbLeaves);
         delete[] sortedParticlesArray;
+
+        FLOG( FLog::Controller << "\t MergeSplitedLeaves is over (" << timer.tacAndElapsed() << "s)\n" );
+        FLOG( timer.tic() );
+
         // Equalize and balance
         EqualizeAndFillContainer(communicator, particleSaver, leavesOffsetInParticles, particlesArrayInLeafOrder, nbLeaves,
                                  nbParticlesInArray, balancer);
         delete[] particlesArrayInLeafOrder;
         delete[] leavesOffsetInParticles;
+
+        FLOG( FLog::Controller << "\t EqualizeAndFillContainer is over (" << timer.tacAndElapsed() << "s)\n" );
+
+        FLOG( FLog::Controller << "\t DistributeArrayToContainer is over (" << timer.cumulated() << "s)\n" );
 
 #ifdef SCALFMM_USE_LOG
         /** To produce stats after the Equalize phase  */
