@@ -195,6 +195,14 @@ public:
             return result;
         }
 
+        /** Reduce a value for all procs */
+        template< class T >
+        T allReduceSum(T data) const {
+            T result(0);
+            FMpi::Assert( MPI_Allreduce( &data, &result, 1, FMpi::GetType(data), MPI_SUM, communicator ), __LINE__);
+            return result;
+        }
+
         /** Reduce an average */
         template< class T >
         T reduceAverageAll(T data) const {
