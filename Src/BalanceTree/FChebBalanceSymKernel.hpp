@@ -13,6 +13,12 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
+
+// ==== CMAKE ====
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
+
 #ifndef FCHEBFLOPSSYMKERNEL_HPP
 #define FCHEBFLOPSSYMKERNEL_HPP
 

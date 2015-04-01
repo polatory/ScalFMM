@@ -1,3 +1,7 @@
+// ==== CMAKE ====
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
 #ifndef _COSTZONES_HPP_
 #define _COSTZONES_HPP_
 

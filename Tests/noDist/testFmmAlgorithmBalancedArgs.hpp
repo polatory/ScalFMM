@@ -1,3 +1,7 @@
+// ==== CMAKE ====
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
 #ifndef _LOADFMAANDRUNFMMARGS_HPP_
 #define _LOADFMAANDRUNFMMARGS_HPP_
 

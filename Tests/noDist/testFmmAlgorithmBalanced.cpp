@@ -14,6 +14,11 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
+// ==== CMAKE ====
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
+
 #include <string>
 
 using FReal = double;
@@ -36,16 +41,16 @@ using FReal = double;
 // Kernel
 //#include "Kernels/Chebyshev/FChebSymKernel.hpp"
 #include "Components/FTestKernels.hpp"
-#include "FChebBalanceSymKernel.hpp"
+#include "BalanceTree/FChebBalanceSymKernel.hpp"
 
 // Algorithm
 #include "Core/FFmmAlgorithm.hpp"
-#include "FFmmAlgorithmThreadBalanced.hpp"
+#include "BalanceTree/FFmmAlgorithmThreadBalanced.hpp"
 
 // Other
-#include "CostZones.hpp"
-#include "loadFMAAndRunFMMArgs.hpp"
-#include "loadFMAAndRunFMMUtils.hpp" // last include, to shorten main file
+#include "BalanceTree/FCostZones.hpp"
+#include "testFmmAlgorithmBalancedArgs.hpp"
+#include "testFmmAlgorithmBalancedUtils.hpp" // last include, to shorten main file
 
 #define ORDER 7
 

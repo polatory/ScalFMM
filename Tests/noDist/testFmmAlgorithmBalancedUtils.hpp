@@ -1,3 +1,7 @@
+// ==== CMAKE ====
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
 #ifndef _LOADFMAANDRUNFMMUTILS_HPP_
 #define _LOADFMAANDRUNFMMUTILS_HPP_
 
