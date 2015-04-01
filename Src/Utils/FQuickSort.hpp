@@ -117,6 +117,7 @@ protected:
         }
     }
 
+#ifndef FQS_TASKS_ARE_DISABLED
     /** A task dispatcher */
     static void QsOmpTask(SortType array[], const IndexType left, const IndexType right, const int deep, const infOrEqualPtr infOrEqual){
         if(left < right){
@@ -127,6 +128,8 @@ protected:
                 QsOmpTask(array,part + 1,right, deep - 1, infOrEqual);
                 // #pragma omp task default(none) firstprivate(array, part, right, deep, infOrEqual) // not needed
                 QsOmpTask(array,left,part - 1, deep - 1, infOrEqual);
+
+                #pragma omp taskwait
             }
             else {
                 QsSequentialStep(array,part + 1,right, infOrEqual);
@@ -134,6 +137,7 @@ protected:
             }
         }
     }
+#endif
 
 public:
     /* a sequential qs */
