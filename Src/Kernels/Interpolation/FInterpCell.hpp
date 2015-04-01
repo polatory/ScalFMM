@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -189,21 +189,21 @@ public:
 
 };
 
-template <int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
-class FTypedInterpCell : public FInterpCell<ORDER,NRHS,NLHS,NVALS>, public FExtendCellType {
+template <class FReal,int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
+class FTypedInterpCell : public FInterpCell<FReal,ORDER,NRHS,NLHS,NVALS>, public FExtendCellType {
 public:
     template <class BufferWriterClass>
     void save(BufferWriterClass& buffer) const{
-        FInterpCell<ORDER,NRHS,NLHS,NVALS>::save(buffer);
+        FInterpCell<FReal,ORDER,NRHS,NLHS,NVALS>::save(buffer);
         FExtendCellType::save(buffer);
     }
     template <class BufferReaderClass>
     void restore(BufferReaderClass& buffer){
-        FInterpCell<ORDER,NRHS,NLHS,NVALS>::restore(buffer);
+        FInterpCell<FReal,ORDER,NRHS,NLHS,NVALS>::restore(buffer);
         FExtendCellType::restore(buffer);
     }
     void resetToInitialState(){
-        FInterpCell<ORDER,NRHS,NLHS,NVALS>::resetToInitialState();
+        FInterpCell<FReal,ORDER,NRHS,NLHS,NVALS>::resetToInitialState();
         FExtendCellType::resetToInitialState();
     }
 
