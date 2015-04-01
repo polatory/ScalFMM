@@ -487,7 +487,7 @@ protected:
                             sendBuffer.writeAt(0,packageFlags);
                             // Post the message
                             bufferSize = sendBuffer.getSize();
-                            MPI_Isend(&bufferSize, 1, MPI_INT, currentProcIdToSendTo,
+                            MPI_Isend(&bufferSize, 1, FMpi::GetType(bufferSize), currentProcIdToSendTo,
                                       FMpi::TagFmmM2MSize + idxLevel, comm.getComm(), &requestsSize[iterMpiRequestsSize++]);
                             FAssertLF(sendBuffer.getSize() < std::numeric_limits<int>::max());
                             MPI_Isend(sendBuffer.data(), int(sendBuffer.getSize()), MPI_PACKED, currentProcIdToSendTo,
@@ -505,7 +505,7 @@ protected:
                         while( idProcSource < nbProcess
                                && ( !procHasWorkAtLevel(idxLevel+1, idProcSource) || procCoversMyRightBorderCell(idxLevel, idProcSource) )){
                             if(procHasWorkAtLevel(idxLevel+1, idProcSource) && procCoversMyRightBorderCell(idxLevel, idProcSource)){
-                                MPI_Irecv(&recvBufferSize[nbProcThatSendToMe], 1, MPI_INT,
+                                MPI_Irecv(&recvBufferSize[nbProcThatSendToMe], 1, FMpi::GetType(recvBufferSize[nbProcThatSendToMe]),
                                         idProcSource, FMpi::TagFmmM2MSize + idxLevel, comm.getComm(), &requestsSize[iterMpiRequestsSize++]);
                                 nbProcThatSendToMe += 1;
                                 FAssertLF(nbProcThatSendToMe <= 7);
@@ -558,17 +558,21 @@ protected:
                             int packageFlags = int(recvBuffer[idxProc].getValue<char>());
 
                             int position = 0;
+                            int positionToInsert = 0;
                             while( packageFlags && position < 8){
                                 while(!(packageFlags & 0x1)){
                                     packageFlags >>= 1;
                                     ++position;
                                 }
+                                FAssertLF(positionToInsert < 7);
+                                FAssertLF(position < 8);
                                 FAssertLF(!currentChild[position], "Already has a cell here");
-                                recvBufferCells[position].deserializeUp(recvBuffer[idxProc]);
-                                currentChild[position] = (CellClass*) &recvBufferCells[position];
+                                recvBufferCells[positionToInsert].deserializeUp(recvBuffer[idxProc]);
+                                currentChild[position] = (CellClass*) &recvBufferCells[positionToInsert];
 
                                 packageFlags >>= 1;
-                                ++position;
+                                position += 1;
+                                positionToInsert += 1;
                             }
 
                             recvBuffer[idxProc].seek(0);
@@ -808,6 +812,7 @@ protected:
                                         }
                                         indexToSend[idxLevel * nbProcess + procToReceive] += iterArrayLocal[idxCell].getCurrentCell()->getSavedSizeUp();
                                         indexToSend[idxLevel * nbProcess + procToReceive] += sizeof(MortonIndex);
+                                        indexToSend[idxLevel * nbProcess + procToReceive] += sizeof(FSize);
                                     }
                                 }
                             }
@@ -849,6 +854,8 @@ protected:
                             sendBuffer[idxLevel * nbProcess + idxProc]->write(int(toSend[idxLevel * nbProcess + idxProc].getSize()));
 
                             for(int idxLeaf = 0 ; idxLeaf < toSend[idxLevel * nbProcess + idxProc].getSize(); ++idxLeaf){
+                                const FSize currentTell = sendBuffer[idxLevel * nbProcess + idxProc]->getSize();
+                                sendBuffer[idxLevel * nbProcess + idxProc]->write(currentTell);
                                 const MortonIndex cellIndex = toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentGlobalIndex();
                                 sendBuffer[idxLevel * nbProcess + idxProc]->write(cellIndex);
                                 toSend[idxLevel * nbProcess + idxProc][idxLeaf].getCurrentCell()->serializeUp(*sendBuffer[idxLevel * nbProcess + idxProc]);
@@ -979,6 +986,10 @@ protected:
                         const int toReceiveFromProcAtLevel = recvBuffer[idxLevel * nbProcess + idxProc]->template getValue<int>();
 
                         for(int idxCell = 0 ; idxCell < toReceiveFromProcAtLevel ; ++idxCell){
+                            const FSize currentTell = recvBuffer[idxLevel * nbProcess + idxProc]->tell();
+                            const FSize verifCurrentTell = recvBuffer[idxLevel * nbProcess + idxProc]->template getValue<FSize>();
+                            FAssertLF(currentTell == verifCurrentTell, currentTell, " ", verifCurrentTell);
+
                             const MortonIndex cellIndex = recvBuffer[idxLevel * nbProcess + idxProc]->template getValue<MortonIndex>();
 
                             CellClass* const newCell = new CellClass;
@@ -1179,7 +1190,7 @@ protected:
                     FSize sendBufferSize;
                     // Post the receive
                     if(hasToReceive){
-                        FMpi::MpiAssert( MPI_Irecv( &recvBufferSize, 1, MPI_INT, idxProcToReceive,
+                        FMpi::MpiAssert( MPI_Irecv( &recvBufferSize, 1, FMpi::GetType(recvBufferSize), idxProcToReceive,
                                                     FMpi::TagFmmL2LSize + idxLevel, comm.getComm(), &requestsSize[iterRequestsSize++]), __LINE__ );
                     }
 
@@ -1199,7 +1210,7 @@ protected:
                                     sendBufferSize = sendBuffer.getSize();
                                 }
                                 // Post the send message
-                                FMpi::MpiAssert( MPI_Isend(&sendBufferSize, 1, MPI_INT, idxProcSend,
+                                FMpi::MpiAssert( MPI_Isend(&sendBufferSize, 1, FMpi::GetType(sendBufferSize), idxProcSend,
                                                            FMpi::TagFmmL2LSize + idxLevel, comm.getComm(), &requestsSize[iterRequestsSize++]), __LINE__);
                                 FAssertLF(sendBuffer.getSize() < std::numeric_limits<int>::max());
                                 FMpi::MpiAssert( MPI_Isend(sendBuffer.data(), int(sendBuffer.getSize()), MPI_PACKED, idxProcSend,
@@ -1400,7 +1411,7 @@ protected:
                 // No idea why it is mandatory there, could it be a few line before,
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                     if(partsToSend[idxProc]){
-                        partsToSend[idxProc] += int(sizeof(int));
+                        partsToSend[idxProc] += int(sizeof(FSize));
                     }
                 }
             }
@@ -1411,7 +1422,8 @@ protected:
             if(p2pEnabled){
                 //Share to all processus globalReceiveMap
                 FLOG(gatherCounter.tic());
-                FMpi::MpiAssert( MPI_Allgather( partsToSend, nbProcess, MPI_INT, globalReceiveMap, nbProcess, MPI_INT, comm.getComm()),  __LINE__ );
+                FMpi::MpiAssert( MPI_Allgather( partsToSend, nbProcess, FMpi::GetType(*partsToSend),
+                                                globalReceiveMap, nbProcess, FMpi::GetType(*partsToSend), comm.getComm()),  __LINE__ );
                 FLOG(gatherCounter.tac());
 
                 //Prepare receive
@@ -1437,6 +1449,7 @@ protected:
                             toSend[idxProc][idxLeaf].getCurrentListSrc()->save(*sendBuffer[idxProc]);
                         }
 
+                        FAssertLF(sendBuffer[idxProc]->getSize() == globalReceiveMap[idProcess*nbProcess+idxProc]);
                         FAssertLF(sendBuffer[idxProc]->getSize() < std::numeric_limits<int>::max());
                         FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), int(sendBuffer[idxProc]->getSize()) , MPI_PACKED ,
                                                     idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
@@ -1458,9 +1471,9 @@ protected:
 
                 for(int idxRcv = 0 ; idxRcv < nbMessagesToRecv ; ++idxRcv){
                     const int idxProc = status[idxRcv].MPI_SOURCE;
-                    int nbLeaves;
+                    FSize nbLeaves;
                     (*recvBuffer[idxProc]) >> nbLeaves;
-                    for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+                    for(FSize idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
                         MortonIndex leafIndex;
                         (*recvBuffer[idxProc]) >> leafIndex;
                         otherP2Ptree.createLeaf(leafIndex)->getSrc()->restore((*recvBuffer[idxProc]));

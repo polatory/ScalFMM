@@ -16,6 +16,8 @@
 #ifndef CKERNELAPI_H
 #define CKERNELAPI_H
 
+typedef long long int FSize;
+
 /**
  * @file
  * This file defines the API for the C USER.  The objective is to
@@ -362,7 +364,7 @@ void scalfmm_algorithm_config(scalfmm_handle Handle,scalfmm_algorithm config);
  * @param particleIndexes indexes of particles currently computed
  * @param userData datas specific to the user's kernel
  */
-typedef void (*Callback_P2M)(void* leafCell, FSize nbParticles, const int* particleIndexes, void* userData);
+typedef void (*Callback_P2M)(void* leafCell, FSize nbParticles, const FSize* particleIndexes, void* userData);
 
 /**
  * @brief Function to be filled by user's M2M
@@ -411,7 +413,7 @@ typedef void (*Callback_L2L)(int level, void* parentCell, int childPosition, voi
  * @param particleIndexes indexes of particles currently computed
  * @param userData datas specific to the user's kernel
  */
-typedef void (*Callback_L2P)(void* leafCell, FSize nbParticles,const int* particleIndexes, void* userData);
+typedef void (*Callback_L2P)(void* leafCell, FSize nbParticles,const FSize* particleIndexes, void* userData);
 
 /**
  * @brief Function to be filled by user's P2P
@@ -421,7 +423,7 @@ typedef void (*Callback_L2P)(void* leafCell, FSize nbParticles,const int* partic
  * @param sourceParticleIndexes indexes of cource particles currently computed
  * @param userData datas specific to the user's kernel
  */
-typedef void (*Callback_P2P)(FSize nbParticles, const int* particleIndexes, int nbSourceParticles, const int* sourceParticleIndexes, void* userData);
+typedef void (*Callback_P2P)(FSize nbParticles, const FSize* particleIndexes, FSize nbSourceParticles, const FSize* sourceParticleIndexes, void* userData);
 
 /**
  * @brief Function to be filled by user's P2P
@@ -432,8 +434,8 @@ typedef void (*Callback_P2P)(FSize nbParticles, const int* particleIndexes, int 
  * @param sourceNbPart array containing the number of part in each neighbors
  * @param userData datas specific to the user's kernel
  */
-typedef void (*Callback_P2PFull)(FSize nbParticles, const int* particleIndexes,
-                                 const int * sourceParticleIndexes[27],int sourceNbPart[27], void* userData);
+typedef void (*Callback_P2PFull)(FSize nbParticles, const FSize* particleIndexes,
+                                 const FSize * sourceParticleIndexes[27],FSize sourceNbPart[27], void* userData);
 
 
 /**
@@ -442,7 +444,7 @@ typedef void (*Callback_P2PFull)(FSize nbParticles, const int* particleIndexes,
  * @param particleIndexes indexes of particles currently computed
  * @param userData datas specific to the user's kernel
  */
-typedef void (*Callback_P2PInner)(FSize nbParticles, const int* particleIndexes, void* userData);
+typedef void (*Callback_P2PInner)(FSize nbParticles, const FSize* particleIndexes, void* userData);
 
 
 

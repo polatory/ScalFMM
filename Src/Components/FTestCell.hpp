@@ -27,7 +27,7 @@
  * This cell simply store the data when up/down.
  * It also shows how to be restored and saved, etc.
  */
-class FTestCell : public FBasicCell  {
+class FTestCell : public FBasicCell, public FAbstractSendable  {
 protected:
 	// To store data during upward and downward pass
 	long long int dataUp, dataDown;
@@ -104,12 +104,12 @@ public:
 		buffer >> this->dataDown;
 	}
 
-    int getSavedSizeDown() {
-        return int(sizeof(long long int));
+    FSize getSavedSizeDown() const {
+        return FSize(sizeof(long long int));
     }
 
-    int getSavedSizeUp() {
-        return int(sizeof(long long int));
+    FSize getSavedSizeUp() const {
+        return FSize(sizeof(long long int));
     }
 };
 

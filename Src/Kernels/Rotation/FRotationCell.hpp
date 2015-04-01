@@ -35,7 +35,7 @@
   * (n+1)*n/2 => (P+2)*(P+1)/2
   */
 template <class FReal, int P>
-class FRotationCell : public FBasicCell {
+class FRotationCell : public FBasicCell, public FAbstractSendable {
 protected:
     //< Size of multipole vector
     static const int MultipoleSize = ((P+2)*(P+1))/2; // Artimethique suite (n+1)*n/2
@@ -129,6 +129,14 @@ public:
         buffer.fillArray(local_exp, LocalSize);
     }
 
+    FSize getSavedSizeUp() const {
+        return ((FSize) sizeof(FComplex<FReal>)) * (MultipoleSize);
+    }
+
+    FSize getSavedSizeDown() const {
+        return ((FSize) sizeof(FComplex<FReal>)) * (LocalSize);
+    }
+
     ///////////////////////////////////////////////////////
     // to extend Serializable
     ///////////////////////////////////////////////////////
@@ -148,14 +156,6 @@ public:
     FSize getSavedSize() const {
         return FSize(((int) sizeof(FComplex<FReal>)) * (MultipoleSize + LocalSize)
                 + FBasicCell::getSavedSize());
-    }
-
-    FSize getSavedSizeUp() const {
-        return ((FSize) sizeof(FComplex<FReal>)) * (MultipoleSize);
-    }
-
-    FSize getSavedSizeDown() const {
-        return ((FSize) sizeof(FComplex<FReal>)) * (LocalSize);
     }
 };
 

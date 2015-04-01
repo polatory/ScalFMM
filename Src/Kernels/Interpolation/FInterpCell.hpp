@@ -40,7 +40,7 @@
  * @param NVALS is the number of right hand side.
  */
 template <class FReal, int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>
-class FInterpCell : public FBasicCell
+class FInterpCell : public FBasicCell, public FAbstractSendable
 {
     static const int VectorSize = TensorTraits<ORDER>::nnodes;
     static const int TransformedVectorSize = (2*ORDER-1)*(2*ORDER-1)*(2*ORDER-1);
