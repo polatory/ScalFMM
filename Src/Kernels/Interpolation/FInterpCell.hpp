@@ -17,11 +17,11 @@
 #define FINTERPCELL_HPP
 
 
-#include "./FInterpTensor.hpp"
-#include "../../Components/FBasicCell.hpp"
-#include "../../Extensions/FExtendCellType.hpp"
+#include "FInterpTensor.hpp"
+#include "Components/FBasicCell.hpp"
+#include "Extensions/FExtendCellType.hpp"
 
-#include "../../Utils/FComplex.hpp"
+#include "Utils/FComplex.hpp"
 
 /**
  * @author Pierre Blanchard (pierre.blanchard@inria.fr)
@@ -177,12 +177,12 @@ public:
                      + FBasicCell::getSavedSize());
     }
 
-    int getSavedSizeUp() const {
+    FSize getSavedSizeUp() const {
         return FSize((NRHS)*NVALS*VectorSize * (int) sizeof(FReal)
                      + (NRHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex<FReal>));
     }
 
-    int getSavedSizeDown() const {
+    FSize getSavedSizeDown() const {
         return FSize((NLHS)*NVALS*VectorSize * (int) sizeof(FReal)
                      + (NLHS)*NVALS*TransformedVectorSize * (int) sizeof(FComplex<FReal>));
     }

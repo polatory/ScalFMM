@@ -20,12 +20,12 @@
 #define FUNIFINTERPOLATOR_HPP
 
 
-#include "./../Interpolation/FInterpMapping.hpp"
+#include "../Interpolation/FInterpMapping.hpp"
 
-#include "./FUnifTensor.hpp"
-#include "./FUnifRoots.hpp"
+#include "FUnifTensor.hpp"
+#include "FUnifRoots.hpp"
 
-#include "../../Utils/FBlas.hpp"
+#include "Utils/FBlas.hpp"
 
 
 
