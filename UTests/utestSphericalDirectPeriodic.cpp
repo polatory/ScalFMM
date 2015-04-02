@@ -83,6 +83,8 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
             particles[idxPart].forces[2] = 0.0;
         }
         FReal CorErr = FReal(loader.getNumberOfParticles())*value/a;
+        coeff = FMath::Abs(coeff)* static_cast<int>(NbParticles)  ;
+
         // Run FMM
         Print("Fmm...");
         FmmClass algo(&tree,PeriodicDeep);
@@ -207,8 +209,8 @@ class TestSphericalDirectPeriodic : public FUTester<TestSphericalDirectPeriodic>
 		uassert(fz.getRMSError() < MaximumDiffForces);                                           //8
 		Print("Test9 - Error Relative L2 norm F ");
 		uassert(L2error              < MaximumDiffForces);                                            //9   Total Force
-//		Print("Test10 - Relative error Energy ");
-//		uassert(FMath::Abs(energy-energyD) /FMath::Abs(energyD)< coeff*MaximumDiffPotential);                     //10  Total Energy
+		Print("Test10 - Relative error Energy ");
+		uassert(FMath::Abs(energy-energyD) /FMath::Abs(energyD)< coeff*MaximumDiffPotential);                     //10  Total Energy
 
         delete[] particles;
     }

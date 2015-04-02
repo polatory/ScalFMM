@@ -30,6 +30,7 @@
 #include "Core/FFmmAlgorithmPeriodic.hpp"
 
 #include "FUTester.hpp"
+#include "Utils/FMath.hpp"
 
 
 #include "Kernels/Chebyshev/FChebCell.hpp"
@@ -110,6 +111,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         		std::cerr << "Sum of charges is not equal zero!!! (sum=<<"<<sum<<" )"<<std::endl;
         		exit(-1);
         }
+        coeff = FMath::Abs(coeff)* static_cast<int>(NbParticles)  ;
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		// Run FMM computation
 		/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -219,6 +221,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         FReal L2error = (fx.getRelativeL2Norm()*fx.getRelativeL2Norm() + fy.getRelativeL2Norm()*fy.getRelativeL2Norm()  + fz.getRelativeL2Norm() *fz.getRelativeL2Norm()  );
 		printf(" Total L2 Force Error= %e\n",FMath::Sqrt(L2error)) ;
 		printf("  Energy Error  =   %.12e\n",FMath::Abs(energy-energyD));
+		printf("  R Energy Error  =   %.12e\n",FMath::Abs(energy-energyD)/FMath::Abs(energyD));
 		printf("  Energy FMM    =   %.12e\n",FMath::Abs(energy));
 		printf("  Energy DIRECT =   %.12e\n",FMath::Abs(energyD));
 
@@ -236,7 +239,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         uassert(fz.getL2Norm()  < MaximumDiffForces);                      //8
   //      uassert(fz.getRMSError() < MaximumDiffForces);                                           //8
         uassert(L2error              < MaximumDiffForces);                                            //9   Total Force
-        uassert(FMath::Abs(energy-energyD) < 10*MaximumDiffPotential);                     //10  Total Energy
+        uassert(FMath::Abs(energy-energyD) / FMath::Abs(energyD) < coeff*MaximumDiffPotential);                     //10  Total Energy
 
 
 
