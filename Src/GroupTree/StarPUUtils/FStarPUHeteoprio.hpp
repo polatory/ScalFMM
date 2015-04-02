@@ -19,7 +19,7 @@
  * However the user needs to provide some information using a callback:
  * initialize_heteroprio_center_policy_callback
  * (this callbacj should set before any scheduler creation)
- * The scheduler propose also prefetching and work stealing.
+ * The scheduler proposes also prefetching and work stealing.
  *
  * The scheduler has HETEROPRIO_MAX_PRIO different buckets.
  * A bucket (_starpu_heteroprio_bucket) here is a n-uple of priorities,
@@ -32,14 +32,14 @@
  * But it is possible to push a task that may be computed by more architecture,
  * like pushing a task that has a support on STARPU_CPU | STARPU_CUDA | STARPU_OPENCL.
  *
- * To enable the critical end support one a bucket, the user should say
+ * To enable the critical end support on a bucket, the user should say
  * which architecture is the fastest by setting factor_base_arch_index.
  * For example factor_base_arch_index = STARPU_CPU
  * Then for all the architectures related to this bucket (valide_archs)
- * the user should tell how slow are each architectures compare to the fastest one
+ * the user should tell how slow are each architecture compare to the fastest one
  * in slow_factors_per_index.
  * For example slow_factors_per_index[FSTARPU_CUDA_IDX] = 10.0f if it is 10 times slower.
- * Then Heteroprio may forbid some tasks if the requested that ask for it may not be
+ * Then Heteroprio may forbid some tasks if the worker that requested it may not be
  * the best one to compute it.
  *
  * The mapping between priorities of the different architectures:
@@ -85,7 +85,7 @@
  *     heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][1] = 1;
  *     // We tell the scheduler that OpenCL uses this bucket
  *     heteroprio->buckets[1].valide_archs |= STARPU_OPENCL;
- *     // We let the CPU as the fastest and tell that OpenCL is 1.7 times slower
+ *     // We let the CPU as the fastest PU and tell that OpenCL is 1.7 times slower
  *     heteroprio->buckets[1].slow_factors_per_index[FSTARPU_OPENCL_IDX] = 1.7f;
  * #endif
  * }
@@ -137,6 +137,22 @@
  *     #endif
  *         0
  * };
+ *
+ * The test to let a worker taking a task from a bucket is :
+ * // There is at least one task in the list
+ * (_starpu_fifo_empty(bucket->tasks_queue) == 0
+ * // And the worker has not taken all the task he needs
+ * && nb_tasks_to_prefetch
+ * // And no faster arch has been set
+ * && (bucket->factor_base_arch_index == 0
+ * // Or the worker is the faster arch
+ * || worker->arch_index == bucket->factor_base_arch_index
+ * // OR the number of task/ number of faster worker >= slow factor
+ * (float(_starpu_fifo_size(bucket->tasks_queue))/float(heteroprio->nb_workers_per_arch_index[bucket->factor_base_arch_index])
+ *              >= bucket->slow_factors_per_index[worker->arch_index])))
+ *
+ * For example there is n task, w faster worker, and the slow factor is s:
+ * n = 10, w = 3 => 10/3 = 3.33 >= s (so a task will be given if s is no more than 3 times slower)
  */
 
 #include "../../Utils/FGlobal.hpp"
