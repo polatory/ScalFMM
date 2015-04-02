@@ -349,13 +349,18 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
       # MKL, THREADS|OMP and/or SIMPLE|DOUBLE|LONG|QUAD
       # Default is DOUBLE and without THREADS|OMP
       find_package(FFTW) # not REQUIRED
-
-     set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your MKL flags")
-      foreach (fft_lib ${FFTW_LIBRARIES_DEP})
-        set(FFT_LIBRARIES "${FFT_LIBRARIES} ${fft_lib};")
-      endforeach()
+      if (FFTW_LIBRARY_DIRS_DEP)
+        set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your MKL flags")
+      endif()
+      if (FFTW_LIBRARIES_DEP)
+        foreach (fft_lib ${FFTW_LIBRARIES_DEP})
+          set(FFT_LIBRARIES "${FFT_LIBRARIES} ${fft_lib};")
+        endforeach()
+      endif()
       set(FFT_INCLUDES "${FFTW_INCLUDE_DIRS_DEP}" )
-      set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${FFT_LIBRARIES}")
+      if (FFT_LIBRARIES)
+        set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES}; ${FFT_LIBRARIES}")
+      endif()
 
     endif(SCALFMM_USE_MKL_AS_FFTW)
 
