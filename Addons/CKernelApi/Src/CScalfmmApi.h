@@ -517,5 +517,12 @@ void scalfmm_execute_fmm(scalfmm_handle Handle);
  */
 void scalfmm_dealloc_handle(scalfmm_handle handle, Callback_free_cell cellDestroyer);
 
+/**
+ * @brief this function reset all the data of the tree. (i e multipole
+ * and local development, forces and potentials)
+ * @param Handle scalfmm_handle provided by scalfmm_init.
+ */
+void reset_tree(scalfmm_handle handle);
+
 
 #endif

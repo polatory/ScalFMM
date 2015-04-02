@@ -30,6 +30,7 @@
 //For tree
 #include "Components/FSimpleLeaf.hpp"
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+#include "Containers/FOctree.hpp"
 
 //For interpolation
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
@@ -201,6 +202,32 @@ public:
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
 
+    virtual void reset_tree(){
+    }
+
+    template<class FReal,class ContainerClass, class CellClass, class LeafClass>
+    void generic_reset_tree(FOctree<FReal,CellClass,ContainerClass,LeafClass> * tree){
+        //Reset forces and potentials
+        tree->forEachLeaf([&](LeafClass * leaf){
+                ContainerClass * targets = leaf->getTargets();
+                FSize nbPartTarget = targets->getNbParticles();
+                //Set potential to 0
+                FReal * potentialsTarget = targets->getPotentialsArray();
+                memset(potentialsTarget,0,sizeof(FReal)*nbPartTarget);
+                //Set forces to 0
+                FReal * forcesX = targets->getForcesXArray();
+                FReal * forcesY = targets->getForcesYArray();
+                FReal * forcesZ = targets->getForcesZArray();
+                memset(forcesX,0,sizeof(FReal)*nbPartTarget);
+                memset(forcesY,0,sizeof(FReal)*nbPartTarget);
+                memset(forcesZ,0,sizeof(FReal)*nbPartTarget);
+            });
+
+        //Reset multipole and local development
+        tree->forEachCell([&](CellClass * cell){
+                cell->resetToInitialState();
+            });
+    }
 
     //User define Kernel Part
     virtual void user_kernel_config( Scalfmm_Kernel_Descriptor userKernel, void * userDatas){
@@ -214,6 +241,8 @@ public:
     virtual void intern_dealloc_handle(Callback_free_cell userDeallocator){
         FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
     }
+
+
 
 };
 
@@ -412,6 +441,8 @@ extern "C" void scalfmm_utils_interactionPosition(int interactionPosition, int* 
 }
 
 
-
+extern "C" void reset_tree(scalfmm_handle Handle){
+    ((ScalFmmCoreHandle * ) Handle)->engine->reset_tree();
+}
 
 #endif

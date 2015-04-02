@@ -518,6 +518,11 @@ public:
             });
     }
 
+    //Simple call to FScalFMMEngine method with good template
+    void reset_tree(){
+        generic_reset_tree<FReal,ContainerClass,InterCell,LeafClass>(octree);
+    }
+
     void update_tree(){
         if(arranger){
             arranger->rearrange();
