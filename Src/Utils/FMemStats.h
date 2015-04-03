@@ -32,6 +32,11 @@
 #include <stdexcept>
 #warning You are using mem stats
 void* operator new(std::size_t n);
+void* operator new[]( std::size_t n );
+
+void* operator new  ( std::size_t n, const std::nothrow_t& tag);
+void* operator new[]( std::size_t n, const std::nothrow_t& tag);
+
 void operator delete(void* p) noexcept;
 void operator delete[](void* p) noexcept;
 void operator delete  ( void* ptr, const std::nothrow_t& tag);
@@ -77,6 +82,9 @@ private:
 
 #ifdef SCALFMM_USE_MEM_STATS
     friend void* operator new(std::size_t n);
+    friend void* operator new[]( std::size_t n );
+    friend void* operator new  ( std::size_t n, const std::nothrow_t& tag);
+    friend void* operator new[]( std::size_t n, const std::nothrow_t& tag);
     friend void operator delete(void* p) noexcept;
     friend void operator delete[](void* p) noexcept;
     friend void operator delete  ( void* ptr, const std::nothrow_t& tag);

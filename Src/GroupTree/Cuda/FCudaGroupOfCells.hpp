@@ -53,9 +53,14 @@ public:
         // Move the pointers to the correct position
         allocatedMemoryInByte = (inAllocatedMemoryInByte);
         memoryBuffer = (inBuffer);
-        blockHeader         = reinterpret_cast<BlockHeader*>(memoryBuffer);
-        blockIndexesTable   = reinterpret_cast<int*>(memoryBuffer+sizeof(BlockHeader));
-        blockCells          = reinterpret_cast<SymboleCellClass*>(memoryBuffer+sizeof(BlockHeader)+(blockHeader->blockIndexesTableSize*sizeof(int)));
+        blockHeader         = reinterpret_cast<BlockHeader*>(inBuffer);
+        inBuffer += sizeof(BlockHeader);
+        blockIndexesTable   = reinterpret_cast<int*>(inBuffer);
+        inBuffer += (blockHeader->blockIndexesTableSize*sizeof(int));
+        blockCells          = reinterpret_cast<SymboleCellClass*>(inBuffer);
+        inBuffer += (sizeof(SymboleCellClass)*blockHeader->numberOfCellsInBlock);
+        //FAssertLF(size_t(inBuffer-memoryBuffer) == allocatedMemoryInByte);
+
         cellMultipoles = (PoleCellClass*)inCellMultipoles;
         cellLocals     = (LocalCellClass*)inCellLocals;
     }
@@ -71,9 +76,14 @@ public:
           blockHeader(nullptr), blockIndexesTable(nullptr), blockCells(nullptr),
           cellMultipoles(nullptr), cellLocals(nullptr){
         // Move the pointers to the correct position
-        blockHeader         = reinterpret_cast<BlockHeader*>(memoryBuffer);
-        blockIndexesTable   = reinterpret_cast<int*>(memoryBuffer+sizeof(BlockHeader));
-        blockCells          = reinterpret_cast<SymboleCellClass*>(memoryBuffer+sizeof(BlockHeader)+(blockHeader->blockIndexesTableSize*sizeof(int)));
+        blockHeader         = reinterpret_cast<BlockHeader*>(inBuffer);
+        inBuffer += sizeof(BlockHeader);
+        blockIndexesTable   = reinterpret_cast<int*>(inBuffer);
+        inBuffer += (blockHeader->blockIndexesTableSize*sizeof(int));
+        blockCells          = reinterpret_cast<SymboleCellClass*>(inBuffer);
+        inBuffer += (sizeof(SymboleCellClass)*blockHeader->numberOfCellsInBlock);
+        //FAssertLF(size_t(inBuffer-memoryBuffer) == allocatedMemoryInByte);
+
         cellMultipoles = (PoleCellClass*)inCellMultipoles;
         cellLocals     = (LocalCellClass*)inCellLocals;
     }
