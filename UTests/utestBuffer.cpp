@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -80,7 +80,7 @@ class TestBuffer : public FUTester<TestBuffer> {
             const int SizeOfInt = int(sizeof(int));
             const int NbTest = 5;
             for(int idxWrite = 0 ; idxWrite < NbTest ; ++idxWrite){
-                const int position = writer.getSize();
+                const FSize position = writer.getSize();
 
                 uassert(position == (NbTest * SizeOfInt * idxWrite) + (idxWrite * SizeOfInt));
 

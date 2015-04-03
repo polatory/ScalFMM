@@ -63,7 +63,6 @@ struct FInterpAbstractMatrixKernel : FNoCopyable
 };
 
 
-
 /// One over r
 template <class FReal>
 struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel<FReal>
