@@ -267,10 +267,12 @@ struct FOpenCLGroupOfParticlesBlockHeader{
 
     //< The real number of particles allocated
     FSize nbParticlesAllocatedInGroup;
+    //< Starting point of position
+    size_t offsetPosition;
     //< Bytes difference/offset between position
-    size_t positionOffset;
+    size_t positionsLeadingDim;
     //< Bytes difference/offset between attributes
-    size_t attributeOffset;
+    size_t attributeLeadingDim;
     //< The total number of particles in the group
     FSize nbParticlesInGroup;
 }__attribute__ ((aligned (DefaultStructAlign)));
@@ -312,19 +314,20 @@ struct FOpenCLGroupOfParticles BuildFOpenCLGroupOfParticles(__global unsigned ch
     group.memoryBuffer = (inBuffer);
 
     // Move the pointers to the correct position
-    group.blockHeader         = ((__global struct FOpenCLGroupOfParticlesBlockHeader*)group.memoryBuffer);
-    group.blockIndexesTable   = ((__global int*)(group.memoryBuffer+sizeof(struct FOpenCLGroupOfParticlesBlockHeader)));
-    group.leafHeader          = ((__global struct FOpenCLGroupOfParticlesLeafHeader*)(group.memoryBuffer+sizeof(struct FOpenCLGroupOfParticlesBlockHeader)+(group.blockHeader->blockIndexesTableSize*sizeof(int))));
+    group.blockHeader         = ((__global struct FOpenCLGroupOfParticlesBlockHeader*)inBuffer);
+    inBuffer += sizeof(struct FOpenCLGroupOfParticlesBlockHeader);
+    group.blockIndexesTable   = ((__global int*)inBuffer);
+    inBuffer += (group.blockHeader->blockIndexesTableSize*sizeof(int));
+    group.leafHeader          = ((__global struct FOpenCLGroupOfParticlesLeafHeader*)inBuffer);
 
     // Init particle pointers
-    group.blockHeader->positionOffset = (sizeof(FReal) * group.blockHeader->nbParticlesAllocatedInGroup);
-    group.particlePosition[0] = (__global FReal*) (( ((size_t)(group.leafHeader + group.blockHeader->numberOfLeavesInBlock))
-                                                   +FOpenCLGroupOfParticlesMemoryAlignementBytes-1) & ~(FOpenCLGroupOfParticlesMemoryAlignementBytes-1));
+    // Assert group.blockHeader->positionsLeadingDim == (sizeof(FReal) * group.blockHeader->nbParticlesAllocatedInGroup);
+    group.particlePosition[0] = (__global FReal*) (group.memoryBuffer + group.offsetPosition);
     group.particlePosition[1] = (group.particlePosition[0] + group.blockHeader->nbParticlesAllocatedInGroup);
     group.particlePosition[2] = (group.particlePosition[1] + group.blockHeader->nbParticlesAllocatedInGroup);
 
     // Redirect pointer to data
-    group.blockHeader->attributeOffset = (sizeof(FParticleValueClass) * group.blockHeader->nbParticlesAllocatedInGroup);
+    // Assert group.blockHeader->attributeLeadingDim == (sizeof(FParticleValueClass) * group.blockHeader->nbParticlesAllocatedInGroup);
     __global unsigned char* previousPointer = ((__global unsigned char*)(group.particlePosition[2] + group.blockHeader->nbParticlesAllocatedInGroup));
     for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes ; ++idxAttribute){
         group.particleAttributes[idxAttribute] = ((__global FParticleValueClass*)previousPointer);
@@ -367,9 +370,9 @@ struct FOpenCLGroupAttachedLeaf FOpenCLGroupOfParticles_getLeaf(struct FOpenCLGr
         const int id = group->blockIndexesTable[leafIndex - group->blockHeader->startingIndex];
         return BuildFOpenCLGroupAttachedLeaf(group->leafHeader[id].nbParticles,
                                       group->particlePosition[0] + group->leafHeader[id].offSet,
-                                        group->blockHeader->positionOffset,
+                                        group->blockHeader->positionsLeadingDim,
                                       (group->attributesBuffer?group->particleAttributes[NbSymbAttributes] + group->leafHeader[id].offSet:NULLPTR),
-                                        group->blockHeader->attributeOffset);
+                                        group->blockHeader->attributeLeadingDim);
     }
     return EmptyFOpenCLGroupAttachedLeaf();
 }

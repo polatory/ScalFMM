@@ -29,10 +29,12 @@ class FGroupOfParticles {
 
         //< The real number of particles allocated
         FSize nbParticlesAllocatedInGroup;
+        //< Starting point of position
+        size_t offsetPosition;
         //< Bytes difference/offset between position
-        size_t positionOffset;
+        size_t positionsLeadingDim;
         //< Bytes difference/offset between attributes
-        size_t attributeOffset;
+        size_t attributeLeadingDim;
         //< The total number of particles in the group
         FSize nbParticlesInGroup;
     };
@@ -97,19 +99,20 @@ public:
           blockHeader(nullptr), blockIndexesTable(nullptr), leafHeader(nullptr), nbParticlesInGroup(0),
           attributesBuffer(nullptr), deleteBuffer(false){
         // Move the pointers to the correct position
-        blockHeader         = reinterpret_cast<BlockHeader*>(memoryBuffer);
-        blockIndexesTable   = reinterpret_cast<int*>(memoryBuffer+sizeof(BlockHeader));
-        leafHeader          = reinterpret_cast<LeafHeader*>(memoryBuffer+sizeof(BlockHeader)+(blockHeader->blockIndexesTableSize*sizeof(int)));
+        blockHeader         = reinterpret_cast<BlockHeader*>(inBuffer);
+        inBuffer += sizeof(BlockHeader);
+        blockIndexesTable   = reinterpret_cast<int*>(inBuffer);
+        inBuffer += (blockHeader->blockIndexesTableSize*sizeof(int));
+        leafHeader          = reinterpret_cast<LeafHeader*>(inBuffer);
 
         // Init particle pointers
-        blockHeader->positionOffset = (sizeof(FReal) * blockHeader->nbParticlesAllocatedInGroup);
-        particlePosition[0] = reinterpret_cast<FReal*>((reinterpret_cast<size_t>(leafHeader + blockHeader->numberOfLeavesInBlock)
-                                                       +MemoryAlignementBytes-1) & ~(MemoryAlignementBytes-1));
+        FAssertLF( blockHeader->positionsLeadingDim == (sizeof(FReal) * blockHeader->nbParticlesAllocatedInGroup) );
+        particlePosition[0] = reinterpret_cast<FReal*>(memoryBuffer + blockHeader->offsetPosition);
         particlePosition[1] = (particlePosition[0] + blockHeader->nbParticlesAllocatedInGroup);
         particlePosition[2] = (particlePosition[1] + blockHeader->nbParticlesAllocatedInGroup);
 
         // Redirect pointer to data
-        blockHeader->attributeOffset = (sizeof(AttributeClass) * blockHeader->nbParticlesAllocatedInGroup);
+        FAssertLF(blockHeader->attributeLeadingDim == (sizeof(AttributeClass) * blockHeader->nbParticlesAllocatedInGroup));
         AttributeClass* symAttributes = (AttributeClass*)(&particlePosition[2][blockHeader->nbParticlesAllocatedInGroup]);
         for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes ; ++idxAttribute){
             particleAttributes[idxAttribute] = symAttributes;
@@ -155,26 +158,31 @@ public:
         memset(memoryBuffer, 0, memoryToAlloc);
 
         // Move the pointers to the correct position
-        blockHeader         = reinterpret_cast<BlockHeader*>(memoryBuffer);
-        blockIndexesTable   = reinterpret_cast<int*>(memoryBuffer+sizeof(BlockHeader));
-        leafHeader          = reinterpret_cast<LeafHeader*>(memoryBuffer+sizeof(BlockHeader)+(blockIndexesTableSize*sizeof(int)));
+        unsigned char* bufferPtr = memoryBuffer;
+        blockHeader         = reinterpret_cast<BlockHeader*>(bufferPtr);
+        bufferPtr += sizeof(BlockHeader);
+        blockIndexesTable   = reinterpret_cast<int*>(bufferPtr);
+        bufferPtr += sizeof(BlockHeader)+(blockIndexesTableSize*sizeof(int));
+        leafHeader          = reinterpret_cast<LeafHeader*>(bufferPtr);
 
         // Init header
         blockHeader->startingIndex = inStartingIndex;
         blockHeader->endingIndex   = inEndingIndex;
         blockHeader->numberOfLeavesInBlock  = inNumberOfLeaves;
-        blockHeader->blockIndexesTableSize = blockIndexesTableSize;
+        blockHeader->blockIndexesTableSize  = blockIndexesTableSize;
         blockHeader->nbParticlesAllocatedInGroup = nbParticlesAllocatedInGroup;
 
         // Init particle pointers
-        blockHeader->positionOffset = (sizeof(FReal) * nbParticlesAllocatedInGroup);
+        blockHeader->positionsLeadingDim = (sizeof(FReal) * nbParticlesAllocatedInGroup);
         particlePosition[0] = reinterpret_cast<FReal*>((reinterpret_cast<size_t>(leafHeader + inNumberOfLeaves)
                                                        +MemoryAlignementBytes-1) & ~(MemoryAlignementBytes-1));
         particlePosition[1] = (particlePosition[0] + nbParticlesAllocatedInGroup);
         particlePosition[2] = (particlePosition[1] + nbParticlesAllocatedInGroup);
 
+        blockHeader->offsetPosition = size_t(particlePosition[0]) - size_t(memoryBuffer);
+
         // Redirect pointer to data
-        blockHeader->attributeOffset = (sizeof(AttributeClass) * nbParticlesAllocatedInGroup);
+        blockHeader->attributeLeadingDim = (sizeof(AttributeClass) * nbParticlesAllocatedInGroup);
 
         AttributeClass* symAttributes = (AttributeClass*)(&particlePosition[2][blockHeader->nbParticlesAllocatedInGroup]);
         for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes ; ++idxAttribute){
@@ -182,8 +190,8 @@ public:
             symAttributes += blockHeader->nbParticlesAllocatedInGroup;
         }
 
-        attributesBuffer = (AttributeClass*)FAlignedMemory::AllocateBytes<MemoryAlignementBytes>(blockHeader->attributeOffset*NbAttributesPerParticle);
-        memset(attributesBuffer, 0, blockHeader->attributeOffset*NbAttributesPerParticle);
+        attributesBuffer = (AttributeClass*)FAlignedMemory::AllocateBytes<MemoryAlignementBytes>(blockHeader->attributeLeadingDim*NbAttributesPerParticle);
+        memset(attributesBuffer, 0, blockHeader->attributeLeadingDim*NbAttributesPerParticle);
         for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
             particleAttributes[idxAttribute+NbSymbAttributes] = &attributesBuffer[idxAttribute*nbParticlesAllocatedInGroup];
         }
@@ -224,7 +232,7 @@ public:
 
     /** The the size of the allocated buffer */
     size_t getAttributesBufferSizeInByte() const {
-        return blockHeader->attributeOffset*NbAttributesPerParticle;
+        return blockHeader->attributeLeadingDim*NbAttributesPerParticle;
     }
 
     /** To know if the object will delete the memory block */
@@ -290,9 +298,9 @@ public:
                 const int id = blockIndexesTable[idxLeafPtr];
                 ParticlesAttachedClass leaf(leafHeader[id].nbParticles,
                                             particlePosition[0] + leafHeader[id].offSet,
-                        blockHeader->positionOffset,
-                        (attributesBuffer?particleAttributes[NbSymbAttributes] + leafHeader[id].offSet:nullptr),
-                        blockHeader->attributeOffset);
+                                            blockHeader->positionsLeadingDim,
+                                            (attributesBuffer?particleAttributes[NbSymbAttributes] + leafHeader[id].offSet:nullptr),
+                                            blockHeader->attributeLeadingDim);
                 function(&leaf);
             }
         }
@@ -306,9 +314,9 @@ public:
             const int id = blockIndexesTable[leafIndex - blockHeader->startingIndex];
             return ParticlesAttachedClass(leafHeader[id].nbParticles,
                                           particlePosition[0] + leafHeader[id].offSet,
-                                            blockHeader->positionOffset,
+                                            blockHeader->positionsLeadingDim,
                                             (attributesBuffer?particleAttributes[NbSymbAttributes] + leafHeader[id].offSet:nullptr),
-                                            blockHeader->attributeOffset);
+                                            blockHeader->attributeLeadingDim);
         }
         return ParticlesAttachedClass();
     }

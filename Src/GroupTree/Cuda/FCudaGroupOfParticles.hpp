@@ -17,10 +17,12 @@ class FCudaGroupOfParticles {
 
         //< The real number of particles allocated
         FSize nbParticlesAllocatedInGroup;
+        //< Starting point of position
+        size_t offsetPosition;
         //< Bytes difference/offset between position
-        size_t positionOffset;
+        size_t positionsLeadingDim;
         //< Bytes difference/offset between attributes
-        size_t attributeOffset;
+        size_t attributeLeadingDim;
         //< The total number of particles in the group
         FSize nbParticlesInGroup;
     };
@@ -87,14 +89,13 @@ public:
         leafHeader          = reinterpret_cast<LeafHeader*>(memoryBuffer+sizeof(BlockHeader)+(blockHeader->blockIndexesTableSize*sizeof(int)));
 
         // Init particle pointers
-        blockHeader->positionOffset = (sizeof(FReal) * blockHeader->nbParticlesAllocatedInGroup);
-        particlePosition[0] = reinterpret_cast<FReal*>((reinterpret_cast<size_t>(leafHeader + blockHeader->numberOfLeavesInBlock)
-                                                       +MemoryAlignementBytes-1) & ~(MemoryAlignementBytes-1));
+        // Assert blockHeader->positionsLeadingDim == (sizeof(FReal) * blockHeader->nbParticlesAllocatedInGroup);
+        particlePosition[0] = reinterpret_cast<FReal*>(memoryBuffer + blockHeader->offsetPosition);
         particlePosition[1] = (particlePosition[0] + blockHeader->nbParticlesAllocatedInGroup);
         particlePosition[2] = (particlePosition[1] + blockHeader->nbParticlesAllocatedInGroup);
 
         // Redirect pointer to data
-        blockHeader->attributeOffset = (sizeof(AttributeClass) * blockHeader->nbParticlesAllocatedInGroup);
+        // Assert blockHeader->attributeLeadingDim == (sizeof(AttributeClass) * blockHeader->nbParticlesAllocatedInGroup);
         AttributeClass* symAttributes = (AttributeClass*)(&particlePosition[2][blockHeader->nbParticlesAllocatedInGroup]);
         for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes ; ++idxAttribute){
             particleAttributes[idxAttribute] = symAttributes;
@@ -150,9 +151,9 @@ public:
             const int id = blockIndexesTable[leafIndex - blockHeader->startingIndex];
             return ParticlesAttachedClass(leafHeader[id].nbParticles,
                                           particlePosition[0] + leafHeader[id].offSet,
-                                            blockHeader->positionOffset,
+                                            blockHeader->positionsLeadingDim,
                                             (attributesBuffer?particleAttributes[NbSymbAttributes] + leafHeader[id].offSet:nullptr),
-                                            blockHeader->attributeOffset);
+                                            blockHeader->attributeLeadingDim);
         }
         return ParticlesAttachedClass();
     }
