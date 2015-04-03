@@ -441,7 +441,7 @@ extern "C" void scalfmm_utils_interactionPosition(int interactionPosition, int* 
 }
 
 
-extern "C" void reset_tree(scalfmm_handle Handle){
+extern "C" void scalfmm_reset_tree(scalfmm_handle Handle){
     ((ScalFmmCoreHandle * ) Handle)->engine->reset_tree();
 }
 

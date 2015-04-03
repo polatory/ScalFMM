@@ -522,7 +522,7 @@ void scalfmm_dealloc_handle(scalfmm_handle handle, Callback_free_cell cellDestro
  * and local development, forces and potentials)
  * @param Handle scalfmm_handle provided by scalfmm_init.
  */
-void reset_tree(scalfmm_handle handle);
+void scalfmm_reset_tree(scalfmm_handle handle);
 
 
 #endif
