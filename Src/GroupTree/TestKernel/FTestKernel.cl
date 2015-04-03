@@ -409,9 +409,14 @@ struct FOpenCLGroupOfCells BuildFOpenCLGroupOfCells(__global unsigned char* inBu
       group.allocatedMemoryInByte = (inAllocatedMemoryInByte);
 
     // Move the pointers to the correct position
-    group.blockHeader         = (__global struct FOpenCLGroupOfCellsBlockHeader*)(group.memoryBuffer);
-    group.blockIndexesTable   = (__global int*)(group.memoryBuffer+sizeof(struct FOpenCLGroupOfCellsBlockHeader));
-    group.blockCells          = (__global struct FSymboleCellClass*)(group.memoryBuffer+sizeof(struct FOpenCLGroupOfCellsBlockHeader)+(group.blockHeader->blockIndexesTableSize*sizeof(int)));
+    group.blockHeader         = (__global struct FOpenCLGroupOfCellsBlockHeader*)(inBuffer);
+    inBuffer += sizeof(struct FOpenCLGroupOfCellsBlockHeader);
+    group.blockIndexesTable   = (__global int*)(inBuffer);
+    inBuffer += (group.blockHeader->blockIndexesTableSize*sizeof(int));
+    group.blockCells          = (__global struct FSymboleCellClass*)(inBuffer);
+    inBuffer += (group.blockHeader->numberOfCellsInBlock*sizeof(struct FSymboleCellClass));
+    // Assert(((size_t)(inBuffer-group.memoryBuffer) == inAllocatedMemoryInByte);
+
     group.cellMultipoles = (__global FPoleCellClass*)inCellMultipoles;
     group.cellLocals = (__global FLocalCellClass*)inCellLocals;
     return group;
