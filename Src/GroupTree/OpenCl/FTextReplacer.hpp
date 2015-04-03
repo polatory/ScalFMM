@@ -97,10 +97,11 @@ public:
     int replaceAll(const char* keyStr, const ValueClass& value){
         std::ostringstream stream;
         stream << value;
-        const char* valueStr = stream.str().c_str();
+        const std::string streamStr = stream.str();
+        const char* valueStr = streamStr.c_str();
+        const size_t valueLength = streamStr.size();
 
         const size_t keyLength = strlen(keyStr);
-        const size_t valueLength = strlen(valueStr);
 
         int counterOccurence = 0;
         size_t from = 0;
@@ -115,9 +116,11 @@ public:
     bool replaceOne(const char* keyStr, const ValueClass& value){
         std::ostringstream stream;
         stream << value;
-        const char* valueStr = stream.str().c_str();
+        const std::string streamStr = stream.str();
+        const char* valueStr = streamStr.c_str();
+        const size_t valueLength = streamStr.size();
 
-        return replaceCore(0, keyStr, strlen(keyStr), valueStr, strlen(valueStr)) != content.size();
+        return replaceCore(0, keyStr, strlen(keyStr), valueStr, valueLength) != content.size();
     }
 
     void clear(){
