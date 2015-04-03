@@ -322,7 +322,7 @@ struct FOpenCLGroupOfParticles BuildFOpenCLGroupOfParticles(__global unsigned ch
 
     // Init particle pointers
     // Assert group.blockHeader->positionsLeadingDim == (sizeof(FReal) * group.blockHeader->nbParticlesAllocatedInGroup);
-    group.particlePosition[0] = (__global FReal*) (group.memoryBuffer + group.offsetPosition);
+    group.particlePosition[0] = (__global FReal*) (group.memoryBuffer + group.blockHeader->offsetPosition);
     group.particlePosition[1] = (group.particlePosition[0] + group.blockHeader->nbParticlesAllocatedInGroup);
     group.particlePosition[2] = (group.particlePosition[1] + group.blockHeader->nbParticlesAllocatedInGroup);
 
