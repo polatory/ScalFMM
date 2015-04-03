@@ -191,7 +191,7 @@ public:
                     STARPU_VARIABLE_GET_ELEMSIZE(buffers[3]),
                     (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[4]),
                     (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[5]),
-                    idxLevel, outsideInteractions->data(), outsideInteractions->size(), kernel,
+                    idxLevel, outsideInteractions->data(), int(outsideInteractions->size()), kernel,
                     starpu_cuda_get_local_stream(),
                 FCuda__GetGridSize(kernel,intervalSize),FCuda__GetBlockSize(kernel));
     }
@@ -290,7 +290,7 @@ public:
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]),
-                outsideInteractions->data(), outsideInteractions->size(), worker->get<ThisClass>(FSTARPU_CPU_IDX)->treeHeight,
+                outsideInteractions->data(), int(outsideInteractions->size()), worker->get<ThisClass>(FSTARPU_CPU_IDX)->treeHeight,
                 kernel, starpu_cuda_get_local_stream(),
                 FCuda__GetGridSize(kernel,intervalSize),FCuda__GetBlockSize(kernel));
     }
