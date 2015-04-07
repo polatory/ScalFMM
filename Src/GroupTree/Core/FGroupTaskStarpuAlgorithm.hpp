@@ -112,6 +112,11 @@ protected:
     FStarPUPtrInterface wrappers;
     FStarPUPtrInterface* wrapperptr;
 
+#ifdef STARPU_SUPPORT_ARBITER
+    starpu_arbiter_t arbiterPole;
+    starpu_arbiter_t arbiterLocal;
+    starpu_arbiter_t arbiterParticles;
+#endif
 public:
     FGroupTaskStarPUAlgorithm(OctreeClass*const inTree, KernelClass* inKernels)
         : tree(inTree), originalCpuKernel(inKernels),
@@ -168,6 +173,12 @@ public:
 
         initCodelet();
 
+#ifdef STARPU_SUPPORT_ARBITER
+        arbiterPole = starpu_arbiter_create();
+        arbiterLocal = starpu_arbiter_create();
+        arbiterParticles = starpu_arbiter_create();
+#endif
+
         FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max Worker " << starpu_worker_get_count() << ")\n");
 #ifdef STARPU_USE_CPU
         FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max CPU " << starpu_cpu_worker_get_count() << ")\n");
@@ -213,6 +224,13 @@ public:
         wrappers.set(FSTARPU_OPENCL_IDX, &openclWrapper);
 #endif
         starpu_pthread_mutex_destroy(&releaseMutex);
+
+
+#ifdef STARPU_SUPPORT_ARBITER
+        starpu_arbiter_destroy(arbiterPole);
+        starpu_arbiter_destroy(arbiterLocal);
+        starpu_arbiter_destroy(arbiterParticles);
+#endif
 
         starpu_shutdown();
     }
@@ -495,6 +513,10 @@ protected:
                 starpu_variable_data_register(&cellHandles[idxLevel][idxGroup].down, 0,
                                               (uintptr_t)currentCells->getRawLocalBuffer(), currentCells->getLocalBufferSizeInByte());
                 cellHandles[idxLevel][idxGroup].intervalSize = int(currentCells->getEndingIndex() - currentCells->getStartingIndex());
+#ifdef STARPU_SUPPORT_ARBITER
+                starpu_data_assign_arbiter(cellHandles[idxLevel][idxGroup].up, arbiterPole);
+                starpu_data_assign_arbiter(cellHandles[idxLevel][idxGroup].down, arbiterLocal);
+#endif
             }
         }
         {
@@ -506,6 +528,9 @@ protected:
                 starpu_variable_data_register(&particleHandles[idxGroup].down, 0,
                                               (uintptr_t)containers->getRawAttributesBuffer(), containers->getAttributesBufferSizeInByte());
                 particleHandles[idxGroup].intervalSize = int(containers->getEndingIndex() - containers->getStartingIndex());
+#ifdef STARPU_SUPPORT_ARBITER
+                starpu_data_assign_arbiter(particleHandles[idxGroup].down, arbiterParticles);
+#endif
             }
         }
     }
