@@ -256,6 +256,7 @@ public:
 
     void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
         FLOG( FLog::Controller << "\tStart FGroupTaskStarPUMpiAlgorithm\n" );
+        const bool directOnly = (tree->getHeight() <= 2);
 
         #pragma omp parallel
         #pragma omp single
@@ -271,20 +272,20 @@ public:
 
         if( operationsToProceed & FFmmP2P ) insertParticlesSend();
 
-        if(operationsToProceed & FFmmP2M) bottomPass();
+        if(operationsToProceed & FFmmP2M && !directOnly) bottomPass();
 
-        if(operationsToProceed & FFmmM2M) upwardPass();
-        if(operationsToProceed & FFmmM2L) insertCellsSend();
+        if(operationsToProceed & FFmmM2M && !directOnly) upwardPass();
+        if(operationsToProceed & FFmmM2L && !directOnly) insertCellsSend();
 
-        if(operationsToProceed & FFmmM2L) transferPass();
-        if(operationsToProceed & FFmmM2L) transferPassMpi();
+        if(operationsToProceed & FFmmM2L && !directOnly) transferPass();
+        if(operationsToProceed & FFmmM2L && !directOnly) transferPassMpi();
 
-        if(operationsToProceed & FFmmL2L) downardPass();
+        if(operationsToProceed & FFmmL2L && !directOnly) downardPass();
 
         if( operationsToProceed & FFmmP2P ) directPass();
         if( operationsToProceed & FFmmP2P ) directPassMpi();
 
-        if( operationsToProceed & FFmmL2P ) mergePass();
+        if( operationsToProceed & FFmmL2P  && !directOnly) mergePass();
 
         starpu_task_wait_for_all();
         starpu_pause();
@@ -918,26 +919,29 @@ protected:
     void postRecvAllocatedBlocks(){
         std::vector<MpiDependency> toRecv;
         FAssertLF(tree->getHeight() == int(remoteCellGroups.size()));
-        for(int idxLevel = 0 ; idxLevel < tree->getHeight() ; ++idxLevel){
-            for(int idxHandle = 0 ; idxHandle < int(remoteCellGroups[idxLevel].size()) ; ++idxHandle){
-                if(remoteCellGroups[idxLevel][idxHandle].ptrSymb){
-                    FAssertLF(remoteCellGroups[idxLevel][idxHandle].ptrUp);
-                    FLOG(FLog::Controller << "[SMpi] " << idxLevel << " Post a recv during M2L for Idx " << processesBlockInfos[idxLevel][idxHandle].firstIndex <<
-                         " and dest is " << processesBlockInfos[idxLevel][idxHandle].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 0) << "\n");
-                    FLOG(FLog::Controller << "[SMpi] " << idxLevel << " Post a recv during M2L for Idx " << processesBlockInfos[idxLevel][idxHandle].firstIndex <<
-                         " and dest is " << processesBlockInfos[idxLevel][idxHandle].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 1) << "\n");
+        const bool directOnly = (tree->getHeight() <= 2);
+        if(!directOnly){
+            for(int idxLevel = 0 ; idxLevel < tree->getHeight() ; ++idxLevel){
+                for(int idxHandle = 0 ; idxHandle < int(remoteCellGroups[idxLevel].size()) ; ++idxHandle){
+                    if(remoteCellGroups[idxLevel][idxHandle].ptrSymb){
+                        FAssertLF(remoteCellGroups[idxLevel][idxHandle].ptrUp);
+                        FLOG(FLog::Controller << "[SMpi] " << idxLevel << " Post a recv during M2L for Idx " << processesBlockInfos[idxLevel][idxHandle].firstIndex <<
+                             " and dest is " << processesBlockInfos[idxLevel][idxHandle].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 0) << "\n");
+                        FLOG(FLog::Controller << "[SMpi] " << idxLevel << " Post a recv during M2L for Idx " << processesBlockInfos[idxLevel][idxHandle].firstIndex <<
+                             " and dest is " << processesBlockInfos[idxLevel][idxHandle].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 1) << "\n");
 
-                    starpu_mpi_irecv_detached( remoteCellGroups[idxLevel][idxHandle].handleSymb,
-                                                processesBlockInfos[idxLevel][idxHandle].owner,
-                                                getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 0),
-                                                comm.getComm(), 0, 0 );
-                    starpu_mpi_irecv_detached( remoteCellGroups[idxLevel][idxHandle].handleUp,
-                                                processesBlockInfos[idxLevel][idxHandle].owner,
-                                                getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 1),
-                                                comm.getComm(), 0, 0 );
+                        starpu_mpi_irecv_detached( remoteCellGroups[idxLevel][idxHandle].handleSymb,
+                                                    processesBlockInfos[idxLevel][idxHandle].owner,
+                                                    getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 0),
+                                                    comm.getComm(), 0, 0 );
+                        starpu_mpi_irecv_detached( remoteCellGroups[idxLevel][idxHandle].handleUp,
+                                                    processesBlockInfos[idxLevel][idxHandle].owner,
+                                                    getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 1),
+                                                    comm.getComm(), 0, 0 );
 
-                    toRecv.push_back({processesBlockInfos[idxLevel][idxHandle].owner,
-                                        comm.processId(), idxLevel, idxHandle});
+                        toRecv.push_back({processesBlockInfos[idxLevel][idxHandle].owner,
+                                            comm.processId(), idxLevel, idxHandle});
+                    }
                 }
             }
         }

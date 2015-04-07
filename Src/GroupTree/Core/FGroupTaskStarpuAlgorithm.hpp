@@ -237,6 +237,7 @@ public:
 
     void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
         FLOG( FLog::Controller << "\tStart FGroupTaskStarPUAlgorithm\n" );
+        const bool directOnly = (tree->getHeight() <= 2);
 
         #pragma omp parallel
         #pragma omp single
@@ -246,17 +247,17 @@ public:
 
         starpu_resume();
 
-        if(operationsToProceed & FFmmP2M) bottomPass();
+        if(operationsToProceed & FFmmP2M && !directOnly) bottomPass();
 
-        if(operationsToProceed & FFmmM2M) upwardPass();
+        if(operationsToProceed & FFmmM2M && !directOnly) upwardPass();
 
-        if(operationsToProceed & FFmmM2L) transferPass();
+        if(operationsToProceed & FFmmM2L && !directOnly) transferPass();
 
-        if(operationsToProceed & FFmmL2L) downardPass();
+        if(operationsToProceed & FFmmL2L && !directOnly) downardPass();
 
         if( operationsToProceed & FFmmP2P ) directPass();
 
-        if( operationsToProceed & FFmmL2P ) mergePass();
+        if( operationsToProceed & FFmmL2P && !directOnly) mergePass();
 
         starpu_task_wait_for_all();
         starpu_pause();

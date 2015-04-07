@@ -48,7 +48,8 @@ int main(int argc, char* argv[]){
         "The size of the block of the blocked tree"
     };
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
-                         FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbParticles, LocalOptionBlocSize);
+                         FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbParticles,
+                         FParameterDefinitions::OctreeSubHeight, LocalOptionBlocSize);
 
     typedef double FReal;
 
@@ -101,7 +102,8 @@ int main(int argc, char* argv[]){
     FAssertLF(loader.isOpen());
 
     // Usual octree
-    OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());
+    OctreeClass tree(NbLevels, FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 2),
+                     loader.getBoxWidth(), loader.getCenterOfBox());
 
     FTestParticleContainer<FReal> allParticles;
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){

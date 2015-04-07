@@ -59,40 +59,65 @@ public:
 
         treeHeight  = inTreeHeight;
 
-        int incPrio = 0;
+        if(inTreeHeight > 2){
+            int incPrio = 0;
 
-        prioP2MSend = incPrio++;
-        prioP2M     = incPrio++;
+            prioP2MSend = incPrio++;
+            prioP2M     = incPrio++;
 
-        prioM2MSend = incPrio++;
-        prioM2M     = incPrio++;
+            prioM2MSend = incPrio++;
+            prioM2M     = incPrio++;
 
-        prioM2L     = incPrio;
-        prioM2LExtern = incPrio;
-        prioM2LMpi  = incPrio++;
+            prioM2L     = incPrio;
+            prioM2LExtern = incPrio;
+            prioM2LMpi  = incPrio++;
 
-        prioL2L     = incPrio++;
+            prioL2L     = incPrio++;
 
-        incPrio += (treeHeight-2)-1 // M2L is done treeHeight-2 times
-                   +(treeHeight-3)-1; // L2L is done treeHeight-3 times
+            incPrio += (treeHeight-2)-1 // M2L is done treeHeight-2 times
+                       +(treeHeight-3)-1; // L2L is done treeHeight-3 times
 
-        prioP2P     = incPrio;
-        prioP2PExtern = incPrio;
-        prioP2PMpi  = incPrio++;
+            prioP2P     = incPrio;
+            prioP2PExtern = incPrio;
+            prioP2PMpi  = incPrio++;
 
-        prioL2P     = incPrio++;
-        assert(incPrio == 6 + (treeHeight-2) + (treeHeight-3));
+            prioL2P     = incPrio++;
+            assert(incPrio == 6 + (treeHeight-2) + (treeHeight-3));
+        }
+        else{
+            int incPrio = 0;
+
+            prioP2MSend = -1;
+            prioP2M     = -1;
+
+            prioM2MSend = -1;
+            prioM2M     = -1;
+
+            prioM2L     = -1;
+            prioM2LExtern = -1;
+            prioM2LMpi  = -1;
+
+            prioL2L     = -1;
+
+            prioP2P     = incPrio;
+            prioP2PExtern = incPrio;
+            prioP2PMpi  = incPrio++;
+
+            prioL2P     = -1;
+            assert(incPrio == 1);
+        }
     }
 
     void initSchedulerCallback(unsigned /*sched_ctx_id*/,
                                struct _starpu_heteroprio_center_policy_heteroprio *heteroprio){
+        const bool workOnlyOnLeaves = (treeHeight <= 2);
 #ifdef STARPU_USE_CPU
         // CPU follows the real prio
         {
             int cpuCountPrio = 0;
             //prioP2MSend = 0;
             //prioP2M     = prioP2MSend+1;
-            if(capacities->supportP2M(FSTARPU_CPU_IDX)){
+            if( !workOnlyOnLeaves && capacities->supportP2M(FSTARPU_CPU_IDX)){
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = prioP2MSend;
                 heteroprio->buckets[prioP2MSend].valide_archs |= STARPU_CPU;
 
@@ -101,8 +126,8 @@ public:
             }
             //prioM2MSend = prioP2M+1;
             //prioM2M     = prioM2MSend+1;
-            assert(cpuCountPrio == prioM2MSend); // True if CPU support all TODO
-            if(capacities->supportM2M(FSTARPU_CPU_IDX)){
+            //assert(cpuCountPrio == prioM2MSend); // True if CPU support all TODO
+            if(!workOnlyOnLeaves && capacities->supportM2M(FSTARPU_CPU_IDX)){
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = prioM2MSend;
                 heteroprio->buckets[prioM2MSend].valide_archs |= STARPU_CPU;
 
@@ -114,7 +139,7 @@ public:
             // prioM2LExtern = prioM2L;
             // prioM2LMpi    = prioM2L;
             // prioL2L     = prioM2L+1;
-            assert(cpuCountPrio == prioM2L); // True if CPU support all TODO
+            // assert(cpuCountPrio == prioM2L); // True if CPU support all TODO
             for(int idxLevel = 2 ; idxLevel < treeHeight ; ++idxLevel){
                 if(capacities->supportM2L(FSTARPU_CPU_IDX)){
                     const int prioM2LAtLevel = getPrioM2L(idxLevel);
@@ -127,19 +152,19 @@ public:
                     heteroprio->buckets[prioL2LAtLevel].valide_archs |= STARPU_CPU;
                 }
             }
-            assert(cpuCountPrio == prioP2P); // True if CPU support all TODO
+            // assert(cpuCountPrio == prioP2P); // True if CPU support all TODO
 
             //prioP2P       = prioL2L + (treeHeight-3)*2+1 +1;
             //prioP2PExtern = prioP2P;
             //prioP2PMpi    = prioP2P;
-            if(capacities->supportP2P(FSTARPU_CPU_IDX)){
+            if( capacities->supportP2P(FSTARPU_CPU_IDX)){
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = prioP2P;
                 heteroprio->buckets[prioP2P].valide_archs |= STARPU_CPU;
             }
 
-            assert(cpuCountPrio == prioL2P); // True if CPU support all TODO
+            //assert(cpuCountPrio == prioL2P); // True if CPU support all TODO
             //prioL2P     = prioP2PMpi+1;
-            if(capacities->supportL2P(FSTARPU_CPU_IDX)){
+            if( !workOnlyOnLeaves && capacities->supportL2P(FSTARPU_CPU_IDX)){
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = prioL2P;
                 heteroprio->buckets[prioL2P].valide_archs |= STARPU_CPU;
             }
@@ -180,7 +205,7 @@ public:
 
             //prioP2MSend = 0;
             //prioP2M     = prioP2MSend+1;
-            if(capacities->supportP2M(FSTARPU_OPENCL_IDX)){
+            if( !workOnlyOnLeaves && capacities->supportP2M(FSTARPU_OPENCL_IDX)){
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = prioP2MSend;
                 heteroprio->buckets[prioP2MSend].valide_archs |= STARPU_OPENCL;
 
@@ -190,7 +215,7 @@ public:
 
             //prioM2MSend = prioP2M+1;
             //prioM2M     = prioM2MSend+1;
-            if(capacities->supportM2M(FSTARPU_OPENCL_IDX)){
+            if( !workOnlyOnLeaves && capacities->supportM2M(FSTARPU_OPENCL_IDX)){
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = prioM2MSend;
                 heteroprio->buckets[prioM2MSend].valide_archs |= STARPU_OPENCL;
 
@@ -208,7 +233,7 @@ public:
             }
 
             //prioL2P     = prioP2PMpi+1;
-            if(capacities->supportL2P(FSTARPU_OPENCL_IDX)){
+            if( !workOnlyOnLeaves && capacities->supportL2P(FSTARPU_OPENCL_IDX)){
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = prioL2P;
                 heteroprio->buckets[prioL2P].valide_archs |= STARPU_OPENCL;
             }
@@ -249,7 +274,7 @@ public:
 
             //prioP2MSend = 0;
             //prioP2M     = prioP2MSend+1;
-            if(capacities->supportP2M(FSTARPU_CUDA_IDX)){
+            if( !workOnlyOnLeaves && capacities->supportP2M(FSTARPU_CUDA_IDX)){
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = prioP2MSend;
                 heteroprio->buckets[prioP2MSend].valide_archs |= STARPU_CUDA;
 
@@ -259,7 +284,7 @@ public:
 
             //prioM2MSend = prioP2M+1;
             //prioM2M     = prioM2MSend+1;
-            if(capacities->supportM2M(FSTARPU_CUDA_IDX)){
+            if( !workOnlyOnLeaves && capacities->supportM2M(FSTARPU_CUDA_IDX)){
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = prioM2MSend;
                 heteroprio->buckets[prioM2MSend].valide_archs |= STARPU_CUDA;
 
@@ -277,7 +302,7 @@ public:
             }
 
             //prioL2P     = prioP2PMpi+1;
-            if(capacities->supportL2P(FSTARPU_CUDA_IDX)){
+            if( !workOnlyOnLeaves && capacities->supportL2P(FSTARPU_CUDA_IDX)){
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = prioL2P;
                 heteroprio->buckets[prioL2P].valide_archs |= STARPU_CUDA;
             }
