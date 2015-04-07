@@ -86,7 +86,7 @@ public:
         return currentMaxZ;
     }
 
-    virtual MortonIndex getIndex(const int inX, const int inY, const int inZ) override{
+    MortonIndex getIndex(const int inX, const int inY, const int inZ) override{
         return FTreeCoordinate(inX+coord.getX(), inY+coord.getY(), inZ+coord.getZ()).getMortonIndex(level);
     }
 };
@@ -192,8 +192,43 @@ public:
         return currentMaxZ;
     }
 
-    virtual MortonIndex getIndex(const int inX, const int inY, const int inZ) override{
+    MortonIndex getIndex(const int inX, const int inY, const int inZ) override{
         return (mindexes[inX+1]&flagX) | (mindexes[inY+1]&flagY) | (mindexes[inZ+1]&flagZ);
+    }
+
+    bool areNeighbors(const MortonIndex mv1, const MortonIndex mv2){
+        bool cellsAreNeighbor = true;
+
+        const MortonIndex flags[3] = { flagX, flagY, flagZ };
+
+        for(int idx = 0; idx < 3; ++idx){
+            const MortonIndex v1 = (mv1 & flags[idx]);
+            const MortonIndex v2 = (mv2 & flags[idx]);
+
+            if( (v1 == v2) || ((v1^v2) == 1) ){
+                // Are neighbor
+            }
+            else{
+                MortonIndex firstBit = 0;
+                asm("bsf %1,%0" : "=r"(firstBit) : "r"(FMath::Max(v1,v2)));
+
+                const MortonIndex highMask = ((((~MortonIndex(0))>>(firstBit+1))<<(firstBit+1)) & flags[idx]);
+
+                if((v1&highMask) != (v2&highMask)){
+                    cellsAreNeighbor = false;
+                    break;
+                }
+                const MortonIndex lowMask = ((~((~MortonIndex(0))<<firstBit)) & flags[idx]);
+
+                if((FMath::Min(v1,v2)&lowMask) != lowMask){
+                    cellsAreNeighbor = false;
+                    break;
+                }
+                // Are neighbors
+            }
+        }
+
+        return cellsAreNeighbor;
     }
 };
 

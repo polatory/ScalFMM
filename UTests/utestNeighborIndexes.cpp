@@ -59,6 +59,8 @@ class TestIndexes : public FUTester<TestIndexes> {
                                         uassert(xbox + idxX == neighCoord.getX());
                                         uassert(ybox + idxY == neighCoord.getY());
                                         uassert(zbox + idxZ == neighCoord.getZ());
+
+                                        uassert(bitsindex.areNeighbors(mindex, neigh));
                                     }
                                 }
                             }
@@ -102,6 +104,11 @@ class TestIndexes : public FUTester<TestIndexes> {
                                 uassert(xbox + idxX == neighCoord.getX());
                                 uassert(ybox + idxY == neighCoord.getY());
                                 uassert(zbox + idxZ == neighCoord.getZ());
+
+                                uassert(bitsindex.areNeighbors(mindex, neigh));
+                                if(bitsindex.areNeighbors(mindex, neigh) == false){
+                                    printf("Stop here\n");// TODO remove
+                                }
                             }
                         }
                     }
@@ -142,11 +149,35 @@ class TestIndexes : public FUTester<TestIndexes> {
                                         uassert(xbox + idxX == neighCoord.getX());
                                         uassert(ybox + idxY == neighCoord.getY());
                                         uassert(zbox + idxZ == neighCoord.getZ());
+
+                                        uassert(bitsindex.areNeighbors(mindex, neigh));
                                     }
                                 }
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    void Neighbors(){
+        {
+            const int idxLevel = 5;
+            const MortonIndex limit = FMath::pow2(idxLevel)*3L;
+            for(MortonIndex idxV1 = 1 ; idxV1 < limit ; ++idxV1){
+                FBitsNeighborIndex bitsindex(idxV1, idxLevel);
+                const FTreeCoordinate coord1(idxV1, idxLevel);
+
+                for(MortonIndex idxV2 = 0 ; idxV2 < limit ; ++idxV2){
+                    const bool isneig = bitsindex.areNeighbors(idxV1, idxV2);
+
+                    const FTreeCoordinate coord2(idxV2, idxLevel);
+                    const bool isreallyneig = (FMath::Abs(coord1.getX()-coord2.getX()) <= 1)
+                            && (FMath::Abs(coord1.getY()-coord2.getY()) <= 1)
+                            && (FMath::Abs(coord1.getZ()-coord2.getZ()) <= 1);
+
+                    uassert(isneig == isreallyneig);
                 }
             }
         }
@@ -158,6 +189,7 @@ class TestIndexes : public FUTester<TestIndexes> {
         AddTest(&TestIndexes::MortonLimite,"Test NeighborIndexes at limits");
         AddTest(&TestIndexes::Morton,"Test NeighborIndexes");
         AddTest(&TestIndexes::MortonAll,"Test All NeighborIndexes");
+        AddTest(&TestIndexes::Neighbors,"Test Neighbors");
     }
 };
 
