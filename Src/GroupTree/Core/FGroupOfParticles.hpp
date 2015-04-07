@@ -162,7 +162,7 @@ public:
         blockHeader         = reinterpret_cast<BlockHeader*>(bufferPtr);
         bufferPtr += sizeof(BlockHeader);
         blockIndexesTable   = reinterpret_cast<int*>(bufferPtr);
-        bufferPtr += sizeof(BlockHeader)+(blockIndexesTableSize*sizeof(int));
+        bufferPtr += (blockIndexesTableSize*sizeof(int));
         leafHeader          = reinterpret_cast<LeafHeader*>(bufferPtr);
 
         // Init header
