@@ -10,7 +10,7 @@
  * @brief The FStarPUFmmPriorities class
  * This class should have an static method to be called by hetero getPrio.
  */
-#ifdef STARPU_SUPPORT_COMMUTE
+#ifdef STARPU_SUPPORT_SCHEDULER
 
 #include "FStarPUHeteoprio.hpp"
 
@@ -325,7 +325,7 @@ public:
     }
 };
 
-#else // STARPU_SUPPORT_COMMUTE
+#else // STARPU_SUPPORT_SCHEDULER
 
 class FStarPUFmmPriorities{
     static FStarPUFmmPriorities controller;
@@ -383,7 +383,7 @@ public:
     }
 };
 
-#endif // STARPU_SUPPORT_COMMUTE
+#endif // STARPU_SUPPORT_SCHEDULER
 
 FStarPUFmmPriorities FStarPUFmmPriorities::controller;
 

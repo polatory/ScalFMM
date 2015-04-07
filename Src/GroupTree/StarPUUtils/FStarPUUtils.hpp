@@ -14,6 +14,11 @@
 
 #if (STARPU_MAJOR_VERSION >= 1) && (STARPU_MINOR_VERSION >= 2)
 #define STARPU_SUPPORT_COMMUTE
+#define STARPU_SUPPORT_SCHEDULER
+#endif
+
+#if (STARPU_MAJOR_VERSION >= 1) && (STARPU_MINOR_VERSION >= 3)
+#define STARPU_SUPPORT_ARBITER
 #endif
 
 /////////////////////////////////////////////////////
