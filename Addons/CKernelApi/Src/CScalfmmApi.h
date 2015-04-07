@@ -524,5 +524,13 @@ void scalfmm_dealloc_handle(scalfmm_handle handle, Callback_free_cell cellDestro
  */
 void scalfmm_reset_tree(scalfmm_handle handle);
 
+/**
+ * @brief This function shouldn't be there !! display information
+ * about the octree built versus the octree hibox want.
+ * @param Handle scalfmm_handle provided by scalfmm_init.
+ * @param Rinflu influence radius for each particle previously
+ * inserted. Tree must be built before calling this function
+ */
+void scalfmm_hibox_Rinflu_display(scalfmm_handle Handle, FSize nbPart, double * Rinflu);
 
 #endif

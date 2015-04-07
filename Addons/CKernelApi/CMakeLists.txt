@@ -40,7 +40,7 @@ if(SCALFMM_ADDON_CKERNELAPI)
         # Install header
         SET(my_include_dirs "Src")
 
-        file( GLOB hpp_in_dir Src/*.hpp )
+        file( GLOB hpp_in_dir Src/*.hpp Src/*.h)
         INSTALL( FILES ${hpp_in_dir} DESTINATION include/ScalFmm/CKernelApi )
 
         file( GLOB_RECURSE source_tests_files Tests/*.c )
