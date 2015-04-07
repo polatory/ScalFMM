@@ -657,6 +657,7 @@ static struct starpu_task *pop_task_heteroprio_policy(unsigned sched_ctx_id)
                     heteroprio->workers_heteroprio[idx_worker].tasks_queue_size -= 1;
                     /* we steal a task update global counter */
                     heteroprio->nb_prefetched_tasks_per_arch_index[heteroprio->workers_heteroprio[idx_worker].arch_index] -= 1;
+                    STARPU_PTHREAD_MUTEX_UNLOCK(&heteroprio->workers_heteroprio[idx_worker].ws_prefetch_mutex);
                     break;
                 }
                 STARPU_PTHREAD_MUTEX_UNLOCK(&heteroprio->workers_heteroprio[idx_worker].ws_prefetch_mutex);
