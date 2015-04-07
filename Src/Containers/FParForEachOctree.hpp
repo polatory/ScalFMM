@@ -15,8 +15,8 @@ namespace FParForEachOctree {
  * @brief forEachLeaf iterate on the leaf and apply the function
  * @param function
  */
-template< class FReal, template<class FReal, class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass > class FOctree,
-          class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass,
+template< template<class FReal, class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass > class FOctree,
+          class FReal, class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass,
           class FunctionTemplate>
 void forEachLeaf(FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree, FunctionTemplate function){
     #pragma omp parallel
@@ -43,8 +43,8 @@ void forEachLeaf(FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocator
  * @brief forEachLeaf iterate on the cell and apply the function
  * @param function
  */
-template< class FReal,  template<class FReal, class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass > class FOctree,
-          class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass,
+template<  template<class FReal, class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass > class FOctree,
+          class FReal, class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass,
           class FunctionTemplate>
 void forEachCell(FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree, FunctionTemplate function){
     #pragma omp parallel
@@ -77,8 +77,8 @@ void forEachCell(FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocator
  * @brief forEachLeaf iterate on the cell and apply the function
  * @param function
  */
-template< class FReal,  template<class FReal, class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass > class FOctree,
-          class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass,
+template<  template<class FReal, class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass > class FOctree,
+          class FReal, class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass,
           class FunctionTemplate>
 void forEachCellWithLevel(FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree, FunctionTemplate function){
     #pragma omp parallel
@@ -111,8 +111,8 @@ void forEachCellWithLevel(FOctree<FReal, CellClass,ContainerClass,LeafClass,Cell
  * @brief forEachLeaf iterate on the cell and apply the function
  * @param function
  */
-template< class FReal,  template<class FReal, class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass > class FOctree,
-          class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass,
+template<  template<class FReal, class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass > class FOctree,
+          class FReal, class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass,
           class FunctionTemplate>
 void forEachCellLeaf(FOctree<FReal, CellClass,ContainerClass,LeafClass,CellAllocatorClass>* tree, FunctionTemplate function){
     #pragma omp parallel
