@@ -116,7 +116,7 @@ class FBitsNeighborIndex : public FAbstractNeighborIndex{
 
     static const int NbBitsFlag = MaxTreeHeight;
 
-    static MortonIndex BuildFlag(){
+    /*constexpr*/ static MortonIndex BuildFlag(){
         MortonIndex flag = 0;
         int counter = NbBitsFlag;
         while(counter--){
