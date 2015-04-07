@@ -372,7 +372,7 @@ protected:
                 m2m_cl[idx].dyn_modes[(idxBuffer*2)+2] = STARPU_R;
                 m2m_cl[idx].dyn_modes[(idxBuffer*2)+3] = STARPU_R;
                 l2l_cl[idx].dyn_modes[(idxBuffer*2)+2] = STARPU_R;
-                l2l_cl[idx].dyn_modes[(idxBuffer*2)+3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+                l2l_cl[idx].dyn_modes[(idxBuffer*2)+3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
             }
         }
 
@@ -399,7 +399,7 @@ protected:
         l2p_cl.modes[0] = STARPU_R;
         l2p_cl.modes[1] = STARPU_R;
         l2p_cl.modes[2] = STARPU_R;
-        l2p_cl.modes[3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+        l2p_cl.modes[3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
         l2p_cl.name = "l2p_cl";
 
         memset(&p2p_cl_in, 0, sizeof(p2p_cl_in));
@@ -423,7 +423,7 @@ protected:
 #endif
         p2p_cl_in.nbuffers = 2;
         p2p_cl_in.modes[0] = STARPU_R;
-        p2p_cl_in.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+        p2p_cl_in.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
         p2p_cl_in.name = "p2p_cl_in";
         memset(&p2p_cl_inout, 0, sizeof(p2p_cl_inout));
 #ifdef STARPU_USE_CPU
@@ -446,9 +446,9 @@ protected:
 #endif
         p2p_cl_inout.nbuffers = 4;
         p2p_cl_inout.modes[0] = STARPU_R;
-        p2p_cl_inout.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+        p2p_cl_inout.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
         p2p_cl_inout.modes[2] = STARPU_R;
-        p2p_cl_inout.modes[3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+        p2p_cl_inout.modes[3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
         p2p_cl_inout.name = "p2p_cl_inout";
 
         memset(&m2l_cl_in, 0, sizeof(m2l_cl_in));
@@ -473,7 +473,7 @@ protected:
         m2l_cl_in.nbuffers = 3;
         m2l_cl_in.modes[0] = STARPU_R;
         m2l_cl_in.modes[1] = STARPU_R;
-        m2l_cl_in.modes[2] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+        m2l_cl_in.modes[2] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
         m2l_cl_in.name = "m2l_cl_in";
         memset(&m2l_cl_inout, 0, sizeof(m2l_cl_inout));
 #ifdef STARPU_USE_CPU
@@ -497,10 +497,10 @@ protected:
         m2l_cl_inout.nbuffers = 6;
         m2l_cl_inout.modes[0] = STARPU_R;
         m2l_cl_inout.modes[1] = STARPU_R;
-        m2l_cl_inout.modes[2] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+        m2l_cl_inout.modes[2] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
         m2l_cl_inout.modes[3] = STARPU_R;
         m2l_cl_inout.modes[4] = STARPU_R;
-        m2l_cl_inout.modes[5] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+        m2l_cl_inout.modes[5] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
         m2l_cl_inout.name = "m2l_cl_inout";
     }
 
@@ -547,7 +547,7 @@ protected:
 #endif
         p2p_cl_inout_mpi.nbuffers = 3;
         p2p_cl_inout_mpi.modes[0] = STARPU_R;
-        p2p_cl_inout_mpi.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+        p2p_cl_inout_mpi.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
         p2p_cl_inout_mpi.modes[2] = STARPU_R;
         p2p_cl_inout_mpi.name = "p2p_cl_inout_mpi";
 
@@ -572,7 +572,7 @@ protected:
 #endif
         m2l_cl_inout_mpi.nbuffers = 4;
         m2l_cl_inout_mpi.modes[0] = STARPU_R;
-        m2l_cl_inout_mpi.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE);
+        m2l_cl_inout_mpi.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
         m2l_cl_inout_mpi.modes[2] = STARPU_R;
         m2l_cl_inout_mpi.modes[3] = STARPU_R;
         m2l_cl_inout_mpi.name = "m2l_cl_inout_mpi";
@@ -1516,7 +1516,7 @@ protected:
                                        STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                        STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioM2LMpi(idxLevel),
                             STARPU_R, cellHandles[idxLevel][idxGroup].symb,
-                            (STARPU_RW|STARPU_COMMUTE), cellHandles[idxLevel][idxGroup].down,
+                            (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
                             STARPU_R, remoteCellGroups[idxLevel][interactionid].handleSymb,
                             STARPU_R, remoteCellGroups[idxLevel][interactionid].handleUp,
                             0);
@@ -1543,7 +1543,7 @@ protected:
                                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioM2L(idxLevel),
                                    STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                    STARPU_R, cellHandles[idxLevel][idxGroup].up,
-                                   (STARPU_RW|STARPU_COMMUTE), cellHandles[idxLevel][idxGroup].down,
+                                   (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
                         0);
             }
             FLOG( timerInBlock.tac() );
@@ -1562,10 +1562,10 @@ protected:
                                        STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioM2LExtern(idxLevel),
                                STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                STARPU_R, cellHandles[idxLevel][idxGroup].up,
-                               (STARPU_RW|STARPU_COMMUTE), cellHandles[idxLevel][idxGroup].down,
+                               (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
                                STARPU_R, cellHandles[idxLevel][interactionid].symb,
                                STARPU_R, cellHandles[idxLevel][interactionid].up,
-                               (STARPU_RW|STARPU_COMMUTE), cellHandles[idxLevel][interactionid].down,
+                               (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
                             0);
                 }
             }
@@ -1798,7 +1798,7 @@ protected:
                                    STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
                                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioP2PMpi(),
                         STARPU_R, particleHandles[idxGroup].symb,
-                        (STARPU_RW|STARPU_COMMUTE), particleHandles[idxGroup].down,
+                        (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
                         STARPU_R, remoteParticleGroupss[interactionid].handleSymb,
                         0);
             }
@@ -1822,7 +1822,7 @@ protected:
                     STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
                                STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioP2P(),
                                STARPU_R, particleHandles[idxGroup].symb,
-                               (STARPU_RW|STARPU_COMMUTE), particleHandles[idxGroup].down,
+                               (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
                     0);
         }
         FLOG( timerInBlock.tac() );
@@ -1837,9 +1837,9 @@ protected:
                         STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
                                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioP2PExtern(),
                         STARPU_R, particleHandles[idxGroup].symb,
-                                   (STARPU_RW|STARPU_COMMUTE), particleHandles[idxGroup].down,
+                                   (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
                         STARPU_R, particleHandles[interactionid].symb,
-                                   (STARPU_RW|STARPU_COMMUTE), particleHandles[interactionid].down,
+                                   (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[interactionid].down,
                         0);
             }
         }
@@ -1864,7 +1864,7 @@ protected:
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].down,
                     STARPU_R, particleHandles[idxGroup].symb,
-                    (STARPU_RW|STARPU_COMMUTE), particleHandles[idxGroup].down,
+                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
                     0);
         }
 

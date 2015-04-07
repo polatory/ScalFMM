@@ -120,8 +120,11 @@ public:
 
 /////////////////////////////////////////////////////
 
+// Use STARPU_COMMUTE if possible otherwise
 #ifndef STARPU_SUPPORT_COMMUTE
-    #define STARPU_COMMUTE STARPU_NONE
+    #define STARPU_COMMUTE_IF_SUPPORTED STARPU_NONE
+#else
+    #define STARPU_COMMUTE_IF_SUPPORTED STARPU_COMMUTE
 #endif
 
 
