@@ -61,6 +61,8 @@ typedef struct myUserDatas{
     double * insertedPositions;
     double * myPhyValues;
     double ** forcesComputed;
+    //In the same way we store multiples forces array.
+    double ** potentials;
 }UserData;
 
 

@@ -242,12 +242,15 @@ extern "C" void ChebKernel_L2P(void* leafCell, FSize nbParticles, const FSize* p
     inKernelStruct->kernel[id_thread]->L2P(leafChebCell,tempContainer);
 
     //Then retrieve the results
-    double * forcesToFill = reinterpret_cast<UserData *>(inKernel)->forcesComputed[id_thread];
+    double * forcesToFill     = reinterpret_cast<UserData *>(inKernel)->forcesComputed[id_thread];
+    double * potentialsToFill = reinterpret_cast<UserData *>(inKernel)->potentials[id_thread];
+
     const FVector<FSize>& indexes = tempContainer->getIndexes();
     for(FSize idxPart = 0 ; idxPart<nbParticles ; ++idxPart){
         forcesToFill[indexes[idxPart]*3+0] += tempContainer->getForcesX()[idxPart];
         forcesToFill[indexes[idxPart]*3+1] += tempContainer->getForcesY()[idxPart];
         forcesToFill[indexes[idxPart]*3+2] += tempContainer->getForcesZ()[idxPart];
+        potentialsToFill[indexes[idxPart]] =+ tempContainer->getPotentials()[idxPart];
     }
 
     delete tempContainer;
@@ -305,13 +308,16 @@ void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes,
 
     inKernelStruct->kernel[id_thread]->P2P(FTreeCoordinate(coord),tempContTarget,nullptr,tempContSources,0);
 
-    //get back forces
+    //get back forces & potentials
     double * forcesToFill = reinterpret_cast<UserData *>(inKernel)->forcesComputed[id_thread];
+    double * potentialsToFill = reinterpret_cast<UserData *>(inKernel)->potentials[id_thread];
+
     const FVector<FSize>& indexes = tempContTarget->getIndexes();
     for(FSize idxPart = 0 ; idxPart<nbParticles ; ++idxPart){
         forcesToFill[indexes[idxPart]*3+0] += tempContTarget->getForcesX()[idxPart];
         forcesToFill[indexes[idxPart]*3+1] += tempContTarget->getForcesY()[idxPart];
         forcesToFill[indexes[idxPart]*3+2] += tempContTarget->getForcesZ()[idxPart];
+        potentialsToFill[indexes[idxPart]] =+ tempContTarget->getPotentials()[idxPart];
     }
 
     //Note that sources are also modified.
@@ -323,6 +329,7 @@ void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes,
             forcesToFill[indexesSource[idxSourcePart]*3+0] += tempContSources[idSource]->getForcesX()[idxSourcePart];
             forcesToFill[indexesSource[idxSourcePart]*3+1] += tempContSources[idSource]->getForcesY()[idxSourcePart];
             forcesToFill[indexesSource[idxSourcePart]*3+2] += tempContSources[idSource]->getForcesZ()[idxSourcePart];
+            potentialsToFill[indexesSource[idxSourcePart]] =+ tempContSources[idSource]->getPotentials()[idxSourcePart];
         }
     }
 
