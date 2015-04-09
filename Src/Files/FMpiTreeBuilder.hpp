@@ -19,6 +19,7 @@
 #include "../Utils/FMpi.hpp"
 #include "../Utils/FQuickSortMpi.hpp"
 #include "../Utils/FBitonicSort.hpp"
+#include "../Utils/FTic.hpp"
 
 #include "../Utils/FMemUtils.hpp"
 
