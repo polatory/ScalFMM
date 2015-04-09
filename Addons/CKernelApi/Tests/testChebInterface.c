@@ -226,6 +226,16 @@ int main(int argc, char ** av){
     }
     userDatas.forcesComputed = forcesToStore;
 
+    //Same idea with potential -> could be merge with loop just above,
+    //but it's kept apart in order to simply
+    double ** potentialToStore = malloc(sizeof(double*)*nb_threads);
+    //For each array, initialisation
+    for(idThreads=0 ; idThreads<nb_threads ; ++idThreads){
+        potentialToStore[idThreads] = malloc(sizeof(double)* nbPart);
+        memset(potentialToStore[idThreads],0,sizeof(double)* nbPart);
+    }
+    userDatas.potentials = potentialToStore;
+
     //Give ScalFMM the datas before calling fmm (this will set as well the kernel)
     scalfmm_user_kernel_config(handle,kernel,&userDatas);
 
@@ -237,13 +247,16 @@ int main(int argc, char ** av){
     scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
     tac(&interface_timer);
 
-    //Reduction on forces array
+    //Reduction on forces & potential arrays
     {
         FSize idxPart;
         for(idThreads=1 ; idThreads<nb_threads ; ++idThreads){
-            for(idxPart=0 ; idxPart<nbPart*3 ; ++idxPart){
+            for(idxPart=0 ; idxPart<nbPart ; ++idxPart){
                 //Everything is stored in first array
-                forcesToStore[0][idxPart] += forcesToStore[idThreads][idxPart];
+                forcesToStore[0][3*idxPart+0] += forcesToStore[idThreads][3*idxPart+0];
+                forcesToStore[0][3*idxPart+1] += forcesToStore[idThreads][3*idxPart+1];
+                forcesToStore[0][3*idxPart+2] += forcesToStore[idThreads][3*idxPart+2];
+                potentialToStore[0][idxPart] += potentialToStore[idThreads][idxPart];
             }
         }
     }
@@ -261,23 +274,33 @@ int main(int argc, char ** av){
     //Print time results
     print_difference_elapsed(&interface_timer,&ref_timer);
 
-    //get back the forces for ref_cheb execution
-    double * forcesRef = malloc(sizeof(double)*3*nbPart);
+    //get back the forces & potentials for ref_cheb execution
+    double * forcesRef     = malloc(sizeof(double)*3*nbPart);
+    double * potentialsRef = malloc(sizeof(double)*nbPart);
+
     memset(forcesRef,0,sizeof(double)*3*nbPart);
+    memset(potentialsRef,0,sizeof(double)*nbPart);
+
     scalfmm_get_forces_xyz(handle_ref,nbPart,forcesRef);
+    scalfmm_get_potentials(handle_ref,nbPart,potentialsRef);
+
     {//Comparison part
         FSize idxPart;
         int nbPartOkay = 0;
         for(idxPart=0 ; idxPart<nbPart ; ++idxPart ){
-            double diffX,diffY,diffZ;
+            double diffX,diffY,diffZ,diffPot;
             diffX = forcesToStore[0][idxPart*3+0]-forcesRef[idxPart*3+0];
             diffY = forcesToStore[0][idxPart*3+1]-forcesRef[idxPart*3+1];
             diffZ = forcesToStore[0][idxPart*3+2]-forcesRef[idxPart*3+2];
-            if(diffX < 0.00000001 && diffY < 0.00000001 && diffZ < 0.00000001){
+            diffPot = potentialToStore[0][idxPart]-potentialsRef[idxPart];
+
+            //THERE
+
+            if(diffX < 0.00000001 && diffY < 0.00000001 && diffZ < 0.00000001 && diffPot < 0.00000001){
                 nbPartOkay++;
             }
             else{
-                printf("id : %lld : %e, %e, %e\n",idxPart,diffX,diffY,diffZ);
+                printf("id : %lld : %e, %e, %e, %e\n",idxPart,diffX,diffY,diffZ,diffPot);
             }
             //That part is to verify with our usual exec' if everything is alright
             if(idxPart == 0 || idxPart == nbPart/2 || idxPart == nbPart-1){
@@ -306,8 +329,11 @@ int main(int argc, char ** av){
     //free the thread' specific datas
     for(idThreads=0 ; idThreads<nb_threads ; ++idThreads){
         free(forcesToStore[idThreads]);
+        free(potentialToStore[idThreads]);
     }
-    ChebKernelStruct_free(userDatas.kernelStruct);
+    free(forcesToStore);
+    free(potentialToStore);
 
-    free(userDatas.forcesComputed);
+    ChebKernelStruct_free(userDatas.kernelStruct);
+    return EXIT_SUCCESS;
 }
