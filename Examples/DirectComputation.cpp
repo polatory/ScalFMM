@@ -15,6 +15,8 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
+// @FUSE_BLAS
+
 #include <iostream>
 #include <iomanip>
 
