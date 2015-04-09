@@ -53,6 +53,22 @@ struct FCoordinateComputer {
         return host;
     }
 
+
+    template <class FReal>
+    static inline FPoint<FReal> GetPositionFromCoordinate(const FPoint<FReal>& centerOfBox, const FReal boxWidth, const int treeHeight,
+                                              const FTreeCoordinate& pos) {
+        const FPoint<FReal> boxCorner(centerOfBox,-(boxWidth/2));
+        const FReal boxWidthAtLeafLevel(boxWidth/FReal(1<<(treeHeight-1)));
+
+        // box coordinate to host the particle
+        FPoint<FReal> host;
+        // position has to be relative to corner not center
+        host.setX( pos.getX()*boxWidthAtLeafLevel + boxCorner.getX() );
+        host.setY( pos.getY()*boxWidthAtLeafLevel + boxCorner.getY() );
+        host.setZ( pos.getZ()*boxWidthAtLeafLevel + boxCorner.getZ() );
+        return host;
+    }
+
 };
 
 
