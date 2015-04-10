@@ -240,7 +240,7 @@ protected:
                             }
 
                             int lastOutInteraction = currentOutInteraction;
-                            while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdx){
+                            while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdxOther){
                                 lastOutInteraction += 1;
                             }
 
