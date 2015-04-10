@@ -359,7 +359,7 @@ public:
     //get back the potentials
     void get_potentials( int nbPotentials, double * potentialsToFill){
         octree->forEachLeaf([&](LeafClass* leaf){
-                ContainerClass * sources = leaf->getSrc();
+                ContainerClass * sources = leaf->getTargets();
                 const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
                 FSize nbPartThere = sources->getNbParticles();
                 for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
@@ -519,7 +519,7 @@ public:
     }
 
     //Simple call to FScalFMMEngine method with good template
-    void reset_tree(){
+    void reset_tree(Callback_reset_cell /*not used*/){
         generic_reset_tree<FReal,ContainerClass,InterCell,LeafClass>(octree);
     }
 

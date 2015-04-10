@@ -447,6 +447,17 @@ typedef void (*Callback_P2PFull)(FSize nbParticles, const FSize* particleIndexes
 typedef void (*Callback_P2PInner)(FSize nbParticles, const FSize* particleIndexes, void* userData);
 
 
+/**
+ * @brief Function to be filled by user's method to reset a user's cell
+ * @param level  level of the cell.
+ * @param morton_index morton index of the cell to be allocated.
+ * @param tree_position int[3] position inside the tree (number of boxes in
+ * each direction)
+ * @param spatial_position double[3] center of the cell
+ * @param usercell ptr to user's cell
+ */
+typedef void (*Callback_reset_cell)(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell);
+
 
 /**
  * @brief Structure containing callbacks to fill in order to define
@@ -522,7 +533,7 @@ void scalfmm_dealloc_handle(scalfmm_handle handle, Callback_free_cell cellDestro
  * and local development, forces and potentials)
  * @param Handle scalfmm_handle provided by scalfmm_init.
  */
-void scalfmm_reset_tree(scalfmm_handle handle);
+void scalfmm_reset_tree(scalfmm_handle handle, Callback_reset_cell cellReseter);
 
 /**
  * @brief This function shouldn't be there !! display information

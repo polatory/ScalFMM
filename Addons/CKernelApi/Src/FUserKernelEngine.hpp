@@ -492,6 +492,28 @@ public:
 
     }
 
+    void reset_tree(Callback_reset_cell cellReset){
+        double boxwidth = octree->getBoxWidth();
+        FPoint<FReal> BoxCenter = octree->getBoxCenter();
+        double boxCorner[3];
+        boxCorner[0] = BoxCenter.getX() - boxwidth/2.0;
+        boxCorner[1] = BoxCenter.getY() - boxwidth/2.0;
+        boxCorner[2] = BoxCenter.getZ() - boxwidth/2.0;
+        //apply user function reset on each user's cell
+        octree->forEachCellWithLevel([&](CoreCell * currCell,const int currLevel){
+                if(currCell->getContainer()){
+                    FTreeCoordinate currCoord = currCell->getCoordinate();
+                    int arrayCoord[3] = {currCoord.getX(),currCoord.getY(),currCoord.getZ()};
+                    MortonIndex    currMorton = currCoord.getMortonIndex(currLevel);
+                    double position[3];
+                    position[0] = boxCorner[0] + currCoord.getX()*boxwidth/double(1<<currLevel);
+                    position[1] = boxCorner[1] + currCoord.getY()*boxwidth/double(1<<currLevel);
+                    position[2] = boxCorner[2] + currCoord.getZ()*boxwidth/double(1<<currLevel);
+                    cellReset(currLevel,currMorton,arrayCoord,position,currCell->getContainer());
+                }
+            });
+    }
+
     void intern_dealloc_handle(Callback_free_cell userDeallocator){
         free_cell(userDeallocator);
     }

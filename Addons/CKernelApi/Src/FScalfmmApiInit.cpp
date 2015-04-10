@@ -250,7 +250,7 @@ extern "C" void ChebKernel_L2P(void* leafCell, FSize nbParticles, const FSize* p
         forcesToFill[indexes[idxPart]*3+0] += tempContainer->getForcesX()[idxPart];
         forcesToFill[indexes[idxPart]*3+1] += tempContainer->getForcesY()[idxPart];
         forcesToFill[indexes[idxPart]*3+2] += tempContainer->getForcesZ()[idxPart];
-        potentialsToFill[indexes[idxPart]] =+ tempContainer->getPotentials()[idxPart];
+        potentialsToFill[indexes[idxPart]] += tempContainer->getPotentials()[idxPart];
     }
 
     delete tempContainer;
@@ -317,7 +317,7 @@ void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes,
         forcesToFill[indexes[idxPart]*3+0] += tempContTarget->getForcesX()[idxPart];
         forcesToFill[indexes[idxPart]*3+1] += tempContTarget->getForcesY()[idxPart];
         forcesToFill[indexes[idxPart]*3+2] += tempContTarget->getForcesZ()[idxPart];
-        potentialsToFill[indexes[idxPart]] =+ tempContTarget->getPotentials()[idxPart];
+        potentialsToFill[indexes[idxPart]] += tempContTarget->getPotentials()[idxPart];
     }
 
     //Note that sources are also modified.
@@ -329,7 +329,7 @@ void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes,
             forcesToFill[indexesSource[idxSourcePart]*3+0] += tempContSources[idSource]->getForcesX()[idxSourcePart];
             forcesToFill[indexesSource[idxSourcePart]*3+1] += tempContSources[idSource]->getForcesY()[idxSourcePart];
             forcesToFill[indexesSource[idxSourcePart]*3+2] += tempContSources[idSource]->getForcesZ()[idxSourcePart];
-            potentialsToFill[indexesSource[idxSourcePart]] =+ tempContSources[idSource]->getPotentials()[idxSourcePart];
+            potentialsToFill[indexesSource[idxSourcePart]] += tempContSources[idSource]->getPotentials()[idxSourcePart];
         }
     }
 
@@ -340,6 +340,10 @@ void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes,
     delete tempContTarget;
 }
 
-
+void ChebCell_reset(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell){
+    ChebCellStruct *  cellStruct = reinterpret_cast<ChebCellStruct *>(userCell);
+    FChebCell<double,7>* chebCell = cellStruct->cell;
+    chebCell->resetToInitialState();
+}
 
 #endif

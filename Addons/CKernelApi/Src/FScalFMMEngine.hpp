@@ -202,7 +202,7 @@ public:
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
 
-    virtual void reset_tree(){
+    virtual void reset_tree(Callback_reset_cell cellReset){
     }
 
     template<class FReal,class ContainerClass, class CellClass, class LeafClass>
@@ -242,6 +242,8 @@ public:
         FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
     }
 
+    virtual void hibox_Rinflu_display(FSize nbPartIn, double *Rinflu){
+    }
 
 
 };
@@ -441,8 +443,12 @@ extern "C" void scalfmm_utils_interactionPosition(int interactionPosition, int* 
 }
 
 
-extern "C" void scalfmm_reset_tree(scalfmm_handle Handle){
-    ((ScalFmmCoreHandle * ) Handle)->engine->reset_tree();
+extern "C" void scalfmm_reset_tree(scalfmm_handle Handle, Callback_reset_cell cellReseter){
+    ((ScalFmmCoreHandle * ) Handle)->engine->reset_tree(cellReseter);
+}
+
+extern "C" void  scalfmm_hibox_Rinflu_display(scalfmm_handle Handle, FSize nbPart, double * Rinflu){
+    ((ScalFmmCoreHandle * ) Handle)->engine->hibox_Rinflu_display(nbPart, Rinflu);
 }
 
 #endif
