@@ -52,7 +52,7 @@ class FTreeCoordinate;
  * \tparam MatrixKernelClass Type of matrix kernel function
  * \tparam ORDER Chebyshev interpolation order
  */
-template < class CellClass, class ContainerClass, class MatrixKernelClass, int ORDER, class OctreeClass>
+template < typename FReal, class CellClass, class ContainerClass, class MatrixKernelClass, int ORDER, class OctreeClass>
 class FChebBalanceSymKernel
     : public FAbstractKernels<CellClass, ContainerClass>
 {
@@ -305,7 +305,7 @@ public:
             LeafCellCoordinate.getMortonIndex(_treeHeight - 1),
             _treeHeight - 1);
 
-        cell->addCost(tmpCost);
+        cell->addNearCost(tmpCost);
         countP2P++;
     }
 };
@@ -316,9 +316,9 @@ public:
  * Handler to deal with all symmetries: Stores permutation indices and vectors
  * to reduce 343 different interactions to 16 only.
  */
-template < class CellClass, class ContainerClass, class MatrixKernelClass,
-           int ORDER, class OctreeClass>
-struct FChebBalanceSymKernel<CellClass, ContainerClass, MatrixKernelClass, ORDER, OctreeClass>
+template < typename FReal, class CellClass, class ContainerClass,
+           class MatrixKernelClass, int ORDER, class OctreeClass>
+struct FChebBalanceSymKernel<FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, OctreeClass>
 ::SymmetryHandler
 {
     // M2L operators
