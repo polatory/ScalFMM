@@ -111,12 +111,14 @@ int main(int argc, char ** argv){
                          FParameterDefinitions::NbParticles,FParameterDefinitions::OutputVisuFile,LocalOptionEllipsoid);
 
 
-
+    
     typedef double FReal;
-	 FReal       extraRadius = 0.000 ;
-    const FSize NbPoints  = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options,   FSize(20000));
-    const std::string genericFileName(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,   "unifPointDist"));
-	FReal BoxWith = 0.0;
+    FReal       extraRadius = 0.000 ;
+
+    const FSize NbPoints  = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options,   FSize(2)0000);
+    const std::string genericFileName(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "unifPointDist"));
+
+    FReal BoxWith = 0.0;
     FPoint<FReal> Centre(0.0, 0.0,0.0);
 	//
 	// Allocation
