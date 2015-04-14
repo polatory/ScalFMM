@@ -6,6 +6,7 @@
 #define _COSTZONES_HPP_
 
 #include "FCostCell.hpp"
+#include "FCoordColour.hpp"
 
 #include <vector>
 #include <stdexcept>
@@ -20,50 +21,85 @@
  * in-order traversal of the octree where cell costs are accumulated. When an
  * accumulation is too big, a new zone is created.
  *
+ * It is possible to set the levels of the tree that must be considered to
+ * compute the costzones.
+ *
  * \tparam OctreeClass The type of the octree to work on.
  * \tparam CellClass   The type of the cells we work with.
+ * \parblock
+ * This class must provide a typedef named CostType that identifies
+ * the structure used to store data.
+ * \endparblock
  */
 template<typename OctreeClass, typename CellClass>
-class CostZones {
+class FCostZones {
 public:
+    using CostType = typename CellClass::costtype;
 
+    /**
+     * \brief Class used to store the bounds of a zone.
+     * The bounds consist in the Morton index of the first node and the number
+     * of subsequent nodes.
+     */ 
     using BoundClass = std::pair<MortonIndex, int>;
     /// Initial value for empty bounds.
     const BoundClass _boundInit {-1,0};
 
 
 protected:
+    /// Alias to FCoordColour#coord2colour -*- not optimised
+    constexpr static int(*coord2colour)(const FTreeCoordinate&)
+    = FCoordColour::coord2colour;
+
+    /**
+     * \brief Enumeration to specify the children to move to during the in-order
+     * traversal.
+     */
+    enum ChildrenSide {LEFT, RIGHT};
+
+
     /// The iterator to move through the tree.
     typename OctreeClass::Iterator _it;
     /// The number of zones to create.
     int _nbZones;
     /// The tree height.
     int _treeHeight;
-
-    /// The current cumulative cost of visited cells.
-    unsigned long long _currentCost = 0;
-    /// The total tree cost.
-    unsigned long long _totalCost = 0;
-
-    /// The vector containing the costzone cells. Sorted by zone > (level, cell).
-    std::vector< std::vector< std::pair<int, CellClass*> > > _zones;
-
-    /**
-     * \brief The vector containing the Morton index boundaries of the zones.
-     * Sorted by zone > level > bounds.
-     * \details This means there are at most _treeHeight elements in the inner
-     * vectors.
-     */
-    std::vector< std::vector< BoundClass > > _zonebounds;
-
-    /// \brief Enumeration to specify the children to move to during the in-order
-    /// traversal.
-    enum ChildrenSide {LEFT, RIGHT};
-
     /// The highest level in the tree in which to consider cells (inclusive)
     int _topMostLevel = 0;
     /// The lowest level in the tree in which to consider cells (exclusive)
     int _bottomMostLevel = 1;
+
+
+    /// The current cumulative cost of visited cells.
+    CostType _internalCurrentCost = 0;
+    /// The total cost of internal cell.
+    CostType _internalTotalCost = 0;
+    /**
+     * \brief The vector containing the boundaries of the internal node zones
+     *
+     * Sorted by zone > level > bounds.
+     * \details This means there are _treeHeight elements in the inner vectors.
+     */
+    std::vector< std::vector< BoundClass > > _internalZoneBounds;
+
+
+    /// The current cumulative cost of the visited leaves.
+    std::vector<CostType> _leafCurrentCost;
+    /// The total cost of the leaves.
+    std::vector<CostType> _leafTotalCost;
+    /**
+     * \brief The vector containing the boundaries of the leaf zones
+     *
+     * Sorted by zone > colour > bounds.
+     * \details This means there are FCoordColour::range elements in the inner
+     * vectors.
+     */
+    std::vector< std::vector< BoundClass > > _leafZoneBounds;
+
+    /// The vector containing the costzone cells sorted by zone > level > cells.
+    std::vector< std::vector< std::pair<int, CellClass*> > > _zones;
+
+
 
 public:
 
@@ -72,20 +108,32 @@ public:
      * \param tree    The tree to work on.
      * \param nbZones The number of zones to create.
      */
-    CostZones(OctreeClass* tree, int nbZones) : 
+    FCostZones(OctreeClass* tree, int nbZones) : 
         _it( tree ),
         _nbZones( nbZones ),
         _treeHeight( tree->getHeight() ),
-        _zones( 1, std::vector< std::pair< int, CellClass*> >( )),
-        _zonebounds( 1, std::vector< BoundClass >(_treeHeight, _boundInit )),
-        _topMostLevel(0),
-        _bottomMostLevel(_treeHeight)
-        {}
+        _bottomMostLevel(_treeHeight),
+        _internalZoneBounds(
+            _nbZones,
+            std::vector< BoundClass >(_treeHeight, _boundInit )),
+        _leafCurrentCost( FCoordColour::range, 0),
+        _leafTotalCost( FCoordColour::range, 0),
+        _leafZoneBounds(
+            _nbZones,
+            std::vector< BoundClass >(FCoordColour::range, _boundInit)),
+        _zones(
+            _nbZones,
+            std::vector< std::pair< int, CellClass*> >( ))
+        {
+            _it.gotoBottomLeft();            
+            typename OctreeClass::Iterator ittest(_it);
+            ittest.gotoBottomLeft();
+        }
 
     /**
      * \brief Gets the computed zones.
      *
-     * See CostZones#_zones.
+     * See #_zones.
      * \return The computed zones.
      */
     const std::vector< std::vector< std::pair<int, CellClass*> > >& getZones() const {
@@ -93,103 +141,127 @@ public:
     }
 
     /**
-     * \brief Gets the computed zone bounds.
+     * \brief Gets the computed internal zone bounds.
      *
-     * See CostZones#_zonebounds.
+     * See #_internalZoneBounds.
      * \return The computed zone bounds.
      */
     const std::vector< std::vector< BoundClass > >& getZoneBounds() const {
-        return _zonebounds;
+        return _internalZoneBounds;
     }
 
+    /**
+     * \brief Gets the computed leaf zone bounds.
+     *
+     * See #_leafZoneBounds.
+     * \return The computed zone bounds.
+     */
+    const std::vector< std::vector< BoundClass > >& getLeafZoneBounds() const {
+        return _leafZoneBounds;
+    }
+
+    /// Gets the tree topmost level used. 
     int getTopMostLevel() const {
         return _topMostLevel;
     }
 
+    /// Sets the tree topmost level used. 
     void setTopMostLevel(unsigned int level) {
         if( level > _treeHeight-1 ) {
             std::stringstream msgstream;
             msgstream << __FUNCTION__ << ": level is to deep. level=" << level
                       << " tree height=" << _treeHeight;
-            //throw std::out_of_range(msgstream.str());
+            throw std::out_of_range(msgstream.str());
         }
             
         _topMostLevel = level;
     }
 
+    /// Gets the tree bottom most level that we use. 
     int getBottomMostLevel() const {
         return _bottomMostLevel;
     }
 
+    /// Sets the tree bottom most level that we use. 
     void setBottomMostLevel(unsigned int level) {
         if( level > _treeHeight-1 ) {
             std::stringstream msgstream;
             msgstream << __FUNCTION__ << ": level is to deep. level=" << level
                       << " tree height=" << _treeHeight;
-            //throw std::out_of_range(msgstream.str());
+            throw std::out_of_range(msgstream.str());
         }
             
         _bottomMostLevel = level;
     }
 
+
     /**
      * \brief Runs the costzones algorithm.
      */
     void run() {
-        _totalCost = 0;
-        int nbRootChildren = 0;
-        // Compute tree total cost;
-        _it.gotoBottomLeft();
-        do {
-            _it.gotoLeft();
-            nbRootChildren = 0; // waste of ressources only toplevel _iteration is kept
-            do {
-                _totalCost += _it.getCurrentCell()->getCost();
-                nbRootChildren++;
-            } while(_it.moveRight());        
-        } while(_it.moveUp());
-        
+
+
+        // Compute tree leaves total cost;
+        computeLeavesCost();
+        // Compute tree internal nodes total cost;
+        computeInternalCost();
+
+        // Count the root's children (the root is not stored in the tree)
+        _it.gotoTop();
         _it.gotoLeft();
-        
-        // Compute costzones, we have to do the first level manualy
-        for ( int i = 0; i < nbRootChildren; i++ ) {
+        do {
             this->costzones();
-            _it.moveRight();
-        }
+        } while( _it.moveRight());
+
+        // int nbRootChildren = 0;
+        // do {
+        //     nbRootChildren++;
+        // } while(_it.moveRight());        
+        
+        // _it.gotoLeft();        
+        // // Compute costzones, we have to do the first level manualy
+        // for ( int i = 0; i < nbRootChildren; i++ ) {
+        //     this->costzones();
+        //     _it.moveRight();
+        // }
+
     }
 
 protected:
 
     /**
-     * \brief Counts the left and right children of the current cell.
+     * \brief Main costzone algorithm.
      *
-     * The current cell is the one currently pointed at by the iterator _it.
-     *
-     * \warning You must check by yourself whether the cell is a leaf or not.
-     *
-     * \return A pair of int containing the count of left (first) and right
-     *         (second) children.
+     * Moves through the tree in-order and assigns each cell to a zone. When a
+     * zone's cumulative cost is too high, the new cells are insterted in the
+     * next one.
      */
-    std::pair<int,int> countLeftRightChildren() {
-        CellClass** children = _it.getCurrentChildren();
-        int nbLeftChildren = 0, nbRightChildren = 0; 
-        // Left children
-        for ( int childIdx = 0; childIdx < 4; childIdx++) {
-            if ( children[childIdx] != nullptr ) {
-                ++ nbLeftChildren;
-            }
+    void costzones() {
+        
+        std::pair<int,int> childrenCount;
+        const int level = _it.level();
+        const bool progressDown = _it.canProgressToDown()
+            && (level < _bottomMostLevel);
+        const bool useCell = (level < _bottomMostLevel)
+            && (level >= _topMostLevel);
+
+        // When not on a leaf, apply to left children first
+        if ( progressDown ) {
+            childrenCount = countLeftRightChildren();
+            callCostZonesOnChildren(LEFT, childrenCount);
         }
-        // Right children
-        for ( int childIdx = 4; childIdx < 8; childIdx++) {
-            if ( children[childIdx] != nullptr) {
-                ++ nbRightChildren;
-            }
+        
+        if( useCell )
+            addCurrentCell();
+        
+        // When not on a leaf, apply to right children
+        if ( progressDown ) {
+            callCostZonesOnChildren(RIGHT, childrenCount);
         }
 
-        return std::pair<int,int> (nbLeftChildren, nbRightChildren);
     }
 
-
+    
     /**
      * \brief Applies costzones to the left or right children of the current cell.
      *
@@ -230,101 +302,154 @@ protected:
 
         // move up to the cell level
         _it.moveUp();
+
     }
 
 
     /**
      * \brief Adds the current cell to a zone.
      *
-     * The choice of the zone is made according to the current cost accumulation.
+     * The choice of the zone is made according to the current cost accumulation
+     * compared to the mean cost of a zone (_totalCost/_nbZones +1).
+     *
+     * This method uses the following attributes to choose the zone into which
+     * the current cell must be stored :
+     *
+     *   - #_internalCurrentCost
+     *   - #_leafCurrentCost
+     *   - #_internalTotalCost
+     *   - #_leafTotalCost
+     *   - #_nbZones
      */
     void addCurrentCell() {
-        CellClass* cell = _it.getCurrentCell();
-        long int cellCost = cell->getCost();
 
-        if ( cellCost != 0) {
-            if ( _currentCost + cellCost < _zones.size() * _totalCost / _nbZones + 1 ) {
-                _currentCost += cellCost;
-                // Zones update
-                _zones.back().push_back({_it.level(), cell});
-                // Zone bounds update
-                if( _zonebounds.back()[_it.level()] == _boundInit ) {
-                    _zonebounds.back()[_it.level()].first = _it.getCurrentGlobalIndex();
-                    _zonebounds.back()[_it.level()].second = 1;
-                } else {
-                    _zonebounds.back()[_it.level()].second++;
-                    // This was to keep the end index
-                    // _zonebounds.back()[_it.level()].second = _it.getCurrentGlobalIndex();
-                }
-                
+        const int& level = _it.level();
+        CellClass* cell = _it.getCurrentCell();
+        CostType cellCost = cell->getCost();
+        bool isLeaf = (level == _treeHeight -1);
+
+        if ( 0 == cellCost ) {
+            return;
+        }
+
+        // find cell zone
+        long long int cellZone = 0;
+
+        // Near-field zone /////////////////
+        if( isLeaf ) {
+            CostType leafCost = cell->getNearCost();
+            int colour = coord2colour(_it.getCurrentGlobalCoordinate());
+
+            cellZone = _leafCurrentCost[colour] * _nbZones / (_leafTotalCost[colour]+1);
+            _leafCurrentCost[colour] += leafCost;
+
+            if( _leafZoneBounds.at(cellZone)[colour] == _boundInit ) {
+                _leafZoneBounds.at(cellZone)[colour].first = _it.getCurrentGlobalIndex();
+                _leafZoneBounds.at(cellZone)[colour].second = 1;
             } else {
-                // Add a new zone
-                _zones.push_back(
-                    std::vector< std::pair<int, CellClass*> >(1, {_it.level(), cell}));
-                // Add a new inferior bound
-                _zonebounds.push_back(
-                    std::vector< BoundClass >(_treeHeight, _boundInit));
-                _zonebounds.back()[_it.level()].first = _it.getCurrentGlobalIndex();
-                _zonebounds.back()[_it.level()].second = 1;
+                _leafZoneBounds.at(cellZone)[colour].second++;
             }
-        }        
+        }
+        ////////////////////////////////////
+
+        // Far-field zone //////////////////
+        cellZone = _internalCurrentCost * _nbZones / (_internalTotalCost+1);
+
+        _internalCurrentCost += cellCost;
+
+        if( _boundInit == _internalZoneBounds.at(cellZone)[level] ) {
+            _internalZoneBounds.at(cellZone)[level].first =
+                _it.getCurrentGlobalIndex();
+            _internalZoneBounds.at(cellZone)[level].second = 1;
+        } else {
+            _internalZoneBounds.at(cellZone)[level].second++;                
+        }
+        ///////////////////////////////
+
+        // add cell to exhaustive zone vector
+        (_zones.at(cellZone)).emplace_back(level, cell);
     }
 
 
     /**
-     * \brief Main costzone algorithm.
+     * \brief Computes and stores the leaves' total cost.
      *
-     * Moves through the tree in-order and assigns each cell to a zone. When a
-     * zone's cumulative cost is too high, the new cells are insterted in the
-     * next one.
+     * The tree itertor (#_it) is moved to the bottom level of the
+     * tree by this method. After the method returns, the iterator is left at
+     * the rightmost leaf.
      */
-    void costzones() {
+    void computeLeavesCost() {
 
-// DEBUG SECTION
-#if 0
-        CellClass* cell = _it.getCurrentCell();    
-        std::cout << "in  lvl " << std::setw(2) << _it.level() << " |"
-                  << "cellidx " << std::setw(4)
-                  << cell->getMortonIndex() << " : "
-                  << cell->getCoordinate() << " "
-                  << ( _it.canProgressToDown() ? "internal" : "leaf") << " "
-                  << std::endl;
-//
-        if (cell->_visited) {
-            std::cerr << "Error : cell revisited..." << _it.level()
-                      << ": " << cell->getCoordinate() << std::endl;
-            throw std::exception();
-            return;
-        } else {
-            cell->_visited = true;
-        }
-#endif
-// END DEBUG SECTION
-
-        std::pair<int,int> childrenCount;
-        const int level = _it.level();
-        const bool progressDown = _it.canProgressToDown()
-            && (level < _bottomMostLevel);
-        const bool useCell = (level < _bottomMostLevel)
-            && (level >= _topMostLevel);
-
-
-        // When not on a leaf, apply to left children first
-        if ( progressDown ) {
-            childrenCount = countLeftRightChildren();
-            callCostZonesOnChildren(LEFT, childrenCount);
+        // Reset colour costs.
+        for( CostType& colourCost : _leafTotalCost ) {
+            colourCost = 0;
         }
 
-        if( useCell )
-            addCurrentCell();
+        _it.gotoBottomLeft();
+        do {
+            int leafColour = coord2colour(_it.getCurrentGlobalCoordinate());
+            _leafTotalCost[leafColour] += _it.getCurrentCell()->getNearCost();
+        } while(_it.moveRight());        
 
-        // When not on a leaf, apply to right children
-        if ( progressDown ) {
-            callCostZonesOnChildren(RIGHT, childrenCount);
-        }
     }
+
+    /**
+     * \brief Computes and stores the internal cells' total cost.
+     * \warning This method makes use of 
+     *
+     * The tree itertor (#_it) is moved to the bottom level of the
+     * tree by this method. After the method returns, the iterator is left at
+     * the rightmost leaf.
+     */
+    void computeInternalCost() {
+        _it.gotoBottomLeft();
+        //_it.moveUp();
+
+        while( _it.level() >= _bottomMostLevel ) {
+            _it.moveUp();
+        }
+
+        do {
+            _it.gotoLeft();
+            do {
+                _internalTotalCost += _it.getCurrentCell()->getCost();
+            } while(_it.moveRight());        
+        } while(_it.moveUp());
+
+    }
+
+    /**
+     * \brief Counts the left and right children of the current cell.
+     *
+     * The current cell is the one currently pointed at by the iterator _it.
+     *
+     * \warning It must be checked whether the current cell is a leaf or not
+     * before calling this method.
+     *
+     * \return A pair of int containing the count of left (first) and right
+     *         (second) children.
+     */
+    std::pair<int,int> countLeftRightChildren() {
+        CellClass** children = _it.getCurrentChildren();
+        int nbLeftChildren = 0, nbRightChildren = 0; 
+        // Left children
+        for ( int childIdx = 0; childIdx < 4; childIdx++) {
+            if ( children[childIdx] != nullptr ) {
+                ++ nbLeftChildren;
+            }
+        }
+        // Right children
+        for ( int childIdx = 4; childIdx < 8; childIdx++) {
+            if ( children[childIdx] != nullptr) {
+                ++ nbRightChildren;
+            }
+        }
+
+        return std::pair<int,int> (nbLeftChildren, nbRightChildren);
+    }
+
+
+
 };
-
-
 
 #endif
