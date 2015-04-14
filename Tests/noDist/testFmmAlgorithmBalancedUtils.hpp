@@ -19,7 +19,7 @@
  * \param costzones The CostZones object that was used get the tree balance.
  */
 template<class OctreeClass, class CellClass>
-void writeZones(const loadFMAAndRunFMMArgs& args, const CostZones <OctreeClass,CellClass>& costzones)
+void writeZones(const loadFMAAndRunFMMArgs& args, const FCostZones <OctreeClass,CellClass>& costzones)
 {
     const std::string outFileBaseName = args.outFileName();
     const std::string outFileExt = args.outFileExt();
@@ -76,7 +76,7 @@ void writeZones(const loadFMAAndRunFMMArgs& args, const CostZones <OctreeClass,C
  * \param tree The the to load into.
  * \param loader The loader to load from.
  */
-template <class OctreeClass>
+template <typename FReal, class OctreeClass>
 void loadTree(OctreeClass& tree, FFmaGenericLoader<FReal>& loader)
 {
     FReal  physicalValue;
@@ -89,7 +89,7 @@ void loadTree(OctreeClass& tree, FFmaGenericLoader<FReal>& loader)
 }
 
 
-template <class OctreeClass>
+template <typename FReal, class OctreeClass>
 void loadTree(OctreeClass& tree, FRandomLoader<FReal>& loader)
 {
     FPoint<FReal> particlePosition;

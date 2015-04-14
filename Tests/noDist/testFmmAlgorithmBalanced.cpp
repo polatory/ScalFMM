@@ -21,7 +21,6 @@
 
 #include <string>
 
-using FReal = double;
 #include "Files/FFmaGenericLoader.hpp"
 #include "Files/FRandomLoader.hpp"
 #include "Containers/FOctree.hpp"
@@ -54,13 +53,15 @@ using FReal = double;
 
 #define ORDER 7
 
+using FReal = double;
+
 using CellClass         = FCostCell<FTestCell>;
 using ContainerClass    = FTestParticleContainer<FReal>;
 using LeafClass         = FSimpleLeaf< FReal, ContainerClass >;
 using OctreeClass       = FOctree< FReal, CellClass, ContainerClass, LeafClass >;
 
 using MatrixKernelClass = FInterpMatrixKernelR<FReal>;
-using BalanceKernelClass= FChebBalanceSymKernel<CellClass, ContainerClass,
+using BalanceKernelClass= FChebBalanceSymKernel<FReal, CellClass, ContainerClass,
                                                 MatrixKernelClass, ORDER,
                                                 OctreeClass>;
 
@@ -102,20 +103,21 @@ int main(int argc, char** argv)
     }
     /**************************************************************************/
 
-
+    std::cerr << ("Running the costzones algorithm") << std::endl;
     /* Run the costzone algorithm *********************************************/
-    CostZones<OctreeClass, CellClass> costzones(&tree, args.zoneCount());
+    FCostZones<OctreeClass, CellClass> costzones(&tree, args.zoneCount());
     costzones.run();
 
     writeZones(args, costzones);
     /**************************************************************************/
+    std::cerr << ("Done") << std::endl;
 
 
     /* Run the balanced algorithm *********************************************/
 
     std::cout << "Running kernel" << std::endl;
     KernelClass computeKernel;
-    FmmClass<FFmmAlgorithmThreadBalanced, KernelClass> fmmAlgo(&tree, &computeKernel, costzones.getZoneBounds());
+    FmmClass<FFmmAlgorithmThreadBalanced, KernelClass> fmmAlgo(&tree, &computeKernel, costzones.getZoneBounds(), costzones.getLeafZoneBounds());
     //FmmClass<FFmmAlgorithm, KernelClass> fmmAlgo(&tree, &computeKernel);
     
     fmmAlgo.execute();

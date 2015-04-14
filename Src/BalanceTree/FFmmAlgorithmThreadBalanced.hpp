@@ -13,6 +13,13 @@
 // "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
+
+// ==== CMAKE ====
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
+
+
 #ifndef FFMMALGORITHMTHREADBALANCED_HPP
 #define FFMMALGORITHMTHREADBALANCED_HPP
 
@@ -27,6 +34,8 @@
 #include "../Src/Containers/FOctree.hpp"
 
 #include "../Src/Core/FCoreCommon.hpp"
+
+#include "../Src/BalanceTree/FCoordColour.hpp"
 
 #include <vector>
 
@@ -75,18 +84,15 @@ class FFmmAlgorithmThreadBalanced : public FAbstractAlgorithm, public FAlgorithm
     OctreeClass* const tree;  ///< The octree to work on.
     KernelClass** kernels;    ///< The kernels.
 
-    /// An array of iterators that points to specific cells in the tree. 
-    typename OctreeClass::Iterator* iterArray; 
-    int leafCount;            ///< The number of leaves.
-
-    static const int SizeColor = 3*3*3; ///< Leaf colors count, see.
-    int colorsLeafCount[SizeColor];     ///< Leaf count for each color.
+    //static const int SizeColour = 3*3*3; ///< Leaf colours count, see.
 
     const int MaxThreads;     ///< The maximum number of threads.
     const int OctreeHeight;   ///< The height of the given tree.
 
     /// The vector containing the costzones
     const std::vector<std::vector<ZoneBoundClass>>& costzones;
+    /// The vector containing the costzones
+    const std::vector<std::vector<ZoneBoundClass>>& leafcostzones;
     
 public:
     /** 
@@ -100,28 +106,32 @@ public:
      *
      * \param inTree      The octree to work on.
      * \param inKernels   The kernel to call.
-     * \param inCostzones The cost zones the threads will follow.
+     * \param inCostzones The cost zones for each thread.
      *
      * \except An exception is thrown if one of the arguments is NULL.
+     * \except An assertion checks that the number of threads is the same as the
+     * number of zones.
      */
-    FFmmAlgorithmThreadBalanced(OctreeClass* const inTree,
-                                KernelClass* const inKernel,
-                                const std::vector<std::vector<ZoneBoundClass>>&
-                                inCostzones) :
+    FFmmAlgorithmThreadBalanced(
+        OctreeClass* const inTree,
+        KernelClass* const inKernel,
+        const std::vector<std::vector<ZoneBoundClass>>& internalCostzones,
+        const std::vector<std::vector<ZoneBoundClass>>& leafCostzones) :
         tree(inTree) , 
         kernels(nullptr),
-        iterArray(nullptr),
-        leafCount(0),
         MaxThreads(omp_get_max_threads()),
         OctreeHeight(tree->getHeight()),
-        costzones(inCostzones) {
+        costzones(internalCostzones),
+        leafcostzones(leafCostzones) {
         
         FAssertLF(tree, "Tree cannot be null.");
-        FAssertLF(inCostzones.size() <= static_cast<unsigned int>(MaxThreads),
-                  std::string("Thread count is inferior to cost zone count.") +
+        FAssertLF(internalCostzones.size() == static_cast<unsigned int>(MaxThreads),
+                  std::string("Thread count is different from cost zone count (") +
                   std::to_string(MaxThreads) +
-                  std::string(" / ") +
-                  std::to_string(inCostzones.size()));
+                  std::string(" : ") +
+                  std::to_string(internalCostzones.size()) +
+                  ")."
+            );
 
         this->kernels = new KernelClass*[MaxThreads];
 
@@ -150,28 +160,10 @@ protected:
     /**
      * \brief Runs the complete algorithm.
      *
-     * \param operationsToProceed A flag combinaison to specifiy the operators to use. See FFmmOperations in FCoreCommon.hpp.
+     * \param operationsToProceed A flag combinaison to specifiy the operators
+     * to use. See FFmmOperations in FCoreCommon.hpp.
      */
     void executeCore(const unsigned operationsToProceed) override {
-
-        for(int idxColor = 0 ; idxColor < SizeColor ; ++idxColor){
-            this->colorsLeafCount[idxColor] = 0;
-        }
-
-        // Count leaves and color them.
-        leafCount = 0;
-        typename OctreeClass::Iterator octreeIterator(tree);
-        octreeIterator.gotoBottomLeft();
-        do{
-            ++leafCount;
-            const FTreeCoordinate& coord =
-                octreeIterator.getCurrentCell()->getCoordinate();
-            ++this->colorsLeafCount[(coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3)];
-
-        } while(octreeIterator.moveRight());
-
-        iterArray = new typename OctreeClass::Iterator[leafCount];
-        FAssertLF(iterArray, "iterArray bad alloc");
 
         Timers[P2MTimer].tic();
         if(operationsToProceed & FFmmP2M)
@@ -198,8 +190,6 @@ protected:
             directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
         Timers[NearTimer].tac();
 
-        delete [] iterArray;
-        iterArray = nullptr;
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -217,16 +207,28 @@ protected:
         // One pair per zone.
         std::vector< std::pair<TreeIterator, int> > iterVector(0);
 
-        std::cerr << "Defining iterators" << std::endl;
-        // Find iterators to leaf portion of each zone.
-        for( std::vector<ZoneBoundClass> zone : costzones ) {
+        /* Find iterators to leaf portion of each zone.
+
+           Since we do not care about the leaves colour here, we use the number
+           of particles that each zone has for each colour and add them to count
+           the total number of particles for a zone.
+
+           The zones are calculated sequentially, we use the same iterator and
+           save it's position when we change zone.
+         */
+        for( std::vector<ZoneBoundClass> zone : leafcostzones ) {
+            int nbCells = 0;
+            for( ZoneBoundClass bounds : zone ) {
+                nbCells += bounds.second;
+            }
+
             iterVector.push_back(
                 std::pair<TreeIterator,int>(
                     octreeIterator,       // Iterator to the current cell
-                    zone.back().second)); // Cell count in zone
+                    nbCells)); // Cell count in zone
 
             // Move iterator to end of zone (which is the first of the next zone)
-            for( int idx = 0; idx < zone.back().second; idx++) {
+            for( int idx = 0; idx < nbCells; idx++) {
                 octreeIterator.moveRight();
             }
         }
@@ -272,43 +274,34 @@ protected:
         octreeIterator.gotoBottomLeft();
         octreeIterator.moveUp(); // Avoid leaf level
 
-        for(int idxLevel = OctreeHeight - 2 ;
-            idxLevel > FAbstractAlgorithm::lowerWorkingLevel-1 ;
-            --idxLevel)
-        {
+        while( octreeIterator.level() >  FAbstractAlgorithm::lowerWorkingLevel-1 ) {
             octreeIterator.moveUp();
         }
 
-        // Avoids jumping to the left of the tree when changing levels
-        TreeIterator avoidGotoLeftIterator(octreeIterator);
-
-
         // Stores the iterators to the beginning of zones *per level* in REVERSE order!
-        // ie. level in REVERSE ORDER > zones > (iterator,cell_count)
+        // ie. levels in REVERSE ORDER > zones > (iterator,cell_count)
         std::vector< std::vector< std::pair<TreeIterator, int> > >
             reverseLevelIterVector(0);
 
-        const int startIdx =
-            FMath::Min(OctreeHeight - 2,
-                       FAbstractAlgorithm::lowerWorkingLevel - 1);
-        for( int idxLevel = startIdx ;
-             idxLevel >= FAbstractAlgorithm::upperWorkingLevel ;
-             --idxLevel )
+        while( octreeIterator.level() >= FAbstractAlgorithm::upperWorkingLevel )
         {
-            std::vector< std::pair<TreeIterator, int> > tempVect;
+            int idxLevel = octreeIterator.level();
+            std::vector< std::pair<TreeIterator, int> > levelVect;
             // Find iterators to leaf portion of each zone.
             for( std::vector<ZoneBoundClass> zone : costzones ) {
-                tempVect.push_back(
+
+                levelVect.push_back(
                     std::pair<TreeIterator,int>(
                         octreeIterator,          // Iterator to the current cell
                         zone[idxLevel].second)); // Cell count in zone
+
                 // Get iterator to end of zone (which is the first of the next zone)
                 for( int idx = 0; idx < zone[idxLevel].second; idx++) {
                     octreeIterator.moveRight();
                 }
 
             }
-            reverseLevelIterVector.emplace_back(tempVect);
+            reverseLevelIterVector.emplace_back(levelVect);
 
             octreeIterator.moveUp();
             octreeIterator.gotoLeft();
@@ -318,9 +311,7 @@ protected:
         for( std::vector< std::pair<TreeIterator, int> > levelIterVector :
                  reverseLevelIterVector ) {
 
-            int idxLevel = -1;
             FLOG(FTic counterTimeLevel);
-
             FLOG(computationCounter.tic());
             #pragma omp parallel
             {
@@ -338,16 +329,18 @@ protected:
                     zoneIterator.moveRight();
                 }
 
-                idxLevel = zoneIterator.level();
             }
 
             FLOG(computationCounter.tac());
-            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
-
+            FLOG( FLog::Controller << "\t\t>> Level " << octreeIterator.level()
+                                   << " = "  << counterTimeLevel.tacAndElapsed()
+                                   << "s\n" );
         }
 
-        FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "
+                               << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\t\t Computation : "
+                               << computationCounter.cumulated() << "s\n" );
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -368,7 +361,6 @@ protected:
             octreeIterator.moveDown();
         }
 
-        TreeIterator avoidGotoLeftIterator(octreeIterator);
 
         // for each levels
         for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ;
@@ -454,8 +446,6 @@ protected:
             octreeIterator.moveDown();
         }
 
-        TreeIterator avoidGotoLeftIterator(octreeIterator);
-
         const int heightMinusOne = FAbstractAlgorithm::lowerWorkingLevel - 1;
         // for each levels excepted leaf level
         for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; 
@@ -519,103 +509,78 @@ protected:
      */
     void directPass(const bool p2pEnabled, const bool l2pEnabled){
         FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
-        FLOG(FTic counterTime);
-        FLOG(FTic computationCounter);
-        FLOG(FTic computationCounterP2P);
+        FLOG( FTic counterTime );
+        FLOG( FTic computationCounter );
+        FLOG( FTic computationCounterP2P );
 
-        omp_lock_t lockColor[SizeColor];
-        for(int idxColor = 0 ; idxColor < SizeColor ; ++idxColor){
-            omp_init_lock(&lockColor[idxColor]);
-        }
 
-        struct LeafData{
+        struct LeafData {
             MortonIndex index;
             CellClass* cell;
             ContainerClass* targets;
             ContainerClass* sources;
         };
-        LeafData* const leafsDataArray = new LeafData[this->leafCount];
 
-        const int LeafIndex = OctreeHeight - 1;
-
-        int startPosAtColor[SizeColor];
-        startPosAtColor[0] = 0;
-        for(int idxColor = 1 ; idxColor < SizeColor ; ++idxColor){
-            startPosAtColor[idxColor] = startPosAtColor[idxColor-1] + this->colorsLeafCount[idxColor-1];
-        }
-
+        const int leafLevel = OctreeHeight - 1;
         #pragma omp parallel
         {
+            const int threadIdx = omp_get_thread_num();
+            
+            ContainerClass* neighbours[27];
+            KernelClass& myThreadkernel = (*kernels[threadIdx]);
+            TreeIterator it(tree);
 
-            const float step = float(this->leafCount) / float(omp_get_num_threads());
-            const int start = int(FMath::Ceil(step * float(omp_get_thread_num())));
-            const int tempEnd = int(FMath::Ceil(step * float(omp_get_thread_num()+1)));
-            const int end = (tempEnd > this->leafCount ? this->leafCount : tempEnd);
+            for( int colourIdx = 0; colourIdx < FCoordColour::range; colourIdx++) {
+                it.gotoBottomLeft();
+                
+                const MortonIndex startIdx = leafcostzones[threadIdx][colourIdx].first;
+                int zoneCellCount =  leafcostzones[threadIdx][colourIdx].second;
 
-            typename OctreeClass::Iterator octreeIterator(tree);
-            octreeIterator.gotoBottomLeft();
-
-            for(int idxPreLeaf = 0 ; idxPreLeaf < start ; ++idxPreLeaf){
-                octreeIterator.moveRight();
-            }
-
-            // for each leafs
-            for(int idxMyLeafs = start ; idxMyLeafs < end ; ++idxMyLeafs){
-                //iterArray[leafs] = octreeIterator;
-                //++leafs;
-                const FTreeCoordinate& coord = octreeIterator.getCurrentGlobalCoordinate();
-                const int colorPosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
-
-                omp_set_lock(&lockColor[colorPosition]);
-                const int positionToWork = startPosAtColor[colorPosition]++;
-                omp_unset_lock(&lockColor[colorPosition]);
-
-                leafsDataArray[positionToWork].index   = octreeIterator.getCurrentGlobalIndex();
-                leafsDataArray[positionToWork].cell    = octreeIterator.getCurrentCell();
-                leafsDataArray[positionToWork].targets = octreeIterator.getCurrentListTargets();
-                leafsDataArray[positionToWork].sources = octreeIterator.getCurrentListSrc();
-
-                octreeIterator.moveRight();
-            }
-
-            #pragma omp barrier
-
-            FLOG(if(!omp_get_thread_num()) computationCounter.tic());
-
-            KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
-            // There is a maximum of 26 neighbors
-            ContainerClass* neighbors[27];
-            int previous = 0;
-
-            for( int idxColor = 0 ; idxColor < SizeColor ; ++idxColor ) {
-                const int endAtThisColor = this->colorsLeafCount[idxColor] + previous;
-                const int chunkSize = FMath::Max(1 , endAtThisColor / (omp_get_num_threads() * omp_get_num_threads()));
-                #pragma omp for schedule(dynamic, chunkSize)
-                for(int idxLeafs = previous ; idxLeafs < endAtThisColor ; ++idxLeafs){
-                    LeafData& currentIter = leafsDataArray[idxLeafs];
-                    if(l2pEnabled) {
-                        myThreadkernels.L2P(currentIter.cell, currentIter.targets);
-                    }
-                    if(p2pEnabled){
-                        // need the current particles and neighbors particles
-                        FLOG(if(!omp_get_thread_num()) computationCounterP2P.tic());
-                        const int counter = tree->getLeafsNeighbors(neighbors, currentIter.cell->getCoordinate(), LeafIndex);
-                        myThreadkernels.P2P(currentIter.cell->getCoordinate(), currentIter.targets,
-                                            currentIter.sources, neighbors, counter);
-                        FLOG(if(!omp_get_thread_num()) computationCounterP2P.tac());
+                if( 0 < zoneCellCount) {                    
+                    while(startIdx != it.getCurrentGlobalIndex()) {
+                        it.moveRight();
                     }
                 }
 
-                previous = endAtThisColor;
+                LeafData leafdata;
+                while( zoneCellCount > 0) {
+                    if( FCoordColour::coord2colour(it.getCurrentCell()->getCoordinate()) == colourIdx) {
+
+                        leafdata.index   = it.getCurrentGlobalIndex();
+                        leafdata.cell    = it.getCurrentCell();
+                        leafdata.targets = it.getCurrentListTargets();
+                        leafdata.sources = it.getCurrentListSrc();
+                        
+                        if( l2pEnabled ) {
+                            myThreadkernel.L2P(leafdata.cell, leafdata.targets);
+                        }
+                        if( p2pEnabled ){
+                            // need the current particles and neighbours particles
+
+                            const int counter =
+                                tree->getLeafsNeighbors(neighbours,
+                                                        leafdata.cell->getCoordinate(),
+                                                        leafLevel);
+
+                            myThreadkernel.P2P(leafdata.cell->getCoordinate(),
+                                               leafdata.targets,
+                                               leafdata.sources,
+                                               neighbours,
+                                               counter);
+                        }
+
+                        zoneCellCount--;
+                    }
+
+                    it.moveRight();
+                }
+                
+                #pragma omp barrier
             }
+            
         }
 
-        FLOG(computationCounter.tac());
 
-        delete [] leafsDataArray;
-        for(int idxColor = 0 ; idxColor < SizeColor ; ++idxColor){
-            omp_destroy_lock(&lockColor[idxColor]);
-        }
 
 
         FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
