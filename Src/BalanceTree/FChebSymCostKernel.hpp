@@ -53,8 +53,7 @@ class FTreeCoordinate;
  * \tparam ORDER Chebyshev interpolation order
  */
 template < typename FReal, class CellClass, class ContainerClass, class MatrixKernelClass, int ORDER, class OctreeClass>
-class FChebBalanceSymKernel
-    : public FAbstractKernels<CellClass, ContainerClass>
+class FChebSymCostKernel : public FAbstractKernels<CellClass, ContainerClass>
 {
     enum {nnodes = TensorTraits<ORDER>::nnodes};
 public:
@@ -131,7 +130,7 @@ public:
      * precomputed and compressed M2L operators from a binary file (an
      * runtime_error is thrown if the required file is not valid).
      */
-    FChebBalanceSymKernel(OctreeClass* tree,
+    FChebSymCostKernel(OctreeClass* tree,
                           const FReal Epsilon)
         : MatrixKernel(new MatrixKernelClass()),
           SymHandler(new SymmetryHandler(MatrixKernel.getPtr(), Epsilon)),
@@ -144,7 +143,7 @@ public:
 
 
     /** Copy constructor */
-    FChebBalanceSymKernel(const FChebBalanceSymKernel& other) :
+    FChebSymCostKernel(const FChebSymCostKernel& other) :
         SymHandler(other.SymHandler),
         _tree(other._tree),
         _treeHeight(other._treeHeight)
@@ -153,7 +152,7 @@ public:
     }
 
     /** Destructor */
-    ~FChebBalanceSymKernel() {
+    ~FChebSymCostKernel() {
         delete [] countExp;
 
     }
@@ -318,7 +317,7 @@ public:
  */
 template < typename FReal, class CellClass, class ContainerClass,
            class MatrixKernelClass, int ORDER, class OctreeClass>
-struct FChebBalanceSymKernel<FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, OctreeClass>
+struct FChebSymCostKernel<FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, OctreeClass>
 ::SymmetryHandler
 {
     // M2L operators

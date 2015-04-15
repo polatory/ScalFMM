@@ -40,7 +40,7 @@
 // Kernel
 //#include "Kernels/Chebyshev/FChebSymKernel.hpp"
 #include "Components/FTestKernels.hpp"
-#include "BalanceTree/FChebBalanceSymKernel.hpp"
+#include "BalanceTree/FChebSymCostKernel.hpp"
 
 // Algorithm
 #include "Core/FFmmAlgorithm.hpp"
@@ -61,7 +61,7 @@ using LeafClass         = FSimpleLeaf< FReal, ContainerClass >;
 using OctreeClass       = FOctree< FReal, CellClass, ContainerClass, LeafClass >;
 
 using MatrixKernelClass = FInterpMatrixKernelR<FReal>;
-using BalanceKernelClass= FChebBalanceSymKernel<FReal, CellClass, ContainerClass,
+using BalanceKernelClass= FChebSymCostKernel<FReal, CellClass, ContainerClass,
                                                 MatrixKernelClass, ORDER,
                                                 OctreeClass>;
 

@@ -39,7 +39,7 @@
 #include "Kernels/Chebyshev/FChebSymKernel.hpp"
 
 #ifdef BALANCED_PERF
-#include "BalanceTree/FChebBalanceSymKernel.hpp"
+#include "BalanceTree/FChebSymCostKernel.hpp"
 #include "BalanceTree/FCostZones.hpp"
 #endif
 
@@ -137,12 +137,12 @@ int main(int argc, char* argv[])
     omp_set_num_threads(NbThreads);
     std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
     //
-    std::cout <<     "Parameters  "<< std::endl
-              <<     "\tOctree Depth     :" << TreeHeight <<std::endl
-              <<     "\tSubOctree depth  :" << SubTreeHeight <<std::endl
-              <<     "\tInput file  name :" << filename <<std::endl
-              <<     "\tThread number    :" << NbThreads <<std::endl
-              <<std::endl;
+    std::cout << "Parameters  "<< std::endl
+              << "\tOctree Depth     :" << TreeHeight <<std::endl
+              << "\tSubOctree depth  :" << SubTreeHeight <<std::endl
+              << "\tInput file  name :" << filename <<std::endl
+              << "\tThread number    :" << NbThreads <<std::endl
+              << std::endl;
     ////////////////////////////////////////////////////////////////////
 
     // init timer
