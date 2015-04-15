@@ -115,7 +115,7 @@ int main(int argc, char ** argv){
     typedef double FReal;
     FReal       extraRadius = 0.000 ;
 
-    const FSize NbPoints  = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options,   FSize(2)0000);
+    const FSize NbPoints  = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options,   FSize(20000));
     const std::string genericFileName(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "unifPointDist"));
 
     FReal BoxWith = 0.0;
