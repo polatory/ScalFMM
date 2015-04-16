@@ -106,8 +106,8 @@ template<>
 struct FChebRootsCore<2>{
     template <class FReal>
     static std::array<FReal,2> Build(){
-        return { -0.707106781186548,
-            0.707106781186547};
+        return { { -0.707106781186548,
+            0.707106781186547} };
     }
 };
 
@@ -116,9 +116,9 @@ template<>
 struct FChebRootsCore<3>{
     template <class FReal>
     static std::array<FReal,3> Build(){
-        return {-8.66025403784439e-01,
+        return { {-8.66025403784439e-01,
             0.0,
-            8.66025403784438e-01};
+            8.66025403784438e-01} };
     }
 };
 
@@ -127,10 +127,10 @@ template<>
 struct FChebRootsCore<4>{
     template <class FReal>
     static std::array<FReal,4> Build(){
-        return {-0.923879532511287,
+        return { {-0.923879532511287,
             -0.382683432365090,
             0.382683432365090,
-            0.923879532511287};
+            0.923879532511287} };
     }
 };
 
@@ -139,11 +139,11 @@ template<>
 struct FChebRootsCore<5>{
     template <class FReal>
     static std::array<FReal,5> Build(){
-        return {-9.51056516295154e-01,
+        return { {-9.51056516295154e-01,
             -5.87785252292473e-01,
             0.0,
             5.87785252292473e-01,
-            9.51056516295154e-01};
+            9.51056516295154e-01} };
     }
 };
 
@@ -152,12 +152,12 @@ template<>
 struct FChebRootsCore<6>{
     template <class FReal>
     static std::array<FReal,6> Build(){
-        return {-0.965925826289068,
+        return { {-0.965925826289068,
             -0.707106781186548,
             -0.258819045102521,
             0.258819045102521,
             0.707106781186547,
-            0.965925826289068};
+            0.965925826289068} };
     }
 };
 
@@ -166,13 +166,13 @@ template<>
 struct FChebRootsCore<7>{
     template <class FReal>
     static std::array<FReal,7> Build(){
-        return {-9.74927912181824e-01,
+        return {{-9.74927912181824e-01,
             -7.81831482468030e-01,
             -4.33883739117558e-01,
             0.0,
             4.33883739117558e-01,
             7.81831482468030e-01,
-            9.74927912181824e-01};
+            9.74927912181824e-01}};
     }
 };
 
@@ -181,14 +181,14 @@ template<>
 struct FChebRootsCore<8>{
     template <class FReal>
     static std::array<FReal,8> Build(){
-        return {-0.980785280403230,
+        return { {-0.980785280403230,
             -0.831469612302545,
             -0.555570233019602,
             -0.195090322016128,
             0.195090322016128,
             0.555570233019602,
             0.831469612302545,
-            0.980785280403230};
+            0.980785280403230} };
     }
 };
 
@@ -197,7 +197,7 @@ template<>
 struct FChebRootsCore<9>{
     template <class FReal>
     static std::array<FReal,9> Build(){
-        return {-9.84807753012208e-01,
+        return { {-9.84807753012208e-01,
             -8.66025403784439e-01,
             -6.42787609686539e-01,
             -3.42020143325669e-01,
@@ -205,7 +205,7 @@ struct FChebRootsCore<9>{
             3.42020143325669e-01,
             6.42787609686539e-01,
             8.66025403784438e-01,
-            9.84807753012208e-01};
+            9.84807753012208e-01} };
     }
 };
 
@@ -214,7 +214,7 @@ template<>
 struct FChebRootsCore<10>{
     template <class FReal>
     static std::array<FReal,10> Build(){
-        return {-0.987688340595138,
+        return { {-0.987688340595138,
             -0.891006524188368,
             -0.707106781186548,
             -0.453990499739547,
@@ -223,7 +223,7 @@ struct FChebRootsCore<10>{
             0.453990499739547,
             0.707106781186547,
             0.891006524188368,
-            0.987688340595138};
+            0.987688340595138} };
     }
 };
 
@@ -232,7 +232,7 @@ template<>
 struct FChebRootsCore<11>{
     template <class FReal>
     static std::array<FReal,11> Build(){
-        return {-9.89821441880933e-01,
+        return { {-9.89821441880933e-01,
             -9.09631995354518e-01,
             -7.55749574354258e-01,
             -5.40640817455598e-01,
@@ -242,7 +242,7 @@ struct FChebRootsCore<11>{
             5.40640817455597e-01,
             7.55749574354258e-01,
             9.09631995354518e-01,
-            9.89821441880933e-01};
+            9.89821441880933e-01} };
     }
 };
 
@@ -251,7 +251,7 @@ template<>
 struct FChebRootsCore<12>{
     template <class FReal>
     static std::array<FReal,12> Build(){
-        return {-0.991444861373810,
+        return { {-0.991444861373810,
             -0.923879532511287,
             -0.793353340291235,
             -0.608761429008721,
@@ -262,7 +262,7 @@ struct FChebRootsCore<12>{
             0.608761429008721,
             0.793353340291235,
             0.923879532511287,
-            0.991444861373810};
+            0.991444861373810} };
     }
 };
 
@@ -272,7 +272,7 @@ template<>
 struct FChebRootsCore<13>{
     template <class FReal>
     static std::array<FReal,13> Build(){
-        return {-9.92708874098054e-01,
+        return { {-9.92708874098054e-01,
             -9.35016242685415e-01,
             -8.22983865893656e-01,
             -6.63122658240795e-01,
@@ -284,7 +284,7 @@ struct FChebRootsCore<13>{
             6.63122658240795e-01,
             8.22983865893656e-01,
             9.35016242685415e-01,
-            9.92708874098054e-01};
+            9.92708874098054e-01} };
     }
 };
 
@@ -293,7 +293,7 @@ template<>
 struct FChebRootsCore<14>{
     template <class FReal>
     static std::array<FReal,14> Build(){
-        return {
+        return { {
             -0.99371220989324258353,
             -0.94388333030836756290,
             -0.84672419922828416835,
@@ -307,7 +307,7 @@ struct FChebRootsCore<14>{
             0.70710678118654752440,
             0.84672419922828416835,
             0.94388333030836756290,
-            0.99371220989324258353};
+            0.99371220989324258353} };
     }
 };
 
