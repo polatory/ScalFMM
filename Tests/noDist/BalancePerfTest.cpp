@@ -22,42 +22,6 @@
 // @FUSE_BLAS
 // ================
 
-#define BALANCED_PERF
-
-#include <iostream>
-
-#include <cstdio>
-#include <cstdlib>
-#include <string>
-
-#include "ScalFmmConfig.h"
-
-#include "Files/FFmaGenericLoader.hpp"
-
-#include "Kernels/Chebyshev/FChebCell.hpp"
-#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "Kernels/Chebyshev/FChebSymKernel.hpp"
-
-#ifdef BALANCED_PERF
-#include "BalanceTree/FChebSymCostKernel.hpp"
-#include "BalanceTree/FCostZones.hpp"
-#endif
-
-#include "Components/FSimpleLeaf.hpp"
-#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
-
-#include "Utils/FParameters.hpp"
-
-#include "Containers/FOctree.hpp"
-
-#ifdef BALANCED_PERF
-#include "Core/FFmmAlgorithm.hpp"
-#include "BalanceTree/FFmmAlgorithmThreadBalanced.hpp"
-#else
-#include "Core/FFmmAlgorithmThread.hpp"
-#endif
-
-#include "Utils/FParameterNames.hpp"
 
 /**
  * \file
@@ -73,148 +37,80 @@
  */
 
 
-//
-////////////////////////////////////////////////////////////////////
-// Chebyshev accuracy
-const unsigned int ORDER = 7;
+#include <iostream>
+#include <string>
+
+// Utilities
+#include "ScalFmmConfig.h"
+#include "Files/FFmaGenericLoader.hpp"
+#include "Utils/FParameters.hpp"
+#include "Utils/FParameterNames.hpp"
+
+// Data structures
+#include "Kernels/Chebyshev/FChebCell.hpp"
+#include "Containers/FOctree.hpp"
+#include "Components/FSimpleLeaf.hpp"
+#include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+
+// Kernels
+#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Chebyshev/FChebSymKernel.hpp"
+#include "BalanceTree/FChebSymCostKernel.hpp"
+
+// Algorithms
+#include "Core/FFmmAlgorithm.hpp"
+#include "Core/FFmmAlgorithmThread.hpp"
+#include "BalanceTree/FFmmAlgorithmThreadBalanced.hpp"
+#include "BalanceTree/FCostZones.hpp"
+
+
 // typedefs
 using FReal = double;
 
-#ifdef BALANCED_PERF
-using ContainerClass = FP2PParticleContainerIndexed<FReal>;
-using LeafClass      = FSimpleLeaf<FReal, ContainerClass >;
-using CellClass      = FCostCell<FChebCell<FReal,ORDER>>;
-using OctreeClass    = FOctree<FReal,CellClass,ContainerClass,LeafClass>;
-//
-using MatrixKernelClass  = FInterpMatrixKernelR<FReal>;
-using KernelClass        = FChebSymKernel<FReal, CellClass,ContainerClass,MatrixKernelClass,ORDER>;
-//
-using CostKernelClass = FChebBalanceSymKernel<FReal, CellClass, ContainerClass, 
-                                              MatrixKernelClass, ORDER, OctreeClass>;
-
-template <template <typename...> class T, typename Kernel>
-using FmmAlgoClass = T<OctreeClass, CellClass, ContainerClass, Kernel, LeafClass>;
-
-using CostFmmClass = FmmAlgoClass<FFmmAlgorithm, CostKernelClass>;
-using FmmClass     = FmmAlgoClass<FFmmAlgorithmThreadBalanced, KernelClass>;
-
-const FReal epsilon = 1e-4;
-
-#else
-
-using ContainerClass = FP2PParticleContainerIndexed<FReal>;
-using LeafClass      = FSimpleLeaf<FReal, ContainerClass >;
-using CellClass      = FChebCell<FReal,ORDER>;
-using OctreeClass    = FOctree<FReal,CellClass,ContainerClass,LeafClass>;
-using MatrixKernelClass  = FInterpMatrixKernelR<FReal>;
-using KernelClass        = FChebSymKernel<FReal, CellClass,ContainerClass,MatrixKernelClass,ORDER>;
-using FmmClass = FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass>;
-
-#endif
+// Chebyshev accuracy
+const unsigned int ORDER = 7;
 
 
-// Simply create particles and try the kernels
-int main(int argc, char* argv[])
-{
-    FHelpDescribeAndExit(argc, argv,
-                         "Driver for Chebyshev interpolation kernel  (1/r kernel).",
-                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
-                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
-                         FParameterDefinitions::NbThreads);
-
-
-    const std::string defaultFile("../Data/unitCubeXYZQ100.bfma" );
-    const std::string filename =
-        FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, defaultFile.c_str());
-    const unsigned int TreeHeight =
-        FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
-    const unsigned int SubTreeHeight =
-        FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
-    const unsigned int NbThreads =
-        FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, 1);
-
-
-    omp_set_num_threads(NbThreads);
-    std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
-    //
-    std::cout << "Parameters  "<< std::endl
-              << "\tOctree Depth     :" << TreeHeight <<std::endl
-              << "\tSubOctree depth  :" << SubTreeHeight <<std::endl
-              << "\tInput file  name :" << filename <<std::endl
-              << "\tThread number    :" << NbThreads <<std::endl
-              << std::endl;
-    ////////////////////////////////////////////////////////////////////
-
-    // init timer
+class AbstractPerfTest {
+protected:
     FTic time;
 
-    // open particle file
-    FFmaGenericLoader<FReal> loader(filename);
+    template <typename... Args>
+    struct false_type {
+        bool value = false;
+    };  
 
-    // init oct-tree
-    OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
-    const MatrixKernelClass MatrixKernel;
+    template <typename...Args>
+    void loadTree(Args...) {
+        static_assert(false_type<Args...>::value,
+                      "I don't know how to load this tree with this loader...");
+    }
 
+    template <class OctreeClass>
+    void loadTree(FFmaGenericLoader<FReal>& loader, OctreeClass& tree) {
+        std::cout << "Creating & inserting particles";
 
-    { // -----------------------------------------------------
-        std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
-                  << " particles ..."
-                  << std::endl
-                  << "\tHeight : " << TreeHeight
-                  << " \t sub-height : " << SubTreeHeight
-                  << std::endl;
         time.tic();
-        //
+
         FPoint<FReal> position;
         FReal physicalValue = 0.0;
-        //
-        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-            //
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart) {
             // Read particle per particle from file
             loader.fillParticle(&position,&physicalValue);
-            //
             // put particle in octree
             tree.insert(position, idxPart, physicalValue);
         }
 
         time.tac();
-        std::cout << "Done  " << "(@Creating and Inserting Particles = "
-                  << time.elapsed() << " s) ." << std::endl;
-    } // -----------------------------------------------------
+        std::cout << "Done  (" << time.elapsed() << "s)." << std::endl;
+    }
 
-    { // -----------------------------------------------------
-        std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ") ... " << std::endl;
-
-#ifdef BALANCED_PERF
-        CostKernelClass balanceKernel(&tree, epsilon);
-        CostFmmClass costAlgo(&tree, &balanceKernel);
-
-        time.tic();
-        costAlgo.execute();
-        time.tac();
-        std::cout << "Generating tree cost: " << time.elapsed() << "s.\n";
-
-        FCostZones<OctreeClass, CellClass> costzones(&tree, omp_get_max_threads());
-
-        time.tic();
-        costzones.run();
-        time.tac();
-        std::cout << "Generating cost zones: " << time.elapsed() << "s.\n";
-#endif
-
-        time.tic();
-        //
-        KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
-        //
-#ifdef BALANCED_PERF
-        FmmClass algo(&tree, &kernels, costzones.getZoneBounds(), costzones.getLeafZoneBounds());
-#else
-        FmmClass algo(&tree, &kernels);
-#endif
-        //
-        algo.execute();   // Here the call of the FMM algorithm
-        //
-        time.tac();
+    virtual void setup() = 0;
+    virtual void runAlgo() = 0;
+    virtual void finalize() = 0;
+    
+    template <class LeafClass, class OctreeClass, class FmmClass, class LoaderClass>
+    void finalize(OctreeClass& tree, FmmClass& algo, LoaderClass& loader) {
         std::cout << "Timers Far Field \n"
                   << "P2M " << algo.getTime(FAlgorithmTimers::P2MTimer) << " seconds\n"
                   << "M2M " << algo.getTime(FAlgorithmTimers::M2MTimer) << " seconds\n"
@@ -223,15 +119,8 @@ int main(int argc, char* argv[])
                   << "P2P and L2P " << algo.getTime(FAlgorithmTimers::NearTimer) << " seconds\n"
                   << std::endl;
 
-
         std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << " s) ." << std::endl;
-    }
-    // -----------------------------------------------------
-    //
-    // Some output
-    //
-    //
-    { // -----------------------------------------------------
+
         FSize N1 = 0, N2 = loader.getNumberOfParticles()/2, N3 = loader.getNumberOfParticles() - 1;
         FReal energy = 0.0;
         //
@@ -265,11 +154,193 @@ int main(int argc, char* argv[])
                     energy += potentials[idxPart]*physicalValues[idxPart] ;
                 }
             });
-        std::cout <<std::endl<<"Energy: "<< energy<<std::endl;
+        std::cout <<std::endl<<"Energy: "<< energy<<std::endl;        
+    }   
+    
+public:
+    virtual ~AbstractPerfTest(){};
 
+    void run() {
+        this->setup();
+        this->runAlgo();
+        this->finalize();
     }
-    // -----------------------------------------------------
+
+};
+
+template < template<typename...> class Algo > class PerfTest;
+
+template <>
+class PerfTest<FFmmAlgorithmThread> : public AbstractPerfTest {
+public: // typedefs
+    using CellClass          = FChebCell<FReal, ORDER>;
+    using ContainerClass     = FP2PParticleContainerIndexed<FReal>;
+    using LeafClass          = FSimpleLeaf<FReal, ContainerClass >;
+    using OctreeClass        = FOctree<FReal, CellClass, ContainerClass, LeafClass>;
+    using MatrixKernelClass  = FInterpMatrixKernelR<FReal>;
+    using KernelClass        = FChebSymKernel      <FReal, CellClass, ContainerClass,
+                                                    MatrixKernelClass, ORDER>;
+
+    using FmmClass = FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>;
+
+protected:    
+    int _nbThreads;
+    FFmaGenericLoader<FReal> _loader;
+    OctreeClass _tree;
+    FmmClass* _algo;
+
+public:
+    PerfTest(const std::string& fileName, const int nbThreads, const int treeHeight, const int subTreeHeight) :
+        _nbThreads(nbThreads) ,
+        _loader(fileName),
+        _tree(treeHeight, subTreeHeight, _loader.getBoxWidth(), _loader.getCenterOfBox()) {
+    }
+
+    ~PerfTest() {
+        if(_algo != nullptr)
+            delete _algo;
+    }
+
+protected:
+    virtual void setup() {
+        omp_set_num_threads(_nbThreads);
+        std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
+
+        loadTree(_loader,_tree);
+    }
+
+    virtual void runAlgo() {
+        time.tic();
+        const MatrixKernelClass MatrixKernel;
+        KernelClass kernels(_tree.getHeight(), _loader.getBoxWidth(), _loader.getCenterOfBox(),&MatrixKernel);
+        _algo = new FmmClass(&_tree, &kernels);
+
+        _algo->execute();
+        time.tac();
+    }
+
+    void finalize() {
+        AbstractPerfTest::finalize<LeafClass>(_tree, *_algo, _loader);
+    }
+};
+
+template <>
+class PerfTest<FFmmAlgorithmThreadBalanced> : public AbstractPerfTest {
+public: // typedefs
+    using ContainerClass     = FP2PParticleContainerIndexed<FReal>;
+    using CellClass          = FCostCell  <FChebCell<FReal, ORDER>>;
+    using LeafClass          = FSimpleLeaf<FReal, ContainerClass >;
+    using OctreeClass        = FOctree    <FReal, CellClass, ContainerClass, LeafClass>;
+    using MatrixKernelClass  = FInterpMatrixKernelR<FReal>;
+    using KernelClass        = FChebSymKernel      <FReal, CellClass, ContainerClass,
+                                                    MatrixKernelClass, ORDER>;
+    using CostKernelClass = FChebSymCostKernel     <FReal, CellClass, ContainerClass, 
+                                                    MatrixKernelClass, ORDER, OctreeClass>;
+
+    template <template <typename...> class T, typename Kernel>
+    using FmmAlgoClass = T<OctreeClass, CellClass, ContainerClass, Kernel, LeafClass>;
+
+    using FmmClass     = FmmAlgoClass<FFmmAlgorithmThreadBalanced, KernelClass>;
+    using CostFmmClass = FmmAlgoClass<FFmmAlgorithm, CostKernelClass>;
+
+    const FReal epsilon = 1e-4;
+
+protected:    
+
+    int _nbThreads;
+    FFmaGenericLoader<FReal> _loader;
+    OctreeClass _tree;
+    FmmClass* _algo;
+
+public:
+    PerfTest<FFmmAlgorithmThreadBalanced>(
+        const std::string& fileName, const int nbThreads,
+        const int treeHeight, const int subTreeHeight) :
+        _nbThreads(nbThreads) ,
+        _loader(fileName),
+        _tree(treeHeight, subTreeHeight, _loader.getBoxWidth(), _loader.getCenterOfBox()) {
+    }
+
+    ~PerfTest<FFmmAlgorithmThreadBalanced>() {
+        if(_algo != nullptr)
+            delete _algo;
+    }
+
+protected:
+    virtual void setup() {
+        omp_set_num_threads(_nbThreads);
+        std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
+
+        loadTree(_loader,_tree);
+    }
+
+    virtual void runAlgo() {
+        // Compute tree cells costs
+        CostKernelClass balanceKernel(&_tree, epsilon);
+        CostFmmClass    costAlgo(&_tree, &balanceKernel);
+
+        time.tic();
+        costAlgo.execute();
+        time.tac();
+        std::cout << "Generating tree cost: " << time.elapsed() << "s.\n";
+
+        FCostZones<OctreeClass, CellClass> costzones(&_tree, omp_get_max_threads());
+
+        time.tic();
+        costzones.run();
+        time.tac();
+        std::cout << "Generating cost zones: " << time.elapsed() << "s.\n";
+
+        time.tic();
+        const MatrixKernelClass MatrixKernel;
+        KernelClass kernels(_tree.getHeight(), _loader.getBoxWidth(), _loader.getCenterOfBox(),&MatrixKernel);
+        _algo = new FmmClass(&_tree, &kernels, costzones.getZoneBounds(), costzones.getLeafZoneBounds());
+
+        _algo->execute();
+        time.tac();
+    }
+
+    void finalize() {
+        AbstractPerfTest::finalize<LeafClass>(_tree, *_algo, _loader);
+    }
+};
 
 
-    return 0;
+
+// Simply create particles and try the kernels
+int main(int argc, char* argv[])
+{
+    FHelpDescribeAndExit(argc, argv,
+                         "Driver for Chebyshev interpolation kernel  (1/r kernel).",
+                         FParameterDefinitions::InputFile,
+                         FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight,
+                         FParameterDefinitions::NbThreads,
+                         {{"--algo"},"Algorithm to run (costzones, basic)"});
+
+    const std::string  defaultFile("../Data/unitCubeXYZQ100.bfma" );
+    const std::string  filename =
+        FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, defaultFile.c_str());
+    const unsigned int TreeHeight =
+        FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
+    const unsigned int SubTreeHeight =
+        FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
+    const unsigned int NbThreads =
+        FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, 1);
+    const std::string  algoChoice =
+        FParameters::getStr(argc,argv,{"--algo"},"costzones");
+
+    std::cout << "file: " << filename << "  tree height: " << TreeHeight
+              << "(" << SubTreeHeight << ")  algo: " << algoChoice << std::endl;
+
+    if(algoChoice == "costzones") {
+        PerfTest<FFmmAlgorithmThreadBalanced> balancePerfTest(filename, NbThreads, TreeHeight, SubTreeHeight);
+        balancePerfTest.run();
+    } else if (algoChoice == "basic") {
+        PerfTest<FFmmAlgorithmThread> threadPerfTest(filename, NbThreads, TreeHeight, SubTreeHeight);
+        threadPerfTest.run();
+    } else {
+        std::cerr << "Wrong algorithm choice. Try 'basic' or 'costzones'." << std::endl;
+    }
+
 }

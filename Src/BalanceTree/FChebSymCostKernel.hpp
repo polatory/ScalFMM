@@ -47,16 +47,33 @@ class FTreeCoordinate;
  * all interfaces (P2P, P2M, M2M, M2L, L2L, L2P) which are required by the
  * FFmmAlgorithm and FFmmAlgorithmThread.
  *
+ * \tparam Freal Type of real number representation
  * \tparam CellClass Type of cell
  * \tparam ContainerClass Type of container to store particles
  * \tparam MatrixKernelClass Type of matrix kernel function
  * \tparam ORDER Chebyshev interpolation order
+ * \tparam OctreeClass Class of the octree to work on.
  */
 template < typename FReal, class CellClass, class ContainerClass, class MatrixKernelClass, int ORDER, class OctreeClass>
 class FChebSymCostKernel : public FAbstractKernels<CellClass, ContainerClass>
 {
     enum {nnodes = TensorTraits<ORDER>::nnodes};
 public:
+    // Class types available to the rest of the world
+    /// Type of real number representation
+    using _FReal = FReal;
+    /// Type of cell
+    using _CellClass = CellClass;
+    /// Type of container to store particles
+    using _ContainerClass = ContainerClass;
+    /// Type of matrix kernel function
+    using _MatrixKernelClass = MatrixKernelClass;
+    /// Chebyshev interpolation order
+    constexpr static const int order = ORDER; 
+    /// Class of the octree to work on
+    using _OctreeClass = OctreeClass;
+
+
     /// Handler to deal with all symmetries: Stores permutation indices and
     /// vectors to reduce 343 different interactions to 16 only.
     struct SymmetryHandler;
