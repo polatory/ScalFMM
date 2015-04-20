@@ -59,12 +59,20 @@ private:
 
 #ifdef SCALFMM_USE_MEM_STATS
     ~FMemStats(){
+        plotState();
+    }
+#endif
+
+    void plotState() const {
+#ifdef SCALFMM_USE_MEM_STATS
         printf("[SCALFMM-MEMSTAT] Total number of allocations %lld \n", numberOfAllocations);
         printf("[SCALFMM-MEMSTAT] Memory used at the end %lu Bytes (%f MB)\n", FMemStats::controler.getCurrentAllocated(), FMemStats::controler.getCurrentAllocatedMB());
         printf("[SCALFMM-MEMSTAT] Max memory used %lld Bytes (%f MB)\n", FMemStats::controler.getMaxAllocated(), FMemStats::controler.getMaxAllocatedMB());
         printf("[SCALFMM-MEMSTAT] Total memory used %lld Bytes (%f MB)\n", FMemStats::controler.getTotalAllocated(), FMemStats::controler.getTotalAllocatedMB());
-    }
+#else
+        printf("[SCALFMM-MEMSTAT] unused\n");
 #endif
+    }
 
     void allocate(const std::size_t size){
         numberOfAllocations += 1;
