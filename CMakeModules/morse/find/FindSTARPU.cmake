@@ -310,7 +310,12 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) 
                 set(STARPU_${starpu_hdr}_INCLUDE_DIRS "STARPU_${starpu_hdr}_INCLUDE_DIRS-NOTFOUND")
                 find_path(STARPU_${starpu_hdr}_INCLUDE_DIRS
                           NAMES ${starpu_hdr}
-                          HINTS ${_inc_env})
+                          HINTS ${_inc_env}
+                          PATH_SUFFIXES
+                          "starpu/1.0"
+                          "starpu/1.1"
+                          "starpu/1.2"
+                          "starpu/1.3")
             endforeach()
         endif()
     endif()

@@ -47,6 +47,19 @@
 ##  Intel10_64lp_seq (intel mkl v10 64 bit,sequential code, lp64 model),
 ##  Intel( older versions of mkl 32 and 64 bit), ACML,ACML_MP,ACML_GPU,Apple, NAS, Generic
 # C/CXX should be enabled to use Intel mkl
+###
+# We handle different modes to find the dependency
+#
+# - Detection if already installed on the system
+#   - BLAS libraries can be detected from different ways
+#     Here is the order of precedence:
+#     1) we look in cmake variable BLAS_LIBDIR or BLAS_DIR (we guess the libdirs) if defined
+#     2) we look in environnement variable BLAS_LIBDIR or BLAS_DIR (we guess the libdirs) if defined
+#     3) we look in common environnment variables depending on the system (INCLUDE, C_INCLUDE_PATH, CPATH - LIB, DYLD_LIBRARY_PATH, LD_LIBRARY_PATH)
+#     4) we look in common system paths depending on the system, see for example paths contained in the following cmake variables:
+#       - CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES, CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES
+#       - CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES, CMAKE_C_IMPLICIT_LINK_DIRECTORIES
+#
 
 #=============================================================================
 # Copyright 2007-2009 Kitware, Inc.

@@ -48,6 +48,19 @@
 # look for a stand alone cblas, please add the following in your
 # CMakeLists.txt before to call find_package(CBLAS):
 # set(CBLAS_STANDALONE TRUE)
+###
+# We handle different modes to find the dependency
+#
+# - Detection if already installed on the system
+#   - CBLAS libraries can be detected from different ways
+#     Here is the order of precedence:
+#     1) we look in cmake variable CBLAS_LIBDIR or CBLAS_DIR (we guess the libdirs) if defined
+#     2) we look in environnement variable CBLAS_LIBDIR or CBLAS_DIR (we guess the libdirs) if defined
+#     3) we look in common environnment variables depending on the system (INCLUDE, C_INCLUDE_PATH, CPATH - LIB, DYLD_LIBRARY_PATH, LD_LIBRARY_PATH)
+#     4) we look in common system paths depending on the system, see for example paths contained in the following cmake variables:
+#       - CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES, CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES
+#       - CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES, CMAKE_C_IMPLICIT_LINK_DIRECTORIES
+#
 
 #=============================================================================
 # Copyright 2012-2013 Inria
@@ -80,11 +93,7 @@ endif()
 if (CBLAS_FIND_COMPONENTS)
     foreach( component ${CBLAS_FIND_COMPONENTS} )
         if(CBLAS_FIND_REQUIRED_${component})
-            if (CBLAS_FIND_REQUIRED)
-                find_package(${component} REQUIRED)
-            else()
-                find_package(${component})
-            endif()
+            find_package(${component} REQUIRED)
         else()
             find_package(${component})
         endif()
