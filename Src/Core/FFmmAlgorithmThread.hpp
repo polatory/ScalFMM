@@ -78,6 +78,7 @@ public:
      * The constructor needs the octree and the kernels used for computation.
      * \param inTree the octree to work on.
      * \param inKernels the kernels to call.
+     * \param inStaticSchedule Whether to use static or dynamic OpenMP scheduling.
      *
      * \except An exception is thrown if one of the arguments is NULL.
      */

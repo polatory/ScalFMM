@@ -40,7 +40,7 @@
 * Of course this class does not deallocate pointer given in arguements.
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmTask : public FAbstractAlgorithm{
+class FFmmAlgorithmTask : public FAbstractAlgorithm, public FAlgorithmTimers {
 
     OctreeClass* const tree;       //< The octree to work on
     KernelClass** kernels;    //< The kernels
@@ -92,15 +92,30 @@ protected:
       */
     void executeCore(const unsigned operationsToProceed) override {
 
-        if(operationsToProceed & FFmmP2M) bottomPass();
+        Timers[P2MTimer].tic();
+        if(operationsToProceed & FFmmP2M)
+            bottomPass();
+        Timers[P2MTimer].tac();
 
-        if(operationsToProceed & FFmmM2M) upwardPass();
+        Timers[M2MTimer].tic();
+        if(operationsToProceed & FFmmM2M)
+            upwardPass();
+        Timers[M2MTimer].tac();
 
-        if(operationsToProceed & FFmmM2L) transferPass();
+        Timers[M2LTimer].tic();
+        if(operationsToProceed & FFmmM2L)
+            transferPass();
+        Timers[M2LTimer].tac();
 
-        if(operationsToProceed & FFmmL2L) downardPass();
+        Timers[L2LTimer].tic();
+        if(operationsToProceed & FFmmL2L)
+            downardPass();
+        Timers[L2LTimer].tac();
 
-        if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
+        Timers[NearTimer].tic();
+        if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) )
+            directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
+        Timers[NearTimer].tac();
     }
 
     /////////////////////////////////////////////////////////////////////////////
