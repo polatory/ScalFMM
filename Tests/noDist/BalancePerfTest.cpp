@@ -60,6 +60,7 @@
 // Algorithms
 #include "Core/FFmmAlgorithm.hpp"
 #include "Core/FFmmAlgorithmThread.hpp"
+#include "Core/FFmmAlgorithmTask.hpp"
 #include "BalanceTree/FFmmAlgorithmThreadBalanced.hpp"
 #include "BalanceTree/FCostZones.hpp"
 
@@ -88,7 +89,7 @@ protected:
 
     template <class OctreeClass>
     void loadTree(FFmaGenericLoader<FReal>& loader, OctreeClass& tree) {
-        std::cout << "Creating & inserting particles";
+        std::cout << "Creating & inserting particles" << std::flush;
 
         time.tic();
 
@@ -189,6 +190,63 @@ protected:
     OctreeClass _tree;
     FmmClass* _algo;
 
+    bool _ompStaticScheduling;
+
+public:
+    PerfTest(const std::string& fileName, const int nbThreads, const int treeHeight, const int subTreeHeight, bool ompStaticScheduling) :
+        _nbThreads(nbThreads) ,
+        _loader(fileName),
+        _tree(treeHeight, subTreeHeight,_loader.getBoxWidth(),_loader.getCenterOfBox()),
+        _ompStaticScheduling(ompStaticScheduling) {
+    }
+
+    ~PerfTest() {
+        if(_algo != nullptr)
+            delete _algo;
+    }
+
+protected:
+    virtual void setup() {
+        omp_set_num_threads(_nbThreads);
+        std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
+
+        loadTree(_loader,_tree);
+    }
+
+    virtual void runAlgo() {
+        time.tic();
+        const MatrixKernelClass MatrixKernel;
+        KernelClass kernels(_tree.getHeight(), _loader.getBoxWidth(), _loader.getCenterOfBox(),&MatrixKernel);
+        _algo = new FmmClass(&_tree, &kernels,_ompStaticScheduling);
+
+        _algo->execute();
+        time.tac();
+    }
+
+    void finalize() {
+        AbstractPerfTest::finalize<LeafClass>(_tree, *_algo, _loader);
+    }
+};
+
+template <>
+class PerfTest<FFmmAlgorithmTask> : public AbstractPerfTest {
+public: // typedefs
+    using CellClass          = FChebCell<FReal, ORDER>;
+    using ContainerClass     = FP2PParticleContainerIndexed<FReal>;
+    using LeafClass          = FSimpleLeaf<FReal, ContainerClass >;
+    using OctreeClass        = FOctree<FReal, CellClass, ContainerClass, LeafClass>;
+    using MatrixKernelClass  = FInterpMatrixKernelR<FReal>;
+    using KernelClass        = FChebSymKernel      <FReal, CellClass, ContainerClass,
+                                                    MatrixKernelClass, ORDER>;
+
+    using FmmClass = FFmmAlgorithmTask<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>;
+
+protected:    
+    int _nbThreads;
+    FFmaGenericLoader<FReal> _loader;
+    OctreeClass _tree;
+    FmmClass* _algo;
+
 public:
     PerfTest(const std::string& fileName, const int nbThreads, const int treeHeight, const int subTreeHeight) :
         _nbThreads(nbThreads) ,
@@ -221,8 +279,10 @@ protected:
 
     void finalize() {
         AbstractPerfTest::finalize<LeafClass>(_tree, *_algo, _loader);
-    }
+    }    
 };
+
+
 
 template <>
 class PerfTest<FFmmAlgorithmThreadBalanced> : public AbstractPerfTest {
@@ -316,7 +376,7 @@ int main(int argc, char* argv[])
                          FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight,
                          FParameterDefinitions::NbThreads,
-                         {{"--algo"},"Algorithm to run (costzones, basic)"});
+                         {{"--algo"},"Algorithm to run (costzones, basic-static, basic-dynamic, task)"});
 
     const std::string  defaultFile("../Data/unitCubeXYZQ100.bfma" );
     const std::string  filename =
@@ -334,11 +394,21 @@ int main(int argc, char* argv[])
               << "(" << SubTreeHeight << ")  algo: " << algoChoice << std::endl;
 
     if(algoChoice == "costzones") {
-        PerfTest<FFmmAlgorithmThreadBalanced> balancePerfTest(filename, NbThreads, TreeHeight, SubTreeHeight);
+        PerfTest<FFmmAlgorithmThreadBalanced>
+            balancePerfTest(filename, NbThreads, TreeHeight, SubTreeHeight);
         balancePerfTest.run();
-    } else if (algoChoice == "basic") {
-        PerfTest<FFmmAlgorithmThread> threadPerfTest(filename, NbThreads, TreeHeight, SubTreeHeight);
-        threadPerfTest.run();
+    } else if (algoChoice == "basic-static") {
+        PerfTest<FFmmAlgorithmThread>
+            threadPerfTestStatic(filename, NbThreads, TreeHeight, SubTreeHeight, true);
+        threadPerfTestStatic.run();
+    } else if (algoChoice == "basic-dynamic") {
+        PerfTest<FFmmAlgorithmThread>
+            threadPerfTestDynamic(filename, NbThreads, TreeHeight, SubTreeHeight,false);
+        threadPerfTestDynamic.run();
+    } else if (algoChoice == "task") {
+        PerfTest<FFmmAlgorithmTask>
+            taskPerfTest(filename, NbThreads, TreeHeight, SubTreeHeight);
+        taskPerfTest.run();
     } else {
         std::cerr << "Wrong algorithm choice. Try 'basic' or 'costzones'." << std::endl;
     }
