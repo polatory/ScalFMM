@@ -266,6 +266,24 @@ public:
         }
         return ParticlesAttachedClass();
     }
+
+    /** Return the buffer for a leaf or null if it does not exist */
+    unsigned char* getLeafSymbBuffer(const MortonIndex leafIndex){
+        if(blockIndexesTable[leafIndex - blockHeader->startingIndex] != LeafIsEmptyFlag){
+            const int id = blockIndexesTable[leafIndex - blockHeader->startingIndex];
+            return (symbPart + leafHeader[id].offSetSymb);
+        }
+        return nullptr;
+    }
+
+    /** Return the buffer for a leaf or null if it does not exist */
+    unsigned char* getLeafDownBuffer(const MortonIndex leafIndex){
+        if(blockIndexesTable[leafIndex - blockHeader->startingIndex] != LeafIsEmptyFlag){
+            const int id = blockIndexesTable[leafIndex - blockHeader->startingIndex];
+            return (downPart?downPart + leafHeader[id].offSetDown : nullptr);
+        }
+        return nullptr;
+    }
 };
 
 #endif // FGROUPOFPARTICLESDYN_HPP

@@ -91,8 +91,8 @@ public:
 
                 // Create a block with the apropriate parameters
                 CellGroupClass*const newBlock = new CellGroupClass(blockIteratorInOctree.getCurrentGlobalIndex(),
-                                                                 octreeIterator.getCurrentGlobalIndex()+1,
-                                                                 sizeOfBlock, inSymbSizePerLevel[idxLevel],
+                                                                   octreeIterator.getCurrentGlobalIndex()+1,
+                                                                   sizeOfBlock, inSymbSizePerLevel[idxLevel],
                                                                    inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
                 {
                     typename OctreeClass::Iterator blockIteratorCellInOctree = blockIteratorInOctree;
@@ -121,8 +121,8 @@ public:
                     int cellIdInBlock = 0;
                     while(cellIdInBlock != sizeOfBlock){
                         GetSizeFunc(blockIteratorLeafInOctree.getCurrentCell()->getMortonIndex(),
-                                             blockIteratorLeafInOctree.getCurrentLeaf()->getSrc(),
-                                             &symbSizePerLeaf[cellIdInBlock],&downSizePerDown[cellIdInBlock]);
+                                    blockIteratorLeafInOctree.getCurrentLeaf()->getSrc(),
+                                    &symbSizePerLeaf[cellIdInBlock],&downSizePerDown[cellIdInBlock]);
 
                         cellIdInBlock += 1;
                         blockIteratorLeafInOctree.moveRight();
@@ -130,8 +130,8 @@ public:
                 }
 
                 ParticleGroupClass*const newParticleBlock = new ParticleGroupClass(blockIteratorInOctree.getCurrentGlobalIndex(),
-                                                                 octreeIterator.getCurrentGlobalIndex()+1,
-                                                                 sizeOfBlock, symbSizePerLeaf.get(), downSizePerDown.get());
+                                                                                   octreeIterator.getCurrentGlobalIndex()+1,
+                                                                                   sizeOfBlock, symbSizePerLeaf.get(), downSizePerDown.get());
                 {
                     typename OctreeClass::Iterator blockIteratorLeafInOctree = blockIteratorInOctree;
                     // Initialize each cell of the block
@@ -173,8 +173,8 @@ public:
 
                 // Create a block with the apropriate parameters
                 CellGroupClass*const newBlock = new CellGroupClass(blockIteratorInOctree.getCurrentGlobalIndex(),
-                                                                 octreeIterator.getCurrentGlobalIndex()+1,
-                                                                 sizeOfBlock, inSymbSizePerLevel[idxLevel],
+                                                                   octreeIterator.getCurrentGlobalIndex()+1,
+                                                                   sizeOfBlock, inSymbSizePerLevel[idxLevel],
                                                                    inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
 
                 // Initialize each cell of the block
@@ -212,15 +212,19 @@ public:
      * If no limite give inLeftLimite = -1
      */
     FGroupTreeDyn(const int inTreeHeight, const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter,
-               const int inNbElementsPerBlock, const size_t inSymbSizePerLevel[],
+                  const int inNbElementsPerBlock, const size_t inSymbSizePerLevel[],
                   const size_t inPoleSizePerLevel[], const size_t inLocalSizePerLevel[],
-               UnknownDescriptor<FReal> inParticlesContainer[], const FSize nbParticles,
-              std::function<void(const MortonIndex, const UnknownDescriptor<FReal>[],
-                                 const FSize, size_t*, size_t*)> GetSizeFunc,
-               const bool particlesAreSorted = false, MortonIndex inLeftLimite = -1):
-            treeHeight(inTreeHeight),nbElementsPerBlock(inNbElementsPerBlock),cellBlocksPerLevel(nullptr),
-            boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth),
-            boxWidthAtLeafLevel(inBoxWidth/FReal(1<<(inTreeHeight-1))){
+                  UnknownDescriptor<FReal> inParticlesContainer[], const FSize nbParticles,
+                  std::function<void(const MortonIndex, const UnknownDescriptor<FReal>[],
+                                     const FSize, size_t*, size_t*)> GetSizeFunc,
+                  std::function<void(const MortonIndex, const UnknownDescriptor<FReal> [],
+                                     const FSize ,
+                                     unsigned char* , const size_t,
+                                     unsigned char* , const size_t)> InitLeafFunc,
+                  const bool particlesAreSorted = false, MortonIndex inLeftLimite = -1):
+        treeHeight(inTreeHeight),nbElementsPerBlock(inNbElementsPerBlock),cellBlocksPerLevel(nullptr),
+        boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth),
+        boxWidthAtLeafLevel(inBoxWidth/FReal(1<<(inTreeHeight-1))){
 
         cellBlocksPerLevel = new std::vector<CellGroupClass*>[treeHeight];
 
@@ -231,8 +235,8 @@ public:
             if(particlesAreSorted == false){
                 for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
                     const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPositionAndCorner<FReal>(this->boxCorner, this->boxWidth,
-                                                                                                       treeHeight,
-                                                                                                       inParticlesContainer[idxPart].pos);
+                                                                                                                treeHeight,
+                                                                                                                inParticlesContainer[idxPart].pos);
                     const MortonIndex particleIndex = host.getMortonIndex(treeHeight-1);
                     inParticlesContainer[idxPart].mindex = particleIndex;
                     inParticlesContainer[idxPart].originalIndex = idxPart;
@@ -276,9 +280,9 @@ public:
 
                 // Create a group
                 CellGroupClass*const newBlock = new CellGroupClass(currentBlockIndexes[0],
-                                                                    currentBlockIndexes[sizeOfBlock-1]+1,
-                                                                    sizeOfBlock, inSymbSizePerLevel[idxLevel],
-                                                                inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
+                        currentBlockIndexes[sizeOfBlock-1]+1,
+                        sizeOfBlock, inSymbSizePerLevel[idxLevel],
+                        inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
                 {
                     for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
                         newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock);
@@ -302,8 +306,8 @@ public:
                 }
 
                 ParticleGroupClass*const newParticleBlock = new ParticleGroupClass(currentBlockIndexes[0],
-                                                                currentBlockIndexes[sizeOfBlock-1]+1,
-                                                                sizeOfBlock, symbSizePerLeaf.get(), downSizePerDown.get());
+                        currentBlockIndexes[sizeOfBlock-1]+1,
+                        sizeOfBlock, symbSizePerLeaf.get(), downSizePerDown.get());
 
                 // Init cells
                 FSize offsetParts = firstParticle;
@@ -311,10 +315,11 @@ public:
                     // Add leaf
                     newParticleBlock->newLeaf(currentBlockIndexes[cellIdInBlock], cellIdInBlock);
 
-                    BasicAttachedClass attachedLeaf = newParticleBlock->template getLeaf<BasicAttachedClass>(currentBlockIndexes[cellIdInBlock]);
-                    attachedLeaf.init(currentBlockIndexes[cellIdInBlock], &inParticlesContainer[offsetParts],
-                                      nbParticlesPerLeaf[cellIdInBlock],
-                                      symbSizePerLeaf[cellIdInBlock], downSizePerDown[cellIdInBlock]);
+                    InitLeafFunc(currentBlockIndexes[cellIdInBlock], &inParticlesContainer[offsetParts],
+                                 nbParticlesPerLeaf[cellIdInBlock],
+                                 newParticleBlock->getLeafSymbBuffer(currentBlockIndexes[cellIdInBlock]), symbSizePerLeaf[cellIdInBlock],
+                                 newParticleBlock->getLeafDownBuffer(currentBlockIndexes[cellIdInBlock]), downSizePerDown[cellIdInBlock]);
+
                     offsetParts += nbParticlesPerLeaf[cellIdInBlock];
                 }
 
@@ -376,9 +381,9 @@ public:
                 if(sizeOfBlock == nbElementsPerBlock || (sizeOfBlock && iterChildCells == iterChildEndCells)){
                     // Create a group
                     CellGroupClass*const newBlock = new CellGroupClass(currentBlockIndexes[0],
-                                                                        currentBlockIndexes[sizeOfBlock-1]+1,
-                                                                        sizeOfBlock,inSymbSizePerLevel[idxLevel],
-                                                                    inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
+                            currentBlockIndexes[sizeOfBlock-1]+1,
+                            sizeOfBlock,inSymbSizePerLevel[idxLevel],
+                            inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
                     // Init cells
                     for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
                         newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock);
@@ -413,16 +418,20 @@ public:
      * this could be an asset).
      */
     FGroupTreeDyn(const int inTreeHeight, const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter,
-               const int inNbElementsPerBlock, const size_t inSymbSizePerLevel[],
+                  const int inNbElementsPerBlock, const size_t inSymbSizePerLevel[],
                   const size_t inPoleSizePerLevel[], const size_t inLocalSizePerLevel[],
-               UnknownDescriptor<FReal> inParticlesContainer[], const FSize nbParticles,
-              std::function<void(const MortonIndex, const UnknownDescriptor<FReal>[],
-                                 const FSize, size_t*, size_t*)> GetSizeFunc,
-               const bool particlesAreSorted, const bool oneParent,
-               const FReal inCoverRatio = 0.0, MortonIndex inLeftLimite = -1):
-            treeHeight(inTreeHeight),nbElementsPerBlock(inNbElementsPerBlock),cellBlocksPerLevel(nullptr),
-            boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth),
-            boxWidthAtLeafLevel(inBoxWidth/FReal(1<<(inTreeHeight-1))){
+                  UnknownDescriptor<FReal> inParticlesContainer[], const FSize nbParticles,
+                  std::function<void(const MortonIndex, const UnknownDescriptor<FReal>[],
+                                     const FSize, size_t*, size_t*)> GetSizeFunc,
+                  std::function<void(const MortonIndex, const UnknownDescriptor<FReal> [],
+                                     const FSize ,
+                                     unsigned char* , const size_t,
+                                     unsigned char* , const size_t)> InitLeafFunc,
+                  const bool particlesAreSorted, const bool oneParent,
+                  const FReal inCoverRatio = 0.0, MortonIndex inLeftLimite = -1):
+        treeHeight(inTreeHeight),nbElementsPerBlock(inNbElementsPerBlock),cellBlocksPerLevel(nullptr),
+        boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth),
+        boxWidthAtLeafLevel(inBoxWidth/FReal(1<<(inTreeHeight-1))){
 
         FAssertLF(inCoverRatio == 0.0 || oneParent == true, "If a ratio is choosen oneParent should be turned on");
         const bool userCoverRatio = (inCoverRatio != 0.0);
@@ -436,8 +445,8 @@ public:
             if(particlesAreSorted == false){
                 for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
                     const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPositionAndCorner<FReal>(this->boxCorner, this->boxWidth,
-                                                                                                       treeHeight,
-                                                                                                       inParticlesContainer[idxPart].pos);
+                                                                                                                treeHeight,
+                                                                                                                inParticlesContainer[idxPart].pos);
                     const MortonIndex particleIndex = host.getMortonIndex(treeHeight-1);
                     inParticlesContainer[idxPart].mindex = particleIndex;
                     inParticlesContainer[idxPart].originalIndex = idxPart;
@@ -483,9 +492,9 @@ public:
 
                 // Create a group
                 CellGroupClass*const newBlock = new CellGroupClass(currentBlockIndexes[0],
-                                                                    currentBlockIndexes[sizeOfBlock-1]+1,
-                                                                    sizeOfBlock, inSymbSizePerLevel[idxLevel],
-                                                                inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
+                        currentBlockIndexes[sizeOfBlock-1]+1,
+                        sizeOfBlock, inSymbSizePerLevel[idxLevel],
+                        inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
                 {
                     for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
                         newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock);
@@ -509,8 +518,8 @@ public:
                 }
 
                 ParticleGroupClass*const newParticleBlock = new ParticleGroupClass(currentBlockIndexes[0],
-                                                                currentBlockIndexes[sizeOfBlock-1]+1,
-                                                                sizeOfBlock, symbSizePerLeaf.get(), downSizePerDown.get());
+                        currentBlockIndexes[sizeOfBlock-1]+1,
+                        sizeOfBlock, symbSizePerLeaf.get(), downSizePerDown.get());
 
                 // Init cells
                 FSize offsetParts = firstParticle;
@@ -518,10 +527,11 @@ public:
                     // Add leaf
                     newParticleBlock->newLeaf(currentBlockIndexes[cellIdInBlock], cellIdInBlock);
 
-                    BasicAttachedClass attachedLeaf = newParticleBlock->template getLeaf<BasicAttachedClass>(currentBlockIndexes[cellIdInBlock]);
-                    attachedLeaf.init(currentBlockIndexes[cellIdInBlock], &inParticlesContainer[offsetParts],
-                                      nbParticlesPerLeaf[cellIdInBlock],
-                                      symbSizePerLeaf[cellIdInBlock], downSizePerDown[cellIdInBlock]);
+                    InitLeafFunc(currentBlockIndexes[cellIdInBlock], &inParticlesContainer[offsetParts],
+                                 nbParticlesPerLeaf[cellIdInBlock],
+                                 newParticleBlock->getLeafSymbBuffer(currentBlockIndexes[cellIdInBlock]), symbSizePerLeaf[cellIdInBlock],
+                                 newParticleBlock->getLeafDownBuffer(currentBlockIndexes[cellIdInBlock]), downSizePerDown[cellIdInBlock]);
+
                     offsetParts += nbParticlesPerLeaf[cellIdInBlock];
                 }
 
@@ -584,9 +594,9 @@ public:
                     if(sizeOfBlock == nbElementsPerBlock || (sizeOfBlock && iterChildCells == iterChildEndCells)){
                         // Create a group
                         CellGroupClass*const newBlock = new CellGroupClass(currentBlockIndexes[0],
-                                                                            currentBlockIndexes[sizeOfBlock-1]+1,
-                                                                            sizeOfBlock,inSymbSizePerLevel[idxLevel],
-                                                                        inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
+                                currentBlockIndexes[sizeOfBlock-1]+1,
+                                sizeOfBlock,inSymbSizePerLevel[idxLevel],
+                                inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
                         // Init cells
                         for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
                             newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock);
@@ -640,9 +650,9 @@ public:
                     if(sizeOfBlock){
                         // Create a group
                         CellGroupClass*const newBlock = new CellGroupClass(currentBlockIndexes[0],
-                                                                            currentBlockIndexes[sizeOfBlock-1]+1,
-                                                                            sizeOfBlock,inSymbSizePerLevel[idxLevel],
-                                                                        inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
+                                currentBlockIndexes[sizeOfBlock-1]+1,
+                                sizeOfBlock,inSymbSizePerLevel[idxLevel],
+                                inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
                         // Init cells
                         for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
                             newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock);
