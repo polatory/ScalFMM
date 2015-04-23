@@ -45,17 +45,16 @@ public:
         return controller;
     }
 
-    static void InitSchedulerCallback(unsigned sched_ctx_id,
-                                      struct _starpu_heteroprio_center_policy_heteroprio *heteroprio){
-        Controller().initSchedulerCallback(sched_ctx_id, heteroprio);
+    static void InitSchedulerCallback(unsigned sched_ctx_id, void* heteroprio){
+        Controller().initSchedulerCallback(sched_ctx_id, (struct _starpu_heteroprio_center_policy_heteroprio*)heteroprio);
     }
 
     void init(struct starpu_conf* conf, const int inTreeHeight,
               FStarPUKernelCapacities* inCapacities){
         capacities = inCapacities;
 
-        conf->sched_policy = &_starpu_sched_heteroprio_policy,
-                initialize_heteroprio_center_policy_callback = &InitSchedulerCallback;
+        conf->sched_policy = &_starpu_sched_heteroprio_policy;
+        starpu_heteroprio_set_callback(&InitSchedulerCallback);
 
         treeHeight  = inTreeHeight;
 
