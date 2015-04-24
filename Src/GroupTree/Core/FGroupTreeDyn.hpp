@@ -62,7 +62,12 @@ public:
     template<class OctreeClass>
     FGroupTreeDyn(const int inTreeHeight, const int inNbElementsPerBlock, OctreeClass*const inOctreeSrc,
                   const size_t inSymbSizePerLevel[], const size_t inPoleSizePerLevel[], const size_t inLocalSizePerLevel[],
-                  std::function<void(const MortonIndex, const void*, size_t*, size_t*)> GetSizeFunc)
+                  std::function<void(const MortonIndex, const void*, size_t*, size_t*)> GetSizeFunc,
+                  std::function<void(const MortonIndex mindex,
+                                     unsigned char* symbBuff, const size_t symbSize,
+                                     unsigned char* upBuff, const size_t upSize,
+                                     unsigned char* downBuff, const size_t downSize,
+                                     const int level)> BuildCellFunc)
         : treeHeight(inTreeHeight), nbElementsPerBlock(inNbElementsPerBlock), cellBlocksPerLevel(nullptr),
           boxCenter(inOctreeSrc->getBoxCenter()), boxCorner(inOctreeSrc->getBoxCenter(),-(inOctreeSrc->getBoxWidth()/2)),
           boxWidth(inOctreeSrc->getBoxWidth()), boxWidthAtLeafLevel(inOctreeSrc->getBoxWidth()/FReal(1<<(inTreeHeight-1))){
@@ -102,7 +107,7 @@ public:
                         const MortonIndex newNodeIndex = blockIteratorCellInOctree.getCurrentCell()->getMortonIndex();
                         const FTreeCoordinate newNodeCoordinate = blockIteratorCellInOctree.getCurrentCell()->getCoordinate();
                         // Add cell
-                        newBlock->newCell(newNodeIndex, cellIdInBlock);
+                        newBlock->newCell(newNodeIndex, cellIdInBlock, BuildCellFunc, idxLevel);
 
                         CompositeCellClass newNode = newBlock->getCompleteCell(newNodeIndex);
                         newNode.setMortonIndex(newNodeIndex);
@@ -182,7 +187,7 @@ public:
                 while(cellIdInBlock != sizeOfBlock){
                     const MortonIndex newNodeIndex = blockIteratorInOctree.getCurrentCell()->getMortonIndex();
                     const FTreeCoordinate newNodeCoordinate = blockIteratorInOctree.getCurrentCell()->getCoordinate();
-                    newBlock->newCell(newNodeIndex, cellIdInBlock);
+                    newBlock->newCell(newNodeIndex, cellIdInBlock, BuildCellFunc, idxLevel);
 
                     CompositeCellClass newNode = newBlock->getCompleteCell(newNodeIndex);
                     newNode.setMortonIndex(newNodeIndex);
@@ -221,6 +226,11 @@ public:
                                      const FSize ,
                                      unsigned char* , const size_t,
                                      unsigned char* , const size_t)> InitLeafFunc,
+                  std::function<void(const MortonIndex mindex,
+                                     unsigned char* symbBuff, const size_t symbSize,
+                                     unsigned char* upBuff, const size_t upSize,
+                                     unsigned char* downBuff, const size_t downSize,
+                                     const int level)> BuildCellFunc,
                   const bool particlesAreSorted = false, MortonIndex inLeftLimite = -1):
         treeHeight(inTreeHeight),nbElementsPerBlock(inNbElementsPerBlock),cellBlocksPerLevel(nullptr),
         boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth),
@@ -285,7 +295,7 @@ public:
                         inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
                 {
                     for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
-                        newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock);
+                        newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock, BuildCellFunc, idxLevel);
 
                         CompositeCellClass newNode = newBlock->getCompleteCell(currentBlockIndexes[cellIdInBlock]);
                         newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
@@ -386,7 +396,7 @@ public:
                             inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
                     // Init cells
                     for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
-                        newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock);
+                        newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock, BuildCellFunc, idxLevel);
 
                         CompositeCellClass newNode = newBlock->getCompleteCell(currentBlockIndexes[cellIdInBlock]);
                         newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
@@ -427,6 +437,11 @@ public:
                                      const FSize ,
                                      unsigned char* , const size_t,
                                      unsigned char* , const size_t)> InitLeafFunc,
+                  std::function<void(const MortonIndex mindex,
+                                     unsigned char* symbBuff, const size_t symbSize,
+                                     unsigned char* upBuff, const size_t upSize,
+                                     unsigned char* downBuff, const size_t downSize,
+                                     const int level)> BuildCellFunc,
                   const bool particlesAreSorted, const bool oneParent,
                   const FReal inCoverRatio = 0.0, MortonIndex inLeftLimite = -1):
         treeHeight(inTreeHeight),nbElementsPerBlock(inNbElementsPerBlock),cellBlocksPerLevel(nullptr),
@@ -497,7 +512,7 @@ public:
                         inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
                 {
                     for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
-                        newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock);
+                        newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock, BuildCellFunc, idxLevel);
 
                         CompositeCellClass newNode = newBlock->getCompleteCell(currentBlockIndexes[cellIdInBlock]);
                         newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
@@ -599,7 +614,7 @@ public:
                                 inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
                         // Init cells
                         for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
-                            newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock);
+                            newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock, BuildCellFunc, idxLevel);
 
                             CompositeCellClass newNode = newBlock->getCompleteCell(currentBlockIndexes[cellIdInBlock]);
                             newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
@@ -655,7 +670,7 @@ public:
                                 inPoleSizePerLevel[idxLevel], inLocalSizePerLevel[idxLevel]);
                         // Init cells
                         for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
-                            newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock);
+                            newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock, BuildCellFunc, idxLevel);
 
                             CompositeCellClass newNode = newBlock->getCompleteCell(currentBlockIndexes[cellIdInBlock]);
                             newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);

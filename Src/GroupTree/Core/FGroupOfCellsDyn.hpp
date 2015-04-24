@@ -177,8 +177,8 @@ public:
         cellMultipoles    = (unsigned char*)FAlignedMemory::AllocateBytes<32>(inNumberOfCells*cellSizes->poleCellClassSize);
         memset(cellMultipoles, 0, inNumberOfCells*cellSizes->poleCellClassSize);
 
-        cellLocals     = (unsigned char*)FAlignedMemory::AllocateBytes<32>(inNumberOfCells*cellSizes->poleCellClassSize);
-        memset(cellLocals, 0, inNumberOfCells*cellSizes->poleCellClassSize);
+        cellLocals     = (unsigned char*)FAlignedMemory::AllocateBytes<32>(inNumberOfCells*cellSizes->localCellClassSize);
+        memset(cellLocals, 0, inNumberOfCells*cellSizes->localCellClassSize);
 
         // Set all index to not used
         for(int idxCellPtr = 0 ; idxCellPtr < blockIndexesTableSize ; ++idxCellPtr){
@@ -314,15 +314,21 @@ public:
     }
 
     /** Allocate a new cell by calling its constructor */
-    template<typename... CellConstructorParams>
-    void newCell(const MortonIndex inIndex, const int id, CellConstructorParams... args){
+    void newCell(const MortonIndex inIndex, const int id,
+                 std::function<void(const MortonIndex mindex,
+                                    unsigned char* symbBuff, const size_t symbSize,
+                                    unsigned char* upBuff, const size_t upSize,
+                                    unsigned char* downBuff, const size_t downSize,
+                                    const int level)> BuildCellFunc,
+                                    const int inLevel){
         FAssertLF(isInside(inIndex));
         FAssertLF(!exists(inIndex));
         FAssertLF(id < blockHeader->blockIndexesTableSize);
-        CompositeCellClass cell(&blockCells[id*cellSizes->symbCellClassSize],
-                                 &cellMultipoles[id*cellSizes->poleCellClassSize],
-                                &cellLocals[id*cellSizes->localCellClassSize]);
-        cell.init(args...);
+        BuildCellFunc(inIndex,
+                      &blockCells[id*cellSizes->symbCellClassSize],cellSizes->symbCellClassSize,
+                      &cellMultipoles[id*cellSizes->poleCellClassSize],cellSizes->poleCellClassSize,
+                      &cellLocals[id*cellSizes->localCellClassSize],cellSizes->localCellClassSize,
+                      inLevel);
         blockIndexesTable[inIndex-blockHeader->startingIndex] = id;
     }
 
