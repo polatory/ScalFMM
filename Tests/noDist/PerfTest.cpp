@@ -74,6 +74,7 @@ int main (int argc, char** argv)
             getStr(argc,argv,{"--schedule"},"dynamic") == std::string("static");
     }
 
+    omp_set_num_threads(params.nbThreads);
 
     if( "basic" == params.algo ) {
         runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderThread>(params);
