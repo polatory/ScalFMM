@@ -145,9 +145,10 @@ public:
         : tree(inTree) , kernels(nullptr), comm(inComm), nbLevelsAboveRoot(inUpperLevel), offsetRealTree(inUpperLevel + 3),
           numberOfLeafs(0),
           MaxThreads(omp_get_max_threads()), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
-          OctreeHeight(tree->getHeight()),intervals(new Interval[inComm.processCount()]),
-          workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]),
-          leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
+          OctreeHeight(tree->getHeight()),
+          leafLevelSeperationCriteria(inLeafLevelSeperationCriteria),
+          intervals(new Interval[inComm.processCount()]),
+          workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]) {
 
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(-1 <= inUpperLevel, "inUpperLevel cannot be < -1");
@@ -755,8 +756,6 @@ protected:
                     typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
                     // for each levels
                     for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
-
-                        const int separationCriteria = (idxLevel != OctreeHeight-1 ? 1 : leafLevelSeperationCriteria);
 
                         if(!procHasWorkAtLevel(idxLevel, idProcess)){
                             avoidGotoLeftIterator.moveDown();
@@ -1782,7 +1781,7 @@ protected:
         // This is not on a border we can use normal interaction list method
         if( !(parentCell.getX() == 0 || parentCell.getY() == 0 || parentCell.getZ() == 0 ||
               parentCell.getX() == boxLimite - 1 || parentCell.getY() == boxLimite - 1 || parentCell.getZ() == boxLimite - 1 ) ) {
-            return getInteractionNeighbors( workingCell, inLevel, inNeighbors, inNeighborsPosition);
+            return getInteractionNeighbors( workingCell, inLevel, inNeighbors, inNeighborsPosition, neighSeparation);
         }
 
         const int startX =  (TestPeriodicCondition(inDirection, DirMinusX) || parentCell.getX() != 0 ?-1:0);
