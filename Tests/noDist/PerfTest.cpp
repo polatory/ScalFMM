@@ -75,7 +75,7 @@ int main (int argc, char** argv)
     }
 
 
-    if( "basic-dynamic" == params.algo ) {
+    if( "basic" == params.algo ) {
         runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderThread>(params);
     } else if( "task" == params.algo ) {
         runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderTask>(params);
