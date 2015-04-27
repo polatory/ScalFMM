@@ -83,6 +83,8 @@ class FFmmAlgorithmThreadProcPeriodic : public FAbstractAlgorithm {
 
     const int OctreeHeight;
 
+    const int leafLevelSeperationCriteria;
+
 public:
     struct Interval{
         MortonIndex leftIndex;
@@ -139,12 +141,13 @@ public:
      * An assert is launched if one of the arguments is null
      */
     FFmmAlgorithmThreadProcPeriodic(const FMpi::FComm& inComm, OctreeClass* const inTree,
-                                    const int inUpperLevel = 2)
+                                    const int inUpperLevel = 2, const int inLeafLevelSeperationCriteria = 1)
         : tree(inTree) , kernels(nullptr), comm(inComm), nbLevelsAboveRoot(inUpperLevel), offsetRealTree(inUpperLevel + 3),
           numberOfLeafs(0),
           MaxThreads(omp_get_max_threads()), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
           OctreeHeight(tree->getHeight()),intervals(new Interval[inComm.processCount()]),
-          workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]) {
+          workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]),
+          leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
 
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(-1 <= inUpperLevel, "inUpperLevel cannot be < -1");
@@ -752,6 +755,9 @@ protected:
                     typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
                     // for each levels
                     for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
+
+                        const int separationCriteria = (idxLevel != OctreeHeight-1 ? 1 : leafLevelSeperationCriteria);
+
                         if(!procHasWorkAtLevel(idxLevel, idProcess)){
                             avoidGotoLeftIterator.moveDown();
                             octreeIterator = avoidGotoLeftIterator;
@@ -776,13 +782,13 @@ protected:
 
                         // Which cell potentialy needs other data and in the same time
                         // are potentialy needed by other
-                        int neighborsPosition[189];
-                        MortonIndex neighborsIndexes[189];
+                        int neighborsPosition[/*189+26+1*/216];
+                        MortonIndex neighborsIndexes[/*189+26+1*/216];
                         for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                             // Find the M2L neigbors of a cell
                             const int counter = getPeriodicInteractionNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(),
                                                                                idxLevel,
-                                                                               neighborsIndexes, neighborsPosition, AllDirs);
+                                                                               neighborsIndexes, neighborsPosition, AllDirs, leafLevelSeperationCriteria);
 
                             memset(alreadySent, false, sizeof(bool) * nbProcess);
                             bool needOther = false;
@@ -907,6 +913,9 @@ protected:
                 // for each levels
                 for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
                     const int fackLevel = idxLevel + offsetRealTree;
+
+                    const int separationCriteria = (idxLevel != OctreeHeight-1 ? 1 : leafLevelSeperationCriteria);
+
                     if(!procHasWorkAtLevel(idxLevel, idProcess)){
                         avoidGotoLeftIterator.moveDown();
                         octreeIterator = avoidGotoLeftIterator;
@@ -936,10 +945,9 @@ protected:
 
                                 const int nbCellToCompute = FMath::Min(chunckSize, numberOfCells-idxCell);
                                 for(int idxCellToCompute = idxCell ; idxCellToCompute < idxCell+nbCellToCompute ; ++idxCellToCompute){
-                                    const int counter = tree->
-                                            getPeriodicInteractionNeighbors(neighbors,
+                                    const int counter = tree->getPeriodicInteractionNeighbors(neighbors,
                                                                             iterArray[idxCellToCompute].getCurrentGlobalCoordinate(),
-                                                                            idxLevel, AllDirs);
+                                                                            idxLevel, AllDirs, separationCriteria);
 
                                     if(counter)
                                         myThreadkernels->M2L( iterArray[idxCellToCompute].getCurrentCell() , neighbors, counter, fackLevel);
@@ -973,6 +981,9 @@ protected:
             // for each levels
             for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
                 const int fackLevel = idxLevel + offsetRealTree;
+
+                const int separationCriteria = (fackLevel != OctreeHeight-1 ? 1 : leafLevelSeperationCriteria);
+
                 if(!procHasWorkAtLevel(idxLevel, idProcess)){
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
@@ -1030,15 +1041,15 @@ protected:
                 #pragma omp parallel
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                    MortonIndex neighborsIndex[189];
-                    int neighborsPosition[189];
+                    MortonIndex neighborsIndex[/*189+26+1*/216];
+                    int neighborsPosition[/*189+26+1*/216];
                     const CellClass* neighbors[343];
 
                     #pragma omp for schedule(static) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         // compute indexes
                         memset(neighbors, 0, 343 * sizeof(CellClass*));
-                        const int counterNeighbors = getPeriodicInteractionNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, neighborsIndex, neighborsPosition, AllDirs);
+                        const int counterNeighbors = getPeriodicInteractionNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, neighborsIndex, neighborsPosition, AllDirs, separationCriteria);
                         //const int counterNeighbors = iterArray[idxCell].getCurrentGlobalCoordinate().getInteractionNeighbors(idxLevel, neighborsIndex, neighborsPosition);
 
                         int counter = 0;
@@ -1758,7 +1769,8 @@ protected:
     }
 
 
-    int getPeriodicInteractionNeighbors(const FTreeCoordinate& workingCell,const int inLevel, MortonIndex inNeighbors[189], int inNeighborsPosition[189], const int inDirection) const{
+    int getPeriodicInteractionNeighbors(const FTreeCoordinate& workingCell,const int inLevel, MortonIndex inNeighbors[/*189+26+1*/216], int inNeighborsPosition[/*189+26+1*/216],
+                const int inDirection, const int neighSeparation) const{
 
         // Then take each child of the parent's neighbors if not in directNeighbors
         // Father coordinate
@@ -1821,7 +1833,7 @@ protected:
                             const int zdiff  = ((otherParent.getZ()<<1) | (idxCousin&1))         - workingCell.getZ();
 
                             // Test if it is a direct neighbor
-                            if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
+                            if(FMath::Abs(xdiff) > neighSeparation || FMath::Abs(ydiff) > neighSeparation || FMath::Abs(zdiff) > neighSeparation){
                                 // add to neighbors
                                 inNeighborsPosition[idxNeighbors] = (((xdiff+3) * 7) + (ydiff+3)) * 7 + zdiff + 3;
                                 inNeighbors[idxNeighbors++] = (mortonOtherParent << 3) | idxCousin;
@@ -1835,7 +1847,8 @@ protected:
         return idxNeighbors;
     }
 
-    int getInteractionNeighbors(const FTreeCoordinate& workingCell,const int inLevel, MortonIndex inNeighbors[189], int inNeighborsPosition[189]) const{
+    int getInteractionNeighbors(const FTreeCoordinate& workingCell,const int inLevel, MortonIndex inNeighbors[/*189+26+1*/216], int inNeighborsPosition[/*189+26+1*/216],
+                const int neighSeparation) const{
 
         // Then take each child of the parent's neighbors if not in directNeighbors
         // Father coordinate
@@ -1860,7 +1873,7 @@ protected:
                             const int zdiff  = ((otherParent.getZ()<<1) | (idxCousin&1)) - workingCell.getZ();
 
                             // Test if it is a direct neighbor
-                            if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
+                            if(FMath::Abs(xdiff) > neighSeparation || FMath::Abs(ydiff) > neighSeparation || FMath::Abs(zdiff) > neighSeparation){
                                 // add to neighbors
                                 inNeighborsPosition[idxNeighbors] = ((( (xdiff+3) * 7) + (ydiff+3))) * 7 + zdiff + 3;
                                 inNeighbors[idxNeighbors++] = (mortonOtherParent << 3) | idxCousin;
