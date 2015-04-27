@@ -81,6 +81,7 @@ class FFmmAlgorithmThreadProc : public FAbstractAlgorithm, public FAlgorithmTime
 
     const int OctreeHeight;            //<Height of the tree
 
+    const int leafLevelSeperationCriteria;
 
     /** An interval is the morton index interval
      * that a proc use (it holds data in this interval)
@@ -134,10 +135,12 @@ public:
      * @param inKernels the kernels to call
      * An assert is launched if one of the arguments is null
      */
-    FFmmAlgorithmThreadProc(const FMpi::FComm& inComm, OctreeClass* const inTree, KernelClass* const inKernels)
+    FFmmAlgorithmThreadProc(const FMpi::FComm& inComm, OctreeClass* const inTree, KernelClass* const inKernels, const int inLeafLevelSeperationCriteria = 1)
         : tree(inTree) , kernels(nullptr), comm(inComm), iterArray(nullptr),iterArrayComm(nullptr),numberOfLeafs(0),
           MaxThreads(omp_get_max_threads()), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
-          OctreeHeight(tree->getHeight()),intervals(new Interval[inComm.processCount()]),
+          OctreeHeight(tree->getHeight()),
+          leafLevelSeperationCriteria(inLeafLevelSeperationCriteria),
+          intervals(new Interval[inComm.processCount()]),
           workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()])
     {
         FAssertLF(tree, "tree cannot be null");
@@ -622,6 +625,9 @@ protected:
                     typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
                     // for each levels
                     for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
+
+                        const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+
                         if(!procHasWorkAtLevel(idxLevel, idProcess)){
                             avoidGotoLeftIterator.moveDown();
                             octreeIterator = avoidGotoLeftIterator;
@@ -646,10 +652,10 @@ protected:
 
                         // Which cell potentialy needs other data and in the same time
                         // are potentialy needed by other
-                        MortonIndex neighborsIndexes[189];
+                        MortonIndex neighborsIndexes[/*189+26+1*/216];
                         for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                             // Find the M2L neigbors of a cell
-                            const int counter = iterArrayLocal[idxCell].getCurrentGlobalCoordinate().getInteractionNeighbors(idxLevel, neighborsIndexes);
+                            const int counter = iterArrayLocal[idxCell].getCurrentGlobalCoordinate().getInteractionNeighbors(idxLevel, neighborsIndexes, separationCriteria);
 
                             memset(alreadySent, false, sizeof(bool) * nbProcess);
                             bool needOther = false;
@@ -778,6 +784,8 @@ protected:
                 // Now we can compute all the data
                 // for each levels
                 for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
+                    const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+
                     if(!procHasWorkAtLevel(idxLevel, idProcess)){
                         avoidGotoLeftIterator.moveDown();
                         octreeIterator = avoidGotoLeftIterator;
@@ -807,7 +815,7 @@ protected:
 
                                 const int nbCellToCompute = FMath::Min(chunckSize, numberOfCells-idxCell);
                                 for(int idxCellToCompute = idxCell ; idxCellToCompute < idxCell+nbCellToCompute ; ++idxCellToCompute){
-                                    const int counter = tree->getInteractionNeighbors(neighbors,  iterArray[idxCellToCompute].getCurrentGlobalCoordinate(), idxLevel);
+                                    const int counter = tree->getInteractionNeighbors(neighbors,  iterArray[idxCellToCompute].getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
                                     if(counter) myThreadkernels->M2L( iterArray[idxCellToCompute].getCurrentCell() , neighbors, counter, idxLevel);
                                 }
                             }
@@ -843,6 +851,8 @@ protected:
             // compute the second time
             // for each levels
             for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
+                const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+
                 if(!procHasWorkAtLevel(idxLevel, idProcess)){
                     avoidGotoLeftIterator.moveDown();
                     octreeIterator = avoidGotoLeftIterator;
@@ -900,15 +910,15 @@ protected:
                 #pragma omp parallel
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                    MortonIndex neighborsIndex[189];
-                    int neighborsPosition[189];
+                    MortonIndex neighborsIndex[/*189+26+1*/216];
+                    int neighborsPosition[/*189+26+1*/216];
                     const CellClass* neighbors[343];
 
                     #pragma omp for schedule(static) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         // compute indexes
                         memset(neighbors, 0, 343 * sizeof(CellClass*));
-                        const int counterNeighbors = iterArray[idxCell].getCurrentGlobalCoordinate().getInteractionNeighbors(idxLevel, neighborsIndex, neighborsPosition);
+                        const int counterNeighbors = iterArray[idxCell].getCurrentGlobalCoordinate().getInteractionNeighbors(idxLevel, neighborsIndex, neighborsPosition, separationCriteria);
 
                         int counter = 0;
                         // does we receive this index from someone?

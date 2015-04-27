@@ -47,6 +47,7 @@ class FFmmAlgorithm :  public FAbstractAlgorithm, public FAlgorithmTimers {
 
     const int OctreeHeight;        ///< The height of the given tree.
 
+    const int leafLevelSeperationCriteria;
 public:
     /** Class constructor
      * 
@@ -56,8 +57,8 @@ public:
      *
      * \except An exception is thrown if one of the arguments is NULL.
      */
-    FFmmAlgorithm(OctreeClass* const inTree, KernelClass* const inKernels)
-        : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()) {
+    FFmmAlgorithm(OctreeClass* const inTree, KernelClass* const inKernels, const int inLeafLevelSeperationCriteria = 1)
+        : tree(inTree) , kernels(inKernels), OctreeHeight(tree->getHeight()), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
 
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(kernels, "kernels cannot be null");
@@ -190,13 +191,16 @@ protected:
 
         const CellClass* neighbors[343];
 
+
         // for each levels
         for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
             FLOG(FTic counterTimeLevel);
 
+            const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+
             // for each cells
             do{
-                const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel);
+                const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
                 FLOG(computationCounter.tic());
                 if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
                 FLOG(computationCounter.tac());

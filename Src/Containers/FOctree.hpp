@@ -808,8 +808,8 @@ public:
      * @return the number of neighbors
      */
     int getInteractionNeighbors(const CellClass* inNeighbors[343],
-    const FTreeCoordinate& workingCell,
-    const int inLevel) const{
+                const FTreeCoordinate& workingCell,
+                const int inLevel, const int neighSeparation = 1) const{
         // reset
         memset(inNeighbors, 0, sizeof(CellClass*) * 343);
 
@@ -848,7 +848,7 @@ public:
                                     const int zdiff  = ((otherParent.getZ()<<1) | (idxCousin&1)) - workingCell.getZ();
 
                                     // Test if it is a direct neighbor
-                                    if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
+                                    if(FMath::Abs(xdiff) > neighSeparation || FMath::Abs(ydiff) > neighSeparation || FMath::Abs(zdiff) > neighSeparation){
                                         // add to neighbors
                                         inNeighbors[ (((xdiff+3) * 7) + (ydiff+3)) * 7 + zdiff + 3] = cells[idxCousin];
                                         ++idxNeighbors;
@@ -875,8 +875,8 @@ public:
      * @return the number of neighbors
      */
     int getFullNeighborhood(const CellClass* inNeighbors[343],
-    const FTreeCoordinate& workingCell,
-    const int inLevel) const{
+                const FTreeCoordinate& workingCell,
+                const int inLevel) const{
         // reset
         memset(inNeighbors, 0, sizeof(CellClass*) * 343);
 
@@ -935,10 +935,8 @@ public:
      * @return the number of neighbors
      */
     int getPeriodicInteractionNeighbors(const CellClass* inNeighbors[343],
-    const FTreeCoordinate& workingCell,
-    const int inLevel, const int inDirection) const{
-        // TODO : REMOVE NEXT COMMENTS
-        //		std::cout << " Begin in getPeriodicInteractionNeighbors"<<std::endl;
+                const FTreeCoordinate& workingCell,
+                const int inLevel, const int inDirection, const int neighSeparation = 1) const{
 
         // Then take each child of the parent's neighbors if not in directNeighbors
         // Father coordinate
@@ -963,11 +961,7 @@ public:
             const int endY =    (TestPeriodicCondition(inDirection, DirPlusY)  || parentCell.getY() != boxLimite - 1 ?1:0);
             const int startZ =  (TestPeriodicCondition(inDirection, DirMinusZ) || parentCell.getZ() != 0 ?-1:0);
             const int endZ =    (TestPeriodicCondition(inDirection, DirPlusZ)  || parentCell.getZ() != boxLimite - 1 ?1:0);
-            // TODO : REMOVE NEXT COMMENTS
-            //			std::cout << "  -- startX " << startX << " endX "<< endX<< std::endl ;
-            //			std::cout << "  -- startY " << startY << " endX "<< endY<< std::endl ;
-            //			std::cout << "  -- startZ " << startZ << " endX "<< endZ<< std::endl ;
-            //			std::cout << "     boxLimite "<< boxLimite<<std::endl;
+
             int idxNeighbors = 0;
             // We test all cells around
             for(int idxX = startX ; idxX <= endX ; ++idxX){
@@ -1018,15 +1012,10 @@ public:
                                         const int zdiff  = ((otherParent.getZ()<<1) | (idxCousin&1))         - workingCell.getZ();
 
                                         // Test if it is a direct neighbor
-                                        if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
+                                        if(FMath::Abs(xdiff) > neighSeparation || FMath::Abs(ydiff) > neighSeparation || FMath::Abs(zdiff) > neighSeparation){
                                             // add to neighbors
-                                            // TODO : REMOVE NEXT COMMENTS
-                                            //											std::cout << "     Voisin numero "<< idxNeighbors
-                                            //													  << " indexinTab "<< (((xdiff+3) * 7) + (ydiff+3)) * 7 + zdiff + 3
-                                            //													  << "  idxXousin " << idxCousin<< std::endl;
                                             inNeighbors[ (((xdiff+3) * 7) + (ydiff+3)) * 7 + zdiff + 3] = cells[idxCousin];
                                             ++idxNeighbors;
-
                                         }
                                     }
                                 }
