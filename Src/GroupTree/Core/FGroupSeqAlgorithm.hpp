@@ -17,7 +17,7 @@
 #include <vector>
 
 template <class OctreeClass, class CellContainerClass, class CellClass, class KernelClass, class ParticleGroupClass, class ParticleContainerClass>
-class FGroupSeqAlgorithm {
+class FGroupSeqAlgorithm : public FAbstractAlgorithm {
 protected:
     const int MaxThreads;         //< The number of threads
     OctreeClass*const tree;       //< The Tree
@@ -28,13 +28,19 @@ public:
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(kernels, "kernels cannot be null");
 
+        FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
+
         FLOG(FLog::Controller << "FGroupSeqAlgorithm (Max Thread " << MaxThreads << ")\n");
     }
 
     ~FGroupSeqAlgorithm(){
     }
 
-    void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
+protected:
+    /**
+      * Runs the complete algorithm.
+      */
+    void executeCore(const unsigned operationsToProceed) override {
         FLOG( FLog::Controller << "\tStart FGroupSeqAlgorithm\n" );
 
         if(operationsToProceed & FFmmP2M) bottomPass();
@@ -48,7 +54,6 @@ public:
         if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) ) directPass();
     }
 
-protected:
     void bottomPass(){
         FLOG( FTic timer; );
         typename OctreeClass::ParticleGroupIterator iterParticles = tree->leavesBegin();
@@ -83,7 +88,7 @@ protected:
 
     void upwardPass(){
         FLOG( FTic timer; );
-        for(int idxLevel = tree->getHeight()-2 ; idxLevel >= 2 ; --idxLevel){
+        for(int idxLevel = FMath::Min(tree->getHeight() - 2, FAbstractAlgorithm::lowerWorkingLevel - 1) ; idxLevel >= FAbstractAlgorithm::upperWorkingLevel ; --idxLevel){
             typename OctreeClass::CellGroupIterator iterCells = tree->cellsBegin(idxLevel);
             const typename OctreeClass::CellGroupIterator endCells = tree->cellsEnd(idxLevel);
 
@@ -133,7 +138,7 @@ protected:
 
     void transferPass(){
         FLOG( FTic timer; );
-        for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
+        for(int idxLevel = FAbstractAlgorithm::lowerWorkingLevel-1 ; idxLevel >= FAbstractAlgorithm::upperWorkingLevel ; --idxLevel){
             typename OctreeClass::CellGroupIterator iterCells = tree->cellsBegin(idxLevel);
             const typename OctreeClass::CellGroupIterator endCells = tree->cellsEnd(idxLevel);
 
@@ -238,7 +243,7 @@ protected:
 
     void downardPass(){
         FLOG( FTic timer; );
-        for(int idxLevel = 2 ; idxLevel <= tree->getHeight()-2 ; ++idxLevel){
+        for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel - 1 ; ++idxLevel){
             typename OctreeClass::CellGroupIterator iterCells = tree->cellsBegin(idxLevel);
             const typename OctreeClass::CellGroupIterator endCells = tree->cellsEnd(idxLevel);
 
