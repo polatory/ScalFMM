@@ -7,6 +7,17 @@
 
 #include <type_traits>
 
+
+/** 
+ * \brief Empty trait class.
+ * \author Quentin Khan
+ *
+ * This class is used to check whether a cell class has FCostCell in its
+ * inheritance tree.
+ */
+class FCostCellTypeTrait {};
+
+
 /**
  * \brief Cell with a cost memory for balance computations.
  * \author Quentin Khan
@@ -18,7 +29,7 @@
  * \tparam CostType The type to use in order to store the cost. Defaults to FSize.
  */
 template<typename BaseClass, typename CostType = FSize>
-class FCostCell : public BaseClass {
+class FCostCell : public BaseClass, virtual public FCostCellTypeTrait {
     static_assert(std::is_arithmetic<CostType>::value,
                   "The cell cost type must be an arithmetic type.");
 
