@@ -24,17 +24,21 @@ public:
     TreeLoader& _treeLoader;
     KernelLoader& _kernelLoader;
 
-    AlgoLoaderThread(FPerfTestParams& /*params*/,
+    bool _omp_static_schedule;
+
+    AlgoLoaderThread(FPerfTestParams& params,
                      TreeLoader& treeLoader,
                      KernelLoader& kernelLoader) :
         _treeLoader(treeLoader),
-        _kernelLoader(kernelLoader) {
+        _kernelLoader(kernelLoader),
+        _omp_static_schedule(params.omp_static_schedule) {
         
     }
 
 
     void run() {
-        FMMClass algo(&(_treeLoader._tree), &(_kernelLoader._kernel), false);
+        FMMClass algo(&(_treeLoader._tree), &(_kernelLoader._kernel),
+                      _omp_static_schedule);
         algo.execute();
     }
 };

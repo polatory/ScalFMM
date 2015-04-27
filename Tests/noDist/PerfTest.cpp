@@ -58,8 +58,8 @@ int main (int argc, char** argv)
                          FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight,
                          FParameterDefinitions::NbThreads,
-                         {{"--algo"},"Algorithm to run (costzones, basic-static,"
-                                         " basic-dynamic, task)"});
+                         {{"--algo"},"Algorithm to run (costzones, basic, task)"},
+                         {{"--schedule"},"OpenMP scheduling policy (static, dynamic)."});
     FPerfTestParams params;
     {
         using namespace FParameterDefinitions;
@@ -70,6 +70,8 @@ int main (int argc, char** argv)
         params.subTreeHeight = getValue(argc, argv, OctreeSubHeight.options, 2);
         params.nbThreads = getValue(argc, argv, NbThreads.options, 1);
         params.algo = getStr(argc,argv,{"--algo"},"task");
+        params.omp_static_schedule =
+            getStr(argc,argv,{"--schedule"},"dynamic") == std::string("static");
     }
 
 
@@ -79,6 +81,8 @@ int main (int argc, char** argv)
         runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderTask>(params);
     } else if ( "costzones" == params.algo ) {
         runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderCostZones>(params);
+    } else {
+        std::cout << "Unknown algorithm: " << params.algo << std::endl;
     }
     
 
