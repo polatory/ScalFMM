@@ -70,7 +70,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   option( SCALFMM_USE_MIC_NATIVE       "Set to ON to compile in native mode for MIC" OFF  )
   option( SCALFMM_ONLY_DEVEL           "Set to ON to compile Development tools (only scalfmm team)" ON )
   if( SCALFMM_ONLY_DEVEL )
-    option( SCALFMM_USE_STARPU "Set to ON to build SCALFMM with StarPU" OFF )
+    option( SCALFMM_USE_STARPU  "Set to ON to build SCALFMM with StarPU" OFF )
+    option( SCALFMM_BUILD_UTILS "Set to ON to build utils Tests"    OFF )
   endif()
   if( SCALFMM_USE_MPI )
     try_compile(COMPILE_INTEL ${CMAKE_CURRENT_BINARY_DIR}
@@ -647,7 +648,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   #           Build tools (Internal use)                           #
   ##################################################################
   # Build - UTILs
-  if( SCALFMM_ONLY_DEVEL )
+  if( SCALFMM_ONLY_DEVEL AND SCALFMM_BUILD_UTILS)
     add_subdirectory(Utils)
   endif()
 
