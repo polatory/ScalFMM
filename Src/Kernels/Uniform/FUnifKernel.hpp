@@ -73,13 +73,13 @@ public:
                 const FReal inBoxWidth,
                 const FPoint<FReal>& inBoxCenter,
                 const MatrixKernelClass *const inMatrixKernel,
-                const int inLeafLevelSeparationCriterion)
+                const int inLeafLevelSeparationCriterion = 1)
     : FAbstractUnifKernel< FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter),
       MatrixKernel(inMatrixKernel),
       M2LHandler(MatrixKernel,
                  inTreeHeight,
                  inBoxWidth,
-                 inLeafLevelSeparationCriterion) ,
+                 inLeafLevelSeparationCriterion),
       LeafLevelSeparationCriterion(inLeafLevelSeparationCriterion)
     { }
 

@@ -197,7 +197,7 @@ class FUnifM2LHandler<FReal, ORDER,HOMOGENEOUS>
     
 public:
     template <typename MatrixKernelClass>
-    FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal, const int inLeafLevelSeparationCriterion)
+    FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal, const int inLeafLevelSeparationCriterion = 1)
         : FC(nullptr), Dft(), opt_rc(rc/2+1), LeafLevelSeparationCriterion(inLeafLevelSeparationCriterion)
     {    
         // init DFT
@@ -216,7 +216,7 @@ public:
      * Copy constructor
      */
     FUnifM2LHandler(const FUnifM2LHandler& other)
-      : FC(other.FC), Dft(), opt_rc(other.opt_rc)
+      : FC(other.FC), Dft(), opt_rc(other.opt_rc), LeafLevelSeparationCriterion(other.LeafLevelSeparationCriterion)
     {    
         // init DFT
         const int steps[dimfft] = {rc};
@@ -361,7 +361,7 @@ class FUnifM2LHandler<FReal,ORDER,NON_HOMOGENEOUS>
     
 public:
     template <typename MatrixKernelClass>
-    FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth, const int inLeafLevelSeparationCriterion)
+    FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth, const int inLeafLevelSeparationCriterion = 1)
         : TreeHeight(inTreeHeight),
           RootCellWidth(inRootCellWidth),
           Dft(), opt_rc(rc/2+1), LeafLevelSeparationCriterion(inLeafLevelSeparationCriterion)
@@ -390,7 +390,7 @@ public:
       : FC(other.FC),
         TreeHeight(other.TreeHeight),
         RootCellWidth(other.RootCellWidth),
-        Dft(), opt_rc(other.opt_rc)
+        Dft(), opt_rc(other.opt_rc), LeafLevelSeparationCriterion(other.LeafLevelSeparationCriterion)
     {    
         // init DFT
         const int steps[dimfft] = {rc};

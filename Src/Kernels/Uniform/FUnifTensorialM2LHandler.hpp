@@ -226,7 +226,7 @@ class FUnifTensorialM2LHandler<FReal, ORDER,MatrixKernelClass,HOMOGENEOUS>
 
     
 public:
-    FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal, const FReal inCellWidthExtension, const int inLeafLevelSeparationCriterion)
+    FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal, const FReal inCellWidthExtension, const int inLeafLevelSeparationCriterion = 1)
         :  CellWidthExtension(inCellWidthExtension), 
            Dft(), opt_rc(rc/2+1), LeafLevelSeparationCriterion(inLeafLevelSeparationCriterion)
     {
@@ -421,7 +421,7 @@ class FUnifTensorialM2LHandler<FReal,ORDER,MatrixKernelClass,NON_HOMOGENEOUS>
 
     
 public:
-    FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth, const FReal inCellWidthExtension, const int inLeafLevelSeparationCriterion)
+    FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth, const FReal inCellWidthExtension, const int inLeafLevelSeparationCriterion = 1)
         : TreeHeight(inTreeHeight),
           RootCellWidth(inRootCellWidth), 
           CellWidthExtension(inCellWidthExtension),
