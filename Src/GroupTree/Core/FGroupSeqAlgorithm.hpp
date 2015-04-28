@@ -51,7 +51,9 @@ protected:
 
         if(operationsToProceed & FFmmL2L) downardPass();
 
-        if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) ) directPass();
+        if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) ){
+            directPass((operationsToProceed & FFmmP2P), (operationsToProceed & FFmmL2P));
+        }
     }
 
     void bottomPass(){
@@ -289,9 +291,9 @@ protected:
         FLOG( FLog::Controller << "\t\t downardPass in " << timer.tacAndElapsed() << "s\n" );
     }
 
-    void directPass(){
+    void directPass(const bool p2pEnabled, const bool l2pEnabled){
         FLOG( FTic timer; );
-        {
+        if(l2pEnabled){
             typename OctreeClass::ParticleGroupIterator iterParticles = tree->leavesBegin();
             const typename OctreeClass::ParticleGroupIterator endParticles = tree->leavesEnd();
 
@@ -319,7 +321,7 @@ protected:
 
             FAssertLF(iterParticles == endParticles && iterCells == endCells);
         }
-        {
+        if(p2pEnabled){
             typename OctreeClass::ParticleGroupIterator iterParticles = tree->leavesBegin();
             const typename OctreeClass::ParticleGroupIterator endParticles = tree->leavesEnd();
 
