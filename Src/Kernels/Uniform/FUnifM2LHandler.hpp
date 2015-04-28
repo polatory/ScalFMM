@@ -38,14 +38,14 @@
 /*!  Precomputation of the 316 interactions by evaluation of the matrix kernel on the uniform grid and transformation into Fourier space. 
 PB: Compute() does not belong to the M2LHandler like it does in the Chebyshev kernel. This allows much nicer specialization of the M2LHandler class with respect to the homogeneity of the kernel of interaction like in the ChebyshevSym kernel.*/
 template < class FReal,int ORDER, typename MatrixKernelClass>
-static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal CellWidth, FComplex<FReal>* &FC)
+static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal CellWidth, FComplex<FReal>* &FC, const int SeparationCriterion = 1)
 {
     // allocate memory and store compressed M2L operators
     if (FC) throw std::runtime_error("M2L operators are already set");
     // dimensions of operators
     const unsigned int order = ORDER;
     const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
-    const unsigned int ninteractions = 316;
+    const unsigned int ninteractions = 316+26*(SeparationCriterion<1 ? 1 : 0) + 1*(SeparationCriterion<0 ? 1 : 0);
     typedef FUnifTensor<FReal,ORDER> TensorType;
 
     // interpolation points of source (Y) and target (X) cell
@@ -53,7 +53,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal Cel
     // set roots of target cell (X)
     TensorType::setRoots(FPoint<FReal>(0.,0.,0.), CellWidth, X);
 
-    // allocate memory and compute 316 m2l operators
+    // allocate memory and compute 316 m2l operators (342 if separation equals 0, 343 if separation equals -1)
     FReal    *_C;
     FComplex<FReal> *_FC;
 
@@ -78,7 +78,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal Cel
     for (int i=-3; i<=3; ++i) {
         for (int j=-3; j<=3; ++j) {
             for (int k=-3; k<=3; ++k) {
-                if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
+                if (abs(i)>SeparationCriterion || abs(j)>SeparationCriterion || abs(k)>SeparationCriterion) {
                     // set roots of source cell (Y)
                     const FPoint<FReal> cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
                     FUnifTensor<FReal,order>::setRoots(cy, CellWidth, Y);
@@ -110,7 +110,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal Cel
         }
     }
     if (counter != ninteractions)
-        throw std::runtime_error("Number of interactions must correspond to 316");
+        throw std::runtime_error("Number of interactions must correspond to " + std::to_string(ninteractions));
 
     // Free _C
     delete [] _C;
@@ -126,7 +126,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal Cel
         for (int j=-3; j<=3; ++j)
             for (int k=-3; k<=3; ++k) {
                 const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
-                if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
+                if (abs(i)>SeparationCriterion || abs(j)>SeparationCriterion || abs(k)>SeparationCriterion) {
                     FBlas::c_copy(opt_rc, reinterpret_cast<FReal*>(_FC + counter*rc), 
                                   reinterpret_cast<FReal*>(FC + idx*opt_rc));
                     counter++;
@@ -136,7 +136,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel, const FReal Cel
       }
 
     if (counter != ninteractions)
-        throw std::runtime_error("Number of interactions must correspond to 316");
+        throw std::runtime_error("Number of interactions must correspond to " + std::to_string(ninteractions));
     delete [] _FC;      
 }
 
@@ -182,6 +182,8 @@ class FUnifM2LHandler<FReal, ORDER,HOMOGENEOUS>
     DftClass Dft;
     const unsigned int opt_rc; // specific to real valued kernel
 
+    /// Leaf level separation criterion
+    const int LeafLevelSeparationCriterion;
 
     static const std::string getFileName()
     {
@@ -195,8 +197,8 @@ class FUnifM2LHandler<FReal, ORDER,HOMOGENEOUS>
     
 public:
     template <typename MatrixKernelClass>
-    FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal)
-        : FC(nullptr), Dft(), opt_rc(rc/2+1)
+    FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal, const int inLeafLevelSeparationCriterion)
+        : FC(nullptr), Dft(), opt_rc(rc/2+1), LeafLevelSeparationCriterion(inLeafLevelSeparationCriterion)
     {    
         // init DFT
         const int steps[dimfft] = {rc};
@@ -239,7 +241,7 @@ public:
         // Compute matrix of interactions
         const FReal ReferenceCellWidth = FReal(2.);
         FComplex<FReal>* pFC = NULL;
-        Compute<FReal,order>(MatrixKernel,ReferenceCellWidth,pFC);
+        Compute<FReal,order>(MatrixKernel,ReferenceCellWidth,pFC,LeafLevelSeparationCriterion);
         FC.assign(pFC);
 
         // Compute memory usage
@@ -250,7 +252,10 @@ public:
         std::cout << "Compute and set M2L operators ("<< long(sizeM2L/**1e-6*/) <<" B) in "
                   << time.tacAndElapsed() << "sec."   << std::endl;
     }
-        
+
+    unsigned long long getMemory() const {
+        return 343*opt_rc*sizeof(FComplex<FReal>);
+    }        
 
     /**
     * Expands potentials \f$x+=IDFT(X)\f$ of a target cell. This operation can be
@@ -341,6 +346,8 @@ class FUnifM2LHandler<FReal,ORDER,NON_HOMOGENEOUS>
     DftClass Dft;
     const unsigned int opt_rc; // specific to real valued kernel
 
+    /// Leaf level separation criterion
+    const int LeafLevelSeparationCriterion;
 
     static const std::string getFileName()
     {
@@ -354,10 +361,10 @@ class FUnifM2LHandler<FReal,ORDER,NON_HOMOGENEOUS>
     
 public:
     template <typename MatrixKernelClass>
-    FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth)
+    FUnifM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth, const int inLeafLevelSeparationCriterion)
         : TreeHeight(inTreeHeight),
           RootCellWidth(inRootCellWidth),
-          Dft(), opt_rc(rc/2+1)
+          Dft(), opt_rc(rc/2+1), LeafLevelSeparationCriterion(inLeafLevelSeparationCriterion)
     {
         // init DFT
         const int steps[dimfft] = {rc};
@@ -414,9 +421,12 @@ public:
         CellWidth /= FReal(2.);                      // at level 2
         for (unsigned int l=2; l<TreeHeight; ++l) {
 
+            // Determine separation criteria wrt level
+            const int SeparationCriterion = (l != TreeHeight-1 ? 1 : LeafLevelSeparationCriterion);
+
             // check if already set
             if (FC[l]) throw std::runtime_error("M2L operator already set");
-            Compute<FReal,order>(MatrixKernel,CellWidth,FC[l]);
+            Compute<FReal,order>(MatrixKernel,CellWidth,FC[l],SeparationCriterion);
             CellWidth /= FReal(2.);                    // at level l+1 
 
         }
@@ -429,6 +439,9 @@ public:
                   << time.tacAndElapsed() << "sec."   << std::endl;
     }
 
+    unsigned long long getMemory() const {
+        return (TreeHeight-2)*343*opt_rc*sizeof(FComplex<FReal>);
+    }   
 
     /**
     * Expands potentials \f$x+=IDFT(X)\f$ of a target cell. This operation can be

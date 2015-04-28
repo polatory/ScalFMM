@@ -42,12 +42,13 @@ template < class FReal, int ORDER, class MatrixKernelClass>
 static void Compute(const MatrixKernelClass *const MatrixKernel, 
                     const FReal CellWidth, 
                     const FReal CellWidthExtension, 
-                    FComplex<FReal>** &FC)
+                    FComplex<FReal>** &FC, 
+                    const int SeparationCriterion = 1)
 {
     // dimensions of operators
     const unsigned int order = ORDER;
     const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
-    const unsigned int ninteractions = 316;
+    const unsigned int ninteractions = 316+26*(SeparationCriterion<1 ? 1 : 0) + 1*(SeparationCriterion<0 ? 1 : 0);
     const unsigned int ncmp = MatrixKernelClass::NCMP;
 
     // utils
@@ -90,11 +91,14 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
     unsigned int perm[rc];
     TensorType::setStoragePermutation(perm);
 
+    // Allocate intermediate interaction block
+    FReal* block = new FReal[ncmp]; 
+
     unsigned int counter = 0;
     for (int i=-3; i<=3; ++i) {
         for (int j=-3; j<=3; ++j) {
             for (int k=-3; k<=3; ++k) {
-                if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
+                if (abs(i)>SeparationCriterion || abs(j)>SeparationCriterion || abs(k)>SeparationCriterion) {
                     // set roots of source cell (Y)
                     const FPoint<FReal> cy(CellWidth*FReal(i), CellWidth*FReal(j), CellWidth*FReal(k));
                     FUnifTensor<FReal,order>::setRoots(cy, ExtendedCellWidth, Y);
@@ -104,8 +108,6 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
                         for(unsigned int m=0; m<2*order-1; ++m)
                             for(unsigned int n=0; n<2*order-1; ++n){   
                                 // Compute current M2L interaction (block matrix)
-                                FReal* block; 
-                                block = new FReal[ncmp]; 
                                 MatrixKernel->evaluateBlock(X[node_ids_pairs[ido][0]], 
                                                             Y[node_ids_pairs[ido][1]],
                                                             block);
@@ -133,6 +135,9 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
     if (counter != ninteractions)
         throw std::runtime_error("Number of interactions must correspond to 316");
 
+    // Free block
+    delete [] block;
+
     // Free _C
     for (unsigned int d=0; d<ncmp; ++d) 
     delete [] _C[d];
@@ -149,7 +154,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
         for (int j=-3; j<=3; ++j)
             for (int k=-3; k<=3; ++k) {
                 const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
-                if (abs(i)>1 || abs(j)>1 || abs(k)>1) {
+                if (abs(i)>SeparationCriterion || abs(j)>SeparationCriterion || abs(k)>SeparationCriterion) {
                     for (unsigned int d=0; d<ncmp; ++d) 
                         FBlas::c_copy(opt_rc, reinterpret_cast<FReal*>(_FC[d] + counter*rc), 
                                       reinterpret_cast<FReal*>(FC[d] + idx*opt_rc));
@@ -207,6 +212,8 @@ class FUnifTensorialM2LHandler<FReal, ORDER,MatrixKernelClass,HOMOGENEOUS>
     DftClass Dft;
     const unsigned int opt_rc; // specific to real valued kernel
 
+    /// Leaf level separation criterion
+    const int LeafLevelSeparationCriterion;
 
     static const std::string getFileName()
     {
@@ -219,9 +226,9 @@ class FUnifTensorialM2LHandler<FReal, ORDER,MatrixKernelClass,HOMOGENEOUS>
 
     
 public:
-    FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal, const FReal inCellWidthExtension)
+    FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal, const FReal inCellWidthExtension, const int inLeafLevelSeparationCriterion)
         :  CellWidthExtension(inCellWidthExtension), 
-           Dft(), opt_rc(rc/2+1)
+           Dft(), opt_rc(rc/2+1), LeafLevelSeparationCriterion(inLeafLevelSeparationCriterion)
     {
         // init DFT
         const int steps[dimfft] = {rc};
@@ -245,7 +252,7 @@ public:
   FUnifTensorialM2LHandler(const FUnifTensorialM2LHandler& other)
     : FC(other.FC),
       CellWidthExtension(other.CellWidthExtension),
-      Dft(), opt_rc(other.opt_rc)
+      Dft(), opt_rc(other.opt_rc), LeafLevelSeparationCriterion(other.LeafLevelSeparationCriterion)
     {    
         // init DFT
         const int steps[dimfft] = {rc};
@@ -278,7 +285,7 @@ public:
         // but it NEEDS to match the numerator of the scale factor in matrix kernel!
         // Therefore box width extension is not yet supported for homog kernels
         const FReal ReferenceCellWidth = FReal(2.);
-        Compute<FReal,order>(MatrixKernel,ReferenceCellWidth, 0., FC);
+        Compute<FReal,order>(MatrixKernel,ReferenceCellWidth, 0., FC, LeafLevelSeparationCriterion);
         
         // Compute memory usage
         unsigned long sizeM2L = 343*ncmp*opt_rc*sizeof(FComplex<FReal>);
@@ -287,6 +294,10 @@ public:
         std::cout << "Compute and set M2L operators ("<< long(sizeM2L/**1e-6*/) <<" B) in "
                   << time.tacAndElapsed() << "sec."   << std::endl;
     }
+
+    unsigned long long getMemory() const {
+        return 343*ncmp*opt_rc*sizeof(FComplex<FReal>);
+    }        
 
     /**
      * Expands potentials \f$x+=IDFT(X)\f$ of a target cell. This operation can be
@@ -396,6 +407,8 @@ class FUnifTensorialM2LHandler<FReal,ORDER,MatrixKernelClass,NON_HOMOGENEOUS>
     DftClass Dft;
     const unsigned int opt_rc; // specific to real valued kernel
 
+    /// Leaf level separation criterion
+    const int LeafLevelSeparationCriterion;
 
     static const std::string getFileName()
     {
@@ -408,11 +421,11 @@ class FUnifTensorialM2LHandler<FReal,ORDER,MatrixKernelClass,NON_HOMOGENEOUS>
 
     
 public:
-    FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth, const FReal inCellWidthExtension)
+    FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int inTreeHeight, const FReal inRootCellWidth, const FReal inCellWidthExtension, const int inLeafLevelSeparationCriterion)
         : TreeHeight(inTreeHeight),
           RootCellWidth(inRootCellWidth), 
           CellWidthExtension(inCellWidthExtension),
-          Dft(), opt_rc(rc/2+1)
+          Dft(), opt_rc(rc/2+1), LeafLevelSeparationCriterion(inLeafLevelSeparationCriterion)
     {
         // init DFT
         const int steps[dimfft] = {rc};
@@ -441,7 +454,7 @@ public:
       TreeHeight(other.TreeHeight),
       RootCellWidth(other.RootCellWidth), 
       CellWidthExtension(other.CellWidthExtension),
-      Dft(), opt_rc(other.opt_rc)
+      Dft(), opt_rc(other.opt_rc), LeafLevelSeparationCriterion(other.LeafLevelSeparationCriterion)
     {    
         // init DFT
         const int steps[dimfft] = {rc};
@@ -471,10 +484,12 @@ public:
         FReal CellWidth = RootCellWidth / FReal(2.); // at level 1
         CellWidth /= FReal(2.);                      // at level 2
         for (unsigned int l=2; l<TreeHeight; ++l) {
+            // Determine separation criteria wrt level
+            const int SeparationCriterion = (l != TreeHeight-1 ? 1 : LeafLevelSeparationCriterion);
             // check if already set
             for (unsigned int d=0; d<ncmp; ++d)
                 if (FC[l][d]) throw std::runtime_error("M2L operator already set");
-            Compute<FReal,order>(MatrixKernel,CellWidth,CellWidthExtension,FC[l]);
+            Compute<FReal,order>(MatrixKernel,CellWidth,CellWidthExtension,FC[l],SeparationCriterion);
             CellWidth /= FReal(2.);                    // at level l+1 
         }
 
@@ -485,6 +500,10 @@ public:
         std::cout << "Compute and set M2L operators ("<< long(sizeM2L/**1e-6*/) <<" B) in "
                   << time.tacAndElapsed() << "sec."   << std::endl;
     }
+
+    unsigned long long getMemory() const {
+        return (TreeHeight-2)*343*ncmp*opt_rc*sizeof(FComplex<FReal>);
+    }        
 
     /**
      * Expands potentials \f$x+=IDFT(X)\f$ of a target cell. This operation can be
