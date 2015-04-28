@@ -968,7 +968,7 @@ public:
                 for(int idxY = startY ; idxY <= endY ; ++idxY){
                     for(int idxZ = startZ ; idxZ <= endZ ; ++idxZ){
                         // if we are not on the current cell
-                        if( idxX || idxY || idxZ ){
+                        if(neighSeparation<1 || idxX || idxY || idxZ ){
 
                             const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
                             FTreeCoordinate otherParentInBox(otherParent);
