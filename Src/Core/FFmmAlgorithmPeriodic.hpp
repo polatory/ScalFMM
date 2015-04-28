@@ -51,6 +51,7 @@ class FFmmAlgorithmPeriodic : public FAbstractAlgorithm{
     const int nbLevelsAboveRoot;    //< The nb of level the user ask to go above the tree (>= -1)
     const int offsetRealTree;       //< nbLevelsAboveRoot GetFackLevel
 
+    const int leafLevelSeperationCriteria;
 
 public:
     /** The constructor need the octree and the kernels used for computation
@@ -60,9 +61,9 @@ public:
       * @param inUpperLevel this parameter defines the behavior of the periodicity refer to the main doc
       *
       */
-    FFmmAlgorithmPeriodic(OctreeClass* const inTree, const int inUpperLevel = 0)
+    FFmmAlgorithmPeriodic(OctreeClass* const inTree, const int inUpperLevel = 0, const int inLeafLevelSeperationCriteria = 1)
         : tree(inTree) , kernels(nullptr), OctreeHeight(tree->getHeight()),
-          nbLevelsAboveRoot(inUpperLevel), offsetRealTree(inUpperLevel + 3) {
+          nbLevelsAboveRoot(inUpperLevel), offsetRealTree(inUpperLevel + 3), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
 
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(-1 <= inUpperLevel, "inUpperLevel cannot be < -1");
@@ -254,9 +255,10 @@ protected:
         for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
             FLOG(FTic counterTimeLevel);
             const int fackLevel = idxLevel + offsetRealTree;
+            const int separationCriteria = (idxLevel != OctreeHeight-1 ? 1 : leafLevelSeperationCriteria);
             // for each cells
             do{
-                const int counter = tree->getPeriodicInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, AllDirs);
+                const int counter = tree->getPeriodicInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, AllDirs, separationCriteria);
                 FLOG(computationCounter.tic());
                 if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, fackLevel);
                 FLOG(computationCounter.tac());

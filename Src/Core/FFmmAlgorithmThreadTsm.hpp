@@ -55,15 +55,17 @@ class FFmmAlgorithmThreadTsm : public FAbstractAlgorithm, public FAlgorithmTimer
 
     const int OctreeHeight;
 
+    const int leafLevelSeperationCriteria;
+
 public:
     /** The constructor need the octree and the kernels used for computation
       * @param inTree the octree to work on
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmThreadTsm(OctreeClass* const inTree, KernelClass* const inKernels)
+    FFmmAlgorithmThreadTsm(OctreeClass* const inTree, KernelClass* const inKernels, const int inLeafLevelSeperationCriteria = 1)
                       : tree(inTree) , kernels(nullptr), iterArray(nullptr),
-                      MaxThreads(omp_get_max_threads()) , OctreeHeight(tree->getHeight()) {
+                      MaxThreads(omp_get_max_threads()) , OctreeHeight(tree->getHeight()), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
 
         FAssertLF(tree, "tree cannot be null");
 
@@ -248,6 +250,7 @@ protected:
             // for each levels
             for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
                 FLOG(FTic counterTimeLevel);
+                const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
 
                 int numberOfCells = 0;
                 // for each cells
@@ -270,7 +273,7 @@ protected:
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
                         if(currentCell->hasTargetsChild()){
-                            const int counter = tree->getInteractionNeighbors(neighbors, iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
+                            const int counter = tree->getInteractionNeighbors(neighbors, iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
                             if( counter ){
                                 int counterWithSrc = 0;
                                 for(int idxRealNeighbors = 0 ; idxRealNeighbors < 343 ; ++idxRealNeighbors ){

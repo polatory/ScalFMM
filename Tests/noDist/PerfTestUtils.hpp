@@ -17,6 +17,7 @@ struct FPerfTestParams {
     int nbThreads = 1;     ///< Maximum number of threads (when used). 
     std::string filename = ""; ///< Particles file.
     std::string algo = "task"; ///< Algorithm to run.
+    bool omp_static_schedule = false; ///< OpenMP static or dynamic schedule.
 };
 
 

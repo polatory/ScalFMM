@@ -182,6 +182,11 @@ static const FParameterNames PhysicalValue = {
      "The physical value of the particles."
 };
 
+static const FParameterNames SeparationCriterion = {
+    {"-sep", "--separation-criterion"} ,
+     "Specify number of clusters separing 2 well-separated clusters."
+};
+
 /** To print a list of parameters */
 inline void PrintUsedOptions(const std::vector<FParameterNames>& options){
     std::cout << ">> Here is the list of the parameters you can pass to this application :\n";

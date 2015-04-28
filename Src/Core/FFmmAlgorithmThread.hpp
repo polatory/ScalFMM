@@ -62,6 +62,8 @@ class FFmmAlgorithmThread : public FAbstractAlgorithm, public FAlgorithmTimers{
 
     const bool staticSchedule;
 
+    const int leafLevelSeperationCriteria;
+
     template <class NumType>
     NumType getChunkSize(const NumType inSize) const {
         if(staticSchedule){
@@ -83,10 +85,10 @@ public:
      * \except An exception is thrown if one of the arguments is NULL.
      */
     FFmmAlgorithmThread(OctreeClass* const inTree, KernelClass* const inKernels,
-                        const bool inStaticSchedule = true)
+                        const bool inStaticSchedule = true, const int inLeafLevelSeperationCriteria = 1)
         : tree(inTree) , kernels(nullptr), iterArray(nullptr), leafsNumber(0),
           MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()),
-          staticSchedule(inStaticSchedule) {
+          staticSchedule(inStaticSchedule), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
 
         FAssertLF(tree, "tree cannot be null");
 
@@ -278,6 +280,7 @@ protected:
         // for each levels
         for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
             FLOG(FTic counterTimeLevel);
+            const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
             int numberOfCells = 0;
             // for each cells
             do{
@@ -297,7 +300,7 @@ protected:
 
                 #pragma omp for  schedule(dynamic, chunkSize) nowait
                 for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
-                    const int counter = tree->getInteractionNeighbors(neighbors,  iterArray[idxCell].getCurrentGlobalCoordinate(),idxLevel);
+                    const int counter = tree->getInteractionNeighbors(neighbors, iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
                     if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
                 }
 

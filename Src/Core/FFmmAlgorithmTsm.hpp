@@ -46,6 +46,8 @@ class FFmmAlgorithmTsm : public FAbstractAlgorithm{
 
     const int OctreeHeight;
 
+    const int leafLevelSeperationCriteria;
+
     FLOG(FTic counterTime);                                               //< In case of debug: to count the elapsed time
     FLOG(FTic computationCounter);                                        //< In case of debug: to  count computation time
 
@@ -55,8 +57,8 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmTsm(OctreeClass* const inTree, KernelClass* const inKernels)
-        : tree(inTree) , kernels(inKernels) , OctreeHeight(tree->getHeight()){
+    FFmmAlgorithmTsm(OctreeClass* const inTree, KernelClass* const inKernels, const int inLeafLevelSeperationCriteria = 1)
+        : tree(inTree) , kernels(inKernels) , OctreeHeight(tree->getHeight()), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria){
 
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(kernels, "kernels cannot be null");
@@ -198,13 +200,14 @@ protected:
         // for each levels
         for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
             FLOG(FTic counterTimeLevel);
+            const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
             // for each cells
             do{
                 FLOG(computationCounter.tic());
                 CellClass* const currentCell = octreeIterator.getCurrentCell();
 
                 if(currentCell->hasTargetsChild()){
-                    const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel);
+                    const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel, separationCriteria);
                     if( counter ){
                         int counterWithSrc = 0;
                         for(int idxRealNeighbors = 0 ; idxRealNeighbors < 343 ; ++idxRealNeighbors ){
