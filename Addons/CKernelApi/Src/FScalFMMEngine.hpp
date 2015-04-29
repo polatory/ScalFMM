@@ -29,8 +29,8 @@
 
 //For tree
 #include "Components/FSimpleLeaf.hpp"
+
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
-#include "Containers/FOctree.hpp"
 
 //For interpolation
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
@@ -42,27 +42,37 @@
 //For chebyshev Interpolation
 #include "Kernels/Chebyshev/FChebCell.hpp"
 #include "Kernels/Chebyshev/FChebSymKernel.hpp"
-
-
+#include "Utils/FAlgorithmTimers.hpp"
+#include "Components/FParticleType.hpp"
+#include "Components/FTypedLeaf.hpp"
+#include "Containers/FOctree.hpp"
+#include "Utils/FTemplate.hpp"
 
 
 /**
  * @class FScalFMMEngine
  */
+template<class FReal>
 class FScalFMMEngine{
+
 protected:
     scalfmm_kernel_type kernelType;
 
     scalfmm_algorithm Algorithm;
     FVector<bool>* progress;
     int nbPart;
+    FAlgorithmTimers * algoTimer;
 
 public:
-    FScalFMMEngine() : Algorithm(multi_thread), progress(nullptr), nbPart(0){
+
+    FScalFMMEngine() : Algorithm(multi_thread), progress(nullptr), nbPart(0), algoTimer(nullptr){
         progress = new FVector<bool>();
     }
 
     virtual ~FScalFMMEngine() {
+        if(algoTimer){
+            delete algoTimer;
+        }
         delete progress;
     }
 
@@ -71,7 +81,6 @@ public:
     scalfmm_kernel_type getKernelType(){
         return this->kernelType;
     }
-
 
     //To change default algorithm
     void algorithm_config(scalfmm_algorithm config){
@@ -83,129 +92,683 @@ public:
     //by specific Engine
 
     //Function about the tree
-    virtual void build_tree(int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
+    virtual void build_tree(int TreeHeight,FReal BoxWidth,FReal* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
         FAssertLF(0,"Nothing has been done yet, exiting");
     }
 
-    virtual void tree_insert_particles( int NbPositions, double * arrayX, double * arrayY, double * arrayZ){
+    virtual void tree_insert_particles( int NbPositions, FReal * arrayX, FReal * arrayY, FReal * arrayZ, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
 
-    virtual void tree_insert_particles_xyz( int NbPositions, double * XYZ){
+    virtual void tree_insert_particles_xyz( int NbPositions, FReal * XYZ, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
 
-    virtual void set_physical_values( int nbPhysicalValues, double * physicalValues){
+    virtual void set_physical_values( int nbPhysicalValues, FReal * physicalValues, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
 
-    virtual void get_physical_values( int nbPhysicalValues, double * physicalValues){
+    virtual void get_physical_values( int nbPhysicalValues, FReal * physicalValues, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
 
     virtual void set_physical_values_npart( int nbPhysicalValues,
-                                            int* idxOfParticles, double * physicalValues){
+                                            int* idxOfParticles, FReal * physicalValues, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
     virtual void get_physical_values_npart( int nbPhysicalValues,
-                                            int* idxOfParticles, double * physicalValues){
+                                            int* idxOfParticles, FReal * physicalValues, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
 
-    //To get the result
-    virtual void get_forces_xyz( int nbParts, double * forcesToFill){
-        FAssertLF(0,"No tree instancied, exiting ...\n");
+    virtual void get_forces_xyz( int nbParts, FReal * forcesToFill, PartType type){
     }
-    virtual void get_forces_xyz_npart( int nbParts, int* idxOfParticles, double * forcesToFill){
-        FAssertLF(0,"No tree instancied, exiting ...\n");
+
+    virtual void get_forces(int nbParts, FReal * fX, FReal* fY, FReal* fZ, PartType type){
     }
-    virtual void get_forces( int nbParts, double * fX, double* fY, double* fZ){
-        FAssertLF(0,"No tree instancied, exiting ...\n");
+
+    virtual void get_forces_npart(int nbParts, int* idxOfParticles ,FReal * fX, FReal* fY, FReal* fZ, PartType type){
     }
-    virtual void get_forces_npart( int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ){
-        FAssertLF(0,"No tree instancied, exiting ...\n");
+
+    virtual void get_forces_xyz_npart(int nbParts, int* idxOfParticles, FReal * forcesToFill, PartType type){
     }
+
+    virtual void add_to_positions_xyz(int NbPositions,FReal * updatedXYZ,PartType type){
+    }
+
+    virtual void add_to_positions(int NbPositions,FReal * X, FReal * Y , FReal * Z, PartType type){
+    }
+
+    virtual void tree_abstract_insert(int NbPartToInsert, int nbAttributeToInsert, int * strideForEachAtt,
+                                      FReal* rawDatas){
+    }
+
 
     //To set initial condition
-    virtual void set_forces_xyz( int nbParts, double * forcesToFill){
+    virtual void set_forces_xyz( int nbParts, FReal * forcesToFill, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
-    virtual void set_forces_xyz_npart( int nbParts, int* idxOfParticles, double * forcesToFill){
+    virtual void set_forces_xyz_npart( int nbParts, int* idxOfParticles, FReal * forcesToFill, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
-    virtual void set_forces( int nbParts, double * fX, double* fY, double* fZ){
+    virtual void set_forces( int nbParts, FReal * fX, FReal* fY, FReal* fZ, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
-    virtual void set_forces_npart( int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ){
+    virtual void set_forces_npart( int nbParts, int* idxOfParticles, FReal * fX, FReal* fY, FReal* fZ, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
     //To deal with potential
-    virtual void get_potentials( int nbParts, double * potentialsToFill){
+    virtual void get_potentials( int nbParts, FReal * potentialsToFill, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
-    virtual void set_potentials( int nbParts, double * potentialsToRead){
+    virtual void set_potentials( int nbParts, FReal * potentialsToRead, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
-    virtual void get_potentials_npart( int nbParts, int* idxOfParticles, double * potentialsToFill){
+    virtual void get_potentials_npart( int nbParts, int* idxOfParticles, FReal * potentialsToFill, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
-    virtual void set_potentials_npart( int nbParts, int* idxOfParticles, double * potentialsToRead){
+    virtual void set_potentials_npart( int nbParts, int* idxOfParticles, FReal * potentialsToRead, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
 
-    //Function to move particles
-    virtual void add_to_positions_xyz( int NbPositions, double * updatedXYZ){
-        FAssertLF(0,"No tree instancied, exiting ...\n");
+
+
+    /** Test ... */
+    struct RunContainer{
+        template< int nbAttributeToInsert,class ContainerClass,class LeafClass, class CellClass>
+        static void Run(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                        int NbPartToInsert,int * strideForEachAtt,
+                        FReal* rawDatas){
+            generic_tree_abstract_insert<ContainerClass,LeafClass,CellClass,nbAttributeToInsert>(octree,
+                                                                                                 NbPartToInsert,strideForEachAtt,rawDatas);
+        }
+    };
+
+    template<class ContainerClass,class LeafClass, class CellClass, int nbAttributeToInsert>
+    void generic_tree_abstract_insert(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                                      int NbPartToInsert,int * strideForEachAtt,
+                                      FReal* rawDatas){
+        for(FSize idxPart = 0; idxPart<NbPartToInsert ; ++idxPart){
+            FPoint<FReal> pos = FPoint<FReal>(rawDatas[0],rawDatas[1],rawDatas[2]);
+            MortonIndex index = octree->getMortonFromPosition(pos);
+            //Insert with how many attributes ???
+            octree->insert(pos,idxPart);
+            //Get again the container
+            ContainerClass * containerToFill = octree->getLeafSrc(index);//cannot be nullptr
+            std::array<FReal,nbAttributeToInsert> arrayOfAttribute;
+            for(int idxAtt = 0; idxAtt<nbAttributeToInsert ; ++idxAtt){
+                arrayOfAttribute[idxAtt] = rawDatas[3+ strideForEachAtt[idxAtt]];
+            }
+            int idxToRemove = containerToFill->getNbParticles();
+            containerToFill->remove(&idxToRemove,1);
+            containerToFill->push(pos,idxPart,arrayOfAttribute);
+        }
     }
-    virtual void add_to_positions( int NbPositions, double * X, double * Y , double * Z){
-        FAssertLF(0,"No tree instancied, exiting ...\n");
+
+    template<class ContainerClass,class LeafClass,class CellClass>
+    void generic_get_forces_xyz(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                                int nbParts, FReal * forcesToFill, PartType type){
+        int checkCount = 0;
+        if(type == SOURCE){
+            std::cout << "No meaning to retrieve source forces ... " << std::endl;
+        }
+        else{ //Targets OR Both
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * targets = leaf->getTargets();
+                    const FVector<FSize>& indexes = targets->getIndexes();
+                    FSize nbPartThere = targets->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        forcesToFill[indexes[idxPart]*3+0] = targets->getForcesX()[idxPart];
+                        forcesToFill[indexes[idxPart]*3+1] = targets->getForcesY()[idxPart];
+                        forcesToFill[indexes[idxPart]*3+2] = targets->getForcesZ()[idxPart];
+                        checkCount++;
+                    }
+                });
+        }
+        if(checkCount < nbParts){std::cout << "Not all "<<nbParts <<" parts has been read (only "<<checkCount<<")"<< std::endl;}
+        else{
+            if(checkCount > nbParts){std::cout << "More parts than  "<<nbParts <<" has been read"<< std::endl;}
+        }
     }
-    virtual void add_to_positions_xyz_npart( int NbPositions, int* idxOfParticles, double * updatedXYZ){
-        FAssertLF(0,"No tree instancied, exiting ...\n");
+
+    template<class ContainerClass,class LeafClass,class CellClass>
+    void generic_get_forces_xyz_npart(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                                      int nbParts, int* idxOfParticles , FReal * forcesToFill, PartType type){
+        int checkCount = 0;
+        if(type == SOURCE){
+            std::cout << "No meaning to retrieve source forces ... " << std::endl;
+        }
+        else{ //Targets OR Both
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * targets = leaf->getTargets();
+                    const FVector<FSize>& indexes = targets->getIndexes();
+                    FSize nbPartThere = targets->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        int iterPart = 0;
+                        bool notFoundYet = true;
+                        while(iterPart < nbParts && notFoundYet){
+                            if(indexes[idxPart] == idxOfParticles[iterPart]){
+                                forcesToFill[iterPart*3+0] = targets->getForcesX()[idxPart];
+                                forcesToFill[iterPart*3+1] = targets->getForcesY()[idxPart];
+                                forcesToFill[iterPart*3+2] = targets->getForcesZ()[idxPart];
+                                notFoundYet = false;
+                                checkCount++;
+                            }
+                            else{
+                                ++iterPart;
+                            }
+                        }
+                    }
+                });
+        }
+        if(checkCount < nbParts){std::cout << "Not all "<<nbParts <<" parts has been read"<< std::endl;}
+        else{
+            if(checkCount > nbParts){std::cout << "More parts than  "<<nbParts <<" has been read"<< std::endl;}
+        }
     }
-    virtual void add_to_positions_npart( int NbPositions, int* idxOfParticles,
-                                         double * X, double * Y , double * Z){
-        FAssertLF(0,"No tree instancied, exiting ...\n");
+
+    template<class ContainerClass,class LeafClass,class CellClass>
+    void generic_get_forces(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                            int nbParts, FReal * fX, FReal* fY, FReal* fZ, PartType type){
+        int checkCount = 0;
+        if(type == SOURCE){
+            std::cout << "No meaning to retrieve source forces ... " << std::endl;
+        }
+        else{ //Targets OR Both
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * targets = leaf->getTargets();
+                    const FVector<FSize>& indexes = targets->getIndexes();
+                    FSize nbPartThere = targets->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        fX[indexes[idxPart]] = targets->getForcesX()[idxPart];
+                        fY[indexes[idxPart]] = targets->getForcesY()[idxPart];
+                        fZ[indexes[idxPart]] = targets->getForcesZ()[idxPart];
+                        checkCount++;
+                    }
+                });
+        }
+        if(checkCount < nbParts){std::cout << "Not all "<<nbParts <<" parts has been read"<< std::endl;}
+        else{
+            if(checkCount > nbParts){std::cout << "More parts than  "<<nbParts <<" has been read"<< std::endl;}
+        }
     }
-    virtual void set_positions_xyz( int NbPositions, double * updatedXYZ){
-        FAssertLF(0,"No tree instancied, exiting ...\n");
+
+    template<class ContainerClass,class LeafClass,class CellClass>
+    void generic_get_forces_nbpart(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                                   int nbParts, int* idxOfParticles ,FReal * fX, FReal* fY, FReal* fZ, PartType type){
+        int checkCount = 0;
+        if(type == SOURCE){
+            std::cout << "No meaning to retrieve source forces ... " << std::endl;
+        }
+        else{ //Targets OR Both
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * targets = leaf->getTargets();
+                    const FVector<FSize>& indexes = targets->getIndexes();
+                    FSize nbPartThere = targets->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        int iterPart = 0;
+                        bool notFoundYet = true;
+                        while(iterPart < nbParts && notFoundYet){
+                            if(indexes[idxPart] == idxOfParticles[iterPart]){
+                                fX[iterPart] = targets->getForcesX()[idxPart];
+                                fY[iterPart] = targets->getForcesY()[idxPart];
+                                fZ[iterPart] = targets->getForcesZ()[idxPart];
+                                notFoundYet = false;
+                                checkCount++;
+                            }
+                            else{
+                                ++iterPart;
+                            }
+                        }
+                    }
+                });
+        }
+        if(checkCount < nbParts){std::cout << "Not all "<<nbParts <<" parts has been read"<< std::endl;}
+        else{
+            if(checkCount > nbParts){std::cout << "More parts than  "<<nbParts <<" has been read"<< std::endl;}
+        }
     }
-    virtual void set_positions( int NbPositions, double * X, double * Y , double * Z){
-        FAssertLF(0,"No tree instancied, exiting ...\n");
+
+    //Arranger parts : following function provide a way to move parts
+    //inside the tree
+    template<class ContainerClass,class LeafClass,class CellClass>
+    void generic_add_to_positions_xyz(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                                      int NbPositions,FReal * updatedXYZ, PartType type){
+        int checkCount = 0;
+        if(type == SOURCE || type==BOTH){
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * sources = leaf->getSrc();
+                    const FVector<FSize>& indexes = sources->getIndexes();
+                    FSize nbPartThere = sources->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        sources->getWPositions()[0][idxPart] += updatedXYZ[indexes[idxPart]*3+0];
+                        sources->getWPositions()[1][idxPart] += updatedXYZ[indexes[idxPart]*3+1];
+                        sources->getWPositions()[2][idxPart] += updatedXYZ[indexes[idxPart]*3+2];
+                        checkCount++;
+                    }
+                });
+        }else{//Targets
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * targets = leaf->getTargets();
+                    const FVector<FSize>& indexes = targets->getIndexes();
+                    FSize nbPartThere = targets->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        targets->getWPositions()[0][idxPart] += updatedXYZ[indexes[idxPart]*3+0];
+                        targets->getWPositions()[1][idxPart] += updatedXYZ[indexes[idxPart]*3+1];
+                        targets->getWPositions()[2][idxPart] += updatedXYZ[indexes[idxPart]*3+2];
+                        checkCount++;
+                    }
+                });
+        }
+        if(checkCount < NbPositions){std::cout << "Not all "<<NbPositions <<" potentials has been read"<< std::endl;}
+        else{
+            if(checkCount > NbPositions){std::cout << "More parts than  "<<NbPositions <<" potentials has been read"<< std::endl;}
+        }
+        update_tree();
     }
-    virtual void set_positions_xyz_npart( int NbPositions, int* idxOfParticles, double * updatedXYZ){
+
+
+    template<class ContainerClass,class LeafClass,class CellClass>
+    void generic_add_to_positions(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                                  int NbPositions,FReal * X, FReal * Y , FReal * Z, PartType type){
+        int checkCount = 0;
+        if(type == SOURCE || type==BOTH){
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * sources = leaf->getSrc();
+                    const FVector<FSize>& indexes = sources->getIndexes();
+                    FSize nbPartThere = sources->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        sources->getWPositions()[0][idxPart] += X[indexes[idxPart]];
+                        sources->getWPositions()[1][idxPart] += Y[indexes[idxPart]];
+                        sources->getWPositions()[2][idxPart] += Z[indexes[idxPart]];
+                        checkCount++;
+                    }
+                });
+        }else{//Targets
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * targets = leaf->getTargets();
+                    const FVector<FSize>& indexes = targets->getIndexes();
+                    FSize nbPartThere = targets->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        targets->getWPositions()[0][idxPart] += X[indexes[idxPart]];
+                        targets->getWPositions()[1][idxPart] += Y[indexes[idxPart]];
+                        targets->getWPositions()[2][idxPart] += Z[indexes[idxPart]];
+                        checkCount++;
+                    }
+                });
+        }
+        if(checkCount < NbPositions){std::cout << "Not all "<<NbPositions <<" potentials has been read"<< std::endl;}
+        else{
+            if(checkCount > NbPositions){std::cout << "More parts than  "<<NbPositions <<" potentials has been read"<< std::endl;}
+        }
+        update_tree();
+    }
+
+    //Not yet done
+    void add_to_positions_xyz_npart( int NbPositions, int* idxOfParticles, FReal * updatedXYZ, PartType type){
+        FAssertLF(0,"Not Yet done ...\n");
+    }
+    void add_to_positions_npart( int NbPositions, int* idxOfParticles,
+                                 FReal * X, FReal * Y , FReal * Z, PartType type){
+        FAssertLF(0,"Not Yet done ...\n");
+    }
+
+    template<class ContainerClass,class LeafClass,class CellClass>
+    void generic_set_positions_xyz(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                                   int NbPositions, FReal * updatedXYZ, PartType type){
+        int checkCount = 0;
+        if(type == SOURCE || type==BOTH){
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * sources = leaf->getSrc();
+                    const FVector<FSize>& indexes = sources->getIndexes();
+                    FSize nbPartThere = sources->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        sources->getWPositions()[0][idxPart] = updatedXYZ[indexes[idxPart]*3+0];
+                        sources->getWPositions()[1][idxPart] = updatedXYZ[indexes[idxPart]*3+1];
+                        sources->getWPositions()[2][idxPart] = updatedXYZ[indexes[idxPart]*3+2];
+                        checkCount++;
+                    }
+                });
+        }else{//Targets
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * targets = leaf->getTargets();
+                    const FVector<FSize>& indexes = targets->getIndexes();
+                    FSize nbPartThere = targets->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        targets->getWPositions()[0][idxPart] = updatedXYZ[indexes[idxPart]*3+0];
+                        targets->getWPositions()[1][idxPart] = updatedXYZ[indexes[idxPart]*3+1];
+                        targets->getWPositions()[2][idxPart] = updatedXYZ[indexes[idxPart]*3+2];
+                        checkCount++;
+                    }
+                });
+        }
+        if(checkCount < NbPositions){std::cout << "Not all "<<NbPositions <<" potentials has been read"<< std::endl;}
+        else{
+            if(checkCount > NbPositions){std::cout << "More parts than  "<<NbPositions <<" potentials has been read"<< std::endl;}
+        }
+        update_tree();
+    }
+
+    template<class ContainerClass,class LeafClass,class CellClass>
+    void generic_set_positions(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                       int NbPositions, FReal * X, FReal * Y, FReal * Z, PartType type){
+        int checkCount = 0;
+        if(type == SOURCE || type==BOTH){
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * sources = leaf->getSrc();
+                    const FVector<FSize>& indexes = sources->getIndexes();
+                    FSize nbPartThere = sources->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        sources->getWPositions()[0][idxPart] = X[indexes[idxPart]];
+                        sources->getWPositions()[1][idxPart] = Y[indexes[idxPart]];
+                        sources->getWPositions()[2][idxPart] = Z[indexes[idxPart]];
+                        checkCount++;
+                    }
+                });
+        }else{//Targets
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * targets = leaf->getTargets();
+                    const FVector<FSize>& indexes = targets->getIndexes();
+                    FSize nbPartThere = targets->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        targets->getWPositions()[0][idxPart] = X[indexes[idxPart]];
+                        targets->getWPositions()[1][idxPart] = Y[indexes[idxPart]];
+                        targets->getWPositions()[2][idxPart] = Z[indexes[idxPart]];
+                        checkCount++;
+                    }
+                });
+        }
+        if(checkCount < NbPositions){std::cout << "Not all "<<NbPositions <<" potentials has been read"<< std::endl;}
+        else{
+            if(checkCount > NbPositions){std::cout << "More parts than  "<<NbPositions <<" potentials has been read"<< std::endl;}
+        }
+        update_tree();
+    }
+
+    template<class ContainerClass,class LeafClass,class CellClass>
+    void generic_set_positions_npart(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                                     int NbPositions,int* idxOfParticles,FReal * X, FReal * Y , FReal * Z, PartType type){
+        int checkCount = 0;
+        if(type == SOURCE || type==BOTH){
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * sources = leaf->getSrc();
+                    const FVector<FSize>& indexes = sources->getIndexes();
+                    FSize nbPartThere = sources->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        sources->getWPositions()[0][idxPart] = X[indexes[idxPart]];
+                        sources->getWPositions()[1][idxPart] = Y[indexes[idxPart]];
+                        sources->getWPositions()[2][idxPart] = Z[indexes[idxPart]];
+                        checkCount++;
+                    }
+                });
+        }else{//Targets
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * targets = leaf->getTargets();
+                    const FVector<FSize>& indexes = targets->getIndexes();
+                    FSize nbPartThere = targets->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        targets->getWPositions()[0][idxPart] = X[indexes[idxPart]];
+                        targets->getWPositions()[1][idxPart] = Y[indexes[idxPart]];
+                        targets->getWPositions()[2][idxPart] = Z[indexes[idxPart]];
+                        checkCount++;
+                    }
+                });
+        }
+        if(checkCount < NbPositions){std::cout << "Not all "<<NbPositions <<" potentials has been read"<< std::endl;}
+        else{
+            if(checkCount > NbPositions){std::cout << "More parts than  "<<NbPositions <<" potentials has been read"<< std::endl;}
+        }
+        update_tree();
+    }
+
+    template<class ContainerClass,class LeafClass,class CellClass>
+    void generic_set_positions_xyz_npart(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                                         int NbPositions,int * idxOfParticles,FReal * updatedXYZ, PartType type){
+        int checkCount = 0;
+        if(type == SOURCE || type==BOTH){
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * sources = leaf->getSrc();
+                    const FVector<FSize>& indexes = sources->getIndexes();
+                    FSize nbPartThere = sources->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        sources->getWPositions()[0][idxPart] = updatedXYZ[indexes[idxPart]*3+0];
+                        sources->getWPositions()[1][idxPart] = updatedXYZ[indexes[idxPart]*3+1];
+                        sources->getWPositions()[2][idxPart] = updatedXYZ[indexes[idxPart]*3+2];
+                        checkCount++;
+                    }
+                });
+        }else{//Targets
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * targets = leaf->getTargets();
+                    const FVector<FSize>& indexes = targets->getIndexes();
+                    FSize nbPartThere = targets->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        targets->getWPositions()[0][idxPart] = updatedXYZ[indexes[idxPart]*3+0];
+                        targets->getWPositions()[1][idxPart] = updatedXYZ[indexes[idxPart]*3+1];
+                        targets->getWPositions()[2][idxPart] = updatedXYZ[indexes[idxPart]*3+2];
+                        checkCount++;
+                    }
+                });
+        }
+        if(checkCount < NbPositions){std::cout << "Not all "<<NbPositions <<" potentials has been read"<< std::endl;}
+        else{
+            if(checkCount > NbPositions){std::cout << "More parts than  "<<NbPositions <<" potentials has been read"<< std::endl;}
+        }
+        update_tree();
+    }
+
+    virtual void set_positions_xyz_npart( int NbPositions, int* idxOfParticles, FReal * updatedXYZ, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
     virtual void set_positions_npart( int NbPositions, int* idxOfParticles,
-                                      double * X, double * Y , double * Z){
+                                      FReal * X, FReal * Y , FReal * Z, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
+    virtual void set_positions_xyz( int NbPositions, FReal * updatedXYZ, PartType type){
+        FAssertLF(0,"No tree instancied, exiting ...\n");
+    }
+    virtual void set_positions( int NbPositions, FReal * X, FReal * Y , FReal * Z, PartType type){
+        FAssertLF(0,"No tree instancied, exiting ...\n");
+    }
+    virtual void get_positions_xyz(int NbPositions,FReal * updatedXYZ, PartType type){
+    }
+    virtual void get_positions(int NbPositions,FReal * X,FReal * Y,FReal * Z, PartType type){
+    }
+    virtual void get_positions_xyz_npart(int NbPositions,int * idxOfPart, FReal * updatedXYZ, PartType type){
+    }
+    virtual void get_positions_npart(int NbPositions,int * idxOfPart, FReal * X,FReal * Y,FReal * Z, PartType type){
+    }
+
 
     //Function to update the tree
     virtual void update_tree(){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
 
+    template<class ContainerClass,class LeafClass,class CellClass>
+    void generic_get_positions_xyz(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                           int NbPositions, FReal * positionsToFill, PartType type){
+        int checkCount = 0;
+        if(type == SOURCE || type==BOTH){
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * sources = leaf->getSrc();
+                    const FVector<FSize>& indexes = sources->getIndexes();
+                    FSize nbPartThere = sources->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        positionsToFill[indexes[idxPart]*3+0] = sources->getPositions()[0][idxPart];
+                        positionsToFill[indexes[idxPart]*3+1] = sources->getPositions()[1][idxPart];
+                        positionsToFill[indexes[idxPart]*3+2] = sources->getPositions()[2][idxPart];
+                        checkCount++;
+                    }
+                });
+        }else{//Targets
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * targets = leaf->getTargets();
+                    const FVector<FSize>& indexes = targets->getIndexes();
+                    FSize nbPartThere = targets->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        positionsToFill[indexes[idxPart]*3+0] = targets->getPositions()[0][idxPart];
+                        positionsToFill[indexes[idxPart]*3+1] = targets->getPositions()[1][idxPart];
+                        positionsToFill[indexes[idxPart]*3+2] = targets->getPositions()[2][idxPart];
+                        checkCount++;
+                    }
+                });
+        }
+        if(checkCount < NbPositions){std::cout << "Not all "<<NbPositions <<" potentials has been read"<< std::endl;}
+        else{
+            if(checkCount > NbPositions){std::cout << "More parts than  "<<NbPositions <<" potentials has been read"<< std::endl;}
+        }
+    }
 
-    //Function to get the positions
-    virtual void get_positions_xyz( int NbPositions, double * positionsToFill){
-        FAssertLF(0,"No tree instancied, exiting ...\n");
+    template<class ContainerClass,class LeafClass,class CellClass>
+    void generic_get_positions_xyz_npart(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                                 int NbPositions, int * idxOfParticles, FReal * positionsToFill, PartType type){
+        int checkCount = 0;
+        if(type == SOURCE || type==BOTH){
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * sources = leaf->getSrc();
+                    const FVector<FSize>& indexes = sources->getIndexes();
+                    FSize nbPartThere = sources->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        int iterPart = 0;
+                        bool notFoundYet = true;
+                        while(iterPart < NbPositions && notFoundYet){
+                            if(indexes[idxPart] == idxOfParticles[iterPart]){
+                                positionsToFill[iterPart] =  sources->getPositions()[0][idxPart];
+                                positionsToFill[iterPart] =  sources->getPositions()[1][idxPart];
+                                positionsToFill[iterPart] =  sources->getPositions()[2][idxPart];
+                                notFoundYet = false;
+                                checkCount++;
+                            }
+                            else{
+                                ++iterPart;
+                            }
+                        }
+                    }
+                });
+        }else {//Targets
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * targets = leaf->getTargets();
+                    const FVector<FSize>& indexes = targets->getIndexes();
+                    FSize nbPartThere = targets->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        int iterPart = 0;
+                        bool notFoundYet = true;
+                        while(iterPart < NbPositions && notFoundYet){
+                            if(indexes[idxPart] == idxOfParticles[iterPart]){
+                                positionsToFill[iterPart] =  targets->getPositions()[0][idxPart];
+                                positionsToFill[iterPart] =  targets->getPositions()[1][idxPart];
+                                positionsToFill[iterPart] =  targets->getPositions()[2][idxPart];
+                                notFoundYet = false;
+                                checkCount++;
+                            }
+                            else{
+                                ++iterPart;
+                            }
+                        }
+                    }
+                });
+        }
+        if(checkCount < NbPositions){std::cout << "Not all "<<NbPositions <<" potentials has been read"<< std::endl;}
+        else{
+            if(checkCount > NbPositions){std::cout << "More parts than  "<<NbPositions <<" potentials has been read"<< std::endl;}
+        }
     }
-    virtual void get_positions( int NbPositions, double * X, double * Y , double * Z){
-        FAssertLF(0,"No tree instancied, exiting ...\n");
+
+    template<class ContainerClass,class LeafClass,class CellClass>
+    void generic_get_positions(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                       int NbPositions, FReal * X, FReal * Y , FReal * Z, PartType type){
+        int checkCount = 0;
+        if(type == SOURCE || type==BOTH){
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * sources = leaf->getSrc();
+                    const FVector<FSize>& indexes = sources->getIndexes();
+                    FSize nbPartThere = sources->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        X[indexes[idxPart]] = sources->getPositions()[0][idxPart];
+                        Y[indexes[idxPart]] = sources->getPositions()[1][idxPart];
+                        Z[indexes[idxPart]] = sources->getPositions()[2][idxPart];
+                        checkCount++;
+                    }
+                });
+        }else{//Targets
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * targets = leaf->getTargets();
+                    const FVector<FSize>& indexes = targets->getIndexes();
+                    FSize nbPartThere = targets->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        X[indexes[idxPart]] = targets->getPositions()[0][idxPart];
+                        Y[indexes[idxPart]] = targets->getPositions()[1][idxPart];
+                        Z[indexes[idxPart]] = targets->getPositions()[2][idxPart];
+                        checkCount++;
+                    }
+                });
+        }
+        if(checkCount < NbPositions){std::cout << "Not all "<<NbPositions <<" potentials has been read"<< std::endl;}
+        else{
+            if(checkCount > NbPositions){std::cout << "More parts than  "<<NbPositions <<" potentials has been read"<< std::endl;}
+        }
     }
-    virtual void get_positions_xyz_npart( int NbPositions, int* idxOfParticles, double * positionsToFill){
-        FAssertLF(0,"No tree instancied, exiting ...\n");
-    }
-    virtual void get_positions_npart( int NbPositions, int* idxOfParticles,
-                                      double * X, double * Y , double * Z){
-        FAssertLF(0,"No tree instancied, exiting ...\n");
+
+    template<class ContainerClass,class LeafClass,class CellClass>
+    void generic_get_positions_npart(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
+                             int NbPositions, int * idxOfParticles,FReal * X, FReal * Y , FReal * Z,PartType type){
+        int checkCount = 0;
+        if(type == SOURCE || type==BOTH){
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * sources = leaf->getSrc();
+                    const FVector<FSize>& indexes = sources->getIndexes();
+                    FSize nbPartThere = sources->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        int iterPart = 0;
+                        bool notFoundYet = true;
+                        while(iterPart < NbPositions && notFoundYet){
+                            if(indexes[idxPart] == idxOfParticles[iterPart]){
+                                X[iterPart] =  sources->getPositions()[0][idxPart];
+                                Y[iterPart] =  sources->getPositions()[1][idxPart];
+                                Z[iterPart] =  sources->getPositions()[2][idxPart];
+                                notFoundYet = false;
+                                checkCount++;
+                            }
+                            else{
+                                ++iterPart;
+                            }
+                        }
+                    }
+                });
+        }else{//Targets
+            octree->forEachLeaf([&](LeafClass* leaf){
+                    ContainerClass * targets = leaf->getTargets();
+                    const FVector<FSize>& indexes = targets->getIndexes();
+                    FSize nbPartThere = targets->getNbParticles();
+                    for(FSize idxPart = 0 ; idxPart<nbPartThere ; ++idxPart){
+                        int iterPart = 0;
+                        bool notFoundYet = true;
+                        while(iterPart < NbPositions && notFoundYet){
+                            if(indexes[idxPart] == idxOfParticles[iterPart]){
+                                X[iterPart] =  targets->getPositions()[0][idxPart];
+                                Y[iterPart] =  targets->getPositions()[1][idxPart];
+                                Z[iterPart] =  targets->getPositions()[2][idxPart];
+                                notFoundYet = false;
+                                checkCount++;
+                            }
+                            else{
+                                ++iterPart;
+                            }
+                        }
+                    }
+                });
+        }
+        if(checkCount < NbPositions){std::cout << "Not all "<<NbPositions <<" potentials has been read"<< std::endl;}
+        else{
+            if(checkCount > NbPositions){std::cout << "More parts than  "<<NbPositions <<" potentials has been read"<< std::endl;}
+        }
     }
 
     virtual void reset_tree(Callback_reset_cell cellReset){
     }
 
-    template<class FReal,class ContainerClass, class CellClass, class LeafClass>
+    template<class ContainerClass, class CellClass, class LeafClass>
     void generic_reset_tree(FOctree<FReal,CellClass,ContainerClass,LeafClass> * tree){
         //Reset forces and potentials
         tree->forEachLeaf([&](LeafClass * leaf){
@@ -234,7 +797,7 @@ public:
         FAssertLF(0,"No user kernel defined, exiting ...\n");
     }
 
-     virtual void execute_fmm(){
+    virtual void execute_fmm(){
         FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
     }
 
@@ -242,213 +805,223 @@ public:
         FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
     }
 
-    virtual void hibox_Rinflu_display(FSize nbPartIn, double *Rinflu){
+
+    virtual void print_everything(){
     }
 
+    /**
+     * Monitoring Function, once the FMM has ended, it's possible to
+     * get the time spent in each operator.
+     */
+    virtual void get_timers(FReal * Timers){
+        const FTic * timers = algoTimer->getAllTimers();
+        int nbTimers = algoTimer->getNbOfTimerRecorded();
+        for(int idTimer = 0; idTimer<nbTimers ; ++idTimer){
+            Timers[idTimer] = timers[idTimer].elapsed();
+        }
+    }
 
+    virtual int get_nb_timers(){
+        return algoTimer->getNbOfTimerRecorded();
+    }
 };
 
-
+template<class FReal>
 struct ScalFmmCoreHandle {
+
     struct ScalFmmCoreConfig {
         // Read/Write parameter
         int treeHeight;     //  Number of level in the octree
-        double boxWidth;    // Simulation box size (root level)
-        FPoint<double> boxCenter; // Center position of the box simulation(FReal[3])
+        FReal boxWidth;    // Simulation box size (root level)
+        FPoint<FReal> boxCenter; // Center position of the box simulation(FReal[3])
     };
 
     ScalFmmCoreConfig config;
-    FScalFMMEngine* engine;
+    FScalFMMEngine<FReal>* engine;
 };
 
 
 
 extern "C" void scalfmm_build_tree(scalfmm_handle Handle,int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
-    ((ScalFmmCoreHandle *) Handle)->engine->build_tree(TreeHeight,BoxWidth, BoxCenter, user_cell_descriptor);
+    ((ScalFmmCoreHandle<double> *) Handle)->engine->build_tree(TreeHeight,BoxWidth, BoxCenter, user_cell_descriptor);
 }
 
-extern "C" void scalfmm_tree_insert_particles(scalfmm_handle Handle, int NbPositions, double * arrayX, double * arrayY, double * arrayZ){
-    ((ScalFmmCoreHandle *) Handle)->engine->tree_insert_particles(NbPositions, arrayX, arrayY, arrayZ);
+extern "C" void scalfmm_tree_insert_particles(scalfmm_handle Handle, int NbPositions, double * arrayX, double * arrayY, double * arrayZ,
+                                              PartType type){
+    ((ScalFmmCoreHandle<double> *) Handle)->engine->tree_insert_particles(NbPositions, arrayX, arrayY, arrayZ, type);
 }
 
-extern "C" void scalfmm_tree_insert_particles_xyz(scalfmm_handle Handle, int NbPositions, double * XYZ){
-    ((ScalFmmCoreHandle * ) Handle)->engine->tree_insert_particles_xyz(NbPositions, XYZ);
+extern "C" void scalfmm_tree_insert_particles_xyz(scalfmm_handle Handle, int NbPositions, double * XYZ, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->tree_insert_particles_xyz(NbPositions, XYZ,type);
 }
 
-extern "C" void scalfmm_set_physical_values(scalfmm_handle Handle, int nbPhysicalValues, double * physicalValues){
-    ((ScalFmmCoreHandle * ) Handle)->engine->set_physical_values(nbPhysicalValues, physicalValues);
+extern "C" void scalfmm_set_physical_values(scalfmm_handle Handle, int nbPhysicalValues, double * physicalValues, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_physical_values(nbPhysicalValues, physicalValues, type);
 }
 
-extern "C" void scalfmm_get_physical_values(scalfmm_handle Handle, int nbPhysicalValues, double * physicalValues){
-    ((ScalFmmCoreHandle * ) Handle)->engine->get_physical_values(nbPhysicalValues, physicalValues);
+extern "C" void scalfmm_get_physical_values(scalfmm_handle Handle, int nbPhysicalValues, double * physicalValues, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->get_physical_values(nbPhysicalValues, physicalValues, type);
 }
 
 extern "C" void scalfmm_set_physical_values_npart(scalfmm_handle Handle, int nbPhysicalValues,
-                                                  int* idxOfParticles, double * physicalValues){
-    ((ScalFmmCoreHandle * ) Handle)->engine->set_physical_values_npart(nbPhysicalValues,
-                                                                       idxOfParticles, physicalValues);
+                                                  int* idxOfParticles, double * physicalValues, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_physical_values_npart(nbPhysicalValues,
+                                                                       idxOfParticles, physicalValues, type);
 }
 extern "C" void scalfmm_get_physical_values_npart(scalfmm_handle Handle, int nbPhysicalValues,
-                                                  int* idxOfParticles, double * physicalValues){
-    ((ScalFmmCoreHandle * ) Handle)->engine->get_physical_values_npart(nbPhysicalValues,
-                                                                       idxOfParticles, physicalValues);
+                                                  int* idxOfParticles, double * physicalValues, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->get_physical_values_npart(nbPhysicalValues,
+                                                                       idxOfParticles, physicalValues, type);
 }
 
 //To get the result
-extern "C" void scalfmm_get_forces_xyz(scalfmm_handle Handle, int nbParts, double * forcesToFill){
-    ((ScalFmmCoreHandle * ) Handle)->engine->get_forces_xyz(nbParts, forcesToFill);
+extern "C" void scalfmm_get_forces_xyz(scalfmm_handle Handle, int nbParts, double * forcesToFill, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->get_forces_xyz(nbParts, forcesToFill, type);
 }
 
-extern "C" void scalfmm_get_forces_xyz_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * forcesToFill){
-    ((ScalFmmCoreHandle * ) Handle)->engine->get_forces_xyz_npart(nbParts, idxOfParticles, forcesToFill);
+extern "C" void scalfmm_get_forces_xyz_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * forcesToFill, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->get_forces_xyz_npart(nbParts, idxOfParticles, forcesToFill, type);
 }
-extern "C" void scalfmm_get_forces(scalfmm_handle Handle, int nbParts, double * fX, double* fY, double* fZ){
-    ((ScalFmmCoreHandle * ) Handle)->engine->get_forces(nbParts,fX, fY, fZ) ;
+extern "C" void scalfmm_get_forces(scalfmm_handle Handle, int nbParts, double * fX, double* fY, double* fZ, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->get_forces(nbParts,fX, fY, fZ, type);
 }
 
-extern "C" void scalfmm_get_forces_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ){
-    ((ScalFmmCoreHandle * ) Handle)->engine->get_forces_npart(nbParts, idxOfParticles, fX, fY, fZ) ;
+extern "C" void scalfmm_get_forces_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->get_forces_npart(nbParts, idxOfParticles, fX, fY, fZ, type);
 }
 
 //To set iniital condition
-extern "C" void scalfmm_set_forces_xyz(scalfmm_handle Handle, int nbParts, double * forcesToFill){
-    ((ScalFmmCoreHandle * ) Handle)->engine->set_forces_xyz(nbParts, forcesToFill) ;
+extern "C" void scalfmm_set_forces_xyz(scalfmm_handle Handle, int nbParts, double * forcesToFill, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_forces_xyz(nbParts, forcesToFill, type);
 }
 
-extern "C" void scalfmm_set_forces_xyz_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * forcesToFill){
-    ((ScalFmmCoreHandle * ) Handle)->engine->set_forces_xyz_npart(nbParts, idxOfParticles, forcesToFill) ;
+extern "C" void scalfmm_set_forces_xyz_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * forcesToFill, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_forces_xyz_npart(nbParts, idxOfParticles, forcesToFill, type);
 }
 
-extern "C" void scalfmm_set_forces(scalfmm_handle Handle, int nbParts, double * fX, double* fY, double* fZ){
-    ((ScalFmmCoreHandle * ) Handle)->engine->set_forces(nbParts, fX, fY, fZ) ;
+extern "C" void scalfmm_set_forces(scalfmm_handle Handle, int nbParts, double * fX, double* fY, double* fZ, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_forces(nbParts, fX, fY, fZ, type);
 }
 
-extern "C" void scalfmm_set_forces_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ){
-    ((ScalFmmCoreHandle * ) Handle)->engine->set_forces_npart(nbParts, idxOfParticles, fX, fY, fZ) ;
+extern "C" void scalfmm_set_forces_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_forces_npart(nbParts, idxOfParticles, fX, fY, fZ, type);
 }
 
 //To deal with potential
-extern "C" void scalfmm_get_potentials(scalfmm_handle Handle, int nbParts, double * potentialsToFill){
-    ((ScalFmmCoreHandle * ) Handle)->engine->get_potentials(nbParts, potentialsToFill) ;
+extern "C" void scalfmm_get_potentials(scalfmm_handle Handle, int nbParts, double * potentialsToFill, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->get_potentials(nbParts, potentialsToFill, type);
 }
 
-extern "C" void scalfmm_set_potentials(scalfmm_handle Handle, int nbParts, double * potentialsToFill){
-    ((ScalFmmCoreHandle * ) Handle)->engine->set_potentials(nbParts, potentialsToFill) ;
+extern "C" void scalfmm_set_potentials(scalfmm_handle Handle, int nbParts, double * potentialsToFill, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_potentials(nbParts, potentialsToFill, type);
 }
 
-extern "C" void scalfmm_get_potentials_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * potentialsToFill){
-    ((ScalFmmCoreHandle * ) Handle)->engine->get_potentials_npart(nbParts, idxOfParticles, potentialsToFill) ;
+extern "C" void scalfmm_get_potentials_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * potentialsToFill, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->get_potentials_npart(nbParts, idxOfParticles, potentialsToFill, type);
 }
 
-extern "C" void scalfmm_set_potentials_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * potentialsToFill){
-    ((ScalFmmCoreHandle * ) Handle)->engine->set_potentials_npart(nbParts, idxOfParticles, potentialsToFill) ;
+extern "C" void scalfmm_set_potentials_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * potentialsToFill, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_potentials_npart(nbParts, idxOfParticles, potentialsToFill, type);
 }
 
 
 // //To deal with positions
 // //Out of the box behavior
 // extern "C" void scalfmm_out_of_the_box_config(scalfmm_handle Handle,scalfmm_out_of_box_behavior config){
-//     ((ScalFmmCoreHandle * ) Handle)->engine->out_of_the_box_config(config);
+//     ((ScalFmmCoreHandle<double> * ) Handle)->engine->out_of_the_box_config(config);
 // }
 
 //Update
-extern "C" void scalfmm_add_to_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ){
-    ((ScalFmmCoreHandle * ) Handle)->engine->add_to_positions_xyz(NbPositions, updatedXYZ);
+extern "C" void scalfmm_add_to_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->add_to_positions_xyz(NbPositions, updatedXYZ, type);
 }
 
-extern "C" void scalfmm_add_to_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z){
-    ((ScalFmmCoreHandle * ) Handle)->engine->add_to_positions(NbPositions, X, Y, Z);
+extern "C" void scalfmm_add_to_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->add_to_positions(NbPositions, X, Y, Z, type);
 }
 
-extern "C" void scalfmm_add_to_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ){
-    ((ScalFmmCoreHandle * ) Handle)->engine->add_to_positions_xyz_npart(NbPositions, idxOfParticles, updatedXYZ);
+extern "C" void scalfmm_add_to_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->add_to_positions_xyz_npart(NbPositions, idxOfParticles, updatedXYZ, type);
 }
 
 extern "C" void scalfmm_add_to_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles,
-                                               double * X, double * Y , double * Z){
-    ((ScalFmmCoreHandle * ) Handle)->engine->add_to_positions_npart(NbPositions, idxOfParticles, X, Y, Z);
+                                               double * X, double * Y , double * Z, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->add_to_positions_npart(NbPositions, idxOfParticles, X, Y, Z, type);
 }
 //Set new positions
-extern "C" void scalfmm_set_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ){
-    ((ScalFmmCoreHandle * ) Handle)->engine->set_positions_xyz(NbPositions, updatedXYZ);
+extern "C" void scalfmm_set_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_positions_xyz(NbPositions, updatedXYZ, type);
 }
 
-extern "C" void scalfmm_set_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z){
-    ((ScalFmmCoreHandle * ) Handle)->engine->set_positions(NbPositions, X, Y , Z);
+extern "C" void scalfmm_set_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_positions(NbPositions, X, Y , Z, type);
 }
 
-extern "C" void scalfmm_set_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ){
-    ((ScalFmmCoreHandle * ) Handle)->engine->set_positions_xyz_npart(NbPositions, idxOfParticles, updatedXYZ);
+extern "C" void scalfmm_set_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_positions_xyz_npart(NbPositions, idxOfParticles, updatedXYZ, type);
 }
 
 extern "C" void scalfmm_set_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles,
-                                            double * X, double * Y , double * Z){
-    ((ScalFmmCoreHandle * ) Handle)->engine->set_positions_npart(NbPositions, idxOfParticles, X, Y, Z);
+                                            double * X, double * Y , double * Z, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_positions_npart(NbPositions, idxOfParticles, X, Y, Z, type);
 }
 
 extern "C" void scalfmm_update_tree(scalfmm_handle Handle){
-    ((ScalFmmCoreHandle * ) Handle)->engine->update_tree();
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->update_tree();
 }
 
 //Get back positions
-extern "C" void scalfmm_get_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ){
-    ((ScalFmmCoreHandle * ) Handle)->engine->get_positions_xyz(NbPositions, updatedXYZ);
+extern "C" void scalfmm_get_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->get_positions_xyz(NbPositions, updatedXYZ, type);
 }
 
-extern "C" void scalfmm_get_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z){
-    ((ScalFmmCoreHandle * ) Handle)->engine->get_positions(NbPositions, X, Y , Z);
+extern "C" void scalfmm_get_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->get_positions(NbPositions, X, Y , Z, type);
 }
 
-extern "C" void scalfmm_get_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ){
-    ((ScalFmmCoreHandle * ) Handle)->engine->get_positions_xyz_npart(NbPositions, idxOfParticles, updatedXYZ);
+extern "C" void scalfmm_get_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->get_positions_xyz_npart(NbPositions, idxOfParticles, updatedXYZ, type);
 }
 
 extern "C" void scalfmm_get_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles,
-                                            double * X, double * Y , double * Z){
-    ((ScalFmmCoreHandle * ) Handle)->engine->get_positions_npart(NbPositions, idxOfParticles, X, Y, Z);
+                                            double * X, double * Y , double * Z, PartType type){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->get_positions_npart(NbPositions, idxOfParticles, X, Y, Z, type);
 }
 
 //To choose algorithm
 extern "C" void scalfmm_algorithm_config(scalfmm_handle Handle, scalfmm_algorithm config){
-    ((ScalFmmCoreHandle * ) Handle)->engine->algorithm_config(config);
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->algorithm_config(config);
 }
 
 //Executing FMM
 extern "C" void scalfmm_execute_fmm(scalfmm_handle Handle){
-    ((ScalFmmCoreHandle * ) Handle)->engine->execute_fmm();
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->execute_fmm();
 }
 
 extern "C" void scalfmm_user_kernel_config(scalfmm_handle Handle, Scalfmm_Kernel_Descriptor userKernel, void * userDatas){
-    ((ScalFmmCoreHandle * ) Handle)->engine->user_kernel_config(userKernel,userDatas);
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->user_kernel_config(userKernel,userDatas);
 }
 
-/**
- * These functions are just translating functions.
- */
-
-//< This function fill the childFullPosition[3] with [-1;1] to know the position of a child relatively to
-//< its position from its parent
-extern "C" void scalfmm_utils_parentChildPosition(int childPosition, int* childFullPosition){
-    childFullPosition[2] = (childPosition%2 ? 1 : -1);
-    childFullPosition[1] = ((childPosition/2)%2 ? 1 : -1);
-    childFullPosition[0] = ((childPosition/4)%2 ? 1 : -1);
+//Monitoring functions
+extern "C" void scalfmm_get_timers(scalfmm_handle Handle, double * Timers){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->get_timers(Timers);
 }
 
-//< This function fill the childFullPosition[3] with [-3;3] to know the position of a interaction
-//< cell relatively to its position from the target
-extern "C" void scalfmm_utils_interactionPosition(int interactionPosition, int* srcPosition){
-    srcPosition[2] = interactionPosition%7 - 3;
-    srcPosition[1] = (interactionPosition/7)%7 - 3;
-    srcPosition[0] = (interactionPosition/49)%7 - 3;
+extern "C" int scalfmm_get_nb_timers(scalfmm_handle Handle){
+    return ((ScalFmmCoreHandle<double> * ) Handle)->engine->get_nb_timers();
 }
 
+// extern "C" void scalfmm_tree_abstract_insert(scalfmm_handle Handle, int NbPartToInsert, int nbAttributeToInsert, int * strideForEachAtt,
+//                                              double* rawDatas){
+//     ((ScalFmmCoreHandle<double> * ) Handle)->engine->tree_abstract_insert(NbPartToInsert,nbAttributeToInsert,strideForEachAtt,rawDatas);
+// }
 
 extern "C" void scalfmm_reset_tree(scalfmm_handle Handle, Callback_reset_cell cellReseter){
-    ((ScalFmmCoreHandle * ) Handle)->engine->reset_tree(cellReseter);
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->reset_tree(cellReseter);
 }
 
-extern "C" void  scalfmm_hibox_Rinflu_display(scalfmm_handle Handle, FSize nbPart, double * Rinflu){
-    ((ScalFmmCoreHandle * ) Handle)->engine->hibox_Rinflu_display(nbPart, Rinflu);
+extern "C" void scalfmm_print_everything(scalfmm_handle Handle){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->print_everything();
 }
 
 #endif

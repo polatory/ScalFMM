@@ -90,7 +90,8 @@ typedef enum kernel_type {
 typedef enum scalfmm_algorithm_config {
     sequential = 0,  /* Use the sequential version of Scalfmm*/
     multi_thread = 1, /* Use the Multi thread version of Scalfmm*/
-    periodic = 2    /* Use the periodic version of Scalfmm*/
+    periodic = 2,    /* Use the periodic version of Scalfmm*/
+    source_target = 3 /* USe the source/target algorithm */
 } scalfmm_algorithm;
 
 
@@ -110,7 +111,7 @@ typedef void* scalfmm_handle;
  * Every data will be stored in order to crete later through a builder
  * what is needed for the simulation
  */
-scalfmm_handle scalfmm_init( scalfmm_kernel_type KernelType);
+scalfmm_handle scalfmm_init( scalfmm_kernel_type KernelType,scalfmm_algorithm algo);
 
 
 /////////////////////////////////////////////////////////////////////
@@ -128,8 +129,9 @@ scalfmm_handle scalfmm_init( scalfmm_kernel_type KernelType);
  * @param tree_position int[3] position inside the tree (number of boxes in
  * each direction)
  * @param spatial_position double[3] center of the cell
+ * @param inDatas user generic pointer to kernel.
  */
-typedef void* (*Callback_init_cell)(int level, long long morton_index, int* tree_position, double* spatial_position);
+typedef void* (*Callback_init_cell)(int level, long long morton_index, int* tree_position, double* spatial_position, void * inDatas);
 
 /**
  * Function to destroy what have bee initialized by the user (should
@@ -160,33 +162,67 @@ typedef struct User_Scalfmm_Cell_Descriptor{
 void scalfmm_build_tree(scalfmm_handle handle,int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor);
 
 
+/**
+ * @brief This enum flag is to know if function calling will deal with
+ * source, target or both
+ */
+typedef enum particule_type{
+    SOURCE=0,
+    TARGET=1,
+    BOTH=2
+}PartType;
 
 
 /**
- * @brief This function insert an array of position into the octree
+ * @brief This function insert alongside to position an arbitrary
+ * number of attributes.
+ * @param Handle scalfmm_handle provided by scalfmm_init.
+ * @param NbPartToInsert number of particles to be inserted
+ * @param nbAttributeToInsert number of attribute to insert (this
+ * number will be > 3 (because we need at least 3 doubles for
+ * position))
+ * @param strideForEachAtt How to get each attribute for each particles
+ * @param rawDatas datas to be read
+ *
+ * Example :
+ struct part{
+   double[3] position;
+   double charge;
+   double test; //not used
+   double coeff;
+ };
+ Then nbAttributeToInsert will be 3+1+1
+ and strideForEachAtt will be : [0,1,2,3,5]
+ */
+void scalfmm_tree_abstract_insert(scalfmm_handle Handle, int NbPartToInsert, int nbAttributeToInsert, int * strideForEachAtt,
+                                  double* rawDatas);
+
+
+/**
+ * @brief This function insert an array of position into the
+ * octree. THis fonction will insert particules with no SOURCE/TARGET
+ * type.
  * @param Handle scalfmm_handle provided by scalfmm_init.
  * @param NbPositions Number of position to be inserted
  * @param arrayX Array containing the X coordinate for all the parts, size : NbPositions
  * @param arrayY Array containing the Y coordinate for all the parts, size : NbPositions
  * @param arrayZ Array containing the Z coordinate for all the parts, size : NbPositions
- *
+ * @param type : type to insert
  * The parts will be inserted with their indices inside the
  * array. Each index will be unique.
  *
- * In case several calls are performed to scalfmm_tree_insert_arrays,
- * first call with N particles, and then with M particles.
- * The second call particles will have index from [N ; N+M].
  *
  * Default physical values, potential and forces are set to 0.
  */
-void scalfmm_tree_insert_particles(scalfmm_handle Handle, int NbPositions, double * arrayX, double * arrayY, double * arrayZ);
+void scalfmm_tree_insert_particles(scalfmm_handle Handle, int NbPositions, double * arrayX, double * arrayY, double * arrayZ, PartType type);
 
 
 /**
  * This function is equivalent to scalfmm_tree_insert_particles
  * but the given array XYZ should contains a triple value per paticles.
  */
-void scalfmm_tree_insert_particles_xyz(scalfmm_handle Handle, int NbPositions, double * XYZ);
+void scalfmm_tree_insert_particles_xyz(scalfmm_handle Handle, int NbPositions, double * XYZ, PartType type);
+
 
 /**
  * @brief This function set the physical values of all the particles
@@ -196,17 +232,17 @@ void scalfmm_tree_insert_particles_xyz(scalfmm_handle Handle, int NbPositions, d
  * inserted.
  * @param physicalValues Array containing the physical values to be
  * associated to each parts.
- *
+ * @param type : type of the particules to be setted.
  * The physical values will be stored according to their indices in
  * the array. First particle inserted will take value physicalValues[0].
  */
-void scalfmm_set_physical_values(scalfmm_handle Handle, int nbPhysicalValues, double * physicalValues);
+void scalfmm_set_physical_values(scalfmm_handle Handle, int nbPhysicalValues, double * physicalValues, PartType type);
 /**
  * @brief get the physical values.
  *
  * WARNING : the user must allocate (and initialize) the array given
  */
-void scalfmm_get_physical_values(scalfmm_handle Handle, int nbPhysicalValues, double * physicalValues);
+void scalfmm_get_physical_values(scalfmm_handle Handle, int nbPhysicalValues, double * physicalValues, PartType type);
 
 /**
  *
@@ -215,6 +251,7 @@ void scalfmm_get_physical_values(scalfmm_handle Handle, int nbPhysicalValues, do
  * @param idxOfParticles an array of indexes of size nbPhysicalValues to know which particles
  * to set the values to.
  * @param physicalValues the physical values.
+ * @param type : type of the particules to be setted.
  *
  * For example to set the physical values to particles 0 and 1 to values 1.1 and 1.4:
  * @code nbPhysicalValues = 2;
@@ -224,9 +261,9 @@ void scalfmm_get_physical_values(scalfmm_handle Handle, int nbPhysicalValues, do
  * Be aware that such approach requiere to find particles in the tree which can have high cost.
  */
 void scalfmm_set_physical_values_npart(scalfmm_handle Handle, int nbPhysicalValues,
-                                       int* idxOfParticles, double * physicalValues);
+                                       int* idxOfParticles, double * physicalValues, PartType type);
 void scalfmm_get_physical_values_npart(scalfmm_handle Handle, int nbPhysicalValues,
-                                       int* idxOfParticles, double * physicalValues);
+                                       int* idxOfParticles, double * physicalValues, PartType type);
 
 
 /**
@@ -236,14 +273,17 @@ void scalfmm_get_physical_values_npart(scalfmm_handle Handle, int nbPhysicalValu
  * to the number of parts inserted)
  * @param forcesToFill array of size nbParts*3, that will contains the
  * forces. WARNING : User must allocate the array before call.
- *
+ * @param type : type of the particules to be setted.
  * Forces will be stored sequentially, according to the indices in the
  * array. (ie fx1,fy1,fz1,fx2,fy2,fz2,fx3 ....)
+ * @param idxOfParticles : array of indices of the particles
+ * wanted. If used, then the parts will be given in the order of
+ * idxOfParticles
  */
-void scalfmm_get_forces_xyz(scalfmm_handle Handle, int nbParts, double * forcesToFill);
-void scalfmm_get_forces_xyz_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * forcesToFill);
-void scalfmm_get_forces(scalfmm_handle Handle, int nbParts, double * fX, double* fY, double* fZ);
-void scalfmm_get_forces_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ);
+void scalfmm_get_forces_xyz(scalfmm_handle Handle, int nbParts, double * forcesToFill, PartType type);
+void scalfmm_get_forces_xyz_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * forcesToFill, PartType type);
+void scalfmm_get_forces(scalfmm_handle Handle, int nbParts, double * fX, double* fY, double* fZ, PartType type);
+void scalfmm_get_forces_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ, PartType type);
 
 
 /**
@@ -257,12 +297,12 @@ void scalfmm_get_forces_npart(scalfmm_handle Handle, int nbParts, int* idxOfPart
  * forces . WARNING : User must allocate the array before call.
  * @param forcesZ array of size nbParts, that will contains the
  * forces . WARNING : User must allocate the array before call.
- *
+ * @param type : type of the particules to be setted.
  */
-void scalfmm_set_forces_xyz(scalfmm_handle Handle, int nbParts, double * forcesToFill);
-void scalfmm_set_forces_xyz_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * forcesToFill);
-void scalfmm_set_forces(scalfmm_handle Handle, int nbParts, double * fX, double* fY, double* fZ);
-void scalfmm_set_forces_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ);
+void scalfmm_set_forces_xyz(scalfmm_handle Handle, int nbParts, double * forcesToFill, PartType type);
+void scalfmm_set_forces_xyz_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * forcesToFill, PartType type);
+void scalfmm_set_forces(scalfmm_handle Handle, int nbParts, double * fX, double* fY, double* fZ, PartType type);
+void scalfmm_set_forces_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * fX, double* fY, double* fZ, PartType type);
 
 
 /**
@@ -272,14 +312,15 @@ void scalfmm_set_forces_npart(scalfmm_handle Handle, int nbParts, int* idxOfPart
  * to the number of parts inserted)
  * @param potentialsToFill array of potentials to be filled. WARNING :
  * User must allocate the array before call.
+ * @param type : type of the particules to be setted.
  *
  * Potentials will be stored sequentially, according to the indices in the
  * array.
  */
-void scalfmm_get_potentials(scalfmm_handle Handle, int nbParts, double * potentialsToFill);
-void scalfmm_set_potentials(scalfmm_handle Handle, int nbParts, double * potentialsToRead);
-void scalfmm_get_potentials_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * potentialsToFill);
-void scalfmm_set_potentials_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * potentialsToRead);
+void scalfmm_get_potentials(scalfmm_handle Handle, int nbParts, double * potentialsToFill, PartType type);
+void scalfmm_set_potentials(scalfmm_handle Handle, int nbParts, double * potentialsToRead, PartType type);
+void scalfmm_get_potentials_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * potentialsToFill, PartType type);
+void scalfmm_set_potentials_npart(scalfmm_handle Handle, int nbParts, int* idxOfParticles, double * potentialsToRead, PartType type);
 
 
 /**
@@ -290,11 +331,12 @@ void scalfmm_set_potentials_npart(scalfmm_handle Handle, int nbParts, int* idxOf
  * number of parts inserted)
  * @param updatedXYZ array of displacement (ie
  * dx1,dy1,dz1,dx2,dy2,dz2,dx3 ...)
+ * @param type : type of the particules to be setted.
  */
-void scalfmm_add_to_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ);
-void scalfmm_add_to_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z);
-void scalfmm_add_to_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ);
-void scalfmm_add_to_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * X, double * Y , double * Z);
+void scalfmm_add_to_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ, PartType type);
+void scalfmm_add_to_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z, PartType type);
+void scalfmm_add_to_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ, PartType type);
+void scalfmm_add_to_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * X, double * Y , double * Z, PartType type);
 
 
 /**
@@ -305,17 +347,17 @@ void scalfmm_add_to_positions_npart(scalfmm_handle Handle, int NbPositions, int*
  * number of parts inserted)
  * @param newXYZ array of new positions (ie
  * dx1,dy1,dz1,dx2,dy2,dz2,dx3 ...)
- *
+ * @param type : type of the particules to be setted.
  * @return Error code, a parts may move out of the simulation
  * box. ScalFMM cannot deals with that specific case. Error code :
  * 0. Success code 1. Could be an arg in order to be Fortran
  * compliant.
  *
  */
-void scalfmm_set_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ);
-void scalfmm_set_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z);
-void scalfmm_set_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ);
-void scalfmm_set_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * X, double * Y , double * Z);
+void scalfmm_set_positions_xyz(scalfmm_handle Handle, int NbPositions, double * updatedXYZ, PartType type);
+void scalfmm_set_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z, PartType type);
+void scalfmm_set_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * updatedXYZ, PartType type);
+void scalfmm_set_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * X, double * Y , double * Z, PartType type);
 
 /**
  *@brief This is function is to be called after a call modifying some
@@ -324,10 +366,10 @@ void scalfmm_set_positions_npart(scalfmm_handle Handle, int NbPositions, int* id
  */
 void scalfmm_update_tree(scalfmm_handle handle);
 
-void scalfmm_get_positions_xyz(scalfmm_handle Handle, int NbPositions, double * positionsToFill);
-void scalfmm_get_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z);
-void scalfmm_get_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * positionsToFill);
-void scalfmm_get_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * X, double * Y , double * Z);
+void scalfmm_get_positions_xyz(scalfmm_handle Handle, int NbPositions, double * positionsToFill, PartType type);
+void scalfmm_get_positions(scalfmm_handle Handle, int NbPositions, double * X, double * Y , double * Z, PartType type);
+void scalfmm_get_positions_xyz_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * positionsToFill, PartType type);
+void scalfmm_get_positions_npart(scalfmm_handle Handle, int NbPositions, int* idxOfParticles, double * X, double * Y , double * Z, PartType type);
 
 /* /\** */
 /*  * @brief This function provides a way for the user to define scalfmm */
@@ -446,7 +488,6 @@ typedef void (*Callback_P2PFull)(FSize nbParticles, const FSize* particleIndexes
  */
 typedef void (*Callback_P2PInner)(FSize nbParticles, const FSize* particleIndexes, void* userData);
 
-
 /**
  * @brief Function to be filled by user's method to reset a user's cell
  * @param level  level of the cell.
@@ -457,7 +498,6 @@ typedef void (*Callback_P2PInner)(FSize nbParticles, const FSize* particleIndexe
  * @param usercell ptr to user's cell
  */
 typedef void (*Callback_reset_cell)(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell);
-
 
 /**
  * @brief Structure containing callbacks to fill in order to define
@@ -535,13 +575,30 @@ void scalfmm_dealloc_handle(scalfmm_handle handle, Callback_free_cell cellDestro
  */
 void scalfmm_reset_tree(scalfmm_handle handle, Callback_reset_cell cellReseter);
 
+/////////////////////////////////////////////////////////////////////
+///////////////       Monitoring functions          /////////////////
+/////////////////////////////////////////////////////////////////////
+
 /**
- * @brief This function shouldn't be there !! display information
- * about the octree built versus the octree hibox want.
+ * @brief Scalfmm has a built in feature to get the time elapsed in
+ * each operator. This function returns the number of different timers.
  * @param Handle scalfmm_handle provided by scalfmm_init.
- * @param Rinflu influence radius for each particle previously
- * inserted. Tree must be built before calling this function
+ * @return Number of timers
  */
-void scalfmm_hibox_Rinflu_display(scalfmm_handle Handle, FSize nbPart, double * Rinflu);
+int scalfmm_get_nb_timers(scalfmm_handle handle);
+
+/**
+ * @brief Scalfmm has a built in feature to get the time elapsed in
+ * each operator. This function fill the array with elapsed time for
+ * each operator.
+ * @param Handle scalfmm_handle provided by scalfmm_init.
+ * @param Array of Timers, to be allocated by the user (using
+ * scalfmm_get_nb_timers)
+ * Order inside the array : P2M, M2M, M2L, L2L, L2P, P2P, NearField
+ * (P2P+L2P).
+ */
+void scalfmm_get_timers(scalfmm_handle handle,double * Timers);
+
+
 
 #endif

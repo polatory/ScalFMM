@@ -6,48 +6,94 @@ extern "C" {
 #include "FInterEngine.hpp"
 #include "FUserKernelEngine.hpp"
 
-extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,double* BoxCenter, */scalfmm_kernel_type KernelType){
-    ScalFmmCoreHandle * handle = new ScalFmmCoreHandle();
+extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,double* BoxCenter, */scalfmm_kernel_type KernelType,
+                                       scalfmm_algorithm algo){
+    ScalFmmCoreHandle<double> * handle = new ScalFmmCoreHandle<double>();
     typedef double FReal;
 
-    switch(KernelType){
-    case 0:
-        handle->engine = new FUserKernelEngine<FReal>(/*TreeHeight, BoxWidth, BoxCenter, */KernelType);
-        break;
+    if(algo == source_target){
 
-    case 1:
-        //TODO typedefs
-        typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
-        typedef FChebCell<FReal,7>                                                         ChebCell;
+        switch(KernelType){
+        case 0:
+            typedef FP2PParticleContainerIndexed<FReal>           ContainerClass;
+            typedef FTypedLeaf<FReal,ContainerClass>                                         LeafClass;
 
-        typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
-        typedef FChebSymKernel<FReal,ChebCell,ContainerClass,MatrixKernelClass,7>        ChebKernel;
+            handle->engine = new FUserKernelEngine<FReal,LeafClass>(/*TreeHeight, BoxWidth, BoxCenter, */KernelType);
+            break;
 
-        handle->engine = new FInterEngine<FReal,ChebCell,ChebKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
-        break;
-        // case 2:
-        //     //TODO typedefs
-        //     typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
-        //     typedef FUnifCell<7>                                                         UnifCell;
+        case 1:
+            //TODO typedefs
+            typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
+            typedef FTypedChebCell<FReal,7>                                                   ChebCell;
+            typedef FTypedLeaf<FReal,ContainerClass>                                         LeafClass;
 
-        //     typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
-        //     typedef FUnifKernel<UnifCell,ContainerClass,MatrixKernelClass,7>           UnifKernel;
+            typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
+            typedef FChebSymKernel<FReal,ChebCell,ContainerClass,MatrixKernelClass,7>        ChebKernel;
 
-        //     handle->engine = new FInterEngine<UnifCell,UnifKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
-        //     break;
+            handle->engine = new FInterEngine<FReal,ChebCell,ChebKernel,LeafClass>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
+            break;
+            // case 2:
+            //     //TODO typedefs
+            //     typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
+            //     typedef FUnifCell<7>                                                         UnifCell;
 
-    default:
-        std::cout<< "Kernel type unsupported" << std::endl;
-        exit(0);
-        break;
+            //     typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
+            //     typedef FUnifKernel<UnifCell,ContainerClass,MatrixKernelClass,7>           UnifKernel;
+
+            //     handle->engine = new FInterEngine<UnifCell,UnifKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
+            //     break;
+
+        default:
+            std::cout<< "Kernel type unsupported" << std::endl;
+            exit(0);
+            break;
+        }
     }
-    return handle;
+    else{ //No Source/Targets distinction
+        switch(KernelType){
+        case 0:
+            typedef FP2PParticleContainerIndexed<FReal>                            ContainerClass;
+            typedef FSimpleLeaf<FReal,ContainerClass>                                   LeafClass;
+
+            handle->engine = new FUserKernelEngine<FReal,LeafClass>(/*TreeHeight, BoxWidth, BoxCenter, */KernelType);
+            break;
+
+        case 1:
+            //TODO typedefs
+            typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
+            typedef FChebCell<FReal,7>                                                   ChebCell;
+            typedef FSimpleLeaf<FReal,ContainerClass>                                         LeafClass;
+
+            typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
+            typedef FChebSymKernel<FReal,ChebCell,ContainerClass,MatrixKernelClass,7>        ChebKernel;
+
+            handle->engine = new FInterEngine<FReal,ChebCell,ChebKernel,LeafClass>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
+            break;
+            // case 2:
+            //     //TODO typedefs
+            //     typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
+            //     typedef FUnifCell<7>                                                         UnifCell;
+
+            //     typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
+            //     typedef FUnifKernel<UnifCell,ContainerClass,MatrixKernelClass,7>           UnifKernel;
+
+            //     handle->engine = new FInterEngine<UnifCell,UnifKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
+            //     break;
+
+        default:
+            std::cout<< "Kernel type unsupported" << std::endl;
+            exit(0);
+            break;
+
+        }
+    }
+   return handle;
 }
 
 extern "C" void scalfmm_dealloc_handle(scalfmm_handle handle, Callback_free_cell userDeallocator){
-    ((ScalFmmCoreHandle *) handle)->engine->intern_dealloc_handle(userDeallocator);
-    delete ((ScalFmmCoreHandle *) handle)->engine ;
-    delete (ScalFmmCoreHandle *) handle;
+    ((ScalFmmCoreHandle<double> *) handle)->engine->intern_dealloc_handle(userDeallocator);
+    delete ((ScalFmmCoreHandle<double> *) handle)->engine ;
+    delete (ScalFmmCoreHandle<double> *) handle;
 }
 
 /**

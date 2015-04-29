@@ -20,7 +20,7 @@
 /**
  * @brief Wrapper to init internal ChebCell
  */
-void* cheb_init_cell(int level, long long morton_index, int* tree_position, double* spatial_position){
+void* cheb_init_cell(int level, long long morton_index, int* tree_position, double* spatial_position, void * KernelDatas){
     return ChebCellStruct_create(morton_index,tree_position);
 }
 
@@ -162,10 +162,11 @@ int main(int argc, char ** av){
         /* fclose(fd); */
     }
 
-    scalfmm_handle handle = scalfmm_init(user_defined_kernel);
+    scalfmm_handle handle = scalfmm_init(user_defined_kernel,multi_thread);
 
     //For Reference
-    scalfmm_handle handle_ref = scalfmm_init(chebyshev);
+    scalfmm_handle handle_ref = scalfmm_init(chebyshev,multi_thread);
+
 
     //Struct for user defined kernel
     struct User_Scalfmm_Cell_Descriptor cellDescriptor;
@@ -184,13 +185,8 @@ int main(int argc, char ** av){
     scalfmm_build_tree(handle,treeHeight, boxWidth, boxCenter, cellDescriptor);
     scalfmm_build_tree(handle_ref,treeHeight, boxWidth, boxCenter, user_descr);
 
-    // Insert particles
-    printf("Inserting particles...\n");
-    scalfmm_tree_insert_particles_xyz(handle, nbPart, particleXYZ);
-    scalfmm_tree_insert_particles_xyz(handle_ref, nbPart, particleXYZ);
+    //Once is the tree built, one must set the kernel before inserting particles
 
-    //Set physical values for Cheb_ref
-    scalfmm_set_physical_values(handle_ref,nbPart,physicalValues);
     //Set our callbacks
     struct User_Scalfmm_Kernel_Descriptor kernel;
     kernel.p2m = cheb_p2m;
@@ -243,14 +239,27 @@ int main(int argc, char ** av){
     //Give ScalFMM the datas before calling fmm (this will set as well the kernel)
     scalfmm_user_kernel_config(handle,kernel,&userDatas);
 
+
+    // Insert particles
+    printf("Inserting particles...\n");
+    scalfmm_tree_insert_particles_xyz(handle, nbPart, particleXYZ,BOTH);
+    scalfmm_tree_insert_particles_xyz(handle_ref, nbPart, particleXYZ,BOTH);
+
+
+    //Set physical values for Cheb_ref
+    scalfmm_set_physical_values(handle_ref,nbPart,physicalValues,BOTH);
+
+
+
     //Set timers
     Timer interface_timer,ref_timer;
-    int ite=0, max_ite=2;
+    int ite=0, max_ite=5;
     while(ite<max_ite){
         //Execute FMM
         tic(&interface_timer);
         scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
         tac(&interface_timer);
+
 
         //Reduction on forces & potential arrays
         {
@@ -287,8 +296,9 @@ int main(int argc, char ** av){
         memset(forcesRef,0,sizeof(double)*3*nbPart);
         memset(potentialsRef,0,sizeof(double)*nbPart);
 
-        scalfmm_get_forces_xyz(handle_ref,nbPart,forcesRef);
-        scalfmm_get_potentials(handle_ref,nbPart,potentialsRef);
+        scalfmm_get_forces_xyz(handle_ref,nbPart,forcesRef,BOTH);
+        scalfmm_get_potentials(handle_ref,nbPart,potentialsRef,BOTH);
+        //scalfmm_print_everything(handle_ref);
 
         {//Comparison part
             FSize idxPart;
