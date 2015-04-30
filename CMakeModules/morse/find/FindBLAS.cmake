@@ -301,6 +301,10 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
             unset(${_prefix}${_combined_name}_WORKS CACHE)
         endif()
         if (_CHECK_FORTRAN)
+            if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+                string(REPLACE "mkl_intel_lp64" "mkl_gf_lp64" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+                string(REPLACE "mkl_intel_ilp64" "mkl_gf_ilp64" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+            endif()
             check_fortran_function_exists("${_name}" ${_prefix}${_combined_name}_WORKS)
         else()
             check_function_exists("${_name}_" ${_prefix}${_combined_name}_WORKS)
@@ -415,8 +419,6 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
         endif()
     endif()
 
-    # libiomp5
-    # --------
     if (WIN32)
         string(REPLACE ":" ";" _libdir "$ENV{LIB}")
     elseif (APPLE)
@@ -426,6 +428,8 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
     endif ()
     list(APPEND _libdir "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
     list(APPEND _libdir "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
+    # libiomp5
+    # --------
     set(OMP_iomp5_LIBRARY "OMP_iomp5_LIBRARY-NOTFOUND")
     find_library(OMP_iomp5_LIBRARY
         NAMES iomp5
@@ -433,15 +437,35 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
       )
     mark_as_advanced(OMP_iomp5_LIBRARY)
     set(OMP_LIB "")
-    if (OMP_iomp5_LIBRARY)
-        set(OMP_LIB "${OMP_iomp5_LIBRARY}")
+    # libgomp
+    # -------
+    set(OMP_gomp_LIBRARY "OMP_gomp_LIBRARY-NOTFOUND")
+    find_library(OMP_gomp_LIBRARY
+        NAMES gomp
+        HINTS ${_libdir}
+      )
+    mark_as_advanced(OMP_gomp_LIBRARY)
+    # choose one or another depending on the compilo
+    if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+        if (OMP_gomp_LIBRARY)
+            set(OMP_LIB "${OMP_gomp_LIBRARY}")
+        endif()
+    else(CMAKE_C_COMPILER_ID STREQUAL "Intel")
+        if (OMP_iomp5_LIBRARY)
+            set(OMP_LIB "${OMP_iomp5_LIBRARY}")
+        endif()
     endif()
 
     if (UNIX AND NOT WIN32)
         set(LM "-lm")
         set(BLAS_COMPILER_FLAGS "")
-        if (CMAKE_C_COMPILER_ID STREQUAL "Intel" AND NOT BLA_VENDOR STREQUAL "Intel10_64lp_seq")
-            list(APPEND BLAS_COMPILER_FLAGS "-openmp")
+        if (NOT BLA_VENDOR STREQUAL "Intel10_64lp_seq")
+            if (CMAKE_C_COMPILER_ID STREQUAL "Intel")
+                list(APPEND BLAS_COMPILER_FLAGS "-openmp")
+            endif()
+            if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+                list(APPEND BLAS_COMPILER_FLAGS "-fopenmp")
+            endif()
         endif()
         if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
             if (BLA_VENDOR STREQUAL "Intel10_32")
@@ -523,8 +547,14 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
                     list(APPEND BLAS_SEARCH_LIBS
                     "mkl_blas95 mkl_intel_lp64 mkl_intel_thread mkl_core guide")
                     # mkl >= 10.3
-                    list(APPEND BLAS_SEARCH_LIBS
-                    "mkl_blas95_lp64 mkl_intel_lp64 mkl_intel_thread mkl_core")
+                    if (CMAKE_C_COMPILER_ID STREQUAL "Intel")
+                        list(APPEND BLAS_SEARCH_LIBS
+                        "mkl_blas95_lp64 mkl_intel_lp64 mkl_intel_thread mkl_core")
+                    endif()
+                    if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+                        list(APPEND BLAS_SEARCH_LIBS
+                        "mkl_blas95_lp64 mkl_intel_lp64 mkl_gnu_thread mkl_core")
+                    endif()
                 endif ()
                 if (BLA_VENDOR STREQUAL "Intel10_64lp_seq" OR BLA_VENDOR STREQUAL "All")
                     list(APPEND BLAS_SEARCH_LIBS
@@ -589,8 +619,14 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
                     list(APPEND BLAS_SEARCH_LIBS
                     "mkl_intel_lp64 mkl_intel_thread mkl_core guide")
                     # mkl >= 10.3
-                    list(APPEND BLAS_SEARCH_LIBS
-                    "mkl_intel_lp64 mkl_intel_thread mkl_core")
+                    if (CMAKE_C_COMPILER_ID STREQUAL "Intel")
+                        list(APPEND BLAS_SEARCH_LIBS
+                        "mkl_intel_lp64 mkl_intel_thread mkl_core")
+                    endif()
+                    if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+                        list(APPEND BLAS_SEARCH_LIBS
+                        "mkl_intel_lp64 mkl_gnu_thread mkl_core")
+                    endif()
                 endif ()
                 if (BLA_VENDOR STREQUAL "Intel10_64lp_seq" OR BLA_VENDOR STREQUAL "All")
                     list(APPEND BLAS_SEARCH_LIBS

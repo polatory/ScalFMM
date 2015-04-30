@@ -205,6 +205,10 @@ if(METIS_LIBRARIES)
         set(REQUIRED_LIBDIRS "${METIS_LIBRARY_DIRS}")
     endif()
     set(REQUIRED_LIBS "${METIS_LIBRARIES}")
+    # m
+    if(UNIX OR WIN32)
+        list(APPEND REQUIRED_LIBS "-lm")
+    endif()
 
     # set required libraries for link
     set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
