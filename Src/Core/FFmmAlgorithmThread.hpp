@@ -448,7 +448,7 @@ protected:
 
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int endAtThisShape = this->shapeLeaf[idxShape] + previous;
-                const int chunkSize = getChunkSize(endAtThisShape);
+                const int chunkSize = getChunkSize(endAtThisShape-previous);
                 #pragma omp for schedule(dynamic, chunkSize)
                 for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
                     LeafData& currentIter = leafsDataArray[idxLeafs];
