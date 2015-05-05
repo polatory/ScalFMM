@@ -150,7 +150,8 @@ int main(int argc, char* argv[])
                 //
                 KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
                 //
-                FmmClass algo(&tree, &kernels);
+		// false : dynamic schedule.
+                FmmClass algo(&tree, &kernels,true);
                 //
                 algo.execute();   // Here the call of the FMM algorithm
                 //

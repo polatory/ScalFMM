@@ -547,11 +547,11 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
       try_compile(COMPILE_RESULT_AVSPE ${CMAKE_CURRENT_BINARY_DIR}
                   ${SCALFMM_CMAKE_MODULE_PATH}/checkAVXpe.cpp
                   COMPILE_DEFINITIONS "${CMAKE_CXX_FLAGS} ${AVX_FLAGS}")
-		#   if( NOT ${COMPILE_RESULT_AVSPE})
+		 if( NOT ${COMPILE_RESULT_AVSPE})
 
 
         set(__AVXPE_INTEL_COMPILER ON)
-  #    endif()
+   endif()
 
       message(STATUS ${CMAKE_CXX_FLAGS} )
     else(${COMPILE_AVX})
@@ -776,7 +776,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   #set(CMAKE_CXX_FLAGS "${SCALFMM_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
   message(STATUS "SCALFMM_USE_BLAS     =  ${SCALFMM_USE_BLAS}")
   message(STATUS "SCALFMM_USE_FFT       =  ${SCALFMM_USE_FFT}")
-  message(STATUS "SCALFMM_USE_MKL      =  TODO")
+  message(STATUS "SCALFMM_USE_MKL      =   ${SCALFMM_USE_MKL}")
 # 
   message(STATUS "CMAKE_CXX_FLAGS     =  ${CMAKE_CXX_FLAGS}")
   message(STATUS "SCALFMM_CXX_FLAGS   =  ${SCALFMM_CXX_FLAGS}")
