@@ -48,7 +48,7 @@ template <class OctreeClass, class CellContainerClass, class KernelClass, class 
     , class StarPUOpenClWrapperClass = FStarPUOpenClWrapper<KernelClass, FOpenCLDeviceWrapper<KernelClass>>
 #endif
           >
-class FGroupTaskStarPUAlgorithm {
+class FGroupTaskStarPUAlgorithm : public FAbstractAlgorithm {
 protected:
     typedef FGroupTaskStarPUAlgorithm<OctreeClass, CellContainerClass, KernelClass, ParticleGroupClass, StarPUCpuWrapperClass
 #ifdef SCALFMM_ENABLE_CUDA_KERNEL
@@ -133,6 +133,8 @@ public:
             wrapperptr(&wrappers){
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(inKernels, "kernels cannot be null");
+
+        FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
 
         struct starpu_conf conf;
         FAssertLF(starpu_conf_init(&conf) == 0);
@@ -235,7 +237,11 @@ public:
         starpu_shutdown();
     }
 
-    void execute(const unsigned operationsToProceed = FFmmNearAndFarFields){
+protected:
+    /**
+      * Runs the complete algorithm.
+      */
+    void executeCore(const unsigned operationsToProceed) override {
         FLOG( FLog::Controller << "\tStart FGroupTaskStarPUAlgorithm\n" );
         const bool directOnly = (tree->getHeight() <= 2);
 
@@ -263,7 +269,7 @@ public:
         starpu_pause();
     }
 
-protected:
+
     void initCodelet(){
         memset(&p2m_cl, 0, sizeof(p2m_cl));
 #ifdef STARPU_USE_CPU
@@ -738,7 +744,7 @@ protected:
 
     void upwardPass(){
         FLOG( FTic timer; );
-        for(int idxLevel = tree->getHeight()-2 ; idxLevel >= 2 ; --idxLevel){
+        for(int idxLevel = FMath::Min(tree->getHeight() - 2, FAbstractAlgorithm::lowerWorkingLevel - 1) ; idxLevel >= FAbstractAlgorithm::upperWorkingLevel ; --idxLevel){
             int idxSubGroup = 0;
 
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
@@ -799,7 +805,7 @@ protected:
     void transferPass(){
         FLOG( FTic timer; );
         FLOG( FTic timerInBlock; FTic timerOutBlock; );
-        for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
+        for(int idxLevel = FAbstractAlgorithm::lowerWorkingLevel-1 ; idxLevel >= FAbstractAlgorithm::upperWorkingLevel ; --idxLevel){
             FLOG( timerInBlock.tic() );
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
                 starpu_insert_task(&m2l_cl_in,
@@ -848,7 +854,7 @@ protected:
 
     void downardPass(){
         FLOG( FTic timer; );
-        for(int idxLevel = 2 ; idxLevel <= tree->getHeight()-2 ; ++idxLevel){
+        for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel - 1 ; ++idxLevel){
             int idxSubGroup = 0;
 
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){

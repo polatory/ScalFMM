@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 #ifndef FTYPEDLEAF_HPP
@@ -56,6 +56,20 @@ public:
     }
 
     /**
+     * To add a new particle in the leaf
+     * @param inParticlePosition the position of the new particle
+     * @param isTarget bool to know if it is a target
+     * followed by other param given by the user
+     */
+    template<typename... Args>
+    void push(const FPoint<FReal>& inParticlePosition, Args ... args){
+        FAssert(0,"Error : cannot push a particle without specifying type (src/tgt)");
+    }
+
+
+
+
+    /**
     * To get all the sources in a leaf
     * @return a pointer to the list of particles that are sources
     */
@@ -75,5 +89,3 @@ public:
 
 
 #endif //FTYPEDLEAF_HPP
-
-

@@ -248,8 +248,8 @@ public:
         for(int idxLeafPtr = 0 ; idxLeafPtr < blockHeader->blockIndexesTableSize ; ++idxLeafPtr){
             if(blockIndexesTable[idxLeafPtr] != LeafIsEmptyFlag){
                 const int id = blockIndexesTable[idxLeafPtr];
-                ParticlesAttachedClass leaf(symbPart + leafHeader[id].offSetSymb,
-                                            (downPart?downPart + leafHeader[id].offSetDown : nullptr));
+                ParticlesAttachedClass leaf( (leafHeader[id].sizeSymb? symbPart + leafHeader[id].offSetSymb : nullptr),
+                                             (downPart && leafHeader[id].sizeDown ?downPart + leafHeader[id].offSetDown : nullptr) );
                 function(&leaf);
             }
         }
@@ -261,10 +261,32 @@ public:
     ParticlesAttachedClass getLeaf(const MortonIndex leafIndex){
         if(blockIndexesTable[leafIndex - blockHeader->startingIndex] != LeafIsEmptyFlag){
             const int id = blockIndexesTable[leafIndex - blockHeader->startingIndex];
-            return ParticlesAttachedClass(symbPart + leafHeader[id].offSetSymb,
-                                        (downPart?downPart + leafHeader[id].offSetDown : nullptr));
+            return ParticlesAttachedClass((leafHeader[id].sizeSymb? symbPart + leafHeader[id].offSetSymb : nullptr),
+                                          (downPart && leafHeader[id].sizeDown ?downPart + leafHeader[id].offSetDown : nullptr) );
         }
         return ParticlesAttachedClass();
+    }
+
+    /** Return the buffer for a leaf or null if it does not exist */
+    unsigned char* getLeafSymbBuffer(const MortonIndex leafIndex){
+        if(blockIndexesTable[leafIndex - blockHeader->startingIndex] != LeafIsEmptyFlag){
+            const int id = blockIndexesTable[leafIndex - blockHeader->startingIndex];
+            if(leafHeader[id].sizeSymb){
+                return (symbPart + leafHeader[id].offSetSymb);
+            }
+        }
+        return nullptr;
+    }
+
+    /** Return the buffer for a leaf or null if it does not exist */
+    unsigned char* getLeafDownBuffer(const MortonIndex leafIndex){
+        if(blockIndexesTable[leafIndex - blockHeader->startingIndex] != LeafIsEmptyFlag){
+            const int id = blockIndexesTable[leafIndex - blockHeader->startingIndex];
+            if(leafHeader[id].sizeDown){
+                return (downPart?downPart + leafHeader[id].offSetDown : nullptr);
+            }
+        }
+        return nullptr;
     }
 };
 

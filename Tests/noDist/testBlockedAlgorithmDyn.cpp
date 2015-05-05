@@ -110,10 +110,6 @@ public:
         : symb(nullptr), up(nullptr), down(nullptr){
     }
 
-    void init(){
-        resetToInitialState();
-    }
-
     void release(){
         // nothing
     }
@@ -265,13 +261,33 @@ int main(int argc, char* argv[]){
 //                                    size_t* inSymbSize, size_t* inDownSize) {
 //                                        GroupContainerClass::GetSizeContainerFunc<ContainerClass>(
 //                                                    inIndex, inParticles, inSymbSize, inDownSize);
-//                                 });
+//                                 },
+//     [](const MortonIndex /*mindex*/,
+//                        unsigned char* symbBuff, const size_t /*symbSize*/,
+//                        unsigned char* upBuff, const size_t /*upSize*/,
+//                        unsigned char* downBuff, const size_t /*downSize*/,
+     //                         const int /*inLevel*/){
+//         GroupCellClass cell(symbBuff, upBuff, downBuff);
+//     });
     GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize,
                                  cellSymbSizePerLevel.get(), cellUpSizePerLevel.get(), cellDownSizePerLevel.get(),
                                  allParticles.get(), loader.getNumberOfParticles(),
                                  [](const MortonIndex inIndex, const UnknownDescriptor<FReal> inParticles[],
                                     const FSize inNbParticles, size_t* inSymbSize, size_t* inDownSize){
         GroupContainerClass::GetSizeFunc(inIndex, inParticles, inNbParticles, inSymbSize, inDownSize);
+    },
+    [](const MortonIndex inIndex, const UnknownDescriptor<FReal> inParticles[],
+                  const FSize inNbParticles, unsigned char* symbBuffer, const size_t inSymbSize,
+    unsigned char* downBuffer, const size_t inDownSize){
+        GroupContainerClass leaf(symbBuffer, downBuffer);
+        leaf.init(inIndex, inParticles, inNbParticles, inSymbSize, inDownSize);
+    },
+    [](const MortonIndex /*mindex*/,
+                       unsigned char* symbBuff, const size_t /*symbSize*/,
+                       unsigned char* upBuff, const size_t /*upSize*/,
+                       unsigned char* downBuff, const size_t /*downSize*/,
+                       const int /*inLevel*/){
+        GroupCellClass cell(symbBuff, upBuff, downBuff);
     });
 //    GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize,
 //                                 cellSymbSizePerLevel.get(), cellUpSizePerLevel.get(), cellDownSizePerLevel.get(),
@@ -280,6 +296,19 @@ int main(int argc, char* argv[]){
 //                                     const FSize inNbParticles, size_t* inSymbSize, size_t* inDownSize){
 //                                         GroupContainerClass::GetSizeFunc(inIndex, inParticles, inNbParticles, inSymbSize, inDownSize);
 //                                  },
+//    [](const MortonIndex inIndex, const UnknownDescriptor<FReal> inParticles[],
+//                  const FSize inNbParticles, unsigned char* symbBuffer, const size_t inSymbSize,
+//    unsigned char* downBuffer, const size_t inDownSize){
+//        GroupContainerClass leaf(symbBuffer, downBuffer);
+//        leaf.init(inIndex, inParticles, inNbParticles, inSymbSize, inDownSize);
+//    },
+//    [](const MortonIndex /*mindex*/,
+//                       unsigned char* symbBuff, const size_t /*symbSize*/,
+//                       unsigned char* upBuff, const size_t /*upSize*/,
+//                       unsigned char* downBuff, const size_t /*downSize*/,
+    //                         const int /*inLevel*/){
+//        GroupCellClass cell(symbBuff, upBuff, downBuff);
+//    }
 //                                 false, true);
 //    GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize,
 //                                cellSymbSizePerLevel.get(), cellUpSizePerLevel.get(), cellDownSizePerLevel.get(),
@@ -288,6 +317,19 @@ int main(int argc, char* argv[]){
 //                                    const FSize inNbParticles, size_t* inSymbSize, size_t* inDownSize){
 //                                        GroupContainerClass::GetSizeFunc(inIndex, inParticles, inNbParticles, inSymbSize, inDownSize);
 //                                 },
+//    [](const MortonIndex inIndex, const UnknownDescriptor<FReal> inParticles[],
+//                  const FSize inNbParticles, unsigned char* symbBuffer, const size_t inSymbSize,
+//    unsigned char* downBuffer, const size_t inDownSize){
+//        GroupContainerClass leaf(symbBuffer, downBuffer);
+//        leaf.init(inIndex, inParticles, inNbParticles, inSymbSize, inDownSize);
+//    },
+//    [](const MortonIndex /*mindex*/,
+//                       unsigned char* symbBuff, const size_t /*symbSize*/,
+//                       unsigned char* upBuff, const size_t /*upSize*/,
+//                       unsigned char* downBuff, const size_t /*downSize*/,
+//                         const int /*inLevel*/){
+//        GroupCellClass cell(symbBuff, upBuff, downBuff);
+//    }
 //                                false, true, 0.2);
     groupedTree.printInfoBlocks();
 

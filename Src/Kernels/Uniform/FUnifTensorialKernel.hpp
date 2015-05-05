@@ -84,6 +84,9 @@ protected://PB: for OptiDis
     /// Needed for M2L operator
     const M2LHandlerClass M2LHandler;
 
+    /// Leaf level separation criterion
+    const int LeafLevelSeparationCriterion;
+
 public:
     /**
      * The constructor initializes all constant attributes and it reads the
@@ -94,13 +97,16 @@ public:
                          const FReal inBoxWidth,
                          const FPoint<FReal>& inBoxCenter,
                          const MatrixKernelClass *const inMatrixKernel,
-                         const FReal inBoxWidthExtension)
+                         const FReal inBoxWidthExtension,
+                         const int inLeafLevelSeparationCriterion = 1)
     : FAbstractUnifKernel< FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter,inBoxWidthExtension),
       MatrixKernel(inMatrixKernel),
       M2LHandler(MatrixKernel,
                  inTreeHeight,
                  inBoxWidth,
-                 inBoxWidthExtension) 
+                 inBoxWidthExtension,
+                 inLeafLevelSeparationCriterion), 
+      LeafLevelSeparationCriterion(inLeafLevelSeparationCriterion)
     { }
 
 

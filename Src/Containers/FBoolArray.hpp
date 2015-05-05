@@ -16,7 +16,8 @@
 #ifndef FBOOLARRAY_HPP
 #define FBOOLARRAY_HPP
 
-
+#include "../Utils/FGlobal.hpp"
+#include "../Utils/FAssert.hpp"
 // To get memcpy
 #include <cstring>
 
@@ -31,35 +32,54 @@
 */
 class FBoolArray{
     /** Size of a unsigned long */
-    const static int BytesInBlock = sizeof(unsigned long);
-    const static int SizeOfBlock = BytesInBlock * 8;
+    const static FSize BytesInBlock = sizeof(unsigned long);
+    const static FSize SizeOfBlock = BytesInBlock * 8;
 
     /** The array to store bits */
-    unsigned long* const array;
+    unsigned long* array;
     /** Size of the memory allocated */
-    const int memSize;
+    FSize memSize;
     /** Size of the array => number of real elements */
-    const int size;
+    FSize size;
 
     /** get size to number of long */
-    int LongFromSize(const int inSize){
+    FSize LongFromSize(const FSize inSize){
         return ((inSize + SizeOfBlock - 1) / SizeOfBlock);
     }
 
     /** Alloc an array */
-    unsigned long * AllocArray(const int inSize){
+    unsigned long * AllocArray(const FSize inSize){
         return new unsigned long[LongFromSize(inSize)];
     }
 
 public :
     /** Constructor with size */
-    FBoolArray(const int inSize) : array(AllocArray(inSize)), memSize(LongFromSize(inSize)*BytesInBlock), size(inSize) {
+    explicit FBoolArray(const FSize inSize = 0) : array(AllocArray(inSize)), memSize(LongFromSize(inSize)*BytesInBlock), size(inSize) {
         setToZeros();
     }
 
     /** Constructor form another array */
     FBoolArray(const FBoolArray& other): array(AllocArray(other.size)), memSize(other.memSize), size(other.size){
         *this = other;
+    }
+
+    /** Move the data */
+    FBoolArray(FBoolArray&& other): array(nullptr), memSize(0), size(0){
+        array   = other.array;
+        memSize = other.memSize;
+        size    = other.size;
+        other.array   = nullptr;
+        other.memSize = 0;
+        other.size    = 0;
+    }
+
+    /** remove all values and allocate new array */
+    void reset(const FSize inSize){
+        delete [] array;
+        array   = (AllocArray(inSize));
+        memSize = (LongFromSize(inSize)*BytesInBlock);
+        size    = (inSize);
+        setToZeros();
     }
 
     /** Destructor */
@@ -72,7 +92,22 @@ public :
     * Array must have the same size
     */
     FBoolArray& operator=(const FBoolArray& other){
+        FAssertLF(size == other.size);
         memcpy(array, other.array, memSize);
+        return *this;
+    }
+
+    /**
+     * Move the data from one array to the other
+     */
+    FBoolArray& operator=(FBoolArray&& other){
+        delete [] array;
+        array   = other.array;
+        memSize = other.memSize;
+        size    = other.size;
+        other.array   = nullptr;
+        other.memSize = 0;
+        other.size    = 0;
         return *this;
     }
 
@@ -93,28 +128,33 @@ public :
     }
 
     /** To get a value */
-    bool get(const int inPos) const {
-        const int posInArray = inPos / SizeOfBlock;
-        const int bytePosition = inPos - (posInArray * 8);
+    bool get(const FSize inPos) const {
+        const FSize posInArray = inPos / SizeOfBlock;
+        const FSize bytePosition = inPos - (posInArray * 8);
         return (array[posInArray] >> bytePosition) & 1;
     }
 
     /** To set a value */
-    void set(const int inPos, const bool inVal){
-        const int posInArray = inPos / SizeOfBlock;
-        const int bytePosition = inPos - (posInArray * 8);
+    void set(const FSize inPos, const bool inVal){
+        const FSize posInArray = inPos / SizeOfBlock;
+        const FSize bytePosition = inPos - (posInArray * 8);
         if(inVal) array[posInArray] |= (1UL << bytePosition);
         else array[posInArray] &= ~(1UL << bytePosition);
     }
 
     /** To get the size of the array */
-    int getSize() const {
+    FSize getSize() const {
         return size;
     }
 
     /** Set all the memory to 0 */
     void setToZeros() const {
         memset( array, 0, memSize);
+    }
+
+    /** Set all the memory to 1 */
+    void setToOnes() const {
+        memset( array, (unsigned char)0xFF, memSize);
     }
 };
 

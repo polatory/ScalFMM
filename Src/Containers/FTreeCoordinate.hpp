@@ -342,7 +342,8 @@ public:
         return idxNeig;
     }
 
-    int getInteractionNeighbors(const int inLevel, MortonIndex inNeighbors[189], int inNeighborsPosition[189]) const{
+    int getInteractionNeighbors(const int inLevel, MortonIndex inNeighbors[/*189+26+1*/216], int inNeighborsPosition[/*189+26+1*/216],
+                            const int neighSeparation = 1) const{
         // Then take each child of the parent's neighbors if not in directNeighbors
         // Father coordinate
         const FTreeCoordinate parentCell(this->getX()>>1,this->getY()>>1,this->getZ()>>1);
@@ -362,7 +363,7 @@ public:
                     if(!FMath::Between(parentCell.getZ() + idxZ,0,limite)) continue;
 
                     // if we are not on the current cell
-                    if( idxX || idxY || idxZ ){
+                    if(neighSeparation<1 || idxX || idxY || idxZ ){
                         const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
                         const MortonIndex mortonOther = otherParent.getMortonIndex(inLevel-1);
 
@@ -373,7 +374,7 @@ public:
                             const int zdiff  = ((otherParent.getZ()<<1) | (idxCousin&1)) - this->getZ();
 
                             // Test if it is a direct neighbor
-                            if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
+                            if(FMath::Abs(xdiff) > neighSeparation || FMath::Abs(ydiff) > neighSeparation || FMath::Abs(zdiff) > neighSeparation){
                                 // add to neighbors
                                 inNeighborsPosition[idxNeighbors] = ((( (xdiff+3) * 7) + (ydiff+3))) * 7 + zdiff + 3;
                                 inNeighbors[idxNeighbors++] = (mortonOther << 3) | idxCousin;
@@ -387,7 +388,7 @@ public:
         return idxNeighbors;
     }
 
-    int getInteractionNeighbors(const int inLevel, MortonIndex inNeighbors[189]) const{
+    int getInteractionNeighbors(const int inLevel, MortonIndex inNeighbors[/*189+26+1*/216], const int neighSeparation = 1) const{
         // Then take each child of the parent's neighbors if not in directNeighbors
         // Father coordinate
         const FTreeCoordinate parentCell(this->getX()>>1,this->getY()>>1,this->getZ()>>1);
@@ -407,7 +408,7 @@ public:
                     if(!FMath::Between(parentCell.getZ() + idxZ,0,limite)) continue;
 
                     // if we are not on the current cell
-                    if( idxX || idxY || idxZ ){
+                    if(neighSeparation<1 || idxX || idxY || idxZ ){
                         const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
                         const MortonIndex mortonOther = otherParent.getMortonIndex(inLevel-1);
 
@@ -418,7 +419,7 @@ public:
                             const int zdiff  = ((otherParent.getZ()<<1) | (idxCousin&1)) - this->getZ();
 
                             // Test if it is a direct neighbor
-                            if(FMath::Abs(xdiff) > 1 || FMath::Abs(ydiff) > 1 || FMath::Abs(zdiff) > 1){
+                            if(FMath::Abs(xdiff) > neighSeparation || FMath::Abs(ydiff) > neighSeparation || FMath::Abs(zdiff) > neighSeparation){
                                 // add to neighbors
                                 inNeighbors[idxNeighbors++] = (mortonOther << 3) | idxCousin;
                             }

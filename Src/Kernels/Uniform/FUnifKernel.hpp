@@ -60,6 +60,8 @@ class FUnifKernel
     /// Needed for M2L operator
     const M2LHandlerClass M2LHandler;
 
+    /// Leaf level separation criterion
+    const int LeafLevelSeparationCriterion;
 
 public:
     /**
@@ -70,12 +72,15 @@ public:
     FUnifKernel(const int inTreeHeight,
                 const FReal inBoxWidth,
                 const FPoint<FReal>& inBoxCenter,
-                const MatrixKernelClass *const inMatrixKernel)
+                const MatrixKernelClass *const inMatrixKernel,
+                const int inLeafLevelSeparationCriterion = 1)
     : FAbstractUnifKernel< FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter),
       MatrixKernel(inMatrixKernel),
       M2LHandler(MatrixKernel,
                  inTreeHeight,
-                 inBoxWidth) 
+                 inBoxWidth,
+                 inLeafLevelSeparationCriterion),
+      LeafLevelSeparationCriterion(inLeafLevelSeparationCriterion)
     { }
 
 
@@ -186,7 +191,13 @@ public:
              ContainerClass* const NeighborSourceParticles[27],
              const int /* size */)
     {
-        DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
+        // Standard FMM separation criterion, i.e. max 27 neighbor clusters per leaf
+        if(LeafLevelSeparationCriterion==1) 
+            DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
+        // Nearfield interactions are only computed within the target leaf
+        if(LeafLevelSeparationCriterion==0) 
+            DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2PRemote(TargetParticles,NeighborSourceParticles,0,MatrixKernel);
+        // If criterion equals -1 then no P2P need to be performed.
     }
 
 
@@ -194,7 +205,13 @@ public:
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                    ContainerClass* const inNeighbors[27], const int /*inSize*/)
     {
-        DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
+        // Standard FMM separation criterion, i.e. max 27 neighbor clusters per leaf
+        if(LeafLevelSeparationCriterion==1) 
+            DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
+        // Nearfield interactions are only computed within the target leaf
+        if(LeafLevelSeparationCriterion==0) 
+            DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,0,MatrixKernel);
+        // If criterion equals -1 then no P2P need to be performed.
     }
 
 };

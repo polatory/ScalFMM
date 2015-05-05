@@ -59,34 +59,27 @@
  * #include "../../Src/GroupTree/StarPUUtils/FStarPUHeteoprio.hpp"
  *
  * void initSchedulerCallback(unsigned sched_ctx_id,
- *                            struct _starpu_heteroprio_center_policy_heteroprio *heteroprio){
+ *     struct _starpu_heteroprio_center_policy_heteroprio *heteroprio){
  *     // CPU uses 3 buckets
- *     heteroprio->nb_prio_per_arch_index[FSTARPU_CPU_IDX] = 3;
+ *     starpu_heteroprio_set_nb_prios(heteroprio, FSTARPU_CPU_IDX, 3);
  *     // It uses direct mapping idx => idx
  *     for(unsigned idx = 0 ; idx < 3 ; ++idx){
- *         heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][idx] = idx;
- *         // We say CPU is faster
- *         heteroprio->buckets[idx].factor_base_arch_index = FSTARPU_CPU_IDX;
- *         // We must say that CPU uses these buckets
- *         heteroprio->buckets[idx].valide_archs |= STARPU_CPU;
+ *         starpu_heteroprio_set_mapping(heteroprio, FSTARPU_CPU_IDX, idx, idx);
+ *         starpu_heteroprio_set_faster_arch(heteroprio, FSTARPU_CPU_IDX, idx);
  *     }
  * #ifdef STARPU_USE_OPENCL
  *     // OpenCL is enabled and uses 2 buckets
- *     heteroprio->nb_prio_per_arch_index[FSTARPU_OPENCL_IDX] = 2;
+ *     starpu_heteroprio_set_nb_prios(heteroprio, FSTARPU_OPENCL_IDX, 2);
  *     // OpenCL will first look to priority 2
- *     heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][0] = 2;
- *     // We tell the scheduler that OpenCL uses this bucket
- *     heteroprio->buckets[2].valide_archs |= STARPU_OPENCL;
+ *     starpu_heteroprio_set_mapping(heteroprio, FSTARPU_OPENCL_IDX, 0, 2);
  *     // For this bucket OpenCL is the fastest
- *     heteroprio->buckets[2].factor_base_arch_index = FSTARPU_OPENCL_IDX;
+ *     starpu_heteroprio_set_faster_arch(heteroprio, FSTARPU_OPENCL_IDX, 2);
  *     // And CPU is 4 times slower
- *     heteroprio->buckets[2].slow_factors_per_index[FSTARPU_CPU_IDX] = 4.0f;
+ *     starpu_heteroprio_set_arch_slow_factor(heteroprio, FSTARPU_CPU_IDX, 2, 4.0f);
  *
- *     heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][1] = 1;
- *     // We tell the scheduler that OpenCL uses this bucket
- *     heteroprio->buckets[1].valide_archs |= STARPU_OPENCL;
- *     // We let the CPU as the fastest PU and tell that OpenCL is 1.7 times slower
- *     heteroprio->buckets[1].slow_factors_per_index[FSTARPU_OPENCL_IDX] = 1.7f;
+ *     starpu_heteroprio_set_mapping(heteroprio, FSTARPU_OPENCL_IDX, 1, 1);
+ *     // We let the CPU as the fastest and tell that OpenCL is 1.7 times slower
+ *     starpu_heteroprio_set_arch_slow_factor(heteroprio, FSTARPU_OPENCL_IDX, 1, 1.7f);
  * #endif
  * }
  *
@@ -346,9 +339,46 @@ struct _starpu_heteroprio_center_policy_heteroprio
     unsigned nb_workers_per_arch_index[FSTARPU_NB_TYPES];
 };
 
+/********************************************************************************/
+/********************************************************************************/
+
 /* This is the callback that must init the scheduler buckets */
-/*extern*/ void (*initialize_heteroprio_center_policy_callback)(unsigned sched_ctx_id,
-                struct _starpu_heteroprio_center_policy_heteroprio *heteroprio) = NULL;
+typedef void (*Heteroprio_callback_type)(unsigned sched_ctx_id, void* heteroprio);
+/*extern*/ Heteroprio_callback_type initialize_heteroprio_center_policy_callback = NULL;
+
+
+inline void starpu_heteroprio_set_callback(Heteroprio_callback_type user_callback){
+    initialize_heteroprio_center_policy_callback = user_callback;
+}
+
+/** Tell how many prio there are for a given arch */
+inline void starpu_heteroprio_set_nb_prios(void* heterodata, const FStarPUTypes arch, const unsigned max_prio){
+    assert(max_prio < HETEROPRIO_MAX_PRIO);
+    ((struct _starpu_heteroprio_center_policy_heteroprio*)heterodata)->nb_prio_per_arch_index[arch] = max_prio;
+}
+
+/** Set the mapping for a given arch prio=>bucket */
+inline void starpu_heteroprio_set_mapping(void* heterodata, const FStarPUTypes arch, const unsigned source_prio, const unsigned dest_bucket_id){
+    assert(dest_bucket_id < HETEROPRIO_MAX_PRIO);
+    ((struct _starpu_heteroprio_center_policy_heteroprio*)heterodata)->prio_mapping_per_arch_index[arch][source_prio] = dest_bucket_id;
+    ((struct _starpu_heteroprio_center_policy_heteroprio*)heterodata)->buckets[dest_bucket_id].valide_archs |= FStarPUTypesToArch[arch];
+}
+
+/** Tell which arch is the faster for the tasks of a bucket (optional) */
+inline void starpu_heteroprio_set_faster_arch(void* heterodata, const FStarPUTypes arch, const unsigned bucket_id){
+    assert(bucket_id < HETEROPRIO_MAX_PRIO);
+    ((struct _starpu_heteroprio_center_policy_heteroprio*)heterodata)->buckets[bucket_id].factor_base_arch_index = arch;
+    ((struct _starpu_heteroprio_center_policy_heteroprio*)heterodata)->buckets[bucket_id].slow_factors_per_index[arch] = 0;
+}
+
+/** Tell how slow is a arch for the tasks of a bucket (optional) */
+inline void starpu_heteroprio_set_arch_slow_factor(void* heterodata, const FStarPUTypes arch, const unsigned bucket_id, const float slow_factor){
+    assert(bucket_id < HETEROPRIO_MAX_PRIO);
+    ((struct _starpu_heteroprio_center_policy_heteroprio*)heterodata)->buckets[bucket_id].slow_factors_per_index[arch] = slow_factor;
+}
+
+/********************************************************************************/
+/********************************************************************************/
 
 /* Init the scheduler - This will call the init callback! */
 static void initialize_heteroprio_center_policy(unsigned sched_ctx_id)
