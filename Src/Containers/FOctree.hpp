@@ -832,7 +832,7 @@ public:
                     if(!FMath::Between(parentCell.getZ() + idxZ,0,boxLimite)) continue;
 
                     // if we are not on the current cell
-                    if( idxX || idxY || idxZ ){
+                    if( neighSeparation<1 || idxX || idxY || idxZ ){
                         const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
                         const MortonIndex mortonOtherParent = otherParent.getMortonIndex(inLevel-1) << 3;
                         // Get child

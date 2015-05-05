@@ -433,6 +433,107 @@ struct FInterpMatrixKernelLJ : FInterpAbstractMatrixKernel<FReal>
     }
 };
 
+
+/// One over (a+r^2)
+template <class FReal>
+struct FInterpMatrixKernelAPLUSRR : FInterpAbstractMatrixKernel<FReal>
+{
+    static const KERNEL_FUNCTION_TYPE Type = NON_HOMOGENEOUS;
+    static const unsigned int NCMP = 1; //< number of components
+    static const unsigned int NPV  = 1; //< dim of physical values
+    static const unsigned int NPOT = 1; //< dim of potentials
+    static const unsigned int NRHS = 1; //< dim of mult exp
+    static const unsigned int NLHS = 1; //< dim of loc exp
+
+    const FReal CoreWidth;
+
+    FInterpMatrixKernelAPLUSRR(const FReal inCoreWidth = .25)
+    : CoreWidth(inCoreWidth)
+     {}
+
+    // copy ctor
+    FInterpMatrixKernelAPLUSRR(const FInterpMatrixKernelAPLUSRR& other)
+    : CoreWidth(other.CoreWidth)
+    {}
+
+  static const char* getID() { return "ONE_OVER_A_PLUS_RR"; }
+
+    // returns position in reduced storage
+    int getPosition(const unsigned int) const
+    {return 0;}
+
+    // evaluate interaction
+    template <class ValueClass>
+    ValueClass evaluate(const ValueClass& x1, const ValueClass& y1, const ValueClass& z1,
+                   const ValueClass& x2, const ValueClass& y2, const ValueClass& z2) const
+    {
+        const ValueClass diffx = (x1-x2);
+        const ValueClass diffy = (y1-y2);
+        const ValueClass diffz = (z1-z2);
+        return FMath::One<ValueClass>() / (FMath::ConvertTo<ValueClass,FReal>(CoreWidth) + // WHY FReal??
+                                           diffx*diffx +
+                                           diffy*diffy +
+                                           diffz*diffz);
+    }
+
+    // evaluate interaction (blockwise)
+    template <class ValueClass>
+    void evaluateBlock(const ValueClass& x1, const ValueClass& y1, const ValueClass& z1,
+                       const ValueClass& x2, const ValueClass& y2, const ValueClass& z2, ValueClass* block) const
+    {
+        block[0]=this->evaluate(x1,y1,z1,x2,y2,z2);
+    }
+
+    // evaluate interaction and derivative (blockwise)
+    template <class ValueClass>
+    void evaluateBlockAndDerivative(const ValueClass& x1, const ValueClass& y1, const ValueClass& z1,
+                                    const ValueClass& x2, const ValueClass& y2, const ValueClass& z2,
+                                    ValueClass block[1], ValueClass blockDerivative[3]) const
+    {
+        const ValueClass diffx = (x1-x2);
+        const ValueClass diffy = (y1-y2);
+        const ValueClass diffz = (z1-z2);
+        const ValueClass r2 = (diffx*diffx +
+                               diffy*diffy +
+                               diffz*diffz);
+        const ValueClass one_over_a_plus_r2 = FMath::One<ValueClass>() / (FMath::ConvertTo<ValueClass,FReal>(CoreWidth)+r2);
+        const ValueClass one_over_a_plus_r2_squared = one_over_a_plus_r2*one_over_a_plus_r2;
+
+        block[0] = one_over_a_plus_r2;
+
+        // TODO Fix derivative
+        const ValueClass coef = FMath::ConvertTo<ValueClass,FReal>(-2.) * one_over_a_plus_r2_squared;
+        blockDerivative[0] = coef * diffx;
+        blockDerivative[1] = coef * diffy;
+        blockDerivative[2] = coef * diffz;
+
+    }
+
+    FReal getScaleFactor(const FReal, const int) const
+    {
+        // return 1 because non homogeneous kernel functions cannot be scaled!!!
+        return FReal(1.0);
+    }
+
+    FReal getScaleFactor(const FReal) const
+    {
+        // return 1 because non homogeneous kernel functions cannot be scaled!!!
+        return FReal(1.0);    
+    }
+
+    FReal evaluate(const FPoint<FReal>& p1, const FPoint<FReal>& p2) const{
+        return evaluate<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());
+    }
+    void evaluateBlock(const FPoint<FReal>& p1, const FPoint<FReal>& p2, FReal* block) const{
+        evaluateBlock<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block);
+    }
+    void evaluateBlockAndDerivative(const FPoint<FReal>& p1, const FPoint<FReal>& p2,
+                                    FReal block[1], FReal blockDerivative[3]) const {
+        evaluateBlockAndDerivative<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ(), block, blockDerivative);
+    }
+};
+
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 //
