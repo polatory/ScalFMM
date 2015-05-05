@@ -1,5 +1,11 @@
+// ==== CMAKE ====
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
 #ifndef _ALGOLOADERTHREAD_HPP_
 #define _ALGOLOADERTHREAD_HPP_
+
+#include <memory>
 
 #include "PerfTestUtils.hpp"
 
@@ -26,20 +32,24 @@ public:
 
     bool _omp_static_schedule;
 
+    std::unique_ptr<FMMClass> _algo;
+
     AlgoLoaderThread(FPerfTestParams& params,
                      TreeLoader& treeLoader,
                      KernelLoader& kernelLoader) :
         _treeLoader(treeLoader),
         _kernelLoader(kernelLoader),
-        _omp_static_schedule(params.omp_static_schedule) {
+        _omp_static_schedule(params.omp_static_schedule),
+        _algo(nullptr) {
         
     }
 
-
     void run() {
-        FMMClass algo(&(_treeLoader._tree), &(_kernelLoader._kernel),
-                      _omp_static_schedule);
-        algo.execute();
+        _algo = std::unique_ptr<FMMClass>(
+            new FMMClass(&(_treeLoader._tree), &(_kernelLoader._kernel),
+                         _omp_static_schedule));
+
+        _algo->execute();
     }
 };
 

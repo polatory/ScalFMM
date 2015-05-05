@@ -1,5 +1,12 @@
+// ==== CMAKE ====
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
 #ifndef _ALGOLOADERCOSTZONES_HPP_
 #define _ALGOLOADERCOSTZONES_HPP_
+
+#include <memory>
+#include <sstream>
 
 #include "PerfTestUtils.hpp"
 
@@ -37,15 +44,20 @@ public:
     using CostFmmClass = FFmmAlgorithm
         <OctreeClass, CellClass, ContainerClass, CostKernelClass, LeafClass>;
 
+    std::stringstream _infostring;
     TreeLoader& _treeLoader;
     KernelLoader& _kernelLoader;
+
+    std::unique_ptr<FMMClass> _algo;
+    
 
     /// Builds the loader
     AlgoLoaderCostZones(FPerfTestParams& /*params*/,
                         TreeLoader& treeLoader,
                         KernelLoader& kernelLoader) :
         _treeLoader(treeLoader),
-        _kernelLoader(kernelLoader) {
+        _kernelLoader(kernelLoader),
+        _algo(nullptr) {
         
     }
 
@@ -61,6 +73,7 @@ public:
         costAlgo.execute();
         this->time.tac();
         std::cout << "Generating tree cost: " << this->time.elapsed() << "s.\n";
+        _infostring << "costgen:" << this->time.elapsed() << " ";
 
         FCostZones<OctreeClass, CellClass> costzones(p_tree, omp_get_max_threads());
 
@@ -68,12 +81,18 @@ public:
         costzones.run();
         this->time.tac();
         std::cout << "Generating cost zones: " << this->time.elapsed() << "s.\n";
-
+        _infostring << "zonegen:" << this->time.elapsed() << " ";
 
         this->time.tic();
-        FMMClass algo(p_tree, &(_kernelLoader._kernel), costzones.getZoneBounds(), costzones.getLeafZoneBounds());
-        algo.execute();
+        _algo = std::unique_ptr<FMMClass>(
+            new FMMClass(p_tree, &(_kernelLoader._kernel),
+                         costzones.getZoneBounds(), costzones.getLeafZoneBounds()));
+        _algo->execute();
         this->time.tac();
+    }
+
+    std::string getRunInfoString() const {
+        return _infostring.str();
     }
 };
 
