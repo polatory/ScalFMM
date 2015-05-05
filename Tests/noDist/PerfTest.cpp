@@ -1,3 +1,7 @@
+// ==== CMAKE ====
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
 
 /**
  * \file
@@ -25,6 +29,7 @@
 
 #include "AlgoLoaderThread.hpp"
 #include "AlgoLoaderTask.hpp"
+#include "AlgoLoaderSectionTask.hpp"
 #include "AlgoLoaderCostZones.hpp"
 
 /**
@@ -48,6 +53,23 @@ void runperf(FPerfTestParams& params)
     KernelLoader<TreeLoader> kernelLoader(params, treeLoader);
     AlgoLoader<TreeLoader, KernelLoader> algoLoader(params, treeLoader, kernelLoader);
     algoLoader.run();
+
+    auto& algo = *(algoLoader._algo);
+    std::cout << "@@ "
+              << "algo:" << params.algo << " "
+              << "file:" << params.filename.substr(params.filename.find_last_of('/')+1) << " "
+              << "particles:" << treeLoader._loader.getNumberOfParticles() << " "
+              << "threads:" << params.nbThreads                            << " "
+              << "height:" << params.treeHeight                            << " "
+              << "subheight:" << params.subTreeHeight                     << " "
+              << algoLoader.getRunInfoString()
+              << "P2M:" << algo.getTime(FAlgorithmTimers::P2MTimer)        << " "
+              << "M2M:" << algo.getTime(FAlgorithmTimers::M2MTimer)        << " "
+              << "M2L:" << algo.getTime(FAlgorithmTimers::M2LTimer)        << " "
+              << "L2L:" << algo.getTime(FAlgorithmTimers::L2LTimer)        << " "
+              << "P2PL2P:" << algo.getTime(FAlgorithmTimers::NearTimer)    << " "
+              << std::endl;
+
 }
 
 int main (int argc, char** argv)
@@ -82,6 +104,8 @@ int main (int argc, char** argv)
         runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderTask>(params);
     } else if ( "costzones" == params.algo ) {
         runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderCostZones>(params);
+    } else if ( "sectiontask" == params.algo ) {
+        runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderSectionTask>(params);
     } else {
         std::cout << "Unknown algorithm: " << params.algo << std::endl;
     }
