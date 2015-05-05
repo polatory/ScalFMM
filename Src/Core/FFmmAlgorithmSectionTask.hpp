@@ -40,7 +40,7 @@
 * Of course this class does not deallocate pointer given in arguements.
 */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
-class FFmmAlgorithmSectionTask : public FAbstractAlgorithm{
+class FFmmAlgorithmSectionTask : public FAbstractAlgorithm, public FAlgorithmTimers {
 
     OctreeClass* const tree;       //< The octree to work on
     KernelClass** kernels;    //< The kernels
@@ -99,24 +99,38 @@ protected:
             {
                 #pragma omp section
                 {
+                    Timers[P2MTimer].tic();
                     if(operationsToProceed & FFmmP2M) bottomPass();
-
+                    Timers[P2MTimer].tac();
+                    
+                    Timers[M2MTimer].tic();
                     if(operationsToProceed & FFmmM2M) upwardPass();
-
+                    Timers[M2MTimer].tac();
+                    
+                    Timers[M2LTimer].tic();
                     if(operationsToProceed & FFmmM2L) transferPass();
-
+                    Timers[M2LTimer].tac();
+                    
+                    Timers[L2LTimer].tic();
                     if(operationsToProceed & FFmmL2L) downardPass();
+                    Timers[L2LTimer].tac();
+                    
                 }
                 #pragma omp section
                 {
-                    if(operationsToProceed & FFmmP2P) directPass();
+                    Timers[P2PTimer].tic();
+                    if( operationsToProceed & FFmmP2P ) directPass();
+                    Timers[P2PTimer].tac();
                 }
             }
             #pragma omp single
             {
+                Timers[L2PTimer].tic();
                 if(operationsToProceed & FFmmL2P) L2PPass();
+                Timers[L2PTimer].tac();
             }
         }
+        Timers[NearTimer] = Timers[L2PTimer] + Timers[P2PTimer];
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -321,7 +335,7 @@ protected:
         FLOG( computationCounter.tic() );
 
         for( int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-            const int nbLeaf = shapes[idxShape].getSize();
+            const FSize nbLeaf = shapes[idxShape].getSize();
             for(int iterLeaf = 0 ; iterLeaf < nbLeaf ; ++iterLeaf ){
                 typename OctreeClass::Iterator toWork = shapes[idxShape][iterLeaf];
                 #pragma omp task firstprivate(neighbors, toWork)
