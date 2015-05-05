@@ -71,12 +71,13 @@ public:
         return *this;
     }
 
-    const FTic operator+(const FTic& other) {
-        start = start < other.start ? start : other.start;
-        end = end > other.end ? end : other.end;
-        cumulate += other.cumulate;
+    const FTic operator+(const FTic& other) const {
+        FTic res(*this);
+        res.start = start < other.start ? start : other.start;
+        res.end = end > other.end ? end : other.end;
+        res.cumulate += other.cumulate;
 
-        return FTic(*this);
+        return res;
     }
     
 
