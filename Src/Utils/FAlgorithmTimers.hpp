@@ -45,7 +45,7 @@ public:
         Timers = new FTic[nbTimers];
     }
 
-    ~FAlgorithmTimers(){
+    virtual ~FAlgorithmTimers(){
         delete[] Timers;
     }
 

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <math.h>
 
 //For timing monitoring
 #include <time.h>
@@ -20,7 +20,7 @@
 /**
  * @brief Wrapper to init internal ChebCell
  */
-void* cheb_init_cell(int level, long long morton_index, int* tree_position, double* spatial_position){
+void* cheb_init_cell(int level, long long morton_index, int* tree_position, double* spatial_position, void * KernelDatas){
     return ChebCellStruct_create(morton_index,tree_position);
 }
 
@@ -53,6 +53,10 @@ void cheb_l2p(void* leafCell, FSize nbParticles, const FSize* particleIndexes, v
 void cheb_p2pFull(FSize nbParticles, const FSize* particleIndexes,
                   const FSize * sourceParticleIndexes[27], FSize sourceNbPart[27],void* userData) {
     ChebKernel_P2P(nbParticles, particleIndexes, sourceParticleIndexes, sourceNbPart, userData);
+}
+
+void cheb_resetCell(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell){
+    ChebCell_reset(level,morton_index,tree_position,spatial_position,userCell);
 }
 
 
@@ -158,10 +162,11 @@ int main(int argc, char ** av){
         /* fclose(fd); */
     }
 
-    scalfmm_handle handle = scalfmm_init(user_defined_kernel);
+    scalfmm_handle handle = scalfmm_init(user_defined_kernel,multi_thread);
 
     //For Reference
-    scalfmm_handle handle_ref = scalfmm_init(chebyshev);
+    scalfmm_handle handle_ref = scalfmm_init(chebyshev,multi_thread);
+
 
     //Struct for user defined kernel
     struct User_Scalfmm_Cell_Descriptor cellDescriptor;
@@ -180,13 +185,8 @@ int main(int argc, char ** av){
     scalfmm_build_tree(handle,treeHeight, boxWidth, boxCenter, cellDescriptor);
     scalfmm_build_tree(handle_ref,treeHeight, boxWidth, boxCenter, user_descr);
 
-    // Insert particles
-    printf("Inserting particles...\n");
-    scalfmm_tree_insert_particles_xyz(handle, nbPart, particleXYZ);
-    scalfmm_tree_insert_particles_xyz(handle_ref, nbPart, particleXYZ);
+    //Once is the tree built, one must set the kernel before inserting particles
 
-    //Set physical values for Cheb_ref
-    scalfmm_set_physical_values(handle_ref,nbPart,physicalValues);
     //Set our callbacks
     struct User_Scalfmm_Kernel_Descriptor kernel;
     kernel.p2m = cheb_p2m;
@@ -239,83 +239,125 @@ int main(int argc, char ** av){
     //Give ScalFMM the datas before calling fmm (this will set as well the kernel)
     scalfmm_user_kernel_config(handle,kernel,&userDatas);
 
+
+    // Insert particles
+    printf("Inserting particles...\n");
+    scalfmm_tree_insert_particles_xyz(handle, nbPart, particleXYZ,BOTH);
+    scalfmm_tree_insert_particles_xyz(handle_ref, nbPart, particleXYZ,BOTH);
+
+
+    //Set physical values for Cheb_ref
+    scalfmm_set_physical_values(handle_ref,nbPart,physicalValues,BOTH);
+
+
+
     //Set timers
     Timer interface_timer,ref_timer;
+    int ite=0, max_ite=5;
+    while(ite<max_ite){
+        //Execute FMM
+        tic(&interface_timer);
+        scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
+        tac(&interface_timer);
 
-    //Execute FMM
-    tic(&interface_timer);
-    scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
-    tac(&interface_timer);
 
-    //Reduction on forces & potential arrays
-    {
-        FSize idxPart;
-        for(idThreads=1 ; idThreads<nb_threads ; ++idThreads){
-            for(idxPart=0 ; idxPart<nbPart ; ++idxPart){
-                //Everything is stored in first array
-                forcesToStore[0][3*idxPart+0] += forcesToStore[idThreads][3*idxPart+0];
-                forcesToStore[0][3*idxPart+1] += forcesToStore[idThreads][3*idxPart+1];
-                forcesToStore[0][3*idxPart+2] += forcesToStore[idThreads][3*idxPart+2];
-                potentialToStore[0][idxPart] += potentialToStore[idThreads][idxPart];
+        //Reduction on forces & potential arrays
+        {
+            FSize idxPart;
+            for(idThreads=1 ; idThreads<nb_threads ; ++idThreads){
+                for(idxPart=0 ; idxPart<nbPart ; ++idxPart){
+                    //Everything is stored in first array
+
+                    forcesToStore[0][3*idxPart+0] += forcesToStore[idThreads][3*idxPart+0];
+                    forcesToStore[0][3*idxPart+1] += forcesToStore[idThreads][3*idxPart+1];
+                    forcesToStore[0][3*idxPart+2] += forcesToStore[idThreads][3*idxPart+2];
+                    potentialToStore[0][idxPart] += potentialToStore[idThreads][idxPart];
+                }
             }
         }
-    }
 
-    printf("User defined Chebyshev done\n");
-    print_elapsed(&interface_timer);
+        printf("User defined Chebyshev done\n");
+        print_elapsed(&interface_timer);
 
-    tic(&ref_timer);
-    scalfmm_execute_fmm(handle_ref/*, kernel, &my_data*/);
-    tac(&ref_timer);
+        tic(&ref_timer);
+        scalfmm_execute_fmm(handle_ref/*, kernel, &my_data*/);
+        tac(&ref_timer);
 
-    printf("Intern Chebyshev done\n");
-    print_elapsed(&ref_timer);
+        printf("Intern Chebyshev done\n");
+        print_elapsed(&ref_timer);
 
-    //Print time results
-    print_difference_elapsed(&interface_timer,&ref_timer);
+        //Print time results
+        print_difference_elapsed(&interface_timer,&ref_timer);
 
-    //get back the forces & potentials for ref_cheb execution
-    double * forcesRef     = malloc(sizeof(double)*3*nbPart);
-    double * potentialsRef = malloc(sizeof(double)*nbPart);
+        //get back the forces & potentials for ref_cheb execution
+        double * forcesRef     = malloc(sizeof(double)*3*nbPart);
+        double * potentialsRef = malloc(sizeof(double)*nbPart);
 
-    memset(forcesRef,0,sizeof(double)*3*nbPart);
-    memset(potentialsRef,0,sizeof(double)*nbPart);
+        memset(forcesRef,0,sizeof(double)*3*nbPart);
+        memset(potentialsRef,0,sizeof(double)*nbPart);
 
-    scalfmm_get_forces_xyz(handle_ref,nbPart,forcesRef);
-    scalfmm_get_potentials(handle_ref,nbPart,potentialsRef);
+        scalfmm_get_forces_xyz(handle_ref,nbPart,forcesRef,BOTH);
+        scalfmm_get_potentials(handle_ref,nbPart,potentialsRef,BOTH);
+        //scalfmm_print_everything(handle_ref);
 
-    {//Comparison part
-        FSize idxPart;
-        int nbPartOkay = 0;
-        for(idxPart=0 ; idxPart<nbPart ; ++idxPart ){
-            double diffX,diffY,diffZ,diffPot;
-            diffX = forcesToStore[0][idxPart*3+0]-forcesRef[idxPart*3+0];
-            diffY = forcesToStore[0][idxPart*3+1]-forcesRef[idxPart*3+1];
-            diffZ = forcesToStore[0][idxPart*3+2]-forcesRef[idxPart*3+2];
-            diffPot = potentialToStore[0][idxPart]-potentialsRef[idxPart];
+        {//Comparison part
+            FSize idxPart;
+            int nbPartOkay = 0;
+            for(idxPart=0 ; idxPart<nbPart ; ++idxPart ){
+                double diffX,diffY,diffZ,diffPot;
+                diffX = fabs( forcesToStore[0][idxPart*3+0]-forcesRef[idxPart*3+0] );
+                diffY = fabs( forcesToStore[0][idxPart*3+1]-forcesRef[idxPart*3+1] );
+                diffZ = fabs( forcesToStore[0][idxPart*3+2]-forcesRef[idxPart*3+2] );
+                diffPot = fabs( potentialToStore[0][idxPart]-potentialsRef[idxPart] );
 
-            //THERE
+                //THERE
 
-            if(diffX < 0.00000001 && diffY < 0.00000001 && diffZ < 0.00000001 && diffPot < 0.00000001){
-                nbPartOkay++;
+                if(diffX < 0.00000001 && diffY < 0.00000001 && diffZ < 0.00000001 && diffPot < 0.00000001){
+                    nbPartOkay++;
+                }
+                else{
+                    printf("id : %lld : %e, %e, %e, %e, ChebInterf Pot : %e  Cheb Pot : %e \n",
+                           idxPart,diffX,diffY,diffZ,diffPot,
+                           potentialToStore[0][idxPart],
+                           potentialsRef[idxPart]);
+                }
+                //That part is to verify with our usual exec' if everything is alright
+                if(idxPart == 0 || idxPart == nbPart/2 || idxPart == nbPart-1){
+                    printf("User one's id : %lld : %e, %e, %e, %e\n",idxPart,
+                           forcesToStore[0][idxPart*3+0],
+                           forcesToStore[0][idxPart*3+1],
+                           forcesToStore[0][idxPart*3+2],
+                           potentialToStore[0][idxPart]);
+                    printf("Chebyshev one's id : %lld : %e, %e, %e, %e\n",idxPart,
+                           forcesRef[idxPart*3+0],
+                           forcesRef[idxPart*3+1],
+                           forcesRef[idxPart*3+2],
+                           potentialsRef[idxPart]);
+                }
             }
-            else{
-                printf("id : %lld : %e, %e, %e, %e\n",idxPart,diffX,diffY,diffZ,diffPot);
-            }
-            //That part is to verify with our usual exec' if everything is alright
-            if(idxPart == 0 || idxPart == nbPart/2 || idxPart == nbPart-1){
-                printf("User one's id : %lld : %e, %e, %e\n",idxPart,
-                       forcesToStore[0][idxPart*3+0],
-                       forcesToStore[0][idxPart*3+1],
-                       forcesToStore[0][idxPart*3+2]);
-                printf("Chebyshev one's id : %lld : %e, %e, %e\n",idxPart,
-                       forcesRef[idxPart*3+0],
-                       forcesRef[idxPart*3+1],
-                       forcesRef[idxPart*3+2]);
+            printf("End of simulation -- \t %d\n \t Percentage of good parts : %d/%d (%f %%) \n",ite,
+                   nbPartOkay,nbPart,(((double) nbPartOkay)/(double)nbPart)*100);
+        }
+
+        free(forcesRef);
+        free(potentialsRef);
+
+        //Reset
+        scalfmm_reset_tree(handle,cheb_resetCell);
+        scalfmm_reset_tree(handle_ref,NULL);
+
+        printf("Internal resets done \n");
+
+        {//Reset User's datas
+            FSize idThreads;
+            for(idThreads=0;idThreads<nb_threads;++idThreads){
+                memset(potentialToStore[idThreads],0,sizeof(double)*nbPart);
+                memset(forcesToStore[idThreads],0,sizeof(double)*nbPart*3);
             }
         }
-        printf("End of simulation \n \t Percentage of good parts : %d/%d (%f %%) \n",
-               nbPartOkay,nbPart,(((double) nbPartOkay)/(double)nbPart)*100);
+        printf("External resets done ...\n");
+
+        ite++;
     }
     printf("Free the kernels\n");
 
@@ -325,7 +367,6 @@ int main(int argc, char ** av){
 
     free(particleXYZ);
     free(physicalValues);
-    free(forcesRef);
     //free the thread' specific datas
     for(idThreads=0 ; idThreads<nb_threads ; ++idThreads){
         free(forcesToStore[idThreads]);
