@@ -31,11 +31,13 @@
 #include "Arranger/FArrangerPeriodic.hpp"
 #include "Arranger/FBasicParticleContainerIndexedMover.hpp"
 #include "Arranger/FParticleTypedIndexedMover.hpp"
+#include "Extensions/FExtendCellType.hpp"
 
 #include "Core/FFmmAlgorithmThread.hpp"
 #include "Core/FFmmAlgorithm.hpp"
 #include "Core/FFmmAlgorithmPeriodic.hpp"
 #include "Core/FFmmAlgorithmThreadTsm.hpp"
+
 
 
 /**
@@ -63,6 +65,7 @@ private:
     // ArrangerClass * arranger;
 
 
+
 public:
     /**
      * @brief Constructor : build the tree and the interpolation
@@ -72,9 +75,10 @@ public:
      * @param BoxCenter double[3] coordinate of the center of the
      * simulation box
      */
-    FInterEngine(scalfmm_kernel_type KernelType) :
+    FInterEngine(scalfmm_kernel_type KernelType, scalfmm_algorithm algo) :
         kernel(nullptr), matrix(nullptr), octree(nullptr)/*,arranger(nullptr)*/{
         FScalFMMEngine<FReal>::kernelType = KernelType;
+        FScalFMMEngine<FReal>::Algorithm = algo;
     }
 
     void build_tree(int TreeHeight, FReal BoxWidth , FReal * BoxCenter,User_Scalfmm_Cell_Descriptor notUsedHere){
@@ -760,11 +764,13 @@ public:
             }
         case 3:
             {
-                // typedef FFmmAlgorithmThreadTsm<OctreeClass,InterCell,ContainerClass,InterKernel,LeafClass> AlgoClassTargetSource;
-                // AlgoClassTargetSource* algoTS = new AlgoClassTargetSource(octree,kernel);
-                // algoTS->execute();
-                // FScalFMMEngine<FReal>::algoTimer = algoTS;
-                // break;
+                // class local : public InterCell, public unExtendedCell{
+                // };
+                typedef FFmmAlgorithmThreadTsm<OctreeClass,InterCell,ContainerClass,InterKernel,LeafClass> AlgoClassTargetSource;
+                AlgoClassTargetSource* algoTS = new AlgoClassTargetSource(octree,kernel);
+                algoTS->execute();
+                FScalFMMEngine<FReal>::algoTimer = algoTS;
+                break;
             }
         default :
             std::cout<< "No algorithm found (probably for strange reasons) : "<< FScalFMMEngine<FReal>::Algorithm <<" exiting" << std::endl;
