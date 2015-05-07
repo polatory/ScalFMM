@@ -77,7 +77,7 @@ void displ_p2m(void* cellData, FSize nbParticlesInLeaf, const FSize* particleInd
 void displ_m2m(int level, void* parentCell, int childPosition, void* childCell, void* userData){
     Cell * parent_cell = parentCell;
     Cell * child_cell = childCell;
-    printf("M2M with %d cell and %d cell ::\n",parent_cell->Id,child_cell->Id);
+    printf("M2M with %d cell and %d cell, childPosition is %d ::\n",parent_cell->Id,child_cell->Id,childPosition);
     printf("\t[m2m]Parent Cell is %d, level is %d, coord are %d %d %d, and child cell is %d, level is %d, coord are %d %d %d\n\n",
            parent_cell->morton,
            parent_cell->lvl,
@@ -106,12 +106,11 @@ void displ_m2l_full(int level, void* targetCell, void* sourceCell[343], void* us
     printf("\tFinished M2L at lvl %d with filling %d cell reading %d sources\n\n",level,target_cell->morton,countSource);
     UserData * user_data = userData;
     user_data->nbM2L += 1;
-
 }
 void displ_l2l(int level, void* parentCell, int childPosition, void* childCell, void* userData){
     Cell * parent_cell = parentCell;
     Cell * child_cell = childCell;
-    printf("L2L with %d cell and %d cell ::\n",parent_cell->Id,child_cell->Id);
+    printf("L2L with %d cell and %d cell, childPosition is %d ::\n",parent_cell->Id,child_cell->Id,childPosition);
     printf("\t[l2l]Parent Cell is %d, level is %d, coord are %d %d %d, Child Cell is %d, level is %d, coord are %d %d %d\n\n",
            parent_cell->morton,
            parent_cell->lvl,
