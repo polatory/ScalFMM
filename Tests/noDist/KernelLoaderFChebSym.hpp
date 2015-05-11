@@ -1,3 +1,9 @@
+// ==== CMAKE ====
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
+
+
 #ifndef _KERNELLOADERFCHEBSYM_HPP_
 #define _KERNELLOADERFCHEBSYM_HPP_
 

@@ -60,6 +60,27 @@ public:
         tic();
     }
 
+    FTic(const FTic& other) : start(other.start), end(other.end), cumulate(other.cumulate) {}
+
+    FTic(FTic&& other) : start(other.start), end(other.end), cumulate(other.cumulate) {}
+
+    FTic& operator=(const FTic& other) {
+        start = other.start;
+        end = other.end;
+        cumulate = other.cumulate;
+        return *this;
+    }
+
+    const FTic operator+(const FTic& other) const {
+        FTic res(*this);
+        res.start = start < other.start ? start : other.start;
+        res.end = end > other.end ? end : other.end;
+        res.cumulate += other.cumulate;
+
+        return res;
+    }
+    
+
     /** Tic : start <= current time */
     void tic(){
         this->start = FTic::GetTime();

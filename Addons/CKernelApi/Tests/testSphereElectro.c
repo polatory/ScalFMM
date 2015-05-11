@@ -7,8 +7,7 @@
 
 
 //For timing monitoring
-#include <time.h>
-#include <sys/time.h>
+#include "Timers.h"
 
 #include "../Src/CScalfmmApi.h"
 
@@ -79,10 +78,10 @@ void getNormal(double * positions, double * normeToFill){
     for(i=0 ; i<3 ; ++i){
         normeToFill[i] = positions[i]/norme;
     }
-    printf("Tgt Norme %e - %e - %e\n",
-           normeToFill[0],
-           normeToFill[1],
-           normeToFill[2]);
+    /* printf("Tgt Norme %e - %e - %e\n", */
+    /*        normeToFill[0], */
+    /*        normeToFill[1], */
+    /*        normeToFill[2]); */
 }
 
 void computeNormalXForces(int nbPoints, double * forcesToRead, double * positionsToRead, double * arrayToFill){
@@ -98,15 +97,17 @@ void computeNormalXForces(int nbPoints, double * forcesToRead, double * position
 }
 
 int main(int argc, char ** av){
-    printf("Start\n");
-    if(argc<2){
-        printf("Use : %s nb_part(cible) (optionnal : TreeHeight) \nexiting\n",av[0]);
+    omp_set_num_threads(4);
+    printf("Start %s nb_targets nb_sources \n",av[0]);
+    if(argc<3){
+        printf("Use : %s nb_part(cible) nb_part(source) (optionnal : TreeHeight) \nexiting\n",av[0]);
         exit(0);
     }
     int nbPartTarget= atoi(av[1]);
     int treeHeight = 5 ;
-    if(argc>2){
-        int treeHeight = atoi(av[2]);
+    if(argc>3){
+        int treeHeight = atoi(av[3]);
+        printf("Tree Heigth Input %d\n",treeHeight );
     }
 
     double boxWidth = 2.0;
@@ -122,13 +123,14 @@ int main(int argc, char ** av){
     memset(targetsPhiValues,0,sizeof(double)*nbPartTarget);
     //Fill
     for(i=0 ; i<nbPartTarget ; ++i){
-        targetsPhiValues[i] = -1.0;
+        targetsPhiValues[i] = 1.0;
     }
+
     generateSurfacePoints(1.0,boxCenter,nbPartTarget,targetsXYZ);
-    printf("Surface points generated \n");
+    printf("%d Surface points generated : Targets\n",nbPartTarget);
 
     //Allocation of the sources points
-    int nbPartSource = 10;
+    int nbPartSource = atoi(av[2]);
     double * sourceXYZ = malloc(sizeof(double)* 3*nbPartSource);
     double * sourcePhiValues = malloc(sizeof(double)* nbPartSource);
     //Set to Zero
@@ -138,14 +140,18 @@ int main(int argc, char ** av){
     for(i=0 ; i<nbPartSource ; ++i){
         sourcePhiValues[i] = 1.0;
     }
+
     generateInsidePoints(1.0,boxCenter,nbPartSource,sourceXYZ);
     //displayPoints(nbPartTarget,targetsXYZ);
 
-    printf("Inside points generated \n");
+    printf("%d Inside points generated :  Sources\n",nbPartSource);
+
     //displayPoints(nbPartSource,sourceXYZ);
     //Creation of arrays to store forces
-    double * arrayOfForces = malloc(sizeof(double )* 3 * (nbPartSource+nbPartTarget));
+    double * arrayOfForces = malloc(sizeof(double )* 3 * nbPartTarget);
+    double * arrayOfPot    = malloc(sizeof(double ) * (nbPartTarget));
     memset(arrayOfForces,0,sizeof(double)* 3 * (nbPartTarget));
+    memset(arrayOfPot,0,sizeof(double)* (nbPartTarget));
 
     {//Start of computation
 
@@ -157,7 +163,7 @@ int main(int argc, char ** av){
         user_descr.user_init_cell = NULL;
         user_descr.user_free_cell = NULL;
         //Set algorithm to source target
-        //scalfmm_algorithm_config(handle,source_target);
+        scalfmm_algorithm_config(handle,source_target);
         //Build the tree
         scalfmm_build_tree(handle,treeHeight, boxWidth, boxCenter, user_descr);
 
@@ -166,9 +172,8 @@ int main(int argc, char ** av){
         printf("Sources inserted \n");
         scalfmm_tree_insert_particles_xyz(handle,nbPartTarget,targetsXYZ,TARGET);
         printf("Targets inserted \n");
-        //Since we inserted first the sources, then sources will get
-        //indices from 0 to (nbPartSource-1), and targets from
-        //(nbPartSource) to nbPartSource+nbPartTarget-1).
+
+        //        scalfmm_print_everything(handle);
 
         int * arrayofIndicesSource = malloc(sizeof(int)*nbPartSource);
         int * arrayofIndicesTarget = malloc(sizeof(int)*nbPartTarget);
@@ -189,15 +194,25 @@ int main(int argc, char ** av){
 
 
         }
+        Timer fmm_timer;
+        tic(&fmm_timer);
         //Computation
         scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
+        tac(&fmm_timer);
+        print_elapsed(&fmm_timer);
 
         //Get back the forces
         scalfmm_get_forces_xyz(handle,nbPartTarget,arrayOfForces,TARGET);
-        scalfmm_get_forces_xyz(handle,nbPartSource,&arrayOfForces[nbPartTarget],SOURCE);
+        //Get back the potentials, too
+        scalfmm_get_potentials(handle,nbPartTarget,arrayOfPot,TARGET);
+
+        //No need to get Source forces, since it will be 0 anyway
+        //scalfmm_get_forces_xyz(handle,nbPartSource,&arrayOfForces[nbPartTarget],SOURCE);
+
         printf("Forces computed : \n");
-        displayPoints(nbPartTarget+nbPartSource,arrayOfForces);
-        printf("As expected, Source forces are 0\n \n");
+        //Display array of forces ::
+        //displayPoints(nbPartTarget+nbPartSource,arrayOfForces);
+
         //Release memory used :
         free(arrayofIndicesSource);
         free(arrayofIndicesTarget);
@@ -207,19 +222,24 @@ int main(int argc, char ** av){
     }
 
     {//Let's check the result, we computed fr each target part its forces
-        //Storage of reference forces
+        //Storage of reference forces + potential
         double * arrayRefForces = malloc(sizeof(double)*nbPartTarget*3);
         memset(arrayRefForces,0,sizeof(double)*nbPartTarget*3);
+        double * arrayOfRefPot = malloc(sizeof(double)*nbPartTarget);
+        memset(arrayOfRefPot,0,sizeof(double)*nbPartTarget);
 
         int idTgt;
+        Timer check_timer;
+        tic(&check_timer);
         for(idTgt = 0 ; idTgt<nbPartTarget ; ++idTgt){
             int idSrc;
             double dx,dy,dz;
-            for(idSrc = 0 ; idSrc<nbPartTarget ; ++idSrc){
+
+            for(idSrc = 0 ; idSrc<nbPartSource ; ++idSrc){
                 //First compute dist.
-                dx = sourceXYZ[idSrc+0] - targetsXYZ[idTgt+0];
-                dy = sourceXYZ[idSrc+1] - targetsXYZ[idTgt+1];
-                dz = sourceXYZ[idSrc+2] - targetsXYZ[idTgt+2];
+                dx = sourceXYZ[idSrc*3+0] - targetsXYZ[idTgt*3+0];
+                dy = sourceXYZ[idSrc*3+1] - targetsXYZ[idTgt*3+1];
+                dz = sourceXYZ[idSrc*3+2] - targetsXYZ[idTgt*3+2];
 
                 //Secondly, compute coeff
                 double coeffs = targetsPhiValues[idTgt] * sourcePhiValues[idSrc];
@@ -229,24 +249,70 @@ int main(int argc, char ** av){
                 arrayRefForces[idTgt*3+0] += dx*coeffs*one_over_r3;
                 arrayRefForces[idTgt*3+1] += dy*coeffs*one_over_r3;
                 arrayRefForces[idTgt*3+2] += dz*coeffs*one_over_r3;
-
+                arrayOfRefPot[idTgt] += one_over_r * sourcePhiValues[idSrc];
             }
         }
+        tac(&check_timer);
+        print_elapsed(&check_timer);
 
         {//Then, we compare
-            double errorCumul = 0;
+
+            //For L2 norm
+            double errorCumulXSquared = 0,
+                errorCumulYSquared = 0,
+                errorCumulZSquared = 0,
+                errorCumulPotSquared = 0;
+            //For Inf Norm
+            double maxErrorX = 0,
+                maxErrorY = 0,
+                maxErrorZ = 0,
+                maxErrorPot = 0;
             int idArr;
             for(idArr = 0 ; idArr<nbPartTarget ; ++idArr){
-                errorCumul += fabs(arrayRefForces[idArr+0]-arrayOfForces[idArr+0]);
-                errorCumul += fabs(arrayRefForces[idArr+1]-arrayOfForces[idArr+1]);
-                errorCumul += fabs(arrayRefForces[idArr+2]-arrayOfForces[idArr+2]);
-                printf("Directly Computed %e %e %e\n",
-                       arrayRefForces[idArr+0],
-                       arrayRefForces[idArr+1],
-                       arrayRefForces[idArr+2]);
+                double deltaX = fabs(arrayRefForces[idArr*3+0]-arrayOfForces[idArr*3+0]);
+                double deltaY = fabs(arrayRefForces[idArr*3+1]-arrayOfForces[idArr*3+1]);
+                double deltaZ = fabs(arrayRefForces[idArr*3+2]-arrayOfForces[idArr*3+2]);
+                double deltaPot = fabs(arrayOfRefPot[idArr]-arrayOfPot[idArr]);
+
+                errorCumulXSquared += deltaX*deltaX;
+                errorCumulYSquared += deltaY*deltaY;
+                errorCumulZSquared += deltaZ*deltaZ;
+                errorCumulPotSquared += deltaPot*deltaPot;
+
+                if(maxErrorX < deltaX){ maxErrorX = deltaX ;}
+                if(maxErrorY < deltaY){ maxErrorY = deltaY ;}
+                if(maxErrorZ < deltaZ){ maxErrorZ = deltaZ ;}
+                if(maxErrorPot < deltaPot) {maxErrorPot = deltaPot;}
             }
-            printf("Error cumul : %e\n",errorCumul);
+            //Last check aim to verify the difference between energy
+            //total directly computed and energy total FMM's computed
+            double energy = 0,energyFmm =0;
+            for(idArr = 0; idArr<nbPartTarget ; ++idArr){
+                energy += arrayOfRefPot[idArr] * targetsPhiValues[idArr];
+                energyFmm += arrayOfPot[idArr] * targetsPhiValues[idArr];
+            }
+
+
+
+            printf("\n \t\t X error \t Y error \t Z error \t Pot error\n");
+            printf("Norme Sup :\t %e \t %e \t %e \t %e\n",maxErrorX,maxErrorY,maxErrorZ,maxErrorPot);
+            printf("Norme L2  :\t %e \t %e \t %e \t %e\n",
+                   sqrt(errorCumulXSquared),
+                   sqrt(errorCumulYSquared),
+                   sqrt(errorCumulZSquared),
+                   sqrt(errorCumulPotSquared));
+            printf("Norme Rms :\t %e \t %e \t %e \t %e\n",
+                   sqrt(errorCumulXSquared/((double) nbPartTarget)),
+                   sqrt(errorCumulYSquared/((double) nbPartTarget)),
+                   sqrt(errorCumulZSquared/((double) nbPartTarget)),
+                   sqrt(errorCumulPotSquared/((double) nbPartTarget)));
+            printf(" \n Energy Error  : \t %e \n Energy FMM   : \t %e \n Energy DIRECT : \t %e\n",
+                   fabs(energy-energyFmm),
+                   energyFmm,
+                   energy);
         }
+        free(arrayRefForces);
+        free(arrayOfRefPot);
     }
 
 
@@ -260,14 +326,18 @@ int main(int argc, char ** av){
 
     computeNormalXForces(nbPartTarget,targetsForces,targetsXYZ,normeXForces);
     printf("For each target, we display [Normal To Sphere] . [Force product] \n");
-    displayArray(nbPartTarget,normeXForces);
+    //displayArray(nbPartTarget,normeXForces);
 
 
     //Free memory
+    free(normeXForces);
+    free(targetsForces);
     free(sourceXYZ);
     free(sourcePhiValues);
     free(targetsXYZ);
     free(targetsPhiValues);
     free(arrayOfForces);
+    free(arrayOfPot);
+
     return EXIT_SUCCESS;
 }

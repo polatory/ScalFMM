@@ -113,9 +113,9 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     IF (APPLE)
       set(SSE_FLAGS  "-msse4  -mfpmath=sse")   # -mtune=native -march=native
     else(APPLE)
-      set(AVX_FLAGS  "-mavx")
-      set(AVX2_FLAGS  "-mavx2")
-      set(SSE_FLAGS  "-axSSE4.2")
+      set(AVX_FLAGS  "-mavx  -march=native")
+      set(AVX2_FLAGS  "-mavx2  -march=native")
+      set(SSE_FLAGS  "-axSSE4.2  -march=native")
     endif(APPLE)
     #-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
   else()
@@ -179,15 +179,13 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     ##############################################################################
     #                          Release flags                                     #
     ##############################################################################
+
     set(CMAKE_BUILD_TYPE Release)
-    # force -O3 in release
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
-    string(REPLACE "-O2" "-O3" CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} )
     set(CMAKE_CXX_FLAGS_TYPE  "${CMAKE_CXX_FLAGS_RELEASE}")
     # if compiler is intel add -ip
+
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-      set(SCALFMM_CXX_FLAGS  "${SCALFMM_CXX_FLAGS} -ip")
-      # set(SCALFMM_CXX_FLAGS  "${SCALFMM_CXX_FLAGS} -ip -no-prec-div -no-prec-sqrt")
+      set(SCALFMM_CXX_FLAGS  "${SCALFMM_CXX_FLAGS} -ip -no-prec-div -no-prec-sqrt")
     endif()
     # Compile optimization
     if(APPLE)
@@ -195,11 +193,11 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
         "Set your optimization flags for release mode.")
     else(APPLE)
       # Not apple system - Check the compiler flags
-      if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-        # set(SCALFMM_FLAGS_OPTI_RELEASE "-fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize"
-        #   CACHE STRING "Set your optimization flags for release mode.")
-        set(SCALFMM_FLAGS_OPTI_RELEASE " " CACHE STRING
-          "Set your optimization flags for release mode.")
+     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+         set(SCALFMM_FLAGS_OPTI_RELEASE "-fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize"
+           CACHE STRING "Set your optimization flags for release mode.")
+       # set(SCALFMM_FLAGS_OPTI_RELEASE "-funroll-loops -ftree-vectorize" CACHE STRING
+       #   "Set your optimization flags for release mode.")
       else()
         set(SCALFMM_FLAGS_OPTI_RELEASE "-ffast-math -funroll-loops -ftree-vectorize" CACHE STRING
           "Set your optimization flags for release mode.")
@@ -208,6 +206,9 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     #
     set(SCALFMM_CXX_FLAGS  "${SCALFMM_CXX_FLAGS} ${SCALFMM_FLAGS_OPTI_RELEASE}")
   endif()
+    MESSAGE(STATUS   " %%%%%%%%%% SCALFMM_CXX_FLAGS  ${SCALFMM_CXX_FLAGS} %%%%%%%%%%%%%")
+    MESSAGE(STATUS   " %%%%%%%%%% CMAKE_CXX_FLAGS_RELEASE  ${CMAKE_CXX_FLAGS_RELEASE} %%%%%%%%%%%%%")
+
   #
   ##############################################################################
   #                Attach source code to exec                                  #
@@ -537,15 +538,20 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
                 ${SCALFMM_CMAKE_MODULE_PATH}/compileTestAvx.cpp
                 COMPILE_DEFINITIONS "${CMAKE_CXX_FLAGS} ${AVX_FLAGS}"
                 OUTPUT_VARIABLE COMPILE_AVX_OUTPUT)
-    if(${COMPILE_AVX})
+     if(${COMPILE_AVX})
+  message(STATUS "%%%%%%%%%%%% COMPILE_AVX               = ${COMPILE_AVX}  %%%%<    ${AVX_FLAGS}")
+		
       set(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS}   ${AVX_FLAGS}")
-      #set( SCALFMM_USE_SSE   OFF   FORCE) # ne marche pas
+    message(STATUS "%%%%%%%%%%%% SCALFMM_CXX_FLAGS               = ${SCALFMM_CXX_FLAGS}")
+    #set( SCALFMM_USE_SSE   OFF   FORCE) # ne marche pas
       try_compile(COMPILE_RESULT_AVSPE ${CMAKE_CURRENT_BINARY_DIR}
                   ${SCALFMM_CMAKE_MODULE_PATH}/checkAVXpe.cpp
                   COMPILE_DEFINITIONS "${CMAKE_CXX_FLAGS} ${AVX_FLAGS}")
-      if( NOT ${COMPILE_RESULT_AVSPE})
+		 if( NOT ${COMPILE_RESULT_AVSPE})
+
+
         set(__AVXPE_INTEL_COMPILER ON)
-      endif()
+   endif()
 
       message(STATUS ${CMAKE_CXX_FLAGS} )
     else(${COMPILE_AVX})
@@ -770,7 +776,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   #set(CMAKE_CXX_FLAGS "${SCALFMM_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
   message(STATUS "SCALFMM_USE_BLAS     =  ${SCALFMM_USE_BLAS}")
   message(STATUS "SCALFMM_USE_FFT       =  ${SCALFMM_USE_FFT}")
-  message(STATUS "SCALFMM_USE_MKL      =  TODO")
+  message(STATUS "SCALFMM_USE_MKL      =   ${SCALFMM_USE_MKL}")
 # 
   message(STATUS "CMAKE_CXX_FLAGS     =  ${CMAKE_CXX_FLAGS}")
   message(STATUS "SCALFMM_CXX_FLAGS   =  ${SCALFMM_CXX_FLAGS}")

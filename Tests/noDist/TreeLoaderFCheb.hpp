@@ -1,3 +1,7 @@
+// ==== CMAKE ====
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
 #ifndef _TREELOADERFCHEB_HPP_
 #define _TREELOADERFCHEB_HPP_
 

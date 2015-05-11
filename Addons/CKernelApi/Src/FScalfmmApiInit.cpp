@@ -30,7 +30,7 @@ extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,double* 
             typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
             typedef FChebSymKernel<FReal,ChebCell,ContainerClass,MatrixKernelClass,7>        ChebKernel;
 
-            handle->engine = new FInterEngine<FReal,ChebCell,ChebKernel,LeafClass>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
+            handle->engine = new FInterEngine<FReal,ChebCell,ChebKernel,LeafClass>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType,algo);
             break;
             // case 2:
             //     //TODO typedefs
@@ -61,13 +61,14 @@ extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,double* 
         case 1:
             //TODO typedefs
             typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
-            typedef FChebCell<FReal,7>                                                   ChebCell;
+            //typedef FChebCell<FReal,7>                                                   ChebCell;
+            typedef FTypedChebCell<FReal,7>                                                   ChebCell;
             typedef FSimpleLeaf<FReal,ContainerClass>                                         LeafClass;
 
             typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
             typedef FChebSymKernel<FReal,ChebCell,ContainerClass,MatrixKernelClass,7>        ChebKernel;
 
-            handle->engine = new FInterEngine<FReal,ChebCell,ChebKernel,LeafClass>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
+            handle->engine = new FInterEngine<FReal,ChebCell,ChebKernel,LeafClass>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType,algo);
             break;
             // case 2:
             //     //TODO typedefs

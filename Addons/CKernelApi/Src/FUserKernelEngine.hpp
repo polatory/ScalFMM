@@ -108,6 +108,7 @@ public:
         if(kernel.m2m){
             for(int idx = 0 ; idx < 8 ; ++idx){
                 if( children[idx] ){
+                    printf("lvl : %d\n",level);
                     kernel.m2m(level, cell->getContainer(), idx, children[idx]->getContainer(), userData);
                 }
             }
@@ -253,6 +254,7 @@ public:
 
     void build_tree(int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
         CoreCell::Init(user_cell_descriptor);
+        printf("Tree Height : %d \n",TreeHeight);
         this->octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint<FReal>(BoxCenter));
     }
 

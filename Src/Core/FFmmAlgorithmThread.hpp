@@ -80,12 +80,12 @@ public:
      * The constructor needs the octree and the kernels used for computation.
      * \param inTree the octree to work on.
      * \param inKernels the kernels to call.
-     * \param inStaticSchedule Whether to use static or dynamic OpenMP scheduling.
+     * \param inStaticSchedule Whether to use static or dynamic OpenMP scheduling. default is dynamic.
      *
      * \except An exception is thrown if one of the arguments is NULL.
      */
     FFmmAlgorithmThread(OctreeClass* const inTree, KernelClass* const inKernels,
-                        const bool inStaticSchedule = true, const int inLeafLevelSeperationCriteria = 1)
+                        const bool inStaticSchedule = false, const int inLeafLevelSeperationCriteria = 1)
         : tree(inTree) , kernels(nullptr), iterArray(nullptr), leafsNumber(0),
           MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()),
           staticSchedule(inStaticSchedule), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {

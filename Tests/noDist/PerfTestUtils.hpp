@@ -1,3 +1,7 @@
+// ==== CMAKE ====
+// Keep in private GIT
+// @SCALFMM_PRIVATE
+
 #ifndef _PERFTESTUTILS_HPP_
 #define _PERFTESTUTILS_HPP_
 
@@ -167,6 +171,9 @@ public:
     FTic time;
     /// Method that runs the algorithm.
     virtual void run() = 0;
+    virtual std::string getRunInfoString() const {
+        return "";
+    }
 };
 
 
