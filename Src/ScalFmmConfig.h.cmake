@@ -105,4 +105,10 @@ const std::string SCALFMMDataPath("@CMAKE_SOURCE_DIR@/Data/");
 const std::string SCALFMMCompileFlags("@SCALFMM_COMPILE_FLAGS@");
 const std::string SCALFMMCompileLibs("@SCALFMM_COMPILE_LIBS@");
 
+///////////////////////////////////////////////////////
+// To use commute for KSTAR OMP4
+///////////////////////////////////////////////////////
+
+#cmakedefine OPENMP_SUPPORT_COMMUTE
+
 #endif // CONFIG_H
