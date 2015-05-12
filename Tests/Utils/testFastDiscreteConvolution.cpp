@@ -28,15 +28,15 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../../Src/Utils/FTic.hpp"
-#include "../../Src/Utils/FMath.hpp"
-#include "../../Src/Utils/FBlas.hpp" 
+#include "Utils/FTic.hpp"
+#include "Utils/FMath.hpp"
+#include "Utils/FBlas.hpp" 
 
 // 
-#include "../../Src/Utils/FDft.hpp"
-#include "../../Src/Utils/FComplex.hpp"
+#include "Utils/FComplex.hpp"
+#include "Utils/FDft.hpp"
 
-#include "../../Src/Utils/FParameterNames.hpp"
+#include "Utils/FParameterNames.hpp"
 
 
 int main(int argc, char ** argv){
@@ -110,10 +110,8 @@ int main(int argc, char ** argv){
     std::cout<< "Set DFT: ";
     time.tic();
     const int dim = 1;
-    const int steps[dim] = {N};
     //FDft<FReal> Dft(N);// direct version (Beware! Ordering of output differs from REAL valued-FFT)
-    FFft<FReal,dim> Dft;// fast version
-    Dft.buildDFT(steps);// fast version
+    FFftw<FReal,FComplex<FReal>,dim> Dft(N);// fast version
     std::cout << "took " << time.tacAndElapsed() << "sec." << std::endl;
 
     // Initialize manually
@@ -170,7 +168,7 @@ int main(int argc, char ** argv){
     // Transform FX back in Physical space
     std::cout<< "Transform FX->iF(FX): ";
     time.tic();
-    Dft.applyIDFT(FX,iFX);
+    Dft.applyIDFTNorm(FX,iFX);
     std::cout << "took " << time.tacAndElapsed() << "sec." << std::endl;
 
     std::cout<< "iF(FK:FY): "<<std::endl;

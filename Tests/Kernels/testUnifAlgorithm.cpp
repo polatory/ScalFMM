@@ -50,7 +50,7 @@
 #include "Core/FFmmAlgorithm.hpp"
 #include "Core/FFmmAlgorithmThread.hpp"
 
-#include "../../Src/Utils/FParameterNames.hpp"
+#include "Utils/FParameterNames.hpp"
 
 /**
  * This program runs the FMM Algorithm with the Uniform kernel and compares the results with a direct computation.

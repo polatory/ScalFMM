@@ -35,15 +35,15 @@
 #include "Utils/FAssert.hpp"
 #include "Utils/FPoint.hpp"
 
-#include "../../Src/Utils/FParameterNames.hpp"
+#include "Utils/FParameterNames.hpp"
 
 #include "Kernels/Uniform/FUnifInterpolator.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "Kernels/Uniform/FUnifTensor.hpp"
 
 // Check DFT
-#include "Utils/FDft.hpp"
 #include "Utils/FComplex.hpp"
+#include "Utils/FDft.hpp"
 
 
 #include "Kernels/P2P/FP2PParticleContainer.hpp"
@@ -361,10 +361,8 @@ int main(int argc, char ** argv){
 
     // Init DFT
     const int dimfft = 1;
-    const int steps[dimfft] = {rc};
     //FDft Dft(rc); // direct version
-    FFft<FReal,dimfft> Dft; // fast version
-    Dft.buildDFT(steps);
+    FFftw<FReal,FComplex<FReal>,dimfft> Dft(rc); // fast version
 
     // Get first COLUMN of K and Store in T
     FReal T[ncmp*rc];
@@ -466,7 +464,7 @@ int main(int argc, char ** argv){
     //    std::cout<<std::endl;
 
     for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs) // apply nrhs 1 dimensionnal FFT
-        Dft.applyIDFT(FPLocalExp+idxLhs*rc,PLocalExp+idxLhs*rc);
+        Dft.applyIDFTNorm(FPLocalExp+idxLhs*rc,PLocalExp+idxLhs*rc);
 
     //  std::cout<< "Padded LocalExp: "<<std::endl;
     //  for (unsigned int p=0; p<rc; ++p)
