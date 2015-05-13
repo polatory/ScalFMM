@@ -22,6 +22,7 @@ struct FPerfTestParams {
     std::string filename = ""; ///< Particles file.
     std::string algo = "task"; ///< Algorithm to run.
     bool omp_static_schedule = false; ///< OpenMP static or dynamic schedule.
+    int  omp_chunk_size = 0;
 };
 
 

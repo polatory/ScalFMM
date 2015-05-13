@@ -6,6 +6,7 @@
 #define _ALGOLOADERTHREAD_HPP_
 
 #include <memory>
+#include <sstream>
 
 #include "PerfTestUtils.hpp"
 
@@ -31,6 +32,7 @@ public:
     KernelLoader& _kernelLoader;
 
     bool _omp_static_schedule;
+    unsigned int _omp_chunk_size;
 
     std::unique_ptr<FMMClass> _algo;
 
@@ -40,6 +42,7 @@ public:
         _treeLoader(treeLoader),
         _kernelLoader(kernelLoader),
         _omp_static_schedule(params.omp_static_schedule),
+        _omp_chunk_size(params.omp_chunk_size),
         _algo(nullptr) {
         
     }
@@ -48,9 +51,19 @@ public:
         _algo = std::unique_ptr<FMMClass>(
             new FMMClass(&(_treeLoader._tree), &(_kernelLoader._kernel),
                          _omp_static_schedule));
+        _algo->setChunkSize(_omp_chunk_size);
 
         _algo->execute();
     }
+
+
+    virtual std::string getRunInfoString() const {
+        std::stringstream sstr;
+        sstr << "chunksize:" << _omp_chunk_size << " ";
+        return sstr.str();
+    }
+
+
 };
 
 #endif

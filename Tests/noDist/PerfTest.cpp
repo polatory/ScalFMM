@@ -72,6 +72,12 @@ void runperf(FPerfTestParams& params)
 
 }
 
+namespace ParName {
+    const FParameterNames Algo = {{"--algo"},"Algorithm to run (costzones, basic, task)"};
+    const FParameterNames Schedule = {{"--schedule"},"OpenMP scheduling policy (static, dynamic)."};
+    const FParameterNames ChunkSize = {{"--chunk", "--chunk-size"},"OpenMP chunk size for basic dynamic algorithm."};
+}
+
 int main (int argc, char** argv)
 {
     FHelpDescribeAndExit(argc, argv,
@@ -80,20 +86,22 @@ int main (int argc, char** argv)
                          FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight,
                          FParameterDefinitions::NbThreads,
-                         {{"--algo"},"Algorithm to run (costzones, basic, task)"},
-                         {{"--schedule"},"OpenMP scheduling policy (static, dynamic)."});
+                         ParName::Algo,
+                         ParName::Schedule,
+                         ParName::ChunkSize);
     FPerfTestParams params;
     {
         using namespace FParameterDefinitions;
         using namespace FParameters;
-        params.filename = getStr(argc,argv,InputFile.options,
+        params.filename      = getStr(argc,argv,InputFile.options,
                                  "../Data/unitCubeXYZQ100.bfma");
-        params.treeHeight = getValue(argc, argv, OctreeHeight.options, 5);
+        params.treeHeight    = getValue(argc, argv, OctreeHeight.options, 5);
         params.subTreeHeight = getValue(argc, argv, OctreeSubHeight.options, 2);
-        params.nbThreads = getValue(argc, argv, NbThreads.options, 1);
-        params.algo = getStr(argc,argv,{"--algo"},"task");
+        params.nbThreads     = getValue(argc, argv, NbThreads.options, 1);
+        params.algo = getStr(argc,argv,ParName::Algo.options,"task");
         params.omp_static_schedule =
-            getStr(argc,argv,{"--schedule"},"dynamic") == std::string("static");
+            getStr(argc,argv,ParName::Schedule.options,"dynamic") == std::string("static");
+        params.omp_chunk_size = getValue(argc, argv, ParName::ChunkSize.options, 0);
     }
 
     omp_set_num_threads(params.nbThreads);

@@ -64,15 +64,7 @@ class FFmmAlgorithmThread : public FAbstractAlgorithm, public FAlgorithmTimers{
 
     const int leafLevelSeperationCriteria;
 
-    template <class NumType>
-    NumType getChunkSize(const NumType inSize) const {
-        if(staticSchedule){
-            return FMath::Max(NumType(1) , NumType(double(inSize)/double(omp_get_max_threads())) );
-        }
-        else{
-            return FMath::Max(NumType(1) , inSize/NumType(omp_get_max_threads()*omp_get_max_threads()));
-        }
-    }
+    unsigned int ompChunkSize = 0;
 
 public:
     /** Class constructor
@@ -89,24 +81,24 @@ public:
         : tree(inTree) , kernels(nullptr), iterArray(nullptr), leafsNumber(0),
           MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()),
           staticSchedule(inStaticSchedule), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
-
+        
         FAssertLF(tree, "tree cannot be null");
-
+        
         this->kernels = new KernelClass*[MaxThreads];
         #pragma omp parallel for schedule(static)
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            #pragma omp critical (InitFFmmAlgorithmThread)
+            #pragma omp critical (InitFFmmAlgorithmThread) 
             {
                 this->kernels[idxThread] = new KernelClass(*inKernels);
             }
         }
-
+        
         FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
-
+        
         FLOG(FLog::Controller << "FFmmAlgorithmThread (Max Thread " << omp_get_max_threads() << ")\n");
         FLOG(FLog::Controller << "\t static schedule " << (staticSchedule?"TRUE":"FALSE") << ")\n");
     }
-
+    
     /** Default destructor */
     virtual ~FFmmAlgorithmThread(){
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
@@ -114,7 +106,29 @@ public:
         }
         delete [] this->kernels;
     }
-
+    
+    
+    template <class NumType>
+    NumType getChunkSize(const NumType inSize) const {
+        if(staticSchedule){
+            return FMath::Max(NumType(1) , NumType(double(inSize)/double(omp_get_max_threads())) );
+        }
+        else{
+            if (ompChunkSize > 0) {
+                return ompChunkSize;
+            }
+            else {
+                return FMath::Max(NumType(1) , inSize/NumType(omp_get_max_threads()*omp_get_max_threads()));
+            }
+        }
+    }
+    
+    
+    template <class NumType>
+    void setChunkSize(const NumType size) {
+        ompChunkSize = size;
+    }
+    
 protected:
     /**
       * Runs the complete algorithm.
