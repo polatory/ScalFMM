@@ -121,7 +121,7 @@ class FUnifInterpolator : FNoCopyable
       FReal(FReal(ParentWidth)/FReal(2.) + CellWidthExtension) / FReal(ParentWidth + CellWidthExtension);
 
     // Child cell width
-    const FReal ChildWidth(2.*ExtendedCellRatio);
+    const FReal ChildWidth(FReal(2.)*ExtendedCellRatio);
 
     // loop: child cells
     for (unsigned int child=0; child<8; ++child) {
