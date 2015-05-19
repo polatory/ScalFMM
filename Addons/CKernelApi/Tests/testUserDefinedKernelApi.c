@@ -47,7 +47,7 @@ struct MyCellDescriptor{
 };
 
 // This is our function that init a cell (struct MyCellDescriptor)
-void* my_Callback_init_cell(int level, long long mortonIndex, int* coord, double* position){
+void* my_Callback_init_cell(int level, long long mortonIndex, int* coord, double* position, void * kernel){
     VerbosePrint("\tAllocating cell for level %d, morton index %lld, coord %d/%d/%d\n", level, mortonIndex, coord[0], coord[1], coord[2]);
     struct MyCellDescriptor* cellData = (struct MyCellDescriptor*)malloc(sizeof(struct MyCellDescriptor));
     memset(cellData, 0, sizeof(struct MyCellDescriptor));
@@ -88,7 +88,7 @@ struct MyData {
 
 
 // Our P2M
-void my_Callback_P2M(void* cellData, FSize nbParticlesInLeaf, const int* particleIndexes, void* userData){
+void my_Callback_P2M(void* cellData, FSize nbParticlesInLeaf, const FSize* particleIndexes, void* userData){
     struct MyData* my_data = (struct MyData*)userData;
     my_data->countP2M += 1;
 
@@ -152,7 +152,7 @@ void my_Callback_L2L(int level, void* cellData, int childPosition, void* childDa
     // JUST-PUT-HERE: Your L2L
 }
 
-void my_Callback_L2P(void* cellData, FSize nbParticlesInLeaf, const int* particleIndexes, void* userData){
+void my_Callback_L2P(void* cellData, FSize nbParticlesInLeaf, const FSize* particleIndexes, void* userData){
     struct MyData* my_data = (struct MyData*)userData;
     my_data->countL2P += 1;
 
@@ -167,7 +167,7 @@ void my_Callback_L2P(void* cellData, FSize nbParticlesInLeaf, const int* particl
     }
 }
 
-void my_Callback_P2P(FSize nbParticlesInLeaf, const int* particleIndexes, FSize nbParticlesInSrc, const int* particleIndexesSrc, void* userData){
+void my_Callback_P2P(FSize nbParticlesInLeaf, const FSize* particleIndexes, FSize nbParticlesInSrc, const FSize* particleIndexesSrc, void* userData){
     struct MyData* my_data = (struct MyData*)userData;
     my_data->countP2P += 1;
 
@@ -189,7 +189,7 @@ void my_Callback_P2P(FSize nbParticlesInLeaf, const int* particleIndexes, FSize 
     // interacting with the target particles
 }
 
-void my_Callback_P2PInner(FSize nbParticlesInLeaf, const int* particleIndexes, void* userData){
+void my_Callback_P2PInner(FSize nbParticlesInLeaf, const FSize* particleIndexes, void* userData){
     struct MyData* my_data = (struct MyData*)userData;
     my_data->countP2PInner += 1;
 
@@ -233,7 +233,7 @@ int main(int argc, char ** argv){
     }
 
     // Init the handle
-    scalfmm_handle handle = scalfmm_init(user_defined_kernel);
+    scalfmm_handle handle = scalfmm_init(user_defined_kernel,multi_thread);
 
     //Build our own call backs
     struct User_Scalfmm_Cell_Descriptor cellDescriptor;
@@ -245,7 +245,7 @@ int main(int argc, char ** argv){
     scalfmm_build_tree(handle,treeHeight, boxWidth, boxCenter, cellDescriptor);
     // Insert particles
     printf("Inserting particles...\n");
-    scalfmm_tree_insert_particles_xyz(handle, nbParticles, particleXYZ);
+    scalfmm_tree_insert_particles_xyz(handle, nbParticles, particleXYZ,BOTH);
     printf("Particles Inserted ...\n");
 
     // Init our callback struct
@@ -253,10 +253,12 @@ int main(int argc, char ** argv){
     kernel.p2m = my_Callback_P2M;
     kernel.m2m = my_Callback_M2M;
     kernel.m2l = my_Callback_M2L;
+    kernel.m2l_full = NULL;
     kernel.l2l = my_Callback_L2L;
     kernel.l2p = my_Callback_L2P;
     kernel.p2pinner = my_Callback_P2PInner;
     kernel.p2p = my_Callback_P2P;
+    kernel.p2p_full = NULL;
 
     // Init the data to pass to all our callbacks
     struct MyData my_data;
@@ -277,7 +279,7 @@ int main(int argc, char ** argv){
         // Execute the FMM
         scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
         printf("FMM finished ... \n");
-        scalfmm_get_positions_xyz(handle,nbParticles,new_positions);
+        scalfmm_get_positions_xyz(handle,nbParticles,new_positions,BOTH);
         //Computation on those positions
         //Here it's a random
         int id;
@@ -288,7 +290,7 @@ int main(int argc, char ** argv){
         }
         printf("Positions changed \n");
 
-        scalfmm_set_positions_xyz(handle,nbParticles,new_positions);
+        scalfmm_set_positions_xyz(handle,nbParticles,new_positions,BOTH);
         scalfmm_update_tree(handle);
         curr_ite++;
     }

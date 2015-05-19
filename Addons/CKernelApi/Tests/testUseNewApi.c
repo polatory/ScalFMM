@@ -28,7 +28,7 @@ int main(int argc, char ** av){
     double boxCenter[3] = {0.0,0.0,0.0};
 
     //Init our lib
-    scalfmm_handle handle = scalfmm_init(/* TreeHeight,boxWidth,boxCenter, */myChoice); //The tree is built
+    scalfmm_handle handle = scalfmm_init(/* TreeHeight,boxWidth,boxCenter, */myChoice,multi_thread); //The tree is built
     struct User_Scalfmm_Cell_Descriptor user_descr;
     user_descr.user_init_cell = NULL;
     user_descr.user_free_cell = NULL;
@@ -54,10 +54,10 @@ int main(int argc, char ** av){
     }
 
     //Inserting the array in the tree
-    scalfmm_tree_insert_particles_xyz(handle,nb_of_parts,positionsXYZ);
+    scalfmm_tree_insert_particles_xyz(handle,nb_of_parts,positionsXYZ,BOTH);
 
     //Set the charge
-    scalfmm_set_physical_values(handle,nb_of_parts,array_of_charge);
+    scalfmm_set_physical_values(handle,nb_of_parts,array_of_charge,BOTH);
 
 
     //Computation Part
@@ -80,9 +80,9 @@ int main(int argc, char ** av){
         scalfmm_execute_fmm(handle);
 
         //Get the resulting forces
-        scalfmm_get_forces_xyz(handle,nb_of_parts,array_of_forces);
+        scalfmm_get_forces_xyz(handle,nb_of_parts,array_of_forces,BOTH);
         //Get the resulting potential
-        scalfmm_get_potentials(handle,nb_of_parts,array_of_pot);
+        scalfmm_get_potentials(handle,nb_of_parts,array_of_pot,BOTH);
 
 
 
@@ -90,7 +90,7 @@ int main(int argc, char ** av){
         compute_displacement_from_forces(array_of_forces,array_of_charge,array_of_displacement,nb_of_parts);
 
         //get position in order to display
-        scalfmm_get_positions_xyz(handle,nb_of_parts,positionsXYZ);
+        scalfmm_get_positions_xyz(handle,nb_of_parts,positionsXYZ,BOTH);
 
         //Display forces :
         {
@@ -109,7 +109,7 @@ int main(int argc, char ** av){
             }
         }
         //Apply displacement computed
-        scalfmm_add_to_positions_xyz(handle,nb_of_parts,array_of_displacement);
+        scalfmm_add_to_positions_xyz(handle,nb_of_parts,array_of_displacement,BOTH);
 
         //Update Consequently the tree
         scalfmm_update_tree(handle);
