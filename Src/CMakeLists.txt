@@ -75,6 +75,11 @@ SET(my_include_dirs "."
   "Kernels/P2P" "Kernels/Taylor" "Kernels/ROtation"
   "Kernels/Uniform" "Kernels/Interpolation")
 
+if(SCALFMM_ONLY_DEVEL)
+    SET(my_include_dirs ${my_include_dirs} "GroupTree/Chebyshev"  "GroupTree/Core"  "GroupTree/Cuda"  "GroupTree/OpenCl"
+        "GroupTree/Rotation"  "GroupTree/StarPUUtils"  "GroupTree/Taylor"  "GroupTree/TestKernel"  "GroupTree/Uniform")
+endif()
+
 FOREACH(my_dir ${my_include_dirs})	
 	file(GLOB 	 	 	 	
 	 	hpp_in_dir

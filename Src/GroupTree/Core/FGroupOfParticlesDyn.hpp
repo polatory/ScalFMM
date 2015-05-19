@@ -117,12 +117,12 @@ public:
         // Allocate
         allocatedMemoryInByteSymb = memoryToAllocSymb;
         memoryBuffer = (unsigned char*)FAlignedMemory::AllocateBytes<MemoryAlignementBytes>(memoryToAllocSymb);
-        FAssertLF(memoryBuffer);
+        FAssertLF(memoryBuffer || !totalSymb);
         memset(memoryBuffer, 0, memoryToAllocSymb);
 
         allocatedMemoryInByteDown = totalDown;
         downPart = (unsigned char*)FAlignedMemory::AllocateBytes<MemoryAlignementBytes>(allocatedMemoryInByteDown);
-        FAssertLF(downPart);
+        FAssertLF(downPart || !totalDown);
         memset(downPart, 0, allocatedMemoryInByteDown);
 
         // Move the pointers to the correct position

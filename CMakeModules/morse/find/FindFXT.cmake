@@ -52,11 +52,19 @@ if (NOT FXT_FOUND)
     endif()
 endif()
 
+set(ENV_FXT_DIR "$ENV{FXT_DIR}")
+set(ENV_FXT_INCDIR "$ENV{FXT_INCDIR}")
+set(ENV_FXT_LIBDIR "$ENV{FXT_LIBDIR}")
+set(FXT_GIVEN_BY_USER "FALSE")
+if ( FXT_DIR OR ( FXT_INCDIR AND FXT_LIBDIR) OR ENV_FXT_DIR OR (ENV_FXT_INCDIR AND ENV_FXT_LIBDIR) )
+    set(FXT_GIVEN_BY_USER "TRUE")
+endif()
+
 # Optionally use pkg-config to detect include/library dirs (if pkg-config is available)
 # -------------------------------------------------------------------------------------
 include(FindPkgConfig)
 find_package(PkgConfig QUIET)
-if(PKG_CONFIG_EXECUTABLE)
+if(PKG_CONFIG_EXECUTABLE AND NOT FXT_GIVEN_BY_USER)
 
     pkg_search_module(FXT fxt)
     if (NOT FXT_FIND_QUIETLY)
@@ -74,9 +82,9 @@ if(PKG_CONFIG_EXECUTABLE)
         endif()
     endif()
 
-endif()
+endif(PKG_CONFIG_EXECUTABLE AND NOT FXT_GIVEN_BY_USER)
 
-if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FXT_FOUND) OR (FXT_DIR) )
+if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FXT_FOUND) OR (FXT_GIVEN_BY_USER) )
 
     if (NOT FXT_FIND_QUIETLY)
         message(STATUS "Looking for FXT - PkgConfig not used")
@@ -269,7 +277,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FXT_FOUND) OR 
         set(CMAKE_REQUIRED_LIBRARIES)
     endif(FXT_LIBRARIES)
 
-endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FXT_FOUND) OR (FXT_DIR) )
+endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FXT_FOUND) OR (FXT_GIVEN_BY_USER) )
 
 if (FXT_LIBRARIES)
     if (FXT_LIBRARY_DIRS)

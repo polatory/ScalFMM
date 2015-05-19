@@ -539,9 +539,9 @@ static int push_task_heteroprio_policy(struct starpu_task *task)
 #endif
 
     workers->init_iterator(workers, &it);
-    while(workers->has_next_master(workers, &it))
+    while(workers->has_next(workers, &it))
     {
-        worker = workers->get_next_master(workers, &it);
+        worker = workers->get_next(workers, &it);
 
 #ifdef STARPU_NON_BLOCKING_DRIVERS
         if (!starpu_bitmap_get(heteroprio->waiters, worker))

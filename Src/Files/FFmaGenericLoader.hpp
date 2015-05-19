@@ -631,7 +631,7 @@ public:
         if (ndata != typeFReal[1]){
             typeFReal[1] = ndata;
         }
-        FReal x = boxWidth *0.5;
+        FReal x = boxWidth * FReal(0.5);
         if(this->binaryFile) {
             this->writerBinaryHeader(centerOfBox,x,nbParticles,typeFReal);
         }
@@ -654,7 +654,7 @@ public:
     void writeHeader(const FPoint<FReal> &centerOfBox,const FReal &boxWidth, const FSize &nbParticles,
                      const unsigned int  dataType, const unsigned int  nbDataPerRecord) {
         unsigned int typeFReal[2]  = {dataType , nbDataPerRecord };
-        FReal x = boxWidth *0.5;
+        FReal x = boxWidth * FReal(0.5);
         if(this->binaryFile) {
             this->writerBinaryHeader(centerOfBox,x,nbParticles,typeFReal);
         }

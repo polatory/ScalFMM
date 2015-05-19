@@ -75,9 +75,9 @@ struct FUnifRoots : FNoCopyable
         // NB: scale factor could be hardcoded (just as the roots)
         FReal scale;
         int omn = order-n-1;
-        if(omn%2) scale=-1.; // (-1)^(n-1-(k+1)+1)=(-1)^(omn-1)
-        else scale=1.;
-        scale/=FMath::pow(2.,order-1)*FMath::factorial<FReal>(n)*FMath::factorial<FReal>(omn);
+        if(omn%2) scale=FReal(-1.); // (-1)^(n-1-(k+1)+1)=(-1)^(omn-1)
+        else scale=FReal(1.);
+        scale/=FReal(FMath::pow(FReal(2.),order-1)*FMath::factorial<FReal>(n)*FMath::factorial<FReal>(omn));
 
         // compute L
         FReal L=FReal(1.);
@@ -88,7 +88,7 @@ struct FUnifRoots : FNoCopyable
 
                 // new version (reducing round-off)
                 // regular grid on [-1,1] (h simplifies, only the size of the domain and a remains i.e. 2. and -1.)
-                L *= ((order-1)*(x+1.)-2.*m);
+                L *= (FReal(order-1)*(x+FReal(1.))-FReal(2.)*FReal(m));
             }
         }
 

@@ -45,6 +45,8 @@
 # (To distribute this file outside of Morse, substitute the full
 #  License text for the above reference.)
 
+include(CheckStructHasMember)
+include(CheckCSourceCompiles)
 
 if (NOT HWLOC_FOUND)
     set(HWLOC_DIR "" CACHE PATH "Installation directory of HWLOC library")
@@ -53,11 +55,19 @@ if (NOT HWLOC_FOUND)
     endif()
 endif()
 
+set(ENV_HWLOC_DIR "$ENV{HWLOC_DIR}")
+set(ENV_HWLOC_INCDIR "$ENV{HWLOC_INCDIR}")
+set(ENV_HWLOC_LIBDIR "$ENV{HWLOC_LIBDIR}")
+set(HWLOC_GIVEN_BY_USER "FALSE")
+if ( HWLOC_DIR OR ( HWLOC_INCDIR AND HWLOC_LIBDIR) OR ENV_HWLOC_DIR OR (ENV_HWLOC_INCDIR AND ENV_HWLOC_LIBDIR) )
+    set(HWLOC_GIVEN_BY_USER "TRUE")
+endif()
+
 # Optionally use pkg-config to detect include/library dirs (if pkg-config is available)
 # -------------------------------------------------------------------------------------
 include(FindPkgConfig)
 find_package(PkgConfig QUIET)
-if(PKG_CONFIG_EXECUTABLE)
+if( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
 
     pkg_search_module(HWLOC hwloc)
     if (NOT HWLOC_FIND_QUIETLY)
@@ -75,9 +85,9 @@ if(PKG_CONFIG_EXECUTABLE)
         endif()
     endif()
 
-endif()
+endif( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
 
-if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR (HWLOC_DIR) )
+if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR (HWLOC_GIVEN_BY_USER) )
 
     if (NOT HWLOC_FIND_QUIETLY)
         message(STATUS "Looking for HWLOC - PkgConfig not used")
@@ -89,8 +99,6 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) O
     # Add system include paths to search include
     # ------------------------------------------
     unset(_inc_env)
-    set(ENV_HWLOC_DIR "$ENV{HWLOC_DIR}")
-    set(ENV_HWLOC_INCDIR "$ENV{HWLOC_INCDIR}")
     if(ENV_HWLOC_INCDIR)
         list(APPEND _inc_env "${ENV_HWLOC_INCDIR}")
     elseif(ENV_HWLOC_DIR)
@@ -164,7 +172,6 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) O
     # Add system library paths to search lib
     # --------------------------------------
     unset(_lib_env)
-    set(ENV_HWLOC_LIBDIR "$ENV{HWLOC_LIBDIR}")
     if(ENV_HWLOC_LIBDIR)
         list(APPEND _lib_env "${ENV_HWLOC_LIBDIR}")
     elseif(ENV_HWLOC_DIR)
@@ -263,6 +270,13 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) O
         check_function_exists(hwloc_topology_init HWLOC_WORKS)
         mark_as_advanced(HWLOC_WORKS)
 
+        # test headers to guess the version
+        check_struct_has_member( "struct hwloc_obj" parent hwloc.h HAVE_HWLOC_PARENT_MEMBER )
+        check_struct_has_member( "struct hwloc_cache_attr_s" size hwloc.h HAVE_HWLOC_CACHE_ATTR )
+        check_c_source_compiles( "#include <hwloc.h>
+            int main(void) { hwloc_obj_t o; o->type = HWLOC_OBJ_PU; return 0;}" HAVE_HWLOC_OBJ_PU)
+        check_library_exists(${HWLOC_LIBRARIES} hwloc_bitmap_free "" HAVE_HWLOC_BITMAP)
+
         if(NOT HWLOC_WORKS)
             if(NOT HWLOC_FIND_QUIETLY)
                 message(STATUS "Looking for hwloc : test of hwloc_topology_init with hwloc library fails")
@@ -276,7 +290,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) O
         set(CMAKE_REQUIRED_LIBRARIES)
     endif(HWLOC_LIBRARIES)
 
-endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR (HWLOC_DIR) )
+endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) OR (HWLOC_GIVEN_BY_USER) )
 
 if (HWLOC_LIBRARIES)
     if (HWLOC_LIBRARY_DIRS)
