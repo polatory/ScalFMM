@@ -45,8 +45,8 @@
  * See documentation of FTreeLoader, FKernelLoader, FAlgoLoader.
  */
 template <class TreeLoader,
-          template <typename TL> class KernelLoader,
-          template <typename TL, template <typename TL> class KL> class AlgoLoader>
+          template <typename TL_1> class KernelLoader,
+          template <typename TL_2, template <typename TL_3> class KL> class AlgoLoader>
 void runperf(FPerfTestParams& params)
 {
     TreeLoader treeLoader(params);
