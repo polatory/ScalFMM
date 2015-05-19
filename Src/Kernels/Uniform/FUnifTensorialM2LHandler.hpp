@@ -26,14 +26,14 @@
 #include <fstream>
 #include <typeinfo>
 
-#include "../../Utils/FBlas.hpp"
-#include "../../Utils/FTic.hpp"
-#include "../../Utils/FDft.hpp"
+#include "Utils/FBlas.hpp"
+#include "Utils/FTic.hpp"
+#include "Utils/FDft.hpp"
 
-#include "../../Utils/FComplex.hpp"
+#include "Utils/FComplex.hpp"
 
 
-#include "./FUnifTensor.hpp"
+#include "FUnifTensor.hpp"
 
 
 /*!  Precomputation of the 316 interactions by evaluation of the matrix kernel on the uniform grid and transformation into Fourier space. These interactions can be tensorial (of size ncmp) and are computed blockwise
@@ -83,9 +83,7 @@ static void Compute(const MatrixKernelClass *const MatrixKernel,
 
     // init Discrete Fourier Transformator
     const int dimfft = 1; // unidim FFT since fully circulant embedding
-    const int steps[dimfft] = {rc};
-    FFft<FReal,dimfft> Dft;
-    Dft.buildDFT(steps);
+    FFftw<FReal,FComplex<FReal>,dimfft> Dft(rc);
 
     // get first column of K via permutation
     unsigned int perm[rc];
@@ -208,7 +206,7 @@ class FUnifTensorialM2LHandler<FReal, ORDER,MatrixKernelClass,HOMOGENEOUS>
 
     /// DFT specific
     static const int dimfft = 1; // unidim FFT since fully circulant embedding
-    typedef FFft<FReal,dimfft> DftClass; // Fast Discrete Fourier Transformator
+    typedef FFftw<FReal,FComplex<FReal>,dimfft> DftClass; // Fast Discrete Fourier Transformator
     DftClass Dft;
     const unsigned int opt_rc; // specific to real valued kernel
 
@@ -228,11 +226,8 @@ class FUnifTensorialM2LHandler<FReal, ORDER,MatrixKernelClass,HOMOGENEOUS>
 public:
     FUnifTensorialM2LHandler(const MatrixKernelClass *const MatrixKernel, const unsigned int, const FReal, const FReal inCellWidthExtension, const int inLeafLevelSeparationCriterion = 1)
         :  CellWidthExtension(inCellWidthExtension), 
-           Dft(), opt_rc(rc/2+1), LeafLevelSeparationCriterion(inLeafLevelSeparationCriterion)
+           Dft(rc), opt_rc(rc/2+1), LeafLevelSeparationCriterion(inLeafLevelSeparationCriterion)
     {
-        // init DFT
-        const int steps[dimfft] = {rc};
-        Dft.buildDFT(steps);
 
         // allocate FC
         FC = new FComplex<FReal>*[ncmp];
@@ -252,12 +247,8 @@ public:
   FUnifTensorialM2LHandler(const FUnifTensorialM2LHandler& other)
     : FC(other.FC),
       CellWidthExtension(other.CellWidthExtension),
-      Dft(), opt_rc(other.opt_rc), LeafLevelSeparationCriterion(other.LeafLevelSeparationCriterion)
-    {    
-        // init DFT
-        const int steps[dimfft] = {rc};
-        Dft.buildDFT(steps); 
-
+      Dft(other.Dft), opt_rc(other.opt_rc), LeafLevelSeparationCriterion(other.LeafLevelSeparationCriterion)
+    {
         // copy node_diff
         memcpy(node_diff,other.node_diff,sizeof(unsigned int)*nnodes*nnodes);
     }
@@ -311,7 +302,7 @@ public:
         FReal Px[rc];
         FBlas::setzero(rc,Px);
         // Apply forward Discrete Fourier Transform
-        Dft.applyIDFT(FX,Px);
+        Dft.applyIDFTNorm(FX,Px);
         // Unapply Zero Padding
         for (unsigned int j=0; j<nnodes; ++j)
             x[j]+=Px[node_diff[nnodes-j-1]];
@@ -403,7 +394,7 @@ class FUnifTensorialM2LHandler<FReal,ORDER,MatrixKernelClass,NON_HOMOGENEOUS>
 
     /// DFT specific
     static const int dimfft = 1; // unidim FFT since fully circulant embedding
-    typedef FFft<FReal,dimfft> DftClass; // Fast Discrete Fourier Transformator
+    typedef FFftw<FReal,FComplex<FReal>,dimfft> DftClass; // Fast Discrete Fourier Transformator
     DftClass Dft;
     const unsigned int opt_rc; // specific to real valued kernel
 
@@ -425,11 +416,8 @@ public:
         : TreeHeight(inTreeHeight),
           RootCellWidth(inRootCellWidth), 
           CellWidthExtension(inCellWidthExtension),
-          Dft(), opt_rc(rc/2+1), LeafLevelSeparationCriterion(inLeafLevelSeparationCriterion)
+          Dft(rc), opt_rc(rc/2+1), LeafLevelSeparationCriterion(inLeafLevelSeparationCriterion)
     {
-        // init DFT
-        const int steps[dimfft] = {rc};
-        Dft.buildDFT(steps);
 
         // allocate FC
         FC = new FComplex<FReal>**[TreeHeight];
@@ -454,12 +442,8 @@ public:
       TreeHeight(other.TreeHeight),
       RootCellWidth(other.RootCellWidth), 
       CellWidthExtension(other.CellWidthExtension),
-      Dft(), opt_rc(other.opt_rc), LeafLevelSeparationCriterion(other.LeafLevelSeparationCriterion)
+      Dft(other.Dft), opt_rc(other.opt_rc), LeafLevelSeparationCriterion(other.LeafLevelSeparationCriterion)
     {    
-        // init DFT
-        const int steps[dimfft] = {rc};
-        Dft.buildDFT(steps); 
-
         // copy node_diff
         memcpy(node_diff,other.node_diff,sizeof(unsigned int)*nnodes*nnodes);
     }
@@ -517,7 +501,7 @@ public:
         FReal Px[rc];
         FBlas::setzero(rc,Px);
         // Apply forward Discrete Fourier Transform
-        Dft.applyIDFT(FX,Px);
+        Dft.applyIDFTNorm(FX,Px);
         // Unapply Zero Padding
         for (unsigned int j=0; j<nnodes; ++j)
             x[j]+=Px[node_diff[nnodes-j-1]];

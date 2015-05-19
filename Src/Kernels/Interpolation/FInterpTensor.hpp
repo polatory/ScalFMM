@@ -144,7 +144,7 @@ public:
                                               { 1,  1, -1},
                                               { 1,  1,  1} };
     // Translate center if cell widths are extended
-    const FReal frac = (1. - ExtendedCellRatio); 
+    const FReal frac = (FReal(1.) - ExtendedCellRatio); 
 
     ChildCenter.setX(FReal(RelativeChildPositions[ChildIndex][0]) * frac);
     ChildCenter.setY(FReal(RelativeChildPositions[ChildIndex][1]) * frac);
