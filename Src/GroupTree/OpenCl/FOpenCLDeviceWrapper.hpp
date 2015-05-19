@@ -30,7 +30,7 @@ protected:
         size_t v[9];
     };
 
-    static void SetKernelArgs(cl_kernel& kernel, const int pos){
+    static void SetKernelArgs(cl_kernel& /*kernel*/, const int /*pos*/){
     }
     template <class ParamClass, class... Args>
     static void SetKernelArgs(cl_kernel& kernel, const int pos, ParamClass* param, Args... args){
