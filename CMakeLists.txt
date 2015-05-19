@@ -480,6 +480,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     message(STATUS "         STARPU_LIBRARIES          = ${STARPU_LIBRARIES}")
     if (STARPU_INCLUDE_DIRS)
         message(STATUS "         STARPU_INCLUDES           = ${STARPU_INCLUDE_DIRS}")
+        set(SCALFMM_INCLUDES  "${SCALFMM_INCLUDES}; ${STARPU_INCLUDE_DIRS}")
     endif()
 
     # TODO: replace this by a component of find starpu
