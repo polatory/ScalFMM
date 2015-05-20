@@ -60,17 +60,20 @@ class FFmmAlgorithmThread : public FAbstractAlgorithm, public FAlgorithmTimers{
 
     const int OctreeHeight;                   ///< The height of the given tree.
 
-    const bool staticSchedule;
+    const int userChunckSize;
 
     const int leafLevelSeperationCriteria;
 
     template <class NumType>
     NumType getChunkSize(const NumType inSize) const {
-        if(staticSchedule){
+        if(userChunckSize == -1){
             return FMath::Max(NumType(1) , NumType(double(inSize)/double(omp_get_max_threads())) );
         }
-        else{
+        else if(userChunckSize == 0){
             return FMath::Max(NumType(1) , inSize/NumType(omp_get_max_threads()*omp_get_max_threads()));
+        }
+        else{
+            return userChunckSize;
         }
     }
 
@@ -80,15 +83,16 @@ public:
      * The constructor needs the octree and the kernels used for computation.
      * \param inTree the octree to work on.
      * \param inKernels the kernels to call.
-     * \param inStaticSchedule Whether to use static or dynamic OpenMP scheduling. default is dynamic.
+     * \param inUserChunckSize To specify the chunck size in the loops (-1 is static, 0 is N/p^2, otherwise it
+     * directly used as the number of item to proceed together), default is 10
      *
      * \except An exception is thrown if one of the arguments is NULL.
      */
     FFmmAlgorithmThread(OctreeClass* const inTree, KernelClass* const inKernels,
-                        const bool inStaticSchedule = false, const int inLeafLevelSeperationCriteria = 1)
+                        const int inUserChunckSize = 10, const int inLeafLevelSeperationCriteria = 1)
         : tree(inTree) , kernels(nullptr), iterArray(nullptr), leafsNumber(0),
           MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()),
-          staticSchedule(inStaticSchedule), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
+          userChunckSize(inUserChunckSize), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
 
         FAssertLF(tree, "tree cannot be null");
 
@@ -104,7 +108,7 @@ public:
         FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
 
         FLOG(FLog::Controller << "FFmmAlgorithmThread (Max Thread " << omp_get_max_threads() << ")\n");
-        FLOG(FLog::Controller << "\t static schedule " << (staticSchedule?"TRUE":"FALSE") << ")\n");
+        FLOG(FLog::Controller << "\t static schedule " << (userChunckSize == -1?"static":(userChunckSize == 0?"N/p^2":userChunckSize)) << ")\n");
     }
 
     /** Default destructor */
