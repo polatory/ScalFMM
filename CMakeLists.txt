@@ -632,8 +632,12 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   #
   set(SCALFMM_COMPILE_FLAGS "${SCALFMM_CXX_FLAGS} ${CMAKE_CXX_FLAGS_TYPE} ${CMAKE_CXX_FLAGS}")
   set(CMAKE_CXX_FLAGS "${SCALFMM_COMPILE_FLAGS}")
-#  set(CMAKE_CXX_FLAGS "${SCALFMM_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS_TYPE} ${CMAKE_CXX_FLAGS}")
-  set(SCALFMM_COMPILE_LIBS   "${SCALFMM_LIBRARIES}")
+  # We need the libraries without spaces (inside the config file)
+  set(SCALFMM_COMPILE_LIBS   "")
+  foreach(lib_var ${SCALFMM_LIBRARIES})
+      string(STRIP ${lib_var} lib_var)
+      LIST(APPEND SCALFMM_COMPILE_LIBS   ${lib_var})        
+  endforeach()
   configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake
                   ${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
   #
