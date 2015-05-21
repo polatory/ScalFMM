@@ -151,7 +151,7 @@ int main(int argc, char* argv[])
                 KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
                 //
 	      	// false : dynamic schedule.
-                int inUserChunckSize = 10 // To specify the chunck size in the loops (-1 is static, 0 is N/p^2, otherwise i)
+                int inUserChunckSize = 10 ;// To specify the chunck size in the loops (-1 is static, 0 is N/p^2, otherwise i)
                 FmmClass algo(&tree, &kernels, inUserChunckSize);
                 //
                 algo.execute();   // Here the call of the FMM algorithm
