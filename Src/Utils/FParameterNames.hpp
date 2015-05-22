@@ -200,6 +200,39 @@ inline void PrintUsedOptions(const std::vector<FParameterNames>& options){
     }
 }
 
+inline bool CheckValidParameters(const int argc, char* argv[], const std::vector<FParameterNames> options){
+    bool isValide = true;
+    bool previousIsCorrectParameter = false;
+    for(int idxParameter = 1 ; idxParameter < argc ; ++idxParameter){
+        bool paramExist = false;
+        for(unsigned idxTest = 0 ; idxTest < options.size() ; ++idxTest){
+            paramExist = FParameters::existParameter(argc, argv, options[idxTest].options);
+            if(paramExist){
+                break;
+            }
+        }
+        if(paramExist == true){
+            previousIsCorrectParameter = true;
+        }
+        else if(previousIsCorrectParameter){
+            previousIsCorrectParameter = false;
+        }
+        else{
+            previousIsCorrectParameter = false;
+            isValide = false;
+            std::cout << "[PARAMETER-ERROR] Parameter " << (idxParameter-1) << " = \"" << argv[idxParameter] << "\" seems incorrect." << "\n";
+        }
+    }
+    if(isValide == false){
+        std::cout << "[ScalFMM] To know more about correct parameters ask for help by passing:\n\t";
+        for(const char* param : FParameterDefinitions::Help.options){
+            std::cout << "\t" << param << ",";
+        }
+        std::cout << std::endl;
+    }
+    return isValide;
+}
+
 inline void PrintFlags(){
     std::cout << "[ScalFMM] This executable has been compiled with:\n";
     std::cout << "    Flags: " << SCALFMMCompileFlags << "\n";
@@ -241,6 +274,10 @@ inline void PrintGivenParams(int argc, const char* const * const argv){
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::UserParams.options)) {\
         FParameterDefinitions::PrintGivenParams(argc, argv);\
     } \
+    if(FParameterDefinitions::CheckValidParameters(argc, argv, {FParameterDefinitions::Compile, FParameterDefinitions::DateHost, \
+                                         FParameterDefinitions::UserParams, __VA_ARGS__}) == false){ \
+        return 121;\
+    } \
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::Help.options)) {\
         const std::vector<FParameterNames> optionsvec = {FParameterDefinitions::Compile, FParameterDefinitions::DateHost, \
                                                          FParameterDefinitions::UserParams, __VA_ARGS__};\
@@ -262,6 +299,10 @@ inline void PrintGivenParams(int argc, const char* const * const argv){
     } \
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::UserParams.options)) {\
         FParameterDefinitions::PrintGivenParams(argc, argv);\
+    } \
+    if(FParameterDefinitions::CheckValidParameters(argc, argv, {FParameterDefinitions::Compile, FParameterDefinitions::DateHost, \
+                                         FParameterDefinitions::UserParams, __VA_ARGS__}) == false){ \
+        return 121;\
     } \
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::Help.options)) {\
         std::cout << argv[0] << " : " << description << "\n"; \
