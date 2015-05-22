@@ -24,6 +24,8 @@
 
 #include <vector>
 
+#include "FAssert.hpp"
+
 /** This file proposes some methods
   * to work with user input parameters.
   */
@@ -44,6 +46,7 @@ namespace FParameters{
 		std::istringstream iss(str,std::istringstream::in);
 		VariableType value;
 		iss >> value;
+        FAssertLF(iss.eof());
 		if( /*iss.tellg()*/ iss.eof() ) return value;
 		return defaultValue;
 	}
@@ -103,6 +106,7 @@ namespace FParameters{
     template <class VariableType>
     inline const VariableType getValue(const int argc, const char* const * const argv, const char* const inName, const VariableType& defaultValue = VariableType(), const bool caseSensible = false){
         const int position = findParameter(argc,argv,inName,caseSensible);
+        FAssertLF(position == NotFound || position != argc - 1);
         if(position == NotFound || position == argc - 1){
             return defaultValue;
         }
@@ -113,6 +117,7 @@ namespace FParameters{
       */
     inline const char* getStr(const int argc, const char* const * const argv, const char* const inName, const char* const inDefault, const bool caseSensible = false){
         const int position = findParameter(argc,argv,inName,caseSensible);
+        FAssertLF(position == NotFound || position != argc - 1);
         if(position == NotFound || position == argc - 1){
             return inDefault;
         }
@@ -154,6 +159,7 @@ namespace FParameters{
     inline const VariableType getValue(const int argc, const char* const * const argv, const std::vector<const char*>& inNames, const VariableType& defaultValue = VariableType(), const bool caseSensible = false){
         for(const char* name : inNames){
             const int position = findParameter(argc, argv, name, caseSensible);
+            FAssertLF(position == NotFound || position != argc - 1);
             if(position != NotFound && position != argc - 1){
                 return StrToOther(argv[position+1],defaultValue);
             }
@@ -166,6 +172,7 @@ namespace FParameters{
     inline const char* getStr(const int argc, const char* const * const argv, const std::vector<const char*>& inNames, const char* const inDefault, const bool caseSensible = false){
         for(const char* name : inNames){
             const int position = findParameter(argc, argv, name, caseSensible);
+            FAssertLF(position == NotFound || position != argc - 1);
             if(position != NotFound && position != argc - 1){
                 return argv[position+1];
             }
