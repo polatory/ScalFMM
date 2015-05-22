@@ -11,13 +11,13 @@ version 1.1
 -----
 - The choice of floating point values is done by template (by passing template to all classes) and no more at configure time
 - There is no more ScalFMM variables and defines but only SCALFMM (all letters in upper case)
-- BLAS and FFTW are turned on by default, and the compilation continue even if they are not found
 - We start to use unique ptr (and advise to use it) in the main files
 - Add interpolation FMM based on uniform grid points.
 - Add blocked version of the algorithm to increase the granularity (task-based approach)
 - Fix bug with Chebyschev kernel and multi RHS.
 - Improvements in unit tests (works with Linux and MacOs X for intel and gcc)
-- 
+- Use MORSE distribution to detect BLAS, FFTW, ....
+- BLAS and FFTW are turned on by default, and the compilation continue even if they are not found
 
 1.2.1
 -----
