@@ -60,7 +60,7 @@ class FFmmAlgorithmThread : public FAbstractAlgorithm, public FAlgorithmTimers{
 
     const int OctreeHeight;                   ///< The height of the given tree.
 
-    const int userChunkSize;
+    int userChunkSize;
 
     const int leafLevelSeperationCriteria;
 
@@ -79,7 +79,7 @@ public:
                         const int inUserChunkSize = 10, const int inLeafLevelSeperationCriteria = 1)
         : tree(inTree) , kernels(nullptr), iterArray(nullptr), leafsNumber(0),
           MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()),
-          userChunckSize(inUserChunckSize), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
+          userChunkSize(inUserChunkSize), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
         FAssertLF(tree, "tree cannot be null");
         
         this->kernels = new KernelClass*[MaxThreads];
@@ -94,7 +94,7 @@ public:
         FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
         
         FLOG(FLog::Controller << "FFmmAlgorithmThread (Max Thread " << omp_get_max_threads() << ")\n");
-        FLOG(FLog::Controller << "\t static schedule " << (userChunckSize == -1?"static":(userChunckSize == 0?"N/p^2":userChunckSize)) << ")\n");
+        FLOG(FLog::Controller << "\t static schedule " << (userChunkSize == -1 ? "static" : (userChunkSize == 0 ? "N/p^2" : std::to_string(userChunkSize))) << ")\n");
     }
     
     /** Default destructor */

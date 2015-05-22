@@ -49,8 +49,7 @@ public:
 
     void run() {
         _algo = std::unique_ptr<FMMClass>(
-            new FMMClass(&(_treeLoader._tree), &(_kernelLoader._kernel),
-                         _omp_static_schedule));
+            new FMMClass(&(_treeLoader._tree), &(_kernelLoader._kernel)));
         _algo->setChunkSize(_omp_chunk_size);
 
         _algo->execute();
