@@ -10,7 +10,7 @@
 
 #include "PerfTestUtils.hpp"
 
-#include "Core/FFmmAlgorithm.hpp"
+#include "Core/FFmmAlgorithmThread.hpp"
 
 #include "BalanceTree/FFmmAlgorithmThreadBalanced.hpp"
 #include "BalanceTree/FCostCell.hpp"
@@ -41,7 +41,7 @@ public:
 
     using FMMClass = FFmmAlgorithmThreadBalanced
         <OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>;    
-    using CostFmmClass = FFmmAlgorithm
+    using CostFmmClass = FFmmAlgorithmThread
         <OctreeClass, CellClass, ContainerClass, CostKernelClass, LeafClass>;
 
     std::stringstream _infostring;
