@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas,
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -93,13 +93,13 @@ int main(int argc, char ** argv){
 	}
 	std::cout << std::endl<< std::endl;
 	// ---------------------------------------------
-	const std::string fileName(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,   "../Data/noDistprolate50.out.fma"));
+	const std::string fileName(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options,   "../Data/noDist/prolate50.out.fma"));
 	const unsigned int TreeHeight      = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 3);
 	const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
 //	const unsigned int NbThreads      = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, 1);
 	//
 	// accuracy
-	const unsigned int P = 7 ;
+	const unsigned int P = 4 ;
 
 
 	const int sminM    = FParameters::getValue(argc,argv,LocalOptionMinMultipoleThreshod.options, P*P*P);
@@ -107,9 +107,9 @@ int main(int argc, char ** argv){
 //
     typedef double FReal;
 	typedef FUnifCell<FReal,P>                                        CellClass;
-	typedef FP2PParticleContainerIndexed<FReal>            ContainerClass;
-	typedef FSimpleIndexedLeaf<FReal,ContainerClass>    LeafClass;
-	typedef FInterpMatrixKernelR<FReal>                               MatrixKernelClass;
+	typedef FP2PParticleContainerIndexed<FReal>           ContainerClass;
+	typedef FSimpleIndexedLeaf<FReal,ContainerClass>   LeafClass;
+	typedef FInterpMatrixKernelR<FReal>                        MatrixKernelClass;
 	//
 	typedef FAdaptiveUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,P> KernelClass;
 	//
@@ -223,7 +223,7 @@ int main(int argc, char ** argv){
 			const FReal*const forcesX            = leaf->getTargets()->getForcesX();
 			const FReal*const forcesY            = leaf->getTargets()->getForcesY();
 			const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
-			const FSize nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
+			const FSize nbParticlesInLeaf        = leaf->getTargets()->getNbParticles();
 			const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
 			for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){

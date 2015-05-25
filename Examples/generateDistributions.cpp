@@ -38,11 +38,11 @@
 //!  <b> General arguments:</b>
 //!     \param   -help (-h)      to see the parameters available in this driver
 //!     \param  -N     The number of points in the distribution (default 20000)
-//!     \param   -filename name: generic name for files (with extension) and save data
+//!     \param   -fout name: generic name for files (with extension) and save data
 //!                  with following format in name.fma or name.bfma in -bin is set"
-//!      \param  -visufmt format for the visu file (vtk, vtp, cvs or cosmo). vtp is the default
+//!      \param  -fvisuout Filename for the visu file (vtk, vtp, cvs or cosmo). vtp is the default
 //!      \param -extraLength   value    extra length to add to the boxWidth (default 0.0)
-//!
+
 //!  <b> Geometry arguments:</b>
 //!      \param  -unitCube uniform distribution on unit cube
 //!      \param  -cube uniform distribution on a cube
@@ -65,11 +65,11 @@
 //!
 //! \b examples
 //!
-//!   generateDistributions -prolate -ar 2:2:4   -N 20000 -filename prolate
+//!   generateDistributions -prolate -ar 2:2:4   -N 20000 -fout prolate
 //!
 //! or
 //!
-//!   generateDistributions  -cuboid 2:2:4 -filename cuboid  -visufmt vtp -charge  -zeromean
+//!  generateDistributions -cuboid 2:2:4 -N 100000 -fout cuboid.bfma  -fvisuout cuboid.vtp -charge  -zeromean
 //!
 
 

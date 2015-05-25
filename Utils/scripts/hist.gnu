@@ -9,21 +9,21 @@ set key off
 set border 3
 # Add a vertical dotted line at x=0 to show centre (mean) of distribution.
 set yzeroaxis
-
-# Each bar is half the (visual) width of its x-range.
-set boxwidth 0.05 absolute
-set style fill solid 1.0 noborder
-
-bin_width = 0.1;
-
-bin_number(x) = floor(x/bin_width)
-
-rounded(x) = bin_width * ( bin_number(x) + 0.5 )
-
+#
+#
 set ylabel "Number of leaves"
-set xabel "Number of Particles"
-
+set xlabel "Number of Particles per box"
+#
+# OUTPUT
 set terminal postscript enhanced color  'Helvetica' 20
 set output 'Histogram.eps'
+#
+#   PLOT
+#
+set style data histogram
+set style histogram cluster gap 1
+#unset ytics
+set boxwidth 0.75
+set style fill solid 1.0 noborder
 
-plot 'output.txt' using (rounded($1)):($2) smooth frequency with boxes
+plot 'output.txt' using ($1,$2) with boxes

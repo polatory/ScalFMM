@@ -34,7 +34,7 @@ then we obtain a uniform distribution of points on the unit sphere.
    \includegraphics[width=0.3\textwidth]{unitsphere}
     \caption{$5\,000$ points distribution on unit sphere.}%
 \end{figure}
-\texttt{generateDistributions -unitsphere   -N 5000 -filename unitsphere -visu }
+\texttt{generateDistributions -unitsphere   -N 5000 -fout unitsphere.fma -fvisuout unitsphere.vtp }
 
 
 \subsection{Ellipsoid distribution}
@@ -76,7 +76,7 @@ is true then we keep the point otherwise we reject it.
   \end{minipage}%
 \end{figure}
 
-\texttt{generateDistributions -prolate -ar 1:1:10   -N 20000 -filename prolate -visu }
+\texttt{generateDistributions -prolate -ar 1:1:10   -N 20000 -fout prolate.bfma -fvisuout prolate.vtp}
 
 
 
@@ -100,7 +100,7 @@ As shown in the figure~\ref{Fig-nonUnifEllipsoid} we obtain a concentration of p
 This bias on the pole could be reduced by choosing the same approach that we use to build a uniform distribution on the unit sphere?
 
 
-\texttt{generateDistributions -ellipsoid -ar 2:2:4   -N 20000 -filename ellipsoid -visu}
+\texttt{generateDistributions -ellipsoid -ar 2:2:4   -N 20000 -fout ellipsoid.bfma  -fvisuout ellipsoid.vtp}
 
 If you consider the 
 
@@ -125,7 +125,8 @@ r = \sqrt{\frac{u^{2/3}}{u^{2/3}-1}}
 \end{figure}
 
 The command to generate such distribution is\\
-\texttt{generateDistributions -plummer -radius 10   -N 50000 -filename plummer  -visu} 
+\texttt{generateDistributions -plummer -radius 10 -N 50000 -fout plummer.bfma  -fvisuout plummer.vtp 
+} 
 
 
 
