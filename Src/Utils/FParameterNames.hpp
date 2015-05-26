@@ -274,16 +274,16 @@ inline void PrintGivenParams(int argc, const char* const * const argv){
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::UserParams.options)) {\
         FParameterDefinitions::PrintGivenParams(argc, argv);\
     } \
-    if(FParameterDefinitions::CheckValidParameters(argc, argv, {FParameterDefinitions::Compile, FParameterDefinitions::DateHost, \
-                                         FParameterDefinitions::UserParams, __VA_ARGS__}) == false){ \
-        return 121;\
-    } \
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::Help.options)) {\
         const std::vector<FParameterNames> optionsvec = {FParameterDefinitions::Compile, FParameterDefinitions::DateHost, \
                                                          FParameterDefinitions::UserParams, __VA_ARGS__};\
         FParameterDefinitions::PrintUsedOptions(optionsvec);\
         return 0;\
     } \
+    if(FParameterDefinitions::CheckValidParameters(argc, argv, {FParameterDefinitions::Compile, FParameterDefinitions::DateHost, \
+                    FParameterDefinitions::UserParams, __VA_ARGS__}) == false){ \
+        return 121;                                                     \
+    }                                                                   \
 
 /** This should be include at the beginin of all main file
  *  @code FHelpDescribeAndExit(argc, argv,
@@ -300,16 +300,16 @@ inline void PrintGivenParams(int argc, const char* const * const argv){
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::UserParams.options)) {\
         FParameterDefinitions::PrintGivenParams(argc, argv);\
     } \
+    if(FParameters::existParameter(argc, argv, FParameterDefinitions::Help.options)) { \
+        std::cout << argv[0] << " : " << description << "\n";           \
+        const std::vector<FParameterNames> optionsvec = {FParameterDefinitions::Compile, FParameterDefinitions::DateHost, \
+                                                         FParameterDefinitions::UserParams, __VA_ARGS__}; \
+        FParameterDefinitions::PrintUsedOptions(optionsvec);            \
+        return 0;                                                       \
+    }                                                                   \
     if(FParameterDefinitions::CheckValidParameters(argc, argv, {FParameterDefinitions::Compile, FParameterDefinitions::DateHost, \
                                          FParameterDefinitions::UserParams, __VA_ARGS__}) == false){ \
         return 121;\
-    } \
-    if(FParameters::existParameter(argc, argv, FParameterDefinitions::Help.options)) {\
-        std::cout << argv[0] << " : " << description << "\n"; \
-        const std::vector<FParameterNames> optionsvec = {FParameterDefinitions::Compile, FParameterDefinitions::DateHost, \
-                                                         FParameterDefinitions::UserParams, __VA_ARGS__};\
-        FParameterDefinitions::PrintUsedOptions(optionsvec);\
-        return 0;\
     } \
     {\
         std::cout << "[ScalFMM] To have the help for this executable pass: "; \
