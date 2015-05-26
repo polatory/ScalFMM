@@ -191,11 +191,11 @@ static const FParameterNames SeparationCriterion = {
 inline void PrintUsedOptions(const std::vector<FParameterNames>& options){
     std::cout << ">> Here is the list of the parameters you can pass to this application :\n";
     for(const FParameterNames& option : options ){
-        std::cout << ">> Descriptions : " << option.description << "\n";
-        std::cout << "\t Params : ";
+        std::cout << "\t";
         for(const char* name : option.options ){
             std::cout << name << ", ";
         }
+        std::cout << "\n\t\t" << option.description << "\n";
         std::cout << "\n";
     }
 }
