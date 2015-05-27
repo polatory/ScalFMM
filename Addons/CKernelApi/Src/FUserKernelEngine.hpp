@@ -96,6 +96,7 @@ public:
 
     /** Default destructor */
     virtual ~CoreKernel(){
+
     }
 
     /** Do nothing */
@@ -108,7 +109,6 @@ public:
         if(kernel.m2m){
             for(int idx = 0 ; idx < 8 ; ++idx){
                 if( children[idx] ){
-                    printf("lvl : %d\n",level);
                     kernel.m2m(level, cell->getContainer(), idx, children[idx]->getContainer(), userData);
                 }
             }
@@ -201,6 +201,13 @@ public:
         return userData;
     }
 
+    void M2L_Extended(CellClass * src, CellClass * tgt, const FTreeCoordinate transfer, const int level){
+        if(kernel.m2l_ext){
+            int array[3] = {transfer.getX(),transfer.getY(),transfer.getZ()};
+            kernel.m2l_ext(level,tgt->getContainer(),src->getContainer(),array,userData);
+        }
+    }
+
 };
 
 template<class FReal,class LeafClass>
@@ -212,7 +219,6 @@ private:
 
     //Typedefs :
     typedef FOctree<FReal,CoreCell,ContainerClass,LeafClass>            OctreeClass;
-
     typedef CoreKernel<CoreCell,ContainerClass>           CoreKernelClass;
 
     //For arranger classes
@@ -220,6 +226,8 @@ private:
     //Attributes
     OctreeClass * octree;
     CoreKernelClass * kernel;
+    int upperLimit;
+    int treeHeight;
 
     // ArrangerClass * arranger;
     // ArrangerClassTyped * arrangerTyped;
@@ -228,7 +236,7 @@ private:
 
 public:
     FUserKernelEngine(/*int TreeHeight, double BoxWidth , double * BoxCenter, */scalfmm_kernel_type KernelType) :
-        octree(nullptr), kernel(nullptr) /*,arranger(nullptr)*/ {
+        octree(nullptr), kernel(nullptr), upperLimit(2), treeHeight(0) /*,arranger(nullptr)*/ {
         FScalFMMEngine<FReal>::kernelType = KernelType;
     }
 
@@ -254,6 +262,7 @@ public:
 
     void build_tree(int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
         CoreCell::Init(user_cell_descriptor);
+        this->treeHeight = TreeHeight;
         printf("Tree Height : %d \n",TreeHeight);
         this->octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint<FReal>(BoxCenter));
     }
@@ -437,23 +446,106 @@ public:
             });
     }
 
+    void set_upper_limit(int inUpperLimit){
+        upperLimit = inUpperLimit;
+    }
+
+    /**
+     * @brief This function is called if the FMM is not computed on
+     * all the standards levels
+     *
+     */
+    void internal_M2L(){
+        if(upperLimit > 1){ // if upperLimit == 1, then, M2L has been
+                            // done at level 2, and hence all the far
+                            // field has been calculated.
+            //Starting at the lower level where the M2L has not been done.
+            typename OctreeClass::Iterator octreeIterator(octree); //lvl : 1
+
+            while(octreeIterator.level() != upperLimit){
+                octreeIterator.moveDown();
+            }
+
+            //I'm at the upperLimit, so the lowest level where M2L has been done.
+            do{
+                CoreCell * currentTgt = octreeIterator.getCurrentCell(); // This one is targeted
+
+                //Then, we get the interaction list at this lvl. This will provide us with lots of source cells.
+                const CoreCell * currentInteractionList[343];
+                //Get an iterator for the sources
+                typename OctreeClass::Iterator upAndDownIterator = octreeIterator;
+
+                {//This is supposed to be done for multiple level. You
+                 //need to go up until level 2. And then, to go down
+                 //until level upperLimit. I think it's possible ...
+                    while(upAndDownIterator.level() >= 2){
+                        upAndDownIterator.moveUp();
+
+                        //There, we get the interaction list of all parents of tgt cell
+                        const int nbInteract = octree->getInteractionNeighbors(currentInteractionList,
+                                                                               upAndDownIterator.getCurrentGlobalCoordinate(),
+                                                                               upAndDownIterator.level());
+                        int currentLevel = upAndDownIterator.level();
+                        if(nbInteract){
+                            //Then, we do M2L for each child at level upperLimit of each 343 Interaction cells.
+                            for(int idxSrc = 0; idxSrc < 343 ; ++idxSrc){
+                                if(currentInteractionList[idxSrc]){//Check if it exist
+                                    const CoreCell * currentSource = currentInteractionList[idxSrc]; //For clarity, will be otpimised out, anyway
+                                    MortonIndex idx = currentSource->getMortonIndex();
+
+                                    //At this point, we instanciate
+                                    //the number of child needed.
+                                    //This only depends on diffenrence
+                                    //between current level and
+                                    //upperLimit level
+                                    int totalNumberOfChild = FMath::pow(8,upperLimit-currentLevel);
+
+                                    for(int idxChildSrc = 0; idxChildSrc < totalNumberOfChild ; ++idxChildSrc){//For all 8^{number of levels to down} children
+                                        MortonIndex indexOfChild = ((idx << 3*(upperLimit-currentLevel))+idxChildSrc);
+                                        CoreCell * src = octree->getCell(indexOfChild,upperLimit); //Get the cell
+                                        if(src){//check if it exists
+                                            FTreeCoordinate srcCoord = src->getCoordinate();
+                                            FTreeCoordinate tgtCoord = currentTgt->getCoordinate();
+                                            //Build tree coord translation vector
+                                            FTreeCoordinate transfer;
+                                            transfer.setPosition(tgtCoord.getX()-srcCoord.getX(),
+                                                                 tgtCoord.getY()-srcCoord.getY(),
+                                                                 tgtCoord.getZ()-srcCoord.getZ());
+                                            kernel->M2L_Extended(src,currentTgt,transfer,octreeIterator.level());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }while(octreeIterator.moveRight());
+        }
+        else{
+            FAssertLF("No reasons to be there, seriously ...\nExiting anyway...");
+        }
+    }
+
     void execute_fmm(){
         FAssertLF(kernel,"No kernel set, please use scalfmm_user_kernel_config before calling the execute routine ... Exiting \n");
+        FAbstractAlgorithm * abstrct = nullptr;
         switch(FScalFMMEngine<FReal>::Algorithm){
         case 0:
             {
                 typedef FFmmAlgorithm<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassSeq;
                 AlgoClassSeq * algoSeq = new AlgoClassSeq(octree,kernel);
-                algoSeq->execute();
                 FScalFMMEngine<FReal>::algoTimer = algoSeq;
+                abstrct = algoSeq;
+                //algoSeq->execute(); will be done later
                 break;
             }
         case 1:
             {
                 typedef FFmmAlgorithmThread<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassThread;
                 AlgoClassThread*  algoThread = new AlgoClassThread(octree,kernel);
-                algoThread->execute();
                 FScalFMMEngine<FReal>::algoTimer = algoThread;
+                abstrct = algoThread;
+                //algoThread->execute(); will be done later
                 break;
             }
         case 2:
@@ -466,16 +558,30 @@ public:
             }
         case 3:
             {
-                // typedef FFmmAlgorithmThreadTsm<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassTargetSource;
-                // AlgoClassTargetSource* algoTS = new AlgoClassTargetSource(octree,kernel);
-                // algoTS->execute();
-                // FScalFMMEngine<FReal>::algoTimer = algoTS;
-                // break;
+                typedef FFmmAlgorithmThreadTsm<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassTargetSource;
+                AlgoClassTargetSource* algoTS = new AlgoClassTargetSource(octree,kernel);
+                FScalFMMEngine<FReal>::algoTimer = algoTS;
+                abstrct = algoTS;
+                //algoTS->execute(); will be done later
+                break;
             }
         default :
             std::cout<< "No algorithm found (probably for strange reasons) : "<< FScalFMMEngine<FReal>::Algorithm <<" exiting" << std::endl;
         }
-
+        if (FScalFMMEngine<FReal>::Algorithm != 2){
+            if(upperLimit != 2){
+                printf("At least I'm here\n");
+                abstrct->execute(FFmmP2M | FFmmM2M | FFmmM2L, upperLimit, treeHeight);
+                printf("\tUpPass finished\n");
+                internal_M2L();
+                printf("\tStrange M2L finished\n");
+                abstrct->execute(FFmmL2L | FFmmL2P | FFmmP2P, upperLimit, treeHeight);
+                printf("\tDownPass finished\n");
+            }
+            else{
+                abstrct->execute();
+            }
+        }
     }
 
     void intern_dealloc_handle(Callback_free_cell userDeallocator){

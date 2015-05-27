@@ -178,7 +178,9 @@ int main(int argc, char ** av){
         int * arrayofIndicesSource = malloc(sizeof(int)*nbPartSource);
         int * arrayofIndicesTarget = malloc(sizeof(int)*nbPartTarget);
         {//Set physical values
-
+            printf("Setting physical values ... \n");
+            Timer phy_timer;
+            tic(&phy_timer);
             //SRC
             int idPart;
             for(idPart = 0 ; idPart<nbPartSource ; ++idPart){
@@ -190,15 +192,18 @@ int main(int argc, char ** av){
                 arrayofIndicesTarget[idPart] = idPart; // here, we add the number of sources previously inserted
             }
             scalfmm_set_physical_values_npart(handle,nbPartTarget,arrayofIndicesTarget,targetsPhiValues,TARGET);
-
-
+            tac(&phy_timer);
+            print_elapsed(&phy_timer);
+            printf("Physical values setted ... \n");
 
         }
+        printf("Executing FMM ...\n");
         Timer fmm_timer;
         tic(&fmm_timer);
         //Computation
         scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
         tac(&fmm_timer);
+        printf("FMM finished ...\n");
         print_elapsed(&fmm_timer);
 
         //Get back the forces
