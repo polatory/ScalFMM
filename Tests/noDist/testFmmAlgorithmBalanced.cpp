@@ -103,14 +103,17 @@ int main(int argc, char** argv)
     }
     /**************************************************************************/
 
-    std::cerr << ("Running the costzones algorithm") << std::endl;
+    std::cerr << "Running the costzones algorithm" << std::endl;
     /* Run the costzone algorithm *********************************************/
     FCostZones<OctreeClass, CellClass> costzones(&tree, args.zoneCount());
     costzones.run();
 
     writeZones(args, costzones);
+    if (args.verboseLevel() == -1) {
+        printZonesCosts(tree, costzones);
+    }
     /**************************************************************************/
-    std::cerr << ("Done") << std::endl;
+    std::cerr << "Done" << std::endl;
 
 
     /* Run the balanced algorithm *********************************************/
