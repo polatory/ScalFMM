@@ -100,4 +100,47 @@ void loadTree(OctreeClass& tree, FRandomLoader<FReal>& loader)
     }
 }
 
+
+template <typename OctreeClass, typename CellClass>
+void printZonesCosts(OctreeClass& tree, FCostZones<OctreeClass, CellClass>& costzones)
+{
+    using CostType = typename CellClass::costtype;
+    //using BoundClass = typename FCostZones<OctreeClass, CellClass>::BoundClass;
+
+    typename OctreeClass::Iterator it(&tree);
+
+
+    // auto leafZoneBounds = costzones.getLeafZoneBounds();
+    // auto internalZoneBounds = costzones.getZoneBounds();
+
+    auto zones = costzones.getZones();
+
+
+    // Zones costs (internal, leaf)
+    std::vector<std::tuple<CostType,CostType>> zonecosts(zones.size());
+
+    int zoneIdx = 0;
+    for(auto z : zones) {
+        for(auto cell : z) {
+            std::get<0>(zonecosts.at(zoneIdx)) += cell.second->getCost();
+            std::get<1>(zonecosts.at(zoneIdx)) += cell.second->getNearCost();
+        }
+        zoneIdx++;
+    }
+
+
+    zoneIdx = 0;
+    for(auto z : zonecosts) {
+        std::cout << "@@"
+                  << zoneIdx        << " "
+                  << std::get<0>(z) << " "
+                  << std::get<1>(z)
+                  << std::endl;
+        zoneIdx++;
+    }
+
+
+}
+
+
 #endif
