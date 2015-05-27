@@ -30,10 +30,9 @@ class loadFMAAndRunFMMArgs {
 
     const FParameterNames OutputFileExtension =
     {{"--output-file-extention", "-fout-ext"},
-     ("Output files extension. One file is created for each level in the"
-      " tree. Each file has a 'basename_$nbZones$z.$i$.extension' "
-      "extension where $i is the level. Default value is "
-      + std::string(_outFileNameExtInit) + ".").c_str()};        
+     "Output files extension. One file is created for each level in the"
+     " tree. Each file has a 'basename_$nbZones$z.$i$.extension' "
+     "extension where $i is the level."};
 
     const FParameterNames ZoneCount = 
     {{"--zone-count","-z"},"Number of zones to create."};
