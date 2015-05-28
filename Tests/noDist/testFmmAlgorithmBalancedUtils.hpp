@@ -123,8 +123,43 @@ void printZonesCosts(OctreeClass& tree, FCostZones<OctreeClass, CellClass>& cost
     for(auto z : zones) {
         for(auto cell : z) {
             std::get<0>(zonecosts.at(zoneIdx)) += cell.second->getCost();
-            std::get<1>(zonecosts.at(zoneIdx)) += cell.second->getNearCost();
         }
+        zoneIdx++;
+    }
+
+    auto nearZones = costzones.getLeafZoneBounds();
+    zoneIdx = 0;
+    int colourIdx = 0;
+
+    for(auto z : nearZones) {
+        colourIdx = 0;
+        for(auto c : z) {
+            it.gotoBottomLeft();
+            
+            const MortonIndex start = c.first;
+            int count = c.second;
+
+            while( start != it.getCurrentGlobalIndex() ) {
+                it.moveRight();
+            }
+
+
+            while(count > 0) {
+                if( FCoordColour::coord2colour(
+                        it.getCurrentCell()->getCoordinate())
+                    == colourIdx) {
+                    
+                    std::get<1>(zonecosts.at(zoneIdx)) +=
+                        it.getCurrentCell()->getNearCost();
+
+                    count--;
+                }
+                it.moveRight();
+            }
+
+            colourIdx++;
+        }
+
         zoneIdx++;
     }
 
