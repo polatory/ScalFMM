@@ -6,6 +6,7 @@
 #define _LOADFMAANDRUNFMMARGS_HPP_
 
 #include <string>
+#include <omp.h>
 
 #include "Utils/FParameters.hpp"
 #include "Utils/FParameterNames.hpp"
@@ -14,7 +15,7 @@
 class loadFMAAndRunFMMArgs {
     const int _treeHeightInit = 5;
     const int _subTreeHeightInit = 1;
-    const int _zoneCountInit = 4;
+    const int _zoneCountInit = omp_get_max_threads();
     const int _verboseInit = 0;
     const char* _inFileNameInit = "";
     const char* _outFileNameInit = "balancetest";
