@@ -25,7 +25,6 @@ class FGroupOfParticles {
         MortonIndex startingIndex;
         MortonIndex endingIndex;
         int numberOfLeavesInBlock;
-        int blockIndexesTableSize;
 
         //< The real number of particles allocated
         FSize nbParticlesAllocatedInGroup;
@@ -41,6 +40,7 @@ class FGroupOfParticles {
 
     /** Information about a leaf */
     struct alignas(FStarPUDefaultAlign::StructAlign) LeafHeader {
+        MortonIndex mindex;
         FSize nbParticles;
         size_t offSet;
     };
@@ -60,9 +60,6 @@ protected:
         return nbParticles + (MemoryAlignementParticles - (nbParticles%MemoryAlignementParticles));
     }
 
-    //< This value is for not used leaves
-    static const int LeafIsEmptyFlag = -1;
-
     //< The size of memoryBuffer in byte
     size_t allocatedMemoryInByte;
     //< Pointer to a block memory
@@ -70,8 +67,6 @@ protected:
 
     //< Pointer to the header inside the block memory
     BlockHeader*    blockHeader;
-    //< Pointer to the indexes table inside the block memory
-    int*            blockIndexesTable;
     //< Pointer to leaves information
     LeafHeader*     leafHeader;
     //< The total number of particles in the group
@@ -96,13 +91,11 @@ public:
     FGroupOfParticles(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte,
                       unsigned char* inAttributes)
         : allocatedMemoryInByte(inAllocatedMemoryInByte), memoryBuffer(inBuffer),
-          blockHeader(nullptr), blockIndexesTable(nullptr), leafHeader(nullptr), nbParticlesInGroup(0),
+          blockHeader(nullptr), leafHeader(nullptr), nbParticlesInGroup(0),
           attributesBuffer(nullptr), deleteBuffer(false){
         // Move the pointers to the correct position
         blockHeader         = reinterpret_cast<BlockHeader*>(inBuffer);
         inBuffer += sizeof(BlockHeader);
-        blockIndexesTable   = reinterpret_cast<int*>(inBuffer);
-        inBuffer += (blockHeader->blockIndexesTableSize*sizeof(int));
         leafHeader          = reinterpret_cast<LeafHeader*>(inBuffer);
 
         // Init particle pointers
@@ -133,7 +126,7 @@ public:
  * @param inNumberOfLeaves total number of leaves in the interval (should be <= inEndingIndex-inEndingIndex)
  */
     FGroupOfParticles(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfLeaves, const FSize inNbParticles)
-        : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), blockIndexesTable(nullptr), leafHeader(nullptr), nbParticlesInGroup(inNbParticles),
+        : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), leafHeader(nullptr), nbParticlesInGroup(inNbParticles),
           deleteBuffer(true){
         memset(particlePosition, 0, sizeof(particlePosition));
         memset(particleAttributes, 0, sizeof(particleAttributes));
@@ -141,12 +134,11 @@ public:
         const FSize nbParticlesAllocatedInGroup = RoundToUpperParticles(nbParticlesInGroup+(MemoryAlignementParticles-1)*inNumberOfLeaves);
 
         // Find the number of leaf to allocate in the blocks
-        const int blockIndexesTableSize = int(inEndingIndex-inStartingIndex);
-        FAssertLF(inNumberOfLeaves <= blockIndexesTableSize);
+        FAssertLF(int(inEndingIndex-inStartingIndex) >= inNumberOfLeaves);
         // Total number of bytes in the block
         const size_t sizeOfOneParticle = (3*sizeof(FReal) + NbSymbAttributes*sizeof(AttributeClass));
         const size_t memoryToAlloc = sizeof(BlockHeader)
-                                    + (blockIndexesTableSize*sizeof(int))
+                                    + (inNumberOfLeaves*sizeof(MortonIndex))
                                     + (inNumberOfLeaves*sizeof(LeafHeader))
                                     + nbParticlesAllocatedInGroup*sizeOfOneParticle;
 
@@ -161,15 +153,12 @@ public:
         unsigned char* bufferPtr = memoryBuffer;
         blockHeader         = reinterpret_cast<BlockHeader*>(bufferPtr);
         bufferPtr += sizeof(BlockHeader);
-        blockIndexesTable   = reinterpret_cast<int*>(bufferPtr);
-        bufferPtr += (blockIndexesTableSize*sizeof(int));
         leafHeader          = reinterpret_cast<LeafHeader*>(bufferPtr);
 
         // Init header
         blockHeader->startingIndex = inStartingIndex;
         blockHeader->endingIndex   = inEndingIndex;
         blockHeader->numberOfLeavesInBlock  = inNumberOfLeaves;
-        blockHeader->blockIndexesTableSize  = blockIndexesTableSize;
         blockHeader->nbParticlesAllocatedInGroup = nbParticlesAllocatedInGroup;
 
         // Init particle pointers
@@ -197,8 +186,8 @@ public:
         }
 
         // Set all index to not used
-        for(int idxLeafPtr = 0 ; idxLeafPtr < blockIndexesTableSize ; ++idxLeafPtr){
-            blockIndexesTable[idxLeafPtr] = LeafIsEmptyFlag;
+        for(int idxLeafPtr = 0 ; idxLeafPtr < inNumberOfLeaves ; ++idxLeafPtr){
+            leafHeader[idxLeafPtr].mindex = -1;
         }
     }
 
@@ -262,7 +251,7 @@ public:
 
     /** The size of the interval endingIndex-startingIndex (set from the constructor) */
     int getSizeOfInterval() const {
-        return blockHeader->blockIndexesTableSize;
+        return int(blockHeader->endingIndex-blockHeader->startingIndex);
     }
 
     /** Return true if inIndex should be located in the current block */
@@ -270,20 +259,45 @@ public:
         return blockHeader->startingIndex <= inIndex && inIndex < blockHeader->endingIndex;
     }
 
+    /** Return the idx in array of the cell */
+    MortonIndex getLeafMortonIndex(const int id) const{
+        FAssertLF(id < blockHeader->numberOfLeavesInBlock);
+        return leafHeader[id].mindex;
+    }
+
+    /** Check if a cell exist (by binary search) and return it index */
+    int getLeafIndex(const MortonIndex leafIdx) const{
+        int idxLeft = 0;
+        int idxRight = blockHeader->numberOfLeavesInBlock-1;
+        while(idxLeft <= idxRight){
+            const int idxMiddle = (idxLeft+idxRight)/2;
+            if(leafHeader[idxMiddle].mindex == leafIdx){
+                return idxMiddle;
+            }
+            if(leafIdx < leafHeader[idxMiddle].mindex){
+                idxRight = idxMiddle-1;
+            }
+            else{
+                idxLeft = idxMiddle+1;
+            }
+        }
+        return -1;
+    }
+
     /** Return true if inIndex is located in the current block and is not empty */
     bool exists(const MortonIndex inIndex) const {
-        return isInside(inIndex) && (blockIndexesTable[inIndex-blockHeader->startingIndex] != LeafIsEmptyFlag);
+        return isInside(inIndex) && (getLeafIndex(inIndex) != -1);
     }
 
     /** Allocate a new leaf by calling its constructor */
     size_t newLeaf(const MortonIndex inIndex, const int id, const FSize nbParticles, const size_t offsetInGroup){
         FAssertLF(isInside(inIndex));
         FAssertLF(!exists(inIndex));
-        FAssertLF(id < blockHeader->blockIndexesTableSize);
+        FAssertLF(id < blockHeader->numberOfLeavesInBlock);
         FAssertLF(offsetInGroup < size_t(blockHeader->nbParticlesAllocatedInGroup));
-        blockIndexesTable[inIndex-blockHeader->startingIndex] = id;
         leafHeader[id].nbParticles = nbParticles;
         leafHeader[id].offSet = offsetInGroup;
+        leafHeader[id].mindex = inIndex;
 
         const size_t nextLeafOffsetInGroup = RoundToUpperParticles(offsetInGroup+nbParticles);
         FAssertLF(nextLeafOffsetInGroup <= size_t(blockHeader->nbParticlesAllocatedInGroup + MemoryAlignementParticles));
@@ -293,32 +307,26 @@ public:
     /** Iterate on each allocated leaves */
     template<class ParticlesAttachedClass>
     void forEachLeaf(std::function<void(ParticlesAttachedClass*)> function){
-        for(int idxLeafPtr = 0 ; idxLeafPtr < blockHeader->blockIndexesTableSize ; ++idxLeafPtr){
-            if(blockIndexesTable[idxLeafPtr] != LeafIsEmptyFlag){
-                const int id = blockIndexesTable[idxLeafPtr];
-                ParticlesAttachedClass leaf(leafHeader[id].nbParticles,
-                                            particlePosition[0] + leafHeader[id].offSet,
+        for(int idxLeafPtr = 0 ; idxLeafPtr < blockHeader->numberOfLeavesInBlock ; ++idxLeafPtr){
+            ParticlesAttachedClass leaf(leafHeader[idxLeafPtr].nbParticles,
+                                            particlePosition[0] + leafHeader[idxLeafPtr].offSet,
                                             blockHeader->positionsLeadingDim,
-                                            (attributesBuffer?particleAttributes[NbSymbAttributes] + leafHeader[id].offSet:nullptr),
+                                            (attributesBuffer?particleAttributes[NbSymbAttributes] + leafHeader[idxLeafPtr].offSet:nullptr),
                                             blockHeader->attributeLeadingDim);
-                function(&leaf);
-            }
+            function(&leaf);
         }
     }
 
 
     /** Return the address of the leaf if it exists (or NULL) */
     template<class ParticlesAttachedClass>
-    ParticlesAttachedClass getLeaf(const MortonIndex leafIndex){
-        if(blockIndexesTable[leafIndex - blockHeader->startingIndex] != LeafIsEmptyFlag){
-            const int id = blockIndexesTable[leafIndex - blockHeader->startingIndex];
-            return ParticlesAttachedClass(leafHeader[id].nbParticles,
+    ParticlesAttachedClass getLeaf(const int id){
+        FAssertLF(id < blockHeader->numberOfLeavesInBlock);
+        return ParticlesAttachedClass(leafHeader[id].nbParticles,
                                           particlePosition[0] + leafHeader[id].offSet,
                                             blockHeader->positionsLeadingDim,
                                             (attributesBuffer?particleAttributes[NbSymbAttributes] + leafHeader[id].offSet:nullptr),
                                             blockHeader->attributeLeadingDim);
-        }
-        return ParticlesAttachedClass();
     }
 };
 

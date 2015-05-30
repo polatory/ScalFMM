@@ -88,18 +88,14 @@ public:
     }
 
     void bottomPassPerform(CellContainerClass* leafCells, ParticleGroupClass* containers){
-        const MortonIndex blockStartIdx = leafCells->getStartingIndex();
-        const MortonIndex blockEndIdx = leafCells->getEndingIndex();
+        FAssertLF(leafCells->getNumberOfCellsInBlock() == containers->getNumberOfLeavesInBlock());
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
-        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){            
-            if(leafCells->exists(mindex)){
-                CellClass cell = leafCells->getUpCell(mindex);
-                FAssertLF(cell.getMortonIndex() == mindex);
-                ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
-                FAssertLF(particles.isAttachedToSomething());
-                kernel->P2M(&cell, &particles);
-            }
+        for(int leafIdx = 0 ; leafIdx < leafCells->getNumberOfCellsInBlock() ; ++leafIdx){
+            CellClass cell = leafCells->getUpCell(leafIdx);
+            ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(leafIdx);
+            FAssertLF(leafCells->getCellMortonIndex(leafIdx) == containers->getLeafMortonIndex(leafIdx));
+            kernel->P2M(&cell, &particles);
         }
     }
 
@@ -140,37 +136,37 @@ public:
                            CellContainerClass* subCellGroups[9],
                             const int nbSubCellGroups, const int idxLevel){
         FAssertLF(nbSubCellGroups != 0);
-        const MortonIndex blockStartIdx = FMath::Max(currentCells->getStartingIndex(),
-                                              subCellGroups[0]->getStartingIndex()>>3);
-        const MortonIndex blockEndIdx   = FMath::Min(currentCells->getEndingIndex(),
-                                              ((subCellGroups[nbSubCellGroups-1]->getEndingIndex()-1)>>3)+1);
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
         int idxSubCellGroup = 0;
+        int idxChildCell = subCellGroups[0]->getFistChildIdx(currentCells->getCellMortonIndex(0));
+        FAssertLF(idxChildCell != -1);
+        CellClass childData[8];
 
-        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && idxSubCellGroup != nbSubCellGroups; ++mindex){
-            if(currentCells->exists(mindex)){
-                CellClass cell = currentCells->getUpCell(mindex);
-                FAssertLF(cell.getMortonIndex() == mindex);
-                CellClass childData[8];
-                CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+        for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){
+            CellClass cell = currentCells->getUpCell(cellIdx);
+            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(cellIdx));
+            CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
-                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                    if( subCellGroups[idxSubCellGroup]->getEndingIndex() <= ((mindex<<3)+idxChild) ){
-                        idxSubCellGroup += 1;
-                    }
-                    if( idxSubCellGroup == nbSubCellGroups ){
-                        break;
-                    }
-                    if(subCellGroups[idxSubCellGroup]->exists((mindex<<3)+idxChild)){
-                        childData[idxChild] = subCellGroups[idxSubCellGroup]->getUpCell((mindex<<3)+idxChild);
-                        child[idxChild] = &childData[idxChild];
-                        FAssertLF(child[idxChild] == nullptr || child[idxChild]->getMortonIndex() == ((mindex<<3)+idxChild));
-                    }
+            FAssertLF(idxSubCellGroup != nbSubCellGroups);
+
+            while(idxSubCellGroup != nbSubCellGroups
+                  && (subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)>>3) == cell.getMortonIndex()){
+                const int idxChild = ((subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)) & 7);
+                FAssertLF(child[idxChild] == nullptr);
+                childData[idxChild] = subCellGroups[idxSubCellGroup]->getUpCell(idxChildCell);
+                FAssertLF(subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
+                child[idxChild] = &childData[idxChild];
+                idxChildCell += 1;
+                if(idxChildCell == subCellGroups[idxSubCellGroup]->getNumberOfCellsInBlock()){
+                    idxChildCell = 0;
+                    idxSubCellGroup += 1;
                 }
-
-                kernel->M2M(&cell, child, idxLevel);
             }
+
+            kernel->M2M(&cell, child, idxLevel);
         }
+
+        FAssertLF(idxSubCellGroup == nbSubCellGroups);
     }
 
 
@@ -205,10 +201,11 @@ public:
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
         for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-            if(cellsOther->exists((*outsideInteractions)[outInterIdx].outIndex)){
-                CellClass interCell = cellsOther->getUpCell((*outsideInteractions)[outInterIdx].outIndex);
+            const int cellPos = cellsOther->getCellIndex((*outsideInteractions)[outInterIdx].outIndex);
+            if(cellPos != -1){
+                CellClass interCell = cellsOther->getUpCell(cellPos);
                 FAssertLF(interCell.getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
-                CellClass cell = currentCells->getDownCell((*outsideInteractions)[outInterIdx].insideIndex);
+                CellClass cell = currentCells->getDownCell((*outsideInteractions)[outInterIdx].insideIdxInBlock);
                 FAssertLF(cell.getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
 
                 const CellClass* interactions[343];
@@ -243,34 +240,36 @@ public:
         const MortonIndex blockEndIdx = currentCells->getEndingIndex();
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
-        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-            if(currentCells->exists(mindex)){
-                CellClass cell = currentCells->getCompleteCell(mindex);
-                FAssertLF(cell.getMortonIndex() == mindex);
-                MortonIndex interactionsIndexes[189];
-                int interactionsPosition[189];
-                const FTreeCoordinate coord(cell.getCoordinate());
-                int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
+        for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){
+            CellClass cell = currentCells->getDownCell(cellIdx);
 
-                CellClass interactionsData[343];
-                const CellClass* interactions[343];
-                memset(interactions, 0, 343*sizeof(CellClass*));
-                int counterExistingCell = 0;
+            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(cellIdx));
 
-                for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                    if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                        if(currentCells->exists(interactionsIndexes[idxInter])){
-                            interactionsData[interactionsPosition[idxInter]] = currentCells->getCompleteCell(interactionsIndexes[idxInter]);
-                            FAssertLF(interactionsData[interactionsPosition[idxInter]].getMortonIndex() == interactionsIndexes[idxInter]);
-                            FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
-                            interactions[interactionsPosition[idxInter]] = &interactionsData[interactionsPosition[idxInter]];
-                            counterExistingCell += 1;
-                        }
+            MortonIndex interactionsIndexes[189];
+            int interactionsPosition[189];
+            const FTreeCoordinate coord(cell.getCoordinate());
+            int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
+
+            CellClass interactionsData[343];
+            const CellClass* interactions[343];
+            memset(interactions, 0, 343*sizeof(CellClass*));
+            int counterExistingCell = 0;
+
+            for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+                if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                    const int cellPos = currentCells->getCellIndex(interactionsIndexes[idxInter]);
+                    if(cellPos != -1){
+                        CellClass interCell = currentCells->getUpCell(cellPos);
+                        FAssertLF(interCell.getMortonIndex() == interactionsIndexes[idxInter]);
+                        FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
+                        interactionsData[interactionsPosition[idxInter]] = interCell;
+                        interactions[interactionsPosition[idxInter]] = &interactionsData[interactionsPosition[idxInter]];
+                        counterExistingCell += 1;
                     }
                 }
-
-                kernel->M2L( &cell , interactions, counterExistingCell, idxLevel);
             }
+
+            kernel->M2L( &cell , interactions, counterExistingCell, idxLevel);
         }
     }
 
@@ -299,16 +298,17 @@ public:
                                   const int idxLevel,
                                   const std::vector<OutOfBlockInteraction>* outsideInteractions){
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
+        const CellClass* interactions[343];
+        memset(interactions, 0, 343*sizeof(CellClass*));
 
         for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-            if(cellsOther->exists((*outsideInteractions)[outInterIdx].outIndex)){
-                CellClass interCell = cellsOther->getCompleteCell((*outsideInteractions)[outInterIdx].outIndex);
+            const int cellPos = cellsOther->getCellIndex((*outsideInteractions)[outInterIdx].outIndex);
+            if(cellPos != -1){
+                CellClass interCell = cellsOther->getCompleteCell(cellPos);
                 FAssertLF(interCell.getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
-                CellClass cell = currentCells->getCompleteCell((*outsideInteractions)[outInterIdx].insideIndex);
+                CellClass cell = currentCells->getCompleteCell((*outsideInteractions)[outInterIdx].insideIdxInBlock);
                 FAssertLF(cell.getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
 
-                const CellClass* interactions[343];
-                memset(interactions, 0, 343*sizeof(CellClass*));
                 interactions[(*outsideInteractions)[outInterIdx].outPosition] = &interCell;
                 const int counter = 1;
                 kernel->M2L( &cell , interactions, counter, idxLevel);
@@ -316,6 +316,7 @@ public:
                 interactions[(*outsideInteractions)[outInterIdx].outPosition] = nullptr;
                 interactions[getOppositeInterIndex((*outsideInteractions)[outInterIdx].outPosition)] = &cell;
                 kernel->M2L( &interCell , interactions, counter, idxLevel);
+                interactions[getOppositeInterIndex((*outsideInteractions)[outInterIdx].outPosition)] = nullptr;
             }
         }
     }
@@ -356,37 +357,35 @@ public:
                             CellContainerClass* subCellGroups[9],
                              const int nbSubCellGroups, const int idxLevel){
         FAssertLF(nbSubCellGroups != 0);
-        const MortonIndex blockStartIdx = FMath::Max(currentCells->getStartingIndex(),
-                                              subCellGroups[0]->getStartingIndex()>>3);
-        const MortonIndex blockEndIdx   = FMath::Min(currentCells->getEndingIndex(),
-                                              ((subCellGroups[nbSubCellGroups-1]->getEndingIndex()-1)>>3)+1);
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
         int idxSubCellGroup = 0;
+        int idxChildCell = subCellGroups[0]->getFistChildIdx(currentCells->getCellMortonIndex(0));
+        FAssertLF(idxChildCell != -1);
+        CellClass childData[8];
 
-        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && idxSubCellGroup != nbSubCellGroups; ++mindex){
-            if(currentCells->exists(mindex)){
-                CellClass cell = currentCells->getDownCell(mindex);
-                FAssertLF(cell.getMortonIndex() == mindex);
-                CellClass childData[8];
-                CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+        for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){
+            CellClass cell = currentCells->getDownCell(cellIdx);
+            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(cellIdx));
+            CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
-                for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                    if( subCellGroups[idxSubCellGroup]->getEndingIndex() <= ((mindex<<3)+idxChild) ){
-                        idxSubCellGroup += 1;
-                    }
-                    if( idxSubCellGroup == nbSubCellGroups ){
-                        break;
-                    }
-                    if(subCellGroups[idxSubCellGroup]->exists((mindex<<3)+idxChild)){
-                        childData[idxChild] = subCellGroups[idxSubCellGroup]->getDownCell((mindex<<3)+idxChild);
-                        child[idxChild] = &childData[idxChild];
-                        FAssertLF(child[idxChild] == nullptr || child[idxChild]->getMortonIndex() == ((mindex<<3)+idxChild));
-                    }
+            while(idxSubCellGroup != nbSubCellGroups
+                  && (subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)>>3) == cell.getMortonIndex()){
+                const int idxChild = ((subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)) & 7);
+                FAssertLF(child[idxChild] == nullptr);
+                childData[idxChild] = subCellGroups[idxSubCellGroup]->getDownCell(idxChildCell);
+                FAssertLF(subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
+                child[idxChild] = &childData[idxChild];
+                idxChildCell += 1;
+                if(idxChildCell == subCellGroups[idxSubCellGroup]->getNumberOfCellsInBlock()){
+                    idxChildCell = 0;
+                    idxSubCellGroup += 1;
                 }
-
-                kernel->L2L(&cell, child, idxLevel);
             }
+
+            kernel->L2L(&cell, child, idxLevel);
         }
+
+        FAssertLF(idxSubCellGroup == nbSubCellGroups);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -414,10 +413,12 @@ public:
                                 const std::vector<OutOfBlockInteraction>* outsideInteractions){
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
         for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-            ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].outIndex);
-            if(interParticles.isAttachedToSomething()){
-                ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIndex);
-                FAssertLF(particles.isAttachedToSomething());
+            const int leafPos = containersOther->getLeafIndex((*outsideInteractions)[outInterIdx].outIndex);
+            if(leafPos != -1){
+                ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>(leafPos);
+                FAssertLF(containersOther->getLeafMortonIndex(leafPos) == (*outsideInteractions)[outInterIdx].outIndex);
+                ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIdxInBlock);
+                FAssertLF(containers->getLeafMortonIndex(leafPos) == (*outsideInteractions)[outInterIdx].insideIndex);
                 ParticleContainerClass* interactions[27];
                 memset(interactions, 0, 27*sizeof(ParticleContainerClass*));
                 interactions[(*outsideInteractions)[outInterIdx].outPosition] = &interParticles;
@@ -447,32 +448,32 @@ public:
         const MortonIndex blockEndIdx = containers->getEndingIndex();
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
-        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-            ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
-            if(particles.isAttachedToSomething()){
-                MortonIndex interactionsIndexes[26];
-                int interactionsPosition[26];
-                FTreeCoordinate coord(mindex, treeHeight-1);
-                int counter = coord.getNeighborsIndexes(treeHeight,interactionsIndexes,interactionsPosition);
+        for(int leafIdx = 0 ; leafIdx < containers->getNumberOfLeavesInBlock() ; ++leafIdx){
+            ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(leafIdx);
 
-                ParticleContainerClass interactionsObjects[27];
-                ParticleContainerClass* interactions[27];
-                memset(interactions, 0, 27*sizeof(ParticleContainerClass*));
-                int counterExistingCell = 0;
+            MortonIndex interactionsIndexes[26];
+            int interactionsPosition[26];
+            FTreeCoordinate coord(containers->getLeafIndex(leafIdx), treeHeight-1);
+            int counter = coord.getNeighborsIndexes(treeHeight,interactionsIndexes,interactionsPosition);
 
-                for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                    if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                        interactionsObjects[counterExistingCell] = containers->template getLeaf<ParticleContainerClass>(interactionsIndexes[idxInter]);
-                        if(interactionsObjects[counterExistingCell].isAttachedToSomething()){
-                            FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
-                            interactions[interactionsPosition[idxInter]] = &interactionsObjects[counterExistingCell];
-                            counterExistingCell += 1;
-                        }
+            ParticleContainerClass interactionsObjects[27];
+            ParticleContainerClass* interactions[27];
+            memset(interactions, 0, 27*sizeof(ParticleContainerClass*));
+            int counterExistingCell = 0;
+
+            for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+                if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                    const int leafPos = containers->getLeafIndex(interactionsIndexes[idxInter]);
+                    if(leafPos != -1){
+                        interactionsObjects[counterExistingCell] = containers->template getLeaf<ParticleContainerClass>(leafPos);
+                        FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
+                        interactions[interactionsPosition[idxInter]] = &interactionsObjects[counterExistingCell];
+                        counterExistingCell += 1;
                     }
                 }
-
-                kernel->P2P( coord, &particles, &particles , interactions, counterExistingCell);
             }
+
+            kernel->P2P( coord, &particles, &particles , interactions, counterExistingCell);
         }
     }
 
@@ -494,12 +495,16 @@ public:
 
     void directInoutPassPerform(ParticleGroupClass* containers, ParticleGroupClass* containersOther,
                                 const std::vector<OutOfBlockInteraction>* outsideInteractions){
-        KernelClass*const kernel = kernels[starpu_worker_get_id()];
+        KernelClass*const kernel = kernels[omp_get_thread_num()];
         for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-            ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].outIndex);
-            if(interParticles.isAttachedToSomething()){
-                ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIndex);
-                FAssertLF(particles.isAttachedToSomething());
+            const int leafPos = containersOther->getLeafIndex((*outsideInteractions)[outInterIdx].outIndex);
+            if(leafPos != -1){
+                ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>(leafPos);
+                ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIdxInBlock);
+
+                FAssertLF(containersOther->getLeafMortonIndex(leafPos) == (*outsideInteractions)[outInterIdx].outIndex);
+                FAssertLF(containers->getLeafMortonIndex((*outsideInteractions)[outInterIdx].insideIdxInBlock) == (*outsideInteractions)[outInterIdx].insideIndex);
+
                 ParticleContainerClass* interactions[27];
                 memset(interactions, 0, 27*sizeof(ParticleContainerClass*));
                 interactions[(*outsideInteractions)[outInterIdx].outPosition] = &interParticles;
@@ -533,18 +538,15 @@ public:
     }
 
     void mergePassPerform(CellContainerClass* leafCells, ParticleGroupClass* containers){
-        const MortonIndex blockStartIdx = leafCells->getStartingIndex();
-        const MortonIndex blockEndIdx = leafCells->getEndingIndex();
+        FAssertLF(leafCells->getNumberOfCellsInBlock() == containers->getNumberOfLeavesInBlock());
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
-        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-            if(leafCells->exists(mindex)){
-                CellClass cell = leafCells->getDownCell(mindex);
-                FAssertLF(cell.getMortonIndex() == mindex);
-                ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
-                FAssertLF(particles.isAttachedToSomething());
-                kernel->L2P(&cell, &particles);
-            }
+        for(int cellIdx = 0 ; cellIdx < leafCells->getNumberOfCellsInBlock() ; ++cellIdx){
+            CellClass cell = leafCells->getDownCell(cellIdx);
+            FAssertLF(cell.getMortonIndex() == leafCells->getCellMortonIndex(cellIdx));
+            ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(cellIdx);
+            FAssertLF(leafCells->getCellMortonIndex(cellIdx) == containers->getLeafMortonIndex(cellIdx));
+            kernel->L2P(&cell, &particles);
         }
     }
 

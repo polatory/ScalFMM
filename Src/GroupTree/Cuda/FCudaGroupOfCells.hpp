@@ -16,23 +16,20 @@ class FCudaGroupOfCells {
         MortonIndex startingIndex;
         MortonIndex endingIndex;
         int numberOfCellsInBlock;
-        int blockIndexesTableSize;
     };
 
 protected:
     //< The size of the memoryBuffer
-    int allocatedMemoryInByte;
+    size_t allocatedMemoryInByte;
     //< Pointer to a block memory
     unsigned char* memoryBuffer;
 
     //< Pointer to the header inside the block memory
     BlockHeader*    blockHeader;
     //< Pointer to the indexes table inside the block memory
-    int*            blockIndexesTable;
+    MortonIndex*    cellIndexes;
     //< Pointer to the cells inside the block memory
     SymboleCellClass*      blockCells;
-    //< This value is for not used cells
-    static const MortonIndex CellIsEmptyFlag = -1;
 
     //< The multipole data
     PoleCellClass* cellMultipoles;
@@ -44,7 +41,7 @@ public:
 
     __device__ FCudaGroupOfCells()
         : allocatedMemoryInByte(0), memoryBuffer(nullptr),
-          blockHeader(nullptr), blockIndexesTable(nullptr), blockCells(nullptr),
+          blockHeader(nullptr), cellIndexes(nullptr), blockCells(nullptr),
           cellMultipoles(nullptr), cellLocals(nullptr){
     }
 
@@ -55,8 +52,8 @@ public:
         memoryBuffer = (inBuffer);
         blockHeader         = reinterpret_cast<BlockHeader*>(inBuffer);
         inBuffer += sizeof(BlockHeader);
-        blockIndexesTable   = reinterpret_cast<int*>(inBuffer);
-        inBuffer += (blockHeader->blockIndexesTableSize*sizeof(int));
+        cellIndexes   = reinterpret_cast<MortonIndex*>(inBuffer);
+        inBuffer += (blockHeader->numberOfCellsInBlock*sizeof(MortonIndex));
         blockCells          = reinterpret_cast<SymboleCellClass*>(inBuffer);
         inBuffer += (sizeof(SymboleCellClass)*blockHeader->numberOfCellsInBlock);
         //FAssertLF(size_t(inBuffer-memoryBuffer) == allocatedMemoryInByte);
@@ -73,13 +70,13 @@ public:
     __device__ FCudaGroupOfCells(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte,
                                  unsigned char* inCellMultipoles, unsigned char* inCellLocals)
         : allocatedMemoryInByte(inAllocatedMemoryInByte), memoryBuffer(inBuffer),
-          blockHeader(nullptr), blockIndexesTable(nullptr), blockCells(nullptr),
+          blockHeader(nullptr), cellIndexes(nullptr), blockCells(nullptr),
           cellMultipoles(nullptr), cellLocals(nullptr){
         // Move the pointers to the correct position
         blockHeader         = reinterpret_cast<BlockHeader*>(inBuffer);
         inBuffer += sizeof(BlockHeader);
-        blockIndexesTable   = reinterpret_cast<int*>(inBuffer);
-        inBuffer += (blockHeader->blockIndexesTableSize*sizeof(int));
+        cellIndexes   = reinterpret_cast<MortonIndex*>(inBuffer);
+        inBuffer += (blockHeader->numberOfCellsInBlock*sizeof(MortonIndex));
         blockCells          = reinterpret_cast<SymboleCellClass*>(inBuffer);
         inBuffer += (sizeof(SymboleCellClass)*blockHeader->numberOfCellsInBlock);
         //FAssertLF(size_t(inBuffer-memoryBuffer) == allocatedMemoryInByte);
@@ -104,8 +101,8 @@ public:
     }
 
     /** The size of the interval endingIndex-startingIndex (set from the constructor) */
-    __device__ int getSizeOfInterval() const {
-        return blockHeader->blockIndexesTableSize;
+    int getSizeOfInterval() const {
+        return int(blockHeader->endingIndex-blockHeader->startingIndex);
     }
 
     /** Return true if inIndex should be located in the current block */
@@ -113,69 +110,85 @@ public:
         return blockHeader->startingIndex <= inIndex && inIndex < blockHeader->endingIndex;
     }
 
+    /** Return the idx in array of the cell */
+    __device__ MortonIndex getCellMortonIndex(const int cellPos) const{
+        return cellIndexes[cellPos];
+    }
+
+    /** Check if a cell exist (by binary search) and return it index */
+    __device__ int getFistChildIdx(const MortonIndex parentIdx) const{
+        int idxLeft = 0;
+        int idxRight = blockHeader->numberOfCellsInBlock-1;
+        while(idxLeft <= idxRight){
+            int idxMiddle = (idxLeft+idxRight)/2;
+            if((cellIndexes[idxMiddle]>>3) == parentIdx){
+                while(0 < idxMiddle && (cellIndexes[idxMiddle-1]>>3) == parentIdx){
+                    idxMiddle -= 1;
+                }
+                return idxMiddle;
+            }
+            if(parentIdx < (cellIndexes[idxMiddle]>>3)){
+                idxRight = idxMiddle-1;
+            }
+            else{
+                idxLeft = idxMiddle+1;
+            }
+        }
+        return -1;
+    }
+
+    /** Check if a cell exist (by binary search) and return it index */
+    __device__ int getCellIndex(const MortonIndex cellIdx) const{
+        int idxLeft = 0;
+        int idxRight = blockHeader->numberOfCellsInBlock-1;
+        while(idxLeft <= idxRight){
+            const int idxMiddle = (idxLeft+idxRight)/2;
+            if(cellIndexes[idxMiddle] == cellIdx){
+                return idxMiddle;
+            }
+            if(cellIdx < cellIndexes[idxMiddle]){
+                idxRight = idxMiddle-1;
+            }
+            else{
+                idxLeft = idxMiddle+1;
+            }
+        }
+        return -1;
+    }
+
     /** Return true if inIndex is located in the current block and is not empty */
     __device__ bool exists(const MortonIndex inIndex) const {
-        return isInside(inIndex) && (blockIndexesTable[inIndex-blockHeader->startingIndex] != CellIsEmptyFlag);
+        return isInside(inIndex) && (getCellIndex(inIndex) != -1);
     }
 
     /** Return the address of the cell if it exists (or NULL) */
-    __device__ CompleteCellClass getCompleteCell(const MortonIndex inIndex){
+    __device__ CompleteCellClass getCompleteCell(const int cellPos){
         //FAssertLF(cellMultipoles && cellLocals);
-        if( exists(inIndex) ){
-            CompleteCellClass cell;
-            const int cellPos = blockIndexesTable[inIndex-blockHeader->startingIndex];
-            cell.symb = &blockCells[cellPos];
-            cell.up   = &cellMultipoles[cellPos];
-            cell.down = &cellLocals[cellPos];
-            return cell;
-        }
-        else{
-            CompleteCellClass cell;
-            cell.symb = nullptr;
-            cell.up   = nullptr;
-            cell.down = nullptr;
-            return cell;
-        }
+        CompleteCellClass cell;
+        cell.symb = &blockCells[cellPos];
+        cell.up   = &cellMultipoles[cellPos];
+        cell.down = &cellLocals[cellPos];
+        return cell;
     }
 
     /** Return the address of the cell if it exists (or NULL) */
-    __device__ CompleteCellClass getUpCell(const MortonIndex inIndex){
+    __device__ CompleteCellClass getUpCell(const int cellPos){
         //FAssertLF(cellMultipoles);
-        if( exists(inIndex) ){
-            CompleteCellClass cell;
-            const int cellPos = blockIndexesTable[inIndex-blockHeader->startingIndex];
-            cell.symb = &blockCells[cellPos];
-            cell.up   = &cellMultipoles[cellPos];
-            cell.down = nullptr;
-            return cell;
-        }
-        else{
-            CompleteCellClass cell;
-            cell.symb = nullptr;
-            cell.up   = nullptr;
-            cell.down = nullptr;
-            return cell;
-        }
+        CompleteCellClass cell;
+        cell.symb = &blockCells[cellPos];
+        cell.up   = &cellMultipoles[cellPos];
+        cell.down = nullptr;
+        return cell;
     }
 
     /** Return the address of the cell if it exists (or NULL) */
-    __device__ CompleteCellClass getDownCell(const MortonIndex inIndex){
+    __device__ CompleteCellClass getDownCell(const int cellPos){
         //FAssertLF(cellLocals);
-        if( exists(inIndex) ){
-            CompleteCellClass cell;
-            const int cellPos = blockIndexesTable[inIndex-blockHeader->startingIndex];
-            cell.symb = &blockCells[cellPos];
-            cell.up   = nullptr;
-            cell.down = &cellLocals[cellPos];
-            return cell;
-        }
-        else{
-            CompleteCellClass cell;
-            cell.symb = nullptr;
-            cell.up   = nullptr;
-            cell.down = nullptr;
-            return cell;
-        }
+        CompleteCellClass cell;
+        cell.symb = &blockCells[cellPos];
+        cell.up   = nullptr;
+        cell.down = &cellLocals[cellPos];
+        return cell;
     }
 
 };

@@ -22,7 +22,6 @@ class FGroupOfCellsDyn {
         MortonIndex startingIndex;
         MortonIndex endingIndex;
         int numberOfCellsInBlock;
-        int blockIndexesTableSize;
     };
 
     struct alignas(FStarPUDefaultAlign::StructAlign) CellClassSizes{
@@ -32,9 +31,6 @@ class FGroupOfCellsDyn {
     };
 
 protected:
-    //< This value is for not used cells
-    static const MortonIndex CellIsEmptyFlag = -1;
-
     //< The size of the memoryBuffer
     size_t allocatedMemoryInByte;
     //< Pointer to a block memory
@@ -44,7 +40,7 @@ protected:
     BlockHeader*    blockHeader;
     CellClassSizes* cellSizes;
     //< Pointer to the indexes table inside the block memory
-    int*            blockIndexesTable;
+    MortonIndex*    cellIndexes;
     //< Pointer to the cells inside the block memory
     unsigned char*  blockCells;
 
@@ -61,21 +57,18 @@ public:
 
     FGroupOfCellsDyn()
         : allocatedMemoryInByte(0), memoryBuffer(nullptr),
-          blockHeader(nullptr), cellSizes(nullptr), blockIndexesTable(nullptr), blockCells(nullptr),
+          blockHeader(nullptr), cellSizes(nullptr), cellIndexes(nullptr), blockCells(nullptr),
           cellMultipoles(nullptr), cellLocals(nullptr), deleteBuffer(false){
     }
 
     void reset(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte,
                unsigned char* inCellMultipoles, unsigned char* inCellLocals){
         if(deleteBuffer){
-            for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->blockIndexesTableSize ; ++idxCellPtr){
-                if(blockIndexesTable[idxCellPtr] != CellIsEmptyFlag){
-                    const int cellPos = blockIndexesTable[idxCellPtr];
-                    CompositeCellClass cell(&blockCells[cellPos*cellSizes->symbCellClassSize],
-                                        &cellMultipoles[cellPos*cellSizes->poleCellClassSize],
-                                        &cellLocals[cellPos*cellSizes->localCellClassSize]);
-                    cell.release();
-                }
+            for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->numberOfCellsInBlock ; ++idxCellPtr){
+                CompositeCellClass cell(&blockCells[idxCellPtr*cellSizes->symbCellClassSize],
+                                    &cellMultipoles[idxCellPtr*cellSizes->poleCellClassSize],
+                                    &cellLocals[idxCellPtr*cellSizes->localCellClassSize]);
+                cell.release();
             }
             FAlignedMemory::DeallocBytes(memoryBuffer);
             FAlignedMemory::DeallocBytes(cellMultipoles);
@@ -88,8 +81,8 @@ public:
         inBuffer += sizeof(BlockHeader);
         cellSizes           = reinterpret_cast<CellClassSizes*>(inBuffer);
         inBuffer += sizeof(CellClassSizes);
-        blockIndexesTable   = reinterpret_cast<int*>(inBuffer);
-        inBuffer += (blockHeader->blockIndexesTableSize*sizeof(int));
+        cellIndexes   = reinterpret_cast<MortonIndex*>(inBuffer);
+        inBuffer += (blockHeader->numberOfCellsInBlock*sizeof(MortonIndex));
         blockCells          = reinterpret_cast<unsigned char*>(inBuffer);
         inBuffer += (cellSizes->symbCellClassSize*blockHeader->numberOfCellsInBlock);
         FAssertLF(size_t(inBuffer -memoryBuffer) == allocatedMemoryInByte);
@@ -107,7 +100,7 @@ public:
     FGroupOfCellsDyn(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte,
                   unsigned char* inCellMultipoles, unsigned char* inCellLocals)
         : allocatedMemoryInByte(inAllocatedMemoryInByte), memoryBuffer(inBuffer),
-          blockHeader(nullptr), cellSizes(nullptr), blockIndexesTable(nullptr), blockCells(nullptr),
+          blockHeader(nullptr), cellSizes(nullptr), cellIndexes(nullptr), blockCells(nullptr),
           cellMultipoles(nullptr), cellLocals(nullptr), deleteBuffer(false){
         // Move the pointers to the correct position
         allocatedMemoryInByte = (inAllocatedMemoryInByte);
@@ -116,8 +109,8 @@ public:
         inBuffer += sizeof(BlockHeader);
         cellSizes           = reinterpret_cast<CellClassSizes*>(inBuffer);
         inBuffer += sizeof(CellClassSizes);
-        blockIndexesTable   = reinterpret_cast<int*>(inBuffer);
-        inBuffer += (blockHeader->blockIndexesTableSize*sizeof(int));
+        cellIndexes   = reinterpret_cast<MortonIndex*>(inBuffer);
+        inBuffer += (blockHeader->numberOfCellsInBlock*sizeof(MortonIndex));
         blockCells          = reinterpret_cast<unsigned char*>(inBuffer);
         inBuffer += (cellSizes->symbCellClassSize*blockHeader->numberOfCellsInBlock);
         FAssertLF(size_t(inBuffer -memoryBuffer) == allocatedMemoryInByte);
@@ -135,14 +128,12 @@ public:
     FGroupOfCellsDyn(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfCells,
                      const size_t inSymbCellClassSize, const size_t inPoleCellClassSize, const size_t inLocalCellClassSize)
         : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), cellSizes(nullptr),
-          blockIndexesTable(nullptr), blockCells(nullptr),
+          cellIndexes(nullptr), blockCells(nullptr),
           cellMultipoles(nullptr), cellLocals(nullptr), deleteBuffer(true){
-        // Find the number of cell to allocate in the blocks
-        const int blockIndexesTableSize = int(inEndingIndex-inStartingIndex);
-        FAssertLF(inNumberOfCells <= blockIndexesTableSize);
+        FAssertLF(int(inEndingIndex-inStartingIndex) >= inNumberOfCells);
         // Total number of bytes in the block
         const size_t memoryToAlloc = sizeof(BlockHeader) + sizeof(CellClassSizes)
-                + (blockIndexesTableSize*sizeof(int))
+                + (inNumberOfCells*sizeof(MortonIndex))
                 + (inNumberOfCells*inSymbCellClassSize);
 
         // Allocate
@@ -158,8 +149,8 @@ public:
         bufferPtr += sizeof(BlockHeader);
         cellSizes           = reinterpret_cast<CellClassSizes*>(bufferPtr);
         bufferPtr += sizeof(CellClassSizes);
-        blockIndexesTable   = reinterpret_cast<int*>(bufferPtr);
-        bufferPtr += (blockIndexesTableSize*sizeof(int));
+        cellIndexes   = reinterpret_cast<MortonIndex*>(bufferPtr);
+        bufferPtr += (inNumberOfCells*sizeof(MortonIndex));
         blockCells          = reinterpret_cast<unsigned char*>(bufferPtr);
         bufferPtr += (inNumberOfCells*inSymbCellClassSize);
         FAssertLF(size_t(bufferPtr - memoryBuffer) == allocatedMemoryInByte);
@@ -168,7 +159,6 @@ public:
         blockHeader->startingIndex = inStartingIndex;
         blockHeader->endingIndex   = inEndingIndex;
         blockHeader->numberOfCellsInBlock  = inNumberOfCells;
-        blockHeader->blockIndexesTableSize = blockIndexesTableSize;
 
         cellSizes->symbCellClassSize = inSymbCellClassSize;
         cellSizes->poleCellClassSize = inPoleCellClassSize;
@@ -181,22 +171,19 @@ public:
         memset(cellLocals, 0, inNumberOfCells*cellSizes->localCellClassSize);
 
         // Set all index to not used
-        for(int idxCellPtr = 0 ; idxCellPtr < blockIndexesTableSize ; ++idxCellPtr){
-            blockIndexesTable[idxCellPtr] = CellIsEmptyFlag;
+        for(int idxCellPtr = 0 ; idxCellPtr < inNumberOfCells ; ++idxCellPtr){
+            cellIndexes[idxCellPtr] = -1;
         }
     }
 
     /** Call the destructor of cells and dealloc block memory */
     ~FGroupOfCellsDyn(){
         if(deleteBuffer){
-            for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->blockIndexesTableSize ; ++idxCellPtr){
-                if(blockIndexesTable[idxCellPtr] != CellIsEmptyFlag){
-                    const int cellPos = blockIndexesTable[idxCellPtr];
-                    CompositeCellClass cell(&blockCells[cellPos*cellSizes->symbCellClassSize],
-                                        &cellMultipoles[cellPos*cellSizes->poleCellClassSize],
-                                        &cellLocals[cellPos*cellSizes->localCellClassSize]);
-                    cell.release();
-                }
+            for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->numberOfCellsInBlock ; ++idxCellPtr){
+                CompositeCellClass cell(&blockCells[idxCellPtr*cellSizes->symbCellClassSize],
+                                        &cellMultipoles[idxCellPtr*cellSizes->poleCellClassSize],
+                                        &cellLocals[idxCellPtr*cellSizes->localCellClassSize]);
+                cell.release();
             }
             FAlignedMemory::DeallocBytes(memoryBuffer);
             FAlignedMemory::DeallocBytes(cellMultipoles);
@@ -266,7 +253,7 @@ public:
 
     /** The size of the interval endingIndex-startingIndex (set from the constructor) */
     int getSizeOfInterval() const {
-        return blockHeader->blockIndexesTableSize;
+        return int(blockHeader->endingIndex-blockHeader->startingIndex);
     }
 
     /** Return true if inIndex should be located in the current block */
@@ -274,43 +261,81 @@ public:
         return blockHeader->startingIndex <= inIndex && inIndex < blockHeader->endingIndex;
     }
 
+    /** Return the idx in array of the cell */
+    MortonIndex getCellMortonIndex(const int cellPos) const{
+        FAssertLF(cellPos < blockHeader->numberOfCellsInBlock);
+        return cellIndexes[cellPos];
+    }
+
+    /** Check if a cell exist (by binary search) and return it index */
+    int getCellIndex(const MortonIndex cellIdx) const{
+        int idxLeft = 0;
+        int idxRight = blockHeader->numberOfCellsInBlock-1;
+        while(idxLeft <= idxRight){
+            const int idxMiddle = (idxLeft+idxRight)/2;
+            if(cellIndexes[idxMiddle] == cellIdx){
+                return idxMiddle;
+            }
+            if(cellIdx < cellIndexes[idxMiddle]){
+                idxRight = idxMiddle-1;
+            }
+            else{
+                idxLeft = idxMiddle+1;
+            }
+        }
+        return -1;
+    }
+
+    /** Check if a cell exist (by binary search) and return it index */
+    int getFistChildIdx(const MortonIndex parentIdx) const{
+        int idxLeft = 0;
+        int idxRight = blockHeader->numberOfCellsInBlock-1;
+        while(idxLeft <= idxRight){
+            int idxMiddle = (idxLeft+idxRight)/2;
+            if((cellIndexes[idxMiddle]>>3) == parentIdx){
+                while(0 < idxMiddle && (cellIndexes[idxMiddle-1]>>3) == parentIdx){
+                    idxMiddle -= 1;
+                }
+                return idxMiddle;
+            }
+            if(parentIdx < (cellIndexes[idxMiddle]>>3)){
+                idxRight = idxMiddle-1;
+            }
+            else{
+                idxLeft = idxMiddle+1;
+            }
+        }
+        return -1;
+    }
+
     /** Return true if inIndex is located in the current block and is not empty */
     bool exists(const MortonIndex inIndex) const {
-        return isInside(inIndex) && (blockIndexesTable[inIndex-blockHeader->startingIndex] != CellIsEmptyFlag);
+        return isInside(inIndex) && (getCellIndex(inIndex) != -1);
     }
 
     /** Return the address of the cell if it exists (or NULL) */
-    CompositeCellClass getCompleteCell(const MortonIndex inIndex){
+    CompositeCellClass getCompleteCell(const MortonIndex cellPos){
         FAssertLF(cellMultipoles && cellLocals);
-        if( exists(inIndex) ){
-            const int cellPos = blockIndexesTable[inIndex-blockHeader->startingIndex];
-            return CompositeCellClass(&blockCells[cellPos*cellSizes->symbCellClassSize],
+        FAssertLF(cellPos < blockHeader->numberOfCellsInBlock);
+        return CompositeCellClass(&blockCells[cellPos*cellSizes->symbCellClassSize],
                     &cellMultipoles[cellPos*cellSizes->poleCellClassSize],
                     &cellLocals[cellPos*cellSizes->localCellClassSize]);
-        }
-        else return CompositeCellClass();
     }
 
     /** Return the address of the cell if it exists (or NULL) */
-    CompositeCellClass getUpCell(const MortonIndex inIndex){
+    CompositeCellClass getUpCell(const MortonIndex cellPos){
         FAssertLF(cellMultipoles);
-        if( exists(inIndex) ){
-            const int cellPos = blockIndexesTable[inIndex-blockHeader->startingIndex];
-            return CompositeCellClass(&blockCells[cellPos*cellSizes->symbCellClassSize],
+        FAssertLF(cellPos < blockHeader->numberOfCellsInBlock);
+        return CompositeCellClass(&blockCells[cellPos*cellSizes->symbCellClassSize],
                     &cellMultipoles[cellPos*cellSizes->poleCellClassSize], nullptr);
-        }
-        else return CompositeCellClass();
     }
 
     /** Return the address of the cell if it exists (or NULL) */
-    CompositeCellClass getDownCell(const MortonIndex inIndex){
+    CompositeCellClass getDownCell(const MortonIndex cellPos){
         FAssertLF(cellLocals);
-        if( exists(inIndex) ){
-            const int cellPos = blockIndexesTable[inIndex-blockHeader->startingIndex];
-            return CompositeCellClass(&blockCells[cellPos*cellSizes->symbCellClassSize],
+        FAssertLF(cellPos < blockHeader->numberOfCellsInBlock);
+        return CompositeCellClass(&blockCells[cellPos*cellSizes->symbCellClassSize],
                     nullptr, &cellLocals[cellPos*cellSizes->localCellClassSize]);
-        }
-        else return CompositeCellClass();
     }
 
     /** Allocate a new cell by calling its constructor */
@@ -323,36 +348,30 @@ public:
                                     const int inLevel){
         FAssertLF(isInside(inIndex));
         FAssertLF(!exists(inIndex));
-        FAssertLF(id < blockHeader->blockIndexesTableSize);
+        FAssertLF(id < blockHeader->numberOfCellsInBlock);
         BuildCellFunc(inIndex,
                       &blockCells[id*cellSizes->symbCellClassSize],cellSizes->symbCellClassSize,
                       &cellMultipoles[id*cellSizes->poleCellClassSize],cellSizes->poleCellClassSize,
                       &cellLocals[id*cellSizes->localCellClassSize],cellSizes->localCellClassSize,
                       inLevel);
-        blockIndexesTable[inIndex-blockHeader->startingIndex] = id;
+        cellIndexes[id] = inIndex;
     }
 
     /** Iterate on each allocated cells */
     template<typename... FunctionParams>
     void forEachCell(std::function<void(CompositeCellClass, FunctionParams...)> function, FunctionParams... args){
-        for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->blockIndexesTableSize ; ++idxCellPtr){
-            if(blockIndexesTable[idxCellPtr] != CellIsEmptyFlag){
-                const int cellPos = blockIndexesTable[idxCellPtr];
-                function(CompositeCellClass(&blockCells[cellPos*cellSizes->symbCellClassSize],
-                         &cellMultipoles[cellPos*cellSizes->poleCellClassSize],
-                        &cellLocals[cellPos*cellSizes->localCellClassSize]), args...);
-            }
+        for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->numberOfCellsInBlock ; ++idxCellPtr){
+            function(CompositeCellClass(&blockCells[idxCellPtr*cellSizes->symbCellClassSize],
+                         &cellMultipoles[idxCellPtr*cellSizes->poleCellClassSize],
+                        &cellLocals[idxCellPtr*cellSizes->localCellClassSize]), args...);
         }
     }
 
     void forEachCell(std::function<void(CompositeCellClass)> function){
-        for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->blockIndexesTableSize ; ++idxCellPtr){
-            if(blockIndexesTable[idxCellPtr] != CellIsEmptyFlag){
-                const int cellPos = blockIndexesTable[idxCellPtr];
-                function(CompositeCellClass(&blockCells[cellPos*cellSizes->symbCellClassSize],
-                         &cellMultipoles[cellPos*cellSizes->poleCellClassSize],
-                        &cellLocals[cellPos*cellSizes->localCellClassSize]));
-            }
+        for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->numberOfCellsInBlock ; ++idxCellPtr){
+            function(CompositeCellClass(&blockCells[idxCellPtr*cellSizes->symbCellClassSize],
+                         &cellMultipoles[idxCellPtr*cellSizes->poleCellClassSize],
+                        &cellLocals[idxCellPtr*cellSizes->localCellClassSize]));
         }
     }
 };

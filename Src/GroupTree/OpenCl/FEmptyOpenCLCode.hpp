@@ -21,6 +21,7 @@ public:
                     MortonIndex outIndex;\
                     MortonIndex insideIndex;\
                     int outPosition;\
+                    int insideIdxInBlock;\
                 } __attribute__ ((aligned (DefaultStructAlign)));\
                 struct Uptr9{\
                     __global unsigned char* ptrs[9];\
