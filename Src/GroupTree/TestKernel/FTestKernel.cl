@@ -37,7 +37,7 @@ typedef FTestCellPODData FLocalCellClass;
 struct FWrappeCell{
     __global struct FSymboleCellClass* symb;
     __global FPoleCellClass* up;
-    __global FLocalCellClass* down;        
+    __global FLocalCellClass* down;
 };
 
 
@@ -50,6 +50,7 @@ struct OutOfBlockInteraction{
     MortonIndex outIndex;
     MortonIndex insideIndex;
     int outPosition;
+    int insideIdxInBlock;
 } __attribute__ ((aligned (DefaultStructAlign)));
 
 #define Between(inValue, inMin, inMax)  ( (inMin) <= (inValue) && (inValue) < (inMax) )
@@ -209,7 +210,7 @@ struct FOpenCLGroupAttachedLeaf {
 };
 
 struct FOpenCLGroupAttachedLeaf BuildFOpenCLGroupAttachedLeaf(const FSize inNbParticles, __global FReal* inPositionBuffer, const size_t inLeadingPosition,
-                       __global FParticleValueClass* inAttributesBuffer, const size_t inLeadingAttributes){
+                                                              __global FParticleValueClass* inAttributesBuffer, const size_t inLeadingAttributes){
     struct FOpenCLGroupAttachedLeaf leaf;
     leaf.nbParticles = (inNbParticles);
     // Redirect pointers to position
@@ -263,7 +264,6 @@ struct FOpenCLGroupOfParticlesBlockHeader{
     MortonIndex startingIndex;
     MortonIndex endingIndex;
     int numberOfLeavesInBlock;
-    int blockIndexesTableSize;
 
     //< The real number of particles allocated
     FSize nbParticlesAllocatedInGroup;
@@ -279,6 +279,7 @@ struct FOpenCLGroupOfParticlesBlockHeader{
 
 /** Information about a leaf */
 struct FOpenCLGroupOfParticlesLeafHeader {
+    MortonIndex mindex;
     FSize nbParticles;
     size_t offSet;
 }__attribute__ ((aligned (DefaultStructAlign)));
@@ -292,8 +293,6 @@ struct FOpenCLGroupOfParticles {
 
     //< Pointer to the header inside the block memory
     __global struct FOpenCLGroupOfParticlesBlockHeader*    blockHeader;
-    //< Pointer to the indexes table inside the block memory
-    __global int*            blockIndexesTable;
     //< Pointer to leaves information
     __global struct FOpenCLGroupOfParticlesLeafHeader*     leafHeader;
     //< The total number of particles in the group
@@ -316,8 +315,6 @@ struct FOpenCLGroupOfParticles BuildFOpenCLGroupOfParticles(__global unsigned ch
     // Move the pointers to the correct position
     group.blockHeader         = ((__global struct FOpenCLGroupOfParticlesBlockHeader*)inBuffer);
     inBuffer += sizeof(struct FOpenCLGroupOfParticlesBlockHeader);
-    group.blockIndexesTable   = ((__global int*)inBuffer);
-    inBuffer += (group.blockHeader->blockIndexesTableSize*sizeof(int));
     group.leafHeader          = ((__global struct FOpenCLGroupOfParticlesLeafHeader*)inBuffer);
 
     // Init particle pointers
@@ -335,7 +332,7 @@ struct FOpenCLGroupOfParticles BuildFOpenCLGroupOfParticles(__global unsigned ch
     }
     
     if(inAttributeBuffer){
-        group.attributesBuffer = (__global FParticleValueClass*)inAttributeBuffer;    
+        group.attributesBuffer = (__global FParticleValueClass*)inAttributeBuffer;
         for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
             group.particleAttributes[idxAttribute+NbSymbAttributes] = ((__global FParticleValueClass*)inAttributeBuffer);
             inAttributeBuffer += sizeof(FParticleValueClass)*group.blockHeader->nbParticlesAllocatedInGroup;
@@ -345,7 +342,7 @@ struct FOpenCLGroupOfParticles BuildFOpenCLGroupOfParticles(__global unsigned ch
         group.attributesBuffer = NULLPTR;
         for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
             group.particleAttributes[idxAttribute+NbSymbAttributes] = NULLPTR;
-        }    
+        }
     }
     
     return group;
@@ -362,19 +359,42 @@ int FOpenCLGroupOfParticles_getNumberOfLeaves(const struct FOpenCLGroupOfParticl
 bool FOpenCLGroupOfParticles_isInside(const struct FOpenCLGroupOfParticles* group, const MortonIndex inIndex) {
     return group->blockHeader->startingIndex <= inIndex && inIndex < group->blockHeader->endingIndex;
 }
-bool FOpenCLGroupOfParticles_exists(const struct FOpenCLGroupOfParticles* group, const MortonIndex inIndex) {
-    return FOpenCLGroupOfParticles_isInside(group, inIndex) && (group->blockIndexesTable[inIndex-group->blockHeader->startingIndex] != FOpenCLGroupOfParticlesLeafIsEmptyFlag);
+
+
+/** Return the idx in array of the cell */
+MortonIndex FOpenCLGroupOfParticles_getLeafMortonIndex(const struct FOpenCLGroupOfParticles* group, const int id){
+    return group->leafHeader[id].mindex;
 }
-struct FOpenCLGroupAttachedLeaf FOpenCLGroupOfParticles_getLeaf(struct FOpenCLGroupOfParticles* group, const MortonIndex leafIndex){
-    if(group->blockIndexesTable[leafIndex - group->blockHeader->startingIndex] != FOpenCLGroupOfParticlesLeafIsEmptyFlag){
-        const int id = group->blockIndexesTable[leafIndex - group->blockHeader->startingIndex];
-        return BuildFOpenCLGroupAttachedLeaf(group->leafHeader[id].nbParticles,
-                                      group->particlePosition[0] + group->leafHeader[id].offSet,
-                                        group->blockHeader->positionsLeadingDim,
-                                      (group->attributesBuffer?group->particleAttributes[NbSymbAttributes] + group->leafHeader[id].offSet:NULLPTR),
-                                        group->blockHeader->attributeLeadingDim);
+
+/** Check if a cell exist (by binary search) and return it index */
+int FOpenCLGroupOfParticles_getLeafIndex(const struct FOpenCLGroupOfParticles* group, const MortonIndex leafIdx){
+    int idxLeft = 0;
+    int idxRight = group->blockHeader->numberOfLeavesInBlock-1;
+    while(idxLeft <= idxRight){
+        const int idxMiddle = (idxLeft+idxRight)/2;
+        if(group->leafHeader[idxMiddle].mindex == leafIdx){
+            return idxMiddle;
+        }
+        if(leafIdx < group->leafHeader[idxMiddle].mindex){
+            idxRight = idxMiddle-1;
+        }
+        else{
+            idxLeft = idxMiddle+1;
+        }
     }
-    return EmptyFOpenCLGroupAttachedLeaf();
+    return -1;
+}
+
+
+bool FOpenCLGroupOfParticles_exists(const struct FOpenCLGroupOfParticles* group, const MortonIndex inIndex) {
+    return FOpenCLGroupOfParticles_isInside(group, inIndex) && (FOpenCLGroupOfParticles_getLeafIndex(group, inIndex) != -1);
+}
+struct FOpenCLGroupAttachedLeaf FOpenCLGroupOfParticles_getLeaf(struct FOpenCLGroupOfParticles* group, const int id){
+    return BuildFOpenCLGroupAttachedLeaf(group->leafHeader[id].nbParticles,
+                                         group->particlePosition[0] + group->leafHeader[id].offSet,
+            group->blockHeader->positionsLeadingDim,
+            (group->attributesBuffer?group->particleAttributes[NbSymbAttributes] + group->leafHeader[id].offSet:NULLPTR),
+            group->blockHeader->attributeLeadingDim);
 }
 
 
@@ -382,7 +402,6 @@ struct FOpenCLGroupOfCellsBlockHeader{
     MortonIndex startingIndex;
     MortonIndex endingIndex;
     int numberOfCellsInBlock;
-    int blockIndexesTableSize;
 } __attribute__ ((aligned (DefaultStructAlign)));
 
 
@@ -395,7 +414,7 @@ struct FOpenCLGroupOfCells {
     //< Pointer to the header inside the block memory
     __global struct FOpenCLGroupOfCellsBlockHeader*    blockHeader;
     //< Pointer to the indexes table inside the block memory
-    __global int*            blockIndexesTable;
+    __global MortonIndex*    cellIndexes;
     //< Pointer to the cells inside the block memory
     __global struct FSymboleCellClass*      blockCells;
     
@@ -406,16 +425,16 @@ struct FOpenCLGroupOfCells {
 };
 
 struct FOpenCLGroupOfCells BuildFOpenCLGroupOfCells(__global unsigned char* inBuffer, const size_t inAllocatedMemoryInByte,
-                __global unsigned char* inCellMultipoles, __global unsigned char* inCellLocals){
-      struct FOpenCLGroupOfCells group;
-      group.memoryBuffer = (inBuffer);
-      group.allocatedMemoryInByte = (inAllocatedMemoryInByte);
+                                                    __global unsigned char* inCellMultipoles, __global unsigned char* inCellLocals){
+    struct FOpenCLGroupOfCells group;
+    group.memoryBuffer = (inBuffer);
+    group.allocatedMemoryInByte = (inAllocatedMemoryInByte);
 
     // Move the pointers to the correct position
     group.blockHeader         = (__global struct FOpenCLGroupOfCellsBlockHeader*)(inBuffer);
     inBuffer += sizeof(struct FOpenCLGroupOfCellsBlockHeader);
-    group.blockIndexesTable   = (__global int*)(inBuffer);
-    inBuffer += (group.blockHeader->blockIndexesTableSize*sizeof(int));
+    group.cellIndexes   = (__global MortonIndex*)(inBuffer);
+    inBuffer += (group.blockHeader->numberOfCellsInBlock*sizeof(MortonIndex));
     group.blockCells          = (__global struct FSymboleCellClass*)(inBuffer);
     inBuffer += (group.blockHeader->numberOfCellsInBlock*sizeof(struct FSymboleCellClass));
     // Assert(((size_t)(inBuffer-group.memoryBuffer) == inAllocatedMemoryInByte);
@@ -434,38 +453,80 @@ int FOpenCLGroupOfCells_getNumberOfCellsInBlock(const struct FOpenCLGroupOfCells
     return group->blockHeader->numberOfCellsInBlock;
 }
 int FOpenCLGroupOfCells_getSizeOfInterval(const struct FOpenCLGroupOfCells* group) {
-    return group->blockHeader->blockIndexesTableSize;
+    return group->blockHeader->endingIndex - group->blockHeader->startingIndex;
 }
 bool FOpenCLGroupOfCells_isInside(const struct FOpenCLGroupOfCells* group, const MortonIndex inIndex){
     return group->blockHeader->startingIndex <= inIndex && inIndex < group->blockHeader->endingIndex;
 }
+
+MortonIndex FOpenCLGroupOfCells_getCellMortonIndex(const struct FOpenCLGroupOfCells* group,const int cellPos){
+    return group->cellIndexes[cellPos];
+}
+
+int FOpenCLGroupOfCells_getCellIndex(const struct FOpenCLGroupOfCells* group,const MortonIndex cellIdx){
+    int idxLeft = 0;
+    int idxRight = group->blockHeader->numberOfCellsInBlock-1;
+    while(idxLeft <= idxRight){
+        const int idxMiddle = (idxLeft+idxRight)/2;
+        if(group->cellIndexes[idxMiddle] == cellIdx){
+            return idxMiddle;
+        }
+        if(cellIdx < group->cellIndexes[idxMiddle]){
+            idxRight = idxMiddle-1;
+        }
+        else{
+            idxLeft = idxMiddle+1;
+        }
+    }
+    return -1;
+}
+
+int FOpenCLGroupOfCells_getFistChildIdx(const struct FOpenCLGroupOfCells* group, const MortonIndex parentIdx) {
+    int idxLeft = 0;
+    int idxRight = group->blockHeader->numberOfCellsInBlock-1;
+    while(idxLeft <= idxRight){
+        int idxMiddle = (idxLeft+idxRight)/2;
+        if((group->cellIndexes[idxMiddle]>>3) == parentIdx){
+            while(0 < idxMiddle && (group->cellIndexes[idxMiddle-1]>>3) == parentIdx){
+                idxMiddle -= 1;
+            }
+            return idxMiddle;
+        }
+        if(parentIdx < (group->cellIndexes[idxMiddle]>>3)){
+            idxRight = idxMiddle-1;
+        }
+        else{
+            idxLeft = idxMiddle+1;
+        }
+    }
+    return -1;
+}
+
+
 bool FOpenCLGroupOfCells_exists(const struct FOpenCLGroupOfCells* group, const MortonIndex inIndex) {
-    return FOpenCLGroupOfCells_isInside(group, inIndex) && (group->blockIndexesTable[inIndex-group->blockHeader->startingIndex] != FOpenCLGroupOfCellsCellIsEmptyFlag);
+    return FOpenCLGroupOfCells_isInside(group, inIndex) && FOpenCLGroupOfCells_getCellIndex(group, inIndex) != -1;
 }
-struct FWrappeCell FOpenCLGroupOfCells_getCompleteCell(struct FOpenCLGroupOfCells* group, const MortonIndex inIndex){
-    size_t pos = group->blockIndexesTable[inIndex-group->blockHeader->startingIndex];
+struct FWrappeCell FOpenCLGroupOfCells_getCompleteCell(struct FOpenCLGroupOfCells* group, const int cellPos){
     struct FWrappeCell cell;
-    cell.symb = &group->blockCells[pos];
-    cell.up = &group->cellMultipoles[pos];
-    cell.down = &group->cellLocals[pos];        
+    cell.symb = &group->blockCells[cellPos];
+    cell.up = &group->cellMultipoles[cellPos];
+    cell.down = &group->cellLocals[cellPos];
     return cell;
 }
 
-struct FWrappeCell FOpenCLGroupOfCells_getUpCell(struct FOpenCLGroupOfCells* group, const MortonIndex inIndex){
-    size_t pos = group->blockIndexesTable[inIndex-group->blockHeader->startingIndex];
+struct FWrappeCell FOpenCLGroupOfCells_getUpCell(struct FOpenCLGroupOfCells* group, const int cellPos){
     struct FWrappeCell cell;
-    cell.symb = &group->blockCells[pos];
-    cell.up = &group->cellMultipoles[pos];
-    cell.down = NULLPTR;       
+    cell.symb = &group->blockCells[cellPos];
+    cell.up = &group->cellMultipoles[cellPos];
+    cell.down = NULLPTR;
     return cell;
 }
 
-struct FWrappeCell FOpenCLGroupOfCells_getDownCell(struct FOpenCLGroupOfCells* group, const MortonIndex inIndex){
-    size_t pos = group->blockIndexesTable[inIndex-group->blockHeader->startingIndex];
-        struct FWrappeCell cell;
-    cell.symb = &group->blockCells[pos];
+struct FWrappeCell FOpenCLGroupOfCells_getDownCell(struct FOpenCLGroupOfCells* group, const int cellPos){
+    struct FWrappeCell cell;
+    cell.symb = &group->blockCells[cellPos];
     cell.up = NULLPTR;
-    cell.down =&group->cellLocals[pos];        
+    cell.down =&group->cellLocals[cellPos];
     return cell;
 }
 
@@ -500,7 +561,7 @@ void M2M(struct FWrappeCell  pole, struct FWrappeCell child[8], const int level,
 }
 
 void M2L(struct FWrappeCell const pole, const struct FWrappeCell distantNeighbors[343],
-    const int size, const int level, __global void* user_data) {
+const int size, const int level, __global void* user_data) {
     for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
         if(distantNeighbors[idxNeigh].symb){
             *pole.down += *distantNeighbors[idxNeigh].up;
@@ -524,8 +585,8 @@ void L2P(const struct FWrappeCell localCell, struct FOpenCLGroupAttachedLeaf par
 }
 
 void P2P(const int3 pos,
-             struct FOpenCLGroupAttachedLeaf  targets, const struct FOpenCLGroupAttachedLeaf sources,
-             struct FOpenCLGroupAttachedLeaf directNeighborsParticles[27], int directNeighborsPositions[27], const int counter, __global void* user_data){
+         struct FOpenCLGroupAttachedLeaf  targets, const struct FOpenCLGroupAttachedLeaf sources,
+         struct FOpenCLGroupAttachedLeaf directNeighborsParticles[27], int directNeighborsPositions[27], const int counter, __global void* user_data){
     long long cumul = sources.nbParticles-1;
     
     for(int idxNeigh = 0 ; idxNeigh < counter ; ++idxNeigh){
@@ -541,8 +602,8 @@ void P2P(const int3 pos,
 }
 
 void P2PRemote(const int3 pos,
-             struct FOpenCLGroupAttachedLeaf  targets, const struct FOpenCLGroupAttachedLeaf  sources,
-             struct FOpenCLGroupAttachedLeaf directNeighborsParticles, const int position, __global void* user_data){
+               struct FOpenCLGroupAttachedLeaf  targets, const struct FOpenCLGroupAttachedLeaf  sources,
+               struct FOpenCLGroupAttachedLeaf directNeighborsParticles, const int position, __global void* user_data){
     __global long long* partdown = targets.attributes[0];
     for(FSize idxPart = 0 ; idxPart < targets.nbParticles ; ++idxPart){
         partdown[idxPart] += directNeighborsParticles.nbParticles;
@@ -554,7 +615,7 @@ int3 getCoordinate(const struct FWrappeCell cell) {
     coord.x = cell.symb->coordinates[0];
     coord.y = cell.symb->coordinates[1];
     coord.z = cell.symb->coordinates[2];
-    return coord;    
+    return coord;
 }
 
 
@@ -581,17 +642,14 @@ __kernel void FOpenCL__bottomPassPerform(__global unsigned char* leafCellsPtr, s
     struct FOpenCLGroupOfCells leafCells = BuildFOpenCLGroupOfCells(leafCellsPtr, leafCellsSize, leafCellsUpPtr, NULLPTR);
     struct FOpenCLGroupOfParticles containers = BuildFOpenCLGroupOfParticles(containersPtr, containersSize, NULLPTR);
 
-    const MortonIndex blockStartIdx = FOpenCLGroupOfCells_getStartingIndex(&leafCells);
-    const MortonIndex blockEndIdx = FOpenCLGroupOfCells_getEndingIndex(&leafCells);
+    const int nbLeaves = FOpenCLGroupOfCells_getNumberOfCellsInBlock(&leafCells);
     
-    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-        if(FOpenCLGroupOfCells_exists(&leafCells, mindex)){
-            struct FWrappeCell cell = FOpenCLGroupOfCells_getUpCell(&leafCells, mindex);
-            FOpenCLAssertLF(cell.symb->mortonIndex == mindex);
-            struct FOpenCLGroupAttachedLeaf particles = FOpenCLGroupOfParticles_getLeaf(&containers, mindex);
-            FOpenCLAssertLF(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&particles));
-            P2M(cell, particles, userkernel);
-        }
+    for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+        struct FWrappeCell cell = FOpenCLGroupOfCells_getUpCell(&leafCells, idxLeaf);
+        FOpenCLAssertLF(cell.symb->mortonIndex == FOpenCLGroupOfCells_getCellMortonIndex(&leafCells, idxLeaf));
+        struct FOpenCLGroupAttachedLeaf particles = FOpenCLGroupOfParticles_getLeaf(&containers, idxLeaf);
+        FOpenCLAssertLF(FOpenCLGroupOfParticles_getLeafMortonIndex(&containers, idxLeaf) == FOpenCLGroupOfCells_getCellMortonIndex(&leafCells, idxLeaf));
+        P2M(cell, particles, userkernel);
     }
 }
 
@@ -601,8 +659,8 @@ __kernel void FOpenCL__bottomPassPerform(__global unsigned char* leafCellsPtr, s
 /////////////////////////////////////////////////////////////////////////////////////
 
 __kernel void FOpenCL__upwardPassPerform(__global unsigned char* currentCellsPtr, size_t currentCellsSize, __global unsigned char* currentCellsUpPtr,
-                                  struct Uptr9 subCellGroupsPtr, struct size_t9 subCellGroupsSize, struct Uptr9 subCellGroupsUpPtr,
-                                  int nbSubCellGroups, int idxLevel, __global void* userkernel){
+                                         struct Uptr9 subCellGroupsPtr, struct size_t9 subCellGroupsSize, struct Uptr9 subCellGroupsUpPtr,
+                                         int nbSubCellGroups, int idxLevel, __global void* userkernel){
     struct FOpenCLGroupOfCells currentCells = BuildFOpenCLGroupOfCells(currentCellsPtr, currentCellsSize, currentCellsUpPtr, NULLPTR);
     struct FOpenCLGroupOfCells subCellGroups[9];
     for(int idx = 0 ; idx < nbSubCellGroups ; ++idx){
@@ -610,36 +668,35 @@ __kernel void FOpenCL__upwardPassPerform(__global unsigned char* currentCellsPtr
     }
 
     FOpenCLAssertLF(nbSubCellGroups != 0);
-    const MortonIndex blockStartIdx = FOpenCLMax(FOpenCLGroupOfCells_getStartingIndex(&currentCells),
-                                          FOpenCLGroupOfCells_getStartingIndex(&subCellGroups[0])>>3);
-    const MortonIndex blockEndIdx   = FOpenCLMin(FOpenCLGroupOfCells_getEndingIndex(&currentCells),
-                                          ((FOpenCLGroupOfCells_getEndingIndex(&subCellGroups[nbSubCellGroups-1])-1)>>3)+1);
-
+    const int nbCells = FOpenCLGroupOfCells_getNumberOfCellsInBlock(&currentCells);
     int idxSubCellGroup = 0;
+    int idxChildCell = FOpenCLGroupOfCells_getFistChildIdx(&subCellGroups[0], FOpenCLGroupOfCells_getCellIndex(&currentCells, 0));
 
-    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && idxSubCellGroup != nbSubCellGroups; ++mindex){
-        if(FOpenCLGroupOfCells_exists(&currentCells, mindex)){
-            struct FWrappeCell cell = FOpenCLGroupOfCells_getUpCell(&currentCells, mindex);
-            FOpenCLAssertLF(cell.symb->mortonIndex == mindex);
-            struct FWrappeCell child[8];
+    for(int idxCell = 0 ; idxCell < nbCells ; ++idxCell){
+        struct FWrappeCell cell = FOpenCLGroupOfCells_getUpCell(&currentCells, idxCell);
+        FOpenCLAssertLF(cell.symb->mortonIndex == FOpenCLGroupOfCells_getCellMortonIndex(&currentCells, idxCell));
+        struct FWrappeCell child[8];
 
-            for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                if( FOpenCLGroupOfCells_getEndingIndex(&subCellGroups[idxSubCellGroup]) <= ((mindex<<3)+idxChild) ){
-                    idxSubCellGroup += 1;
-                }
-                if( idxSubCellGroup == nbSubCellGroups ){
-                    break;
-                }
-                if(FOpenCLGroupOfCells_exists(&subCellGroups[idxSubCellGroup], (mindex<<3)+idxChild)){
-                    child[idxChild] = FOpenCLGroupOfCells_getUpCell(&subCellGroups[idxSubCellGroup], (mindex<<3)+idxChild);
-                }
-                else{
-                    child[idxChild].symb = NULLPTR;
-                }
-            }
+        FOpenCLAssertLF(idxSubCellGroup != nbSubCellGroups);
 
-            M2M(cell, child, idxLevel, userkernel);
+        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+            child[idxChild].symb = NULLPTR;
         }
+
+        while(idxSubCellGroup != nbSubCellGroups
+              && (FOpenCLGroupOfCells_getCellMortonIndex(&subCellGroups[idxSubCellGroup], idxChildCell)>>3) == cell.symb->mortonIndex){
+            const int idxChild = ((FOpenCLGroupOfCells_getCellMortonIndex(&subCellGroups[idxSubCellGroup], idxChildCell)) & 7);
+
+            child[idxChild] = FOpenCLGroupOfCells_getUpCell(&subCellGroups[idxSubCellGroup], idxChildCell);
+            idxChildCell += 1;
+
+            if(idxChildCell == FOpenCLGroupOfCells_getNumberOfCellsInBlock(&subCellGroups[idxSubCellGroup])){
+                idxChildCell = 0;
+                idxSubCellGroup += 1;
+            }
+        }
+
+        M2M(cell, child, idxLevel, userkernel);
     }
 }
 
@@ -651,17 +708,19 @@ __kernel void FOpenCL__upwardPassPerform(__global unsigned char* currentCellsPtr
 
 
 __kernel  void FOpenCL__transferInoutPassPerformMpi(__global unsigned char* currentCellsPtr, size_t currentCellsSize, __global unsigned char* currentCellsDownPtr,
-                                             __global unsigned char* externalCellsPtr, size_t externalCellsSize, __global unsigned char* externalCellsUpPtr,
-                                             int idxLevel, const __global struct OutOfBlockInteraction* outsideInteractions,
-                                             size_t nbOutsideInteractions, __global void* userkernel){
+                                                    __global unsigned char* externalCellsPtr, size_t externalCellsSize, __global unsigned char* externalCellsUpPtr,
+                                                    int idxLevel, const __global struct OutOfBlockInteraction* outsideInteractions,
+                                                    size_t nbOutsideInteractions, __global void* userkernel){
     struct FOpenCLGroupOfCells currentCells = BuildFOpenCLGroupOfCells(currentCellsPtr, currentCellsSize, NULLPTR, currentCellsDownPtr);
     struct FOpenCLGroupOfCells cellsOther = BuildFOpenCLGroupOfCells(externalCellsPtr, externalCellsSize, externalCellsUpPtr, NULLPTR);
 
     for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
-        if(FOpenCLGroupOfCells_exists(&cellsOther, outsideInteractions[outInterIdx].outIndex)){
-            struct FWrappeCell interCell = FOpenCLGroupOfCells_getUpCell(&cellsOther, outsideInteractions[outInterIdx].outIndex);
+        const int cellPos = FOpenCLGroupOfCells_getCellIndex(&cellsOther, outsideInteractions[outInterIdx].outIndex);
+        if(cellPos != -1){
+            FOpenCLAssertLF(outsideInteractions[outInterIdx].outIndex == FOpenCLGroupOfCells_getCellMortonIndex(&cellsOther, outsideInteractions[outInterIdx].outIndex));
+            struct FWrappeCell interCell = FOpenCLGroupOfCells_getUpCell(&cellsOther, cellPos);
             FOpenCLAssertLF(interCell.symb->mortonIndex == outsideInteractions[outInterIdx].outIndex);
-            struct FWrappeCell cell = FOpenCLGroupOfCells_getDownCell(&currentCells, outsideInteractions[outInterIdx].insideIndex);
+            struct FWrappeCell cell = FOpenCLGroupOfCells_getDownCell(&currentCells, outsideInteractions[outInterIdx].insideIdxInBlock);
             FOpenCLAssertLF(cell.symb->mortonIndex == outsideInteractions[outInterIdx].insideIndex);
 
             struct FWrappeCell interactions[343];
@@ -681,59 +740,62 @@ __kernel  void FOpenCL__transferInoutPassPerformMpi(__global unsigned char* curr
 
 
 __kernel  void FOpenCL__transferInPassPerform(__global unsigned char* currentCellsPtr, size_t currentCellsSize,
-                                        __global unsigned char* currentCellsUpPtr, __global unsigned char* currentCellsDownPtr,
-                                       int idxLevel, __global void* userkernel){
+                                              __global unsigned char* currentCellsUpPtr, __global unsigned char* currentCellsDownPtr,
+                                              int idxLevel, __global void* userkernel){
     struct FOpenCLGroupOfCells currentCells = BuildFOpenCLGroupOfCells(currentCellsPtr, currentCellsSize, currentCellsUpPtr, currentCellsDownPtr);
 
     const MortonIndex blockStartIdx = FOpenCLGroupOfCells_getStartingIndex(&currentCells);
     const MortonIndex blockEndIdx = FOpenCLGroupOfCells_getEndingIndex(&currentCells);
 
-    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-        if(FOpenCLGroupOfCells_exists(&currentCells, mindex)){
-            struct FWrappeCell cell = FOpenCLGroupOfCells_getDownCell(&currentCells, mindex);
-            FOpenCLAssertLF(cell.symb->mortonIndex == mindex);
-            MortonIndex interactionsIndexes[189];
-            int interactionsPosition[189];
-            const int3 coord = (getCoordinate(cell));
-            int counter = GetInteractionNeighbors(coord, idxLevel,interactionsIndexes,interactionsPosition);
+    const int nbCells = FOpenCLGroupOfCells_getNumberOfCellsInBlock(&currentCells);
 
-            struct FWrappeCell interactions[343];
-            FSetToNullptr343(interactions);
-            int counterExistingCell = 0;
+    for(int idxCell = 0 ; idxCell < nbCells ; ++idxCell){
+        struct FWrappeCell cell = FOpenCLGroupOfCells_getDownCell(&currentCells, idxCell);
+        FOpenCLAssertLF(cell.symb->mortonIndex == FOpenCLGroupOfCells_getCellMortonIndex(&currentCells, idxCell));
+        MortonIndex interactionsIndexes[189];
+        int interactionsPosition[189];
+        const int3 coord = (getCoordinate(cell));
+        int counter = GetInteractionNeighbors(coord, idxLevel,interactionsIndexes,interactionsPosition);
 
-            for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                    if(FOpenCLGroupOfCells_exists(&currentCells, interactionsIndexes[idxInter])){
-                        struct FWrappeCell interCell = FOpenCLGroupOfCells_getUpCell(&currentCells, interactionsIndexes[idxInter]);
-                        FOpenCLAssertLF(interCell.symb->mortonIndex == interactionsIndexes[idxInter]);
-                        FOpenCLAssertLF(interactions[interactionsPosition[idxInter]].symb == NULLPTR);
-                        interactions[interactionsPosition[idxInter]] = interCell;
-                        counterExistingCell += 1;
-                    }
+        struct FWrappeCell interactions[343];
+        FSetToNullptr343(interactions);
+        int counterExistingCell = 0;
+
+        for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+            if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                const int cellPos = FOpenCLGroupOfCells_getCellIndex(&currentCells, interactionsIndexes[idxInter]);
+                if(cellPos != -1){
+                    struct FWrappeCell interCell = FOpenCLGroupOfCells_getUpCell(&currentCells, cellPos);
+                    FOpenCLAssertLF(interCell.symb->mortonIndex == interactionsIndexes[idxInter]);
+                    FOpenCLAssertLF(interactions[interactionsPosition[idxInter]].symb == NULLPTR);
+                    interactions[interactionsPosition[idxInter]] = interCell;
+                    counterExistingCell += 1;
                 }
             }
-
-            M2L( cell , interactions, counterExistingCell, idxLevel, userkernel);
         }
+
+        M2L( cell , interactions, counterExistingCell, idxLevel, userkernel);
     }
 }
 
 
 
 __kernel void FOpenCL__transferInoutPassPerform(__global unsigned char* currentCellsPtr, size_t currentCellsSize,
-                                         __global unsigned char*  currentCellsUpPtr, __global unsigned char*  currentCellsDownPtr,
-                                         __global unsigned char* externalCellsPtr, size_t externalCellsSize,
-                                         __global unsigned char* externalCellsUpPtr, __global unsigned char* externalCellsDownPtr,
-                                         int idxLevel, const __global struct OutOfBlockInteraction* outsideInteractions,
-                                         size_t nbOutsideInteractions, __global void* userkernel){
+                                                __global unsigned char*  currentCellsUpPtr, __global unsigned char*  currentCellsDownPtr,
+                                                __global unsigned char* externalCellsPtr, size_t externalCellsSize,
+                                                __global unsigned char* externalCellsUpPtr, __global unsigned char* externalCellsDownPtr,
+                                                int idxLevel, const __global struct OutOfBlockInteraction* outsideInteractions,
+                                                size_t nbOutsideInteractions, __global void* userkernel){
     struct FOpenCLGroupOfCells currentCells = BuildFOpenCLGroupOfCells(currentCellsPtr, currentCellsSize, currentCellsUpPtr, currentCellsDownPtr);
     struct FOpenCLGroupOfCells cellsOther = BuildFOpenCLGroupOfCells(externalCellsPtr, externalCellsSize, externalCellsUpPtr, externalCellsDownPtr);
 
     for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
-        if(FOpenCLGroupOfCells_exists(&cellsOther, outsideInteractions[outInterIdx].outIndex)){
-            struct FWrappeCell interCell = FOpenCLGroupOfCells_getCompleteCell(&cellsOther, outsideInteractions[outInterIdx].outIndex);
+        const int cellPos = FOpenCLGroupOfCells_getCellIndex(&cellsOther, outsideInteractions[outInterIdx].outIndex);
+        if(cellPos != -1){
+            FOpenCLAssertLF(outsideInteractions[outInterIdx].outIndex == FOpenCLGroupOfCells_getCellMortonIndex(&cellsOther, outsideInteractions[outInterIdx].outIndex));
+            struct FWrappeCell interCell = FOpenCLGroupOfCells_getUpCell(&cellsOther, cellPos);
             FOpenCLAssertLF(interCell.symb->mortonIndex == outsideInteractions[outInterIdx].outIndex);
-            struct FWrappeCell cell = FOpenCLGroupOfCells_getCompleteCell(&currentCells, outsideInteractions[outInterIdx].insideIndex);
+            struct FWrappeCell cell = FOpenCLGroupOfCells_getDownCell(&currentCells, outsideInteractions[outInterIdx].insideIdxInBlock);
             FOpenCLAssertLF(cell.symb->mortonIndex == outsideInteractions[outInterIdx].insideIndex);
 
             struct FWrappeCell interactions[343];
@@ -757,8 +819,8 @@ __kernel void FOpenCL__transferInoutPassPerform(__global unsigned char* currentC
 
 
 __kernel void FOpenCL__downardPassPerform(__global unsigned char* currentCellsPtr, size_t currentCellsSize, __global unsigned char* currentCellsDownPtr,
-                                   struct Uptr9 subCellGroupsPtr, struct size_t9 subCellGroupsSize, struct Uptr9 subCellGroupsDownPtr,
-                                   int nbSubCellGroups, int idxLevel, __global void* userkernel){
+                                          struct Uptr9 subCellGroupsPtr, struct size_t9 subCellGroupsSize, struct Uptr9 subCellGroupsDownPtr,
+                                          int nbSubCellGroups, int idxLevel, __global void* userkernel){
     FOpenCLAssertLF(nbSubCellGroups != 0);
     struct FOpenCLGroupOfCells currentCells = BuildFOpenCLGroupOfCells(currentCellsPtr, currentCellsSize, NULLPTR, currentCellsDownPtr);
     struct FOpenCLGroupOfCells subCellGroups[9];
@@ -766,36 +828,37 @@ __kernel void FOpenCL__downardPassPerform(__global unsigned char* currentCellsPt
         subCellGroups[idx] = BuildFOpenCLGroupOfCells(subCellGroupsPtr.ptrs[idx], subCellGroupsSize.v[idx], NULLPTR, subCellGroupsDownPtr.ptrs[idx]);
     }
 
-    const MortonIndex blockStartIdx = FOpenCLMax(FOpenCLGroupOfCells_getStartingIndex(&currentCells),
-                                          FOpenCLGroupOfCells_getStartingIndex(&subCellGroups[0])>>3);
-    const MortonIndex blockEndIdx   = FOpenCLMin(FOpenCLGroupOfCells_getEndingIndex(&currentCells),
-                                          ((FOpenCLGroupOfCells_getEndingIndex(&subCellGroups[nbSubCellGroups-1])-1)>>3)+1);
 
+    FOpenCLAssertLF(nbSubCellGroups != 0);
+    const int nbCells = FOpenCLGroupOfCells_getNumberOfCellsInBlock(&currentCells);
     int idxSubCellGroup = 0;
+    int idxChildCell = FOpenCLGroupOfCells_getFistChildIdx(&subCellGroups[0], FOpenCLGroupOfCells_getCellIndex(&currentCells, 0));
 
-    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && idxSubCellGroup != nbSubCellGroups; ++mindex){
-        if(FOpenCLGroupOfCells_exists(&currentCells, mindex)){
-            struct FWrappeCell cell = FOpenCLGroupOfCells_getDownCell(&currentCells, mindex);
-            FOpenCLAssertLF(cell.symb->mortonIndex == mindex);
-            struct FWrappeCell child[8];
+    for(int idxCell = 0 ; idxCell < nbCells ; ++idxCell){
+        struct FWrappeCell cell = FOpenCLGroupOfCells_getDownCell(&currentCells, idxCell);
+        FOpenCLAssertLF(cell.symb->mortonIndex == FOpenCLGroupOfCells_getCellMortonIndex(&currentCells, idxCell));
+        struct FWrappeCell child[8];
 
-            for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                if( FOpenCLGroupOfCells_getEndingIndex(&subCellGroups[idxSubCellGroup]) <= ((mindex<<3)+idxChild) ){
-                    idxSubCellGroup += 1;
-                }
-                if( idxSubCellGroup == nbSubCellGroups ){
-                    break;
-                }
-                if(FOpenCLGroupOfCells_exists(&subCellGroups[idxSubCellGroup], (mindex<<3)+idxChild)){
-                    child[idxChild] = FOpenCLGroupOfCells_getDownCell(&subCellGroups[idxSubCellGroup], (mindex<<3)+idxChild);                
-                }
-                else{
-                    child[idxChild].symb = NULLPTR;
-                }
-            }
+        FOpenCLAssertLF(idxSubCellGroup != nbSubCellGroups);
 
-            L2L(cell, child, idxLevel, userkernel);
+        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+            child[idxChild].symb = NULLPTR;
         }
+
+        while(idxSubCellGroup != nbSubCellGroups
+              && (FOpenCLGroupOfCells_getCellMortonIndex(&subCellGroups[idxSubCellGroup], idxChildCell)>>3) == cell.symb->mortonIndex){
+            const int idxChild = ((FOpenCLGroupOfCells_getCellMortonIndex(&subCellGroups[idxSubCellGroup], idxChildCell)) & 7);
+
+            child[idxChild] = FOpenCLGroupOfCells_getDownCell(&subCellGroups[idxSubCellGroup], idxChildCell);
+            idxChildCell += 1;
+
+            if(idxChildCell == FOpenCLGroupOfCells_getNumberOfCellsInBlock(&subCellGroups[idxSubCellGroup])){
+                idxChildCell = 0;
+                idxSubCellGroup += 1;
+            }
+        }
+
+        L2L(cell, child, idxLevel, userkernel);
     }
 }
 
@@ -807,17 +870,19 @@ __kernel void FOpenCL__downardPassPerform(__global unsigned char* currentCellsPt
 
 
 __kernel void FOpenCL__directInoutPassPerformMpi(__global unsigned char* containersPtr, size_t containersSize, __global unsigned char* containersDownPtr,
-                                          __global unsigned char* externalContainersPtr, size_t externalContainersSize, __global unsigned char* outsideInteractionsCl,
-                                          const __global struct OutOfBlockInteraction* outsideInteractions,
-                                          size_t nbOutsideInteractions, const int treeHeight, __global void* userkernel){
+                                                 __global unsigned char* externalContainersPtr, size_t externalContainersSize, __global unsigned char* outsideInteractionsCl,
+                                                 const __global struct OutOfBlockInteraction* outsideInteractions,
+                                                 size_t nbOutsideInteractions, const int treeHeight, __global void* userkernel){
     struct FOpenCLGroupOfParticles containers = BuildFOpenCLGroupOfParticles(containersPtr, containersSize, containersDownPtr);
     struct FOpenCLGroupOfParticles containersOther = BuildFOpenCLGroupOfParticles(externalContainersPtr, externalContainersSize, NULLPTR);
 
     for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
-        struct FOpenCLGroupAttachedLeaf interParticles = FOpenCLGroupOfParticles_getLeaf(&containersOther, outsideInteractions[outInterIdx].outIndex);
-        if(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&interParticles)){
-            struct FOpenCLGroupAttachedLeaf particles = FOpenCLGroupOfParticles_getLeaf(&containers, outsideInteractions[outInterIdx].insideIndex);
-            FOpenCLAssertLF(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&particles));
+        const int leafPos = FOpenCLGroupOfParticles_getLeafIndex(&containersOther, outsideInteractions[outInterIdx].outIndex);
+        if(leafPos != -1){
+            FOpenCLAssertLF(FOpenCLGroupOfParticles_getLeafMortonIndex(&containersOther, leafPos) == outsideInteractions[outInterIdx].outIndex);
+            struct FOpenCLGroupAttachedLeaf interParticles = FOpenCLGroupOfParticles_getLeaf(&containersOther, leafPos);
+            struct FOpenCLGroupAttachedLeaf particles = FOpenCLGroupOfParticles_getLeaf(&containers, outsideInteractions[outInterIdx].insideIdxInBlock);
+            FOpenCLAssertLF(FOpenCLGroupOfParticles_getLeafMortonIndex(&containers, outsideInteractions[outInterIdx].insideIdxInBlock) == outsideInteractions[outInterIdx].insideIndex);
 
             P2PRemote( GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1), particles, particles , interParticles, outsideInteractions[outInterIdx].outPosition, userkernel);
         }
@@ -832,53 +897,57 @@ __kernel void FOpenCL__directInoutPassPerformMpi(__global unsigned char* contain
 
 
 __kernel void FOpenCL__directInPassPerform(__global unsigned char* containersPtr, size_t containersSize, __global unsigned char* containersDownPtr,
-                                    const int treeHeight, __global void* userkernel){
+                                           const int treeHeight, __global void* userkernel){
     struct FOpenCLGroupOfParticles containers = BuildFOpenCLGroupOfParticles(containersPtr, containersSize, containersDownPtr);
 
     const MortonIndex blockStartIdx = FOpenCLGroupOfParticles_getStartingIndex(&containers);
     const MortonIndex blockEndIdx = FOpenCLGroupOfParticles_getEndingIndex(&containers);
 
-    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-        struct FOpenCLGroupAttachedLeaf particles = FOpenCLGroupOfParticles_getLeaf(&containers, mindex);
-        if(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&particles)){
-            MortonIndex interactionsIndexes[26];
-            int interactionsPosition[26];
-            const int3 coord = GetPositionFromMorton(mindex, treeHeight-1);
-            int counter = GetNeighborsIndexes(coord, treeHeight,interactionsIndexes,interactionsPosition);
+    const int nbLeaves = FOpenCLGroupOfParticles_getNumberOfLeaves(&containers);
 
-            struct FOpenCLGroupAttachedLeaf interactionsObjects[27];
-            int neighPosition[26];
-            int counterExistingCell = 0;
+    for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+        struct FOpenCLGroupAttachedLeaf particles = FOpenCLGroupOfParticles_getLeaf(&containers, idxLeaf);
+        MortonIndex interactionsIndexes[26];
+        int interactionsPosition[26];
+        const int3 coord = GetPositionFromMorton(FOpenCLGroupOfParticles_getLeafMortonIndex(&containers, idxLeaf), treeHeight-1);
+        int counter = GetNeighborsIndexes(coord, treeHeight,interactionsIndexes,interactionsPosition);
 
-            for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                    interactionsObjects[counterExistingCell] = FOpenCLGroupOfParticles_getLeaf(&containers, interactionsIndexes[idxInter]);
-                    if(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&interactionsObjects[counterExistingCell])){
-                        neighPosition[counterExistingCell] = interactionsPosition[idxInter];
-                        counterExistingCell += 1;
-                    }
+        struct FOpenCLGroupAttachedLeaf interactionsObjects[27];
+        int neighPosition[26];
+        int counterExistingCell = 0;
+
+        for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+            if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                const int leafPos = FOpenCLGroupOfParticles_getLeafIndex(&containers, interactionsIndexes[idxInter]);
+                if(leafPos){
+                    FOpenCLAssertLF(FOpenCLGroupOfParticles_getLeafMortonIndex(&containers, leafPos) == interactionsIndexes[idxInter]);
+                    interactionsObjects[counterExistingCell] = FOpenCLGroupOfParticles_getLeaf(&containers, leafPos);
+                    neighPosition[counterExistingCell] = interactionsPosition[idxInter];
+                    counterExistingCell += 1;
                 }
             }
-
-            P2P( coord, particles, particles , interactionsObjects, neighPosition, counterExistingCell, userkernel);
         }
+
+        P2P( coord, particles, particles , interactionsObjects, neighPosition, counterExistingCell, userkernel);
     }
 }
 
 
 
 __kernel void FOpenCL__directInoutPassPerform(__global unsigned char* containersPtr, size_t containersSize, __global unsigned char* containersDownPtr,
-                                       __global unsigned char* externalContainersPtr, size_t externalContainersSize, __global unsigned char* externalContainersDownPtr,
-                                       const __global struct OutOfBlockInteraction* outsideInteractions,
-                                       size_t nbOutsideInteractions, const int treeHeight, __global void* userkernel){
+                                              __global unsigned char* externalContainersPtr, size_t externalContainersSize, __global unsigned char* externalContainersDownPtr,
+                                              const __global struct OutOfBlockInteraction* outsideInteractions,
+                                              size_t nbOutsideInteractions, const int treeHeight, __global void* userkernel){
     struct FOpenCLGroupOfParticles containers = BuildFOpenCLGroupOfParticles(containersPtr, containersSize, containersDownPtr);
     struct FOpenCLGroupOfParticles containersOther = BuildFOpenCLGroupOfParticles(externalContainersPtr, externalContainersSize, externalContainersDownPtr);
 
     for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
-        struct FOpenCLGroupAttachedLeaf interParticles = FOpenCLGroupOfParticles_getLeaf(&containersOther, outsideInteractions[outInterIdx].outIndex);
-        if(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&interParticles)){
-            struct FOpenCLGroupAttachedLeaf particles = FOpenCLGroupOfParticles_getLeaf(&containers, outsideInteractions[outInterIdx].insideIndex);
-            FOpenCLAssertLF(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&particles));
+        const int leafPos = FOpenCLGroupOfParticles_getLeafIndex(&containersOther, outsideInteractions[outInterIdx].outIndex);
+        if(leafPos != -1){
+            FOpenCLAssertLF(FOpenCLGroupOfParticles_getLeafMortonIndex(&containersOther, leafPos) == outsideInteractions[outInterIdx].outIndex);
+            struct FOpenCLGroupAttachedLeaf interParticles = FOpenCLGroupOfParticles_getLeaf(&containersOther, leafPos);
+            struct FOpenCLGroupAttachedLeaf particles = FOpenCLGroupOfParticles_getLeaf(&containers, outsideInteractions[outInterIdx].insideIdxInBlock);
+            FOpenCLAssertLF(FOpenCLGroupOfParticles_getLeafMortonIndex(&containers, outsideInteractions[outInterIdx].insideIdxInBlock) == outsideInteractions[outInterIdx].insideIndex);
             FOpenCLAssertLF(particles.nbParticles);
             FOpenCLAssertLF(interParticles.nbParticles);
 
@@ -898,22 +967,19 @@ __kernel void FOpenCL__directInoutPassPerform(__global unsigned char* containers
 
 
 __kernel void FOpenCL__mergePassPerform(__global unsigned char* leafCellsPtr, size_t leafCellsSize, __global unsigned char* leafCellsDownPtr,
-                                 __global unsigned char* containersPtr, size_t containersSize, __global unsigned char* containersDownPtr,
-                                 __global void* userkernel){
+                                        __global unsigned char* containersPtr, size_t containersSize, __global unsigned char* containersDownPtr,
+                                        __global void* userkernel){
     struct FOpenCLGroupOfCells leafCells = BuildFOpenCLGroupOfCells(leafCellsPtr,leafCellsSize, NULLPTR, leafCellsDownPtr);
     struct FOpenCLGroupOfParticles containers = BuildFOpenCLGroupOfParticles(containersPtr,containersSize, containersDownPtr);
 
-    const MortonIndex blockStartIdx = FOpenCLGroupOfCells_getStartingIndex(&leafCells);
-    const MortonIndex blockEndIdx = FOpenCLGroupOfCells_getEndingIndex(&leafCells);
+    const int nbLeaves = FOpenCLGroupOfCells_getNumberOfCellsInBlock(&leafCells);
 
-    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-        if(FOpenCLGroupOfCells_exists(&leafCells, mindex)){
-            struct FWrappeCell cell = FOpenCLGroupOfCells_getDownCell(&leafCells, mindex);
-            FOpenCLAssertLF(cell.symb->mortonIndex == mindex);
-            struct FOpenCLGroupAttachedLeaf particles = FOpenCLGroupOfParticles_getLeaf(&containers, mindex);
-            FOpenCLAssertLF(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&particles));
-            L2P(cell, particles, userkernel);
-        }
+    for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+        struct FWrappeCell cell = FOpenCLGroupOfCells_getDownCell(&leafCells, idxLeaf);
+        FOpenCLAssertLF(cell.symb->mortonIndex == FOpenCLGroupOfCells_getCellMortonIndex(&leafCells, idxLeaf));
+        struct FOpenCLGroupAttachedLeaf particles = FOpenCLGroupOfParticles_getLeaf(&containers, idxLeaf);
+        FOpenCLAssertLF(FOpenCLGroupOfParticles_getLeafMortonIndex(&containers, idxLeaf) == FOpenCLGroupOfCells_getCellMortonIndex(&leafCells, idxLeaf));
+        L2P(cell, particles, userkernel);
     }
 }
 
