@@ -758,7 +758,9 @@ public:
 
         while(iterCells != iterEndCells && iterLeaves != iterEndLeaves){
             (*iterCells)->forEachCell([&](CompositeCellClass aCell){
-                ParticlesAttachedClass aLeaf = (*iterLeaves)->template getLeaf <ParticlesAttachedClass>(aCell.getMortonIndex());
+                const int leafPos = (*iterLeaves)->getLeafIndex(aCell.getMortonIndex());
+                FAssertLF(leafPos != -1);
+                ParticlesAttachedClass aLeaf = (*iterLeaves)->template getLeaf <ParticlesAttachedClass>(leafPos);
                 FAssertLF(aLeaf.isAttachedToSomething());
                 function(aCell, &aLeaf);
             });
