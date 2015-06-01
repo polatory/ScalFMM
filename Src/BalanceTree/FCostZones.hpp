@@ -25,10 +25,10 @@
  * compute the costzones.
  *
  * \tparam OctreeClass The type of the octree to work on.
- * \tparam CellClass   The type of the cells we work with.
+ * \tparam CellClass   The type of the cells to work with.
  * \parblock
  * This class must provide a typedef named CostType that identifies
- * the structure used to store data.
+ * the type used to store data.
  * \endparblock
  */
 template<typename OctreeClass, typename CellClass>

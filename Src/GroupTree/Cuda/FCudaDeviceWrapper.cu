@@ -31,17 +31,11 @@ __global__ void FCuda__bottomPassPerform(unsigned char* leafCellsPtr, std::size_
     CellContainerClass leafCells(leafCellsPtr, leafCellsSize, leafCellsUpPtr, nullptr);
     ParticleContainerGroupClass containers(containersPtr, containersSize, nullptr);
 
-    const MortonIndex blockStartIdx = leafCells.getStartingIndex();
-    const MortonIndex blockEndIdx = leafCells.getEndingIndex();
-
-    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-        if(leafCells.exists(mindex)){
-            typename CellContainerClass::CompleteCellClass cell = leafCells.getUpCell(mindex);
-            FCudaAssertLF(cell.symb->mortonIndex == mindex);
-            ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(mindex);
-            FCudaAssertLF(particles.isAttachedToSomething());
-            kernel->P2M(cell, &particles);
-        }
+    for(int leafIdx = 0 ; leafIdx < leafCells.getNumberOfCellsInBlock() ; ++leafIdx){
+        typename CellContainerClass::CompleteCellClass cell = leafCells.getUpCell(leafIdx);
+        ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(leafIdx);
+        FCudaAssertLF(leafCells.getCellMortonIndex(leafIdx) == containers.getLeafMortonIndex(leafIdx));
+        kernel->P2M(cell, &particles);
     }
 }
 
@@ -80,36 +74,34 @@ __global__ void FCuda__upwardPassPerform(unsigned char* currentCellsPtr, std::si
     }
 
     FCudaAssertLF(nbSubCellGroups != 0);
-    const MortonIndex blockStartIdx = FCudaMax(currentCells.getStartingIndex(),
-                                          subCellGroups[0].getStartingIndex()>>3);
-    const MortonIndex blockEndIdx   = FCudaMin(currentCells.getEndingIndex(),
-                                          ((subCellGroups[nbSubCellGroups-1].getEndingIndex()-1)>>3)+1);
-
     int idxSubCellGroup = 0;
+    int idxChildCell = subCellGroups[0].getFistChildIdx(currentCells.getCellMortonIndex(0));
 
-    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && idxSubCellGroup != nbSubCellGroups; ++mindex){
-        if(currentCells.exists(mindex)){
-            typename CellContainerClass::CompleteCellClass cell = currentCells.getUpCell(mindex);
-            FCudaAssertLF(cell.symb->mortonIndex == mindex);
-            typename CellContainerClass::CompleteCellClass child[8];
+    for(int cellIdx = 0 ; cellIdx < currentCells.getNumberOfCellsInBlock() ; ++cellIdx){
+        typename CellContainerClass::CompleteCellClass cell = currentCells.getUpCell(cellIdx);
+        FCudaAssertLF(cell.symb->mortonIndex == currentCells.getCellMortonIndex(cellIdx));
+        typename CellContainerClass::CompleteCellClass child[8];
 
-            for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                if( subCellGroups[idxSubCellGroup].getEndingIndex() <= ((mindex<<3)+idxChild) ){
-                    idxSubCellGroup += 1;
-                }
-                if( idxSubCellGroup == nbSubCellGroups ){
-                    break;
-                }
-                if(subCellGroups[idxSubCellGroup].exists((mindex<<3)+idxChild)){
-                    child[idxChild] = subCellGroups[idxSubCellGroup].getUpCell((mindex<<3)+idxChild);
-                }
-                else{
-                    child[idxChild].symb = nullptr;
-                }
-            }
+        FCudaAssertLF(idxSubCellGroup != nbSubCellGroups);
 
-            kernel->M2M(cell, child, idxLevel);
+        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+            child[idxChild].symb = nullptr;
         }
+
+        while(idxSubCellGroup != nbSubCellGroups
+              && (subCellGroups[idxSubCellGroup].getCellMortonIndex(idxChildCell)>>3) == cell.symb->mortonIndex){
+            const int idxChild = ((subCellGroups[idxSubCellGroup].getCellMortonIndex(idxChildCell)) & 7);
+            FCudaAssertLF(child[idxChild].symb == nullptr);
+            child[idxChild] = subCellGroups[idxSubCellGroup].getUpCell(idxChildCell);
+
+            idxChildCell += 1;
+            if(idxChildCell == subCellGroups[idxSubCellGroup].getNumberOfCellsInBlock()){
+                idxChildCell = 0;
+                idxSubCellGroup += 1;
+            }
+        }
+
+        kernel->M2M(cell, child, idxLevel);
     }
 }
 
@@ -147,11 +139,12 @@ __global__  void FCuda__transferInoutPassPerformMpi(unsigned char* currentCellsP
     CellContainerClass currentCells(currentCellsPtr, currentCellsSize, nullptr, currentCellsDownPtr);
     CellContainerClass cellsOther(externalCellsPtr, externalCellsSize, externalCellsUpPtr, nullptr);
 
-    for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){        
-        if(cellsOther.exists(outsideInteractions[outInterIdx].outIndex)){
-            typename CellContainerClass::CompleteCellClass interCell = cellsOther.getUpCell(outsideInteractions[outInterIdx].outIndex);
+    for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
+        const int cellPos = cellsOther.getCellIndex(outsideInteractions[outInterIdx].outIndex);
+        if(cellPos != -1){
+            typename CellContainerClass::CompleteCellClass interCell = cellsOther.getUpCell(cellPos);
             FCudaAssertLF(interCell.symb->mortonIndex == outsideInteractions[outInterIdx].outIndex);
-            typename CellContainerClass::CompleteCellClass cell = currentCells.getDownCell(outsideInteractions[outInterIdx].insideIndex);
+            typename CellContainerClass::CompleteCellClass cell = currentCells.getDownCell(outsideInteractions[outInterIdx].insideIdxInBlock);
             FCudaAssertLF(cell.symb->mortonIndex == outsideInteractions[outInterIdx].insideIndex);
 
             typename CellContainerClass::CompleteCellClass interactions[343];
@@ -203,33 +196,32 @@ __global__  void FCuda__transferInPassPerform(unsigned char* currentCellsPtr, st
     const MortonIndex blockStartIdx = currentCells.getStartingIndex();
     const MortonIndex blockEndIdx = currentCells.getEndingIndex();
 
-    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-        if(currentCells.exists(mindex)){
-            typename CellContainerClass::CompleteCellClass cell = currentCells.getDownCell(mindex);
-            FCudaAssertLF(cell.symb->mortonIndex == mindex);
-            MortonIndex interactionsIndexes[189];
-            int interactionsPosition[189];
-            const int3 coord = (FCudaTreeCoordinate::ConvertCoordinate(cell.symb->coordinates));
-            int counter = FCudaTreeCoordinate::GetInteractionNeighbors(coord, idxLevel,interactionsIndexes,interactionsPosition);
+    for(int cellIdx = 0 ; cellIdx < currentCells.getNumberOfCellsInBlock() ; ++cellIdx){
+        typename CellContainerClass::CompleteCellClass cell = currentCells.getDownCell(cellIdx);
+        FCudaAssertLF(cell.symb->mortonIndex == currentCells.getCellMortonIndex(cellIdx));
+        MortonIndex interactionsIndexes[189];
+        int interactionsPosition[189];
+        const int3 coord = (FCudaTreeCoordinate::ConvertCoordinate(cell.symb->coordinates));
+        int counter = FCudaTreeCoordinate::GetInteractionNeighbors(coord, idxLevel,interactionsIndexes,interactionsPosition);
 
-            typename CellContainerClass::CompleteCellClass interactions[343];
-            memset(interactions, 0, 343*sizeof(interactions[0]));
-            int counterExistingCell = 0;
+        typename CellContainerClass::CompleteCellClass interactions[343];
+        memset(interactions, 0, 343*sizeof(interactions[0]));
+        int counterExistingCell = 0;
 
-            for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                    if(currentCells.exists(interactionsIndexes[idxInter])){
-                        typename CellContainerClass::CompleteCellClass interCell = currentCells.getUpCell(interactionsIndexes[idxInter]);
-                        FCudaAssertLF(interCell.symb->mortonIndex == interactionsIndexes[idxInter]);
-                        FCudaAssertLF(interactions[interactionsPosition[idxInter]].symb == nullptr);
-                        interactions[interactionsPosition[idxInter]] = interCell;
-                        counterExistingCell += 1;
-                    }
+        for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+            if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                const int cellPos = currentCells.getCellIndex(interactionsIndexes[idxInter]);
+                if(cellPos != -1){
+                    typename CellContainerClass::CompleteCellClass interCell = currentCells.getUpCell(cellPos);
+                    FCudaAssertLF(interCell.symb->mortonIndex == interactionsIndexes[idxInter]);
+                    FCudaAssertLF(interactions[interactionsPosition[idxInter]].symb == nullptr);
+                    interactions[interactionsPosition[idxInter]] = interCell;
+                    counterExistingCell += 1;
                 }
             }
-
-            kernel->M2L( cell , interactions, counterExistingCell, idxLevel);
         }
+
+        kernel->M2L( cell , interactions, counterExistingCell, idxLevel);
     }
 }
 
@@ -262,11 +254,12 @@ __global__ void FCuda__transferInoutPassPerform(unsigned char* currentCellsPtr, 
     CellContainerClass currentCells(currentCellsPtr, currentCellsSize, currentCellsUpPtr, currentCellsDownPtr);
     CellContainerClass cellsOther(externalCellsPtr, externalCellsSize, externalCellsUpPtr, externalCellsDownPtr);
 
-    for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){        
-        if(cellsOther.exists(outsideInteractions[outInterIdx].outIndex)){
+    for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
+        const int cellPos = cellsOther.getCellIndex(outsideInteractions[outInterIdx].outIndex);
+        if(cellPos != -1){
             typename CellContainerClass::CompleteCellClass interCell = cellsOther.getCompleteCell(outsideInteractions[outInterIdx].outIndex);
             FCudaAssertLF(interCell.symb->mortonIndex == outsideInteractions[outInterIdx].outIndex);
-            typename CellContainerClass::CompleteCellClass cell = currentCells.getCompleteCell(outsideInteractions[outInterIdx].insideIndex);
+            typename CellContainerClass::CompleteCellClass cell = currentCells.getCompleteCell(outsideInteractions[outInterIdx].insideIdxInBlock);
             FCudaAssertLF(cell.symb);
             FCudaAssertLF(cell.symb->mortonIndex == outsideInteractions[outInterIdx].insideIndex);
 
@@ -332,36 +325,32 @@ __global__ void FCuda__downardPassPerform(unsigned char* currentCellsPtr, std::s
         subCellGroups[idx].reset(subCellGroupsPtr.values[idx], subCellGroupsSize.values[idx], nullptr, subCellGroupsDownPtr.values[idx]);
     }
 
-    const MortonIndex blockStartIdx = FCudaMax(currentCells.getStartingIndex(),
-                                          subCellGroups[0].getStartingIndex()>>3);
-    const MortonIndex blockEndIdx   = FCudaMin(currentCells.getEndingIndex(),
-                                          ((subCellGroups[nbSubCellGroups-1].getEndingIndex()-1)>>3)+1);
-
     int idxSubCellGroup = 0;
+    int idxChildCell = subCellGroups[0].getFistChildIdx(currentCells.getCellMortonIndex(0));
 
-    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx && idxSubCellGroup != nbSubCellGroups; ++mindex){
-        if(currentCells.exists(mindex)){
-            typename CellContainerClass::CompleteCellClass cell = currentCells.getDownCell(mindex);
-            FCudaAssertLF(cell.symb->mortonIndex == mindex);
-            typename CellContainerClass::CompleteCellClass child[8];
+    for(int cellIdx = 0 ; cellIdx < currentCells.getNumberOfCellsInBlock() ; ++cellIdx){
+        typename CellContainerClass::CompleteCellClass cell = currentCells.getDownCell(cellIdx);
+        FCudaAssertLF(cell.symb->mortonIndex == currentCells.getCellMortonIndex(cellIdx));
+        typename CellContainerClass::CompleteCellClass child[8];
 
-            for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                if( subCellGroups[idxSubCellGroup].getEndingIndex() <= ((mindex<<3)+idxChild) ){
-                    idxSubCellGroup += 1;
-                }
-                if( idxSubCellGroup == nbSubCellGroups ){
-                    break;
-                }
-                if(subCellGroups[idxSubCellGroup].exists((mindex<<3)+idxChild)){
-                    child[idxChild] = subCellGroups[idxSubCellGroup].getDownCell((mindex<<3)+idxChild);
-                }
-                else{
-                    child[idxChild].symb = nullptr;
-                }
-            }
-
-            kernel->L2L(cell, child, idxLevel);
+        for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+            child[idxChild].symb = nullptr;
         }
+
+        while(idxSubCellGroup != nbSubCellGroups
+              && (subCellGroups[idxSubCellGroup].getCellMortonIndex(idxChildCell)>>3) == cell.symb->mortonIndex){
+            const int idxChild = ((subCellGroups[idxSubCellGroup].getCellMortonIndex(idxChildCell)) & 7);
+            FCudaAssertLF(child[idxChild].symb == nullptr);
+            child[idxChild] = subCellGroups[idxSubCellGroup].getDownCell(idxChildCell);
+
+            idxChildCell += 1;
+            if(idxChildCell == subCellGroups[idxSubCellGroup].getNumberOfCellsInBlock()){
+                idxChildCell = 0;
+                idxSubCellGroup += 1;
+            }
+        }
+
+        kernel->L2L(cell, child, idxLevel);
     }
 }
 
@@ -397,10 +386,10 @@ __global__ void FCuda__directInoutPassPerformMpi(unsigned char* containersPtr, s
     ParticleContainerGroupClass containersOther(externalContainersPtr, externalContainersSize, nullptr);
 
     for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
-        ParticleGroupClass interParticles = containersOther.template getLeaf<ParticleGroupClass>(outsideInteractions[outInterIdx].outIndex);
-        if(interParticles.isAttachedToSomething()){
-            ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(outsideInteractions[outInterIdx].insideIndex);
-            FCudaAssertLF(particles.isAttachedToSomething());
+        const int leafPos = containersOther.getLeafIndex(outsideInteractions[outInterIdx].outIndex);
+        if(leafPos != -1){
+            ParticleGroupClass interParticles = containersOther.template getLeaf<ParticleGroupClass>(leafPos);
+            ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(outsideInteractions[outInterIdx].insideIdxInBlock);
             ParticleGroupClass* interactions[27];
             memset(interactions, 0, 27*sizeof(ParticleGroupClass*));
             interactions[outsideInteractions[outInterIdx].outPosition] = &interParticles;
@@ -449,32 +438,32 @@ __global__ void FCuda__directInPassPerform(unsigned char* containersPtr, std::si
     const MortonIndex blockStartIdx = containers.getStartingIndex();
     const MortonIndex blockEndIdx = containers.getEndingIndex();
 
-    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-        ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(mindex);
-        if(particles.isAttachedToSomething()){
-            MortonIndex interactionsIndexes[26];
-            int interactionsPosition[26];
-            const int3 coord = FCudaTreeCoordinate::GetPositionFromMorton(mindex, treeHeight-1);
-            int counter = FCudaTreeCoordinate::GetNeighborsIndexes(coord, treeHeight,interactionsIndexes,interactionsPosition);
+    for(int leafIdx = 0 ; leafIdx < containers.getNumberOfLeavesInBlock() ; ++leafIdx){
+        ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(leafIdx);
+        const MortonIndex mindex = containers.getLeafMortonIndex(leafIdx);
+        MortonIndex interactionsIndexes[26];
+        int interactionsPosition[26];
+        const int3 coord = FCudaTreeCoordinate::GetPositionFromMorton(mindex, treeHeight-1);
+        int counter = FCudaTreeCoordinate::GetNeighborsIndexes(coord, treeHeight,interactionsIndexes,interactionsPosition);
 
-            ParticleGroupClass interactionsObjects[27];
-            ParticleGroupClass* interactions[27];
-            memset(interactions, 0, 27*sizeof(ParticleGroupClass*));
-            int counterExistingCell = 0;
+        ParticleGroupClass interactionsObjects[27];
+        ParticleGroupClass* interactions[27];
+        memset(interactions, 0, 27*sizeof(ParticleGroupClass*));
+        int counterExistingCell = 0;
 
-            for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                    interactionsObjects[counterExistingCell] = containers.template getLeaf<ParticleGroupClass>(interactionsIndexes[idxInter]);
-                    if(interactionsObjects[counterExistingCell].isAttachedToSomething()){
-                        FCudaAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
-                        interactions[interactionsPosition[idxInter]] = &interactionsObjects[counterExistingCell];
-                        counterExistingCell += 1;
-                    }
+        for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+            if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                const int leafPos = containers.getLeafIndex(interactionsIndexes[idxInter]);
+                if(leafPos != -1){
+                    interactionsObjects[counterExistingCell] = containers.template getLeaf<ParticleGroupClass>(leafPos);
+                    FCudaAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
+                    interactions[interactionsPosition[idxInter]] = &interactionsObjects[counterExistingCell];
+                    counterExistingCell += 1;
                 }
             }
-
-            kernel->P2P( coord, &particles, &particles , interactions, counterExistingCell);
         }
+
+        kernel->P2P( coord, &particles, &particles , interactions, counterExistingCell);
     }
 }
 
@@ -502,10 +491,14 @@ __global__ void FCuda__directInoutPassPerform(unsigned char* containersPtr, std:
     ParticleContainerGroupClass containersOther(externalContainersPtr, externalContainersSize, externalContainersPtr);
 
     for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
-        ParticleGroupClass interParticles = containersOther.template getLeaf<ParticleGroupClass>(outsideInteractions[outInterIdx].outIndex);
-        if(interParticles.isAttachedToSomething()){
-            ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(outsideInteractions[outInterIdx].insideIndex);
-            FCudaAssertLF(particles.isAttachedToSomething());
+        const int leafPos = containersOther.getLeafIndex(outsideInteractions[outInterIdx].outIndex);
+        if(leafPos != -1){
+            ParticleGroupClass interParticles = containersOther.template getLeaf<ParticleGroupClass>(leafPos);
+            ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(outsideInteractions[outInterIdx].insideIdxInBlock);
+
+            FCudaAssertLF(containersOther.getLeafMortonIndex(leafPos) == outsideInteractions[outInterIdx].outIndex);
+            FCudaAssertLF(containers.getLeafMortonIndex(outsideInteractions[outInterIdx].insideIdxInBlock) == outsideInteractions[outInterIdx].insideIndex);
+
             ParticleGroupClass* interactions[27];
             memset(interactions, 0, 27*sizeof(ParticleGroupClass*));
             interactions[outsideInteractions[outInterIdx].outPosition] = &interParticles;
@@ -558,17 +551,12 @@ __global__ void FCuda__mergePassPerform(unsigned char* leafCellsPtr, std::size_t
     CellContainerClass leafCells(leafCellsPtr,leafCellsSize, nullptr, leafCellsDownPtr);
     ParticleContainerGroupClass containers(containersPtr,containersSize, containersDownPtr);
 
-    const MortonIndex blockStartIdx = leafCells.getStartingIndex();
-    const MortonIndex blockEndIdx = leafCells.getEndingIndex();
-
-    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-        if(leafCells.exists(mindex)){
-            typename CellContainerClass::CompleteCellClass cell = leafCells.getDownCell(mindex);
-            FCudaAssertLF(cell.symb->mortonIndex == mindex);
-            ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(mindex);
-            FCudaAssertLF(particles.isAttachedToSomething());
-            kernel->L2P(cell, &particles);
-        }
+    for(int cellIdx = 0 ; cellIdx < leafCells.getNumberOfCellsInBlock() ; ++cellIdx){
+        typename CellContainerClass::CompleteCellClass cell = leafCells.getDownCell(cellIdx);
+        FCudaAssertLF(cell.symb->mortonIndex == leafCells.getCellMortonIndex(cellIdx));
+        ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(cellIdx);
+        FCudaAssertLF(leafCells.getCellMortonIndex(cellIdx) == containers.getLeafMortonIndex(cellIdx));
+        kernel->L2P(cell, &particles);
     }
 }
 

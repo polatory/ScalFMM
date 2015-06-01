@@ -824,6 +824,11 @@ public:
     virtual int get_nb_timers(){
         return algoTimer->getNbOfTimerRecorded();
     }
+
+    virtual void set_upper_limit(int upperLimit){
+        FAssertLF(0,"This feature is not available with Chebyshev Kernel, please use your own kernel or do not use it.\n Exiting anyways...\n");
+    }
+
 };
 
 template<class FReal>
@@ -1043,6 +1048,10 @@ extern "C" void scalfmm_reset_tree(scalfmm_handle Handle, Callback_reset_cell ce
 
 extern "C" void scalfmm_print_everything(scalfmm_handle Handle){
     ((ScalFmmCoreHandle<double> * ) Handle)->engine->print_everything();
+}
+
+extern "C" void scalfmm_set_upper_limit(scalfmm_handle Handle, int upperLimit){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_upper_limit(upperLimit);
 }
 
 #endif

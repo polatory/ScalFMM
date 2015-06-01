@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
                          FParameterDefinitions::NbThreads);
 
 
-    const std::string defaultFile(/*SCALFMMDataPath+*/"Data/unitCubeXYZQ100.bfma" );
+    const std::string defaultFile(SCALFMMDataPath+"unitCubeXYZQ100.bfma" );
     const std::string filename                = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, defaultFile.c_str());
     const unsigned int TreeHeight        = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
     const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
@@ -258,7 +258,14 @@ int main(int argc, char* argv[])
         writer.writeArrayOfReal(particles,  8 , NbPoints);
 
         delete[] particles;
+
+        //
+        std::string name1( "output.fma");
+//
+        FFmaGenericWriter<FReal> writer1(name1) ;
+        writer1.writeDistributionOfParticlesFromOctree(&tree,NbPoints) ;
     }
+
 
     return 0;
 }

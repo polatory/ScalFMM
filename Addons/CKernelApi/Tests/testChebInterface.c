@@ -116,7 +116,7 @@ int main(int argc, char ** av){
     }
 
     scalfmm_handle handle = scalfmm_init(user_defined_kernel,multi_thread);
-
+    scalfmm_set_upper_limit(handle,2);
     //For Reference
     scalfmm_handle handle_ref = scalfmm_init(chebyshev,multi_thread);
 
@@ -213,6 +213,17 @@ int main(int argc, char ** av){
         scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
         tac(&interface_timer);
 
+        { //Temporary
+            int nbTimers = scalfmm_get_nb_timers(handle);
+            double * timersArray = malloc(sizeof(double)*nbTimers);
+            scalfmm_get_timers(handle,timersArray);
+            int i;
+            for(i=0; i<nbTimers ; ++i){
+                printf("ScalFMM Operands : %d : \t %e\n",i,timersArray[i]);
+            }
+            free(timersArray);
+        }
+
 
         //Reduction on forces & potential arrays
         {
@@ -235,6 +246,18 @@ int main(int argc, char ** av){
         tic(&ref_timer);
         scalfmm_execute_fmm(handle_ref/*, kernel, &my_data*/);
         tac(&ref_timer);
+
+        { //Temporary
+            int nbTimers = scalfmm_get_nb_timers(handle_ref);
+            double * timersArray = malloc(sizeof(double)*nbTimers);
+            scalfmm_get_timers(handle_ref,timersArray);
+            int i;
+            for(i=0; i<nbTimers ; ++i){
+                printf("ScalFMM Operands : %d : \t %e\n",i,timersArray[i]);
+            }
+            free(timersArray);
+        }
+
 
         printf("Intern Chebyshev done\n");
         print_elapsed(&ref_timer);

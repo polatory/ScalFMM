@@ -433,6 +433,17 @@ typedef void (*Callback_M2L)(int level, void* targetCell, int sourceCellPosition
  * @brief Function to be filled by user's M2L
  * @param level current level in the tree
  * @param targetCell pointer to cell to be filled
+ * @param sourceCell cell to be read
+ * @param transfer array of 3 int, displaying the number of boxes at
+ * the current level in along X,Y and Z axis.
+ * @param userData datas specific to the user's kernel
+ */
+typedef void (*Callback_M2L_Ext)(int level, void* targetCell, void* sourceCell, int tranfer[3], void* userData);
+
+/**
+ * @brief Function to be filled by user's M2L
+ * @param level current level in the tree
+ * @param targetCell pointer to cell to be filled
  * @param sourceCell array of cell to be read
  * @param userData datas specific to the user's kernel
  */
@@ -508,6 +519,7 @@ typedef struct User_Scalfmm_Kernel_Descriptor {
     Callback_P2M p2m;
     Callback_M2M m2m;
     Callback_M2L m2l;
+    Callback_M2L_Ext m2l_ext;
     Callback_M2LFull m2l_full;
     Callback_L2L l2l;
     Callback_L2P l2p;
@@ -599,6 +611,15 @@ int scalfmm_get_nb_timers(scalfmm_handle handle);
  */
 void scalfmm_get_timers(scalfmm_handle handle,double * Timers);
 
+
+/**
+ * @brief Set the upper limit int the tree for applying FMM : standard
+ * value is 2. If used, then user MUST provide a M2L source to target
+ * to be applyied on a wider range than the usual 189 cells.
+ * @param Handle scalfmm_handle provided by scalfmm_init.
+ * @param upperLimit : int  than 2.
+ */
+void scalfmm_set_upper_limit(scalfmm_handle handle, int upperLimit);
 
 
 #endif

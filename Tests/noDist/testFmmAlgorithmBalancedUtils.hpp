@@ -100,4 +100,82 @@ void loadTree(OctreeClass& tree, FRandomLoader<FReal>& loader)
     }
 }
 
+
+template <typename OctreeClass, typename CellClass>
+void printZonesCosts(OctreeClass& tree, FCostZones<OctreeClass, CellClass>& costzones)
+{
+    using CostType = typename CellClass::costtype;
+    //using BoundClass = typename FCostZones<OctreeClass, CellClass>::BoundClass;
+
+    typename OctreeClass::Iterator it(&tree);
+
+
+    // auto leafZoneBounds = costzones.getLeafZoneBounds();
+    // auto internalZoneBounds = costzones.getZoneBounds();
+
+    auto zones = costzones.getZones();
+
+
+    // Zones costs (internal, leaf)
+    std::vector<std::tuple<CostType,CostType>> zonecosts(zones.size());
+
+    int zoneIdx = 0;
+    for(auto z : zones) {
+        for(auto cell : z) {
+            std::get<0>(zonecosts.at(zoneIdx)) += cell.second->getCost();
+        }
+        zoneIdx++;
+    }
+
+    auto nearZones = costzones.getLeafZoneBounds();
+    zoneIdx = 0;
+    int colourIdx = 0;
+
+    for(auto z : nearZones) {
+        colourIdx = 0;
+        for(auto c : z) {
+            it.gotoBottomLeft();
+            
+            const MortonIndex start = c.first;
+            int count = c.second;
+
+            while( start != it.getCurrentGlobalIndex() ) {
+                it.moveRight();
+            }
+
+
+            while(count > 0) {
+                if( FCoordColour::coord2colour(
+                        it.getCurrentCell()->getCoordinate())
+                    == colourIdx) {
+                    
+                    std::get<1>(zonecosts.at(zoneIdx)) +=
+                        it.getCurrentCell()->getNearCost();
+
+                    count--;
+                }
+                it.moveRight();
+            }
+
+            colourIdx++;
+        }
+
+        zoneIdx++;
+    }
+
+
+    zoneIdx = 0;
+    for(auto z : zonecosts) {
+        std::cout << "@@"
+                  << zoneIdx        << " "
+                  << std::get<0>(z) << " "
+                  << std::get<1>(z)
+                  << std::endl;
+        zoneIdx++;
+    }
+
+
+}
+
+
 #endif

@@ -40,19 +40,19 @@
 
 
 template <class OctreeClass, class CellContainerClass, class KernelClass, class ParticleGroupClass, class StarPUCpuWrapperClass
-#ifdef SCALFMM_ENABLE_CUDA_KERNEL
-    , class StarPUCudaWrapperClass = FStarPUCudaWrapper<KernelClass, FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
-                                                        FCudaGroupOfParticles<int, 0, 0, int>, FCudaGroupAttachedLeaf<int, 0, 0, int>, FCudaEmptyKernel<int> >
-#endif
-#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
-    , class StarPUOpenClWrapperClass = FStarPUOpenClWrapper<KernelClass, FOpenCLDeviceWrapper<KernelClass>>
-#endif
+          #ifdef SCALFMM_ENABLE_CUDA_KERNEL
+          , class StarPUCudaWrapperClass = FStarPUCudaWrapper<KernelClass, FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                                              FCudaGroupOfParticles<int, 0, 0, int>, FCudaGroupAttachedLeaf<int, 0, 0, int>, FCudaEmptyKernel<int> >
+          #endif
+          #ifdef SCALFMM_ENABLE_OPENCL_KERNEL
+          , class StarPUOpenClWrapperClass = FStarPUOpenClWrapper<KernelClass, FOpenCLDeviceWrapper<KernelClass>>
+          #endif
           >
 class FGroupTaskStarPUAlgorithm : public FAbstractAlgorithm {
 protected:
     typedef FGroupTaskStarPUAlgorithm<OctreeClass, CellContainerClass, KernelClass, ParticleGroupClass, StarPUCpuWrapperClass
 #ifdef SCALFMM_ENABLE_CUDA_KERNEL
-        , StarPUCudaWrapperClass
+    , StarPUCudaWrapperClass
 #endif
 #ifdef SCALFMM_ENABLE_OPENCL_KERNEL
     , StarPUOpenClWrapperClass
@@ -121,16 +121,16 @@ public:
     FGroupTaskStarPUAlgorithm(OctreeClass*const inTree, KernelClass* inKernels)
         : tree(inTree), originalCpuKernel(inKernels),
           cellHandles(nullptr),
-#ifdef STARPU_USE_CPU
-            cpuWrapper(tree->getHeight()),
-#endif
-#ifdef SCALFMM_ENABLE_CUDA_KERNEL
-            cudaWrapper(tree->getHeight()),
-#endif
-#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
-            openclWrapper(tree->getHeight()),
-#endif
-            wrapperptr(&wrappers){
+      #ifdef STARPU_USE_CPU
+          cpuWrapper(tree->getHeight()),
+      #endif
+      #ifdef SCALFMM_ENABLE_CUDA_KERNEL
+          cudaWrapper(tree->getHeight()),
+      #endif
+      #ifdef SCALFMM_ENABLE_OPENCL_KERNEL
+          openclWrapper(tree->getHeight()),
+      #endif
+          wrapperptr(&wrappers){
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(inKernels, "kernels cannot be null");
 
@@ -245,8 +245,8 @@ protected:
         FLOG( FLog::Controller << "\tStart FGroupTaskStarPUAlgorithm\n" );
         const bool directOnly = (tree->getHeight() <= 2);
 
-        #pragma omp parallel
-        #pragma omp single
+#pragma omp parallel
+#pragma omp single
         buildExternalInteractionVecs();
 
         buildHandles();
@@ -567,30 +567,32 @@ protected:
 
                 std::vector<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel[idxGroup];
 
-                #pragma omp task default(none) firstprivate(idxGroup, containers, externalInteractions)
+#pragma omp task default(none) firstprivate(idxGroup, containers, externalInteractions)
                 { // Can be a task(inout:iterCells)
                     std::vector<OutOfBlockInteraction> outsideInteractions;
                     const MortonIndex blockStartIdx = containers->getStartingIndex();
                     const MortonIndex blockEndIdx   = containers->getEndingIndex();
 
-                    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                        if(containers->exists(mindex)){
-                            MortonIndex interactionsIndexes[26];
-                            int interactionsPosition[26];
-                            FTreeCoordinate coord(mindex, tree->getHeight()-1);
-                            int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
+                    for(int leafIdx = 0 ; leafIdx < containers->getNumberOfLeavesInBlock() ; ++leafIdx){
+                        const MortonIndex mindex = containers->getLeafMortonIndex(leafIdx);
+                        // ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(leafIdx);
 
-                            for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                                if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                                    // Inside block interaction, do nothing
-                                }
-                                else if(interactionsIndexes[idxInter] < mindex){
-                                    OutOfBlockInteraction property;
-                                    property.insideIndex = mindex;
-                                    property.outIndex    = interactionsIndexes[idxInter];
-                                    property.outPosition = interactionsPosition[idxInter];
-                                    outsideInteractions.push_back(property);
-                                }
+                        MortonIndex interactionsIndexes[26];
+                        int interactionsPosition[26];
+                        FTreeCoordinate coord(mindex, tree->getHeight()-1);
+                        int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
+
+                        for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+                            if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                                // Inside block interaction, do nothing
+                            }
+                            else if(interactionsIndexes[idxInter] < mindex){
+                                OutOfBlockInteraction property;
+                                property.insideIndex = mindex;
+                                property.outIndex    = interactionsIndexes[idxInter];
+                                property.outPosition = interactionsPosition[idxInter];
+                                property.insideIdxInBlock = leafIdx;
+                                outsideInteractions.push_back(property);
                             }
                         }
                     }
@@ -641,32 +643,31 @@ protected:
 
                     std::vector<BlockInteractions<CellContainerClass>>* externalInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup];
 
-                    #pragma omp task default(none) firstprivate(idxGroup, currentCells, idxLevel, externalInteractions)
+#pragma omp task default(none) firstprivate(idxGroup, currentCells, idxLevel, externalInteractions)
                     {
                         std::vector<OutOfBlockInteraction> outsideInteractions;
                         const MortonIndex blockStartIdx = currentCells->getStartingIndex();
                         const MortonIndex blockEndIdx   = currentCells->getEndingIndex();
 
-                        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                            if(currentCells->exists(mindex)){
-                                typename CellContainerClass::CompleteCellClass cell = currentCells->getCompleteCell(mindex);
-                                FAssertLF(cell.getMortonIndex() == mindex);
-                                MortonIndex interactionsIndexes[189];
-                                int interactionsPosition[189];
-                                const FTreeCoordinate coord(cell.getCoordinate());
-                                int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
+                        for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){
+                            const MortonIndex mindex = currentCells->getCellMortonIndex(cellIdx);
 
-                                for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                                    if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                                        // Nothing to do
-                                    }
-                                    else if(interactionsIndexes[idxInter] < mindex){
-                                        OutOfBlockInteraction property;
-                                        property.insideIndex = mindex;
-                                        property.outIndex    = interactionsIndexes[idxInter];
-                                        property.outPosition = interactionsPosition[idxInter];
-                                        outsideInteractions.push_back(property);
-                                    }
+                            MortonIndex interactionsIndexes[189];
+                            int interactionsPosition[189];
+                            const FTreeCoordinate coord(mindex, idxLevel);
+                            int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
+
+                            for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+                                if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                                    // Nothing to do
+                                }
+                                else if(interactionsIndexes[idxInter] < mindex){
+                                    OutOfBlockInteraction property;
+                                    property.insideIndex = mindex;
+                                    property.outIndex    = interactionsIndexes[idxInter];
+                                    property.outPosition = interactionsPosition[idxInter];
+                                    property.insideIdxInBlock = cellIdx;
+                                    outsideInteractions.push_back(property);
                                 }
                             }
                         }
@@ -710,7 +711,7 @@ protected:
         }
         FLOG( cellTimer.tac(); );
 
-        #pragma omp taskwait
+#pragma omp taskwait
 
         FLOG( FLog::Controller << "\t\t Prepare in " << timer.tacAndElapsed() << "s\n" );
         FLOG( FLog::Controller << "\t\t\t Prepare at leaf level in   " << leafTimer.elapsed() << "s\n" );
@@ -726,8 +727,8 @@ protected:
 
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2m_cl,
-                    STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                    STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
+                               STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                               STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
                     STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioP2M(),
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
                     STARPU_RW, cellHandles[tree->getHeight()-1][idxGroup].up,
@@ -809,14 +810,14 @@ protected:
             FLOG( timerInBlock.tic() );
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
                 starpu_insert_task(&m2l_cl_in,
-                        STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                        STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                        STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                   STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                   STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                   STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioM2L(idxLevel),
                                    STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                    STARPU_R, cellHandles[idxLevel][idxGroup].up,
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
-                        0);
+                                   0);
             }
             FLOG( timerInBlock.tac() );
 
@@ -827,18 +828,18 @@ protected:
                     const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].interactions;
 
                     starpu_insert_task(&m2l_cl_inout,
-                            STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                            STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                            STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                            STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                       STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                       STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                       STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                       STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                        STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioM2LExtern(idxLevel),
-                               STARPU_R, cellHandles[idxLevel][idxGroup].symb,
-                               STARPU_R, cellHandles[idxLevel][idxGroup].up,
-                               (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
-                               STARPU_R, cellHandles[idxLevel][interactionid].symb,
-                               STARPU_R, cellHandles[idxLevel][interactionid].up,
-                               (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
-                            0);
+                                       STARPU_R, cellHandles[idxLevel][idxGroup].symb,
+                                       STARPU_R, cellHandles[idxLevel][idxGroup].up,
+                                       (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
+                                       STARPU_R, cellHandles[idxLevel][interactionid].symb,
+                                       STARPU_R, cellHandles[idxLevel][interactionid].up,
+                                       (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
+                                       0);
                 }
             }
             FLOG( timerOutBlock.tac() );
@@ -917,12 +918,12 @@ protected:
         FLOG( timerInBlock.tic() );
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2p_cl_in,
-                    STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                    STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
+                               STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                               STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
                                STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioP2P(),
                                STARPU_R, particleHandles[idxGroup].symb,
                                (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
-                    0);
+                               0);
         }
         FLOG( timerInBlock.tac() );
         FLOG( timerOutBlock.tic() );
@@ -931,15 +932,15 @@ protected:
                 const int interactionid = externalInteractionsLeafLevel[idxGroup][idxInteraction].otherBlockId;
                 const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions;
                 starpu_insert_task(&p2p_cl_inout,
-                        STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                        STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                        STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
+                                   STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                   STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                   STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
                                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioP2PExtern(),
-                        STARPU_R, particleHandles[idxGroup].symb,
+                                   STARPU_R, particleHandles[idxGroup].symb,
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
-                        STARPU_R, particleHandles[interactionid].symb,
+                                   STARPU_R, particleHandles[interactionid].symb,
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[interactionid].down,
-                        0);
+                                   0);
             }
         }
         FLOG( timerOutBlock.tac() );
@@ -957,9 +958,9 @@ protected:
 
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&l2p_cl,
-                    STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                    STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
-                               STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioL2P(),
+                               STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                               STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
+                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getPrioL2P(),
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].down,
                     STARPU_R, particleHandles[idxGroup].symb,

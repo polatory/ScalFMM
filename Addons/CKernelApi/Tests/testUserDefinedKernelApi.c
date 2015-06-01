@@ -38,6 +38,7 @@
 
 // This represent a cell
 struct MyCellDescriptor{
+    long long int dataUp,dataDown;
     int level;
     long long mortonIndex;
     int coord[3];
@@ -53,6 +54,11 @@ void* my_Callback_init_cell(int level, long long mortonIndex, int* coord, double
     memset(cellData, 0, sizeof(struct MyCellDescriptor));
     cellData->level       = level;
     cellData->mortonIndex = mortonIndex;
+
+    //Count the interactions
+    cellData->dataUp = 0;
+    cellData->dataDown = 0;
+
     memcpy(cellData->coord, coord, sizeof(int)*3);
     memcpy(cellData->position, position, sizeof(double)*3);
     // JUST-PUT-HERE:
@@ -81,9 +87,11 @@ struct MyData {
     int countL2P;
     int countP2PInner;
     int countP2P;
+    int countM2L_ext;
     // JUST-PUT-HERE:
     // everything your kernel will need for its computation
     // pre-computed matrices, etc....
+    long long int * arrayOfInfluence;
 };
 
 
@@ -93,11 +101,13 @@ void my_Callback_P2M(void* cellData, FSize nbParticlesInLeaf, const FSize* parti
     my_data->countP2M += 1;
 
     struct MyCellDescriptor* my_cell = (struct MyCellDescriptor*) cellData;
-    VerbosePrint("Cell morton %lld is doing P2M with %d particles :\n", my_cell->mortonIndex, nbParticlesInLeaf);
+    my_cell->dataUp += nbParticlesInLeaf;
+
+    VerbosePrint("Cell morton %lld is doing P2M with %lld particles :\n", my_cell->mortonIndex, nbParticlesInLeaf);
     FSize idxPart;
     for(idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
         double* position = &my_data->insertedPositions[particleIndexes[idxPart]*3];
-        VerbosePrint("\t particle idx %d position %e/%e%e\n", particleIndexes[idxPart],
+        VerbosePrint("\t particle idx %lld position %e/%e%e\n", particleIndexes[idxPart],
                position[0], position[1], position[2]);
         // JUST-PUT-HERE:
         // Your real P2M computation
@@ -110,6 +120,8 @@ void my_Callback_M2M(int level, void* cellData, int childPosition, void* childDa
 
     struct MyCellDescriptor* my_cell = (struct MyCellDescriptor*) cellData;
     struct MyCellDescriptor* my_child = (struct MyCellDescriptor*) childData;
+
+    my_cell->dataUp += my_child->dataUp;
 
     int childFullPosition[3];
     scalfmm_utils_parentChildPosition(childPosition, childFullPosition);
@@ -127,6 +139,8 @@ void my_Callback_M2L(int level, void* cellData, int srcPosition, void* srcData, 
     struct MyCellDescriptor* my_cell = (struct MyCellDescriptor*) cellData;
     struct MyCellDescriptor* my_src_cell = (struct MyCellDescriptor*) srcData;
 
+    my_cell->dataDown += my_src_cell->dataUp;
+
     int interactionFullPosition[3];
     scalfmm_utils_interactionPosition(srcPosition, interactionFullPosition);
 
@@ -136,12 +150,29 @@ void my_Callback_M2L(int level, void* cellData, int srcPosition, void* srcData, 
     // JUST-PUT-HERE: Your M2L
 }
 
+void my_Callback_M2L_ext(int level, void * cellTgt, void * cellSrc, int transfer[3], void * userData){
+    struct MyData* my_data = (struct MyData*)userData;
+    my_data->countM2L_ext += 1;
+
+    struct MyCellDescriptor* my_cell = (struct MyCellDescriptor*) cellTgt;
+    struct MyCellDescriptor* my_src_cell = (struct MyCellDescriptor*) cellSrc;
+
+    my_cell->dataDown += my_src_cell->dataUp;
+
+    VerbosePrint("Doing a M2L_ext at level %d, between cells %lld and %lld (transfer %d/%d/%d)\n",
+                 level, my_cell->mortonIndex, my_src_cell->mortonIndex,
+                 transfer[0], transfer[1], transfer[2]);
+}
+
+
 void my_Callback_L2L(int level, void* cellData, int childPosition, void* childData, void* userData){
     struct MyData* my_data = (struct MyData*)userData;
     my_data->countL2L += 1;
 
     struct MyCellDescriptor* my_cell = (struct MyCellDescriptor*) cellData;
     struct MyCellDescriptor* my_child = (struct MyCellDescriptor*) childData;
+
+    my_child->dataDown += my_cell->dataDown;
 
     int childFullPosition[3];
     scalfmm_utils_parentChildPosition(childPosition, childFullPosition);
@@ -157,11 +188,16 @@ void my_Callback_L2P(void* cellData, FSize nbParticlesInLeaf, const FSize* parti
     my_data->countL2P += 1;
 
     struct MyCellDescriptor* my_cell = (struct MyCellDescriptor*) cellData;
-    VerbosePrint("Cell morton %lld is doing L2P with %d particles :\n", my_cell->mortonIndex, nbParticlesInLeaf);
+
+    //printf("[%lld] Far Field Influence : \t%lld parts have been summed on %lld locals parts \n",my_cell->mortonIndex,my_cell->dataDown,nbParticlesInLeaf);
+
+    VerbosePrint("Cell morton %lld is doing L2P with %lld particles :\n", my_cell->mortonIndex, nbParticlesInLeaf);
     FSize idxPart;
     for(idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
         double* position = &my_data->insertedPositions[particleIndexes[idxPart]*3];
-        VerbosePrint("\t particle idx %d position %e/%e%e\n", particleIndexes[idxPart],
+        //Store the number of cells that contribute to the far field of current cell.
+        my_data->arrayOfInfluence[particleIndexes[idxPart]] += my_cell->dataDown;
+        VerbosePrint("\t particle idx %lld position %e/%e%e\n", particleIndexes[idxPart],
                position[0], position[1], position[2]);
         // JUST-PUT-HERE: Your L2P
     }
@@ -171,19 +207,23 @@ void my_Callback_P2P(FSize nbParticlesInLeaf, const FSize* particleIndexes, FSiz
     struct MyData* my_data = (struct MyData*)userData;
     my_data->countP2P += 1;
 
-    VerbosePrint("Doing P2P between two leaves of %d particles and %d particles :\n", nbParticlesInLeaf, nbParticlesInSrc);
+    VerbosePrint("Doing P2P between two leaves of %lld particles and %lld particles :\n", nbParticlesInLeaf, nbParticlesInSrc);
     FSize idxPart;
     for(idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
         double* position = &my_data->insertedPositions[particleIndexes[idxPart]*3];
-        VerbosePrint("\t Target >> particle idx %d position %e/%e%e\n", particleIndexes[idxPart],
+
+        VerbosePrint("\t Target >> particle idx %lld position %e/%e%e\n", particleIndexes[idxPart],
                position[0], position[1], position[2]);
     }
     for(idxPart = 0 ; idxPart < nbParticlesInSrc ; ++idxPart){
         double* position = &my_data->insertedPositions[particleIndexesSrc[idxPart]*3];
-        VerbosePrint("\t Target >> Src idx %d position %e/%e%e\n", particleIndexesSrc[idxPart],
+        VerbosePrint("\t Target >> Src idx %lld position %e/%e%e\n", particleIndexesSrc[idxPart],
                position[0], position[1], position[2]);
     }
 
+    for(idxPart = 0; idxPart < nbParticlesInLeaf ; ++idxPart){
+        my_data->arrayOfInfluence[particleIndexes[idxPart]] += nbParticlesInSrc;
+    }
     // JUST-PUT-HERE:
     // Put one loop into the other to make all particles from source
     // interacting with the target particles
@@ -193,11 +233,12 @@ void my_Callback_P2PInner(FSize nbParticlesInLeaf, const FSize* particleIndexes,
     struct MyData* my_data = (struct MyData*)userData;
     my_data->countP2PInner += 1;
 
-    VerbosePrint("Doing P2P inside a leaf of %d particles :\n", nbParticlesInLeaf);
+    VerbosePrint("Doing P2P inside a leaf of %lld particles :\n", nbParticlesInLeaf);
     FSize idxPart;
     for(idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+        my_data->arrayOfInfluence[particleIndexes[idxPart]] += nbParticlesInLeaf-1;
         double* position = &my_data->insertedPositions[particleIndexes[idxPart]*3];
-        VerbosePrint("\t particle idx %d position %e/%e%e\n", particleIndexes[idxPart],
+        VerbosePrint("\t particle idx %lld position %e/%e%e\n", particleIndexes[idxPart],
                position[0], position[1], position[2]);
         // JUST-PUT-HERE: another loop to have all particles interacting with
         // the other from the same leaf
@@ -210,16 +251,17 @@ void my_Callback_P2PInner(FSize nbParticlesInLeaf, const FSize* particleIndexes,
 
 // Simply create particles and try the kernels
 int main(int argc, char ** argv){
+    omp_set_num_threads(1);
     // The properties of our tree
-    int treeHeight = 4;
+    int treeHeight = 5;
     double boxWidth = 1.0;
     double boxCenter[3];
     boxCenter[0] = boxCenter[1] = boxCenter[2] = 0.0;
 
     // Create random particles
-    FSize nbParticles = 10;
+    FSize nbParticles = 100;
     int particleIndexes[nbParticles];
-    double particleXYZ[nbParticles*3];
+    double * particleXYZ = malloc(sizeof(double)*nbParticles*3);
     {
         printf("Creating Particles:\n");
         FSize idxPart;
@@ -228,7 +270,7 @@ int main(int argc, char ** argv){
             particleXYZ[idxPart*3]   = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[0];
             particleXYZ[idxPart*3+1] = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[1];
             particleXYZ[idxPart*3+2] = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[2];
-            VerbosePrint("\t %d] %e/%e/%e\n", idxPart, particleXYZ[idxPart*3], particleXYZ[idxPart*3+1], particleXYZ[idxPart*3+2]);
+            VerbosePrint("\t %lld] %e/%e/%e\n", idxPart, particleXYZ[idxPart*3], particleXYZ[idxPart*3+1], particleXYZ[idxPart*3+2]);
         }
     }
 
@@ -253,6 +295,7 @@ int main(int argc, char ** argv){
     kernel.p2m = my_Callback_P2M;
     kernel.m2m = my_Callback_M2M;
     kernel.m2l = my_Callback_M2L;
+    kernel.m2l_ext = my_Callback_M2L_ext;
     kernel.m2l_full = NULL;
     kernel.l2l = my_Callback_L2L;
     kernel.l2p = my_Callback_L2P;
@@ -265,14 +308,21 @@ int main(int argc, char ** argv){
     memset(&my_data, 0, sizeof(struct MyData));
     my_data.insertedPositions = particleXYZ;
     //Set my datas before calling fmm (this will set as well the kernel)
+    my_data.arrayOfInfluence = malloc(sizeof(long long int)* nbParticles);
+    memset(my_data.arrayOfInfluence,0,sizeof(long long int)* nbParticles);
+
     scalfmm_user_kernel_config(handle,kernel,&my_data);
+
     printf("Kernel set ... \n");
+
+
     //loop to multiples runs of the fmm
     int nb_ite = 1;
     int curr_ite = 0;
     //array to store positions
     double new_positions[nbParticles*3];
     memset(new_positions,0,3*nbParticles*sizeof(double));
+    scalfmm_set_upper_limit(handle,4);
 
     while(curr_ite < nb_ite){
         printf("Start FMM number %d/%d ... \n", curr_ite,nb_ite);
@@ -290,20 +340,32 @@ int main(int argc, char ** argv){
         }
         printf("Positions changed \n");
 
-        scalfmm_set_positions_xyz(handle,nbParticles,new_positions,BOTH);
-        scalfmm_update_tree(handle);
+        //scalfmm_set_positions_xyz(handle,nbParticles,new_positions,BOTH);
+        //scalfmm_update_tree(handle);
         curr_ite++;
     }
 
-    // Print the results store in our callback
-    printf("There was %d P2M\n", my_data.countP2M);
-    printf("There was %d M2M\n", my_data.countM2M);
-    printf("There was %d M2L\n", my_data.countM2L);
-    printf("There was %d L2L\n", my_data.countL2L);
-    printf("There was %d L2P\n", my_data.countL2P);
-    printf("There was %d P2PInner\n", my_data.countP2PInner);
-    printf("There was %d P2P\n", my_data.countP2P);
+    //Check the result:
+    int idPart;
 
+    for(idPart = 0; idPart < nbParticles ; ++idPart){
+        if(my_data.arrayOfInfluence[idPart] != nbParticles-1){
+            printf("Probleme with part %d \t:: %lld\n",idPart,my_data.arrayOfInfluence[idPart]);
+        }
+    }
+
+    // Print the results store in our callback
+    printf("There was %d \tP2M\n", my_data.countP2M);
+    printf("There was %d \tM2M\n", my_data.countM2M);
+    printf("There was %d \tM2L\n", my_data.countM2L);
+    printf("There was %d \tM2L_ext\n", my_data.countM2L_ext);
+    printf("There was %d \tL2L\n", my_data.countL2L);
+    printf("There was %d \tL2P\n", my_data.countL2P);
+    printf("There was %d \tP2PInner\n", my_data.countP2PInner);
+    printf("There was %d \tP2P\n", my_data.countP2P);
+
+    free(particleXYZ);
+    free(my_data.arrayOfInfluence);
     // Dealloc the handle
     scalfmm_dealloc_handle(handle,my_Callback_free_cell);
 

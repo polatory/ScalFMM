@@ -27,9 +27,6 @@ public:
     typedef FGroupOfCellsDyn<CompositeCellClass> CellGroupClass;
 
 protected:
-    //< This value is for not used cells
-    static const int CellIsEmptyFlag = -1;
-
     //< height of the tree (1 => only the root)
     const int treeHeight;
     //< max number of cells in a block
@@ -109,7 +106,7 @@ public:
                         // Add cell
                         newBlock->newCell(newNodeIndex, cellIdInBlock, BuildCellFunc, idxLevel);
 
-                        CompositeCellClass newNode = newBlock->getCompleteCell(newNodeIndex);
+                        CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                         newNode.setMortonIndex(newNodeIndex);
                         newNode.setCoordinate(newNodeCoordinate);
 
@@ -146,7 +143,7 @@ public:
                         // Add leaf
                         newParticleBlock->newLeaf(newNodeIndex, cellIdInBlock);
 
-                        BasicAttachedClass attachedLeaf = newParticleBlock->template getLeaf<BasicAttachedClass>(newNodeIndex);
+                        BasicAttachedClass attachedLeaf = newParticleBlock->template getLeaf<BasicAttachedClass>(cellIdInBlock);
                         attachedLeaf.copyFromContainer(newNodeIndex,
                                                        blockIteratorLeafInOctree.getCurrentLeaf()->getSrc());
 
@@ -189,7 +186,7 @@ public:
                     const FTreeCoordinate newNodeCoordinate = blockIteratorInOctree.getCurrentCell()->getCoordinate();
                     newBlock->newCell(newNodeIndex, cellIdInBlock, BuildCellFunc, idxLevel);
 
-                    CompositeCellClass newNode = newBlock->getCompleteCell(newNodeIndex);
+                    CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                     newNode.setMortonIndex(newNodeIndex);
                     newNode.setCoordinate(newNodeCoordinate);
 
@@ -297,7 +294,7 @@ public:
                     for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
                         newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock, BuildCellFunc, idxLevel);
 
-                        CompositeCellClass newNode = newBlock->getCompleteCell(currentBlockIndexes[cellIdInBlock]);
+                        CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                         newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
                         FTreeCoordinate coord;
                         coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock], idxLevel);
@@ -327,8 +324,8 @@ public:
 
                     InitLeafFunc(currentBlockIndexes[cellIdInBlock], &inParticlesContainer[offsetParts],
                                  nbParticlesPerLeaf[cellIdInBlock],
-                                 newParticleBlock->getLeafSymbBuffer(currentBlockIndexes[cellIdInBlock]), symbSizePerLeaf[cellIdInBlock],
-                                 newParticleBlock->getLeafDownBuffer(currentBlockIndexes[cellIdInBlock]), downSizePerDown[cellIdInBlock]);
+                                 newParticleBlock->getLeafSymbBuffer(cellIdInBlock), symbSizePerLeaf[cellIdInBlock],
+                                 newParticleBlock->getLeafDownBuffer(cellIdInBlock), downSizePerDown[cellIdInBlock]);
 
                     offsetParts += nbParticlesPerLeaf[cellIdInBlock];
                 }
@@ -398,7 +395,7 @@ public:
                     for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
                         newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock, BuildCellFunc, idxLevel);
 
-                        CompositeCellClass newNode = newBlock->getCompleteCell(currentBlockIndexes[cellIdInBlock]);
+                        CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                         newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
                         FTreeCoordinate coord;
                         coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock], idxLevel);
@@ -514,7 +511,7 @@ public:
                     for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
                         newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock, BuildCellFunc, idxLevel);
 
-                        CompositeCellClass newNode = newBlock->getCompleteCell(currentBlockIndexes[cellIdInBlock]);
+                        CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                         newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
                         FTreeCoordinate coord;
                         coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock], idxLevel);
@@ -544,8 +541,8 @@ public:
 
                     InitLeafFunc(currentBlockIndexes[cellIdInBlock], &inParticlesContainer[offsetParts],
                                  nbParticlesPerLeaf[cellIdInBlock],
-                                 newParticleBlock->getLeafSymbBuffer(currentBlockIndexes[cellIdInBlock]), symbSizePerLeaf[cellIdInBlock],
-                                 newParticleBlock->getLeafDownBuffer(currentBlockIndexes[cellIdInBlock]), downSizePerDown[cellIdInBlock]);
+                                 newParticleBlock->getLeafSymbBuffer(cellIdInBlock), symbSizePerLeaf[cellIdInBlock],
+                                 newParticleBlock->getLeafDownBuffer(cellIdInBlock), downSizePerDown[cellIdInBlock]);
 
                     offsetParts += nbParticlesPerLeaf[cellIdInBlock];
                 }
@@ -616,7 +613,7 @@ public:
                         for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
                             newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock, BuildCellFunc, idxLevel);
 
-                            CompositeCellClass newNode = newBlock->getCompleteCell(currentBlockIndexes[cellIdInBlock]);
+                            CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                             newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
                             FTreeCoordinate coord;
                             coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock], idxLevel);
@@ -672,7 +669,7 @@ public:
                         for(int cellIdInBlock = 0; cellIdInBlock != sizeOfBlock ; ++cellIdInBlock){
                             newBlock->newCell(currentBlockIndexes[cellIdInBlock], cellIdInBlock, BuildCellFunc, idxLevel);
 
-                            CompositeCellClass newNode = newBlock->getCompleteCell(currentBlockIndexes[cellIdInBlock]);
+                            CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                             newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
                             FTreeCoordinate coord;
                             coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock], idxLevel);
@@ -761,7 +758,9 @@ public:
 
         while(iterCells != iterEndCells && iterLeaves != iterEndLeaves){
             (*iterCells)->forEachCell([&](CompositeCellClass aCell){
-                ParticlesAttachedClass aLeaf = (*iterLeaves)->template getLeaf <ParticlesAttachedClass>(aCell.getMortonIndex());
+                const int leafPos = (*iterLeaves)->getLeafIndex(aCell.getMortonIndex());
+                FAssertLF(leafPos != -1);
+                ParticlesAttachedClass aLeaf = (*iterLeaves)->template getLeaf <ParticlesAttachedClass>(leafPos);
                 FAssertLF(aLeaf.isAttachedToSomething());
                 function(aCell, &aLeaf);
             });

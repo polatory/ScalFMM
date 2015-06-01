@@ -22,7 +22,7 @@
 #include "FTreeCoordinate.hpp"
 #include "FBlockAllocator.hpp"
 
-#include "../Utils/FLog.hpp"
+#include "Utils/FLog.hpp"
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FGlobalPeriodic.hpp"
 #include "../Utils/FPoint.hpp"
@@ -54,9 +54,17 @@
  */
 template<class FReal, class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass = FBasicBlockAllocator<CellClass> /*FListBlockAllocator<CellClass, 15>*/ >
 class FOctree : public FNoCopyable {
-    typedef FOctree<FReal, CellClass , ContainerClass, LeafClass, CellAllocatorClass>                      OctreeType;
+public:
+    using FRealType = FReal;
+    using CellClassType = CellClass;
+    using ContainerClassType = ContainerClass;
+    using LeafClassType = LeafClass;
+
+protected:
+    typedef FOctree<FReal, CellClass , ContainerClass, LeafClass, CellAllocatorClass>      OctreeType;
     typedef  FSubOctreeWithLeafs<FReal, CellClass , ContainerClass, LeafClass, CellAllocatorClass> SubOctreeWithLeaves;
-    typedef FSubOctree<FReal, CellClass , ContainerClass, LeafClass, CellAllocatorClass>                 SubOctree;
+    typedef FSubOctree<FReal, CellClass , ContainerClass, LeafClass, CellAllocatorClass>           SubOctree;
+
     FAbstractSubOctree<FReal, CellClass , ContainerClass, LeafClass, CellAllocatorClass>* root;   //< root suboctree
 
     FReal*const boxWidthAtLevel;	//< to store the width of each boxs at all levels
@@ -387,12 +395,12 @@ public:
          * if needed we go on another suboctree but we stay on at the same level
          * the Algorithm is :
          *     go to top
-         *     go downward until we are a the same level
+         *     go downard until we are a the same level
          */
         void gotoRight(){
             //  Function variables
             const int currentLevel = level();
-            // Goto root suboctree
+            // Goto root sutoctree
             while( this->current.tree->hasParent() ){
                 this->current.tree = this->current.tree->getParent();
             }
@@ -475,7 +483,7 @@ public:
                     }
                 }
 
-                // if working tree != current tree => working tree leafs level ; else current level
+                // if wokring tree != current tree => working tree leafs level ; else current level
                 const int objectiveLevel = (countUpward ? workingTree.tree->getSubOctreeHeight() - 1 : this->currentLocalLevel );
 
                 // We need to go down as left as possible
@@ -690,7 +698,7 @@ public:
 
     /** This function return a cell (if it exists) from a morton index and a level
      * @param inIndex the index of the desired cell
-     * @param inLevel the level of the desired cell (cannot be inferred from the index)
+     * @param inLevel the level of the desired cell (cannot be infered from the index)
      * @return the cell if it exist or null (0)
      * This function starts from the root until it find a missing cell or the right cell
      */
@@ -765,10 +773,10 @@ public:
     }
 
 
-    /** This function return an address of cell array from a morton index and a level
+    /** This function return an adresse of cell array from a morton index and a level
      *
      * @param inIndex the index of the desired cell array has to contains
-     * @param inLevel the level of the desired cell (cannot be inferred from the index)
+     * @param inLevel the level of the desired cell (cannot be infered from the index)
      * @return the cell if it exist or null (0)
      *
      */
@@ -864,7 +872,7 @@ public:
     }
 
     /** This function fills an array with all the neighbors of a cell, 
-     * i.e. Child of parent's neighbors, direct neighbors and cell itself.
+     * i.e. childs of parent's neighbors, direct neighbors and cell itself.
      * This is called for instance when the nearfield also needs to be approximated
      * in that cas we only call this function at the leaf level.
      * @param inNeighbors the array to store the elements
@@ -1032,7 +1040,7 @@ public:
 
     /** This function return a cell (if it exists) from a morton index and a level
      * @param inIndex the index of the desired cell
-     * @param inLevel the level of the desired cell (cannot be inferred from the index)
+     * @param inLevel the level of the desired cell (cannot be infered from the index)
      * @return the cell if it exist or null (0)
      *
      */

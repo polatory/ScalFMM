@@ -29,19 +29,25 @@
 #include "FCoreCommon.hpp"
 
 /**
-* @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FFmmAlgorithmSectionTask
-* @brief
-* Please read the license
-*
-* This class is a basic FMM algorithm
-* It just iterates on a tree and call the kernels with good arguments.
-*
-* Of course this class does not deallocate pointer given in arguements.
-*/
+ * @author Berenger Bramas (berenger.bramas@inria.fr)
+ * @class FFmmAlgorithmSectionTask
+ * @brief Parallel FMM algorithm implementation using OpenMP sections.
+ * Please read the license
+ *
+ *
+ * This class implements the FMM algorithm. the far field and near field
+ * computations are parallelized using OpenMP sections (the L2P operator is done
+ * last)
+ *
+ * \warning Because of the parallelization in this class, the only timers that
+ * are meaningfull after a call to #executeCore are the P2M timer, which times the
+ * far (P2M,M2M,M2L,L2L) and near (P2P) field computation and the NearTimer (L2P).
+ *
+ * Upon destruction, this class does not deallocate pointers given to its constructor.
+ */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmSectionTask : public FAbstractAlgorithm, public FAlgorithmTimers {
-
+    
     OctreeClass* const tree;       //< The octree to work on
     KernelClass** kernels;    //< The kernels
 
@@ -95,25 +101,18 @@ protected:
 
         #pragma omp parallel
         {
-            #pragma omp sections
+            Timers[P2MTimer].tic();
+            #pragma omp sections 
             {
-                #pragma omp section
+                #pragma omp section  
                 {
-                    Timers[P2MTimer].tic();
                     if(operationsToProceed & FFmmP2M) bottomPass();
-                    Timers[P2MTimer].tac();
                     
-                    Timers[M2MTimer].tic();
                     if(operationsToProceed & FFmmM2M) upwardPass();
-                    Timers[M2MTimer].tac();
                     
-                    Timers[M2LTimer].tic();
                     if(operationsToProceed & FFmmM2L) transferPass();
-                    Timers[M2LTimer].tac();
                     
-                    Timers[L2LTimer].tic();
                     if(operationsToProceed & FFmmL2L) downardPass();
-                    Timers[L2LTimer].tac();
                     
                 }
                 #pragma omp section
@@ -123,14 +122,15 @@ protected:
                     Timers[P2PTimer].tac();
                 }
             }
+            Timers[P2MTimer].tac();
+            
+            Timers[NearTimer].tic();
             #pragma omp single
             {
-                Timers[L2PTimer].tic();
                 if(operationsToProceed & FFmmL2P) L2PPass();
-                Timers[L2PTimer].tac();
             }
+            Timers[NearTimer].tac();
         }
-        Timers[NearTimer] = Timers[L2PTimer] + Timers[P2PTimer];
     }
 
     /////////////////////////////////////////////////////////////////////////////

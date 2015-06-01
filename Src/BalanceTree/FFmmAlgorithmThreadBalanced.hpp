@@ -89,9 +89,9 @@ class FFmmAlgorithmThreadBalanced : public FAbstractAlgorithm, public FAlgorithm
     const int MaxThreads;     ///< The maximum number of threads.
     const int OctreeHeight;   ///< The height of the given tree.
 
-    /// The vector containing the costzones
+    /// The vector containing the internal costzones
     const std::vector<std::vector<ZoneBoundClass>>& costzones;
-    /// The vector containing the costzones
+    /// The vector containing the leaf level costzones
     const std::vector<std::vector<ZoneBoundClass>>& leafcostzones;
     
 public:

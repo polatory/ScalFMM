@@ -103,6 +103,10 @@ extern "C" void scalfmm_dealloc_handle(scalfmm_handle handle, Callback_free_cell
  */
 #ifndef CHEBINTERFACE_HPP
 #define CHEBINTERFACE_HPP
+
+#warning "Compiling Cheb Interface"
+
+
 extern "C" {
 #include "Kernels/Chebyshev/FChebInterface.h"
 }
