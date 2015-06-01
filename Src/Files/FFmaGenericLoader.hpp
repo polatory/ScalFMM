@@ -776,6 +776,21 @@ public:
         }
     }
 
+    /**
+     *  Write all particles inside the octree
+     *
+     * @param tree Octree that contains the particles in the leaves
+     * @param N number of particles
+     *
+     *   example
+     * \code
+     *  OctreeClass tree(TreeHeight, SubTreeHeight, BoxWidth, CenterOfBox);
+     * ...
+     * FFmaGenericWriter<FReal> writer(filenameOut) ;
+     * Fwriter.writeHeader(Centre,BoxWith, nbParticles,*particles) ;
+     * Fwriter.writeDistributionOfParticlesFromOctree(&tree, nbParticles);
+     * \endcode
+     */
 template <class Toctree>
   void writeDistributionOfParticlesFromOctree( Toctree *tree, const FSize N){
 //
