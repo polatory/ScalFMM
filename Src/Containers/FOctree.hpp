@@ -54,6 +54,13 @@
  */
 template<class FReal, class CellClass, class ContainerClass, class LeafClass, class CellAllocatorClass = FBasicBlockAllocator<CellClass> /*FListBlockAllocator<CellClass, 15>*/ >
 class FOctree : public FNoCopyable {
+public:
+    using FRealType = FReal;
+    using CellClassType = CellClass;
+    using ContainerClassType = ContainerClass;
+    using LeafClassType = LeafClass;
+
+protected:
     typedef FOctree<FReal, CellClass , ContainerClass, LeafClass, CellAllocatorClass>      OctreeType;
     typedef  FSubOctreeWithLeafs<FReal, CellClass , ContainerClass, LeafClass, CellAllocatorClass> SubOctreeWithLeaves;
     typedef FSubOctree<FReal, CellClass , ContainerClass, LeafClass, CellAllocatorClass>           SubOctree;
