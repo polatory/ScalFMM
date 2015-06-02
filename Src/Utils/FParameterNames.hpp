@@ -278,7 +278,7 @@ inline void PrintGivenParams(int argc, const char* const * const argv){
         const std::vector<FParameterNames> optionsvec = {FParameterDefinitions::Compile, FParameterDefinitions::DateHost, \
                                                          FParameterDefinitions::UserParams, __VA_ARGS__};\
         FParameterDefinitions::PrintUsedOptions(optionsvec);\
-        return 0;\
+        exit(0);                                              \
     } \
     if(FParameterDefinitions::CheckValidParameters(argc, argv, {FParameterDefinitions::Compile, FParameterDefinitions::DateHost, \
                     FParameterDefinitions::UserParams, __VA_ARGS__}) == false){ \
@@ -305,7 +305,7 @@ inline void PrintGivenParams(int argc, const char* const * const argv){
         const std::vector<FParameterNames> optionsvec = {FParameterDefinitions::Compile, FParameterDefinitions::DateHost, \
                                                          FParameterDefinitions::UserParams, __VA_ARGS__}; \
         FParameterDefinitions::PrintUsedOptions(optionsvec);            \
-        return 0;                                                       \
+        exit(0);                                                          \
     }                                                                   \
     if(FParameterDefinitions::CheckValidParameters(argc, argv, {FParameterDefinitions::Compile, FParameterDefinitions::DateHost, \
                                          FParameterDefinitions::UserParams, __VA_ARGS__}) == false){ \
