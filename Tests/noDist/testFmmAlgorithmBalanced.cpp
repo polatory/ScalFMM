@@ -43,7 +43,7 @@
 #include "BalanceTree/FChebSymCostKernel.hpp"
 
 // Algorithm
-#include "Core/FFmmAlgorithm.hpp"
+#include "Core/FFmmAlgorithmThread.hpp"
 #include "BalanceTree/FFmmAlgorithmThreadBalanced.hpp"
 
 // Other
@@ -78,7 +78,7 @@ int main(int argc, char** argv)
 {
     // Handle arguments
     loadFMAAndRunFMMArgs args(argc, argv);
-
+    omp_set_num_threads(args.zoneCount());
 
     /* Creating tree and insterting particles *********************************/
     FFmaGenericLoader<FReal> loader(args.inFileName().c_str());
@@ -94,7 +94,7 @@ int main(int argc, char** argv)
 
     /* Compute the cost of each tree cell *************************************/
     BalanceKernelClass balanceKernel(&tree, epsilon);
-    FmmClass<FFmmAlgorithm, BalanceKernelClass> costAlgo(&tree, &balanceKernel);
+    FmmClass<FFmmAlgorithmThread, BalanceKernelClass> costAlgo(&tree, &balanceKernel);
 
     costAlgo.execute();
 
@@ -108,10 +108,10 @@ int main(int argc, char** argv)
     FCostZones<OctreeClass, CellClass> costzones(&tree, args.zoneCount());
     costzones.run();
 
-    writeZones(args, costzones);
-    if (args.verboseLevel() == -1) {
+    //writeZones(args, costzones);
+    //if (args.verboseLevel() == -1) {
         printZonesCosts(tree, costzones);
-    }
+    //}
     /**************************************************************************/
     std::cerr << "Done" << std::endl;
 
