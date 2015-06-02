@@ -536,10 +536,8 @@ protected:
                 const MortonIndex startIdx = leafcostzones[threadIdx][colourIdx].first;
                 int zoneCellCount =  leafcostzones[threadIdx][colourIdx].second;
 
-                if( 0 < zoneCellCount) {                    
-                    while(startIdx != it.getCurrentGlobalIndex()) {
-                        it.moveRight();
-                    }
+                if( 0 < zoneCellCount) {
+                    while(startIdx != it.getCurrentGlobalIndex() && it.moveRight());
                 }
 
                 LeafData leafdata;
