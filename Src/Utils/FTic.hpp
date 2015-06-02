@@ -34,9 +34,9 @@
 #endif
 
 
-/** @author Berenger Bramas (berenger.bramas@inria.fr)
-  * This class is a easy to use time counter
-  * With it you can very easyli estimate elapsed time between two moments
+/** \author Berenger Bramas (berenger.bramas@inria.fr)
+  * \brief This class implements a time counter
+  *
   * <code>
   * FTic counter;<br>
   * counter.tic();<br>
@@ -60,10 +60,15 @@ public:
         tic();
     }
 
+    /** Copy constructor */
     FTic(const FTic& other) : start(other.start), end(other.end), cumulate(other.cumulate) {}
 
-    FTic(FTic&& other) : start(other.start), end(other.end), cumulate(other.cumulate) {}
+    /** Move constructor */
+    FTic(FTic&& other) : start(other.start), end(other.end), cumulate(other.cumulate) {
+        other.reset();
+    }
 
+    /** \brief Copies an other timer */
     FTic& operator=(const FTic& other) {
         start = other.start;
         end = other.end;
@@ -71,6 +76,7 @@ public:
         return *this;
     }
 
+    /** \brief Adds two timers and returns a new one */
     const FTic operator+(const FTic& other) const {
         FTic res(*this);
         res.start = start < other.start ? start : other.start;
@@ -80,13 +86,31 @@ public:
         return res;
     }
     
+    /**
+     * \brief Resets cumulated time to 0
+     * \warning You must retic to restart measuring time.
+     */
+    void reset() {
+        start    = 0;
+        end      = 0;
+        cumulate = 0;
+    }
 
-    /** Tic : start <= current time */
+    /**
+     * \brief Start measuring time.
+     *
+     * Tic : start <= current time
+     */
     void tic(){
         this->start = FTic::GetTime();
     }
 
-    /** Tac : end <= current time */
+    /**
+     * \brief Stop measuring time and add to cumulative time.
+     *
+     *
+     * Tac : end <= current time 
+     */
     void tac(){
         this->end = FTic::GetTime();
         cumulate += elapsed();
