@@ -98,10 +98,9 @@ protected:
       * Call this function to run the complete algorithm
       */
     void executeCore(const unsigned operationsToProceed) override {
-
+        Timers[P2MTimer].tic();
         #pragma omp parallel
         {
-            Timers[P2MTimer].tic();
             #pragma omp sections 
             {
                 #pragma omp section  
@@ -122,15 +121,15 @@ protected:
                     Timers[P2PTimer].tac();
                 }
             }
-            Timers[P2MTimer].tac();
             
-            Timers[NearTimer].tic();
-            #pragma omp single
+            //Timers[NearTimer].tic();
+            #pragma omp single 
             {
                 if(operationsToProceed & FFmmL2P) L2PPass();
             }
-            Timers[NearTimer].tac();
+            //Timers[NearTimer].tac();
         }
+        Timers[P2MTimer].tac();
     }
 
     /////////////////////////////////////////////////////////////////////////////
