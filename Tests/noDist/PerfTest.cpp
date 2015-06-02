@@ -63,11 +63,11 @@ void runperf(FPerfTestParams& params)
               << "height:" << params.treeHeight                            << " "
               << "subheight:" << params.subTreeHeight                     << " "
               << algoLoader.getRunInfoString()
-              << "P2M:" << algo.getTime(FAlgorithmTimers::P2MTimer)        << " "
-              << "M2M:" << algo.getTime(FAlgorithmTimers::M2MTimer)        << " "
-              << "M2L:" << algo.getTime(FAlgorithmTimers::M2LTimer)        << " "
-              << "L2L:" << algo.getTime(FAlgorithmTimers::L2LTimer)        << " "
-              << "P2PL2P:" << algo.getTime(FAlgorithmTimers::NearTimer)    << " "
+              << "P2M:" << algo.getCumulatedTime(FAlgorithmTimers::P2MTimer)        << " "
+              << "M2M:" << algo.getCumulatedTime(FAlgorithmTimers::M2MTimer)        << " "
+              << "M2L:" << algo.getCumulatedTime(FAlgorithmTimers::M2LTimer)        << " "
+              << "L2L:" << algo.getCumulatedTime(FAlgorithmTimers::L2LTimer)        << " "
+              << "P2PL2P:" << algo.getCumulatedTime(FAlgorithmTimers::NearTimer)    << " "
               << std::endl;
 
 }
