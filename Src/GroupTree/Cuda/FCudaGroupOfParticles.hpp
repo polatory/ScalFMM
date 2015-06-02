@@ -13,7 +13,6 @@ class FCudaGroupOfParticles {
         MortonIndex startingIndex;
         MortonIndex endingIndex;
         int numberOfLeavesInBlock;
-        int blockIndexesTableSize;
 
         //< The real number of particles allocated
         FSize nbParticlesAllocatedInGroup;
@@ -29,6 +28,7 @@ class FCudaGroupOfParticles {
 
     /** Information about a leaf */
     struct alignas(FStarPUDefaultAlign::StructAlign) LeafHeader {
+        MortonIndex mindex;
         FSize nbParticles;
         size_t offSet;
     };
@@ -52,14 +52,12 @@ protected:
     static const int LeafIsEmptyFlag = -1;
 
     //< The size of memoryBuffer in byte
-    int allocatedMemoryInByte;
+    size_t allocatedMemoryInByte;
     //< Pointer to a block memory
     unsigned char* memoryBuffer;
 
     //< Pointer to the header inside the block memory
     BlockHeader*    blockHeader;
-    //< Pointer to the indexes table inside the block memory
-    int*            blockIndexesTable;
     //< Pointer to leaves information
     LeafHeader*     leafHeader;
     //< The total number of particles in the group
@@ -81,12 +79,11 @@ public:
     __device__ FCudaGroupOfParticles(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte,
                                      unsigned char* inAttributes)
         : allocatedMemoryInByte(inAllocatedMemoryInByte), memoryBuffer(inBuffer),
-          blockHeader(nullptr), blockIndexesTable(nullptr), leafHeader(nullptr), nbParticlesInGroup(0),
+          blockHeader(nullptr), leafHeader(nullptr), nbParticlesInGroup(0),
           attributesBuffer(nullptr){
         // Move the pointers to the correct position
         blockHeader         = reinterpret_cast<BlockHeader*>(memoryBuffer);
-        blockIndexesTable   = reinterpret_cast<int*>(memoryBuffer+sizeof(BlockHeader));
-        leafHeader          = reinterpret_cast<LeafHeader*>(memoryBuffer+sizeof(BlockHeader)+(blockHeader->blockIndexesTableSize*sizeof(int)));
+        leafHeader          = reinterpret_cast<LeafHeader*>(memoryBuffer+sizeof(BlockHeader)+(blockHeader->numberOfLeavesInBlock*sizeof(int)));
 
         // Init particle pointers
         // Assert blockHeader->positionsLeadingDim == (sizeof(FReal) * blockHeader->nbParticlesAllocatedInGroup);
@@ -131,7 +128,7 @@ public:
 
     /** The size of the interval endingIndex-startingIndex (set from the constructor) */
     __device__ int getSizeOfInterval() const {
-        return blockHeader->blockIndexesTableSize;
+        return int(blockHeader->endingIndex-blockHeader->startingIndex);
     }
 
     /** Return true if inIndex should be located in the current block */
@@ -139,23 +136,43 @@ public:
         return blockHeader->startingIndex <= inIndex && inIndex < blockHeader->endingIndex;
     }
 
+    /** Return the idx in array of the cell */
+    __device__ MortonIndex getLeafMortonIndex(const int id) const{
+        return leafHeader[id].mindex;
+    }
+
+    /** Check if a cell exist (by binary search) and return it index */
+    __device__ int getLeafIndex(const MortonIndex leafIdx) const{
+        int idxLeft = 0;
+        int idxRight = blockHeader->numberOfLeavesInBlock-1;
+        while(idxLeft <= idxRight){
+            const int idxMiddle = (idxLeft+idxRight)/2;
+            if(leafHeader[idxMiddle].mindex == leafIdx){
+                return idxMiddle;
+            }
+            if(leafIdx < leafHeader[idxMiddle].mindex){
+                idxRight = idxMiddle-1;
+            }
+            else{
+                idxLeft = idxMiddle+1;
+            }
+        }
+        return -1;
+    }
+
     /** Return true if inIndex is located in the current block and is not empty */
     __device__ bool exists(const MortonIndex inIndex) const {
-        return isInside(inIndex) && (blockIndexesTable[inIndex-blockHeader->startingIndex] != LeafIsEmptyFlag);
+        return isInside(inIndex) && (getLeafIndex(inIndex) != -1);
     }
 
     /** Return the address of the leaf if it exists (or NULL) */
     template<class ParticlesAttachedClass>
-    __device__ ParticlesAttachedClass getLeaf(const MortonIndex leafIndex){
-        if(blockIndexesTable[leafIndex - blockHeader->startingIndex] != LeafIsEmptyFlag){
-            const int id = blockIndexesTable[leafIndex - blockHeader->startingIndex];
-            return ParticlesAttachedClass(leafHeader[id].nbParticles,
+    __device__ ParticlesAttachedClass getLeaf(const int id){
+        return ParticlesAttachedClass(leafHeader[id].nbParticles,
                                           particlePosition[0] + leafHeader[id].offSet,
                                             blockHeader->positionsLeadingDim,
                                             (attributesBuffer?particleAttributes[NbSymbAttributes] + leafHeader[id].offSet:nullptr),
                                             blockHeader->attributeLeadingDim);
-        }
-        return ParticlesAttachedClass();
     }
 };
 

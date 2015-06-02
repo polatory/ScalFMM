@@ -200,6 +200,10 @@ public:
     void * getUserKernelDatas(){
         return userData;
     }
+    //Getter
+    Scalfmm_Kernel_Descriptor getKernelFct() const {
+        return kernel;
+    }
 
     void M2L_Extended(CellClass * src, CellClass * tgt, const FTreeCoordinate transfer, const int level){
         if(kernel.m2l_ext){
@@ -456,74 +460,77 @@ public:
      *
      */
     void internal_M2L(){
-        if(upperLimit > 1){ // if upperLimit == 1, then, M2L has been
-                            // done at level 2, and hence all the far
-                            // field has been calculated.
-            //Starting at the lower level where the M2L has not been done.
-            typename OctreeClass::Iterator octreeIterator(octree); //lvl : 1
+        if(this->kernel->getKernelFct().m2l_ext){
+            if(upperLimit > 1){ // if upperLimit == 1, then, M2L has been
+                // done at level 2, and hence all the far
+                // field has been calculated.
+                //Starting at the lower level where the M2L has not been done.
+                typename OctreeClass::Iterator octreeIterator(octree); //lvl : 1
 
-            while(octreeIterator.level() != upperLimit){
-                octreeIterator.moveDown();
-            }
+                while(octreeIterator.level() != upperLimit){
+                    octreeIterator.moveDown();
+                }
 
-            //I'm at the upperLimit, so the lowest level where M2L has been done.
-            do{
-                CoreCell * currentTgt = octreeIterator.getCurrentCell(); // This one is targeted
+                //I'm at the upperLimit, so the lowest level where M2L has been done.
+                do{
+                    CoreCell * currentTgt = octreeIterator.getCurrentCell(); // This one is targeted
 
-                //Then, we get the interaction list at this lvl. This will provide us with lots of source cells.
-                const CoreCell * currentInteractionList[343];
-                //Get an iterator for the sources
-                typename OctreeClass::Iterator upAndDownIterator = octreeIterator;
+                    //Then, we get the interaction list at this lvl. This will provide us with lots of source cells.
+                    const CoreCell * currentInteractionList[343];
+                    //Get an iterator for the sources
+                    typename OctreeClass::Iterator upAndDownIterator = octreeIterator;
 
-                {//This is supposed to be done for multiple level. You
-                 //need to go up until level 2. And then, to go down
-                 //until level upperLimit. I think it's possible ...
-                    while(upAndDownIterator.level() >= 2){
-                        upAndDownIterator.moveUp();
+                    {//This is supposed to be done for multiple level. You
+                        //need to go up until level 2. And then, to go down
+                        //until level upperLimit. I think it's possible ...
+                        while(upAndDownIterator.level() >= 2){
+                            upAndDownIterator.moveUp();
 
-                        //There, we get the interaction list of all parents of tgt cell
-                        const int nbInteract = octree->getInteractionNeighbors(currentInteractionList,
-                                                                               upAndDownIterator.getCurrentGlobalCoordinate(),
-                                                                               upAndDownIterator.level());
-                        int currentLevel = upAndDownIterator.level();
-                        if(nbInteract){
-                            //Then, we do M2L for each child at level upperLimit of each 343 Interaction cells.
-                            for(int idxSrc = 0; idxSrc < 343 ; ++idxSrc){
-                                if(currentInteractionList[idxSrc]){//Check if it exist
-                                    const CoreCell * currentSource = currentInteractionList[idxSrc]; //For clarity, will be otpimised out, anyway
-                                    MortonIndex idx = currentSource->getMortonIndex();
+                            //There, we get the interaction list of all parents of tgt cell
+                            const int nbInteract = octree->getInteractionNeighbors(currentInteractionList,
+                                                                                   upAndDownIterator.getCurrentGlobalCoordinate(),
+                                                                                   upAndDownIterator.level());
+                            int currentLevel = upAndDownIterator.level();
+                            if(nbInteract){
+                                //Then, we do M2L for each child at level upperLimit of each 343 Interaction cells.
+                                for(int idxSrc = 0; idxSrc < 343 ; ++idxSrc){
+                                    if(currentInteractionList[idxSrc]){//Check if it exist
+                                        const CoreCell * currentSource = currentInteractionList[idxSrc]; //For clarity, will be otpimised out, anyway
+                                        MortonIndex idx = currentSource->getMortonIndex();
 
-                                    //At this point, we instanciate
-                                    //the number of child needed.
-                                    //This only depends on diffenrence
-                                    //between current level and
-                                    //upperLimit level
-                                    int totalNumberOfChild = FMath::pow(8,upperLimit-currentLevel);
+                                        //At this point, we instanciate
+                                        //the number of child needed.
+                                        //This only depends on diffenrence
+                                        //between current level and
+                                        //upperLimit level
+                                        int totalNumberOfChild = FMath::pow(8,upperLimit-currentLevel);
 
-                                    for(int idxChildSrc = 0; idxChildSrc < totalNumberOfChild ; ++idxChildSrc){//For all 8^{number of levels to down} children
-                                        MortonIndex indexOfChild = ((idx << 3*(upperLimit-currentLevel))+idxChildSrc);
-                                        CoreCell * src = octree->getCell(indexOfChild,upperLimit); //Get the cell
-                                        if(src){//check if it exists
-                                            FTreeCoordinate srcCoord = src->getCoordinate();
-                                            FTreeCoordinate tgtCoord = currentTgt->getCoordinate();
-                                            //Build tree coord translation vector
-                                            FTreeCoordinate transfer;
-                                            transfer.setPosition(tgtCoord.getX()-srcCoord.getX(),
-                                                                 tgtCoord.getY()-srcCoord.getY(),
-                                                                 tgtCoord.getZ()-srcCoord.getZ());
-                                            kernel->M2L_Extended(src,currentTgt,transfer,octreeIterator.level());
+                                        for(int idxChildSrc = 0; idxChildSrc < totalNumberOfChild ; ++idxChildSrc){//For all 8^{number of levels to down} children
+                                            MortonIndex indexOfChild = ((idx << 3*(upperLimit-currentLevel))+idxChildSrc);
+                                            CoreCell * src = octree->getCell(indexOfChild,upperLimit); //Get the cell
+                                            if(src){//check if it exists
+                                                FTreeCoordinate srcCoord = src->getCoordinate();
+                                                FTreeCoordinate tgtCoord = currentTgt->getCoordinate();
+                                                //Build tree coord translation vector
+                                                FTreeCoordinate transfer;
+                                                transfer.setPosition(tgtCoord.getX()-srcCoord.getX(),
+                                                                     tgtCoord.getY()-srcCoord.getY(),
+                                                                     tgtCoord.getZ()-srcCoord.getZ());
+                                                kernel->M2L_Extended(src,currentTgt,transfer,octreeIterator.level());
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                }
-            }while(octreeIterator.moveRight());
+                }while(octreeIterator.moveRight());
+            }
+            else{
+                FAssertLF("No reasons to be there, seriously ...\nExiting anyway...");
+            }
         }
-        else{
-            FAssertLF("No reasons to be there, seriously ...\nExiting anyway...");
-        }
+
     }
 
     void execute_fmm(){
@@ -570,7 +577,6 @@ public:
         }
         if (FScalFMMEngine<FReal>::Algorithm != 2){
             if(upperLimit != 2){
-                printf("At least I'm here\n");
                 abstrct->execute(FFmmP2M | FFmmM2M | FFmmM2L, upperLimit, treeHeight);
                 printf("\tUpPass finished\n");
                 internal_M2L();

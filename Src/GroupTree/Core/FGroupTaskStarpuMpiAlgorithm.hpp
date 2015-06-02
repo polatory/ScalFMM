@@ -725,27 +725,24 @@ protected:
                 #pragma omp task default(none) firstprivate(idxGroup, currentCells, idxLevel, externalInteractions)
                 {
                     std::vector<OutOfBlockInteraction> outsideInteractions;
-                    const MortonIndex blockStartIdx = currentCells->getStartingIndex();
-                    const MortonIndex blockEndIdx   = currentCells->getEndingIndex();
 
-                    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                        if(currentCells->exists(mindex)){
-                            const typename CellContainerClass::CompleteCellClass cell = currentCells->getCompleteCell(mindex);
-                            FAssertLF(cell.getMortonIndex() == mindex);
-                            MortonIndex interactionsIndexes[189];
-                            int interactionsPosition[189];
-                            const FTreeCoordinate coord(cell.getCoordinate());
-                            int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
+                    for(int idxCell = 0 ; idxCell < currentCells->getNumberOfCellsInBlock() ; ++idxCell){
+                        const MortonIndex mindex = currentCells->getCellMortonIndex(idxCell);
 
-                            for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                                // This interactions need a block owned by someoneelse
-                                if(interactionsIndexes[idxInter] < myFirstIndex || myLastIndex <= interactionsIndexes[idxInter]){
-                                    OutOfBlockInteraction property;
-                                    property.insideIndex = mindex;
-                                    property.outIndex    = interactionsIndexes[idxInter];
-                                    property.outPosition = interactionsPosition[idxInter];
-                                    outsideInteractions.push_back(property);
-                                }
+                        MortonIndex interactionsIndexes[189];
+                        int interactionsPosition[189];
+                        const FTreeCoordinate coord(mindex, idxLevel);
+                        int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
+
+                        for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+                            // This interactions need a block owned by someoneelse
+                            if(interactionsIndexes[idxInter] < myFirstIndex || myLastIndex <= interactionsIndexes[idxInter]){
+                                OutOfBlockInteraction property;
+                                property.insideIndex = mindex;
+                                property.outIndex    = interactionsIndexes[idxInter];
+                                property.outPosition = interactionsPosition[idxInter];
+                                property.insideIdxInBlock = idxCell;
+                                outsideInteractions.push_back(property);
                             }
                         }
                     }
@@ -830,11 +827,10 @@ protected:
                 #pragma omp task default(none) firstprivate(idxGroup, containers, externalInteractions)
                 { // Can be a task(inout:iterCells)
                     std::vector<OutOfBlockInteraction> outsideInteractions;
-                    const MortonIndex blockStartIdx = containers->getStartingIndex();
-                    const MortonIndex blockEndIdx   = containers->getEndingIndex();
 
-                    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
+                    for(int idxLeaf = 0 ; idxLeaf < containers->getNumberOfLeavesInBlock() ; ++idxLeaf){
                         // ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(mindex);
+                        const MortonIndex mindex = containers->getLeafMortonIndex(idxLeaf);
                         if(containers->exists(mindex)){
                             MortonIndex interactionsIndexes[26];
                             int interactionsPosition[26];
@@ -1163,24 +1159,26 @@ protected:
                     const MortonIndex blockStartIdx = containers->getStartingIndex();
                     const MortonIndex blockEndIdx   = containers->getEndingIndex();
 
-                    for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                        if(containers->exists(mindex)){
-                            MortonIndex interactionsIndexes[26];
-                            int interactionsPosition[26];
-                            FTreeCoordinate coord(mindex, tree->getHeight()-1);
-                            int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
+                    for(int leafIdx = 0 ; leafIdx < containers->getNumberOfLeavesInBlock() ; ++leafIdx){
+                        const MortonIndex mindex = containers->getLeafMortonIndex(leafIdx);
+                        // ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(leafIdx);
 
-                            for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                                if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                                    // Inside block interaction, do nothing
-                                }
-                                else if(interactionsIndexes[idxInter] < mindex){
-                                    OutOfBlockInteraction property;
-                                    property.insideIndex = mindex;
-                                    property.outIndex    = interactionsIndexes[idxInter];
-                                    property.outPosition = interactionsPosition[idxInter];
-                                    outsideInteractions.push_back(property);
-                                }
+                        MortonIndex interactionsIndexes[26];
+                        int interactionsPosition[26];
+                        FTreeCoordinate coord(mindex, tree->getHeight()-1);
+                        int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
+
+                        for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+                            if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                                // Inside block interaction, do nothing
+                            }
+                            else if(interactionsIndexes[idxInter] < mindex){
+                                OutOfBlockInteraction property;
+                                property.insideIndex = mindex;
+                                property.outIndex    = interactionsIndexes[idxInter];
+                                property.outPosition = interactionsPosition[idxInter];
+                                property.insideIdxInBlock = leafIdx;
+                                outsideInteractions.push_back(property);
                             }
                         }
                     }
@@ -1237,26 +1235,25 @@ protected:
                         const MortonIndex blockStartIdx = currentCells->getStartingIndex();
                         const MortonIndex blockEndIdx   = currentCells->getEndingIndex();
 
-                        for(MortonIndex mindex = blockStartIdx ; mindex < blockEndIdx ; ++mindex){
-                            if(currentCells->exists(mindex)){
-                                typename CellContainerClass::CompleteCellClass cell = currentCells->getCompleteCell(mindex);
-                                FAssertLF(cell.getMortonIndex() == mindex);
-                                MortonIndex interactionsIndexes[189];
-                                int interactionsPosition[189];
-                                const FTreeCoordinate coord(cell.getCoordinate());
-                                int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
+                        for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){
+                            const MortonIndex mindex = currentCells->getCellMortonIndex(cellIdx);
 
-                                for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                                    if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                                        // Nothing to do
-                                    }
-                                    else if(interactionsIndexes[idxInter] < mindex){
-                                        OutOfBlockInteraction property;
-                                        property.insideIndex = mindex;
-                                        property.outIndex    = interactionsIndexes[idxInter];
-                                        property.outPosition = interactionsPosition[idxInter];
-                                        outsideInteractions.push_back(property);
-                                    }
+                            MortonIndex interactionsIndexes[189];
+                            int interactionsPosition[189];
+                            const FTreeCoordinate coord(mindex, idxLevel);
+                            int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
+
+                            for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+                                if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                                    // Nothing to do
+                                }
+                                else if(interactionsIndexes[idxInter] < mindex){
+                                    OutOfBlockInteraction property;
+                                    property.insideIndex = mindex;
+                                    property.outIndex    = interactionsIndexes[idxInter];
+                                    property.outPosition = interactionsPosition[idxInter];
+                                    property.insideIdxInBlock = cellIdx;
+                                    outsideInteractions.push_back(property);
                                 }
                             }
                         }
