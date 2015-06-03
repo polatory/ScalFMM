@@ -49,7 +49,7 @@ class FUnifInterpolator : FNoCopyable
         nLhs = MatrixKernelClass::NLHS,
         nPV = MatrixKernelClass::NPV,
         nVals = NVALS};
-  typedef FUnifRoots<FReal, ORDER>  BasisType;
+  typedef FUnifRoots<FReal, ORDER>   BasisType;
   typedef FUnifTensor<FReal, ORDER> TensorType;
 
   unsigned int node_ids[nnodes][3];

@@ -9,8 +9,11 @@
 #include <memory>
 #include <assert.h>
 
+#include <array>
+#include <vector>
+
 /**
- * \brief Saves the costzones to files.
+ * \brief Saves the far-field costzones to files.
  *
  * One file is created per level, one particle is stored per line in the form :
  * x,y,z,zone.
@@ -89,6 +92,11 @@ void loadTree(OctreeClass& tree, FFmaGenericLoader<FReal>& loader)
 }
 
 
+/**
+ * \brief Loads a tree from a loader.
+ * \param tree The the to load into.
+ * \param loader The loader to load from.
+ */
 template <typename FReal, class OctreeClass>
 void loadTree(OctreeClass& tree, FRandomLoader<FReal>& loader)
 {
@@ -100,7 +108,12 @@ void loadTree(OctreeClass& tree, FRandomLoader<FReal>& loader)
     }
 }
 
-
+/**
+ * \brief Prints the costzones costs.
+ *
+ * This function prints the far-field and near-field costzones costs to stdout.
+ *
+ */
 template <typename OctreeClass, typename CellClass>
 void printZonesCosts(OctreeClass& tree, FCostZones<OctreeClass, CellClass>& costzones)
 {
@@ -118,6 +131,9 @@ void printZonesCosts(OctreeClass& tree, FCostZones<OctreeClass, CellClass>& cost
 
     // Zones costs (internal, leaf)
     std::vector<std::tuple<CostType,CostType>> zonecosts(zones.size());
+    // Leaf colour zone costs
+    std::vector<std::array<CostType, FCoordColour::range>> zonecolourcosts(zones.size());
+
 
     int zoneIdx = 0;
     for(auto z : zones) {
@@ -132,17 +148,20 @@ void printZonesCosts(OctreeClass& tree, FCostZones<OctreeClass, CellClass>& cost
     int colourIdx = 0;
 
     for(auto z : nearZones) {
+        std::cerr << "zone : " << zoneIdx;
+
         colourIdx = 0;
         for(auto c : z) {
             it.gotoBottomLeft();
+
+            std::cerr << "  " << colourIdx;
             
             const MortonIndex start = c.first;
             int count = c.second;
 
-            while( start != it.getCurrentGlobalIndex() ) {
-                it.moveRight();
+            if(count > 0) {
+                while( start < it.getCurrentGlobalIndex() && it.moveRight());
             }
-
 
             while(count > 0) {
                 if( FCoordColour::coord2colour(
@@ -152,14 +171,20 @@ void printZonesCosts(OctreeClass& tree, FCostZones<OctreeClass, CellClass>& cost
                     std::get<1>(zonecosts.at(zoneIdx)) +=
                         it.getCurrentCell()->getNearCost();
 
+                    zonecolourcosts.at(zoneIdx).at(colourIdx) +=
+                        it.getCurrentCell()->getNearCost();
+
                     count--;
                 }
-                it.moveRight();
+                if (! it.moveRight()) {
+                    std::cerr << "Reached the end...";
+                    break;
+                }
             }
 
             colourIdx++;
         }
-
+        std::cerr << std::endl;
         zoneIdx++;
     }
 
@@ -169,8 +194,12 @@ void printZonesCosts(OctreeClass& tree, FCostZones<OctreeClass, CellClass>& cost
         std::cout << "@@"
                   << zoneIdx        << " "
                   << std::get<0>(z) << " "
-                  << std::get<1>(z)
-                  << std::endl;
+                  << std::get<1>(z) << " ";
+
+        for(auto c : zonecolourcosts.at(zoneIdx))
+            std::cout << c << " ";
+
+        std::cout << std::endl;
         zoneIdx++;
     }
 

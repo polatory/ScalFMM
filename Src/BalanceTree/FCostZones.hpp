@@ -233,7 +233,7 @@ protected:
      * \brief Main costzone algorithm.
      *
      * Moves through the tree in-order and assigns each cell to a zone. When a
-     * zone's cumulative cost is too high, the new cells are insterted in the
+     * zone's cumulative cost is too high, the new cells are inserted in the
      * next one.
      */
     void costzones() {
@@ -374,7 +374,7 @@ protected:
     /**
      * \brief Computes and stores the leaves' total cost.
      *
-     * The tree itertor (#_it) is moved to the bottom level of the
+     * The tree iterator (#_it) is moved to the bottom level of the
      * tree by this method. After the method returns, the iterator is left at
      * the rightmost leaf.
      */
@@ -397,7 +397,7 @@ protected:
      * \brief Computes and stores the internal cells' total cost.
      * \warning This method makes use of 
      *
-     * The tree itertor (#_it) is moved to the bottom level of the
+     * The tree iterator (#_it) is moved to the bottom level of the
      * tree by this method. After the method returns, the iterator is left at
      * the rightmost leaf.
      */

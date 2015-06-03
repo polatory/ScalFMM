@@ -297,7 +297,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     else()
         message(WARNING "BLAS has not been found, SCALFMM will continue to compile but some applications will be disabled.")
         message(WARNING "If you have BLAS set BLAS_LIBDIR, BLAS_INCDIR or BLAS_DIR (CMake variables using -D or environment variables).")        
-        set(SCALFMM_USE_FFT OFF)
+        set(SCALFMM_USE_BLAS OFF)
     endif()
 
   endif(SCALFMM_USE_BLAS)

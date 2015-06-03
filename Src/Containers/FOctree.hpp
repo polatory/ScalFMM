@@ -22,7 +22,7 @@
 #include "FTreeCoordinate.hpp"
 #include "FBlockAllocator.hpp"
 
-#include "../Utils/FLog.hpp"
+#include "Utils/FLog.hpp"
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FGlobalPeriodic.hpp"
 #include "../Utils/FPoint.hpp"
@@ -58,7 +58,7 @@ public:
     using FRealType = FReal;
     using CellClassType = CellClass;
     using ContainerClassType = ContainerClass;
-    using LeafClassType = LeafClass;
+    using LeafClassType = LeafClass;                             //< The type of the Leaf used in the Octree
 
 protected:
     typedef FOctree<FReal, CellClass , ContainerClass, LeafClass, CellAllocatorClass>      OctreeType;
@@ -80,7 +80,7 @@ protected:
 
 
     /**
-     * Get morton index from a position for the leaf leavel
+     * Get morton index from a position for the leaf level
      * @param inPosition position to compute
      * @return the morton index
      */
@@ -182,7 +182,7 @@ public:
      * algorithm is :
      * Compute morton index for the particle
      * ask node to insert this particle
-     * @param inParticle the particle to insert (must inherite from FAbstractParticle)
+     * @param inParticle the particle to insert (must inherit from FAbstractParticle)
      */
     template<typename... Args>
     void insert(const FPoint<FReal>& inParticlePosition, Args... args){
@@ -256,7 +256,7 @@ public:
     /**
      * This has to be used to iterate on an octree
      * It simply stores an pointer on a suboctree and moves to right/left/up/down.
-     * Please refere to testOctreeIter file to see how it works.
+     * Please refer to testOctreeIter file to see how it works.
      *
      * @code
      * FOctree<TestParticle, TestCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree); <br>
@@ -369,7 +369,7 @@ public:
          * if needed we go on another suboctree but we stay on at the same level
          * the Algorithm is :
          *     go to top
-         *     go downard until we are a the same level
+         *     go downward until we are a the same level
          */
         void gotoLeft(){
             //  Function variables
@@ -395,7 +395,7 @@ public:
          * if needed we go on another suboctree but we stay on at the same level
          * the Algorithm is :
          *     go to top
-         *     go downard until we are a the same level
+         *     go downward until we are a the same level
          */
         void gotoRight(){
             //  Function variables
@@ -433,7 +433,7 @@ public:
          * until : the current level if we did not have change the current suboctree
          * or : the leaf level
          *
-         * In the second case, it meanse we need to change octree downward
+         * In the second case, it means we need to change octree downward
          * but it is easy because we can use the left limit!
          *
          * @return true if we succeed to go to the right, else false
@@ -636,7 +636,7 @@ public:
 
         /** Gets the children of the current cell.
          *
-         * This function return an array of 8 CellClass. To konw whether
+         * This function return an array of 8 CellClass. To know whether
          * a child cell exists or not, the pointer must be checked.
          *
          * @return the 8-child array.
@@ -654,7 +654,7 @@ public:
 
         /** Gets the children of the current cell.
          *
-         * This function return an array of 8 CellClass. To konw whether
+         * This function return an array of 8 CellClass. To know whether
          * a child cell exists or not, the pointer must be checked.
          *
          * @return the 8-child array.
@@ -698,7 +698,7 @@ public:
 
     /** This function return a cell (if it exists) from a morton index and a level
      * @param inIndex the index of the desired cell
-     * @param inLevel the level of the desired cell (cannot be infered from the index)
+     * @param inLevel the level of the desired cell (cannot be inferred from the index)
      * @return the cell if it exist or null (0)
      * This function starts from the root until it find a missing cell or the right cell
      */
@@ -773,10 +773,10 @@ public:
     }
 
 
-    /** This function return an adresse of cell array from a morton index and a level
+    /** This function return an address of cell array from a morton index and a level
      *
      * @param inIndex the index of the desired cell array has to contains
-     * @param inLevel the level of the desired cell (cannot be infered from the index)
+     * @param inLevel the level of the desired cell (cannot be inferred from the index)
      * @return the cell if it exist or null (0)
      *
      */
@@ -872,7 +872,7 @@ public:
     }
 
     /** This function fills an array with all the neighbors of a cell, 
-     * i.e. childs of parent's neighbors, direct neighbors and cell itself.
+     * i.e. Child of parent's neighbors, direct neighbors and cell itself.
      * This is called for instance when the nearfield also needs to be approximated
      * in that cas we only call this function at the leaf level.
      * @param inNeighbors the array to store the elements
@@ -1040,7 +1040,7 @@ public:
 
     /** This function return a cell (if it exists) from a morton index and a level
      * @param inIndex the index of the desired cell
-     * @param inLevel the level of the desired cell (cannot be infered from the index)
+     * @param inLevel the level of the desired cell (cannot be inferred from the index)
      * @return the cell if it exist or null (0)
      *
      */

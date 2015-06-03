@@ -1,5 +1,5 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
 // olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 // This software is a computer program whose purpose is to compute the FMM.
 //
@@ -98,10 +98,9 @@ protected:
       * Call this function to run the complete algorithm
       */
     void executeCore(const unsigned operationsToProceed) override {
-
+        Timers[P2MTimer].tic();
         #pragma omp parallel
         {
-            Timers[P2MTimer].tic();
             #pragma omp sections 
             {
                 #pragma omp section  
@@ -122,15 +121,15 @@ protected:
                     Timers[P2PTimer].tac();
                 }
             }
-            Timers[P2MTimer].tac();
             
-            Timers[NearTimer].tic();
-            #pragma omp single
+            //Timers[NearTimer].tic();
+            #pragma omp single 
             {
                 if(operationsToProceed & FFmmL2P) L2PPass();
             }
-            Timers[NearTimer].tac();
+            //Timers[NearTimer].tac();
         }
+        Timers[P2MTimer].tac();
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -324,6 +323,7 @@ protected:
         octreeIterator.gotoBottomLeft();
 
         // for each leafs
+        // Coloring all the cells
         do{
             const FTreeCoordinate& coord = octreeIterator.getCurrentGlobalCoordinate();
             const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
@@ -338,7 +338,8 @@ protected:
             const FSize nbLeaf = shapes[idxShape].getSize();
             for(int iterLeaf = 0 ; iterLeaf < nbLeaf ; ++iterLeaf ){
                 typename OctreeClass::Iterator toWork = shapes[idxShape][iterLeaf];
-                #pragma omp task firstprivate(neighbors, toWork)
+                // ToDO increase the granularity of the task
+                #pragma omp task   firstprivate(neighbors,toWork)
                 {
                     const int counter = tree->getLeafsNeighbors(neighbors, toWork.getCurrentGlobalCoordinate(),heightMinusOne);
                     kernels[omp_get_thread_num()]->P2P(toWork.getCurrentGlobalCoordinate(), toWork.getCurrentListTargets(),

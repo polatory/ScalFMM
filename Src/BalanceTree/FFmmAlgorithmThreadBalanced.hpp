@@ -91,6 +91,7 @@ class FFmmAlgorithmThreadBalanced : public FAbstractAlgorithm, public FAlgorithm
 
     /// The vector containing the internal costzones
     const std::vector<std::vector<ZoneBoundClass>>& costzones;
+
     /// The vector containing the leaf level costzones
     const std::vector<std::vector<ZoneBoundClass>>& leafcostzones;
     
@@ -160,7 +161,7 @@ protected:
     /**
      * \brief Runs the complete algorithm.
      *
-     * \param operationsToProceed A flag combinaison to specifiy the operators
+     * \param operationsToProceed A flag combinaison to specify the operators
      * to use. See FFmmOperations in FCoreCommon.hpp.
      */
     void executeCore(const unsigned operationsToProceed) override {
@@ -216,7 +217,7 @@ protected:
            The zones are calculated sequentially, we use the same iterator and
            save it's position when we change zone.
          */
-        for( std::vector<ZoneBoundClass> zone : leafcostzones ) {
+        for( std::vector<ZoneBoundClass> zone : costzones ) {
             int nbCells = 0;
             for( ZoneBoundClass bounds : zone ) {
                 nbCells += bounds.second;
@@ -225,8 +226,8 @@ protected:
             iterVector.push_back(
                 std::pair<TreeIterator,int>(
                     octreeIterator,       // Iterator to the current cell
-                    nbCells)); // Cell count in zone
-
+                    nbCells)              // Cell count in zone
+            );
             // Move iterator to end of zone (which is the first of the next zone)
             for( int idx = 0; idx < nbCells; idx++) {
                 octreeIterator.moveRight();
@@ -240,15 +241,15 @@ protected:
             const int threadIdx = omp_get_thread_num();
             KernelClass * const myThreadkernels = kernels[threadIdx];
             TreeIterator zoneIterator = iterVector.at(threadIdx).first;
-            int zoneCellCount = iterVector[threadIdx].second;
+            int zoneCellCount           = iterVector[threadIdx].second;
 
             // Call P2M on cells
             while ( zoneCellCount-- > 0 ) {
                 myThreadkernels->P2M(zoneIterator.getCurrentCell(),     // Cell
-                                     zoneIterator.getCurrentListSrc()); // Particles
+                                                      zoneIterator.getCurrentListSrc()); // Particles
                 zoneIterator.moveRight();
             }
-        }
+        } // barrier
 
         FLOG( computationCounter.tac() );
 
@@ -536,10 +537,8 @@ protected:
                 const MortonIndex startIdx = leafcostzones[threadIdx][colourIdx].first;
                 int zoneCellCount =  leafcostzones[threadIdx][colourIdx].second;
 
-                if( 0 < zoneCellCount) {                    
-                    while(startIdx != it.getCurrentGlobalIndex()) {
-                        it.moveRight();
-                    }
+                if( 0 < zoneCellCount) {
+                    while(startIdx != it.getCurrentGlobalIndex() && it.moveRight());
                 }
 
                 LeafData leafdata;
