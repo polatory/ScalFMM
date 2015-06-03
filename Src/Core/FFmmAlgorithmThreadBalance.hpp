@@ -203,191 +203,230 @@ protected:
         }
 
         // Allocate the working buffer
-        std::unique_ptr<WorkloadTemp[]> workloadBuffer(new WorkloadTemp[leafsNumber]);
+        std::unique_ptr<WorkloadTemp*[]> workloadBufferThread(new WorkloadTemp*[MaxThreads]);
+        memset(workloadBufferThread.get(), 0, MaxThreads*sizeof(WorkloadTemp*));
 
-        { // Prepare P2M
-            /// FLOG(FLog::Controller << "[Balance] P2M:\n");
-            typename OctreeClass::Iterator octreeIterator(tree);
-            octreeIterator.gotoBottomLeft();
-            FSize idxLeaf = 0;
-            FSize totalWork = 0;
-            do{
-                // Keep track of tree iterator
-                workloadBuffer[idxLeaf].iterator = octreeIterator;
-                // Count the nb of particles as amount of work in the leaf
-                workloadBuffer[idxLeaf].amountOfWork = octreeIterator.getCurrentListSrc()->getNbParticles();
-                // Keep the total amount of work
-                totalWork += workloadBuffer[idxLeaf].amountOfWork;
-                ++idxLeaf;
-            } while(octreeIterator.moveRight());
-
-            generateIntervalFromWorkload(&workloadP2M, totalWork, workloadBuffer.get(), idxLeaf);
-        }
-
-        { // Prepare L2P
-            /// FLOG(FLog::Controller << "[Balance] L2P:\n");
-            typename OctreeClass::Iterator octreeIterator(tree);
-            octreeIterator.gotoBottomLeft();
-            FSize idxLeaf = 0;
-            FSize totalWork = 0;
-            do{
-                // Keep track of tree iterator
-                workloadBuffer[idxLeaf].iterator = octreeIterator;
-                // Count the nb of particles as amount of work in the leaf
-                workloadBuffer[idxLeaf].amountOfWork = octreeIterator.getCurrentListTargets()->getNbParticles();
-                // Keep the total amount of work
-                totalWork += workloadBuffer[idxLeaf].amountOfWork;
-                ++idxLeaf;
-            } while(octreeIterator.moveRight());
-
-            generateIntervalFromWorkload(&workloadL2P, totalWork, workloadBuffer.get(), idxLeaf);
-        }
-
-        {// Do it for the M2L
-            /// FLOG(FLog::Controller << "[Balance] M2L:\n");
-            workloadM2L.resize(OctreeHeight);
-            typename OctreeClass::Iterator avoidGotoLeftIterator(tree);
-            avoidGotoLeftIterator.gotoBottomLeft();
-
-            const CellClass* neighbors[343];
-
-            for(int idxLevel = OctreeHeight-1 ; idxLevel >= 2 ; --idxLevel){
-                FLOG(FLog::Controller << "[Balance] \t level " << idxLevel << ":\n");
-                typename OctreeClass::Iterator octreeIterator(avoidGotoLeftIterator);
-                avoidGotoLeftIterator.moveUp();
-
-                FSize idxCell = 0;
-                FSize totalWork = 0;
-                do{
-                    // Keep track of tree iterator
-                    workloadBuffer[idxCell].iterator = octreeIterator;
-                    // Count the nb of M2L for this cell
-                    workloadBuffer[idxCell].amountOfWork = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, 1);
-                    // Keep the total amount of work
-                    totalWork += workloadBuffer[idxCell].amountOfWork;
-                    ++idxCell;
-                } while(octreeIterator.moveRight());
-
-                // Now split between thread
-                generateIntervalFromWorkload(&workloadM2L[idxLevel], totalWork, workloadBuffer.get(), idxCell);
-            }
-        }
-        {// Do it for the M2M L2L
-            /// FLOG(FLog::Controller << "[Balance] M2M L2L:\n");
-            workloadM2M.resize(OctreeHeight);
-            workloadL2L.resize(OctreeHeight);
-            typename OctreeClass::Iterator avoidGotoLeftIterator(tree);
-            avoidGotoLeftIterator.gotoBottomLeft();
-            avoidGotoLeftIterator.moveUp();
-
-            for(int idxLevel = OctreeHeight-2 ; idxLevel >= 2 ; --idxLevel){
-                FLOG(FLog::Controller << "[Balance] \t level " << idxLevel << ":\n");
-                typename OctreeClass::Iterator octreeIterator(avoidGotoLeftIterator);
-                avoidGotoLeftIterator.moveUp();
-
-                FSize idxCell = 0;
-                FSize totalWork = 0;
-                do{
-                    // Keep track of tree iterator
-                    workloadBuffer[idxCell].iterator = octreeIterator;
-                    // Count the nb of children of the current cell
-                    workloadBuffer[idxCell].amountOfWork = 0;
-                    CellClass** child = octreeIterator.getCurrentChild();
-                    for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                        if(child[idxChild]) workloadBuffer[idxCell].amountOfWork += 1;
-                    }
-                    // Keep the total amount of work
-                    totalWork += workloadBuffer[idxCell].amountOfWork;
-                    ++idxCell;
-                } while(octreeIterator.moveRight());
-
-                // Now split between thread
-                generateIntervalFromWorkload(&workloadM2M[idxLevel], totalWork, workloadBuffer.get(), idxCell);
-                generateIntervalFromWorkload(&workloadL2L[idxLevel], totalWork, workloadBuffer.get(), idxCell);
-            }
-        }
-
+        #pragma omp parallel
         {
-            // Prepare the P2P
-            const int LeafIndex = OctreeHeight - 1;
-            leafsDataArray.reset(new LeafData[leafsNumber]);
+            #pragma omp single
+            {
+                #pragma omp task
+                { // Prepare P2M
+                    if(workloadBufferThread[omp_get_thread_num()] == nullptr){
+                        workloadBufferThread[omp_get_thread_num()] = new WorkloadTemp[leafsNumber];
+                    }
+                    WorkloadTemp* workloadBuffer = workloadBufferThread[omp_get_thread_num()];
 
-            // We need the offset for each color
-            int startPosAtShape[SizeShape] = {0};
-            for(int idxShape = 1 ; idxShape < SizeShape ; ++idxShape){
-                startPosAtShape[idxShape] = startPosAtShape[idxShape-1] + shapeLeaves[idxShape-1];
-            }
+                    /// FLOG(FLog::Controller << "[Balance] P2M:\n");
+                    typename OctreeClass::Iterator octreeIterator(tree);
+                    octreeIterator.gotoBottomLeft();
+                    FSize idxLeaf = 0;
+                    FSize totalWork = 0;
+                    do{
+                        // Keep track of tree iterator
+                        workloadBuffer[idxLeaf].iterator = octreeIterator;
+                        // Count the nb of particles as amount of work in the leaf
+                        workloadBuffer[idxLeaf].amountOfWork = octreeIterator.getCurrentListSrc()->getNbParticles();
+                        // Keep the total amount of work
+                        totalWork += workloadBuffer[idxLeaf].amountOfWork;
+                        ++idxLeaf;
+                    } while(octreeIterator.moveRight());
 
-            // Prepare each color
-            typename OctreeClass::Iterator octreeIterator(tree);
-            octreeIterator.gotoBottomLeft();
+                    generateIntervalFromWorkload(&workloadP2M, totalWork, workloadBuffer, idxLeaf);
+                }
 
-            FSize workPerShape[SizeShape] = {0};
+                #pragma omp task
+                { // Prepare L2P
+                    if(workloadBufferThread[omp_get_thread_num()] == nullptr){
+                        workloadBufferThread[omp_get_thread_num()] = new WorkloadTemp[leafsNumber];
+                    }
+                    WorkloadTemp* workloadBuffer = workloadBufferThread[omp_get_thread_num()];
+                    /// FLOG(FLog::Controller << "[Balance] L2P:\n");
+                    typename OctreeClass::Iterator octreeIterator(tree);
+                    octreeIterator.gotoBottomLeft();
+                    FSize idxLeaf = 0;
+                    FSize totalWork = 0;
+                    do{
+                        // Keep track of tree iterator
+                        workloadBuffer[idxLeaf].iterator = octreeIterator;
+                        // Count the nb of particles as amount of work in the leaf
+                        workloadBuffer[idxLeaf].amountOfWork = octreeIterator.getCurrentListTargets()->getNbParticles();
+                        // Keep the total amount of work
+                        totalWork += workloadBuffer[idxLeaf].amountOfWork;
+                        ++idxLeaf;
+                    } while(octreeIterator.moveRight());
 
-            // for each leafs
-            for(int idxLeaf = 0 ; idxLeaf < leafsNumber ; ++idxLeaf){
-                const FTreeCoordinate& coord = octreeIterator.getCurrentGlobalCoordinate();
-                const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
+                    generateIntervalFromWorkload(&workloadL2P, totalWork, workloadBuffer, idxLeaf);
+                }
 
-                const int positionToWork = startPosAtShape[shapePosition]++;
+                #pragma omp task
+                {// Do it for the M2L
+                    if(workloadBufferThread[omp_get_thread_num()] == nullptr){
+                        workloadBufferThread[omp_get_thread_num()] = new WorkloadTemp[leafsNumber];
+                    }
+                    WorkloadTemp* workloadBuffer = workloadBufferThread[omp_get_thread_num()];
+                    /// FLOG(FLog::Controller << "[Balance] M2L:\n");
+                    workloadM2L.resize(OctreeHeight);
+                    typename OctreeClass::Iterator avoidGotoLeftIterator(tree);
+                    avoidGotoLeftIterator.gotoBottomLeft();
 
-                leafsDataArray[positionToWork].index   = octreeIterator.getCurrentGlobalIndex();
-                leafsDataArray[positionToWork].coord   = coord;
-                leafsDataArray[positionToWork].targets = octreeIterator.getCurrentListTargets();
-                leafsDataArray[positionToWork].sources = octreeIterator.getCurrentListSrc();
+                    const CellClass* neighbors[343];
 
-                // For now the cost is simply based on the number of particles
-                const FSize nbPartInLeaf = octreeIterator.getCurrentListTargets()->getNbParticles();
-                workloadBuffer[positionToWork].amountOfWork = nbPartInLeaf*nbPartInLeaf;
-                ContainerClass* neighbors[27];
-                tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), LeafIndex);
-                for(int idxNeigh = 0 ; idxNeigh < 27 ; ++idxNeigh){
-                    if(neighbors[idxNeigh]){
-                        workloadBuffer[positionToWork].amountOfWork +=
-                                 nbPartInLeaf * neighbors[idxNeigh]->getNbParticles();
+                    for(int idxLevel = OctreeHeight-1 ; idxLevel >= 2 ; --idxLevel){
+                        /// FLOG(FLog::Controller << "[Balance] \t level " << idxLevel << ":\n");
+                        typename OctreeClass::Iterator octreeIterator(avoidGotoLeftIterator);
+                        avoidGotoLeftIterator.moveUp();
+
+                        FSize idxCell = 0;
+                        FSize totalWork = 0;
+                        do{
+                            // Keep track of tree iterator
+                            workloadBuffer[idxCell].iterator = octreeIterator;
+                            // Count the nb of M2L for this cell
+                            workloadBuffer[idxCell].amountOfWork = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, 1);
+                            // Keep the total amount of work
+                            totalWork += workloadBuffer[idxCell].amountOfWork;
+                            ++idxCell;
+                        } while(octreeIterator.moveRight());
+
+                        // Now split between thread
+                        generateIntervalFromWorkload(&workloadM2L[idxLevel], totalWork, workloadBuffer, idxCell);
+                    }
+                }
+                #pragma omp task
+                {// Do it for the M2M L2L
+                    if(workloadBufferThread[omp_get_thread_num()] == nullptr){
+                        workloadBufferThread[omp_get_thread_num()] = new WorkloadTemp[leafsNumber];
+                    }
+                    WorkloadTemp* workloadBuffer = workloadBufferThread[omp_get_thread_num()];
+                    /// FLOG(FLog::Controller << "[Balance] M2M L2L:\n");
+                    workloadM2M.resize(OctreeHeight);
+                    workloadL2L.resize(OctreeHeight);
+                    typename OctreeClass::Iterator avoidGotoLeftIterator(tree);
+                    avoidGotoLeftIterator.gotoBottomLeft();
+                    avoidGotoLeftIterator.moveUp();
+
+                    for(int idxLevel = OctreeHeight-2 ; idxLevel >= 2 ; --idxLevel){
+                        /// FLOG(FLog::Controller << "[Balance] \t level " << idxLevel << ":\n");
+                        typename OctreeClass::Iterator octreeIterator(avoidGotoLeftIterator);
+                        avoidGotoLeftIterator.moveUp();
+
+                        FSize idxCell = 0;
+                        FSize totalWork = 0;
+                        do{
+                            // Keep track of tree iterator
+                            workloadBuffer[idxCell].iterator = octreeIterator;
+                            // Count the nb of children of the current cell
+                            workloadBuffer[idxCell].amountOfWork = 0;
+                            CellClass** child = octreeIterator.getCurrentChild();
+                            for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
+                                if(child[idxChild]) workloadBuffer[idxCell].amountOfWork += 1;
+                            }
+                            // Keep the total amount of work
+                            totalWork += workloadBuffer[idxCell].amountOfWork;
+                            ++idxCell;
+                        } while(octreeIterator.moveRight());
+
+                        // Now split between thread
+                        generateIntervalFromWorkload(&workloadM2M[idxLevel], totalWork, workloadBuffer, idxCell);
+                        generateIntervalFromWorkload(&workloadL2L[idxLevel], totalWork, workloadBuffer, idxCell);
                     }
                 }
 
-                workPerShape[shapePosition] += workloadBuffer[positionToWork].amountOfWork;
+                #pragma omp task
+                {
+                    if(workloadBufferThread[omp_get_thread_num()] == nullptr){
+                        workloadBufferThread[omp_get_thread_num()] = new WorkloadTemp[leafsNumber];
+                    }
+                    WorkloadTemp* workloadBuffer = workloadBufferThread[omp_get_thread_num()];
+                    // Prepare the P2P
+                    const int LeafIndex = OctreeHeight - 1;
+                    leafsDataArray.reset(new LeafData[leafsNumber]);
 
-                octreeIterator.moveRight();
-            }
+                    // We need the offset for each color
+                    int startPosAtShape[SizeShape] = {0};
+                    for(int idxShape = 1 ; idxShape < SizeShape ; ++idxShape){
+                        startPosAtShape[idxShape] = startPosAtShape[idxShape-1] + shapeLeaves[idxShape-1];
+                    }
 
-            workloadP2P.resize(SizeShape);
-            int offsetShape = 0;
+                    // Prepare each color
+                    typename OctreeClass::Iterator octreeIterator(tree);
+                    octreeIterator.gotoBottomLeft();
 
-            for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
-                std::vector<std::pair<int,int>>* intervals = &workloadP2P[idxShape];
-                const int nbElements = shapeLeaves[idxShape];
-                const FSize totalWork = workPerShape[idxShape];
+                    FSize workPerShape[SizeShape] = {0};
 
-                // Now split between thread
-                (*intervals).resize(MaxThreads);
-                // Ideally each thread will have this
-                const FSize idealWork = (totalWork/MaxThreads);
-                // Assign default value for first thread
-                int idxThread = 0;
-                (*intervals)[idxThread].first = offsetShape;
-                FSize assignWork = workloadBuffer[0].amountOfWork;
-                for(int idxElement = 1+offsetShape ; idxElement < nbElements+offsetShape ; ++idxElement){
-                    if(FMath::Abs((idxThread+1)*idealWork - assignWork) <
-                            FMath::Abs((idxThread+1)*idealWork - assignWork - workloadBuffer[idxElement].amountOfWork)
-                            && idxThread != MaxThreads-1){
-                        (*intervals)[idxThread].second = idxElement;
+                    // for each leafs
+                    for(int idxLeaf = 0 ; idxLeaf < leafsNumber ; ++idxLeaf){
+                        const FTreeCoordinate& coord = octreeIterator.getCurrentGlobalCoordinate();
+                        const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
+
+                        const int positionToWork = startPosAtShape[shapePosition]++;
+
+                        leafsDataArray[positionToWork].index   = octreeIterator.getCurrentGlobalIndex();
+                        leafsDataArray[positionToWork].coord   = coord;
+                        leafsDataArray[positionToWork].targets = octreeIterator.getCurrentListTargets();
+                        leafsDataArray[positionToWork].sources = octreeIterator.getCurrentListSrc();
+
+                        // For now the cost is simply based on the number of particles
+                        const FSize nbPartInLeaf = octreeIterator.getCurrentListTargets()->getNbParticles();
+                        workloadBuffer[positionToWork].amountOfWork = nbPartInLeaf*nbPartInLeaf;
+                        ContainerClass* neighbors[27];
+                        tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), LeafIndex);
+                        for(int idxNeigh = 0 ; idxNeigh < 27 ; ++idxNeigh){
+                            if(neighbors[idxNeigh]){
+                                workloadBuffer[positionToWork].amountOfWork +=
+                                         nbPartInLeaf * neighbors[idxNeigh]->getNbParticles();
+                            }
+                        }
+
+                        workPerShape[shapePosition] += workloadBuffer[positionToWork].amountOfWork;
+
+                        octreeIterator.moveRight();
+                    }
+
+                    workloadP2P.resize(SizeShape);
+                    int offsetShape = 0;
+
+                    for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
+                        std::vector<std::pair<int,int>>* intervals = &workloadP2P[idxShape];
+                        const int nbElements = shapeLeaves[idxShape];
+                        const FSize totalWork = workPerShape[idxShape];
+
+                        // Now split between thread
+                        (*intervals).resize(MaxThreads);
+                        // Ideally each thread will have this
+                        const FSize idealWork = (totalWork/MaxThreads);
+                        // Assign default value for first thread
+                        int idxThread = 0;
+                        (*intervals)[idxThread].first = offsetShape;
+                        FSize assignWork = workloadBuffer[0].amountOfWork;
+                        for(int idxElement = 1+offsetShape ; idxElement < nbElements+offsetShape ; ++idxElement){
+                            if(FMath::Abs((idxThread+1)*idealWork - assignWork) <
+                                    FMath::Abs((idxThread+1)*idealWork - assignWork - workloadBuffer[idxElement].amountOfWork)
+                                    && idxThread != MaxThreads-1){
+                                (*intervals)[idxThread].second = idxElement;
+                                /// FLOG(FLog::Controller << "[Balance] Shape " << idxShape << " Thread " << idxThread << " goes from "
+                                ///      << (*intervals)[idxThread].first << " to " << (*intervals)[idxThread].second << "\n");
+                                idxThread += 1;
+                                (*intervals)[idxThread].first = idxElement;
+                            }
+                            assignWork += workloadBuffer[idxElement].amountOfWork;
+                        }
+                        (*intervals)[idxThread].second = nbElements + offsetShape;
+
                         /// FLOG(FLog::Controller << "[Balance] Shape " << idxShape << " Thread " << idxThread << " goes from "
                         ///      << (*intervals)[idxThread].first << " to " << (*intervals)[idxThread].second << "\n");
-                        idxThread += 1;
-                        (*intervals)[idxThread].first = idxElement;
+
+                        offsetShape += nbElements;
                     }
-                    assignWork += workloadBuffer[idxElement].amountOfWork;
                 }
-                (*intervals)[idxThread].second = nbElements + offsetShape;
-
-                /// FLOG(FLog::Controller << "[Balance] Shape " << idxShape << " Thread " << idxThread << " goes from "
-                ///      << (*intervals)[idxThread].first << " to " << (*intervals)[idxThread].second << "\n");
-
-                offsetShape += nbElements;
             }
+
+            #pragma omp barrier
+        }
+
+        for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
+            delete[] workloadBufferThread[idxThread];
         }
     }
 
