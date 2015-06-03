@@ -165,8 +165,6 @@ public:
 
             kernel->M2M(&cell, child, idxLevel);
         }
-
-        FAssertLF(idxSubCellGroup == nbSubCellGroups);
     }
 
 
@@ -384,8 +382,6 @@ public:
 
             kernel->L2L(&cell, child, idxLevel);
         }
-
-        FAssertLF(idxSubCellGroup == nbSubCellGroups);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////

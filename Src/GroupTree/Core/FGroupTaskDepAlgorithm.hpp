@@ -374,8 +374,6 @@ protected:
 
                         kernel->M2M(&cell, child, idxLevel);
                     }
-
-                    FAssertLF(idxSubCellGroup == nbSubCellGroups);
                 }
 
                 ++iterCells;
@@ -586,8 +584,6 @@ protected:
 
                         kernel->L2L(&cell, child, idxLevel);
                     }
-
-                    FAssertLF(idxSubCellGroup == nbSubCellGroups);
                 }
 
                 ++iterCells;
