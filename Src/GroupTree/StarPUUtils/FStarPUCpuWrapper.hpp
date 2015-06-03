@@ -461,6 +461,7 @@ public:
                 if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
                     const int leafPos = containers->getLeafIndex(interactionsIndexes[idxInter]);
                     if(leafPos != -1){
+                        FAssertLF(interactionsIndexes[idxInter] == containers->getLeafMortonIndex(leafPos));
                         interactionsObjects[counterExistingCell] = containers->template getLeaf<ParticleContainerClass>(leafPos);
                         FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
                         interactions[interactionsPosition[idxInter]] = &interactionsObjects[counterExistingCell];
