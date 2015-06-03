@@ -449,7 +449,7 @@ public:
 
             MortonIndex interactionsIndexes[26];
             int interactionsPosition[26];
-            FTreeCoordinate coord(containers->getLeafIndex(leafIdx), treeHeight-1);
+            FTreeCoordinate coord(containers->getLeafMortonIndex(leafIdx), treeHeight-1);
             int counter = coord.getNeighborsIndexes(treeHeight,interactionsIndexes,interactionsPosition);
 
             ParticleContainerClass interactionsObjects[27];
