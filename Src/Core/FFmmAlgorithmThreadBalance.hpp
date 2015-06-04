@@ -422,7 +422,7 @@ protected:
                 }
             }
 
-            #pragma omp barrier
+            #pragma omp taskwait
         }
 
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
