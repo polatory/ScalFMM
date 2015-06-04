@@ -869,5 +869,177 @@ template void FCuda__ReleaseCudaKernel<FTestCudaKernels<double>>(FTestCudaKernel
 template dim3 FCuda__GetGridSize< FTestCudaKernels<double> >(FTestCudaKernels<double>* kernel, int intervalSize);
 template dim3 FCuda__GetBlockSize< FTestCudaKernels<double> >(FTestCudaKernels<double>* cukernel);
 
+
 /////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////
+
+#include "../P2P/FCudaP2P.hpp"
+
+template void FCuda__bottomPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<float,4, 4, float>, FCudaGroupAttachedLeaf<float,4, 4, float>, FCudaP2P<float> >
+    (unsigned char* leafCellsPtr, std::size_t leafCellsSize, unsigned char* leafCellsUpPtr,
+unsigned char* containersPtr, std::size_t containersSize,
+    FCudaP2P<float>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+
+template void FCuda__upwardPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<float,4, 4, float>, FCudaGroupAttachedLeaf<float,4, 4, float>, FCudaP2P<float> >
+    (unsigned char* currentCellsPtr, std::size_t currentCellsSize, unsigned char* currentCellsUpPtr,
+    FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t, 9> subCellGroupsSize,
+    FCudaParams<unsigned char*,9> subCellGroupsUpPtr,
+    int nbSubCellGroups, int idxLevel, FCudaP2P<float>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+#ifdef SCALFMM_USE_MPI
+template void FCuda__transferInoutPassCallbackMpi<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<float,4, 4, float>, FCudaGroupAttachedLeaf<float,4, 4, float>, FCudaP2P<float> >
+    (unsigned char* currentCellsPtr, std::size_t currentCellsSize, unsigned char* currentCellsDownPtr,
+    unsigned char* externalCellsPtr, std::size_t externalCellsSize, unsigned char* externalCellsUpPtr,
+    int idxLevel, const OutOfBlockInteraction* outsideInteractions,
+    int nbOutsideInteractions, FCudaP2P<float>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+#endif
+template void FCuda__transferInPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<float,4, 4, float>, FCudaGroupAttachedLeaf<float,4, 4, float>, FCudaP2P<float> >
+    (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
+    unsigned char* currentCellsUpPtr, unsigned char* currentCellsDownPtr,
+    int idxLevel, FCudaP2P<float>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+
+template void FCuda__transferInoutPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<float,4, 4, float>, FCudaGroupAttachedLeaf<float,4, 4, float>, FCudaP2P<float> >
+    (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
+    unsigned char* currentCellsUpPtr, unsigned char* currentCellsDownPtr,
+    unsigned char* externalCellsPtr, std::size_t externalCellsSize,
+    unsigned char* externalCellsUpPtr, unsigned char* externalCellsDownPtr,
+    int idxLevel, const OutOfBlockInteraction* outsideInteractions,
+    int nbOutsideInteractions, FCudaP2P<float>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+
+template void FCuda__downardPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<float,4, 4, float>, FCudaGroupAttachedLeaf<float,4, 4, float>, FCudaP2P<float> >
+    (unsigned char* currentCellsPtr, std::size_t currentCellsSize, unsigned char* currentCellsDownPtr,
+    FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t,9> subCellGroupsSize,
+    FCudaParams<unsigned char*,9> subCellGroupsDownPtr,
+    int nbSubCellGroups, int idxLevel, FCudaP2P<float>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+#ifdef SCALFMM_USE_MPI
+template void FCuda__directInoutPassCallbackMpi<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<float,4, 4, float>, FCudaGroupAttachedLeaf<float,4, 4, float>, FCudaP2P<float> >
+    (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
+    unsigned char* externalContainersPtr, std::size_t externalContainersSize,
+    const OutOfBlockInteraction* outsideInteractions,
+    int nbOutsideInteractions, const int treeHeight, FCudaP2P<float>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+#endif
+template void FCuda__directInPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<float,4, 4, float>, FCudaGroupAttachedLeaf<float,4, 4, float>, FCudaP2P<float> >
+    (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
+    const int treeHeight, FCudaP2P<float>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+
+template void FCuda__directInoutPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<float,4, 4, float>, FCudaGroupAttachedLeaf<float,4, 4, float>, FCudaP2P<float> >
+    (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
+    unsigned char* externalContainersPtr, std::size_t externalContainersSize, unsigned char* externalContainersDownPtr,
+    const OutOfBlockInteraction* outsideInteractions,
+    int nbOutsideInteractions, const int treeHeight, FCudaP2P<float>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+
+template void FCuda__mergePassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<float,4, 4, float>, FCudaGroupAttachedLeaf<float,4, 4, float>, FCudaP2P<float> >
+    (unsigned char* leafCellsPtr, std::size_t leafCellsSize, unsigned char* leafCellsDownPtr,
+    unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
+    FCudaP2P<float>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+
+template FCudaP2P<float>* FCuda__BuildCudaKernel<FCudaP2P<float>>(void* kernel);
+template void FCuda__ReleaseCudaKernel<FCudaP2P<float>>(FCudaP2P<float>* cukernel);
+
+template dim3 FCuda__GetGridSize< FCudaP2P<float> >(FCudaP2P<float>* kernel, int intervalSize);
+template dim3 FCuda__GetBlockSize< FCudaP2P<float> >(FCudaP2P<float>* cukernel);
+
+
+
+
+template void FCuda__bottomPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<double,4, 4, double>, FCudaGroupAttachedLeaf<double,4, 4, double>, FCudaP2P<double> >
+    (unsigned char* leafCellsPtr, std::size_t leafCellsSize, unsigned char* leafCellsUpPtr,
+unsigned char* containersPtr, std::size_t containersSize,
+    FCudaP2P<double>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+
+template void FCuda__upwardPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<double,4, 4, double>, FCudaGroupAttachedLeaf<double,4, 4, double>, FCudaP2P<double> >
+    (unsigned char* currentCellsPtr, std::size_t currentCellsSize, unsigned char* currentCellsUpPtr,
+    FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t, 9> subCellGroupsSize,
+    FCudaParams<unsigned char*,9> subCellGroupsUpPtr,
+    int nbSubCellGroups, int idxLevel, FCudaP2P<double>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+#ifdef SCALFMM_USE_MPI
+template void FCuda__transferInoutPassCallbackMpi<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<double,4, 4, double>, FCudaGroupAttachedLeaf<double,4, 4, double>, FCudaP2P<double> >
+    (unsigned char* currentCellsPtr, std::size_t currentCellsSize, unsigned char* currentCellsDownPtr,
+    unsigned char* externalCellsPtr, std::size_t externalCellsSize, unsigned char* externalCellsUpPtr,
+    int idxLevel, const OutOfBlockInteraction* outsideInteractions,
+    int nbOutsideInteractions, FCudaP2P<double>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+#endif
+template void FCuda__transferInPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<double,4, 4, double>, FCudaGroupAttachedLeaf<double,4, 4, double>, FCudaP2P<double> >
+    (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
+    unsigned char* currentCellsUpPtr, unsigned char* currentCellsDownPtr,
+    int idxLevel, FCudaP2P<double>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+
+template void FCuda__transferInoutPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<double,4, 4, double>, FCudaGroupAttachedLeaf<double,4, 4, double>, FCudaP2P<double> >
+    (unsigned char* currentCellsPtr, std::size_t currentCellsSize,
+    unsigned char* currentCellsUpPtr, unsigned char* currentCellsDownPtr,
+    unsigned char* externalCellsPtr, std::size_t externalCellsSize,
+    unsigned char* externalCellsUpPtr, unsigned char* externalCellsDownPtr,
+    int idxLevel, const OutOfBlockInteraction* outsideInteractions,
+    int nbOutsideInteractions, FCudaP2P<double>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+
+template void FCuda__downardPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<double,4, 4, double>, FCudaGroupAttachedLeaf<double,4, 4, double>, FCudaP2P<double> >
+    (unsigned char* currentCellsPtr, std::size_t currentCellsSize, unsigned char* currentCellsDownPtr,
+    FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t,9> subCellGroupsSize,
+    FCudaParams<unsigned char*,9> subCellGroupsDownPtr,
+    int nbSubCellGroups, int idxLevel, FCudaP2P<double>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+#ifdef SCALFMM_USE_MPI
+template void FCuda__directInoutPassCallbackMpi<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<double,4, 4, double>, FCudaGroupAttachedLeaf<double,4, 4, double>, FCudaP2P<double> >
+    (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
+    unsigned char* externalContainersPtr, std::size_t externalContainersSize,
+    const OutOfBlockInteraction* outsideInteractions,
+    int nbOutsideInteractions, const int treeHeight, FCudaP2P<double>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+#endif
+template void FCuda__directInPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<double,4, 4, double>, FCudaGroupAttachedLeaf<double,4, 4, double>, FCudaP2P<double> >
+    (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
+    const int treeHeight, FCudaP2P<double>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+
+template void FCuda__directInoutPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<double,4, 4, double>, FCudaGroupAttachedLeaf<double,4, 4, double>, FCudaP2P<double> >
+    (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
+    unsigned char* externalContainersPtr, std::size_t externalContainersSize, unsigned char* externalContainersDownPtr,
+    const OutOfBlockInteraction* outsideInteractions,
+    int nbOutsideInteractions, const int treeHeight, FCudaP2P<double>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+
+template void FCuda__mergePassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                        FCudaGroupOfParticles<double,4, 4, double>, FCudaGroupAttachedLeaf<double,4, 4, double>, FCudaP2P<double> >
+    (unsigned char* leafCellsPtr, std::size_t leafCellsSize, unsigned char* leafCellsDownPtr,
+    unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
+    FCudaP2P<double>* kernel, cudaStream_t currentStream,
+                                        const dim3 inGridSize, const dim3 inBlocksSize);
+
+template FCudaP2P<double>* FCuda__BuildCudaKernel<FCudaP2P<double>>(void* kernel);
+template void FCuda__ReleaseCudaKernel<FCudaP2P<double>>(FCudaP2P<double>* cukernel);
+
+template dim3 FCuda__GetGridSize< FCudaP2P<double> >(FCudaP2P<double>* kernel, int intervalSize);
+template dim3 FCuda__GetBlockSize< FCudaP2P<double> >(FCudaP2P<double>* cukernel);
