@@ -31,6 +31,7 @@
 #include "AlgoLoaderTask.hpp"
 #include "AlgoLoaderSectionTask.hpp"
 #include "AlgoLoaderCostZones.hpp"
+#include "AlgoLoaderThreadBalance.hpp"
 
 /**
  * \brief Runs a generic sequence of actions to use an algorithm.
@@ -115,6 +116,8 @@ int main (int argc, char** argv)
         runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderCostZones>(params);
     } else if ( "sectiontask" == params.algo ) {
         runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderSectionTask>(params);
+    } else if ( "autobalance" == params.algo ) {
+        runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderThreadBalance>(params);
     } else {
         std::cout << "Unknown algorithm: " << params.algo << std::endl;
     }
