@@ -76,6 +76,7 @@ __global__ void FCuda__upwardPassPerform(unsigned char* currentCellsPtr, std::si
     FCudaAssertLF(nbSubCellGroups != 0);
     int idxSubCellGroup = 0;
     int idxChildCell = subCellGroups[0].getFistChildIdx(currentCells.getCellMortonIndex(0));
+    FCudaAssertLF(idxChildCell != -1);
 
     for(int cellIdx = 0 ; cellIdx < currentCells.getNumberOfCellsInBlock() ; ++cellIdx){
         typename CellContainerClass::CompleteCellClass cell = currentCells.getUpCell(cellIdx);
@@ -327,6 +328,7 @@ __global__ void FCuda__downardPassPerform(unsigned char* currentCellsPtr, std::s
 
     int idxSubCellGroup = 0;
     int idxChildCell = subCellGroups[0].getFistChildIdx(currentCells.getCellMortonIndex(0));
+    FCudaAssertLF(idxChildCell != -1);
 
     for(int cellIdx = 0 ; cellIdx < currentCells.getNumberOfCellsInBlock() ; ++cellIdx){
         typename CellContainerClass::CompleteCellClass cell = currentCells.getDownCell(cellIdx);
