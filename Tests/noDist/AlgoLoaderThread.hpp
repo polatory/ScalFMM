@@ -12,10 +12,16 @@
 
 #include "Core/FFmmAlgorithmThread.hpp"
 
-
+/**
+ * \brief Algorithm loader for FFmmAlgorithmThread
+ *
+ * See FAlgoLoader.
+ */
 template <class _TreeLoader, template<typename> class _KernelLoader>
 class AlgoLoaderThread : public FAlgoLoader<_TreeLoader, _KernelLoader> {
 public:
+
+    // Type definitions, allows them to be reused by other classes
     using TreeLoader     = _TreeLoader;
     using KernelLoader   = _KernelLoader<TreeLoader>;
 
@@ -26,14 +32,18 @@ public:
     using OctreeClass    = typename TreeLoader::OctreeClass;
     using KernelClass    = typename KernelLoader::KernelClass;
 
+    /// FMM algorithm class
     using FMMClass = FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>;
     
+    /// The tree loader (FTreeLoader) that was used
     TreeLoader& _treeLoader;
+
+    /// The kernel loader (FKernelLoader) that was used
     KernelLoader& _kernelLoader;
 
-    bool _omp_static_schedule;
-    unsigned int _omp_chunk_size;
+    unsigned int _omp_chunk_size; ///< Chunk size for OpenMP
 
+    /// The #FMMClass algorithm instance
     std::unique_ptr<FMMClass> _algo;
 
     AlgoLoaderThread(FPerfTestParams& params,
@@ -41,7 +51,6 @@ public:
                      KernelLoader& kernelLoader) :
         _treeLoader(treeLoader),
         _kernelLoader(kernelLoader),
-        _omp_static_schedule(params.omp_static_schedule),
         _omp_chunk_size(params.omp_chunk_size),
         _algo(nullptr) {
         
