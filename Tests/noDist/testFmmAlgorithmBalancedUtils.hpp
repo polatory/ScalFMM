@@ -13,7 +13,7 @@
 #include <vector>
 
 /**
- * \brief Saves the far-field costzones to files.
+ * \brief Saves the far field costzones to files.
  *
  * One file is created per level, one particle is stored per line in the form :
  * x,y,z,zone.
@@ -91,7 +91,6 @@ void loadTree(OctreeClass& tree, FFmaGenericLoader<FReal>& loader)
     }
 }
 
-
 /**
  * \brief Loads a tree from a loader.
  * \param tree The the to load into.
@@ -108,11 +107,16 @@ void loadTree(OctreeClass& tree, FRandomLoader<FReal>& loader)
     }
 }
 
+
 /**
- * \brief Prints the costzones costs.
+ * \brief Prints the cost of each zone.
  *
  * This function prints the far-field and near-field costzones costs to stdout.
+ * The costs are printed using the format :
+ *     zone_number far_field_cost near_field_cost
  *
+ * \param tree The tree.
+ * \param costzones The FCostZones object that was used to compute the zones. 
  */
 template <typename OctreeClass, typename CellClass>
 void printZonesCosts(OctreeClass& tree, FCostZones<OctreeClass, CellClass>& costzones)
@@ -187,7 +191,6 @@ void printZonesCosts(OctreeClass& tree, FCostZones<OctreeClass, CellClass>& cost
         std::cerr << std::endl;
         zoneIdx++;
     }
-
 
     zoneIdx = 0;
     for(auto z : zonecosts) {

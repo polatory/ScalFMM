@@ -31,6 +31,7 @@
 #include "AlgoLoaderTask.hpp"
 #include "AlgoLoaderSectionTask.hpp"
 #include "AlgoLoaderCostZones.hpp"
+#include "AlgoLoaderThreadBalance.hpp"
 
 /**
  * \brief Runs a generic sequence of actions to use an algorithm.
@@ -80,6 +81,8 @@ namespace ParName {
 
 int main (int argc, char** argv)
 {
+
+    // Parameter handling //////////////
     FHelpDescribeAndExit(argc, argv,
                          "Driver for Chebyshev interpolation kernel  (1/r kernel).",
                          FParameterDefinitions::InputFile,
@@ -99,10 +102,9 @@ int main (int argc, char** argv)
         params.subTreeHeight = getValue(argc, argv, OctreeSubHeight.options, 2);
         params.nbThreads     = getValue(argc, argv, NbThreads.options, 1);
         params.algo = getStr(argc,argv,ParName::Algo.options,"task");
-        params.omp_static_schedule =
-            getStr(argc,argv,ParName::Schedule.options,"dynamic") == std::string("static");
         params.omp_chunk_size = getValue(argc, argv, ParName::ChunkSize.options, 0);
     }
+    // End of Parameter handling ///////
 
     omp_set_num_threads(params.nbThreads);
 
@@ -114,6 +116,8 @@ int main (int argc, char** argv)
         runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderCostZones>(params);
     } else if ( "sectiontask" == params.algo ) {
         runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderSectionTask>(params);
+    } else if ( "autobalance" == params.algo ) {
+        runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderThreadBalance>(params);
     } else {
         std::cout << "Unknown algorithm: " << params.algo << std::endl;
     }
