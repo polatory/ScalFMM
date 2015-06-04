@@ -23,6 +23,7 @@ static void FCudaCheckCore(cudaError_t code, const char *file, int line) {
 #define FCudaMax(x,y) ((x)<(y) ? (y) : (x))
 #define FCudaMin(x,y) ((x)>(y) ? (y) : (x))
 
+
 template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__bottomPassPerform(unsigned char* leafCellsPtr, std::size_t leafCellsSize, unsigned char* leafCellsUpPtr,
@@ -31,7 +32,7 @@ __global__ void FCuda__bottomPassPerform(unsigned char* leafCellsPtr, std::size_
     CellContainerClass leafCells(leafCellsPtr, leafCellsSize, leafCellsUpPtr, nullptr);
     ParticleContainerGroupClass containers(containersPtr, containersSize, nullptr);
 
-    for(int leafIdx = 0 ; leafIdx < leafCells.getNumberOfCellsInBlock() ; ++leafIdx){
+    for(int leafIdx = blockIdx.x ; leafIdx < leafCells.getNumberOfCellsInBlock() ; leafIdx += gridDim.x){
         typename CellContainerClass::CompleteCellClass cell = leafCells.getUpCell(leafIdx);
         ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(leafIdx);
         FCudaAssertLF(leafCells.getCellMortonIndex(leafIdx) == containers.getLeafMortonIndex(leafIdx));
@@ -73,12 +74,28 @@ __global__ void FCuda__upwardPassPerform(unsigned char* currentCellsPtr, std::si
         subCellGroups[idx].reset(subCellGroupsPtr.values[idx], subCellGroupsSize.values[idx], subCellGroupsUpPtr.values[idx], nullptr);
     }
 
+    const int firstCell = FCudaMin(currentCells.getNumberOfCellsInBlock(), blockIdx.x*((currentCells.getNumberOfCellsInBlock()+gridDim.x-1)/gridDim.x));
+    const int lastCell = FCudaMin(currentCells.getNumberOfCellsInBlock(), (blockIdx.x+1)*((currentCells.getNumberOfCellsInBlock()+gridDim.x-1)/gridDim.x));
+
+    if(firstCell == currentCells.getNumberOfCellsInBlock()){
+        return ;
+    }
+
     FCudaAssertLF(nbSubCellGroups != 0);
     int idxSubCellGroup = 0;
-    int idxChildCell = subCellGroups[0].getFistChildIdx(currentCells.getCellMortonIndex(0));
+    int idxChildCell = 0;
+    {// Find first child
+        const MortonIndex mindex = currentCells.getCellMortonIndex(firstCell);
+        while(idxSubCellGroup != nbSubCellGroups
+              && (mindex < (subCellGroups[idxSubCellGroup].getStartingIndex()>>3))){
+            idxSubCellGroup += 1;
+        }
+        FCudaAssertLF(idxSubCellGroup != nbSubCellGroups);
+        idxChildCell = subCellGroups[idxSubCellGroup].getFistChildIdx(currentCells.getCellMortonIndex(0));
+    }
     FCudaAssertLF(idxChildCell != -1);
 
-    for(int cellIdx = 0 ; cellIdx < currentCells.getNumberOfCellsInBlock() ; ++cellIdx){
+    for(int cellIdx = firstCell ; cellIdx < lastCell ; ++cellIdx){
         typename CellContainerClass::CompleteCellClass cell = currentCells.getUpCell(cellIdx);
         FCudaAssertLF(cell.symb->mortonIndex == currentCells.getCellMortonIndex(cellIdx));
         typename CellContainerClass::CompleteCellClass child[8];
@@ -137,6 +154,10 @@ __global__  void FCuda__transferInoutPassPerformMpi(unsigned char* currentCellsP
                                                   unsigned char* externalCellsPtr, std::size_t externalCellsSize, unsigned char* externalCellsUpPtr,
                                                   int idxLevel, const OutOfBlockInteraction* outsideInteractions,
                                                   int nbOutsideInteractions, CudaKernelClass* kernel){
+    if(blockIdx.x != 0){
+        return;
+    }
+
     CellContainerClass currentCells(currentCellsPtr, currentCellsSize, nullptr, currentCellsDownPtr);
     CellContainerClass cellsOther(externalCellsPtr, externalCellsSize, externalCellsUpPtr, nullptr);
 
@@ -192,6 +213,10 @@ template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
 __global__  void FCuda__transferInPassPerform(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
                                               unsigned char* currentCellsUpPtr, unsigned char* currentCellsDownPtr,
                                               int idxLevel, CudaKernelClass* kernel){
+    if(blockIdx.x != 0){
+        return;
+    }
+
     CellContainerClass currentCells(currentCellsPtr, currentCellsSize, currentCellsUpPtr, currentCellsDownPtr);
 
     const MortonIndex blockStartIdx = currentCells.getStartingIndex();
@@ -252,6 +277,10 @@ __global__ void FCuda__transferInoutPassPerform(unsigned char* currentCellsPtr, 
                                                 unsigned char* externalCellsUpPtr, unsigned char* externalCellsDownPtr,
                                                 int idxLevel, const OutOfBlockInteraction* outsideInteractions,
                                                 int nbOutsideInteractions, CudaKernelClass* kernel){
+    if(blockIdx.x != 0){
+        return;
+    }
+
     CellContainerClass currentCells(currentCellsPtr, currentCellsSize, currentCellsUpPtr, currentCellsDownPtr);
     CellContainerClass cellsOther(externalCellsPtr, externalCellsSize, externalCellsUpPtr, externalCellsDownPtr);
 
@@ -319,6 +348,10 @@ __global__ void FCuda__downardPassPerform(unsigned char* currentCellsPtr, std::s
                                           FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t,9> subCellGroupsSize,
                                           FCudaParams<unsigned char*,9> subCellGroupsDownPtr,
                                           int nbSubCellGroups, int idxLevel, CudaKernelClass* kernel){
+    if(blockIdx.x != 0){
+        return;
+    }
+
     FCudaAssertLF(nbSubCellGroups != 0);
     CellContainerClass currentCells(currentCellsPtr, currentCellsSize, nullptr, currentCellsDownPtr);
     CellContainerClass subCellGroups[9];
@@ -326,11 +359,28 @@ __global__ void FCuda__downardPassPerform(unsigned char* currentCellsPtr, std::s
         subCellGroups[idx].reset(subCellGroupsPtr.values[idx], subCellGroupsSize.values[idx], nullptr, subCellGroupsDownPtr.values[idx]);
     }
 
+    const int firstCell = FCudaMin(currentCells.getNumberOfCellsInBlock(), blockIdx.x*((currentCells.getNumberOfCellsInBlock()+gridDim.x-1)/gridDim.x));
+    const int lastCell = FCudaMin(currentCells.getNumberOfCellsInBlock(), (blockIdx.x+1)*((currentCells.getNumberOfCellsInBlock()+gridDim.x-1)/gridDim.x));
+
+    if(firstCell == currentCells.getNumberOfCellsInBlock()){
+        return ;
+    }
+
+    FCudaAssertLF(nbSubCellGroups != 0);
     int idxSubCellGroup = 0;
-    int idxChildCell = subCellGroups[0].getFistChildIdx(currentCells.getCellMortonIndex(0));
+    int idxChildCell = 0;
+    {// Find first child
+        const MortonIndex mindex = currentCells.getCellMortonIndex(firstCell);
+        while(idxSubCellGroup != nbSubCellGroups
+              && (mindex < (subCellGroups[idxSubCellGroup].getStartingIndex()>>3))){
+            idxSubCellGroup += 1;
+        }
+        FCudaAssertLF(idxSubCellGroup != nbSubCellGroups);
+        idxChildCell = subCellGroups[idxSubCellGroup].getFistChildIdx(currentCells.getCellMortonIndex(0));
+    }
     FCudaAssertLF(idxChildCell != -1);
 
-    for(int cellIdx = 0 ; cellIdx < currentCells.getNumberOfCellsInBlock() ; ++cellIdx){
+    for(int cellIdx = firstCell ; cellIdx < lastCell ; ++cellIdx){
         typename CellContainerClass::CompleteCellClass cell = currentCells.getDownCell(cellIdx);
         FCudaAssertLF(cell.symb->mortonIndex == currentCells.getCellMortonIndex(cellIdx));
         typename CellContainerClass::CompleteCellClass child[8];
@@ -384,6 +434,10 @@ __global__ void FCuda__directInoutPassPerformMpi(unsigned char* containersPtr, s
                                                  unsigned char* externalContainersPtr, std::size_t externalContainersSize,
                                                  const OutOfBlockInteraction* outsideInteractions,
                                                  int nbOutsideInteractions, const int treeHeight, CudaKernelClass* kernel){
+    if(blockIdx.x != 0){
+        return;
+    }
+
     ParticleContainerGroupClass containers(containersPtr, containersSize, containersDownPtr);
     ParticleContainerGroupClass containersOther(externalContainersPtr, externalContainersSize, nullptr);
 
@@ -435,6 +489,10 @@ template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__directInPassPerform(unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
                                            const int treeHeight, CudaKernelClass* kernel){
+    if(blockIdx.x != 0){
+        return;
+    }
+
     ParticleContainerGroupClass containers(containersPtr, containersSize, containersDownPtr);
 
     const MortonIndex blockStartIdx = containers.getStartingIndex();
@@ -489,6 +547,10 @@ __global__ void FCuda__directInoutPassPerform(unsigned char* containersPtr, std:
                                               unsigned char* externalContainersPtr, std::size_t externalContainersSize, unsigned char* externalContainersDownPtr,
                                               const OutOfBlockInteraction* outsideInteractions,
                                               int nbOutsideInteractions, const int treeHeight, CudaKernelClass* kernel){
+    if(blockIdx.x != 0){
+        return;
+    }
+
     ParticleContainerGroupClass containers(containersPtr, containersSize, containersDownPtr);
     ParticleContainerGroupClass containersOther(externalContainersPtr, externalContainersSize, externalContainersPtr);
 
@@ -549,11 +611,11 @@ template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__mergePassPerform(unsigned char* leafCellsPtr, std::size_t leafCellsSize, unsigned char* leafCellsDownPtr,
                                         unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
-                                        CudaKernelClass* kernel){
+                                        CudaKernelClass* kernel){    
     CellContainerClass leafCells(leafCellsPtr,leafCellsSize, nullptr, leafCellsDownPtr);
     ParticleContainerGroupClass containers(containersPtr,containersSize, containersDownPtr);
 
-    for(int cellIdx = 0 ; cellIdx < leafCells.getNumberOfCellsInBlock() ; ++cellIdx){
+    for(int cellIdx = blockIdx.x ; cellIdx < leafCells.getNumberOfCellsInBlock() ; cellIdx += gridDim.x){
         typename CellContainerClass::CompleteCellClass cell = leafCells.getDownCell(cellIdx);
         FCudaAssertLF(cell.symb->mortonIndex == leafCells.getCellMortonIndex(cellIdx));
         ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(cellIdx);
