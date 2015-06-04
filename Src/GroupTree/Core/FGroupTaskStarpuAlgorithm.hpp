@@ -519,7 +519,7 @@ protected:
                                               (uintptr_t)currentCells->getRawMultipoleBuffer(), currentCells->getMultipoleBufferSizeInByte());
                 starpu_variable_data_register(&cellHandles[idxLevel][idxGroup].down, 0,
                                               (uintptr_t)currentCells->getRawLocalBuffer(), currentCells->getLocalBufferSizeInByte());
-                cellHandles[idxLevel][idxGroup].intervalSize = int(currentCells->getEndingIndex() - currentCells->getStartingIndex());
+                cellHandles[idxLevel][idxGroup].intervalSize = int(currentCells->getNumberOfCellsInBlock());
 #ifdef STARPU_SUPPORT_ARBITER
                 starpu_data_assign_arbiter(cellHandles[idxLevel][idxGroup].up, arbiterPole);
                 starpu_data_assign_arbiter(cellHandles[idxLevel][idxGroup].down, arbiterLocal);
@@ -534,7 +534,7 @@ protected:
                                               (uintptr_t)containers->getRawBuffer(), containers->getBufferSizeInByte());
                 starpu_variable_data_register(&particleHandles[idxGroup].down, 0,
                                               (uintptr_t)containers->getRawAttributesBuffer(), containers->getAttributesBufferSizeInByte());
-                particleHandles[idxGroup].intervalSize = int(containers->getEndingIndex() - containers->getStartingIndex());
+                particleHandles[idxGroup].intervalSize = int(containers->getNumberOfLeavesInBlock());
 #ifdef STARPU_SUPPORT_ARBITER
                 starpu_data_assign_arbiter(particleHandles[idxGroup].down, arbiterParticles);
 #endif
