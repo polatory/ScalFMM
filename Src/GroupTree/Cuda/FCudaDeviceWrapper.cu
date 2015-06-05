@@ -348,10 +348,6 @@ __global__ void FCuda__downardPassPerform(unsigned char* currentCellsPtr, std::s
                                           FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t,9> subCellGroupsSize,
                                           FCudaParams<unsigned char*,9> subCellGroupsDownPtr,
                                           int nbSubCellGroups, int idxLevel, CudaKernelClass* kernel){
-    if(blockIdx.x != 0){
-        return;
-    }
-
     FCudaAssertLF(nbSubCellGroups != 0);
     CellContainerClass currentCells(currentCellsPtr, currentCellsSize, nullptr, currentCellsDownPtr);
     CellContainerClass subCellGroups[9];

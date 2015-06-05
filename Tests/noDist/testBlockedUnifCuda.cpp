@@ -2,6 +2,7 @@
 // @FUSE_BLAS
 // @FUSE_FFT
 // @FUSE_STARPU
+// @FUSE_CUDA
 // ================
 // Keep in private GIT
 // @SCALFMM_PRIVATE
