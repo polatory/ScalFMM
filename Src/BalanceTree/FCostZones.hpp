@@ -35,15 +35,16 @@ template<typename OctreeClass, typename CellClass>
 class FCostZones {
 public:
     using CostType = typename CellClass::costtype;
+    using TreeIterator = typename OctreeClass::Iterator;
 
     /**
      * \brief Class used to store the bounds of a zone.
      * The bounds consist in the Morton index of the first node and the number
      * of subsequent nodes.
      */ 
-    using BoundClass = std::pair<MortonIndex, int>;
+    using BoundClass = std::pair<TreeIterator, int>;
     /// Initial value for empty bounds.
-    const BoundClass _boundInit {-1,0};
+    const BoundClass _boundInit {TreeIterator(),0};
 
 
 protected:
@@ -197,9 +198,11 @@ public:
 
     /**
      * \brief Runs the costzones algorithm.
+     *
+     * Since ScalFMM's implementation of the octree doesn't have a real root, we
+     * run the algorithm on each of its children.
      */
     void run() {
-
 
         // Compute tree leaves total cost;
         computeLeavesCost();
@@ -211,19 +214,7 @@ public:
         _it.gotoLeft();
         do {
             this->costzones();
-        } while( _it.moveRight());
-
-        // int nbRootChildren = 0;
-        // do {
-        //     nbRootChildren++;
-        // } while(_it.moveRight());        
-        
-        // _it.gotoLeft();        
-        // // Compute costzones, we have to do the first level manualy
-        // for ( int i = 0; i < nbRootChildren; i++ ) {
-        //     this->costzones();
-        //     _it.moveRight();
-        // }
+        } while( _it.moveRight() );
 
     }
 
@@ -242,6 +233,7 @@ protected:
         const int level = _it.level();
         const bool progressDown = _it.canProgressToDown()
             && (level < _bottomMostLevel);
+        // Is this cell within the level range we consider
         const bool useCell = (level < _bottomMostLevel)
             && (level >= _topMostLevel);
 
@@ -251,6 +243,7 @@ protected:
             callCostZonesOnChildren(LEFT, childrenCount);
         }
         
+        // if the current cell is within the levels we consider, we add it
         if( useCell )
             addCurrentCell();
         
@@ -300,7 +293,7 @@ protected:
                 _it.moveRight();
         }
 
-        // move up to the cell level
+        // move up to the previous cell level
         _it.moveUp();
 
     }
@@ -344,7 +337,7 @@ protected:
             _leafCurrentCost[colour] += leafCost;
 
             if( _leafZoneBounds.at(cellZone)[colour] == _boundInit ) {
-                _leafZoneBounds.at(cellZone)[colour].first = _it.getCurrentGlobalIndex();
+                _leafZoneBounds.at(cellZone)[colour].first = _it;
                 _leafZoneBounds.at(cellZone)[colour].second = 1;
             } else {
                 _leafZoneBounds.at(cellZone)[colour].second++;
@@ -358,8 +351,7 @@ protected:
         _internalCurrentCost += cellCost;
 
         if( _boundInit == _internalZoneBounds.at(cellZone)[level] ) {
-            _internalZoneBounds.at(cellZone)[level].first =
-                _it.getCurrentGlobalIndex();
+            _internalZoneBounds.at(cellZone)[level].first = _it;
             _internalZoneBounds.at(cellZone)[level].second = 1;
         } else {
             _internalZoneBounds.at(cellZone)[level].second++;                

@@ -36,6 +36,8 @@
 #include "../Src/Core/FCoreCommon.hpp"
 
 #include "../Src/BalanceTree/FCoordColour.hpp"
+#include "../Src/BalanceTree/FCostZones.hpp"
+
 
 #include <vector>
 
@@ -79,12 +81,10 @@ class FFmmAlgorithmThreadBalanced : public FAbstractAlgorithm, public FAlgorithm
     /// Shortened tree iterator class.
     using TreeIterator   = typename OctreeClass::Iterator;
     /// Factorisation of the class holding the zone bounds.
-    using ZoneBoundClass = std::pair<MortonIndex, int>;
+    using ZoneBoundClass = typename FCostZones<OctreeClass, CellClass>::BoundClass;
 
     OctreeClass* const tree;  ///< The octree to work on.
     KernelClass** kernels;    ///< The kernels.
-
-    //static const int SizeColour = 3*3*3; ///< Leaf colours count, see.
 
     const int MaxThreads;     ///< The maximum number of threads.
     const int OctreeHeight;   ///< The height of the given tree.
@@ -99,7 +99,8 @@ public:
     /** 
      * \brief Class constructor
      * 
-     * The constructor needs the octree and the kernel used for computation.
+     * The constructor needs the octree, the kernel used for computation and the
+     * cost zones.
      *
      * \warning Internally, one kernel is built for each thread, and each works
      * on its own copy. This means the kernel cannot assume anything about the
@@ -107,7 +108,8 @@ public:
      *
      * \param inTree      The octree to work on.
      * \param inKernels   The kernel to call.
-     * \param inCostzones The cost zones for each thread.
+     * \param internalCostZones The far-field cost zones for each thread.
+     * \param leafCostZones The near-field cost zones for each thread.
      *
      * \except An exception is thrown if one of the arguments is NULL.
      * \except An assertion checks that the number of threads is the same as the
@@ -128,14 +130,12 @@ public:
         FAssertLF(tree, "Tree cannot be null.");
         FAssertLF(internalCostzones.size() == static_cast<unsigned int>(MaxThreads),
                   std::string("Thread count is different from cost zone count (") +
-                  std::to_string(MaxThreads) +
-                  std::string(" : ") +
-                  std::to_string(internalCostzones.size()) +
-                  ")."
-            );
+                  std::to_string(MaxThreads) + std::string(" : ") +
+                  std::to_string(internalCostzones.size()) + ")." );
 
+        // Allocation of one kernel per thread (in case of impossible concurent use)
         this->kernels = new KernelClass*[MaxThreads];
-
+        // Allocation is done so that kernels are closest to their core.
         #pragma omp parallel for schedule(static)
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread) {
             #pragma omp critical (InitFFmmAlgorithmThreadBalanced)
@@ -146,10 +146,10 @@ public:
 
         FAbstractAlgorithm::setNbLevelsInTree(OctreeHeight);
 
-        FLOG(FLog::Controller << "FFmmAlgorithmThreadBalanced (Max Thread " << MaxThreads << ")\n");
+        FLOG(std::cerr << "FFmmAlgorithmThreadBalanced (Max Thread " << MaxThreads << ")\n");
     }
 
-    /** \brief Default destructor */
+    /** \brief Destructor */
     virtual ~FFmmAlgorithmThreadBalanced(){
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
             delete this->kernels[idxThread];
@@ -197,130 +197,76 @@ protected:
     // P2M
     /////////////////////////////////////////////////////////////////////////////
 
-    /** \brief Runs the P2M kernel. */
+    /** \brief Runs the P2M kernel.
+     *
+     * We retrieve the far-field cost zones for the tree leaf level. Each thread
+     * runs the P2M kernel on the cells within its zone.
+     *
+     * \note The lower level of the far-field zones is used.
+     */
     void bottomPass(){
-        FLOG( FLog::Controller.write("\tStart Bottom Pass\n").write(FLog::Flush) );
-        FLOG( FTic counterTime );
+        FLOG( std::cerr << "\tStart Bottom Pass" << std::endl );
+        FLOG( FTic timer );
 
-        TreeIterator octreeIterator(tree);
-        octreeIterator.gotoBottomLeft();
-
-        // One pair per zone.
-        std::vector< std::pair<TreeIterator, int> > iterVector(0);
-
-        /* Find iterators to leaf portion of each zone.
-
-           Since we do not care about the leaves colour here, we use the number
-           of particles that each zone has for each colour and add them to count
-           the total number of particles for a zone.
-
-           The zones are calculated sequentially, we use the same iterator and
-           save it's position when we change zone.
-         */
-        for( std::vector<ZoneBoundClass> zone : costzones ) {
-            int nbCells = 0;
-            for( ZoneBoundClass bounds : zone ) {
-                nbCells += bounds.second;
-            }
-
-            iterVector.push_back(
-                std::pair<TreeIterator,int>(
-                    octreeIterator,       // Iterator to the current cell
-                    nbCells)              // Cell count in zone
-            );
-            // Move iterator to end of zone (which is the first of the next zone)
-            for( int idx = 0; idx < nbCells; idx++) {
-                octreeIterator.moveRight();
-            }
-        }
-
-        FLOG( FTic computationCounter );
-
-        #pragma omp parallel
+        #pragma omp parallel 
         {
+            // Thread index ( = zone index )
             const int threadIdx = omp_get_thread_num();
-            KernelClass * const myThreadkernels = kernels[threadIdx];
-            TreeIterator zoneIterator = iterVector.at(threadIdx).first;
-            int zoneCellCount           = iterVector[threadIdx].second;
-
+            // Thread kernels
+            KernelClass * const threadKernels = kernels[threadIdx];
+            // Iterator to the zone's first cell
+            TreeIterator zoneIterator = costzones.at(threadIdx).at(OctreeHeight-1).first;
+            // Cell count in zone
+            int zoneCellCount         = costzones.at(threadIdx).at(OctreeHeight-1).second;
+            
             // Call P2M on cells
             while ( zoneCellCount-- > 0 ) {
-                myThreadkernels->P2M(zoneIterator.getCurrentCell(),     // Cell
-                                                      zoneIterator.getCurrentListSrc()); // Particles
+                threadKernels->P2M(zoneIterator.getCurrentCell(),     // Cell
+                                   zoneIterator.getCurrentListSrc()); // Particles
                 zoneIterator.moveRight();
             }
-        } // barrier
+        } // sync barrier
 
-        FLOG( computationCounter.tac() );
-
-        FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "
-              << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FLog::Controller << "\t\t Computation : "
-              << computationCounter.elapsed() << " s\n" );
-
+        FLOG( timer.tac() );
+        FLOG( std::cerr << "\tFinished (@Bottom Pass (P2M) = "
+                        << timer.elapsed() << " s)" << std::endl );
     }
     
     /////////////////////////////////////////////////////////////////////////////
     // Upward
     /////////////////////////////////////////////////////////////////////////////
     
-    /** \brief Runs the M2M kernel. */
+    /** \brief Runs the M2M kernel.
+     *
+     * The M2M kernel is run on every node of the tree starting from the
+     * lowest level up to the topmost. There is a synchronisation barrier
+     * between each level.
+     *
+     */
     void upwardPass() {
-        FLOG( FLog::Controller.write("\tStart Upward Pass\n").write(FLog::Flush); );
-        FLOG( FTic counterTime );
-        FLOG( FTic computationCounter );
+        FLOG( std::cerr << "\tStart Upward Pass" << std::endl );
+        FLOG( FTic timer );
 
-        // Start from leaf level - 1
-        TreeIterator octreeIterator(tree);
-        octreeIterator.gotoBottomLeft();
-        octreeIterator.moveUp(); // Avoid leaf level
+        // Running the kernel from the lowest up to the topmost
+        for(auto level = FAbstractAlgorithm::lowerWorkingLevel-2;
+            level >= FAbstractAlgorithm::upperWorkingLevel;
+            level--) {
 
-        while( octreeIterator.level() >  FAbstractAlgorithm::lowerWorkingLevel-1 ) {
-            octreeIterator.moveUp();
-        }
+            FLOG( FTic levelTimer );
+            FLOG( std::cerr << "\t\t>> Level " << level << std::flush);
 
-        // Stores the iterators to the beginning of zones *per level* in REVERSE order!
-        // ie. levels in REVERSE ORDER > zones > (iterator,cell_count)
-        std::vector< std::vector< std::pair<TreeIterator, int> > >
-            reverseLevelIterVector(0);
-
-        while( octreeIterator.level() >= FAbstractAlgorithm::upperWorkingLevel )
-        {
-            int idxLevel = octreeIterator.level();
-            std::vector< std::pair<TreeIterator, int> > levelVect;
-            // Find iterators to leaf portion of each zone.
-            for( std::vector<ZoneBoundClass> zone : costzones ) {
-
-                levelVect.push_back(
-                    std::pair<TreeIterator,int>(
-                        octreeIterator,          // Iterator to the current cell
-                        zone[idxLevel].second)); // Cell count in zone
-
-                // Get iterator to end of zone (which is the first of the next zone)
-                for( int idx = 0; idx < zone[idxLevel].second; idx++) {
-                    octreeIterator.moveRight();
-                }
-
-            }
-            reverseLevelIterVector.emplace_back(levelVect);
-
-            octreeIterator.moveUp();
-            octreeIterator.gotoLeft();
-        }
-
-        // for each level from bottom to top
-        for( std::vector< std::pair<TreeIterator, int> > levelIterVector :
-                 reverseLevelIterVector ) {
-
-            FLOG(FTic counterTimeLevel);
-            FLOG(computationCounter.tic());
-            #pragma omp parallel
+            #pragma omp parallel 
             {
-                const int threadNum = omp_get_thread_num();
+                // Thread index ( = zone index)
+                const int threadNum = omp_get_thread_num(); 
+                // Thread kernels
                 KernelClass * const myThreadkernels = kernels[threadNum];
-                TreeIterator zoneIterator = levelIterVector[threadNum].first;
-                int zoneCellCount = levelIterVector[threadNum].second;
-
+                // Iterator to the zone's first cell (for this level)
+                TreeIterator zoneIterator = costzones.at(threadNum).at(level).first;
+                // Cell count in zone (for this level)
+                int zoneCellCount         = costzones.at(threadNum).at(level).second;
+               
+                // Call M2M on cells
                 while(zoneCellCount-- > 0) {
                     // We need the current cell and the child
                     // child is an array (of 8 child) that may be null
@@ -329,171 +275,130 @@ protected:
                                           zoneIterator.level());
                     zoneIterator.moveRight();
                 }
+            } // barrier between levels
 
-            }
-
-            FLOG(computationCounter.tac());
-            FLOG( FLog::Controller << "\t\t>> Level " << octreeIterator.level()
-                                   << " = "  << counterTimeLevel.tacAndElapsed()
-                                   << "s\n" );
+            FLOG( levelTimer.tac() );
+            FLOG( std::cerr << " = "  << levelTimer.elapsed()
+                                   << "s" << std::endl );
         }
 
-        FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "
-                               << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FLog::Controller << "\t\t Computation : "
-                               << computationCounter.cumulated() << "s\n" );
+        FLOG( std::cerr << "\tFinished (@Upward Pass (M2M) = "
+                               << timer.tacAndElapsed() << " s)" << std::endl );
     }
 
     /////////////////////////////////////////////////////////////////////////////
     // Transfer
     /////////////////////////////////////////////////////////////////////////////
 
-    /** \brief Runs the M2L kernel. */
-    void transferPass(){
+    /** \brief Runs the M2L kernel.
+     *
+     * The M2L kernel is run on every node of the tree starting from the
+     * topmost level up to the lowest. There is a synchronisation barrier
+     * between each level.
+     */
+    void transferPass() {
+        FLOG( std::cerr << "\tStart Downward Pass (M2L)" << std::endl );
+        FLOG( FTic timer );
 
-        FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
-        FLOG(FTic counterTime);
-        FLOG(FTic computationCounter);
-
-        TreeIterator octreeIterator(tree);
-        octreeIterator.moveDown();
-
-        for(int idxLevel = 2 ; idxLevel < FAbstractAlgorithm::upperWorkingLevel ; ++idxLevel){
-            octreeIterator.moveDown();
-        }
-
-
-        // for each levels
-        for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ;
-            idxLevel < FAbstractAlgorithm::lowerWorkingLevel ;
-            ++idxLevel )
+        // Running the kernel from the topmost to the lowest
+        for( int level = FAbstractAlgorithm::upperWorkingLevel ;
+             level < FAbstractAlgorithm::lowerWorkingLevel ;
+             ++level )
         {
-            FLOG(FTic counterTimeLevel);
+            FLOG( std::cerr << "\t\t>> Level " << level << std::flush );
+            FLOG( FTic levelTimer );
 
-            std::vector< std::pair<TreeIterator, int> > iterVector;
-            // Find iterators to leaf portion of each zone.
-            for( std::vector<ZoneBoundClass> zone : costzones ) {
-                iterVector.push_back(
-                    std::pair<TreeIterator,int>(
-                        octreeIterator,          // Iterator to the current cell
-                        zone[idxLevel].second)); // Cell count in zone
-                // Get iterator to end of zone (which is the first of the next zone)
-                for( int idx = 0; idx < zone[idxLevel].second; idx++) {
-                    octreeIterator.moveRight();
-                }
-
-            }
-
-            octreeIterator.moveDown();
-            octreeIterator.gotoLeft();
-
-            FLOG(computationCounter.tic());
-
-            #pragma omp parallel
+            #pragma omp parallel 
             {
-                const int threadNum = omp_get_thread_num();
+
+                // Thread index ( = zone index)
+                const int threadNum = omp_get_thread_num(); 
+                // Thread kernels
                 KernelClass * const myThreadkernels = kernels[threadNum];
+                // Iterator to the zone's first cell (for this level)
+                TreeIterator zoneIterator = costzones.at(threadNum).at(level).first;
+                // Cell count in zone (for this level)
+                int zoneCellCount         = costzones.at(threadNum).at(level).second;
+                // Array for cell neighbours
                 const CellClass* neighbours[343];
-                TreeIterator zoneIterator = iterVector[threadNum].first;
-                int zoneCellCount = iterVector[threadNum].second;
                 
+                // Call M2L kernel on cells
                 while(zoneCellCount-- > 0) {
                     const int counter =
                         tree->getInteractionNeighbors(
                             neighbours,
                             zoneIterator.getCurrentGlobalCoordinate(),
-                            idxLevel);
+                            level);
                     if(counter)
                         myThreadkernels->M2L(
                             zoneIterator.getCurrentCell(),
                             neighbours,
                             counter,
-                            idxLevel);
+                            level);
                     zoneIterator.moveRight();
                 }
 
-                myThreadkernels->finishedLevelM2L(idxLevel);
-
+                myThreadkernels->finishedLevelM2L(level);
             }
 
-            FLOG( computationCounter.tac() );
-            FLOG( FLog::Controller << "\t\t>> Level " 
-                                   << idxLevel << " = "  
-                                   << counterTimeLevel.tacAndElapsed()
-                                   << "s\n" );
+            FLOG( levelTimer.tac() );
+            FLOG( std::cerr << " = " << levelTimer.elapsed()
+                                   << " s"  << std::endl );
         }
                 
-        FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "
-              << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FLog::Controller << "\t\t Computation : "
-              << computationCounter.cumulated() << " s\n" );
+        FLOG( std::cerr << "\tFinished (@Downward Pass (M2L) = "
+              << timer.tacAndElapsed() << " s)\n" );
     }
 
     /////////////////////////////////////////////////////////////////////////////
     // Downward
     /////////////////////////////////////////////////////////////////////////////
 
-    /** \brief Runs the L2L kernel. */
+    /** \brief Runs the L2L kernel. 
+     *
+     * The L2L kernel is run on every node of the tree starting from the
+     * topmost level up to the lowest. There is a synchronisation barrier
+     * between each level.
+     */
     void downardPass(){
+        FLOG( std::cerr << "\tStart Downward Pass (L2L)" << std::endl );
+        FLOG( FTic timer );
 
-        FLOG( FLog::Controller.write("\tStart Downward Pass (L2L)\n").write(FLog::Flush); );
-        FLOG(FTic counterTime);
-        FLOG(FTic computationCounter);
-
-        TreeIterator octreeIterator(tree);
-        octreeIterator.moveDown();
-
-        for(int idxLevel = 2 ; idxLevel < FAbstractAlgorithm::upperWorkingLevel ; ++idxLevel){
-            octreeIterator.moveDown();
-        }
-
-        const int heightMinusOne = FAbstractAlgorithm::lowerWorkingLevel - 1;
         // for each levels excepted leaf level
-        for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; 
-            idxLevel < heightMinusOne ;
-            ++idxLevel ) 
+        for(int level = FAbstractAlgorithm::upperWorkingLevel ; 
+            level < FAbstractAlgorithm::lowerWorkingLevel - 1;
+            ++level ) 
         {
-            FLOG(FTic counterTimeLevel);
-
-            std::vector< std::pair<TreeIterator, int> > iterVector;
-            // Find iterators to leaf portion of each zone.
-            for( std::vector<ZoneBoundClass> zone : costzones ) {
-                iterVector.push_back(
-                    std::pair<TreeIterator,int>(
-                        octreeIterator,          // Iterator to the current cell
-                        zone[idxLevel].second)); // Cell count in zone
-                // Get iterator to end of zone (which is the first of the next zone)
-                for( int idx = 0; idx < zone[idxLevel].second; idx++) {
-                    octreeIterator.moveRight();
-                }
-            }
-            octreeIterator.gotoLeft();
-            octreeIterator.moveDown();
-
-            FLOG(computationCounter.tic());
+            FLOG( std::cerr << "\t\t>> Level " << level << std::flush);
+            FLOG( FTic levelTimer );
 
             #pragma omp parallel
             {
-                const int threadNum = omp_get_thread_num();
+                // Thread index ( = zone index)
+                const int threadNum = omp_get_thread_num(); 
+                // Thread kernels
                 KernelClass * const myThreadkernels = kernels[threadNum];
-                TreeIterator zoneIterator = iterVector[threadNum].first;
-                int zoneCellCount = iterVector[threadNum].second;
+                // Iterator to the zone's first cell (for this level)
+                TreeIterator zoneIterator = costzones.at(threadNum).at(level).first;
+                // Cell count in zone (for this level)
+                int zoneCellCount         = costzones.at(threadNum).at(level).second;
                 
+                // Call L2L kernel on cells
                 while( zoneCellCount-- > 0 ) {
                     myThreadkernels->L2L(
                         zoneIterator.getCurrentCell(),
                         zoneIterator.getCurrentChild(),
-                        idxLevel);
+                        level);
                     zoneIterator.moveRight();
                 }
             }
 
-            FLOG(computationCounter.tac());
-            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FLOG(levelTimer.tac());
+            FLOG( std::cerr << " = "  << levelTimer.elapsed() << " s\n" );
         }
 
-        FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
+        FLOG( std::cerr << "\tFinished (@Downward Pass (L2L) = " 
+                               << timer.tacAndElapsed() << " s)\n" );
     }
 
 
@@ -509,83 +414,92 @@ protected:
      * \param l2pEnabled Run the L2P kernel.
      */
     void directPass(const bool p2pEnabled, const bool l2pEnabled){
-        FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
-        FLOG( FTic counterTime );
-        FLOG( FTic computationCounter );
-        FLOG( FTic computationCounterP2P );
+        FLOG( std::cerr << "\tStart Direct Pass" << std::endl );
+        FLOG( FTic timer );
 
-
+        /** \brief Data handling structure
+         *
+         * This structure is used to store data related to a leaf.
+         */
         struct LeafData {
-            MortonIndex index;
-            CellClass* cell;
-            ContainerClass* targets;
-            ContainerClass* sources;
+            MortonIndex index;       ///< Leaf Morton index
+            CellClass* cell;         ///< Pointer to the cell in the tree
+            ContainerClass* targets; ///< Targets for L2P & P2P kernel
+            ContainerClass* sources; ///< Sources for P2P kernel
         };
 
-        const int leafLevel = OctreeHeight - 1;
         #pragma omp parallel
         {
-            const int threadIdx = omp_get_thread_num();
-            
+            // Thread index ( = zone index)
+            const int threadNum = omp_get_thread_num(); 
+            // Thread kernels
+            KernelClass * const threadKernels = kernels[threadNum];
+            // Iterator to the zone's first cell (for this level)
+            TreeIterator zoneIterator;
+            // Cell count in zone (for this level)
+            int zoneCellCount;
+            // Cell neighbours
             ContainerClass* neighbours[27];
-            KernelClass& myThreadkernel = (*kernels[threadIdx]);
-            TreeIterator it(tree);
-
-            for( int colourIdx = 0; colourIdx < FCoordColour::range; colourIdx++) {
-                it.gotoBottomLeft();
+            // Cell data
+            LeafData leafdata;
+            
+            // The cells are coloured in order to make concurent work
+            // possible. Cells in a colour can all be computed at the same time.
+            for( int colourIdx = 0; colourIdx < FCoordColour::range; colourIdx++ ) {
                 
-                const MortonIndex startIdx = leafcostzones[threadIdx][colourIdx].first;
-                int zoneCellCount =  leafcostzones[threadIdx][colourIdx].second;
+                // Get the iterator of the first cell and cell count for this
+                // thread ( = zone)
+                zoneIterator  = leafcostzones.at(threadNum).at(colourIdx).first;
+                zoneCellCount = leafcostzones.at(threadNum).at(colourIdx).second;
 
-                if( 0 < zoneCellCount) {
-                    while(startIdx != it.getCurrentGlobalIndex() && it.moveRight());
-                }
-
-                LeafData leafdata;
+                // Skip through all the leaves, work only on those with the
+                // right colour
                 while( zoneCellCount > 0) {
-                    if( FCoordColour::coord2colour(it.getCurrentCell()->getCoordinate()) == colourIdx) {
+                    if( FCoordColour::coord2colour(zoneIterator.getCurrentCell()
+                                                   ->getCoordinate())
+                        == colourIdx) {
 
-                        leafdata.index   = it.getCurrentGlobalIndex();
-                        leafdata.cell    = it.getCurrentCell();
-                        leafdata.targets = it.getCurrentListTargets();
-                        leafdata.sources = it.getCurrentListSrc();
+                        // Store leaf data
+                        leafdata.index   = zoneIterator.getCurrentGlobalIndex();
+                        leafdata.cell    = zoneIterator.getCurrentCell();
+                        leafdata.targets = zoneIterator.getCurrentListTargets();
+                        leafdata.sources = zoneIterator.getCurrentListSrc();
                         
+                        // Call L2P kernel
                         if( l2pEnabled ) {
-                            myThreadkernel.L2P(leafdata.cell, leafdata.targets);
+                            threadKernels->L2P(leafdata.cell, leafdata.targets);
                         }
-                        if( p2pEnabled ){
-                            // need the current particles and neighbours particles
 
+                        // Call P2P kernel
+                        if( p2pEnabled ) {
+                            // needs the current particles and neighbours particles
                             const int counter =
                                 tree->getLeafsNeighbors(neighbours,
                                                         leafdata.cell->getCoordinate(),
-                                                        leafLevel);
+                                                        OctreeHeight - 1); // Leaf level
 
-                            myThreadkernel.P2P(leafdata.cell->getCoordinate(),
-                                               leafdata.targets,
-                                               leafdata.sources,
-                                               neighbours,
-                                               counter);
+                            threadKernels->P2P(leafdata.cell->getCoordinate(),
+                                                leafdata.targets,
+                                                leafdata.sources,
+                                                neighbours,
+                                                counter);
                         }
 
+                        // Decrease cell count only if a cell of the right colour was encountered.
                         zoneCellCount--;
                     }
 
-                    it.moveRight();
+                    zoneIterator.moveRight();
                 }
-                
+                // Barrier between computation on two different colours
                 #pragma omp barrier
             }
             
         }
 
-
-
-
-        FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FLog::Controller << "\t\t Computation L2P + P2P : " << computationCounter.cumulated()    << " s\n" );
-        FLOG( FLog::Controller << "\t\t Computation P2P :       " << computationCounterP2P.cumulated() << " s\n" );
-
+        FLOG( timer.tac() );
+        FLOG( std::cerr << "\tFinished (@Direct Pass (L2P + P2P) = "
+                               << timer.elapsed() << " s)" << std::endl );
     }
 
 };

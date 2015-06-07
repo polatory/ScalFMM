@@ -122,13 +122,8 @@ template <typename OctreeClass, typename CellClass>
 void printZonesCosts(OctreeClass& tree, FCostZones<OctreeClass, CellClass>& costzones)
 {
     using CostType = typename CellClass::costtype;
+    using TreeIterator = typename OctreeClass::Iterator;
     //using BoundClass = typename FCostZones<OctreeClass, CellClass>::BoundClass;
-
-    typename OctreeClass::Iterator it(&tree);
-
-
-    // auto leafZoneBounds = costzones.getLeafZoneBounds();
-    // auto internalZoneBounds = costzones.getZoneBounds();
 
     auto zones = costzones.getZones();
 
@@ -156,16 +151,10 @@ void printZonesCosts(OctreeClass& tree, FCostZones<OctreeClass, CellClass>& cost
 
         colourIdx = 0;
         for(auto c : z) {
-            it.gotoBottomLeft();
-
             std::cerr << "  " << colourIdx;
             
-            const MortonIndex start = c.first;
+            TreeIterator it = c.first;
             int count = c.second;
-
-            if(count > 0) {
-                while( start < it.getCurrentGlobalIndex() && it.moveRight());
-            }
 
             while(count > 0) {
                 if( FCoordColour::coord2colour(
@@ -180,7 +169,7 @@ void printZonesCosts(OctreeClass& tree, FCostZones<OctreeClass, CellClass>& cost
 
                     count--;
                 }
-                if (! it.moveRight()) {
+                if (! it.moveRight() && count > 0) {
                     std::cerr << "Reached the end...";
                     break;
                 }
