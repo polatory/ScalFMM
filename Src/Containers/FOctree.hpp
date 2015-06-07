@@ -259,15 +259,15 @@ public:
      * Please refer to testOctreeIter file to see how it works.
      *
      * @code
-     * FOctree<TestParticle, TestCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree); <br>
-     * octreeIterator.gotoBottomLeft(); <br>
-     * for(int idx = 0 ; idx < NbLevels - 1; ++idx ){ <br>
-     *     do{ <br>
-     *         // ...  <br>
-     *     } while(octreeIterator.moveRight()); <br>
-     *     octreeIterator.moveUp(); <br>
-     *     octreeIterator.gotoLeft(); <br>
-     * } <br>
+     * FOctree<TestParticle, TestCell, NbLevels, NbSubLevels>::Iterator octreeIterator(&tree);
+     * octreeIterator.gotoBottomLeft();
+     * for(int idx = 0 ; idx < NbLevels - 1; ++idx ){
+     *     do{
+     *         // ... 
+     *     } while(octreeIterator.moveRight());
+     *     octreeIterator.moveUp();
+     *     octreeIterator.gotoLeft();
+     * }
      * @endcode
      * Remark :
      * It uses the left right limit on each suboctree and their morton index.
@@ -319,6 +319,15 @@ public:
             this->currentLocalIndex = other.currentLocalIndex ;
         }
 
+        /** Move constructor
+         * @param other source iterator to move.
+         */
+        Iterator(Iterator&& other){
+            this->current = other.current ;
+            this->currentLocalLevel = other.currentLocalLevel ;
+            this->currentLocalIndex = other.currentLocalIndex ;
+        }
+
         /** Copy operator
          * @param other source iterator to copy
          * @return this after copy
@@ -328,6 +337,44 @@ public:
             this->currentLocalLevel = other.currentLocalLevel ;
             this->currentLocalIndex = other.currentLocalIndex ;
             return *this;
+        }
+
+        /** \brief Move operator
+         * \param other Object to move.
+         * \return This object after move.
+         */
+        Iterator& operator=(Iterator&& other) {
+            this->current = other.current ;
+            this->currentLocalLevel = other.currentLocalLevel ;
+            this->currentLocalIndex = other.currentLocalIndex ;
+            return *this;
+        }
+
+        /** \brief equality operator
+         *
+         * \param other Iterator to compare to.
+         * \return True if the two oterators are the same, false otherwise.
+         */
+        bool operator==(const Iterator& other) const {
+            // Note C++11 standard, $5.9.4:
+            // If two pointers point to non-static data members of the same
+            // union object, they compare equal (after conversion to void*, if
+            // necessary). If two pointers point to elements of the same array
+            // or one beyond the end of the array, the pointer to the object
+            // with the higher subscript compares higher. 
+            // 
+            // This is why we compare the 'tree' component of the 'current' union
+            return this->current.tree == other.current.tree &&
+                this->currentLocalLevel == other.currentLocalLevel &&
+                this->currentLocalIndex == other.currentLocalIndex ;
+        }
+
+        /** \brief Inequality operator
+         * \param other Iterator to compare to.
+         * \return True if the two oterators are the different, false otherwise.
+         */
+        bool operator!=(const Iterator& other) const {
+            return ! (*this == other);
         }
 
         /**
