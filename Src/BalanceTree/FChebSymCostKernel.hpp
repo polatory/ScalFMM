@@ -250,10 +250,10 @@ public:
             if (ChildCells[ChildIndex]) {
                 tmpCost = countFlopsM2MorL2L() + nnodes;
                 flops += tmpCost;
-                ChildCells[ChildIndex]->addCost(flops);
+                ChildCells[ChildIndex]->addCost(tmpCost);
             }
-        flopsL2L += flops;
 
+        flopsL2L += flops;
         countL2L++;
     }
 
