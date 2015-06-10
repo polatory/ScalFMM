@@ -17,7 +17,9 @@
 #include "BalanceTree/FCostZones.hpp"
 
 /**
- * \brief Algorithm loader for the CostZones algorithm.
+ * \brief Algorithm loader for FFmmAlgorithmThreadBalanced.
+ *
+ * See FAlgoLoader documentation.
  *
  * \warning : This loader requires that the KernelLoader supply a type definition
  * for a `CostKernelClass`
@@ -25,6 +27,9 @@
 template <class _TreeLoader, template<typename> class _KernelLoader>
 class AlgoLoaderCostZones : public FAlgoLoader<_TreeLoader, _KernelLoader> {
 public:
+    // Types definitions
+
+    /// The TreeLoader type that is used.
     using TreeLoader     = _TreeLoader;
     using KernelLoader   = _KernelLoader<TreeLoader>;
 
@@ -63,7 +68,7 @@ public:
 
     /// Computes the tree cells costs then runs the costzones and FMM algorithms.
     void run() {
-
+        // The tree loader holds the tree structure
         OctreeClass* p_tree = &(_treeLoader._tree);
 
         // Compute tree cells costs
@@ -75,6 +80,7 @@ public:
         std::cout << "Generating tree cost: " << this->time.elapsed() << "s.\n";
         _infostring << "costgen:" << this->time.elapsed() << " ";
 
+        // Compute cost zones
         FCostZones<OctreeClass, CellClass> costzones(p_tree, omp_get_max_threads());
 
         this->time.tic();
@@ -83,6 +89,7 @@ public:
         std::cout << "Generating cost zones: " << this->time.elapsed() << "s.\n";
         _infostring << "zonegen:" << this->time.elapsed() << " ";
 
+        // Execute FFM algorithm
         this->time.tic();
         _algo = std::unique_ptr<FMMClass>(
             new FMMClass(p_tree, &(_kernelLoader._kernel),

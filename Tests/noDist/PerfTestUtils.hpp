@@ -47,9 +47,7 @@ struct FPerfTestParams {
  */
 class FTreeLoader {
 public:
-    /// A timer
-    /** Is used to time the loadTree method.
-     */
+    /// A timer used to time the loadTree method.
     FTic time;
 protected:
 
@@ -135,7 +133,8 @@ class FKernelLoader {
     /// The tree loader that was used (see FTreeLoader).
     using TreeLoader = _TreeLoader;
 public:
-        FTic time;
+    /// A timer
+    FTic time;
 };
 
 /**
@@ -169,8 +168,16 @@ class FAlgoLoader {
 public:
     /// A timer.
     FTic time;
+
     /// Method that runs the algorithm.
     virtual void run() = 0;
+
+    /// Additionnal information for specific algorithm loader.
+    /**  
+     * The string should be formated as a key:value list separated by spaces.
+     * For instance : "key1:value1 key2:value2 ". It may be a good idea to add a
+     * space at the end of the string.
+     */
     virtual std::string getRunInfoString() const {
         return "";
     }

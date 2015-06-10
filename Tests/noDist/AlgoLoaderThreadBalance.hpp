@@ -12,7 +12,11 @@
 
 #include "Core/FFmmAlgorithmThreadBalance.hpp"
 
-
+/**
+ * \brief An algorithm loader for FFmmAlgorithmBalance
+ *
+ * See FAlgoLoader documentation.
+ */
 template <class _TreeLoader, template<typename> class _KernelLoader>
 class AlgoLoaderThreadBalance : public FAlgoLoader<_TreeLoader, _KernelLoader> {
 public:
