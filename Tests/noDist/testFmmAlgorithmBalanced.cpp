@@ -41,6 +41,7 @@
 //#include "Kernels/Chebyshev/FChebSymKernel.hpp"
 #include "Components/FTestKernels.hpp"
 #include "BalanceTree/FChebSymCostKernel.hpp"
+#include "BalanceTree/FDumbCostKernel.hpp"
 
 // Algorithm
 #include "Core/FFmmAlgorithmThread.hpp"
@@ -61,9 +62,11 @@ using LeafClass         = FSimpleLeaf< FReal, ContainerClass >;
 using OctreeClass       = FOctree< FReal, CellClass, ContainerClass, LeafClass >;
 
 using MatrixKernelClass = FInterpMatrixKernelR<FReal>;
-using BalanceKernelClass= FChebSymCostKernel<FReal, CellClass, ContainerClass,
-                                                MatrixKernelClass, ORDER,
-                                                OctreeClass>;
+// using CostKernelClass   = FChebSymCostKernel<FReal, CellClass, ContainerClass,
+//                                              MatrixKernelClass, ORDER,
+//                                              OctreeClass>;
+using CostKernelClass   = FDumbCostKernel<FReal, CellClass, ContainerClass,
+                                             OctreeClass>;
 
 using KernelClass       = FTestKernels< CellClass, ContainerClass>;
 
@@ -93,13 +96,13 @@ int main(int argc, char** argv)
 
 
     /* Compute the cost of each tree cell *************************************/
-    BalanceKernelClass balanceKernel(&tree, epsilon);
-    FmmClass<FFmmAlgorithmThread, BalanceKernelClass> costAlgo(&tree, &balanceKernel);
+    CostKernelClass costKernel(&tree, epsilon);
+    FmmClass<FFmmAlgorithmThread, CostKernelClass> costAlgo(&tree, &costKernel);
 
     costAlgo.execute();
 
     if (args.verboseLevel() > 1) {
-        balanceKernel.printResults(std::cout);
+        //costKernel.printResults(std::cout);
     }
     /**************************************************************************/
 
@@ -108,10 +111,6 @@ int main(int argc, char** argv)
     FCostZones<OctreeClass, CellClass> costzones(&tree, args.zoneCount());
     costzones.run();
 
-    //writeZones(args, costzones);
-    //if (args.verboseLevel() == -1) {
-        printZonesCosts(tree, costzones);
-    //}
     /**************************************************************************/
     std::cerr << "Done" << std::endl;
 
