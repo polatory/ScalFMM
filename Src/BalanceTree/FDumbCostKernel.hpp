@@ -71,7 +71,7 @@ public:
     const unsigned int _treeHeight;
 
     /// count permuted local and multipole expansions
-    unsigned int* countExp;
+    unsigned int _countExp[343];
 
     /// Flops count for each operator of the FMM. 
     unsigned long long flopsP2M = 0,
@@ -97,22 +97,20 @@ public:
      */
     FDumbCostKernel(OctreeClass* tree, const FReal Epsilon) :
           _tree(tree),
-          _treeHeight(_tree->getHeight())
-        {
-            countExp = new unsigned int [343];
-        }
+          _treeHeight(_tree->getHeight()) {
+        //_countExp = new unsigned int [343];
+    }
 
     /** Copy constructor */
     FDumbCostKernel(const FDumbCostKernel& other) :
         _tree(other._tree),
-        _treeHeight(other._treeHeight)
-        {
-            countExp = new unsigned int [343];
+        _treeHeight(other._treeHeight) {
+        // _countExp = new unsigned int [343];
     }
 
     /** Destructor */
     ~FDumbCostKernel() {
-        delete [] countExp;
+        // delete [] _countExp;
     }
 
     void P2M(CellClass* const cell, const ContainerClass* const SourceParticles) {
@@ -142,7 +140,7 @@ public:
              const int /* TreeLevel */) {
         FSize flops = 0;
         // count how often each of the 16 interactions is used
-        memset(countExp, 0, sizeof(int) * 343);
+        memset(_countExp, 0, sizeof(int) * 343);
         for (unsigned int idx = 0; idx < 343; ++idx) {
             if ( SourceCells[idx] ) {
                 flops += 1;
