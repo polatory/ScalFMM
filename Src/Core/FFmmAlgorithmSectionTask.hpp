@@ -208,7 +208,7 @@ protected:
     // Transfer
     /////////////////////////////////////////////////////////////////////////////
 
-    /** M2L L2L */
+    /** M2L  */
     void transferPass(){
         FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
@@ -254,10 +254,10 @@ protected:
             }
 
             #pragma omp taskwait
-            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << " s\n" );
         }
 
-        FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << " s)\n" );
     }
 
     /////////////////////////////////////////////////////////////////////////////
