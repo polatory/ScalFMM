@@ -48,24 +48,29 @@
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmSectionTask : public FAbstractAlgorithm, public FAlgorithmTimers {
     
-    OctreeClass* const tree;       //< The octree to work on
-    KernelClass** kernels;    //< The kernels
+    OctreeClass* const tree;  ///< The octree to work on
+    KernelClass** kernels;    ///< The kernels
 
     const int MaxThreads;
 
     const int OctreeHeight;
 
-    const int leafLevelSeperationCriteria;
+    const int leafLevelSeparationCriteria;
 public:
-    /** The constructor need the octree and the kernels used for computation
-      * @param inTree the octree to work on
-      * @param inKernels the kernels to call
-      * An assert is launched if one of the arguments is null
-      */
-    FFmmAlgorithmSectionTask(OctreeClass* const inTree, KernelClass* const inKernels, const int inLeafLevelSeperationCriteria = 1)
-        : tree(inTree) , kernels(0),
-          MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria)
-    {
+    /** \brief Class constructor
+     * 
+     * \note An assert checks whether one of the arguments is null.
+     * \param inTree the octree to work on.
+     * \param inKernels the kernels used for computation.
+     */
+    FFmmAlgorithmSectionTask(OctreeClass* const inTree,
+                             KernelClass* const inKernels,
+                             const int inLeafLevelSeparationCriteria = 1) :
+        tree(inTree) ,
+        kernels(0),
+        MaxThreads(omp_get_max_threads()),
+        OctreeHeight(tree->getHeight()),
+        leafLevelSeparationCriteria(inLeafLevelSeparationCriteria) {
 
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(inKernels, "kernels cannot be null");
@@ -116,18 +121,14 @@ protected:
                 }
                 #pragma omp section
                 {
-                    Timers[P2PTimer].tic();
                     if( operationsToProceed & FFmmP2P ) directPass();
-                    Timers[P2PTimer].tac();
                 }
             }
             
-            //Timers[NearTimer].tic();
             #pragma omp single 
             {
                 if(operationsToProceed & FFmmL2P) L2PPass();
             }
-            //Timers[NearTimer].tac();
         }
         Timers[P2MTimer].tac();
     }
@@ -228,7 +229,7 @@ protected:
         // for each levels
         for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
             FLOG(FTic counterTimeLevel);
-            const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+            const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
             // for each cells
             do{
                 const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
