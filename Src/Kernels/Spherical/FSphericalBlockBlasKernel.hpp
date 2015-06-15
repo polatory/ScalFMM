@@ -188,7 +188,10 @@ public:
             }
         }
     }
-
+    /** the needFinishedM2LEvent method is needed   */
+    bool needFinishedM2LEvent(){
+   	 	 return true ;
+    }
     /** Do we have some computation to do in the buffers */
     void finishedLevelM2L(const int inLevel){
         for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){

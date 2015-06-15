@@ -71,7 +71,16 @@ public:
                      const int size, const int inLevel) = 0;
 
 
-    /** This method can be optionnaly inherited
+    /** This method is used to bypass needFinishedM2LEvent method a each level
+       *  during the transferPass.  If you have to use the  finishedLevelM2L then you
+       *  have to  inherit it and return true rather than false.
+       *
+       * @return false
+       */
+     bool needFinishedM2LEvent(){
+    	 	 return false;
+     }
+     /** This method can be optionally inherited
       * It is called at the end of each computation level during the M2L pass
       * @param level the ending level
       */
