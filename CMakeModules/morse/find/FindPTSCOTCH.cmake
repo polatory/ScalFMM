@@ -132,7 +132,8 @@ else()
         set(PTSCOTCH_ptscotch.h_DIRS "PTSCOTCH_ptscotch.h_DIRS-NOTFOUND")
         find_path(PTSCOTCH_ptscotch.h_DIRS
           NAMES ptscotch.h
-          HINTS ${_inc_env})
+          HINTS ${_inc_env}
+          PATH_SUFFIXES "scotch")
     endif()
 endif()
 mark_as_advanced(PTSCOTCH_ptscotch.h_DIRS)

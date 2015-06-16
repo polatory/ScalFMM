@@ -115,7 +115,8 @@ else()
         set(SCOTCH_scotch.h_DIRS "SCOTCH_scotch.h_DIRS-NOTFOUND")
         find_path(SCOTCH_scotch.h_DIRS
           NAMES scotch.h
-          HINTS ${_inc_env})
+          HINTS ${_inc_env}
+          PATH_SUFFIXES "scotch")
     endif()
 endif()
 mark_as_advanced(SCOTCH_scotch.h_DIRS)
