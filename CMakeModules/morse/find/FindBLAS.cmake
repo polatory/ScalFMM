@@ -1028,16 +1028,20 @@ endif (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
 # Generic BLAS library?
 if (BLA_VENDOR STREQUAL "Generic" OR BLA_VENDOR STREQUAL "All")
 
-    if(NOT BLAS_LIBRARIES)
-        check_fortran_libraries(
-        BLAS_LIBRARIES
-        BLAS
-        sgemm
-        ""
-        "blas"
-        ""
-        )
-    endif()
+    set(BLAS_SEARCH_LIBS "blas;blas_LINUX;blas_MAC;blas_WINDOWS")
+    foreach (SEARCH_LIB ${BLAS_SEARCH_LIBS})
+        if (BLAS_LIBRARIES)
+        else ()
+            check_fortran_libraries(
+            BLAS_LIBRARIES
+            BLAS
+            sgemm
+            ""
+            "${SEARCH_LIB}"
+            ""
+            )
+        endif()
+    endforeach ()
 
 endif (BLA_VENDOR STREQUAL "Generic" OR BLA_VENDOR STREQUAL "All")
 
