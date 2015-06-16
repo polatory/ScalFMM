@@ -36,9 +36,8 @@ ALGO=(basic task sectiontask)
 #
 pwd
 #export OMP_PROC_BIND=true
-export KMP_AFFINITY=verbose,scatter
-echo  "# Core GlabalTIME P2PTIME M2LTIME  ENERGY PotentialError ForceError"> $FILEPERF-${HOST}.out
-
+export KMP_AFFINITY=scatter
+NUM=`git rev-list HEAD --count`
 echo $DISTRIB
 for dist in `seq 0 $NBTEST`;
 do
@@ -49,16 +48,18 @@ do
     #    Loop on algorithm 
     for a in `seq 0 2`;
     do 
+echo  "# Core GlabalTIME P2PTIME M2LTIME  ENERGY PotentialError ForceError"> $FILEPERF-${DISTRIB[$dist]}-${ALGO[$a]}.out
 	#  One computation
 	for l in $PER_SIZE ;
 	do
 	    OUTPUT=${FILEPERF}-${DISTRIB[$dist]}-${ALGO[$a]}-${l}.out
+	    echo "ScalFMM git version: " $NUM > $OUTPUT
 	    echo "Running  on " ${l} " threads with algo "   ${ALGO[$a]}
-	    $EXEC ${OPTION} -f $FILE  -depth  ${DEPTH[$dist]}  -subdepth 4  -t $l  -cmp  -algo ${ALGO[$a]}>  $OUTPUT
+	    $EXEC ${OPTION} -f $FILE  -depth  ${DEPTH[$dist]}  -subdepth 4  -t $l  -cmp  -algo ${ALGO[$a]}>>  $OUTPUT
 	    #
 	    TIME=`grep "@Algorithm"  $OUTPUT | awk '{print $4}'`
 	    TIMEP2P=`grep "P2P"  $OUTPUT | awk '{print $4}'`
-	    TIMEM2L=`grep "M2L"  $OUTPUT | grep "second"   $OUTPUT | awk '{print $2}'`
+	    TIMEM2L=`grep "M2L"  $OUTPUT | grep "second" | awk '{print $2}'`
 	    Energy=`grep "Energy"  $OUTPUT | awk '{print $3}'`
 	    P1=`grep " Potential "  $OUTPUT | awk '{print $7}'`
 	    P2=`grep " F "  $OUTPUT | awk '{print $7}'`
@@ -70,3 +71,4 @@ do
     done
     echo "-------------------------------------------------------------------"
 done
+echo " ----------------------   FINISH -------------------------------"
