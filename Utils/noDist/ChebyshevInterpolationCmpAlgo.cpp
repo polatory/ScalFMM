@@ -43,6 +43,7 @@
 #include "Core/FFmmAlgorithmThread.hpp"
 #include "Core/FFmmAlgorithmTask.hpp"
 #include "Core/FFmmAlgorithmSectionTask.hpp"
+#include "Core/FFmmAlgorithmThreadBalance.hpp"
 #else
 #include "Core/FFmmAlgorithm.hpp"
 #endif
@@ -55,31 +56,28 @@
 /// \file  ChebyshevInterpolationCmpAlgo.cpp
 //!
 //! \brief This program runs the FMM Algorithm with the interpolation kernel based on Chebyshev interpolation (1/r kernel)
-//!  \authors B. Bramas, O. Coulaud
+//!  \authors  O. Coulaud
 //!
 //!  This code is a short example to use the Chebyshev Interpolation approach for the 1/r kernel
-
-
-// Simply create particles and try the kernels
-namespace ParName {
-const FParameterNames Algo = {{"--algo"},"Algorithm to run (basic, task, sectiontask)"};
-}
-
+//
 int main(int argc, char* argv[])
 {
-	const FParameterNames LocalOptionAlgo= {
-			{"-algo"} ,
-			" Algorithm to run (basic, task, sectiontask)\n"
-	};
+	const FParameterNames LocalOptionAlgo= { {"-algo"} , " Algorithm to run (basic, balanced, task, sectiontask)\n"};
+	const FParameterNames LocalOptionCmp = {
+			{"-cmp"} , "Use to check the result with the exact solution given in the input file\n" };
 	FHelpDescribeAndExit(argc, argv,
 			"Driver for Chebyshev interpolation kernel  (1/r kernel).",
 			FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
 			FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
+			FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::OutputFile,
 			FParameterDefinitions::NbThreads,
-			LocalOptionAlgo);
+			LocalOptionAlgo,LocalOptionCmp);
+/////////////////////////////////////////////////////////////////////////////////////
+//   Set parameters
+/////////////////////////////////////////////////////////////////////////////////////
 
 
-	const std::string defaultFile(/*SCALFMMDataPath+*/"Data/unitCubeXYZQ100.bfma" );
+	const std::string defaultFile(SCALFMMDataPath+"Data/unitCubeXYZQ100.bfma" );
 	const std::string filename                = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, defaultFile.c_str());
 	const unsigned int TreeHeight        = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
 	const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
@@ -103,10 +101,9 @@ int main(int argc, char* argv[])
 	// init timer
 	FTic time;
 
-	// open particle file
+	/////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////
 	typedef double FReal;
-	FFmaGenericLoader<FReal> loader(filename);
 	//
 	////////////////////////////////////////////////////////////////////
 	// begin Chebyshev kernel
@@ -122,18 +119,27 @@ int main(int argc, char* argv[])
 	const MatrixKernelClass MatrixKernel;
 	typedef FChebSymKernel<FReal, CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
 	//
+	//  Different algorithms
 #ifdef _OPENMP
-	typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass>        ForFmmClass;
-	typedef FFmmAlgorithmTask<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass>           TaskFmmClass;
-	typedef FFmmAlgorithmSectionTask<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> SectionTaskFmmClass;
+	typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass>          ForFmmClass;
+	typedef FFmmAlgorithmTask<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass>              TaskFmmClass;
+	typedef FFmmAlgorithmSectionTask<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass>    SectionTaskFmmClass;
+	typedef FFmmAlgorithmThreadBalance<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> ForBalFmmClass;
 #else
 	typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 #endif
-	// init oct-tree
-	OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
+	/////////////////////////////////////////////////////////////////////
+	// open particle file
+	////////////////////////////////////////////////////////////////////
+	FFmaGenericLoader<FReal> loader(filename);
+	if (loader.getNbRecordPerline() !=8 ){
+		std::cerr << "File should contain 8 data to read (x,y,z,q,p,fx,fy,fz)\n";
+		std::exit(EXIT_FAILURE);
+	}
 	FSize nbParticles = loader.getNumberOfParticles() ;
-	FmaRWParticle<FReal,8,8>* const particles = new FmaRWParticle<FReal, 8,8>[nbParticles];
+	FmaRWParticle<FReal,8,8> * const particles = new FmaRWParticle<FReal, 8,8>[nbParticles];
+	//
 	std::cout << "Creating & Inserting " << nbParticles << " particles ..." << std::endl;
 	std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
 	time.tic();
@@ -143,6 +149,9 @@ int main(int argc, char* argv[])
 	//
 	loader.fillParticle(particles,nbParticles);
 	time.tac();
+	//
+	// init oct-tree
+	OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 	//
 	FReal  energyD = 0.0 ;
 	/////////////////////////////////////////////////////////////////////////////////////////////////
@@ -168,6 +177,7 @@ int main(int argc, char* argv[])
 		std::string  algoStr  = FParameters::getStr(argc,argv,"-algo",  "basic");
 
 		ForFmmClass              algo1(&tree, &kernels, inUserChunckSize);
+		ForBalFmmClass          algo4(&tree, &kernels, inUserChunckSize);
 		TaskFmmClass            algo2(&tree, &kernels );
 		SectionTaskFmmClass algo3(&tree, &kernels );
 
@@ -176,6 +186,9 @@ int main(int argc, char* argv[])
 		if( "basic" == algoStr) {
 			algo    = &algo1 ;
 			timer  =   &algo1;
+		} else if( "balanced" == algoStr) {
+			algo   = &algo4 ;
+			timer  =   &algo4;
 		} else if( "task" == algoStr) {
 			algo   = &algo2 ;
 			timer  =   &algo2;
@@ -211,55 +224,56 @@ int main(int argc, char* argv[])
 	//
 	//   Loop over all leaves
 	//
-	std::cout <<std::endl<<" &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "<<std::endl;
-	std::cout << std::scientific;
-	std::cout.precision(10) ;
+	if(FParameters::existParameter(argc, argv, "-cmp") ){
+		std::cout <<std::endl<<" &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "<<std::endl;
+		std::cout << std::scientific;
+		std::cout.precision(10) ;
 
-	printf("Compute Diff...");
-	FMath::FAccurater<FReal> potentialDiff;
-	FMath::FAccurater<FReal> fx, fy, fz, f;
-	{ // Check that each particle has been summed with all other
+		printf("Compute Diff...");
+		FMath::FAccurater<FReal> potentialDiff;
+		FMath::FAccurater<FReal> fx, fy, fz, f;
+		{ // Check that each particle has been summed with all other
 
-		tree.forEachLeaf([&](LeafClass* leaf){
-			const FReal*const potentials = leaf->getTargets()->getPotentials();
-			const FReal*const forcesX = leaf->getTargets()->getForcesX();
-			const FReal*const forcesY = leaf->getTargets()->getForcesY();
-			const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-			const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-			const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+			tree.forEachLeaf([&](LeafClass* leaf){
+				const FReal*const potentials = leaf->getTargets()->getPotentials();
+				const FReal*const forcesX = leaf->getTargets()->getForcesX();
+				const FReal*const forcesY = leaf->getTargets()->getForcesY();
+				const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+				const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+				const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
 
-			const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
+				const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-			for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-				const FSize indexPartOrig = indexes[idxPart];
-				potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
-				fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
-				//	const std::string outputFile("accuracyChebyschev.txt") ;
-				fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
-				fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
-				f.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
-				f.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
-				f.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
-				energy   += potentials[idxPart]*physicalValues[idxPart];
-			}
-		});
+				for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+					const FSize indexPartOrig = indexes[idxPart];
+					potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
+					fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
+					//	const std::string outputFile("accuracyChebyschev.txt") ;
+					fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
+					fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
+					f.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
+					f.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
+					f.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
+					energy   += potentials[idxPart]*physicalValues[idxPart];
+				}
+			});
 
-		std::cout << energy << " " << energyD << std::endl;
-		delete[] particles;
+			std::cout << energy << " " << energyD << std::endl;
+			delete[] particles;
 
-		f.setNbElements(nbParticles);
-		std::cout << "FChebSymKernel Energy "  << FMath::Abs(energy-energyD) <<  "  Relative     "<< FMath::Abs(energy-energyD) / FMath::Abs(energyD) <<std::endl;
-		std::cout << "FChebSymKernel Potential " << potentialDiff << std::endl;
-		std::cout << "FChebSymKernel Fx " << fx << std::endl;
-		std::cout << "FChebSymKernel Fy " << fy << std::endl;
-		std::cout << "FChebSymKernel Fz " << fz << std::endl;
-		std::cout << "FChebSymKernel F  " << f << std::endl;
-		std::cout <<std::endl<<"Energy: "<< energy<<std::endl;
-		std::cout <<std::endl<<" &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "<<std::endl<<std::endl;
-	}
+			f.setNbElements(nbParticles);
+			std::cout << "FChebSymKernel Energy "  << FMath::Abs(energy-energyD) <<  "  Relative     "<< FMath::Abs(energy-energyD) / FMath::Abs(energyD) <<std::endl;
+			std::cout << "FChebSymKernel Potential " << potentialDiff << std::endl;
+			std::cout << "FChebSymKernel Fx " << fx << std::endl;
+			std::cout << "FChebSymKernel Fy " << fy << std::endl;
+			std::cout << "FChebSymKernel Fz " << fz << std::endl;
+			std::cout << "FChebSymKernel F  " << f << std::endl;
+			std::cout <<std::endl<<"Energy: "<< energy<<std::endl;
+			std::cout <<std::endl<<" &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "<<std::endl<<std::endl;
+		}
 
 		// -----------------------------------------------------
 
-
-		return 0;
 	}
+	return 0;
+}

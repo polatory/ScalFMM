@@ -223,8 +223,7 @@ protected:
         }
 
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
-
-
+        //
         // for each levels
         for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
             FLOG(FTic counterTimeLevel);

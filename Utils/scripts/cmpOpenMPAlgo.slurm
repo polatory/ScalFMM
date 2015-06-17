@@ -32,7 +32,7 @@ HOST=`hostname`
 NBTEST=3  # 0..NBTEST
 DISTRIB=(unitcube unitsphere prolate plummer)
 DEPTH=(6           7           9            8)
-ALGO=(basic task sectiontask)
+ALGO=(basic balanced task sectiontask)
 #
 pwd
 #export OMP_PROC_BIND=true
