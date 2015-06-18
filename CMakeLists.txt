@@ -12,7 +12,7 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 # Project Declaration
 #===========================================================================
 project(SCALFMM C CXX)
-
+INCLUDE( CMakeDependentOption )
 # check if compiling into source directories
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
 if(insource)
@@ -71,6 +71,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   option( SCALFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
   option( SCALFMM_USE_MIC_NATIVE       "Set to ON to compile in native mode for MIC" OFF  )
   option( SCALFMM_ONLY_DEVEL           "Set to ON to compile Development tools (only scalfmm team)" ON )
+  option( SCALFMM_USE_EZTRACE          "Set to ON to compile with eztrace framwork" OFF )
   if( SCALFMM_ONLY_DEVEL )
     option( OPENMP_SUPPORT_COMMUTE   "Set to ON to let tasks commute (KSTAR/StarPU compiler only)" OFF )
     option( SCALFMM_USE_STARPU  "Set to ON to build SCALFMM with StarPU" OFF )
@@ -116,8 +117,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     IF (APPLE)
       set(SSE_FLAGS  "-msse4  -mfpmath=sse")   # -mtune=native -march=native
     else(APPLE)
-      set(AVX_FLAGS  "-mavx  -march=native")
-      set(AVX2_FLAGS  "-mavx2  -march=native")
+      set(AVX_FLAGS  "-mavx")
+      set(AVX2_FLAGS  "-march=core-avx2")
       set(SSE_FLAGS  "-axSSE4.2  -march=native")
     endif(APPLE)
     #-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
@@ -619,9 +620,27 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   list(APPEND FUSE_LIST "MIC")
   ##################################################################
   #
+  #   Set EZTRACE
+  #
   ##################################################################
+  If(SCALFMM_USE_EZTRACE)
+    find_package (PkgConfig)
+    if(PKG_CONFIG_FOUND)
+      MESSAGE(WARNING "PKG-CONFIG  found")
+      set(PKG_CONFIG_USE_CMAKE_PREFIX_PATH "ON")
+     set(CMAKE_PREFIX_PATH "/cm/shared/dev/apps/trace/eztrace/1.0/lib/pkgconfig/")
+     pkg_search_module( EZTrace REQUIRED eztrace)
+      link_directories(${EZTrace_LIBRARY_DIRS})
+#      link_libraries(/cm/shared/dev/apps/trace/eztrace/1.0/lib/libeztrace.so /cm/shared/dev/apps/trace/eztrace/1.0/lib/libeztrace-memory.so)# ${EZTrace_LIBRARIES})
+      link_libraries( ${EZTrace_LIBRARIES} -leztrace-memory)
+      include_directories(${EZTrace_INCLUDE_DIRS})
+      MESSAGE(WARNING "EZTRACE:  ${EZTrace_INCLUDE_DIRS}   ${EZTrace_LIBRARY_DIRS}  ${EZTrace_LIBRARIES}") 
+    else(PKG_CONFIG_FOUND)
+      MESSAGE(WARNING "PKG-CONFIG not found- EZTRACE Is set to NONE")
+      set(SCALFMM_USE_EZTRACE OFF)
+    endif(PKG_CONFIG_FOUND)
 
-
+  endif(SCALFMM_USE_EZTRACE)
   ##################################################################
   #                                                                #
   #                     END SETTING VARIABLES                      #

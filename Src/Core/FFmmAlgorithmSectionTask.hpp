@@ -210,7 +210,18 @@ protected:
     /////////////////////////////////////////////////////////////////////////////
 
     /** M2L  */
-    void transferPass(){
+ 	/** M2L  */
+  void transferPass(){
+#ifdef SCALFMM_USE_EZTRACE
+    
+    eztrace_start();
+#endif
+    this->transferPassWithFinalize() ;
+#ifdef SCALFMM_USE_EZTRACE
+    eztrace_stop();
+#endif
+  }
+   void transferPassWithFinalize(){
         FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
 
