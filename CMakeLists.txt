@@ -196,7 +196,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     else(APPLE)
       # Not apple system - Check the compiler flags
      if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-         set(SCALFMM_FLAGS_OPTI_RELEASE "-fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize"
+         #set(SCALFMM_FLAGS_OPTI_RELEASE "-fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize"
+         set(SCALFMM_FLAGS_OPTI_RELEASE "-funroll-loops -ftree-vectorize"
            CACHE STRING "Set your optimization flags for release mode.")
        # set(SCALFMM_FLAGS_OPTI_RELEASE "-funroll-loops -ftree-vectorize" CACHE STRING
        #   "Set your optimization flags for release mode.")
@@ -626,10 +627,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     if(PKG_CONFIG_FOUND)
       MESSAGE(WARNING "PKG-CONFIG  found")
       set(PKG_CONFIG_USE_CMAKE_PREFIX_PATH "ON")
-     set(CMAKE_PREFIX_PATH "/cm/shared/dev/apps/trace/eztrace/1.0/lib/pkgconfig/")
      pkg_search_module( EZTrace REQUIRED eztrace)
       link_directories(${EZTrace_LIBRARY_DIRS})
-#      link_libraries(/cm/shared/dev/apps/trace/eztrace/1.0/lib/libeztrace.so /cm/shared/dev/apps/trace/eztrace/1.0/lib/libeztrace-memory.so)# ${EZTrace_LIBRARIES})
       link_libraries( ${EZTrace_LIBRARIES} -leztrace-memory)
       include_directories(${EZTrace_INCLUDE_DIRS})
       MESSAGE(WARNING "EZTRACE:  ${EZTrace_INCLUDE_DIRS}   ${EZTrace_LIBRARY_DIRS}  ${EZTrace_LIBRARIES}") 
