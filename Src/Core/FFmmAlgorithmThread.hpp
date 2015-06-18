@@ -311,7 +311,7 @@ protected:
                 }
 
                 myThreadkernels->finishedLevelM2L(idxLevel);
-            }
+            }  //Synchro end of parallel section
             FLOG(computationCounter.tac());
             FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
         }

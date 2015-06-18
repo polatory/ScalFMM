@@ -21,6 +21,8 @@ endif(insource)
 
 set(SCALFMM_CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules)
 
+# Adds the CMAKE_DEPENDENT_OPTION command
+INCLUDE(CMakeDependentOption)
 
 #===========================================================================
 # Version Number
@@ -305,10 +307,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   #
   # FFT option
   #
+  CMAKE_DEPENDENT_OPTION(SCALFMM_USE_MKL_AS_FFTW "Set to ON to use MKL FFTW" ON  "SCALFMM_USE_FFT;SCALFMM_USE_MKL_AS_BLAS" OFF )
   if( SCALFMM_USE_FFT )
-
-    option( SCALFMM_USE_MKL_AS_FFTW "Set to ON to use MKL FFTW" OFF )
-
     message(STATUS "SCALFMM USE FFT Configure:")
 
     if( SCALFMM_USE_MKL_AS_FFTW )

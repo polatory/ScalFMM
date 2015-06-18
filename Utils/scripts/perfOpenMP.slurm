@@ -3,23 +3,27 @@
 #SBATCH  --mail-user=olivier.coulaud@inria.fr
 #SBATCH -m a
 #   
+#SBATCH -p court
 #SBATCH --time=1:00:00
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=20
+#SBATCH --ntasks-per-node=24
 #
+source $HOME/Config/bashrc.bash
 project_dir=/projets/scalfmm/scalfmm-tests ;
 project_dir=$HOME/Dev/src/ScalFMM/scalfmm ;
 
 #
 # PlaFRIM environment
 #
-module add build/cmake/2.8.12.2 compiler/intel/2013_sp1.2.144
+module add compiler/gcc/5.1.0 compiler/intel/64/2016_beta; module li
 #
-EXEC="Examples/Release/ChebyshevInterpolationAlgorithm"
+EXEC="Examples/Release/ChebyshevInterpolationFMM"
 FILEPERF="RES_Chebyshev-openmp"
-FILE="unifCube_2.fma"
+#EXEC="Examples/Release/LagrangeInterpolationFMM"
+#FILEPERF="RES_Lagrange-openmp"
+FILE="unitcube_2M.bfma"
 #
-cd $project_dir/Build/
+cd $project_dir/BuildIntel2016
 #
 #
 PER_SIZE=`cat /proc/cpuinfo |grep processor |wc -l`
