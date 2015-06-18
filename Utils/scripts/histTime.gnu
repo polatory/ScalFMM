@@ -18,7 +18,7 @@ set xlabel "Number of core"
 #
 # OUTPUT
 #set terminal postscript enhanced color  'Helvetica' 20
-set terminal postscript enhanced color "times-roman,24"
+#set terminal postscript enhanced color "times-roman,24"
 set output 'HistogramTime.eps'
 #
 #   PLOT
@@ -26,11 +26,10 @@ set output 'HistogramTime.eps'
 set style data histograms
 set style histogram rowstacked
 
-#set style histogram cluster gap 1
 #unset ytics
 set boxwidth 0.75
 set style fill solid 1.0 border
 
 set xtics border ("4" 0, "8" 1, "12" 2, "16" 3, "20" 4, "24" 5)
-#plot  "RES-Cheb-openmp-unitsphere-basic.out"  using 3 t "P2P", "" using 4 lc 4 t "M2L" , "" using ($2-$4-$3) lc 5 t "Remain operators"
-plot  "RES-Cheb-openmp-unitsphere-basic.out"  using 3, "" using 4 lc 4 , "" using ($2-$4-$3) lc 5
+plot  "RES-Cheb-openmp-unitsphere-basic.out"  using 3 t "P2P", "" using 4 lc 4 t "M2L" , "" using ($2-$4-$3) lc 5 t "Remain operators"
+#plot  "RES-Cheb-openmp-unitsphere-basic.out"  using 3, "" using 4 lc 4 , "" using ($2-$4-$3) lc 5

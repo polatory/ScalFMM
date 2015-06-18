@@ -12,7 +12,7 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 # Project Declaration
 #===========================================================================
 project(SCALFMM C CXX)
-
+INCLUDE( CMakeDependentOption )
 # check if compiling into source directories
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
 if(insource)

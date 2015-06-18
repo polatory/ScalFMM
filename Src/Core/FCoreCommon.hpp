@@ -19,6 +19,11 @@
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FAssert.hpp"
 
+#ifdef SCALFMM_USE_EZTRACE
+extern "C" {
+#include "eztrace.h"
+}
+#endif
 /**
  * @brief The FFmmOperations enum
  * To chose which operation has to be performed.
