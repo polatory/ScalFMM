@@ -9,10 +9,14 @@
 
 #include "../Files/FFmaGenericLoader.hpp"
 
+
+
 #include "../Containers/FCoordinateComputer.hpp"
 #include "../Utils/FPoint.hpp"
 
+#include "../Utils/FLog.hpp"
 
+#include "../Utils/FRepeatAction.hpp"
 
 /** \brief Loads a particle file and splits it for MPI processing.
  *
@@ -198,12 +202,27 @@ protected:
     void readFile() {
         FReal physicalValue;
         FPoint<FReal> particlePosition;
-        for ( int idxPart = 0 ; idxPart < _loader.getNumberOfParticles() ; ++idxPart ) {
+        FSize particleCount = _loader.getNumberOfParticles();
+        int idxPart = 0;
+        
+        FLOG( 
+            FRepeatAction progress(
+                [&]() -> bool {
+                    std::cerr
+                        << "\rReading particles: "
+                        << idxPart * 100 / particleCount << "%     " ;
+                    return true; }, 200 ); );
+
+
+        for ( idxPart = 0 ; idxPart < particleCount; ++idxPart ) {
             // Read one particle from file
             _loader.fillParticle(&particlePosition, &physicalValue);
             // And insert in the sorted set
             _particles.emplace(particlePosition, physicalValue);
         }
+
+
+        FLOG(progress.stop(); std::cerr << std::endl;)
     }
 
     /// Writes the output file based on #_outputBasename.
@@ -237,6 +256,16 @@ protected:
         size_type currentFileParticleCount = 0;
         MortonIndex currentMortonIndex = 0;
         long long int currentFileIndex = 0;
+
+        FLOG( FRepeatAction progress(
+                  [&]() -> bool {
+                      std::cerr
+                          << "\rWriting particles: "
+                          << currentGlobalParticleCount * 100 / totalParticleCount
+                          << "%     " ;
+                      return true; }, 200 ); );
+
+
         while(_particles.begin() != _particles.end()) {
             /* Particles are sorted, we pull out all those with the same Morton
              * index and put them in the temporary container. */
@@ -257,6 +286,8 @@ protected:
             container.clear();
             currentMortonIndex = (*_particles.begin()).getMortonIndex();
         }
+
+        FLOG( progress.stop(); std::cerr << std::endl; );
 
     }
 
