@@ -91,7 +91,8 @@ typedef enum scalfmm_algorithm_config {
     sequential = 0,  /* Use the sequential version of Scalfmm*/
     multi_thread = 1, /* Use the Multi thread version of Scalfmm*/
     periodic = 2,    /* Use the periodic version of Scalfmm*/
-    source_target = 3 /* USe the source/target algorithm */
+    source_target = 3, /* USe the source/target algorithm */
+    adaptiv = 4 /*Temporary*/
 } scalfmm_algorithm;
 
 
@@ -508,7 +509,7 @@ typedef void (*Callback_P2PInner)(FSize nbParticles, const FSize* particleIndexe
  * @param spatial_position double[3] center of the cell
  * @param usercell ptr to user's cell
  */
-typedef void (*Callback_reset_cell)(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell);
+typedef void (*Callback_reset_cell)(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell, void * userData);
 
 /**
  * @brief Structure containing callbacks to fill in order to define

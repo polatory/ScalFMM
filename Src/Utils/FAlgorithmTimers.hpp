@@ -43,6 +43,9 @@ public:
     FAlgorithmTimers() : Timers(nullptr)
     {
         Timers = new FTic[nbTimers];
+        for(int i=0; i<nbTimers ; ++i){
+            Timers[i].reset();
+        }
     }
 
     virtual ~FAlgorithmTimers(){

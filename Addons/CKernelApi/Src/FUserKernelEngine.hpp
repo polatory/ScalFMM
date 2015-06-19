@@ -288,7 +288,7 @@ public:
                     position[0] = boxCorner[0] + currCoord.getX()*boxwidth/double(1<<currLevel);
                     position[1] = boxCorner[1] + currCoord.getY()*boxwidth/double(1<<currLevel);
                     position[2] = boxCorner[2] + currCoord.getZ()*boxwidth/double(1<<currLevel);
-                    cellReset(currLevel,currMorton,arrayCoord,position,currCell->getContainer());
+                    cellReset(currLevel,currMorton,arrayCoord,position,currCell->getContainer(),kernel->getUserKernelDatas());
                 }
             });
     }

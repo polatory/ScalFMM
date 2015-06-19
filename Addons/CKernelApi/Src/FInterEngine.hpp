@@ -34,6 +34,8 @@
 #include "Extensions/FExtendCellType.hpp"
 
 #include "Core/FFmmAlgorithmThread.hpp"
+#include "Core/FFmmAlgorithmSectionTask.hpp"
+#include "Core/FFmmAlgorithmTask.hpp"
 #include "Core/FFmmAlgorithm.hpp"
 #include "Core/FFmmAlgorithmPeriodic.hpp"
 #include "Core/FFmmAlgorithmThreadTsm.hpp"
@@ -764,8 +766,6 @@ public:
             }
         case 3:
             {
-                // class local : public InterCell, public unExtendedCell{
-                // };
                 typedef FFmmAlgorithmThreadTsm<OctreeClass,InterCell,ContainerClass,InterKernel,LeafClass> AlgoClassTargetSource;
                 AlgoClassTargetSource* algoTS = new AlgoClassTargetSource(octree,kernel);
                 algoTS->execute();

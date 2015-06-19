@@ -56,7 +56,7 @@ void ChebKernel_L2P(void* leafCell, FSize nbParticles, const FSize* particleInde
 void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes,
                     const FSize * sourceParticleIndexes[27], FSize sourceNbPart[27],void* userData);
 
-void ChebCell_reset(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell);
+void ChebCell_reset(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell, void * kernel);
 
 typedef struct myUserDatas{
     ChebKernelStruct * kernelStruct;
