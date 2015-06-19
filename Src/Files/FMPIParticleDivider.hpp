@@ -48,6 +48,7 @@ private:
      * 8^_divisionLevel cells.
      */
     class Particle {
+    public:
         /// Center of the particles' box
         static FPoint<FReal> _boxCenter;
         /// Width of the particles' box
@@ -59,7 +60,6 @@ private:
         FPoint<FReal> position;
         /// Particle physical value
         FReal value;
-    public:
         /// Contructor
         Particle(FPoint<FReal> pos, FReal val) :
             position(pos),
@@ -221,7 +221,8 @@ protected:
             std::unique_ptr<std::ofstream> out(
                 new std::ofstream( _outputBasename
                                    + "_" + std::to_string(_splitCount) + "z" 
-                                   + "." + std::to_string(fileIdx)
+                                   + "." + std::to_string(fileIdx),
+                                   std::ofstream::trunc
                                    ));
             outfiles[fileIdx] = std::move(out);
         }
