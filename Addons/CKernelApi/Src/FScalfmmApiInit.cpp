@@ -5,6 +5,7 @@ extern "C" {
 
 #include "FInterEngine.hpp"
 #include "FUserKernelEngine.hpp"
+//#include "FAdaptEngine.hpp"
 
 extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,double* BoxCenter, */scalfmm_kernel_type KernelType,
                                        scalfmm_algorithm algo){
@@ -49,44 +50,48 @@ extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,double* 
             break;
         }
     }
-    else{ //No Source/Targets distinction
-        switch(KernelType){
-        case 0:
-            typedef FP2PParticleContainerIndexed<FReal>                            ContainerClass;
-            typedef FSimpleLeaf<FReal,ContainerClass>                                   LeafClass;
+    else{
+        // if(algo == adaptiv){
+        //     //Temporary
+        //     handle->engine = new FAdaptEngine<FReal,4>(KernelType,algo);
+        //}else{
+            //No Source/Targets distinction
+            switch(KernelType){
+            case 0:
+                typedef FP2PParticleContainerIndexed<FReal>                            ContainerClass;
+                typedef FSimpleLeaf<FReal,ContainerClass>                                   LeafClass;
 
-            handle->engine = new FUserKernelEngine<FReal,LeafClass>(/*TreeHeight, BoxWidth, BoxCenter, */KernelType);
-            break;
+                handle->engine = new FUserKernelEngine<FReal,LeafClass>(/*TreeHeight, BoxWidth, BoxCenter, */KernelType);
+                break;
 
-        case 1:
-            //TODO typedefs
-            typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
-            //typedef FChebCell<FReal,7>                                                   ChebCell;
-            typedef FTypedChebCell<FReal,7>                                                   ChebCell;
-            typedef FSimpleLeaf<FReal,ContainerClass>                                         LeafClass;
+            case 1:
+                //TODO typedefs
+                typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
+                //typedef FChebCell<FReal,7>                                                   ChebCell;
+                typedef FTypedChebCell<FReal,7>                                                   ChebCell;
+                typedef FSimpleLeaf<FReal,ContainerClass>                                         LeafClass;
 
-            typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
-            typedef FChebSymKernel<FReal,ChebCell,ContainerClass,MatrixKernelClass,7>        ChebKernel;
+                typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
+                typedef FChebSymKernel<FReal,ChebCell,ContainerClass,MatrixKernelClass,7>        ChebKernel;
 
-            handle->engine = new FInterEngine<FReal,ChebCell,ChebKernel,LeafClass>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType,algo);
-            break;
-            // case 2:
-            //     //TODO typedefs
-            //     typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
-            //     typedef FUnifCell<7>                                                         UnifCell;
+                handle->engine = new FInterEngine<FReal,ChebCell,ChebKernel,LeafClass>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType,algo);
+                break;
+                // case 2:
+                //     //TODO typedefs
+                //     typedef FP2PParticleContainerIndexed<FReal>                                 ContainerClass;
+                //     typedef FUnifCell<7>                                                         UnifCell;
 
-            //     typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
-            //     typedef FUnifKernel<UnifCell,ContainerClass,MatrixKernelClass,7>           UnifKernel;
+                //     typedef FInterpMatrixKernelR<FReal>                                        MatrixKernelClass;
+                //     typedef FUnifKernel<UnifCell,ContainerClass,MatrixKernelClass,7>           UnifKernel;
 
-            //     handle->engine = new FInterEngine<UnifCell,UnifKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
-            //     break;
-
-        default:
-            std::cout<< "Kernel type unsupported" << std::endl;
-            exit(0);
-            break;
-
-        }
+                //     handle->engine = new FInterEngine<UnifCell,UnifKernel>(/*TreeHeight,BoxWidth,BoxCenter, */KernelType);
+                //     break;
+            default:
+                std::cout<< "Kernel type unsupported" << std::endl;
+                exit(0);
+                break;
+            }
+            // }
     }
    return handle;
 }
@@ -391,7 +396,7 @@ void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes,
     delete tempContTarget;
 }
 
-void ChebCell_reset(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell){
+void ChebCell_reset(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell,void * inKernel){
     ChebCellStruct *  cellStruct = reinterpret_cast<ChebCellStruct *>(userCell);
     FChebCell<double,7>* chebCell = cellStruct->cell;
     chebCell->resetToInitialState();

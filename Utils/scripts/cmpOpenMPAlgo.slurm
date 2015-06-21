@@ -28,13 +28,13 @@ cd $project_dir/BuildIntel2016
 #
 #   INTEL
 #
-# module add compiler/gcc/5.1.0 compiler/intel/64/2016_beta
-# cd $project_dir/BuildIntel2016
+ module add compiler/gcc/5.1.0 compiler/intel/64/2016_beta
+cd $project_dir/BuildIntel2016
 #
 #   GCC
 #
-module add compiler/gcc/5.1.0 intel/mkl/64/11.2/2015.3.187  
-cd $project_dir/BuildGCC51
+#module add compiler/gcc/5.1.0 intel/mkl/64/11.2/2015.3.187  
+#cd $project_dir/BuildGCC51
 #
 # For eztrace
 #

@@ -54,8 +54,8 @@ void cheb_p2pFull(FSize nbParticles, const FSize* particleIndexes,
     ChebKernel_P2P(nbParticles, particleIndexes, sourceParticleIndexes, sourceNbPart, userData);
 }
 
-void cheb_resetCell(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell){
-    ChebCell_reset(level,morton_index,tree_position,spatial_position,userCell);
+void cheb_resetCell(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell, void * userData){
+    ChebCell_reset(level,morton_index,tree_position,spatial_position,userCell,userData);
 }
 
 
@@ -247,16 +247,16 @@ int main(int argc, char ** av){
         scalfmm_execute_fmm(handle_ref/*, kernel, &my_data*/);
         tac(&ref_timer);
 
-        { //Temporary
-            int nbTimers = scalfmm_get_nb_timers(handle_ref);
-            double * timersArray = malloc(sizeof(double)*nbTimers);
-            scalfmm_get_timers(handle_ref,timersArray);
-            int i;
-            for(i=0; i<nbTimers ; ++i){
-                printf("ScalFMM Operands : %d : \t %e\n",i,timersArray[i]);
-            }
-            free(timersArray);
-        }
+        /* { //Temporary */
+        /*     int nbTimers = scalfmm_get_nb_timers(handle_ref); */
+        /*     double * timersArray = malloc(sizeof(double)*nbTimers); */
+        /*     scalfmm_get_timers(handle_ref,timersArray); */
+        /*     int i; */
+        /*     for(i=0; i<nbTimers ; ++i){ */
+        /*         printf("ScalFMM Operands : %d : \t %e\n",i,timersArray[i]); */
+        /*     } */
+        /*     free(timersArray); */
+        /* } */
 
 
         printf("Intern Chebyshev done\n");
@@ -292,10 +292,10 @@ int main(int argc, char ** av){
                     nbPartOkay++;
                 }
                 else{
-                    printf("id : %lld : %e, %e, %e, %e, ChebInterf Pot : %e  Cheb Pot : %e \n",
-                           idxPart,diffX,diffY,diffZ,diffPot,
-                           potentialToStore[0][idxPart],
-                           potentialsRef[idxPart]);
+                    /* printf("id : %lld : %e, %e, %e, %e, ChebInterf Pot : %e  Cheb Pot : %e \n", */
+                    /*        idxPart,diffX,diffY,diffZ,diffPot, */
+                    /*        potentialToStore[0][idxPart], */
+                    /*        potentialsRef[idxPart]); */
                 }
                 //That part is to verify with our usual exec' if everything is alright
                 if(idxPart == 0 || idxPart == nbPart/2 || idxPart == nbPart-1){

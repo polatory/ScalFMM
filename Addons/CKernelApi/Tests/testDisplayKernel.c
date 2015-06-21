@@ -139,7 +139,7 @@ void displ_p2pFull(FSize nbParticles, const FSize* particleIndexes,
     user_data->nbP2PFull+= 1;
 }
 
-void displ_resetCell(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell){
+void displ_resetCell(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell, void * userData){
     printf("Removing %d cell at lvl %d... \n",((Cell*)userCell)->Id,((Cell*)userCell)->lvl);
 }
 
