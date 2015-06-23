@@ -216,7 +216,8 @@ else()
         set(FFTW_fftw3.h_DIRS "FFTW_fftw3.h_DIRS-NOTFOUND")
         find_path(FFTW_fftw3.h_DIRS
                   NAMES fftw3.h
-                  HINTS ${PATH_TO_LOOK_FOR})
+                  HINTS ${PATH_TO_LOOK_FOR}
+                  PATH_SUFFIXES "fftw")
     endif()
 endif()
 mark_as_advanced(FFTW_fftw3.h_DIRS)

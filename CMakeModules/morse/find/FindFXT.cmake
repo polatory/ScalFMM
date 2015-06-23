@@ -141,7 +141,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FXT_FOUND) OR 
             set(FXT_fxt.h_DIRS "FXT_fxt.h_DIRS-NOTFOUND")
             find_path(FXT_fxt.h_DIRS
                       NAMES fxt.h
-                      HINTS ${_inc_env})
+                      HINTS ${_inc_env}
+                      PATH_SUFFIXES "fxt")
         endif()
     endif()
     mark_as_advanced(FXT_fxt.h_DIRS)
