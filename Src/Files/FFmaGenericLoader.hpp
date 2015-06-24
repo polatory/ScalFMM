@@ -47,15 +47,12 @@
  */
 template<class FReal, unsigned int READ, unsigned int WRITE>
 class FmaRWParticle {
+    static_assert(WRITE >= 4, "Cannot create FmaRWParticle with less than 4 as value for WRITE");
+
     /// Data stored
     FReal data[WRITE];
 public:
-    FmaRWParticle(){
-        if(WRITE<4){
-            std::cout << "Cannot create FmaRWParticle with less than 4 as value for WRITE" << std::endl;
-            exit(0);
-        }
-    }
+    FmaRWParticle() = default;
 
     /// Get a FPoint<FReal> from the position
     FPoint<FReal> getPosition() const{
