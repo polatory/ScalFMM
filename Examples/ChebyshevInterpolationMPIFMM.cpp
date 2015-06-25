@@ -77,10 +77,10 @@ int main(int argc, char* argv[])
 
     //
     std::cout << "Parameters"<< std::endl
-              << "      Octree Depth      " << TreeHeight    <<std::endl
-              << "      SubOctree depth   " << SubTreeHeight <<std::endl
-              << "      Input file  name: " << filename      <<std::endl
-              << "      Thread count :    " << NbThreads     <<std::endl
+              << "      Octree Depth      " << TreeHeight    << std::endl
+              << "      SubOctree depth   " << SubTreeHeight << std::endl
+              << "      Input file  name: " << filename      << std::endl
+              << "      Thread count :    " << NbThreads     << std::endl
               << std::endl;
 
 
@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
     using CellClass      = FChebCell<FReal,ORDER>;
     using OctreeClass    = FOctree<FReal,CellClass,ContainerClass,LeafClass>;
 
-    using MatrixKernel   = FInterpMatrixKernelR<FReal>;
+    using MatrixKernelClass = FInterpMatrixKernelR<FReal>;
     const MatrixKernelClass MatrixKernel;
 
     using KernelClass    = FChebSymKernel<FReal, CellClass,ContainerClass,MatrixKernelClass,ORDER>;
@@ -192,7 +192,7 @@ int main(int argc, char* argv[])
         MPI_Reduce(&timeUsed,&maxTime,1,MPI_DOUBLE,MPI_MAX,0,app.global().getComm());
         if(app.global().processId() == 0){
             std::cout << "readinsert-time-min:" << minTime
-                      << "readinsert-time-max:" << maxTime
+                      << " readinsert-time-max:" << maxTime
                       << std::endl;
         }
     } // -----------------------------------------------------
@@ -217,7 +217,7 @@ int main(int argc, char* argv[])
         MPI_Reduce(&timeUsed,&maxTime,1,MPI_DOUBLE,MPI_MAX,0,app.global().getComm());
         if(app.global().processId() == 0){
             std::cout << "exec-time-min:" << minTime
-                      << "exec-time-max:" << maxTime 
+                      << " exec-time-max:" << maxTime
                       << std::endl;
         }
 
