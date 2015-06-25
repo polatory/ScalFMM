@@ -256,6 +256,7 @@ public:
      */
     FFmaGenericLoader(const std::string & filename) : file(nullptr),binaryFile(false),
                                                       centerOfBox(0.0,0.0,0.0),boxWidth(0.0),nbParticles(0),tmpVal(nullptr),otherDataToRead(0) {
+
         std::string ext(".bfma");
         // open particle file
         if(filename.find(ext) != std::string::npos) {
@@ -266,7 +267,10 @@ public:
             this->file = new std::fstream(filename.c_str(),std::ifstream::in) ;
         }
         else  {
-            std::cout << "Input file not allowed only .fma or .bfma extensions" <<std::endl;
+            std::cout << "FFmaGenericLoader: "
+                      << "Only .fma or .bfma input file are allowed. Got " 
+                      << filename << "."
+                      << std::endl;
             std::exit ( EXIT_FAILURE) ;
         }
         // test if open
