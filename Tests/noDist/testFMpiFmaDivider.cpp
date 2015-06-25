@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "Files/FMPIParticleDivider.hpp"
+#include "Files/FMpiFmaDivider.hpp"
 
 using FReal = double;
 
@@ -12,9 +12,8 @@ int main(int argc, char** argv)
 
     loadFMAAndRunFMMArgs args(argc, argv);
 
-    FMPIParticleDivider<FReal>
+    FMpiFmaDivider<FReal>
         divider(args.inFileName(),
-                args.outFileName(),
                 args.zoneCount(),
                 args.treeHeight());
 
