@@ -54,7 +54,7 @@
 #   - BLAS libraries can be detected from different ways
 #     Here is the order of precedence:
 #     1) we look in cmake variable BLAS_LIBDIR or BLAS_DIR (we guess the libdirs) if defined
-#     2) we look in environnement variable BLAS_LIBDIR or BLAS_DIR (we guess the libdirs) if defined
+#     2) we look in environment variable BLAS_LIBDIR or BLAS_DIR (we guess the libdirs) if defined
 #     3) we look in common environnment variables depending on the system (INCLUDE, C_INCLUDE_PATH, CPATH - LIB, DYLD_LIBRARY_PATH, LD_LIBRARY_PATH)
 #     4) we look in common system paths depending on the system, see for example paths contained in the following cmake variables:
 #       - CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES, CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES

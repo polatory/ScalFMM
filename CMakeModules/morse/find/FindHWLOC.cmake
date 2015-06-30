@@ -145,7 +145,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) O
             set(HWLOC_hwloc.h_DIRS "HWLOC_hwloc.h_DIRS-NOTFOUND")
             find_path(HWLOC_hwloc.h_DIRS
                       NAMES hwloc.h
-                      HINTS ${PATH_TO_LOOK_FOR})
+                      HINTS ${PATH_TO_LOOK_FOR}
+                      PATH_SUFFIXES "hwloc")
         endif()
     endif()
     mark_as_advanced(HWLOC_hwloc.h_DIRS)

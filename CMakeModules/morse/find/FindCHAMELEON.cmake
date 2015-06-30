@@ -426,7 +426,8 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUN
             set(CHAMELEON_morse.h_DIRS "CHAMELEON_morse.h_DIRS-NOTFOUND")
             find_path(CHAMELEON_morse.h_DIRS
               NAMES morse.h
-              HINTS ${_inc_env})
+              HINTS ${_inc_env}
+              PATH_SUFFIXES "chameleon")
         endif()
     endif()
     mark_as_advanced(CHAMELEON_morse.h_DIRS)

@@ -231,7 +231,7 @@ struct FMath{
     static double pow(double x, double y){
         return ::pow(x,y);
     }
-    static double pow(float x, float y){
+    static float pow(float x, float y){
         return ::powf(x,y);
     }
     template <class NumType>
@@ -255,6 +255,14 @@ struct FMath{
             while(--inValue > 1) result *= NumType(inValue);
             return result;
         }
+    }
+
+    /** To get exponential */
+    static double Exp(double x){
+        return ::exp(x);
+    }
+    static float Exp(float x){
+        return ::expf(x);
     }
 
     /** To know if a value is between two others */

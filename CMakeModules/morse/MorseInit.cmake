@@ -43,6 +43,9 @@ include(PrintFindStatus)
 # Define some auxilary flags
 include(AuxilaryFlags)
 
+# Define some variables to et info about ressources
+include(Ressources)
+
 # Add the path where we handle our FindFOO.cmake to seek for liraries
 list(APPEND CMAKE_MODULE_PATH ${MORSE_CMAKE_MODULE_PATH}/find)
 

@@ -25,11 +25,15 @@
 # Define auxilary variables:
 #  - CMAKE_Fortran_PREPROCESS_FLAGS : force C preprocessor.
 #  - CMAKE_Fortran_FREEFORM_FLAG : Force free format.
+#  - CMAKE_Fortran
 ###
 
 
 IF(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
-  list(APPEND CMAKE_Fortran_FLAGS "-cpp -ffree-form")
+  list(APPEND CMAKE_Fortran_PREPROCESS_FLAGS "-cpp")
+  list(APPEND CMAKE_Fortran_FREEFORM_FLAG "-ffree-form")
+
 ELSEIF(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
   list(APPEND CMAKE_Fortran_PREPROCESS_FLAG "-fpp")
+  list(APPEND CMAKE_Fortran_FREEFORM_FLAG "")
 ENDIF()

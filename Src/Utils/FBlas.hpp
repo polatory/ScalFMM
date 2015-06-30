@@ -206,12 +206,16 @@ namespace FBlas {
 	{	dcopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
 	inline void copy(const unsigned n, float* orig, float* dest)
 	{	scopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
+    inline void copy(const unsigned n, const float* orig, float* dest)
+    {   scopy_(&n, orig, &N_ONE, dest, &N_ONE); }
 	inline void c_copy(const unsigned n, double* orig, double* dest)
 	{	zcopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
 	inline void c_copy(const unsigned n, const double* orig, double* dest)
 	{	zcopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
 	inline void c_copy(const unsigned n, float* orig, float* dest)
 	{	ccopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
+    inline void c_copy(const unsigned n, const float* orig, float* dest)
+    {   ccopy_(&n, orig, &N_ONE, dest, &N_ONE); }
 
 	// copy (variable increment)
 	inline void copy(const unsigned n, double* orig, const unsigned inco, double* dest, const unsigned incd)

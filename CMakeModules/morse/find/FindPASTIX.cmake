@@ -381,7 +381,8 @@ else()
         set(PASTIX_pastix.h_DIRS "PASTIX_pastix.h_DIRS-NOTFOUND")
         find_path(PASTIX_pastix.h_DIRS
           NAMES pastix.h
-          HINTS ${_inc_env})
+          HINTS ${_inc_env}
+          PATH_SUFFIXES "pastix")
     endif()
 endif()
 mark_as_advanced(PASTIX_pastix.h_DIRS)
