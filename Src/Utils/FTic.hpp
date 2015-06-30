@@ -34,41 +34,53 @@
 #endif
 
 
-/** \author Berenger Bramas (berenger.bramas@inria.fr)
-  * \brief This class implements a time counter
-  *
-  * <code>
-  * FTic counter;<br>
-  * counter.tic();<br>
-  * //...<br>
-  * counter.tac();<br>
-  * counter.elapsed(); //> time in s<br>
-  * </code>
-  *
-  * The special method that uses asm register is based on the code by : Alexandre DENIS
-  * http://dept-info.labri.fr/~denis/Enseignement/2006-SSECPD/timing.h
-  */
+/**
+ * \brief Time counter class.
+ * \author Berenger Bramas (berenger.bramas@inria.fr)
+ *
+ * This time counter can be (re)started using tic() and stopped using tac().
+ *
+ *  - use elapsed() to get the last time interval;
+ *  - use cumulated() to get the total running time;
+ *  - use reset() to stop and reset the counter. 
+ *
+ * \code
+ * FTic timer;
+ * timer.tic();
+ * //...(1)
+ * timer.tac();
+ * timer.elapsed();  // time of (1) in s
+ * timer.tic();
+ * //...(2)
+ * timer.tac();
+ * timer.elapsed();  // time of (2) in s
+ * timer.cumulated() // time of (1) and (2) in s
+ * timer.reset()     // reset the object
+ * \endcode
+ *
+ * The special method that uses asm register is based on code by Alexandre DENIS
+ * http://dept-info.labri.fr/~denis/Enseignement/2006-SSECPD/timing.h
+ */
 class FTic {
 private:
-    double start;       //< start time (tic)
-    double end;         //< stop time (tac)
-    double cumulate;    //< the cumulate time
+
+    double start    = 0;    ///< start time (tic)
+    double end      = 0;    ///< stop time (tac)
+    double cumulate = 0;    ///< the cumulate time
 
 public:
-    /** Constructor */
-    FTic() : start(0.0), end(0.0), cumulate(0.0) {
+    /// Constructor
+    FTic() {
         tic();
     }
 
-    /** Copy constructor */
-    FTic(const FTic& other) : start(other.start), end(other.end), cumulate(other.cumulate) {}
+    /// Copy constructor
+    FTic(const FTic& other) = default;
 
-    /** Move constructor */
-    FTic(FTic&& other) : start(other.start), end(other.end), cumulate(other.cumulate) {
-        other.reset();
-    }
+    /// Move constructor
+    FTic(FTic&& other) = default;
 
-    /** \brief Copies an other timer */
+    /// Copies an other timer
     FTic& operator=(const FTic& other) {
         start = other.start;
         end = other.end;
@@ -76,70 +88,62 @@ public:
         return *this;
     }
 
-    /** \brief Adds two timers and returns a new one */
+    /// Adds two timers
+    /** The addition is done by keeping :
+     *     - the left operand start date
+     *     - the left operand end date
+     *     - adding the cumulated times
+     * \return A new FTic object
+     */
     const FTic operator+(const FTic& other) const {
         FTic res(*this);
-        res.start = start < other.start ? start : other.start;
-        res.end = end > other.end ? end : other.end;
         res.cumulate += other.cumulate;
-
         return res;
     }
     
-    /**
-     * \brief Resets cumulated time to 0
-     * \warning You must retic to restart measuring time.
-     */
+    /// Resets the timer
+    /**\warning Use tic() to restart the timer. */
     void reset() {
         start    = 0;
         end      = 0;
         cumulate = 0;
     }
 
-    /**
-     * \brief Start measuring time.
-     *
-     * Tic : start <= current time
-     */
+    /// Start measuring time.
     void tic(){
         this->start = FTic::GetTime();
     }
 
-    /**
-     * \brief Stop measuring time and add to cumulative time.
-     *
-     *
-     * Tac : end <= current time 
-     */
+    /// Stop measuring time and add to cumulated time.
     void tac(){
         this->end = FTic::GetTime();
         cumulate += elapsed();
     }
 
-    /** Return end - start
-      * @return the time elapsed between tic & tac in second */
+    /// Elapsed time between the last tic() and tac() (in seconds).
+    /** \return the time elapsed between tic() & tac() in second. */
     double elapsed() const{
         return this->end - this->start;
     }
 
-    /** Return cumulate
-      * @return the time elapsed between ALL tic & tac in second */
+    /// Cumulated tic() - tac() time spans
+    /** \return the time elapsed between ALL tic() & tac() in second. */
     double cumulated() const{
         return cumulate;
     }
 
-    /** Return end - start
-      * @return the time elapsed between tic & tac in second */
+    /// Combination of tic() and elapsed().
+    /** \return the time elapsed between tic() & tac() in second. */
     double tacAndElapsed() {
         tac();
         return elapsed();
     }
 
-    /** Global get time
-      * @return a global time
-      * GetTickCount on windows
-      * gettimeofday on linux or a direct ASM method
-      */
+    /// Get system dependent time point.
+    /** GetTickCount on windows
+     *  gettimeofday on linux or a direct ASM method
+     *  \return A system dependent time point.
+     */
     static double GetTime(){
 #ifdef _OPENMP
         return omp_get_wtime();
