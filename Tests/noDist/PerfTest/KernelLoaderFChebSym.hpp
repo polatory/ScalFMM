@@ -25,6 +25,12 @@
  */
 template <typename _TreeLoader>
 class KernelLoaderFChebSym : public FKernelLoader<_TreeLoader> {
+    // Meaningfull (?) error message.
+    static_assert(
+        std::is_base_of<FChebCell<typename _TreeLoader::FReal,_TreeLoader::ORDER>,
+                        typename _TreeLoader::CellClass>::value,
+        "TreeLoader::CellClass must derive from FChebCell");    
+
 
 public:
     // Required type definitions
@@ -43,19 +49,19 @@ public:
                                                MatrixKernelClass, TreeLoader::ORDER,
                                                OctreeClass>;
 
-    // Meaningfull (?) error message.
-    static_assert(std::is_base_of<FChebCell<FReal,TreeLoader::ORDER>,CellClass>::value,
-                  "TreeLoader::CellClass must derive from FChebCell");    
-
-
     const FReal epsilon = 1e-4;
+    
+    /// Matrix used to compute the tree cells interactions.
     const MatrixKernelClass _matrixKernel;
-    /// kernel used to compute the tree cells interactions.
+    /// Kernel used to compute the tree cells interactions.
     KernelClass _kernel;
     /// Kernel used to compute the tree cells costs.
     CostKernelClass _costKernel;
 
-    /// Builds the loader and loads the kernel.
+    /// Builds and loads the kernel.
+    /** \param params Parameters from the main invocation, UNSUSED
+     *  \param treeLoader Tree loader that was used.
+     */
     KernelLoaderFChebSym(FPerfTestParams& /*params*/, TreeLoader& treeLoader) :
         _matrixKernel(),
         _kernel(treeLoader._tree.getHeight(),

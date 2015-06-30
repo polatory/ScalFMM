@@ -52,60 +52,12 @@ public:
 protected:
 
     /**
-     * \brief A template which type is always false.
-     *
-     * This template is only expanded by the compiler when it is requested
-     * (ie. the compiler will not try to optimize out its value.). Must be used
-     * to create false static_assert to catch unintended use of a template.
-     */
-    template <typename... Args>
-    struct false_type {
-        bool value = false;
-    };  
-
-    /**
-     * \brief Failure method for unimplemented loadTree templates.
-     *
-     * This template will catch unspecialised call to the loadTree method and
-     * will cause the compilation to fail with a (somewhat) meaningfull message.
-     */
-    template <typename...Args>
-    void loadTree(Args...) {
-        static_assert(false_type<Args...>::value,
-                      "I don't know how to load this tree with this loader...");
-    }
-
-
-    /**
-     * \brief Simple method to load a tree from a FMA file.
-     *
-     * The template parameters are usualy guessed by the compiler.
-     *
-     * \tparam OctreeClass The class of the tree to fill.
-     * \tparam FReal The floating point type.
+     * \brief Load a tree from a file.
      *
      * \param loader The file loader to read from the file.
      * \param tree The tree to be filled.
      */
-    template <class OctreeClass, typename FReal>
-    void loadTree(FFmaGenericLoader<FReal>& loader, OctreeClass& tree) {
-        std::cout << "Creating & inserting particles" << std::flush;
-
-        time.tic();
-
-        FPoint<FReal> position;
-        FReal physicalValue = 0.0;
-        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart) {
-            // Read particle per particle from file
-            loader.fillParticle(&position,&physicalValue);
-            // put particle in octree
-            tree.insert(position, idxPart, physicalValue);
-        }
-
-        time.tac();
-        std::cout << " Done  (" << time.elapsed() << "s)." << std::endl;
-    }
-
+    virtual void loadTree() = 0;
 };
 
 /**
