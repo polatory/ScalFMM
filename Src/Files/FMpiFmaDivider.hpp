@@ -64,6 +64,12 @@
  */
 template <typename FReal>
 class FMpiFmaDivider {
+public:
+    /// Policy for entites that are dispatched.
+    /**  - PARTICLES to dispatch by counting particles.
+     *   - BOXES to dispatch by counting Morton index boxes. */
+    enum DispatchPolicy {PARTICLES = 0, BOXES = 1};
+
 private:
 
     /** \brief Particle structure.
@@ -77,7 +83,7 @@ private:
      *
      * \todo Merge with / replace by FmaRWParticle <8,8> ?
      */
-    class Particle {
+    class FmaParticle {
     public:
         /// Center of the particles' box
         static FPoint<FReal> _boxCenter;
@@ -88,7 +94,9 @@ private:
         
     private:
         /// Position and physical values of the particle
-        /** Stored in the following order. Q is the physical value of the particle,
+        /** Stored in the following order. Q is the physical value of the
+         *  particle, P is its potential, FX, FY and FZ are the components of the
+         *  forces applying to it.
          *
          *     x y z Q [P FX FY FZ]
          */
@@ -101,29 +109,29 @@ private:
         enum do_not_overload {};
         /// Delegated constructor that automatically fills the data array.
         /** See
-         *  - [How can I pervent a variadic constructor from being prefered to the copy constructor ?]
+         *  - [How can I prevent a variadic constructor from being prefered to the copy constructor ?]
          *    (http://stackoverflow.com/q/13937873)
          *  - [Can one overload a constructor with a private constructor with the same parameters ?]
          *    (http://stackoverflow.com/q/14679299)
          */
         template<typename...Args>
-        Particle(do_not_overload, Args&&... args) :
+        FmaParticle(do_not_overload, Args&&... args) :
             data{args...},
             dataCount{sizeof...(Args)}
             {}
 
     public:
         /// Contructor
-        Particle(FPoint<FReal>& pos, FReal& val) :
-            Particle(do_not_overload(), pos.getX(), pos.getY(), pos.getZ(), val)
+        FmaParticle(FPoint<FReal>& pos, FReal& val) :
+            FmaParticle(do_not_overload(), pos.getX(), pos.getY(), pos.getZ(), val)
             { }
         
         /// Default constructor
-        Particle() = default;
+        FmaParticle() = default;
         /// Default copy constructor
-        Particle(const Particle& other) = default;
+        FmaParticle(const FmaParticle& other) = default;
         /// Default move constructor
-        Particle(Particle&& other) = default;
+        FmaParticle(FmaParticle&& other) = default;
 
 
         /// Get containing cell Morton index.
@@ -150,7 +158,7 @@ private:
         }
 
         /// Particle's forces accessor.
-        /**\returns
+        /**\return
          * An FReal array if #dataCount >= 6; nullptr otherwise.
          * The returned array is not garanteed to be 3 elements long. Use
          * getDataCount() - 5 to compute the length.
@@ -183,18 +191,18 @@ private:
         }
 
         /// Equality operator
-        bool operator==(const Particle& other) const {
+        bool operator==(const FmaParticle& other) const {
             return getPosition() == other.getPosition() &&
                 getPhysicalValue() == other.getPhysicalValue();
         }
 
         /// Strictly less than operator
-        bool operator<(const Particle& other) const {
+        bool operator<(const FmaParticle& other) const {
             return getMortonIndex() < other.getMortonIndex();
         }
 
         /// Output stream operator
-        friend std::ostream& operator<<(std::ostream& os, const Particle& p) {
+        friend std::ostream& operator<<(std::ostream& os, const FmaParticle& p) {
             for( int i = 0; i < p.dataCount; i++) {
                 os << p.data[i] << " ";
             }
@@ -218,7 +226,7 @@ private:
     int _divisionLevel;
 
     /// A set to sort the particles using their Morton index
-    std::multiset<Particle> _particles;
+    std::multiset<FmaParticle> _particles;
 
     /// Particle count as returned by reading the file header with the loader
     FSize _particleCount {0};
@@ -229,32 +237,59 @@ private:
     /// Record count per line as returned by reading the file header with the loader
     unsigned int _nbRecordsPerLine {4};
 
+    /// What to count to choose file content
+    DispatchPolicy _dispatchPolicy = PARTICLES;
+
 public:
+
     /** \brief Constructor
      *
-     * Build the particle divider and opens the loader.
+     * Builds the particle divider and opens the loader. The output files
+     * basename and extension are extracted from the input file name.
+     *
+     * \param filename[in] The particle input file.
+     * \param splitcount[in] The number of parts to split the input file into.
+     * \param divisionLevel[in] The level in the to-be tree at which to do the division.
+     */
+    FMpiFmaDivider(const std::string filename,
+                   int splitCount,
+                   int divisionLevel,
+                   DispatchPolicy dispatchPolicy = PARTICLES) :
+        FMpiFmaDivider(filename, 
+                       filename.substr(0,filename.find_last_of(".")),
+                       filename.substr(filename.find_last_of(".")),
+                       splitCount,
+                       divisionLevel,
+                       dispatchPolicy ) {
+        }
+
+    /** \brief Constructor
+     *
+     * Builds the particle divider and opens the loader.
+     *
      * \param filename[in] The particle input file.
      * \param outputBasename[in] The basename for the output files.
      * \param splitcount[in] The number of parts to split the input file into.
      * \param divisionLevel[in] The level in the to-be tree at which to do the division.
      */
     FMpiFmaDivider(const std::string filename,
-                        int splitcount,
-                        int divisionLevel) :
+                   const std::string basename,
+                   const std::string ext,
+                   int splitCount,
+                   int divisionLevel,
+                   DispatchPolicy dispatchPolicy) :
         _filename(filename),
-        _splitCount(splitcount),
-        _divisionLevel(divisionLevel) {
-
-        // Setup output format from input
-        typename std::string::size_type lastpoint = filename.find_last_of(".");
-        _outputBasename = filename.substr(0,lastpoint) + "_"
-            + std::to_string(_splitCount) + "z";
-        _outputExt = filename.substr(lastpoint);
+        _outputBasename(basename + "_" + std::to_string(splitCount) + "z"),
+        _outputExt(ext),
+        _splitCount(splitCount),
+        _divisionLevel(divisionLevel),
+        _dispatchPolicy(dispatchPolicy) {
 
         readFile();
         writeFiles();
 
     }
+
 
     /// Deleted copy constructor because of loader
     FMpiFmaDivider(const FMpiFmaDivider&) = delete;
@@ -273,9 +308,9 @@ protected:
         _nbRecordsPerLine = loader.getNbRecordPerline();
 
         // Set particles' space to enable comparisons.
-        Particle::_boxCenter = loader.getCenterOfBox();
-        Particle::_boxWidth = loader.getBoxWidth();
-        Particle::_divisionLevel = _divisionLevel;            
+        FmaParticle::_boxCenter = loader.getCenterOfBox();
+        FmaParticle::_boxWidth = loader.getBoxWidth();
+        FmaParticle::_divisionLevel = _divisionLevel;            
 
 
         FReal valueBuffer;
@@ -288,8 +323,8 @@ protected:
             FRepeatAction progress(
                 [&]() -> bool {
                     std::cerr
-                        << "\rReading & sorting particles: "
-                        << idxPart * 100 / _particleCount << "%     " ;
+                        << "     \rReading & sorting particles: "
+                        << idxPart * 100 / _particleCount << "%" ;
                     return true; }, 200 ); 
             );
         ////////////////////////
@@ -313,28 +348,39 @@ protected:
     /// Writes the output file based on #_outputBasename.
     void writeFiles() {
 
-        std::vector<std::vector<Particle> > filesParticles(_splitCount);
+        std::vector<std::vector<FmaParticle> > filesParticles(_splitCount);
 
         // Temporary vector to store all particles with same Morton index
-        std::vector<Particle> container;
+        std::vector<FmaParticle> container;
 
-        using size_type = typename std::vector<Particle>::size_type;
-        size_type totalParticleCount = _particles.size();
-        size_type currentGlobalParticleCount = 0;
-        size_type currentFileParticleCount = 0;
+        using size_type = typename std::vector<FmaParticle>::size_type;
+        
+        size_type totalCount = _particleCount;
+        size_type currentCount = 0;
         MortonIndex currentMortonIdx = 0;
         long long int currentFileIdx = 0;
 
-        ////////////////////////
-        FLOG( FRepeatAction progress(
-                  [&]() -> bool {
-                      std::cerr
-                          << "\rCreating particle-files association: "
-                          << currentGlobalParticleCount * 100 / totalParticleCount
-                          << "%     " ;
-                      return true; }, 200 ); );
-        ////////////////////////
+        if( BOXES == _dispatchPolicy ) {
+            totalCount = 1;
+            for ( auto p :  _particles ) {
+                if( p.getMortonIndex() != currentMortonIdx) {
+                    totalCount++;
+                    currentMortonIdx = p.getMortonIndex();
+                }
+            }
+            currentMortonIdx = 0;
+        }
 
+        // FIND OUT PARTICLES' FILE ////////////////////////////////////////////
+        FLOG( // Choose file progress log
+            FRepeatAction progress(
+                [&]() -> bool {
+                    std::cerr
+                        << "     \rCreating particle-files association: "
+                        << currentCount * 100 / totalCount
+                        << "%" ;
+                    return true; }, 200 ); );
+        ////////////////////////
 
         while(_particles.begin() != _particles.end()) {
             /* Particles are sorted, we pull out all those with the same Morton
@@ -343,17 +389,23 @@ protected:
                    && (*_particles.begin()).getMortonIndex() == currentMortonIdx) {
                 container.push_back(*(_particles.begin()));
                 _particles.erase(_particles.begin());
-            }          
+            }
+
+
             // File number
-            currentFileIdx = currentGlobalParticleCount * _splitCount
-                / totalParticleCount;
+            currentFileIdx = currentCount * _splitCount
+                / totalCount;
+
             // Set particles to file.
-            for(Particle p : container) {
+            for(FmaParticle p : container) {
                 filesParticles[currentFileIdx].push_back(p);
             }
 
-            currentGlobalParticleCount += container.size();
-            currentMortonIdx += container.size();
+            if( BOXES == _dispatchPolicy ) {
+                currentCount++;
+            } else if ( PARTICLES == _dispatchPolicy ) {
+                currentCount += container.size();
+            }
             container.clear();
             currentMortonIdx = (*_particles.begin()).getMortonIndex();
         }
@@ -369,19 +421,21 @@ protected:
         ////////////////////////
 
         currentFileIdx = 0;
-        currentGlobalParticleCount = 0;
+        currentCount = 0;
 
-        ////////////////////////
-        FLOG(
+
+
+        // WRITE FILES /////////////////////////////////////////////////////////
+        FLOG( /// Write files progress log
             std::cerr << "\rWriting particles to files... ";
             progress.setFunction(
                 [&]() -> bool {
                     std::cerr
-                        << "\rWriting particles to file "
+                        << "     \rWriting particles to file "
                         << currentFileIdx
                         << ": "
-                        << currentGlobalParticleCount * 100 / totalParticleCount
-                        << "%     " ;
+                        << currentCount * 100 / _particleCount
+                        << "%" ;
                     return true; } );
             progress.start();
             );
@@ -391,30 +445,31 @@ protected:
         {
             FFmaGenericWriter<FReal>
                 commonWriter(_outputBasename + ".main" + _outputExt);
-            commonWriter.writeHeader(Particle::_boxCenter,
-                                     Particle::_boxWidth,
+            commonWriter.writeHeader(FmaParticle::_boxCenter,
+                                     FmaParticle::_boxWidth,
                                      _particleCount,
                                      _dataType,
                                      _nbRecordsPerLine);
         }
 
-        // Write remaining file
-        for ( std::vector<Particle>& filecontent : filesParticles ) {
-            // The current file writer
+        // Write files
+        for ( std::vector<FmaParticle>& filecontent : filesParticles ) {
+            // Open the current file writer
             FFmaGenericWriter<FReal>
                 writer(_outputBasename + "." + std::to_string(currentFileIdx)
                        + _outputExt);
 
-            writer.writeHeader(Particle::_boxCenter,
-                               Particle::_boxWidth,
+            writer.writeHeader(FmaParticle::_boxCenter,
+                               FmaParticle::_boxWidth,
                                filecontent.size(),
                                _dataType,
                                _nbRecordsPerLine);
 
-            for( Particle p : filecontent ) {
+            for( FmaParticle p : filecontent ) {
                 writer.writeArrayOfReal(p.getPtrFirstData(),
                                         p.getWriteDataNumber(), 1);
-                FLOG(currentGlobalParticleCount++);
+
+                FLOG(currentCount++);
             }
             currentFileIdx++;
         }
@@ -436,11 +491,11 @@ protected:
 
 
 template<typename FReal>
-FPoint<FReal> FMpiFmaDivider<FReal>::Particle::_boxCenter = FPoint<FReal>{0,0,0};
+FPoint<FReal> FMpiFmaDivider<FReal>::FmaParticle::_boxCenter = FPoint<FReal>{0,0,0};
 template<typename FReal>
-FReal FMpiFmaDivider<FReal>::Particle::_boxWidth = 1;
+FReal FMpiFmaDivider<FReal>::FmaParticle::_boxWidth = 1;
 template<typename FReal>
-int FMpiFmaDivider<FReal>::Particle::_divisionLevel = 4;
+int FMpiFmaDivider<FReal>::FmaParticle::_divisionLevel = 4;
 
 
 

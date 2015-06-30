@@ -4,17 +4,21 @@
 
 using FReal = double;
 
-#include "testFmmAlgorithmBalancedArgs.hpp"
+#include "testFMpiFmaDividerArgs.hpp"
 
 
 int main(int argc, char** argv)
 {
 
-    loadFMAAndRunFMMArgs args(argc, argv);
+    testFMpiFmaDividerArgs args(argc, argv);
+
 
     FMpiFmaDivider<FReal>
         divider(args.inFileName(),
+                args.outFileName(),
+                args.outFileExt(),
                 args.zoneCount(),
-                args.treeHeight());
+                args.treeHeight(),
+                FMpiFmaDivider<FReal>::DispatchPolicy(args.dispatchPolicy()));
 
 }
