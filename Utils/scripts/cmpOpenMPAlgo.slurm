@@ -26,9 +26,14 @@ echo $DATE
 #
 cd $project_dir/BuildIntel2016
 #
-#   INTEL
+#   INTEL 2015
 #
- module add compiler/gcc/5.1.0 compiler/intel/64/2016_beta
+# module add compiler/gcc/5.1.0 compiler/intel/64/2015.3.187
+# cd $project_dir/BuildIntel2015
+#
+#   INTEL 2016
+#
+module add compiler/gcc/5.1.0 compiler/intel/64/2016_beta
 cd $project_dir/BuildIntel2016
 #
 #   GCC
