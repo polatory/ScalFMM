@@ -51,9 +51,8 @@
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
- * @class FMpi
- * Please read the license
  *
+ * Please read the license.
  */
 
 class FMpi {
@@ -91,26 +90,29 @@ public:
     ////////////////////////////////////////////////////////
     // FComm to factorize MPI_Comm work
     ////////////////////////////////////////////////////////
-
-    /** This class is used to put all the usual method
-   * related mpi comm
-   */
+    
+    /**
+     * \brief MPI comunicator handling
+     *
+     * This class is used to gather the usual methods related to identifying an
+     * MPI communicator.
+     */
     class FComm : public FNoCopyable {
-        int rank;   //< rank related to the comm
-        int nbProc; //< nb proc in this group
+        int rank;   ///< rank related to the comm
+        int nbProc; ///< nb proc in this group
 
-        MPI_Comm communicator;  //< current mpi communicator
-        MPI_Group group;        //< current mpi group
+        MPI_Comm communicator;  ///< current mpi communicator
+        MPI_Group group;        ///< current mpi group
 
 
-        // reset : get rank and nb proc from mpi
+        /// Updates current process rank and process count from mpi
         void reset(){
             FMpi::Assert( MPI_Comm_rank(communicator,&rank),  __LINE__ );
             FMpi::Assert( MPI_Comm_size(communicator,&nbProc),  __LINE__ );
         }
 
     public:
-        /** Constructor : dup the comm given in parameter */
+        /// Constructor : duplicates the given communicator
         explicit FComm(MPI_Comm inCommunicator ) {
             FMpi::Assert( MPI_Comm_dup(inCommunicator, &communicator),  __LINE__ , "comm dup");
             FMpi::Assert( MPI_Comm_group(communicator, &group),  __LINE__ , "comm group");
@@ -118,23 +120,23 @@ public:
             reset();
         }
 
-        /** Free communicator and group */
+        /// Frees communicator and group
         virtual ~FComm(){
             FMpi::Assert( MPI_Comm_free(&communicator),  __LINE__ );
             FMpi::Assert( MPI_Group_free(&group),  __LINE__ );
         }
 
-        /** To get the mpi comm needed for communication */
+        /// Gets the underlying MPI communicator
         MPI_Comm getComm() const {
             return communicator;
         }
 
-        /** The current rank */
+        /// Gets the current rank
         int processId() const {
             return rank;
         }
 
-        /** The current number of procs in the group */
+        /// The current number of procs in the group */
         int processCount() const {
             return nbProc;
         }
