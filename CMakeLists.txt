@@ -117,8 +117,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     IF (APPLE)
       set(SSE_FLAGS  "-msse4  -mfpmath=sse")   # -mtune=native -march=native
     else(APPLE)
-      set(AVX_FLAGS  "-mavx")
-      set(AVX2_FLAGS  "-march=core-avx2")
+      set(AVX_FLAGS  "-march=native -axCORE-AVX2,CORE-AVX-I,AVX") #-mavx
+      set(AVX2_FLAGS  "-march=native  -axCORE-AVX2,CORE-AVX-I") #-march=core-avx2
       set(SSE_FLAGS  "-axSSE4.2  -march=native")
     endif(APPLE)
     #-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
@@ -189,7 +189,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     # if compiler is intel add -ip
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-      set(SCALFMM_CXX_FLAGS  "${SCALFMM_CXX_FLAGS} -ip -no-prec-div -no-prec-sqrt")
+      set(SCALFMM_CXX_FLAGS  "${SCALFMM_CXX_FLAGS} -ipo  -fstrict-aliasing ")# -no-prec-div -no-prec-sqrt")
     endif()
     # Compile optimization
     if(APPLE)
@@ -627,13 +627,14 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   If(SCALFMM_USE_EZTRACE)
     find_package (PkgConfig)
     if(PKG_CONFIG_FOUND)
-      MESSAGE(WARNING "PKG-CONFIG  found")
       set(PKG_CONFIG_USE_CMAKE_PREFIX_PATH "ON")
      pkg_search_module( EZTrace REQUIRED eztrace)
       link_directories(${EZTrace_LIBRARY_DIRS})
       link_libraries( ${EZTrace_LIBRARIES} -leztrace-memory)
       include_directories(${EZTrace_INCLUDE_DIRS})
-      MESSAGE(WARNING "EZTRACE:  ${EZTrace_INCLUDE_DIRS}   ${EZTrace_LIBRARY_DIRS}  ${EZTrace_LIBRARIES}") 
+      MESSAGE(STATUS "EZTRACE:  ${EZTrace_INCLUDE_DIRS}   ${EZTrace_LIBRARY_DIRS}  ${EZTrace_LIBRARIES}")
+      CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2L "Set to ON to trace M2L operator" ON  "SCALFMM_USE_EZTRACE" OFF )
+
     else(PKG_CONFIG_FOUND)
       MESSAGE(WARNING "PKG-CONFIG not found- EZTRACE Is set to NONE")
       set(SCALFMM_USE_EZTRACE OFF)
