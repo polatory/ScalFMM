@@ -19,6 +19,22 @@
 
 #include <omp.h>
 
+
+
+#ifdef OPENMP_SUPPORT_COMMUTE
+#define commute_if_supported commute
+#else
+#define commute_if_supported inout
+#endif
+
+#ifdef OPENMP_SUPPORT_PRIORITY
+#define priority_if_supported(x) priority(x)
+#else
+#define priority_if_supported(x)
+#endif
+
+
+
 template <class OctreeClass, class CellContainerClass, class CellClass,
           class SymboleCellClass, class PoleCellClass, class LocalCellClass, class KernelClass, class ParticleGroupClass, class ParticleContainerClass>
 class FGroupTaskDepAlgorithm : public FAbstractAlgorithm {
@@ -287,7 +303,7 @@ protected:
 
             ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
 
-            #pragma omp task default(shared) firstprivate(leafCells, cellPoles, containers) depend(inout: cellPoles[0])
+            #pragma omp task default(shared) firstprivate(leafCells, cellPoles, containers) depend(inout: cellPoles[0]) priority_if_supported(1)
             {
                 KernelClass*const kernel = kernels[omp_get_thread_num()];
 
@@ -343,7 +359,7 @@ protected:
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
 
-                #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroups, subCellGroupPoles, nbSubCellGroups) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0][0], subCellGroupPoles[1][0], subCellGroupPoles[2][0], subCellGroupPoles[3][0], subCellGroupPoles[4][0], subCellGroupPoles[5][0], subCellGroupPoles[6][0], subCellGroupPoles[7][0], subCellGroupPoles[8][0])
+                #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroups, subCellGroupPoles, nbSubCellGroups) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0][0], subCellGroupPoles[1][0], subCellGroupPoles[2][0], subCellGroupPoles[3][0], subCellGroupPoles[4][0], subCellGroupPoles[5][0], subCellGroupPoles[6][0], subCellGroupPoles[7][0], subCellGroupPoles[8][0])  priority_if_supported(1)
                 {
                     KernelClass*const kernel = kernels[omp_get_thread_num()];
                     int idxSubCellGroup = 0;
@@ -400,11 +416,7 @@ protected:
                     PoleCellClass* cellPoles = currentCells->getRawMultipoleBuffer();
                     LocalCellClass* cellLocals = currentCells->getRawLocalBuffer();
 
-#ifdef OPENMP_SUPPORT_COMMUTE
-                    #pragma omp task default(none) firstprivate(currentCells, cellPoles, cellLocals, idxLevel) depend(commute: cellLocals[0]) depend(in: cellPoles[0])
-#else
-                    #pragma omp task default(none) firstprivate(currentCells, cellPoles, cellLocals, idxLevel) depend(inout: cellLocals[0]) depend(in: cellPoles[0])
-#endif
+                    #pragma omp task default(none) firstprivate(currentCells, cellPoles, cellLocals, idxLevel) depend(commute_if_supported: cellLocals[0]) depend(in: cellPoles[0])  priority_if_supported(1)
                     {
                         const MortonIndex blockStartIdx = currentCells->getStartingIndex();
                         const MortonIndex blockEndIdx = currentCells->getEndingIndex();
@@ -467,11 +479,7 @@ protected:
                         LocalCellClass* cellOtherLocals = cellsOther->getRawLocalBuffer();
                         const std::vector<OutOfBlockInteraction>* outsideInteractions = &(*currentInteractions).interactions;
 
-#ifdef OPENMP_SUPPORT_COMMUTE
-                        #pragma omp task default(none) firstprivate(currentCells, cellPoles, cellLocals, outsideInteractions, cellsOther, cellOtherPoles, cellOtherLocals, idxLevel) depend(commute: cellLocals[0], cellOtherLocals[0]) depend(in: cellPoles[0], cellOtherPoles[0])
-#else
-                        #pragma omp task default(none) firstprivate(currentCells, cellPoles, cellLocals, outsideInteractions, cellsOther, cellOtherPoles, cellOtherLocals, idxLevel) depend(inout: cellLocals[0], cellOtherLocals[0]) depend(in: cellPoles[0], cellOtherPoles[0])
-#endif
+                        #pragma omp task default(none) firstprivate(currentCells, cellPoles, cellLocals, outsideInteractions, cellsOther, cellOtherPoles, cellOtherLocals, idxLevel) depend(commute_if_supported: cellLocals[0], cellOtherLocals[0]) depend(in: cellPoles[0], cellOtherPoles[0])  priority_if_supported(1)
                         {
                             KernelClass*const kernel = kernels[omp_get_thread_num()];
                             const CellClass* interactions[343];
@@ -551,11 +559,7 @@ protected:
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
 
-#ifdef OPENMP_SUPPORT_COMMUTE
-                #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0], subCellLocalGroupsLocal[7][0], subCellLocalGroupsLocal[8][0]) depend(in: cellLocals[0])
-#else
-                #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(inout: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0], subCellLocalGroupsLocal[7][0], subCellLocalGroupsLocal[8][0]) depend(in: cellLocals[0])
-#endif
+                #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0], subCellLocalGroupsLocal[7][0], subCellLocalGroupsLocal[8][0]) depend(in: cellLocals[0])  priority_if_supported(1)
                 {
                     KernelClass*const kernel = kernels[omp_get_thread_num()];
                     int idxSubCellGroup = 0;
@@ -607,11 +611,7 @@ protected:
                 ParticleGroupClass* containers = (*iterParticles);
                 unsigned char* containersDown = containers->getRawAttributesBuffer();
 
-#ifdef OPENMP_SUPPORT_COMMUTE
-                #pragma omp task default(none) firstprivate(containers, containersDown) depend(commute: containersDown[0])
-#else
-                #pragma omp task default(none) firstprivate(containers, containersDown) depend(inout: containersDown[0])
-#endif
+                #pragma omp task default(none) firstprivate(containers, containersDown) depend(commute_if_supported: containersDown[0])  priority_if_supported(1)
                 {
                     const MortonIndex blockStartIdx = containers->getStartingIndex();
                     const MortonIndex blockEndIdx = containers->getEndingIndex();
@@ -669,11 +669,7 @@ protected:
                     unsigned char* containersOtherDown = containersOther->getRawAttributesBuffer();
                     const std::vector<OutOfBlockInteraction>* outsideInteractions = &(*currentInteractions).interactions;
 
-#ifdef OPENMP_SUPPORT_COMMUTE
-                    #pragma omp task default(none) firstprivate(containers, containersDown, containersOther, containersOtherDown, outsideInteractions) depend(commute: containersOtherDown[0], containersDown[0])
-#else
-                    #pragma omp task default(none) firstprivate(containers, containersDown, containersOther, containersOtherDown, outsideInteractions) depend(inout: containersOtherDown[0], containersDown[0])
-#endif
+                    #pragma omp task default(none) firstprivate(containers, containersDown, containersOther, containersOtherDown, outsideInteractions) depend(commute_if_supported: containersOtherDown[0], containersDown[0])  priority_if_supported(1)
                     {
                         KernelClass*const kernel = kernels[omp_get_thread_num()];
                         for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
@@ -722,11 +718,7 @@ protected:
             ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
             unsigned char* containersDown = containers->getRawAttributesBuffer();
 
-#ifdef OPENMP_SUPPORT_COMMUTE
-            #pragma omp task default(shared) firstprivate(leafCells, cellLocals, containers, containersDown) depend(commute: containersDown[0]) depend(in: cellLocals[0])
-#else
-            #pragma omp task default(shared) firstprivate(leafCells, cellLocals, containers, containersDown) depend(inout: containersDown[0]) depend(in: cellLocals[0])
-#endif
+            #pragma omp task default(shared) firstprivate(leafCells, cellLocals, containers, containersDown) depend(commute_if_supported: containersDown[0]) depend(in: cellLocals[0])  priority_if_supported(1)
             {
                 KernelClass*const kernel = kernels[omp_get_thread_num()];
 
