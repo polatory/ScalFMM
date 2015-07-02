@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
     using CellClass      = FChebCell<FReal,ORDER>;
     using OctreeClass    = FOctree<FReal,CellClass,ContainerClass,LeafClass>;
 
-    using MatrixKernel   = FInterpMatrixKernelR<FReal>;
+    using MatrixKernelClass = FInterpMatrixKernelR<FReal>;
     const MatrixKernelClass MatrixKernel;
 
     using KernelClass    = FChebSymKernel<FReal, CellClass,ContainerClass,MatrixKernelClass,ORDER>;
@@ -168,7 +168,7 @@ int main(int argc, char* argv[])
                                        tree.getHeight(),
                                        &finalParticles,
                                        &balancer);
-        
+
         // Free temporary array memory.
         delete[] particles;
 
@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
         double minTime,maxTime;
         std::cout << "Proc:" << app.global().processId()
                   << " "     << finalParticles.getSize()
-                  << "particles have been inserted in the tree. (@Reading and Inserting Particles = " 
+                  << "particles have been inserted in the tree. (@Reading and Inserting Particles = "
                   << time.elapsed() << " s)."
                   << std::endl;
 
@@ -217,7 +217,7 @@ int main(int argc, char* argv[])
         MPI_Reduce(&timeUsed,&maxTime,1,MPI_DOUBLE,MPI_MAX,0,app.global().getComm());
         if(app.global().processId() == 0){
             std::cout << "exec-time-min:" << minTime
-                      << "exec-time-max:" << maxTime 
+                      << "exec-time-max:" << maxTime
                       << std::endl;
         }
 
