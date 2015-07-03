@@ -40,22 +40,19 @@
  * Potential, forceX, forceY, forceZ. The first 4 are mandatory.
  * Data is stored as FReal.
  *
- * See FFmaGenericLoader<FReal> for information on the format.
+ * See FFmaGenericLoader for information on the format.
  *
  * \tparam READ  number of items to read (UNUSED, see WRITE)
  * \tparam WRITE number of items to write (must be >= 4)
  */
 template<class FReal, unsigned int READ, unsigned int WRITE>
 class FmaRWParticle {
+    static_assert(WRITE >= 4, "Cannot create FmaRWParticle with less than 4 as value for WRITE");
+
     /// Data stored
     FReal data[WRITE];
 public:
-    FmaRWParticle(){
-        if(WRITE<4){
-            std::cout << "Cannot create FmaRWParticle with less than 4 as value for WRITE" << std::endl;
-            exit(0);
-        }
-    }
+    FmaRWParticle() = default;
 
     /// Get a FPoint<FReal> from the position
     FPoint<FReal> getPosition() const{
@@ -205,15 +202,17 @@ public:
 template <class FReal>
 class FFmaGenericLoader : public FAbstractLoader<FReal>  {
 protected:
-    std::fstream *file;        ///< the stream used to read the file
-    bool binaryFile  ;         ///< if true the file to read is in binary mode
-    FPoint<FReal>     centerOfBox;    ///< The center of box (read from file)
-    FReal boxWidth;            ///< the box width (read from file)
-    FSize    nbParticles;      ///< the number of particles (read from file)
-    unsigned int typeData[2];  ///< Size of the data to read, number of data on 1 line
+    std::fstream* file;       ///< the stream used to read the file
+    bool          binaryFile; ///< if true the file to read is in binary mode
+    FPoint<FReal> centerOfBox;///< The center of box (read from file)
+    FReal         boxWidth;   ///< the box width (read from file)
+    FSize         nbParticles;///< the number of particles (read from file)
+    unsigned int  typeData[2];///< Size of the data to read, number of data on 1 line
+
 private:
-    FReal   *tmpVal ;          ///< Temporary array to read data
-    unsigned int  otherDataToRead  ;    ///< number of other data (>4) to read in a particle record
+    FReal *       tmpVal;     ///< Temporary array to read data
+    /// Count of other data pieces to read in a particle record after the 4 first ones.
+    unsigned int  otherDataToRead;
 public:
     /**
      * This constructor opens a file using the given mode and reads its
@@ -257,6 +256,7 @@ public:
      */
     FFmaGenericLoader(const std::string & filename) : file(nullptr),binaryFile(false),
                                                       centerOfBox(0.0,0.0,0.0),boxWidth(0.0),nbParticles(0),tmpVal(nullptr),otherDataToRead(0) {
+
         std::string ext(".bfma");
         // open particle file
         if(filename.find(ext) != std::string::npos) {
@@ -267,7 +267,10 @@ public:
             this->file = new std::fstream(filename.c_str(),std::ifstream::in) ;
         }
         else  {
-            std::cout << "Input file not allowed only .fma or .bfma extensions" <<std::endl;
+            std::cout << "FFmaGenericLoader: "
+                      << "Only .fma or .bfma input file are allowed. Got " 
+                      << filename << "."
+                      << std::endl;
             std::exit ( EXIT_FAILURE) ;
         }
         // test if open
@@ -647,9 +650,9 @@ public:
      * Should be used if we write the particles with writeArrayOfReal method
      * 
      * @param centerOfBox      The center of the Box (FPoint<FReal> class)
-     * @param boxWidth            The width of the box
-     * @param nbParticles          Number of particles in the box (or to save)
-     * @param dataType             Data type of the values in particle
+     * @param boxWidth         The width of the box
+     * @param nbParticles      Number of particles in the box (or to save)
+     * @param dataType         Size of the data type of the values in particle
      * @param nbDataPerRecord  Number of record/value per particle
      */
     void writeHeader(const FPoint<FReal> &centerOfBox,const FReal &boxWidth, const FSize &nbParticles,

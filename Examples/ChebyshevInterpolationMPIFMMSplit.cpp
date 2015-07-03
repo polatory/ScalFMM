@@ -31,7 +31,7 @@
 #include "Core/FFmmAlgorithmThreadProc.hpp"
 
 #include "Files/FFmaGenericLoader.hpp"
-#include "Files/FMpiFmaGenericLoader.hpp"
+#include "Files/FMpiSplitFmaLoader.hpp"
 #include "Files/FMpiTreeBuilder.hpp"
 
 #include "BalanceTree/FLeafBalance.hpp"
@@ -47,7 +47,7 @@
 #include "Utils/FParameterNames.hpp"
 
 
-/// \file
+/// \file ChebyshevInterpolationMPIFMM
 //!
 //! \brief This program runs the MPI FMM with Chebyshev interpolation of 1/r kernel
 //!  \authors B. Bramas, O. Coulaud
@@ -59,14 +59,16 @@
 int main(int argc, char* argv[])
 {
     ///////// PARAMETERS HANDLING //////////////////////////////////////
-    FHelpDescribeAndExit(argc, argv,
-                         "Driver for Chebyshev Interpolation kernel using MPI  (1/r kernel). "
-                         "Usully run using : mpirun -np nb_proc_needed ./ChebyshevInterpolationAlgorithm [params].",
-                         FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight,
-                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile,
-                         FParameterDefinitions::NbThreads);
+    FHelpDescribeAndExit(
+        argc, argv,
+        "Driver for Chebyshev Interpolation kernel using MPI  (1/r kernel).\n\n"
+        "usage: mpirun -np nb_proc_needed ./ChebyshevInterpolationAlgorithm [params]\n",
+        FParameterDefinitions::InputFile,
+        FParameterDefinitions::OctreeHeight,
+        FParameterDefinitions::OctreeSubHeight,
+        FParameterDefinitions::NbThreads);
 
-    const std::string defaultFile("../Data/test20k.fma");
+    const std::string defaultFile("../Data/test20k.main.fma");
     const std::string filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, defaultFile.c_str());
     const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
@@ -86,19 +88,7 @@ int main(int argc, char* argv[])
 
     ///////// VAR INIT /////////////////////////////////////////////////
 
-    // Initialize values for MPI
-    FMpi app(argc,argv);
-    //
-    // Initialize timer
-    FTic time;
-
-    typedef double FReal;
-
-    // Creation of the particle loader
-    FMpiFmaGenericLoader<FReal> loader(filename,app.global());
-    if(!loader.isOpen()) throw std::runtime_error("Particle file couldn't be opened!") ;
-
-
+    using FReal = double;
     // Begin spherical kernel
     // Accuracy
     const unsigned int ORDER = 7;
@@ -114,77 +104,57 @@ int main(int argc, char* argv[])
     using KernelClass    = FChebSymKernel<FReal, CellClass,ContainerClass,MatrixKernelClass,ORDER>;
     using FmmClassProc   = FFmmAlgorithmThreadProc<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass>;
 
+
+    // Initialize values for MPI
+    FMpi app(argc,argv);
+    //
+    // Initialize timer
+    FTic time;
+
+
+    // Creation of the particle loader
+    FMpiSplitFmaLoader<FReal> loader(filename,app.global().processId());
+    if(!loader.isOpen())
+        throw std::runtime_error("Particle file couldn't be opened!") ;
+
     // Initialize empty oct-tree
     OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
 
     { // -----------------------------------------------------
         if(app.global().processId() == 0){
-            std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
-                      << " particles ..." << std::endl;
-            std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
+            std::cout << "Creating & Inserting "
+                      << loader.getNumberOfParticles()
+                      << " particles..."
+                      << std::endl;
+            std::cout << "\tHeight : "
+                      << TreeHeight
+                      << "\tsub-height : "
+                      << SubTreeHeight
+                      << std::endl;
         }
         time.tic();
 
-        /* Mock particle structure to balance the tree over the processes. */
-        struct TestParticle{
-            FSize index;             // Index of the particle in the original file.
-            FPoint<FReal> position;  // Spatial position of the particle.
-            FReal physicalValue;     // Physical value of the particle.
-            /* Returns the particle position. */
-            const FPoint<FReal>& getPosition(){
-                return position;
-            }
-        };
 
-        // Temporary array of particles read by this process.
-        TestParticle* particles = new TestParticle[loader.getMyNumberOfParticles()];
-        memset(particles, 0, (sizeof(TestParticle) * loader.getMyNumberOfParticles()));
-
-        // Index (in file) of the first particle that will be read by this process.
-        FSize idxStart = loader.getStart();
-        std::cout << "Proc:" << app.global().processId() << " start-index: " << idxStart << std::endl;
+        FPoint<FReal> position;  // Spatial position of the particle.
+        FReal physicalValue;     // Physical value of the particle.
 
         // Read particles from parts.
         for(FSize idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
-            // Store the index (in the original file) the particle.
-            particles[idxPart].index = idxPart + idxStart;
             // Read particle from file
-            loader.fillParticle(&particles[idxPart].position,
-                                &particles[idxPart].physicalValue);
+            loader.fillParticle(&position,
+                                &physicalValue);
+
+            tree.insert(position, idxPart, physicalValue);
         }
 
-        // Final vector of particles
-        FVector<TestParticle> finalParticles;
-        FLeafBalance balancer;
-
-        // Redistribute particules between processes
-        FMpiTreeBuilder< FReal, TestParticle >::
-            DistributeArrayToContainer(app.global(),
-                                       particles,
-                                       loader.getMyNumberOfParticles(),
-                                       tree.getBoxCenter(),
-                                       tree.getBoxWidth(),
-                                       tree.getHeight(),
-                                       &finalParticles,
-                                       &balancer);
-
-        // Free temporary array memory.
-        delete[] particles;
-
-        // Insert final particles into tree.
-        for(FSize idx = 0 ; idx < finalParticles.getSize(); ++idx){
-            tree.insert(finalParticles[idx].position,
-                        finalParticles[idx].index,
-                        finalParticles[idx].physicalValue);
-        }
 
         time.tac();
         double timeUsed = time.elapsed();
         double minTime,maxTime;
         std::cout << "Proc:" << app.global().processId()
-                  << " "     << finalParticles.getSize()
-                  << "particles have been inserted in the tree. (@Reading and Inserting Particles = "
+                  << " "     << loader.getMyNumberOfParticles()
+                  << "particles have been inserted in the tree. (@Reading and Inserting Particles = " 
                   << time.elapsed() << " s)."
                   << std::endl;
 
@@ -217,7 +187,7 @@ int main(int argc, char* argv[])
         MPI_Reduce(&timeUsed,&maxTime,1,MPI_DOUBLE,MPI_MAX,0,app.global().getComm());
         if(app.global().processId() == 0){
             std::cout << "exec-time-min:" << minTime
-                      << " exec-time-max:" << maxTime
+                      << " exec-time-max:" << maxTime 
                       << std::endl;
         }
 
@@ -255,19 +225,32 @@ int main(int argc, char* argv[])
 
             for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
                 const FSize indexPartOrig = indexes[idxPart];
-                if ((indexPartOrig == N1) || (indexPartOrig == N2) || (indexPartOrig == N3)  ) {
-                    std::cout << "Proc "<< app.global().processId() << " Index "<< indexPartOrig <<"  potential  " << potentials[idxPart]
-                                 << " Pos "<<posX[idxPart]<<" "<<posY[idxPart]<<" "<<posZ[idxPart]
-                                    << "   Forces: " << forcesX[idxPart] << " " << forcesY[idxPart] << " "<< forcesZ[idxPart] <<std::endl;
+                if ((indexPartOrig == N1)
+                    || (indexPartOrig == N2)
+                    || (indexPartOrig == N3)  ) {
+                    std::cout << "Proc "<< app.global().processId()
+                              << " Index "<< indexPartOrig
+                              <<"  potential  " << potentials[idxPart]
+                              << " Pos " << posX[idxPart]
+                              << " "     << posY[idxPart]
+                              << " "     << posZ[idxPart]
+                              << "   Forces: " << forcesX[idxPart]
+                              << " "           << forcesY[idxPart]
+                              << " "           << forcesZ[idxPart]
+                              << std::endl;
                 }
                 energy += potentials[idxPart]*physicalValues[idxPart] ;
             }
         });
         FReal gloEnergy = app.global().reduceSum(energy);
-        if(0 == app.global().processId()){
-            std::cout <<std::endl << "Proc "<< app.global().processId() << " Energy: "<< gloEnergy <<std::endl;
-            std::cout <<std::endl <<" &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "<<std::endl<<std::endl;
-        }
+        std::cout << std::endl
+                  << "Proc " << app.global().processId()
+                  << " Energy: " << gloEnergy
+                  << std::endl;
+        std::cout << std::endl
+                  << " &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& "
+                  << std::endl
+                  << std::endl;
     }
     // -----------------------------------------------------
 
