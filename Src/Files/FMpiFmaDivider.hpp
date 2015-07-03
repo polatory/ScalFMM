@@ -279,7 +279,7 @@ public:
                    int divisionLevel,
                    DispatchPolicy dispatchPolicy) :
         _filename(filename),
-        _outputBasename(basename + "_" + std::to_string(splitCount) + "z"),
+        _outputBasename(basename),
         _outputExt(ext),
         _splitCount(splitCount),
         _divisionLevel(divisionLevel),

@@ -1,11 +1,11 @@
 #include <iostream>
+#include <string>
 
 #include "Files/FMpiFmaDivider.hpp"
 
-using FReal = double;
-
 #include "testFMpiFmaDividerArgs.hpp"
 
+using FReal = double;
 
 int main(int argc, char** argv)
 {
@@ -15,7 +15,8 @@ int main(int argc, char** argv)
 
     FMpiFmaDivider<FReal>
         divider(args.inFileName(),
-                args.outFileName(),
+                args.outFileName() + "_" + std::to_string(args.zoneCount())
+                                   + "z_h" + std::to_string(args.treeHeight()),
                 args.outFileExt(),
                 args.zoneCount(),
                 args.treeHeight(),
