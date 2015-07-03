@@ -8,6 +8,7 @@
 #include <string>
 
 #include "Utils/FTic.hpp"
+#include "Utils/FMpi.hpp"
 #include "Files/FFmaGenericLoader.hpp"
 
 #include "Containers/FOctree.hpp"
@@ -22,6 +23,7 @@ struct FPerfTestParams {
     std::string filename = ""; ///< Particles file.
     std::string algo = "task"; ///< Algorithm to run.
     int  omp_chunk_size = 0;   ///< OpenMP chunk size for basic algorithm (FFmmAlgorithmThread)
+    FMpi* mpiContext = nullptr;
 };
 
 

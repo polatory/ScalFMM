@@ -36,6 +36,8 @@ public:
     /// FMM algorithm class
     using FMMClass = FFmmAlgorithmThreadProc<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>;
     
+    FMpi* _mpiContext;
+
     /// The tree loader (FTreeLoader) that was used
     TreeLoader& _treeLoader;
 
@@ -45,21 +47,19 @@ public:
     /// The #FMMClass algorithm instance
     std::unique_ptr<FMMClass> _algo;
     
-    FMpi mpiApp;
-
     AlgoLoaderThreadProc(FPerfTestParams& params,
                      TreeLoader& treeLoader,
                      KernelLoader& kernelLoader) :
+        _mpiContext(params.mpiContext),
         _treeLoader(treeLoader),
         _kernelLoader(kernelLoader),
-        _algo(nullptr),
-        mpiApp() {
+        _algo(nullptr) {
         
     }
 
     void run() {
         _algo = std::unique_ptr<FMMClass>(
-            new FMMClass(mpiApp.global(), &(_treeLoader._tree), &(_kernelLoader._kernel)));
+            new FMMClass(_mpiContext->global(), &(_treeLoader._tree), &(_kernelLoader._kernel)));
         _algo->execute();
     }
 

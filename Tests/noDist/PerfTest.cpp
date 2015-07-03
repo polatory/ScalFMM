@@ -18,8 +18,6 @@
 #include <iostream>
 #include <string>
 
-#include "mpi.h"
-
 #include "Utils/FParameters.hpp"
 #include "Utils/FParameterNames.hpp"
 
@@ -28,6 +26,7 @@
 #include "PerfTest/TreeLoaderBasic.hpp"
 #include "PerfTest/TreeLoaderFCheb.hpp"
 #include "PerfTest/TreeLoaderMpiSplitFCheb.hpp"
+#include "PerfTest/TreeLoaderMpiGenericFCheb.hpp"
 
 #include "PerfTest/KernelLoaderFChebSym.hpp"
 
@@ -46,8 +45,8 @@
  * over a set of particles. It does the following steps :
  *
  *    - Load a tree using the class defined as a TreeLoader
- *    - Prepares the needed kernels using the KernelLoader
- *    - Prepares and runs the algorithm using the AlgorithmLoader
+ *    - Prepare the needed kernels using the KernelLoader
+ *    - Prepare and run the algorithm using the AlgorithmLoader
  *
  * See documentation of FTreeLoader, FKernelLoader, FAlgoLoader.
  */
@@ -109,6 +108,12 @@ int main (int argc, char** argv)
         params.nbThreads     = getValue(argc, argv, NbThreads.options, 1);
         params.algo = getStr(argc,argv,ParName::Algo.options,"task");
         params.omp_chunk_size = getValue(argc, argv, ParName::ChunkSize.options, 0);
+        std::cerr << "là" << std::endl;
+
+        std::string prefix("mpi-");
+        if( params.algo.substr(0, prefix.size()) == prefix ) {
+            params.mpiContext = new FMpi(argc,argv);
+        }
     }
     // End of Parameter handling ///////
 
@@ -142,8 +147,13 @@ int main (int argc, char** argv)
                 KernelLoaderFChebSym,
                 AlgoLoaderThreadBalance>
             (params);
-    } else if ( "mpi" == params.algo ) {
+    } else if ( "mpi-split" == params.algo ) {
         runperf<TreeLoaderMpiSplitFCheb<FReal,ORDER>,
+                KernelLoaderFChebSym,
+                AlgoLoaderThreadProc>
+            (params);        
+    } else if ( "mpi-generic" == params.algo ) {
+        runperf<TreeLoaderMpiGenericFCheb<FReal,ORDER>,
                 KernelLoaderFChebSym,
                 AlgoLoaderThreadProc>
             (params);        
@@ -151,5 +161,8 @@ int main (int argc, char** argv)
         std::cout << "Unknown algorithm: " << params.algo << std::endl;
     }
     
+    if( nullptr != params.mpiContext ) {
+        delete params.mpiContext;
+    }
 
 }

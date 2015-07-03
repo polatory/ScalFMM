@@ -33,6 +33,8 @@ public:
     using LeafClass          = FSimpleLeaf<FReal, ContainerClass >;
     using OctreeClass        = FOctree<FReal, CellClass, ContainerClass, LeafClass>;
 
+    /// Mpi application context
+    FMpi* _mpiContext;
     /// File loader.
     FMpiSplitFmaLoader<FReal> _loader;
     /// Required tree member.
@@ -40,11 +42,17 @@ public:
 
     /// Constructs the loader and loads the tree.
     TreeLoaderMpiSplit(FPerfTestParams& params):
-        _loader(params.filename,FMpi().global().processId()),
+        _mpiContext(params.mpiContext),
+        _loader(params.filename,_mpiContext->global().processId()),
         _tree(params.treeHeight,
               params.subTreeHeight,
               _loader.getBoxWidth(),
               _loader.getCenterOfBox()) {
+        if( nullptr == _mpiContext ) {
+            std::cerr << "No MPI context available" << std::endl;
+            exit(-1);
+        }
+
         this->loadTree();
     }
 
