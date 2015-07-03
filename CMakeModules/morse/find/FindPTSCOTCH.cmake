@@ -264,6 +264,10 @@ if(PTSCOTCH_LIBRARIES)
     if(CMAKE_THREAD_LIBS_INIT)
         list(APPEND REQUIRED_LIBS "${CMAKE_THREAD_LIBS_INIT}")
     endif()
+    if(UNIX OR WIN32)
+        list(APPEND REQUIRED_LIBS "-lm")
+    endif()
+    list(APPEND REQUIRED_LIBS "-lz -lrt")
 
     # set required libraries for link
     set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")

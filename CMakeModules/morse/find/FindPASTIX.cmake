@@ -615,6 +615,12 @@ if(PASTIX_LIBRARIES)
         endforeach()
         list(APPEND REQUIRED_LIBS "${METIS_LIBRARIES}")
     endif()
+    # Fortran
+    if (CMAKE_Fortran_COMPILER MATCHES ".+gfortran.*")
+        list(APPEND REQUIRED_LIBS "-lgfortran")
+    elseif (CMAKE_Fortran_COMPILER MATCHES ".+ifort.*")
+        list(APPEND REQUIRED_LIBS "-lifcore")
+    endif()
     # EXTRA LIBS such that pthread, m, rt
     list(APPEND REQUIRED_LIBS ${PASTIX_EXTRA_LIBRARIES})
 
