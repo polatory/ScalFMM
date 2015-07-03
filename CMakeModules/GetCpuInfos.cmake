@@ -12,7 +12,7 @@
 ###########################################################################################
 macro(GetCpuInfos)
 # The original CPP file
-set(GetCpuInfosFile "${PROJECT_SOURCE_DIR}/SparseTd/CMake/getCpuInfos.cpp")
+set(GetCpuInfosFile "${PROJECT_SOURCE_DIR}/CMakeModules/getCpuInfos.cpp")
 
 # Fatal error if the file does not exist
 if(NOT EXISTS ${GetCpuInfosFile})
