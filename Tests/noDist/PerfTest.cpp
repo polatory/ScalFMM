@@ -21,17 +21,22 @@
 #include "Utils/FParameters.hpp"
 #include "Utils/FParameterNames.hpp"
 
-#include "PerfTestUtils.hpp"
+#include "PerfTest/PerfTestUtils.hpp"
 
-#include "TreeLoaderFCheb.hpp"
+#include "PerfTest/TreeLoaderBasic.hpp"
+#include "PerfTest/TreeLoaderFCheb.hpp"
+#include "PerfTest/TreeLoaderMpiSplitFCheb.hpp"
+#include "PerfTest/TreeLoaderMpiGenericFCheb.hpp"
 
-#include "KernelLoaderFChebSym.hpp"
+#include "PerfTest/KernelLoaderFChebSym.hpp"
 
-#include "AlgoLoaderThread.hpp"
-#include "AlgoLoaderTask.hpp"
-#include "AlgoLoaderSectionTask.hpp"
-#include "AlgoLoaderCostZones.hpp"
-#include "AlgoLoaderThreadBalance.hpp"
+#include "PerfTest/AlgoLoaderThread.hpp"
+#include "PerfTest/AlgoLoaderTask.hpp"
+#include "PerfTest/AlgoLoaderSectionTask.hpp"
+#include "PerfTest/AlgoLoaderCostZones.hpp"
+#include "PerfTest/AlgoLoaderThreadBalance.hpp"
+#include "PerfTest/AlgoLoaderThreadProc.hpp"
+
 
 /**
  * \brief Runs a generic sequence of actions to use an algorithm.
@@ -40,8 +45,8 @@
  * over a set of particles. It does the following steps :
  *
  *    - Load a tree using the class defined as a TreeLoader
- *    - Prepares the needed kernels using the KernelLoader
- *    - Prepares and runs the algorithm using the AlgorithmLoader
+ *    - Prepare the needed kernels using the KernelLoader
+ *    - Prepare and run the algorithm using the AlgorithmLoader
  *
  * See documentation of FTreeLoader, FKernelLoader, FAlgoLoader.
  */
@@ -64,19 +69,19 @@ void runperf(FPerfTestParams& params)
               << "height:" << params.treeHeight                            << " "
               << "subheight:" << params.subTreeHeight                     << " "
               << algoLoader.getRunInfoString()
-              << "P2M:" << algo.getCumulatedTime(FAlgorithmTimers::P2MTimer)        << " "
-              << "M2M:" << algo.getCumulatedTime(FAlgorithmTimers::M2MTimer)        << " "
-              << "M2L:" << algo.getCumulatedTime(FAlgorithmTimers::M2LTimer)        << " "
-              << "L2L:" << algo.getCumulatedTime(FAlgorithmTimers::L2LTimer)        << " "
-              << "P2PL2P:" << algo.getCumulatedTime(FAlgorithmTimers::NearTimer)    << " "
+              << "P2M:" << algo.getCumulatedTime(FAlgorithmTimers::P2MTimer)     << " "
+              << "M2M:" << algo.getCumulatedTime(FAlgorithmTimers::M2MTimer)     << " "
+              << "M2L:" << algo.getCumulatedTime(FAlgorithmTimers::M2LTimer)     << " "
+              << "L2L:" << algo.getCumulatedTime(FAlgorithmTimers::L2LTimer)     << " "
+              << "P2PL2P:" << algo.getCumulatedTime(FAlgorithmTimers::NearTimer) << " "
               << std::endl;
 
 }
 
 namespace ParName {
-    const FParameterNames Algo = {{"--algo"},"Algorithm to run (costzones, basic, task)"};
+    const FParameterNames Algo = {{"--algo"},"Algorithm to run (basic, task, costzones, sectiontask, autobalance, mpi)"};
     const FParameterNames Schedule = {{"--schedule"},"OpenMP scheduling policy (static, dynamic)."};
-    const FParameterNames ChunkSize = {{"--chunk", "--chunk-size"},"OpenMP chunk size for basic dynamic algorithm."};
+    const FParameterNames ChunkSize = {{"--chunk-size"},"OpenMP chunk size for basic dynamic algorithm."};
 }
 
 int main (int argc, char** argv)
@@ -103,24 +108,61 @@ int main (int argc, char** argv)
         params.nbThreads     = getValue(argc, argv, NbThreads.options, 1);
         params.algo = getStr(argc,argv,ParName::Algo.options,"task");
         params.omp_chunk_size = getValue(argc, argv, ParName::ChunkSize.options, 0);
+        std::cerr << "là" << std::endl;
+
+        std::string prefix("mpi-");
+        if( params.algo.substr(0, prefix.size()) == prefix ) {
+            params.mpiContext = new FMpi(argc,argv);
+        }
     }
     // End of Parameter handling ///////
 
     omp_set_num_threads(params.nbThreads);
 
+    using FReal = double;
+    constexpr const int ORDER = 7;
+
     if( "basic" == params.algo ) {
-        runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderThread>(params);
+        runperf<TreeLoaderFCheb<FReal,ORDER>,
+                KernelLoaderFChebSym,
+                AlgoLoaderThread>
+            (params);
     } else if( "task" == params.algo ) {
-        runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderTask>(params);
+        runperf<TreeLoaderFCheb<FReal,ORDER>,
+                KernelLoaderFChebSym,
+                AlgoLoaderTask>
+            (params);
     } else if ( "costzones" == params.algo ) {
-        runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderCostZones>(params);
+        runperf<TreeLoaderFCheb<FReal,ORDER>,
+                KernelLoaderFChebSym,
+                AlgoLoaderCostZones>
+            (params);
     } else if ( "sectiontask" == params.algo ) {
-        runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderSectionTask>(params);
+        runperf<TreeLoaderFCheb<FReal,ORDER>,
+                KernelLoaderFChebSym,
+                AlgoLoaderSectionTask>
+            (params);
     } else if ( "autobalance" == params.algo ) {
-        runperf<TreeLoaderFCheb<>, KernelLoaderFChebSym, AlgoLoaderThreadBalance>(params);
+        runperf<TreeLoaderFCheb<FReal,ORDER>,
+                KernelLoaderFChebSym,
+                AlgoLoaderThreadBalance>
+            (params);
+    } else if ( "mpi-split" == params.algo ) {
+        runperf<TreeLoaderMpiSplitFCheb<FReal,ORDER>,
+                KernelLoaderFChebSym,
+                AlgoLoaderThreadProc>
+            (params);        
+    } else if ( "mpi-generic" == params.algo ) {
+        runperf<TreeLoaderMpiGenericFCheb<FReal,ORDER>,
+                KernelLoaderFChebSym,
+                AlgoLoaderThreadProc>
+            (params);        
     } else {
         std::cout << "Unknown algorithm: " << params.algo << std::endl;
     }
     
+    if( nullptr != params.mpiContext ) {
+        delete params.mpiContext;
+    }
 
 }

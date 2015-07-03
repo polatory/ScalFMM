@@ -18,6 +18,7 @@
 
 
 #include <cstdio>
+#include <stdexcept>
 
 #include "FGlobal.hpp"
 #ifndef SCALFMM_USE_MPI
@@ -50,10 +51,17 @@
 
 
 /**
+ * @brief MPI context management
  * @author Berenger Bramas (berenger.bramas@inria.fr)
- * @class FMpi
- * Please read the license
  *
+ * This class manages the initialization and destruction of the MPI context. It
+ * also gives access to the main communicator via its `const FComm& global()`
+ * member.
+ *
+ * @warning Do not create more that one instance of this class for the whole
+ * program lifetime. MPI does not support multiple initializations.
+ *
+ * Please read the license.
  */
 
 class FMpi {
@@ -91,26 +99,29 @@ public:
     ////////////////////////////////////////////////////////
     // FComm to factorize MPI_Comm work
     ////////////////////////////////////////////////////////
-
-    /** This class is used to put all the usual method
-   * related mpi comm
-   */
+    
+    /**
+     * \brief MPI comunicator abstraction
+     *
+     * This class is used to gather the usual methods related to identifying an
+     * MPI communicator.
+     */
     class FComm : public FNoCopyable {
-        int rank;   //< rank related to the comm
-        int nbProc; //< nb proc in this group
+        int rank;   ///< rank related to the comm
+        int nbProc; ///< nb proc in this group
 
-        MPI_Comm communicator;  //< current mpi communicator
-        MPI_Group group;        //< current mpi group
+        MPI_Comm communicator;  ///< current mpi communicator
+        MPI_Group group;        ///< current mpi group
 
 
-        // reset : get rank and nb proc from mpi
+        /// Updates current process rank and process count from mpi
         void reset(){
             FMpi::Assert( MPI_Comm_rank(communicator,&rank),  __LINE__ );
             FMpi::Assert( MPI_Comm_size(communicator,&nbProc),  __LINE__ );
         }
 
     public:
-        /** Constructor : dup the comm given in parameter */
+        /// Constructor : duplicates the given communicator
         explicit FComm(MPI_Comm inCommunicator ) {
             FMpi::Assert( MPI_Comm_dup(inCommunicator, &communicator),  __LINE__ , "comm dup");
             FMpi::Assert( MPI_Comm_group(communicator, &group),  __LINE__ , "comm group");
@@ -118,23 +129,23 @@ public:
             reset();
         }
 
-        /** Free communicator and group */
+        /// Frees communicator and group
         virtual ~FComm(){
             FMpi::Assert( MPI_Comm_free(&communicator),  __LINE__ );
             FMpi::Assert( MPI_Group_free(&group),  __LINE__ );
         }
 
-        /** To get the mpi comm needed for communication */
+        /// Gets the underlying MPI communicator
         MPI_Comm getComm() const {
             return communicator;
         }
 
-        /** The current rank */
+        /// Gets the current rank
         int processId() const {
             return rank;
         }
 
-        /** The current number of procs in the group */
+        /// The current number of procs in the group */
         int processCount() const {
             return nbProc;
         }
@@ -241,35 +252,53 @@ public:
     // FMpi methods
     ////////////////////////////////////////////////////////
 
-    /*
-    We use init with thread because of an openmpi error:
-
-    [fourmi062:15896] [[13237,0],1]-[[13237,1],1] mca_oob_tcp_msg_recv: readv failed: Connection reset by peer (104)
-    [fourmi056:04597] [[13237,0],3]-[[13237,1],3] mca_oob_tcp_msg_recv: readv failed: Connection reset by peer (104)
-    [fourmi053:08571] [[13237,0],5]-[[13237,1],5] mca_oob_tcp_msg_recv: readv failed: Connection reset by peer (104)
-
-    Erreur pour le proc1
-    [[13237,1],1][btl_openib_component.c:3227:handle_wc] from fourmi062 to: fourmi056 error polling LP CQ with status LOCAL LENGTH ERROR status number 1 for wr_id 7134664 opcode 0  vendor error 105 qp_idx 3
-    Tous on la meme erreur le 2e 1 est remplace par le rang.
-  */
+    /// Constructor
+    /**
+     * We use `MPI_Init_thread` because of an openmpi error:
+     *
+     *     [fourmi062:15896] [[13237,0],1]-[[13237,1],1] mca_oob_tcp_msg_recv: readv failed: Connection reset by peer (104)
+     *     [fourmi056:04597] [[13237,0],3]-[[13237,1],3] mca_oob_tcp_msg_recv: readv failed: Connection reset by peer (104)
+     *     [fourmi053:08571] [[13237,0],5]-[[13237,1],5] mca_oob_tcp_msg_recv: readv failed: Connection reset by peer (104)
+     *    
+     * Error for process 1:
+     *
+     *     [[13237,1],1][btl_openib_component.c:3227:handle_wc] from fourmi062 to: fourmi056 error polling LP CQ with status LOCAL LENGTH ERROR status number 1 for wr_id 7134664 opcode 0  vendor error 105 qp_idx 3
+     *                ^
+     *
+     * All processes raise the same error, the second 1 (see caret) is replaced by the rank.
+     */
     FMpi() : communicator(nullptr) {
+        if( instanceCount > 0) {
+            throw std::logic_error("FMpi should not be instanciated more than once.");
+        } else {
+            instanceCount++;
+        }
+
         int provided = 0;
         FMpi::Assert( MPI_Init_thread(nullptr,nullptr, MPI_THREAD_SERIALIZED, &provided), __LINE__);
         communicator = new FComm(MPI_COMM_WORLD);
     }
+
+    /// Constructor
     FMpi(int inArgc, char **  inArgv ) : communicator(nullptr) {
+        if( instanceCount > 0) {
+            throw std::logic_error("FMpi should not be instanciatedmore than once.");
+        } else {
+            instanceCount++;
+        }
+
         int provided = 0;
         FMpi::Assert( MPI_Init_thread(&inArgc,&inArgv, MPI_THREAD_SERIALIZED, &provided), __LINE__);
         communicator = new FComm(MPI_COMM_WORLD);
     }
 
-    /** Delete the communicator and call mpi finalize */
+    /// Delete the communicator and call `MPI_Finalize`
     ~FMpi(){
         delete communicator;
         MPI_Finalize();
     }
 
-    /** Get the global communicator */
+    /// Get the global communicator
     const FComm& global() {
         return (*communicator);
     }
@@ -278,34 +307,42 @@ public:
     // Mpi Types meta function
     ////////////////////////////////////////////////////////////
 
+    /// Get the MPI datatype corresponding to a variable.
     static MPI_Datatype GetType(const long long&){
         return MPI_LONG_LONG;
     }
 
+    /// Get the MPI datatype corresponding to a variable.
     static MPI_Datatype GetType(const long int&){
         return MPI_LONG;
     }
 
+    /// Get the MPI datatype corresponding to a variable.
     static MPI_Datatype GetType(const double&){
         return MPI_DOUBLE;
     }
 
+    /// Get the MPI datatype corresponding to a variable.
     static MPI_Datatype GetType(const float&){
         return MPI_FLOAT;
     }
 
+    /// Get the MPI datatype corresponding to a variable.
     static MPI_Datatype GetType(const int&){
         return MPI_INT;
     }
 
+    /// Get the MPI datatype corresponding to a variable.
     static MPI_Datatype GetType(const char&){
         return MPI_CHAR;
     }
 
+    /// Get the MPI datatype corresponding to a variable.
     static MPI_Datatype GetType(const unsigned char&){
         return MPI_UNSIGNED_CHAR;
     }
 
+    /// Get the MPI datatype corresponding to a variable.
     template <class FReal>
     static MPI_Datatype GetType(const FComplex<FReal>& a){
         MPI_Datatype FMpiComplexe;
@@ -317,7 +354,7 @@ public:
     // Mpi interface functions
     ////////////////////////////////////////////////////////////
 
-    /** generic mpi assert function */
+    /// Generic mpi assert function
     static void Assert(const int test, const unsigned line, const char* const message = nullptr){
         if(test != MPI_SUCCESS){
             printf("[ERROR-QS] Test failled at line %d, result is %d", line, test);
@@ -328,14 +365,14 @@ public:
         }
     }
 
-    /** Compute a left index from data */
+    /// Compute a left index from data
     template <class T>
     static T GetLeft(const T inSize, const int inIdProc, const int inNbProc) {
         const double step = (double(inSize) / inNbProc);
         return T(ceil(step * inIdProc));
     }
 
-    /** Compute a right index from data */
+    /// Compute a right index from data
     template <class T>
     static T GetRight(const T inSize, const int inIdProc, const int inNbProc) {
         const double step = (double(inSize) / inNbProc);
@@ -344,14 +381,14 @@ public:
         else return res;
     }
 
-    /** Compute a proc id from index & data */
+    /// Compute a proc id from index & data */
     template <class T>
     static int GetProc(const T position, const T inSize, const int inNbProc) {
         const double step = double(inSize) / double(inNbProc);
         return int(double(position)/step);
     }
 
-    /** assert if mpi error */
+    /// assert if mpi error */
     static void MpiAssert(const int test, const unsigned line, const char* const message = nullptr){
         if(test != MPI_SUCCESS){
             printf("[ERROR] Test failed at line %d, result is %d", line, test);
@@ -363,8 +400,11 @@ public:
     }
 
 private:
-    /** The original communicator */
+    /// The original communicator
     FComm* communicator;
+    
+    /// Counter to avoid several instanciations
+    static int instanceCount;
 };
 
 
