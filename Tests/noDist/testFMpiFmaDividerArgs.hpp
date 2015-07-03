@@ -142,6 +142,7 @@ public:
              OutputFileBasename,
              OutputFileExtension,
              ZoneCount,
+             DispatchPolicy,
              EnabledVerbose
              );
         return 0;
