@@ -18,53 +18,60 @@
 #define FALGORITHMTIMERS_HPP
 
 /**
- * @brief This class provide a way for the different algorithms to
- * store the time spent in each operator.
+ * @brief Collection of timers for FMM operators.
  *
+ * This class provide a way for the different algorithms to
+ * store the time spent in each operator.
  */
 class FAlgorithmTimers{
-protected:
-    FTic * Timers;
-
 public:
-
-    enum FTimers{
-        P2MTimer=0,
-        M2MTimer=1,
-        M2LTimer=2,
-        L2LTimer=3,
-        L2PTimer=4,
-        P2PTimer=5,
-        NearTimer=6,
+    /// The timer names
+    enum FTimers {
+        P2MTimer,
+        M2MTimer,
+        M2LTimer,
+        L2LTimer,
+        L2PTimer,
+        P2PTimer,
+        NearTimer,
+        nbTimers   ///< Timer count
     };
 
-    const int nbTimers = 7;
+protected:
+    /// Timer array
+    FTic Timers[nbTimers];
 
-    FAlgorithmTimers() : Timers(nullptr)
+public:
+    /// Constructor: resets all timers
+    FAlgorithmTimers()
     {
-        Timers = new FTic[nbTimers];
-        for(int i=0; i<nbTimers ; ++i){
+        for(int i = 0; i < nbTimers ; ++i){
             Timers[i].reset();
         }
     }
 
-    virtual ~FAlgorithmTimers(){
-        delete[] Timers;
-    }
+    /// Default copy contructor
+    FAlgorithmTimers(const FAlgorithmTimers&) = default;
+    /// Default move contructor
+    FAlgorithmTimers(FAlgorithmTimers&&) = default;
 
+    /// Returns the timer array
     const FTic * getAllTimers() const {
         return Timers;
     }
 
+    /// Returns the timer count
     int getNbOfTimerRecorded() const {
         return nbTimers;
     }
 
+    /// Elapsed time between last FTic::tic() and FTic::tac() for given timer.
     double getTime(FTimers OpeTimer) const{
         //assert to verify size
         return Timers[OpeTimer].elapsed();
     }
 
+    /// Cumulated time between all FTic::tic() and FTic::tac() for given timer.
     double getCumulatedTime(FTimers OpeTimer) const{
         //assert to verify size
         return Timers[OpeTimer].cumulated();
