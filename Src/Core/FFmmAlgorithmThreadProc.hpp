@@ -45,106 +45,115 @@
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
- * @class FFmmAlgorithmThreadProc
- * @brief
+ *
  * Please read the license
  *
- * This class is a threaded FMM algorithm with mpi.
- * It just iterates on a tree and call the kernels with good arguments.
- * It used the inspector-executor model :
- * iterates on the tree and builds an array to work in parallel on this array
+ * This class is a threaded FMM algorithm distributed using MPI. It iterates on
+ * a tree and call the kernels with good arguments. It uses the inspector -
+ * executor model : iterates on the tree and builds an array to work in parallel
+ * on this array
  *
- * Of course this class does not deallocate pointer given in arguements.
+ * This class does not free pointers given in arguements.
  *
  * Threaded & based on the inspector-executor model
- * schedule(runtime) export OMP_NUM_THREADS=2
- * export OMPI_CXX=`which g++-4.4`
- * mpirun -np 2 valgrind --suppressions=/usr/share/openmpi/openmpi-valgrind.supp
- * --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes
- * ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
+ *
+ *     schedule(runtime) export OMP_NUM_THREADS=2
+ *     export OMPI_CXX=`which g++-4.4`
+ *     mpirun -np 2 valgrind --suppressions=/usr/share/openmpi/openmpi-valgrind.supp
+ *        --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20
+ *        --track-fds=yes ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
  */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
 class FFmmAlgorithmThreadProc : public FAbstractAlgorithm, public FAlgorithmTimers {
-    OctreeClass* const tree;                 //< The octree to work on
-    KernelClass** kernels;                   //< The kernels
+private:
+    OctreeClass* const tree;     ///< The octree to work on
+    KernelClass** kernels;       ///< The kernels
 
-    const FMpi::FComm& comm;                 //< MPI comm
+    const FMpi::FComm& comm;     ///< MPI comm
 
-    typename OctreeClass::Iterator*     iterArray;  //Will be used to store pointers to cells/leafs to work with
-    typename OctreeClass::Iterator* iterArrayComm;  //Will be used to store pointers to cells/leafs to send/rcv
-    int numberOfLeafs;                          //< To store the size at the previous level
+    /// Used to store pointers to cells/leafs to work with
+    typename OctreeClass::Iterator* iterArray;  
+    /// Used to store pointers to cells/leafs to send/rcv
+    typename OctreeClass::Iterator* iterArrayComm;
 
-    const int MaxThreads;               //< the max number of thread allowed by openmp
-
-    const int nbProcess;                //< Number of process
-    const int idProcess;                //< Id of current process
-
-    const int OctreeHeight;            //<Height of the tree
+    int numberOfLeafs;           ///< To store the size at the previous level
+    const int MaxThreads;        ///< Max number of thread allowed by openmp
+    const int nbProcess;         ///< Process count
+    const int idProcess;         ///< Current process id
+    const int OctreeHeight;      ///< Tree height
 
     const int leafLevelSeperationCriteria;
 
     /** An interval is the morton index interval
-     * that a proc use (it holds data in this interval)
-     */
+     * that a proc uses (i.e. it holds data in this interval) */
     struct Interval{
         MortonIndex leftIndex;
         MortonIndex rightIndex;
     };
-    /** My interval */
+
+    /// Current process interval
     Interval*const intervals;
-    /** All process intervals */
+    /// All processes intervals
     Interval*const workingIntervalsPerLevel;
 
-    /** Get an interval from proc id and level */
+    /// Get an interval from a process id and tree level
     Interval& getWorkingInterval( int level,  int proc){
         return workingIntervalsPerLevel[OctreeHeight * proc + level];
     }
 
+    /// Get an interval from a process id and tree level
     const Interval& getWorkingInterval( int level,  int proc) const {
         return workingIntervalsPerLevel[OctreeHeight * proc + level];
     }
 
-    /** To know if a proc has work at a given level (if it hold cells and was responsible of them) */
+    /// Does \a procIdx have work at given \a idxLevel
+    /** i.e. does it hold cells and is responsible of them ? */
     bool procHasWorkAtLevel(const int idxLevel , const int idxProc) const {
         return getWorkingInterval(idxLevel, idxProc).leftIndex <= getWorkingInterval(idxLevel, idxProc).rightIndex;
     }
 
-    /** Return true if the idxProc left cell at idxLevel+1 has the same parent as us for our right cell */
+    /** True if the \a idxProc left cell at \a idxLevel+1 has the same parent as us for our right cell */
     bool procCoversMyRightBorderCell(const int idxLevel , const int idxProc) const {
         return (getWorkingInterval((idxLevel+1) , idProcess).rightIndex>>3) == (getWorkingInterval((idxLevel+1) ,idxProc).leftIndex >>3);
     }
 
-    /** Return true if the idxProc right cell at idxLevel+1 has the same parent as us for our left cell */
+    /** True if the idxProc right cell at idxLevel+1 has the same parent as us for our left cell */
     bool procCoversMyLeftBorderCell(const int idxLevel , const int idxProc) const {
         return (getWorkingInterval((idxLevel+1) , idxProc).rightIndex >>3) == (getWorkingInterval((idxLevel+1) , idProcess).leftIndex>>3);
     }
 
 public:
-    /** Get current proc interval at level */
+    /// Get current process interval at given \a level
     Interval& getWorkingInterval( int level){
         return getWorkingInterval(level, idProcess);
     }
 
-    /** Does the current proc has some work at this level */
+    /// Does the current process has some work at this level ?
     bool hasWorkAtLevel( int level){
         return idProcess == 0 || (getWorkingInterval(level, idProcess - 1).rightIndex) < (getWorkingInterval(level, idProcess).rightIndex);
     }
 
-    /** The constructor need the octree and the kernels used for computation
+    /**@brief Constructor
      * @param inTree the octree to work on
      * @param inKernels the kernels to call
+     *
      * An assert is launched if one of the arguments is null
      */
-    FFmmAlgorithmThreadProc(const FMpi::FComm& inComm, OctreeClass* const inTree, KernelClass* const inKernels, const int inLeafLevelSeperationCriteria = 1)
-        : tree(inTree) , kernels(nullptr), comm(inComm), iterArray(nullptr),iterArrayComm(nullptr),numberOfLeafs(0),
-          MaxThreads(omp_get_max_threads()), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
-          OctreeHeight(tree->getHeight()),
-          leafLevelSeperationCriteria(inLeafLevelSeperationCriteria),
-          intervals(new Interval[inComm.processCount()]),
-          workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()])
-    {
+    FFmmAlgorithmThreadProc(const FMpi::FComm& inComm, OctreeClass* const inTree, KernelClass* const inKernels, const int inLeafLevelSeperationCriteria = 1) :
+        tree(inTree),
+        kernels(nullptr),
+        comm(inComm),
+        iterArray(nullptr),
+        iterArrayComm(nullptr),
+        numberOfLeafs(0),
+        MaxThreads(omp_get_max_threads()),
+        nbProcess(inComm.processCount()),
+        idProcess(inComm.processId()),
+        OctreeHeight(tree->getHeight()),
+        leafLevelSeperationCriteria(inLeafLevelSeperationCriteria),
+        intervals(new Interval[inComm.processCount()]),
+        workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]) {
         FAssertLF(tree, "tree cannot be null");
-
 
         this->kernels = new KernelClass*[MaxThreads];
         #pragma omp parallel for schedule(static)
@@ -160,7 +169,8 @@ public:
         FLOG(FLog::Controller << "FFmmAlgorithmThreadProc\n");
         FLOG(FLog::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
     }
-    /** Default destructor */
+
+    /// Default destructor
     virtual ~FFmmAlgorithmThreadProc(){
         for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
             delete this->kernels[idxThread];
@@ -250,16 +260,6 @@ protected:
                                             workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, comm.getComm()),  __LINE__ );
         }
 
-        // run;
-        // if(operationsToProceed & FFmmP2M) bottomPass();
-
-        // if(operationsToProceed & FFmmM2M) upwardPass();
-
-        // if(operationsToProceed & FFmmM2L) transferPass();
-
-        // if(operationsToProceed & FFmmL2L) downardPass();
-
-        // if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
         Timers[P2MTimer].tic();
         if(operationsToProceed & FFmmP2M) bottomPass();
         Timers[P2MTimer].tac();
