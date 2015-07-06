@@ -261,25 +261,27 @@ struct RunContainer{
             typedef FUnifCellPODLocal<FReal,ORDER> GroupCellDownClass;
             typedef FUnifCellPOD<FReal,ORDER>      GroupCellClass;
 
+            std::cout << "\n>> Using " << omp_get_max_threads() << " omp threads.\n" << std::endl;
+
             typedef FP2PGroupParticleContainer<FReal>          GroupContainerClass;
             typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
     #ifdef SCALFMM_USE_STARPU
             typedef FStarPUAllCpuCapacities<FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
             typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
             typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
-            std::cout << "Block version FGroupTaskStarPUAlgorithm " << std::endl;
+            std::cout << "Using FGroupTaskStarPUAlgorithm" << std::endl;
     #elif defined(SCALFMM_USE_OMP4)
             typedef FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
             // Set the number of threads
             omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
             typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass,
                     GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
-            std::cout << "Block version FGroupTaskDepAlgorithm " << std::endl;
+            std::cout << "Using FGroupTaskDepAlgorithm" << std::endl;
     #else
             typedef FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
             //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
             typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
-            std::cout << "Block version FGroupTaskAlgorithm " << std::endl;
+            std::cout << "Using FGroupTaskAlgorithm" << std::endl;
     #endif
             // Get params
             const int groupSize     = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 250);
@@ -306,7 +308,6 @@ struct RunContainer{
     #endif
                 allParticles.push(particlePosition, physicalValue);
             }
-            std::cout << "Particles loaded in " << timer.tacAndElapsed() << "s\n";
 
             // Put the data into the tree
             timer.tic();
@@ -320,7 +321,7 @@ struct RunContainer{
 
             timer.tic();
             groupalgo.execute();
-            std::cout << "Kernel executed in in " << timer.tacAndElapsed() << "s\n";
+            std::cout << "Done  " << "(@Algorithm = " << timer.tacAndElapsed() << "s)." << std::endl;
 
             // Validate the result
             if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
