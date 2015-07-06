@@ -411,7 +411,7 @@ int main(int argc, char* argv[]){
                          LocalOrder);
 
     const int order = FParameters::getValue(argc,argv,LocalOrder.options, 5);
-    FRunIf::Run<int, 3, 7, 1, RunContainer>(order, argc, argv);
+    FRunIf::Run<int, 3, 8, 1, RunContainer>(order, argc, argv);
 
     return 0;
 }
