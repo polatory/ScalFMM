@@ -2,6 +2,7 @@
 // Keep in private GIT
 // @SCALFMM_PRIVATE
 
+// @FUSE_MPI
 
 /**
  * \file

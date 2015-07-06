@@ -1,3 +1,5 @@
+// @FUSE_MPI
+
 #include <iostream>
 #include <string>
 
