@@ -99,7 +99,7 @@ typedef long long MortonIndex;
 // Test OMP4
 ///////////////////////////////////////////////////////
 
-#if _OPENMP >= 201307
+#if _OPENMP >= 201307 && !defined(SCALFMM_DISABLE_NATIVE_OMP4)
 #ifndef __INTEL_COMPILER
 #define SCALFMM_USE_OMP4
 #endif
