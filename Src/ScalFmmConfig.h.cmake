@@ -120,4 +120,10 @@ const std::string SCALFMMCompileLibs("@SCALFMM_COMPILE_LIBS@");
 
 #cmakedefine OPENMP_SUPPORT_COMMUTE
 
+///////////////////////////////////////////////////////
+// To use priority for KSTAR OMP4
+///////////////////////////////////////////////////////
+
+#cmakedefine OPENMP_SUPPORT_PRIORITY
+
 #endif // CONFIG_H
