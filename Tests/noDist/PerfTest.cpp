@@ -60,20 +60,20 @@ void runperf(FPerfTestParams& params)
     AlgoLoader<TreeLoader, KernelLoader> algoLoader(params, treeLoader, kernelLoader);
     algoLoader.run();
 
-    auto& algo = *(algoLoader._algo);
     std::cout << "@@ "
               << "algo:" << params.algo << " "
-              << "file:" << params.filename.substr(params.filename.find_last_of('/')+1) << " "
+              << "file:" << params.filename.substr(
+                  params.filename.find_last_of('/')+1) << " "
               << "particles:" << treeLoader._loader.getNumberOfParticles() << " "
-              << "threads:" << params.nbThreads                            << " "
-              << "height:" << params.treeHeight                            << " "
-              << "subheight:" << params.subTreeHeight                     << " "
+              << "threads:"   << params.nbThreads                          << " "
+              << "height:"    << params.treeHeight                         << " "
+              << "subheight:" << params.subTreeHeight                      << " "
               << algoLoader.getRunInfoString()
-              << "P2M:" << algo.getCumulatedTime(FAlgorithmTimers::P2MTimer)     << " "
-              << "M2M:" << algo.getCumulatedTime(FAlgorithmTimers::M2MTimer)     << " "
-              << "M2L:" << algo.getCumulatedTime(FAlgorithmTimers::M2LTimer)     << " "
-              << "L2L:" << algo.getCumulatedTime(FAlgorithmTimers::L2LTimer)     << " "
-              << "P2PL2P:" << algo.getCumulatedTime(FAlgorithmTimers::NearTimer) << " "
+              << "P2M:" << algoLoader.getCumulatedTime(FAlgorithmTimers::P2MTimer)     << " "
+              << "M2M:" << algoLoader.getCumulatedTime(FAlgorithmTimers::M2MTimer)     << " "
+              << "M2L:" << algoLoader.getCumulatedTime(FAlgorithmTimers::M2LTimer)     << " "
+              << "L2L:" << algoLoader.getCumulatedTime(FAlgorithmTimers::L2LTimer)     << " "
+              << "P2PL2P:" << algoLoader.getCumulatedTime(FAlgorithmTimers::NearTimer) << " "
               << std::endl;
 
 }
@@ -108,7 +108,6 @@ int main (int argc, char** argv)
         params.nbThreads     = getValue(argc, argv, NbThreads.options, 1);
         params.algo = getStr(argc,argv,ParName::Algo.options,"task");
         params.omp_chunk_size = getValue(argc, argv, ParName::ChunkSize.options, 0);
-        std::cerr << "là" << std::endl;
 
         std::string prefix("mpi-");
         if( params.algo.substr(0, prefix.size()) == prefix ) {
