@@ -2,7 +2,6 @@
 // Keep in private GIT
 // @SCALFMM_PRIVATE
 
-// @FUSE_MPI
 
 /**
  * \file
@@ -26,8 +25,11 @@
 
 #include "PerfTest/TreeLoaderBasic.hpp"
 #include "PerfTest/TreeLoaderFCheb.hpp"
+
+#ifdef SCALFMM_USE_MPI
 #include "PerfTest/TreeLoaderMpiSplitFCheb.hpp"
 #include "PerfTest/TreeLoaderMpiGenericFCheb.hpp"
+#endif
 
 #include "PerfTest/KernelLoaderFChebSym.hpp"
 
@@ -36,7 +38,10 @@
 #include "PerfTest/AlgoLoaderSectionTask.hpp"
 #include "PerfTest/AlgoLoaderCostZones.hpp"
 #include "PerfTest/AlgoLoaderThreadBalance.hpp"
+
+#ifdef SCALFMM_USE_MPI
 #include "PerfTest/AlgoLoaderThreadProc.hpp"
+#endif
 
 
 /**
@@ -80,7 +85,11 @@ void runperf(FPerfTestParams& params)
 }
 
 namespace ParName {
-    const FParameterNames Algo = {{"--algo"},"Algorithm to run (basic, task, costzones, sectiontask, autobalance, mpi)"};
+    const FParameterNames Algo = {{"--algo"},"Algorithm to run (basic, task, costzones, sectiontask, autobalance"
+#ifdef SCALFMM_USE_MPI
+                                  ", mpi-split, mpi-generic"
+#endif
+                                  ")."};
     const FParameterNames Schedule = {{"--schedule"},"OpenMP scheduling policy (static, dynamic)."};
     const FParameterNames ChunkSize = {{"--chunk-size"},"OpenMP chunk size for basic dynamic algorithm."};
 }
@@ -90,7 +99,11 @@ int main (int argc, char** argv)
 
     // Parameter handling //////////////
     FHelpDescribeAndExit(argc, argv,
-                         "Driver for Chebyshev interpolation kernel  (1/r kernel).",
+                         "Performance test program for FMM balancing techniques. "
+#ifdef SCALFMM_USE_MPI
+                         "This program has been compiled with MPI superpowers !"
+#endif
+                         ,
                          FParameterDefinitions::InputFile,
                          FParameterDefinitions::OctreeHeight,
                          FParameterDefinitions::OctreeSubHeight,
@@ -109,12 +122,13 @@ int main (int argc, char** argv)
         params.nbThreads     = getValue(argc, argv, NbThreads.options, 1);
         params.algo = getStr(argc,argv,ParName::Algo.options,"task");
         params.omp_chunk_size = getValue(argc, argv, ParName::ChunkSize.options, 0);
-        std::cerr << "là" << std::endl;
 
+#ifdef SCALFMM_USE_MPI
         std::string prefix("mpi-");
         if( params.algo.substr(0, prefix.size()) == prefix ) {
             params.mpiContext = new FMpi(argc,argv);
         }
+#endif
     }
     // End of Parameter handling ///////
 
@@ -148,6 +162,7 @@ int main (int argc, char** argv)
                 KernelLoaderFChebSym,
                 AlgoLoaderThreadBalance>
             (params);
+#ifdef SCALFMM_USE_MPI
     } else if ( "mpi-split" == params.algo ) {
         runperf<TreeLoaderMpiSplitFCheb<FReal,ORDER>,
                 KernelLoaderFChebSym,
@@ -158,12 +173,15 @@ int main (int argc, char** argv)
                 KernelLoaderFChebSym,
                 AlgoLoaderThreadProc>
             (params);        
+#endif
     } else {
         std::cout << "Unknown algorithm: " << params.algo << std::endl;
     }
     
+#ifdef SCALFMM_USE_MPI
     if( nullptr != params.mpiContext ) {
         delete params.mpiContext;
     }
+#endif
 
 }
