@@ -66,7 +66,7 @@ const FParameterNames LocalOptionOmpTask { {"-omp-task"}, "To use FFmmAlgorithmT
 const FParameterNames LocalOptionOmpSection { {"-omp-section"}, "To use FFmmAlgorithmSectionTask"};
 const FParameterNames LocalOptionOmpBalance { {"-omp-balance"}, "To use FFmmAlgorithmThreadBalance"};
 
-const FParameterNames LocalOptionClassic { {"-omp", "-classic"}, "In order to use classic parallelism"};
+const FParameterNames LocalOptionClassic { {"-omp", "omp-classic"}, "In order to use classic parallelism"};
 const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
 const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
 
