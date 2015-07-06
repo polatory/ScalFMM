@@ -17,6 +17,27 @@ file(
 	./*.cpp
 )
 
+set(source_lib_files_enabled)
+foreach(exec ${source_lib_files}) 
+	set(compile_exec "TRUE")
+	
+	foreach(fuse_key ${FUSE_LIST})
+	    file(STRINGS "${exec}" lines_fuse REGEX "@FUSE_${fuse_key}")
+	    if(lines_fuse)
+		    if( NOT SCALFMM_USE_${fuse_key} )
+			    MESSAGE( STATUS "This needs ${fuse_key} = ${exec}" )
+			    set(compile_exec "FALSE")
+		    endif()
+	    endif()
+	endforeach()
+
+	# Dependency are OK
+	if( compile_exec )
+        list(APPEND source_lib_files_enabled ${exec})
+	endif()
+endforeach(exec)
+
+
 # Add CUDA files once they are compiled from cu to .o
 if(SCALFMM_USE_CUDA)
     # Find all the CU files in my project
@@ -44,7 +65,7 @@ endif()
 add_library(
 	scalfmm
 	STATIC
-	${source_lib_files}
+	${source_lib_files_enabled}
 	${SCALFMM_CUDA_SOURCES}
 )
 
