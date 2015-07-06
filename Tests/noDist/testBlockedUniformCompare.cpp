@@ -220,7 +220,6 @@ struct RunContainer{
 
             if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
                 // -----------------------------------------------------
-                std::cout << "\nError computation ... " << std::endl;
                 FMath::FAccurater<FReal> potentialDiff;
                 FMath::FAccurater<FReal> fx, fy, fz;
 
