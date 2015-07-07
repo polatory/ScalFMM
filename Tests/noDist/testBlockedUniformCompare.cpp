@@ -79,6 +79,7 @@ struct RunContainer{
         typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
         const MatrixKernelClass MatrixKernel;
         const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
+        omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
 
         if(FParameters::existParameter(argc, argv, LocalOptionClassic.options)){
             std::cout << "\n>> Using " << omp_get_max_threads() << " omp threads.\n" << std::endl;
