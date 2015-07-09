@@ -54,7 +54,7 @@ public:
      * \except An exception is thrown if one of the arguments is NULL.
      */
     FFmmAlgorithmThreadBalance(OctreeClass* const inTree, KernelClass* const inKernels,
-                               const int inUserChunkSize = 10, const int inLeafLevelSeperationCriteria = 1)
+                               const int inLeafLevelSeperationCriteria = 1)
         : tree(inTree) , kernels(nullptr),
           MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()),
           leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
@@ -393,13 +393,13 @@ protected:
                         const FSize totalWork = workPerShape[idxShape];
 
                         // Now split between thread
-                        (*intervals).resize(MaxThreads);
+                        (*intervals).resize(MaxThreads, std::pair<int,int>(0,0));
                         // Ideally each thread will have this
                         const FSize idealWork = (totalWork/MaxThreads);
                         // Assign default value for first thread
                         int idxThread = 0;
                         (*intervals)[idxThread].first = offsetShape;
-                        FSize assignWork = workloadBuffer[0].amountOfWork;
+                        FSize assignWork = workloadBuffer[offsetShape].amountOfWork;
                         for(int idxElement = 1+offsetShape ; idxElement < nbElements+offsetShape ; ++idxElement){
                             if(FMath::Abs((idxThread+1)*idealWork - assignWork) <
                                     FMath::Abs((idxThread+1)*idealWork - assignWork - workloadBuffer[idxElement].amountOfWork)
@@ -644,6 +644,8 @@ protected:
                                         currentIter.sources, neighbors, counter);
                     FLOG(if(!omp_get_thread_num()) computationCounterP2P.tac());
                 }
+
+                #pragma omp barrier
             }
         }
 
