@@ -224,8 +224,6 @@ struct RunContainer{
                 FMath::FAccurater<FReal> potentialDiff;
                 FMath::FAccurater<FReal> fx, fy, fz;
 
-                FReal checkPotential[20000];
-
                 { // Check that each particle has been summed with all other
 
                     tree.forEachLeaf([&](LeafClass* leaf){
@@ -238,8 +236,6 @@ struct RunContainer{
 
                         for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
                             const FSize indexPartOrig = indexes[idxPart];
-                            //PB: store potential in nbParticles array
-                            checkPotential[indexPartOrig]=potentials[idxPart];
 
                             potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
                             fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
