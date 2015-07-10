@@ -126,4 +126,10 @@ const std::string SCALFMMCompileLibs("@SCALFMM_COMPILE_LIBS@");
 
 #cmakedefine OPENMP_SUPPORT_PRIORITY
 
+///////////////////////////////////////////////////////
+// To record omp4 task times for statistics
+///////////////////////////////////////////////////////
+
+#cmakedefine SCALFMM_TIME_OMPTASKS
+
 #endif // CONFIG_H

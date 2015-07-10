@@ -82,6 +82,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     option( SCALFMM_USE_STARPU  "Set to ON to build SCALFMM with StarPU" OFF )
     option( SCALFMM_BUILD_UTILS "Set to ON to build utils Tests"    OFF )
     option( SCALFMM_DISABLE_NATIVE_OMP4 "Set to ON to disable the gcc/intel omp4"    OFF )
+    option( SCALFMM_TIME_OMPTASKS "Set to ON to time omp4 tasks and generate output file"    OFF )
   endif()
   if( SCALFMM_USE_MPI )
     try_compile(COMPILE_INTEL ${CMAKE_CURRENT_BINARY_DIR}
