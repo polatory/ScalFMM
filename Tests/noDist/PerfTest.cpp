@@ -37,6 +37,7 @@
 #include "PerfTest/AlgoLoaderThreadBalance.hpp"
 #include "PerfTest/AlgoLoaderThreadProc.hpp"
 
+#define HOST_NAME_MAX 64
 
 /**
  * \brief Runs a generic sequence of actions to use an algorithm.
@@ -60,11 +61,20 @@ void runperf(FPerfTestParams& params)
     AlgoLoader<TreeLoader, KernelLoader> algoLoader(params, treeLoader, kernelLoader);
     algoLoader.run();
 
+    char hostname[HOST_NAME_MAX];
+    memset(hostname,'\0',HOST_NAME_MAX);
+    if ( -1 == gethostname(hostname, HOST_NAME_MAX-1) ) {
+        perror("Could not get hostname");
+        strncpy(hostname, "unknown", HOST_NAME_MAX);
+    }
+
     std::cout << "@@ "
+              << "host:" << hostname << " "
               << "algo:" << params.algo << " "
               << "file:" << params.filename.substr(
-                  params.filename.find_last_of('/')+1) << " "
+                  params.filename.find_last_of('/')+1 ) << " "
               << "particles:" << treeLoader._loader.getNumberOfParticles() << " "
+              << "procs:"     << params.nbProcs                            << " "
               << "threads:"   << params.nbThreads                          << " "
               << "height:"    << params.treeHeight                         << " "
               << "subheight:" << params.subTreeHeight                      << " "
@@ -75,7 +85,6 @@ void runperf(FPerfTestParams& params)
               << "L2L:" << algoLoader.getCumulatedTime(FAlgorithmTimers::L2LTimer)     << " "
               << "P2PL2P:" << algoLoader.getCumulatedTime(FAlgorithmTimers::NearTimer) << " "
               << std::endl;
-
 }
 
 namespace ParName {
@@ -86,7 +95,6 @@ namespace ParName {
 
 int main (int argc, char** argv)
 {
-
     // Parameter handling //////////////
     FHelpDescribeAndExit(argc, argv,
                          "Driver for Chebyshev interpolation kernel  (1/r kernel).",
@@ -109,12 +117,23 @@ int main (int argc, char** argv)
         params.algo = getStr(argc,argv,ParName::Algo.options,"task");
         params.omp_chunk_size = getValue(argc, argv, ParName::ChunkSize.options, 0);
 
+#ifdef SCALFMM_USE_MPI
         std::string prefix("mpi-");
         if( params.algo.substr(0, prefix.size()) == prefix ) {
             params.mpiContext = new FMpi(argc,argv);
+            params.nbProcs = params.mpiContext->global().processCount();
         }
+#endif
     }
     // End of Parameter handling ///////
+
+    char hostname[HOST_NAME_MAX];
+    memset(hostname,'\0',HOST_NAME_MAX);
+    if ( -1 == gethostname(hostname, HOST_NAME_MAX-1) ) {
+        perror("Could not get hostname");
+        strncpy(hostname, "unknown", HOST_NAME_MAX);
+    }
+    std::cout << "Hostname: " << hostname << std::endl;
 
     omp_set_num_threads(params.nbThreads);
 
