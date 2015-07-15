@@ -26,6 +26,7 @@ struct FPerfTestParams {
     std::string filename = ""; ///< Particles file.
     std::string algo = "task"; ///< Algorithm to run.
     int  omp_chunk_size = 0;   ///< OpenMP chunk size for basic algorithm (FFmmAlgorithmThread)
+    int nbProcs = 1;
 #ifdef SCALFMM_USE_MPI
     FMpi* mpiContext = nullptr;
 #endif

@@ -48,6 +48,10 @@ public:
             new FMMClass(&(_treeLoader._tree), &(_kernelLoader._kernel)));
         _algo->execute();
     }
+
+    double getCumulatedTime(FAlgorithmTimers::FTimers timerName) const {
+        return _algo->getCumulatedTime(timerName);
+    }
 };
 
 

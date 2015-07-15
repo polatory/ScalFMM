@@ -101,6 +101,11 @@ public:
     std::string getRunInfoString() const {
         return _infostring.str();
     }
+
+    double getCumulatedTime(FAlgorithmTimers::FTimers timerName) const {
+        return _algo->getCumulatedTime(timerName);
+    }
+
 };
 
 

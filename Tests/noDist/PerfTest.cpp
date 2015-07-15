@@ -43,6 +43,7 @@
 #include "PerfTest/AlgoLoaderThreadProc.hpp"
 #endif
 
+#define HOST_NAME_MAX 64
 
 /**
  * \brief Runs a generic sequence of actions to use an algorithm.
@@ -66,22 +67,30 @@ void runperf(FPerfTestParams& params)
     AlgoLoader<TreeLoader, KernelLoader> algoLoader(params, treeLoader, kernelLoader);
     algoLoader.run();
 
-    auto& algo = *(algoLoader._algo);
-    std::cout << "@@ "
-              << "algo:" << params.algo << " "
-              << "file:" << params.filename.substr(params.filename.find_last_of('/')+1) << " "
-              << "particles:" << treeLoader._loader.getNumberOfParticles() << " "
-              << "threads:" << params.nbThreads                            << " "
-              << "height:" << params.treeHeight                            << " "
-              << "subheight:" << params.subTreeHeight                     << " "
-              << algoLoader.getRunInfoString()
-              << "P2M:" << algo.getCumulatedTime(FAlgorithmTimers::P2MTimer)     << " "
-              << "M2M:" << algo.getCumulatedTime(FAlgorithmTimers::M2MTimer)     << " "
-              << "M2L:" << algo.getCumulatedTime(FAlgorithmTimers::M2LTimer)     << " "
-              << "L2L:" << algo.getCumulatedTime(FAlgorithmTimers::L2LTimer)     << " "
-              << "P2PL2P:" << algo.getCumulatedTime(FAlgorithmTimers::NearTimer) << " "
-              << std::endl;
+    char hostname[HOST_NAME_MAX];
+    memset(hostname,'\0',HOST_NAME_MAX);
+    if ( -1 == gethostname(hostname, HOST_NAME_MAX-1) ) {
+        perror("Could not get hostname");
+        strncpy(hostname, "unknown", HOST_NAME_MAX);
+    }
 
+    std::cout << "@@ "
+              << "host:" << hostname << " "
+              << "algo:" << params.algo << " "
+              << "file:" << params.filename.substr(
+                  params.filename.find_last_of('/')+1 ) << " "
+              << "particles:" << treeLoader._loader.getNumberOfParticles() << " "
+              << "procs:"     << params.nbProcs                            << " "
+              << "threads:"   << params.nbThreads                          << " "
+              << "height:"    << params.treeHeight                         << " "
+              << "subheight:" << params.subTreeHeight                      << " "
+              << algoLoader.getRunInfoString()
+              << "P2M:" << algoLoader.getCumulatedTime(FAlgorithmTimers::P2MTimer)     << " "
+              << "M2M:" << algoLoader.getCumulatedTime(FAlgorithmTimers::M2MTimer)     << " "
+              << "M2L:" << algoLoader.getCumulatedTime(FAlgorithmTimers::M2LTimer)     << " "
+              << "L2L:" << algoLoader.getCumulatedTime(FAlgorithmTimers::L2LTimer)     << " "
+              << "P2PL2P:" << algoLoader.getCumulatedTime(FAlgorithmTimers::NearTimer) << " "
+              << std::endl;
 }
 
 namespace ParName {
@@ -96,7 +105,6 @@ namespace ParName {
 
 int main (int argc, char** argv)
 {
-
     // Parameter handling //////////////
     FHelpDescribeAndExit(argc, argv,
                          "Performance test program for FMM balancing techniques. "
@@ -127,10 +135,19 @@ int main (int argc, char** argv)
         std::string prefix("mpi-");
         if( params.algo.substr(0, prefix.size()) == prefix ) {
             params.mpiContext = new FMpi(argc,argv);
+            params.nbProcs = params.mpiContext->global().processCount();
         }
 #endif
     }
     // End of Parameter handling ///////
+
+    char hostname[HOST_NAME_MAX];
+    memset(hostname,'\0',HOST_NAME_MAX);
+    if ( -1 == gethostname(hostname, HOST_NAME_MAX-1) ) {
+        perror("Could not get hostname");
+        strncpy(hostname, "unknown", HOST_NAME_MAX);
+    }
+    std::cout << "Hostname: " << hostname << std::endl;
 
     omp_set_num_threads(params.nbThreads);
 

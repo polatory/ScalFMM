@@ -17,7 +17,8 @@ int main(int argc, char** argv)
 
     FMpiFmaDivider<FReal>
         divider(args.inFileName(),
-                args.outFileName() + "_" + std::to_string(args.zoneCount())
+                args.outFileName() + "_" + args.dispatchPolicyString()
+                                   + "_" + std::to_string(args.zoneCount())
                                    + "z_h" + std::to_string(args.treeHeight()),
                 args.outFileExt(),
                 args.zoneCount(),
