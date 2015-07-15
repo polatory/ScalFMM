@@ -213,6 +213,22 @@ private:
     FReal *       tmpVal;     ///< Temporary array to read data
     /// Count of other data pieces to read in a particle record after the 4 first ones.
     unsigned int  otherDataToRead;
+
+    void open_file(const std::string filename, const bool binary) {
+            if(binary) {
+                this->file = new std::fstream (filename.c_str(),std::ifstream::in| std::ios::binary);
+            }
+            else {
+                this->file = new std::fstream(filename.c_str(),std::ifstream::in) ;
+            }
+            // test if open
+            if(! this->file->is_open()){
+                std::cerr << "File "<< filename<<" not opened! Error: " << strerror(errno) <<std::endl;
+                std::exit( EXIT_FAILURE);
+            }
+            std::cout << "Opened file "<< filename << std::endl;
+    }
+
 public:
     /**
      * This constructor opens a file using the given mode and reads its
@@ -228,18 +244,7 @@ public:
         file(nullptr), binaryFile(binary), centerOfBox(0.0,0.0,0.0), boxWidth(0.0), 
         nbParticles(0), tmpVal(nullptr), otherDataToRead(0)
         {
-            if(binary) {
-                this->file = new std::fstream (filename.c_str(),std::ifstream::in| std::ios::binary);
-            }
-            else {
-                this->file = new std::fstream(filename.c_str(),std::ifstream::in) ;
-            }
-            // test if open
-            if(! this->file->is_open()){
-                std::cerr << "File "<< filename<<" not opened! " <<std::endl;
-                std::exit( EXIT_FAILURE);
-            }
-            std::cout << "Open file "<< filename << std::endl;
+            this->open_file(filename, binary);
             this->readHeader();
 	}
 
@@ -256,29 +261,20 @@ public:
      */
     FFmaGenericLoader(const std::string & filename) : file(nullptr),binaryFile(false),
                                                       centerOfBox(0.0,0.0,0.0),boxWidth(0.0),nbParticles(0),tmpVal(nullptr),otherDataToRead(0) {
-
-        std::string ext(".bfma");
         // open particle file
-        if(filename.find(ext) != std::string::npos) {
+        if( filename.find(".bfma") != std::string::npos ) {
             binaryFile = true;
-            this->file = new std::fstream (filename.c_str(),std::ifstream::in| std::ios::binary);
-        }
-        else if(filename.find(".fma")!=std::string::npos ) {
-            this->file = new std::fstream(filename.c_str(),std::ifstream::in) ;
-        }
-        else  {
+        } else if( filename.find(".fma")!=std::string::npos ) {
+            binaryFile = false;
+        } else  {
             std::cout << "FFmaGenericLoader: "
                       << "Only .fma or .bfma input file are allowed. Got " 
                       << filename << "."
                       << std::endl;
             std::exit ( EXIT_FAILURE) ;
         }
-        // test if open
-        if(! this->file->is_open()){
-            std::cerr << "File "<< filename<<" not opened! " <<std::endl;
-            std::exit( EXIT_FAILURE);
-        }
-        std::cout << "Open file "<< filename << std::endl;
+
+        this->open_file(filename, binaryFile);
         this->readHeader();
     }
 
