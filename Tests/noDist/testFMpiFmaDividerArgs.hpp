@@ -16,7 +16,6 @@
 
 class testFMpiFmaDividerArgs {
     const int _treeHeightInit = 5;
-    const int _subTreeHeightInit = 1;
     const int _zoneCountInit = omp_get_max_threads();
     const int _verboseInit = 0;
     const char* _inFileNameInit = "";
@@ -51,14 +50,6 @@ public:
         using namespace FParameters;
 
         return getValue(_argc, _argv, OctreeHeight.options, _treeHeightInit);
-    }
-
-    int subTreeHeight() const {
-        using namespace FParameterDefinitions;
-        using namespace FParameters;
-
-        return getValue(_argc, _argv, OctreeSubHeight.options,
-                        _subTreeHeightInit);
     }
 
     int zoneCount()     const {
@@ -112,11 +103,17 @@ public:
         return ext;
     } 
 
-    int dispatchPolicy() {
+    std::string dispatchPolicyString() const {
         using namespace FParameterDefinitions;
         using namespace FParameters;
 
         std::string str = getStr(_argc, _argv, DispatchPolicy.options, _dispatchPolicyInit);
+        return str;
+    }
+
+    int dispatchPolicy() const {
+        std::string str = dispatchPolicyString();
+
         if ( "particles" == str ) {
             return 0;
         } else {
@@ -137,13 +134,12 @@ public:
              "Loads an FMA file into a tree and runs a pseudo FMM algorithm "
              "through it to compute load balancing.",
              OctreeHeight,
-             OctreeSubHeight,
              InputFile,
              OutputFileBasename,
              OutputFileExtension,
              ZoneCount,
-             DispatchPolicy,
-             EnabledVerbose
+             DispatchPolicy
+
              );
         return 0;
     }
