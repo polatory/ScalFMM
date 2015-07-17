@@ -82,7 +82,7 @@ private:
     const int idProcess;         ///< Current process id
     const int OctreeHeight;      ///< Tree height
 
-    const int leafLevelSeperationCriteria;
+    const int leafLevelSeparationCriteria;
 
     /** An interval is the morton index interval
      * that a proc uses (i.e. it holds data in this interval) */
@@ -150,10 +150,11 @@ public:
         nbProcess(inComm.processCount()),
         idProcess(inComm.processId()),
         OctreeHeight(tree->getHeight()),
-        leafLevelSeperationCriteria(inLeafLevelSeperationCriteria),
+        leafLevelSeparationCriteria(inLeafLevelSeperationCriteria),
         intervals(new Interval[inComm.processCount()]),
         workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]) {
         FAssertLF(tree, "tree cannot be null");
+        FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
 
         this->kernels = new KernelClass*[MaxThreads];
         #pragma omp parallel for schedule(static)
@@ -663,7 +664,7 @@ protected:
                     // for each levels
                     for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
 
-                        const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+                        const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
 
                         if(!procHasWorkAtLevel(idxLevel, idProcess)){
                             avoidGotoLeftIterator.moveDown();
@@ -821,7 +822,7 @@ protected:
                 // Now we can compute all the data
                 // for each levels
                 for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
-                    const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+                    const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
 
                     if(!procHasWorkAtLevel(idxLevel, idProcess)){
                         avoidGotoLeftIterator.moveDown();
@@ -888,7 +889,7 @@ protected:
             // compute the second time
             // for each levels
             for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
-                const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+                const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
 
                 if(!procHasWorkAtLevel(idxLevel, idProcess)){
                     avoidGotoLeftIterator.moveDown();

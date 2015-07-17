@@ -46,7 +46,7 @@ class FFmmAlgorithmTsm : public FAbstractAlgorithm{
 
     const int OctreeHeight;
 
-    const int leafLevelSeperationCriteria;
+    const int leafLevelSeparationCriteria;
 
     FLOG(FTic counterTime);                                               //< In case of debug: to count the elapsed time
     FLOG(FTic computationCounter);                                        //< In case of debug: to  count computation time
@@ -58,10 +58,11 @@ public:
       * An assert is launched if one of the arguments is null
       */
     FFmmAlgorithmTsm(OctreeClass* const inTree, KernelClass* const inKernels, const int inLeafLevelSeperationCriteria = 1)
-        : tree(inTree) , kernels(inKernels) , OctreeHeight(tree->getHeight()), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria){
+        : tree(inTree) , kernels(inKernels) , OctreeHeight(tree->getHeight()), leafLevelSeparationCriteria(inLeafLevelSeperationCriteria){
 
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(kernels, "kernels cannot be null");
+        FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
 
         FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
 
@@ -200,7 +201,7 @@ protected:
         // for each levels
         for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
             FLOG(FTic counterTimeLevel);
-            const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+            const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
             // for each cells
             do{
                 FLOG(computationCounter.tic());

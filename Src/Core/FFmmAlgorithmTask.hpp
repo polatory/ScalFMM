@@ -49,7 +49,7 @@ class FFmmAlgorithmTask : public FAbstractAlgorithm, public FAlgorithmTimers {
 
 	const int OctreeHeight;
 
-	const int leafLevelSeperationCriteria;
+    const int leafLevelSeparationCriteria;
 public:
 	/** The constructor need the octree and the kernels used for computation
 	 * @param inTree the octree to work on
@@ -58,11 +58,12 @@ public:
 	 */
 	FFmmAlgorithmTask(OctreeClass* const inTree, KernelClass* const inKernels, const int inLeafLevelSeperationCriteria = 1)
 : tree(inTree) , kernels(nullptr),
-  MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria)
+  MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()), leafLevelSeparationCriteria(inLeafLevelSeperationCriteria)
 {
 
 		FAssertLF(tree, "tree cannot be null");
 		FAssertLF(inKernels, "kernels cannot be null");
+        FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
 
 		this->kernels = new KernelClass*[MaxThreads];
 #pragma omp parallel for schedule(static)
@@ -239,7 +240,7 @@ protected:
 				// for each levels
 				for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
 					FLOG(FTic counterTimeLevel);
-					const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+                    const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
 					// for each cell we apply the M2L with all cells in the implicit interaction list
 					do{
 #pragma omp task firstprivate(octreeIterator) private(neighbors) shared(idxLevel)
@@ -286,7 +287,7 @@ protected:
 				// for each levels
 				for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
 					FLOG(FTic counterTimeLevel);
-					const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+                    const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
 					// for each cells
 					do{
 //#pragma omp task default(none) firstprivate(octreeIterator,separationCriteria)  private( neighbors) shared(idxLevel)

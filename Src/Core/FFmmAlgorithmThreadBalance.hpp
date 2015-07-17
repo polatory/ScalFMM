@@ -40,7 +40,7 @@ class FFmmAlgorithmThreadBalance : public FAbstractAlgorithm, public FAlgorithmT
 
     const int OctreeHeight;                   ///< The height of the given tree.
 
-    const int leafLevelSeperationCriteria;
+    const int leafLevelSeparationCriteria;
 
 public:
     /** Class constructor
@@ -57,8 +57,9 @@ public:
                                const int inLeafLevelSeperationCriteria = 1)
         : tree(inTree) , kernels(nullptr),
           MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()),
-          leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
+          leafLevelSeparationCriteria(inLeafLevelSeperationCriteria) {
         FAssertLF(tree, "tree cannot be null");
+        FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
 
         this->kernels = new KernelClass*[MaxThreads];
 #pragma omp parallel for schedule(static)
@@ -543,7 +544,7 @@ protected:
 
         // for each levels
         for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
-            const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+            const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
             FLOG(FTic counterTimeLevel);
             FLOG(computationCounter.tic());
             #pragma omp parallel

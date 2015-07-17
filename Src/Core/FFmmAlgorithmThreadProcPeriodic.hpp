@@ -83,7 +83,7 @@ class FFmmAlgorithmThreadProcPeriodic : public FAbstractAlgorithm {
 
     const int OctreeHeight;
 
-    const int leafLevelSeperationCriteria;
+    const int leafLevelSeparationCriteria;
 
 public:
     struct Interval{
@@ -146,12 +146,13 @@ public:
           numberOfLeafs(0),
           MaxThreads(omp_get_max_threads()), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
           OctreeHeight(tree->getHeight()),
-          leafLevelSeperationCriteria(inLeafLevelSeperationCriteria),
+          leafLevelSeparationCriteria(inLeafLevelSeperationCriteria),
           intervals(new Interval[inComm.processCount()]),
           workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]) {
 
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(-1 <= inUpperLevel, "inUpperLevel cannot be < -1");
+        FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
 
         FAbstractAlgorithm::setNbLevelsInTree(extendedTreeHeight());
 
@@ -787,7 +788,7 @@ protected:
                             // Find the M2L neigbors of a cell
                             const int counter = getPeriodicInteractionNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(),
                                                                                idxLevel,
-                                                                               neighborsIndexes, neighborsPosition, AllDirs, leafLevelSeperationCriteria);
+                                                                               neighborsIndexes, neighborsPosition, AllDirs, leafLevelSeparationCriteria);
 
                             memset(alreadySent, false, sizeof(bool) * nbProcess);
                             bool needOther = false;
@@ -913,7 +914,7 @@ protected:
                 for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
                     const int fackLevel = idxLevel + offsetRealTree;
 
-                    const int separationCriteria = (idxLevel != OctreeHeight-1 ? 1 : leafLevelSeperationCriteria);
+                    const int separationCriteria = (idxLevel != OctreeHeight-1 ? 1 : leafLevelSeparationCriteria);
 
                     if(!procHasWorkAtLevel(idxLevel, idProcess)){
                         avoidGotoLeftIterator.moveDown();
@@ -981,7 +982,7 @@ protected:
             for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
                 const int fackLevel = idxLevel + offsetRealTree;
 
-                const int separationCriteria = (fackLevel != OctreeHeight-1 ? 1 : leafLevelSeperationCriteria);
+                const int separationCriteria = (fackLevel != OctreeHeight-1 ? 1 : leafLevelSeparationCriteria);
 
                 if(!procHasWorkAtLevel(idxLevel, idProcess)){
                     avoidGotoLeftIterator.moveDown();

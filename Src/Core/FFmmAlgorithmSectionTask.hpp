@@ -74,6 +74,7 @@ public:
 
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(inKernels, "kernels cannot be null");
+        FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
 
         this->kernels = new KernelClass*[MaxThreads];
         #pragma omp parallel for schedule(static)

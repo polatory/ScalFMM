@@ -55,7 +55,7 @@ class FFmmAlgorithmThreadTsm : public FAbstractAlgorithm, public FAlgorithmTimer
 
     const int OctreeHeight;
 
-    const int leafLevelSeperationCriteria;
+    const int leafLevelSeparationCriteria;
 
 public:
     /** The constructor need the octree and the kernels used for computation
@@ -65,9 +65,10 @@ public:
       */
     FFmmAlgorithmThreadTsm(OctreeClass* const inTree, KernelClass* const inKernels, const int inLeafLevelSeperationCriteria = 1)
                       : tree(inTree) , kernels(nullptr), iterArray(nullptr),
-                      MaxThreads(omp_get_max_threads()) , OctreeHeight(tree->getHeight()), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
+                      MaxThreads(omp_get_max_threads()) , OctreeHeight(tree->getHeight()), leafLevelSeparationCriteria(inLeafLevelSeperationCriteria) {
 
         FAssertLF(tree, "tree cannot be null");
+        FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
 
         this->kernels = new KernelClass*[MaxThreads];
         #pragma omp parallel for schedule(static)
@@ -250,7 +251,7 @@ protected:
             // for each levels
             for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
                 FLOG(FTic counterTimeLevel);
-                const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+                const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
 
                 int numberOfCells = 0;
                 // for each cells
