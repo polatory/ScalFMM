@@ -263,28 +263,56 @@ protected:
                                             workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, comm.getComm()),  __LINE__ );
         }
 
+#ifdef SCALFMM_TRACE_ALGO
         Timers[P2MTimer].tic();
+	    eztrace_enter_event("P2M", EZTRACE_YELLOW);
+#endif
         if(operationsToProceed & FFmmP2M) bottomPass();
         Timers[P2MTimer].tac();
 
-        Timers[M2MTimer].tic();
-        if(operationsToProceed & FFmmM2M) upwardPass();
-        Timers[M2MTimer].tac();
+#ifdef SCALFMM_TRACE_ALGO
+		eztrace_leave_event();
+#endif
 
-        Timers[M2LTimer].tic();
+#ifdef SSCALFMM_TRACE_ALGO
+		eztrace_leave_event();
+	    eztrace_enter_event("M2M", EZTRACE_PINK);
+#endif
+
+        Timers[M2MTimer].tic();
+	    if(operationsToProceed & FFmmM2M) upwardPass();
+      Timers[M2MTimer].tac();
+
+#ifdef SCALFMM_TRACE_ALGO
+		eztrace_leave_event();
+	    eztrace_enter_event("M2L", EZTRACE_GREEN);
+#endif
+
+		Timers[M2LTimer].tic();
         if(operationsToProceed & FFmmM2L) transferPass();
         Timers[M2LTimer].tac();
 
-        Timers[L2LTimer].tic();
+ #ifdef SCALFMM_TRACE_ALGO
+		eztrace_leave_event();
+	    eztrace_enter_event("L2L", EZTRACE_PINK);
+#endif
+
+	    Timers[L2LTimer].tic();
         if(operationsToProceed & FFmmL2L) downardPass();
         Timers[L2LTimer].tac();
 
-        Timers[NearTimer].tic();
+#ifdef SCALFMM_TRACE_ALGO
+		eztrace_leave_event();
+	    eztrace_enter_event("L2P+P2P", EZTRACE_BLUE);
+#endif
+
+	    Timers[NearTimer].tic();
         if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) ) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
         Timers[NearTimer].tac();
 
 #ifdef SCALFMM_TRACE_ALGO
-	  eztrace_stop();
+		eztrace_leave_event();
+	    eztrace_stop();
 #endif
         // delete array
         delete []     iterArray;
