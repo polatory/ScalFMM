@@ -346,6 +346,7 @@ protected:
                         workloadBufferThread[omp_get_thread_num()] = new WorkloadTemp[leafsNumber];
                     }
                     WorkloadTemp* workloadBuffer = workloadBufferThread[omp_get_thread_num()];
+                    memset(workloadBuffer, 0, sizeof(struct WorkloadTemp)*leafsNumber);
                     // Prepare the P2P
                     const int LeafIndex = OctreeHeight - 1;
                     leafsDataArray.reset(new LeafData[leafsNumber]);
