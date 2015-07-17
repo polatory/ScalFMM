@@ -27,6 +27,7 @@
 #include "../Containers/FOctree.hpp"
 
 #include "FCoreCommon.hpp"
+#include "FP2PExclusion.hpp"
 
 #include <omp.h>
 
@@ -45,7 +46,7 @@
 *
 * This class does not deallocate pointers given to its constructor.
 */
-template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass, class P2PExclusionClass = FP2PMiddleExclusion>
 class FFmmAlgorithmThread : public FAbstractAlgorithm, public FAlgorithmTimers{
     OctreeClass* const tree;                  ///< The octree to work on.
     KernelClass** kernels;                    ///< The kernels.
@@ -53,7 +54,7 @@ class FFmmAlgorithmThread : public FAbstractAlgorithm, public FAlgorithmTimers{
     typename OctreeClass::Iterator* iterArray;
     int leafsNumber;
 
-    static const int SizeShape = 3*3*3;
+    static const int SizeShape = P2PExclusionClass::SizeShape;
     int shapeLeaf[SizeShape];
 
     const int MaxThreads;                     ///< The maximum number of threads.
@@ -140,7 +141,7 @@ protected:
         do{
             ++leafsNumber;
             const FTreeCoordinate& coord = octreeIterator.getCurrentCell()->getCoordinate();
-            ++this->shapeLeaf[(coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3)];
+            ++this->shapeLeaf[P2PExclusionClass::GetShapeIdx(coord)];
 
         } while(octreeIterator.moveRight());
         iterArray = new typename OctreeClass::Iterator[leafsNumber];
@@ -441,7 +442,7 @@ protected:
                 //iterArray[leafs] = octreeIterator;
                 //++leafs;
                 const FTreeCoordinate& coord = octreeIterator.getCurrentGlobalCoordinate();
-                const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
+                const int shapePosition = P2PExclusionClass::GetShapeIdx(coord);
 
                 omp_set_lock(&lockShape[shapePosition]);
                 const int positionToWork = startPosAtShape[shapePosition]++;

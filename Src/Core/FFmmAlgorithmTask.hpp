@@ -27,6 +27,7 @@
 #include "../Containers/FVector.hpp"
 
 #include "FCoreCommon.hpp"
+#include "FP2PExclusion.hpp"
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -39,7 +40,7 @@
  *
  * Of course this class does not deallocate pointer given in arguements.
  */
-template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass, class P2PExclusionClass = FP2PMiddleExclusion>
 class FFmmAlgorithmTask : public FAbstractAlgorithm, public FAlgorithmTimers {
 
 	OctreeClass* const tree;       //< The octree to work on
@@ -389,7 +390,7 @@ protected:
 				// There is a maximum of 26 neighbors
 				ContainerClass* neighbors[27];
 
-				const int SizeShape = 3*3*3;
+                const int SizeShape = P2PExclusionClass::SizeShape;
 				FVector<typename OctreeClass::Iterator> shapes[SizeShape];
 
 				typename OctreeClass::Iterator octreeIterator(tree);
@@ -398,7 +399,7 @@ protected:
 				// for each leafs
 				do{
 					const FTreeCoordinate& coord = octreeIterator.getCurrentGlobalCoordinate();
-					const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
+                    const int shapePosition = P2PExclusionClass::GetShapeIdx(coord);
 
 					shapes[shapePosition].push(octreeIterator);
 

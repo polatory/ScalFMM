@@ -38,6 +38,7 @@
 #include <omp.h>
 
 #include "FCoreCommon.hpp"
+#include "FP2PExclusion.hpp"
 
 #include <memory>
 
@@ -61,7 +62,7 @@
  * --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes
  * ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
  */
-template<class FReal, class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class FReal, class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass, class P2PExclusionClass = FP2PMiddleExclusion>
 class FFmmAlgorithmThreadProcPeriodic : public FAbstractAlgorithm {
     OctreeClass* const tree;                 //< The octree to work on
     KernelClass** kernels;                   //< The kernels
@@ -1348,7 +1349,7 @@ protected:
 
         // init
         const int LeafIndex = OctreeHeight - 1;
-        const int SizeShape = 3*3*3;
+        const int SizeShape = P2PExclusionClass::SizeShape;
 
         int shapeLeaf[SizeShape];
         memset(shapeLeaf,0,SizeShape*sizeof(int));
@@ -1511,7 +1512,7 @@ protected:
                     myLeafs[idxLeaf] = octreeIterator;
 
                     const FTreeCoordinate& coord = octreeIterator.getCurrentCell()->getCoordinate();
-                    const int shape = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
+                    const int shape = P2PExclusionClass::GetShapeIdx(coord);
                     shapeType[idxLeaf] = shape;
 
                     ++shapeLeaf[shape];
