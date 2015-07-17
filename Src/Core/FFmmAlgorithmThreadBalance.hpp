@@ -154,20 +154,26 @@ protected:
                                       WorkloadTemp* workPerElement, const FSize nbElements) const {
         // Now split between thread
         (*intervals).resize(MaxThreads);
+
         // Ideally each thread will have this
         const FSize idealWork = (totalWork/MaxThreads);
+        ///FLOG(FLog::Controller << "[Balance] idealWork " << idealWork << "\n");
+
         // Assign default value for first thread
         int idxThread = 0;
         (*intervals)[idxThread].iterator = workPerElement[0].iterator;
         (*intervals)[idxThread].nbElements = 1;
         FSize assignWork = workPerElement[0].amountOfWork;
+
         for(int idxElement = 1 ; idxElement < nbElements ; ++idxElement){
+            ///FLOG(FLog::Controller << "[Balance] idxElement " << workPerElement[idxElement].amountOfWork << "\n");
+            ///FLOG(FLog::Controller << "[Balance] assignWork " << assignWork << "\n");
             // is it more balance if we add the current element to the current thread
             if(FMath::Abs((idxThread+1)*idealWork - assignWork) <
                     FMath::Abs((idxThread+1)*idealWork - assignWork - workPerElement[idxElement].amountOfWork)
                     && idxThread != MaxThreads-1){
-                /// FLOG(FLog::Controller << "[Balance] Shape Thread " << idxThread << " goes from "
-                ///      << (*intervals)[idxThread].iterator.getCurrentGlobalIndex() << " nb " << (*intervals)[idxThread].nbElements << "\n");
+                ///FLOG(FLog::Controller << "[Balance] Shape Thread " << idxThread << " goes from "
+                ///      << (*intervals)[idxThread].iterator.getCurrentGlobalIndex() << " nb " << (*intervals)[idxThread].nbElements << "/" << nbElements << "\n");
                 // if not start filling the next thread
                 idxThread += 1;
                 (*intervals)[idxThread].iterator = workPerElement[idxElement].iterator;
@@ -176,8 +182,9 @@ protected:
             (*intervals)[idxThread].nbElements += 1;
             assignWork += workPerElement[idxElement].amountOfWork;
         }
-        /// FLOG(FLog::Controller << "[Balance] Shape Thread " << idxThread << " goes from "
-        ///      << (*intervals)[idxThread].iterator.getCurrentGlobalIndex() << " nb " << (*intervals)[idxThread].nbElements << "\n");
+
+        ///FLOG(FLog::Controller << "[Balance] Shape Thread " << idxThread << " goes from "
+        ///      << (*intervals)[idxThread].iterator.getCurrentGlobalIndex() << " nb " << (*intervals)[idxThread].nbElements << "/" << nbElements << "\n");
     }
 
     void buildThreadIntervals(){
@@ -405,8 +412,6 @@ protected:
                                     FMath::Abs((idxThread+1)*idealWork - assignWork - workloadBuffer[idxElement].amountOfWork)
                                     && idxThread != MaxThreads-1){
                                 (*intervals)[idxThread].second = idxElement;
-                                /// FLOG(FLog::Controller << "[Balance] Shape " << idxShape << " Thread " << idxThread << " goes from "
-                                ///      << (*intervals)[idxThread].first << " to " << (*intervals)[idxThread].second << "\n");
                                 idxThread += 1;
                                 (*intervals)[idxThread].first = idxElement;
                             }
@@ -414,8 +419,12 @@ protected:
                         }
                         (*intervals)[idxThread].second = nbElements + offsetShape;
 
-                        /// FLOG(FLog::Controller << "[Balance] Shape " << idxShape << " Thread " << idxThread << " goes from "
-                        ///      << (*intervals)[idxThread].first << " to " << (*intervals)[idxThread].second << "\n");
+                        idxThread += 1;
+                        while(idxThread != MaxThreads){
+                            (*intervals)[idxThread].first = nbElements+offsetShape;
+                            (*intervals)[idxThread].second = nbElements+offsetShape;
+                            idxThread += 1;
+                        }
 
                         offsetShape += nbElements;
                     }
@@ -441,7 +450,7 @@ protected:
         FLOG(FTic counterTime);
 
         FLOG(FTic computationCounter);
-#pragma omp parallel
+        #pragma omp parallel
         {
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
             const int nbCellsToCompute = workloadP2M[omp_get_thread_num()].nbElements;
@@ -453,6 +462,10 @@ protected:
                 myThreadkernels->P2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentListSrc());
                 octreeIterator.moveRight();
             }
+
+            FAssertLF(omp_get_thread_num() == MaxThreads-1
+                      || workloadP2M[omp_get_thread_num()+1].nbElements == 0
+                      || octreeIterator.getCurrentGlobalIndex() == workloadP2M[omp_get_thread_num()+1].iterator.getCurrentGlobalIndex());
         }
         FLOG(computationCounter.tac() );
 
@@ -476,7 +489,7 @@ protected:
             FLOG(FTic counterTimeLevel);
 
             FLOG(computationCounter.tic());
-#pragma omp parallel
+            #pragma omp parallel
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                 const int nbCellsToCompute = workloadM2M[idxLevel][omp_get_thread_num()].nbElements;
@@ -488,6 +501,10 @@ protected:
                     myThreadkernels->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                     octreeIterator.moveRight();
                 }
+
+                FAssertLF(omp_get_thread_num() == MaxThreads-1
+                          || workloadM2M[idxLevel][omp_get_thread_num()+1].nbElements == 0
+                          || octreeIterator.getCurrentGlobalIndex() == workloadM2M[idxLevel][omp_get_thread_num()+1].iterator.getCurrentGlobalIndex());
             }
 
             FLOG(computationCounter.tac());
@@ -528,7 +545,7 @@ protected:
             const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
             FLOG(FTic counterTimeLevel);
             FLOG(computationCounter.tic());
-#pragma omp parallel
+            #pragma omp parallel
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                 const int nbCellsToCompute = workloadM2L[idxLevel][omp_get_thread_num()].nbElements;
@@ -543,6 +560,11 @@ protected:
                 }
 
                 myThreadkernels->finishedLevelM2L(idxLevel);
+
+
+                FAssertLF(omp_get_thread_num() == MaxThreads-1
+                          || workloadM2L[idxLevel][omp_get_thread_num()+1].nbElements == 0
+                          || octreeIterator.getCurrentGlobalIndex() == workloadM2L[idxLevel][omp_get_thread_num()+1].iterator.getCurrentGlobalIndex());
             }
             FLOG(computationCounter.tac());
             FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
@@ -570,7 +592,7 @@ protected:
             FLOG(FTic counterTimeLevel);
 
             FLOG(computationCounter.tic());
-#pragma omp parallel
+            #pragma omp parallel
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                 const int nbCellsToCompute = workloadL2L[idxLevel][omp_get_thread_num()].nbElements;
@@ -580,6 +602,10 @@ protected:
                     myThreadkernels->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                     octreeIterator.moveRight();
                 }
+
+                FAssertLF(omp_get_thread_num() == MaxThreads-1
+                          || workloadL2L[idxLevel][omp_get_thread_num()+1].nbElements == 0
+                          || octreeIterator.getCurrentGlobalIndex() == workloadL2L[idxLevel][omp_get_thread_num()+1].iterator.getCurrentGlobalIndex());
             }
             FLOG(computationCounter.tac());
             FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
@@ -597,7 +623,7 @@ protected:
     /////////////////////////////////////////////////////////////////////////////
 
     void L2P(){
-#pragma omp parallel
+        #pragma omp parallel
         {
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
             const int nbCellsToCompute = workloadL2P[omp_get_thread_num()].nbElements;
@@ -609,6 +635,10 @@ protected:
                 myThreadkernels->L2P( octreeIterator.getCurrentCell() , octreeIterator.getCurrentListTargets());
                 octreeIterator.moveRight();
             }
+
+            FAssertLF(omp_get_thread_num() == MaxThreads-1
+                      || workloadL2P[omp_get_thread_num()+1].nbElements == 0
+                      || octreeIterator.getCurrentGlobalIndex() == workloadL2P[omp_get_thread_num()+1].iterator.getCurrentGlobalIndex());
         }
     }
 
@@ -625,7 +655,7 @@ protected:
 
         const int LeafIndex = OctreeHeight - 1;
 
-#pragma omp parallel
+        #pragma omp parallel
         {
             FLOG(if(!omp_get_thread_num()) computationCounter.tic());
 
@@ -644,6 +674,10 @@ protected:
                                         currentIter.sources, neighbors, counter);
                     FLOG(if(!omp_get_thread_num()) computationCounterP2P.tac());
                 }
+
+                FAssertLF(omp_get_thread_num() == MaxThreads-1
+                          || interval.second == workloadP2P[idxShape][omp_get_thread_num()+1].first,
+                        omp_get_thread_num(), " ==> ", interval.second, " != ", workloadP2P[idxShape][omp_get_thread_num()+1].first);
 
                 #pragma omp barrier
             }
