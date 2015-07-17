@@ -188,7 +188,10 @@ protected:
      */
     void executeCore(const unsigned operationsToProceed) override {
         // Count leaf
-        this->numberOfLeafs = 0;
+#ifdef SCALFMM_TRACE_ALGO
+    	eztrace_start();
+#endif
+	this->numberOfLeafs = 0;
         {
             Interval myFullInterval;
             {//Building the interval with the first and last leaves (and count the number of leaves)
@@ -280,11 +283,17 @@ protected:
         if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) ) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
         Timers[NearTimer].tac();
 
+#ifdef SCALFMM_TRACE_ALGO
+	  eztrace_stop();
+#endif
         // delete array
         delete []     iterArray;
-        delete [] iterArrayComm;
-        iterArray     = nullptr;
+        delete []     iterArrayComm;
+        iterArray          = nullptr;
         iterArrayComm = nullptr;
+#ifdef SCALFMM_TRACE_ALGO
+	  eztrace_stop();
+#endif
     }
 
     /////////////////////////////////////////////////////////////////////////////
