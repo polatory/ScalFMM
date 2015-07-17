@@ -197,11 +197,15 @@ int main(int argc, char* argv[])
 			timer  =   &algo3;
 		} else {
 			std::cout << "Unknown algorithm: " << algoStr << std::endl;
+			return 1;
 		}
+		std::cout << "Algorithm to check: "<< algoStr <<std::endl;
 		time.tic();
-		//
-		algo->execute();   // Here the call of the FMM algorithm
-		//
+		//  ---------------------------------------------
+//		algo->execute(FFmmNearField);   // Here the call of the FMM algorithm
+		algo->execute(FFmmFarField);   // Here the call of the FMM algorithm
+//		algo->execute();   // Here the call of the FMM algorithm
+		//  ---------------------------------------------
 		time.tac();
 		std::cout << "Timers Far Field \n"
 				<< "P2M " << timer->getTime(FAlgorithmTimers::P2MTimer) << " seconds\n"
@@ -248,7 +252,6 @@ int main(int argc, char* argv[])
 					const FSize indexPartOrig = indexes[idxPart];
 					potentialDiff.add(particles[indexPartOrig].getPotential(),potentials[idxPart]);
 					fx.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
-					//	const std::string outputFile("accuracyChebyschev.txt") ;
 					fy.add(particles[indexPartOrig].getForces()[1],forcesY[idxPart]);
 					fz.add(particles[indexPartOrig].getForces()[2],forcesZ[idxPart]);
 					f.add(particles[indexPartOrig].getForces()[0],forcesX[idxPart]);
@@ -275,5 +278,54 @@ int main(int argc, char* argv[])
 		// -----------------------------------------------------
 
 	}
+    if(FParameters::existParameter(argc, argv, FParameterDefinitions::OutputFile.options)){
+        std::string name(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output.fma"));
+        FFmaGenericWriter<FReal> writer(name) ;
+        //
+        FSize NbPoints = loader.getNumberOfParticles();
+       FReal * particlesW ;
+        particlesW = new FReal[8*NbPoints] ;
+        memset(particlesW,0,8*NbPoints*sizeof(FReal));
+        FSize j = 0 ;
+        tree.forEachLeaf([&](LeafClass* leaf){
+            //
+            // Input
+            const FReal*const posX = leaf->getTargets()->getPositions()[0];
+            const FReal*const posY = leaf->getTargets()->getPositions()[1];
+            const FReal*const posZ = leaf->getTargets()->getPositions()[2];
+            const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+            const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
+            //
+            // Computed data
+            const FReal*const potentials = leaf->getTargets()->getPotentials();
+            const FReal*const forcesX = leaf->getTargets()->getForcesX();
+            const FReal*const forcesY = leaf->getTargets()->getForcesY();
+            const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+            //
+            const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+            for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                j = 8*indexes[idxPart];
+                particlesW[j]      = posX[idxPart] ;
+                particlesW[j+1]  = posY[idxPart] ;
+                particlesW[j+2]  = posZ[idxPart] ;
+                particlesW[j+3]  = physicalValues[idxPart] ;
+                particlesW[j+4]  = potentials[idxPart] ;
+                particlesW[j+5]  =  forcesX[idxPart] ;
+                particlesW[j+6]  =  forcesY[idxPart] ;
+                particlesW[j+7]  =  forcesZ[idxPart] ;
+            }
+        });
+
+        writer.writeHeader( loader.getCenterOfBox(), loader.getBoxWidth() ,  NbPoints, sizeof(FReal), 8) ;
+        writer.writeArrayOfReal(particlesW,  8 , NbPoints);
+
+        delete[] particles;
+
+        //
+        std::string name1( "output.fma");
+//
+        FFmaGenericWriter<FReal> writer1(name1) ;
+        writer1.writeDistributionOfParticlesFromOctree(&tree,NbPoints) ;
+    }
 	return 0;
 }
