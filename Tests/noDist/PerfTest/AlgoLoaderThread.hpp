@@ -71,6 +71,10 @@ public:
         return sstr.str();
     }
 
+    double getCumulatedTime(FAlgorithmTimers::FTimers timerName) const {
+        return _algo->getCumulatedTime(timerName);
+    }
+
 
 };
 

@@ -58,6 +58,10 @@ public:
         return "";
     }
 
+    double getCumulatedTime(FAlgorithmTimers::FTimers timerName) const {
+        return _algo->getCumulatedTime(timerName);
+    }
+
 
 };
 

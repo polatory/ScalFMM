@@ -47,6 +47,10 @@ public:
     /// The #FMMClass algorithm instance
     std::unique_ptr<FMMClass> _algo;
     
+    /// Array of MPI gathered cumulated times
+    double timers[FAlgorithmTimers::nbTimers] {0};
+
+
     AlgoLoaderThreadProc(FPerfTestParams& params,
                      TreeLoader& treeLoader,
                      KernelLoader& kernelLoader) :
@@ -56,11 +60,26 @@ public:
         _algo(nullptr) {
         
     }
+    
 
     void run() {
         _algo = std::unique_ptr<FMMClass>(
             new FMMClass(_mpiContext->global(), &(_treeLoader._tree), &(_kernelLoader._kernel)));
         _algo->execute();
+        
+        for( int idxTimer = 0; idxTimer < FAlgorithmTimers::nbTimers; ++idxTimer ) {
+            timers[idxTimer] = _algo->getCumulatedTime(FAlgorithmTimers::FTimers(idxTimer));
+        }
+
+        if( _mpiContext->global().processId() == 0) {
+            MPI_Reduce(MPI_IN_PLACE, timers, FAlgorithmTimers::nbTimers, MPI_DOUBLE, MPI_MAX, 0, _mpiContext->global().getComm());
+        } else {
+            MPI_Reduce(timers, NULL, FAlgorithmTimers::nbTimers, MPI_DOUBLE, MPI_MAX, 0, _mpiContext->global().getComm());
+        }
+    }
+
+    double getCumulatedTime(FAlgorithmTimers::FTimers timerName) const {
+        return timers[timerName];
     }
 
 };

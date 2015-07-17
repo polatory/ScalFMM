@@ -159,7 +159,7 @@ namespace FParameters{
     inline const VariableType getValue(const int argc, const char* const * const argv, const std::vector<const char*>& inNames, const VariableType& defaultValue = VariableType(), const bool caseSensible = false){
         for(const char* name : inNames){
             const int position = findParameter(argc, argv, name, caseSensible);
-            FAssertLF(position == NotFound || position != argc - 1);
+            FAssertLF(position == NotFound || position != argc - 1, "Could no find a value for argument: ",name, ". " );
             if(position != NotFound && position != argc - 1){
                 return StrToOther(argv[position+1],defaultValue);
             }
@@ -172,7 +172,7 @@ namespace FParameters{
     inline const char* getStr(const int argc, const char* const * const argv, const std::vector<const char*>& inNames, const char* const inDefault, const bool caseSensible = false){
         for(const char* name : inNames){
             const int position = findParameter(argc, argv, name, caseSensible);
-            FAssertLF(position == NotFound || position != argc - 1);
+            FAssertLF(position == NotFound || position != argc - 1, "Could no find a value for argument: ",name, ". ");
             if(position != NotFound && position != argc - 1){
                 return argv[position+1];
             }
