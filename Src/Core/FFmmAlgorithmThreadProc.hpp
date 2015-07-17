@@ -271,10 +271,6 @@ protected:
         if(operationsToProceed & FFmmP2M) bottomPass();
         Timers[P2MTimer].tac();
 
-#ifdef SCALFMM_TRACE_ALGO
-		eztrace_leave_event();
-#endif
-
 #ifdef SSCALFMM_TRACE_ALGO
 		eztrace_leave_event();
 	    eztrace_enter_event("M2M", EZTRACE_PINK);
@@ -285,7 +281,7 @@ protected:
       Timers[M2MTimer].tac();
 
 #ifdef SCALFMM_TRACE_ALGO
-		eztrace_leave_event();
+	     eztrace_leave_event();
 	    eztrace_enter_event("M2L", EZTRACE_GREEN);
 #endif
 
