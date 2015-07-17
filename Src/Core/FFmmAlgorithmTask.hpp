@@ -66,13 +66,13 @@ public:
         FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
 
 		this->kernels = new KernelClass*[MaxThreads];
-#pragma omp parallel for schedule(static)
-		for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-#pragma omp critical (InitFFmmAlgorithmTask)
-			{
-				this->kernels[idxThread] = new KernelClass(*inKernels);
-			}
-		}
+        #pragma omp parallel num_threads(MaxThreads)
+        {
+            #pragma omp critical (InitFFmmAlgorithmTask)
+            {
+                this->kernels[omp_get_thread_num()] = new KernelClass(*inKernels);
+            }
+        }
 
 		FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
 
