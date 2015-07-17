@@ -12,6 +12,7 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 # Project Declaration
 #===========================================================================
 project(SCALFMM C CXX)
+# Adds the CMAKE_DEPENDENT_OPTION command
 INCLUDE( CMakeDependentOption )
 # check if compiling into source directories
 string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
@@ -26,7 +27,7 @@ include(GetCpuInfos)
 GetCpuInfos()
 
 # Adds the CMAKE_DEPENDENT_OPTION command
-INCLUDE(CMakeDependentOption)
+#INCLUDE(CMakeDependentOption)
 
 #===========================================================================
 # Version Number
@@ -89,6 +90,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     option( SCALFMM_DISABLE_NATIVE_OMP4 "Set to ON to disable the gcc/intel omp4"    OFF )
     option( SCALFMM_TIME_OMPTASKS "Set to ON to time omp4 tasks and generate output file"    OFF )
   endif()
+  message(STATUS "AVANT  ${CMAKE_CXX_COMPILER_ID}" )
   if( SCALFMM_USE_MPI )
     try_compile(COMPILE_INTEL ${CMAKE_CURRENT_BINARY_DIR}
                 ${SCALFMM_CMAKE_MODULE_PATH}/compileTestIntel.cpp
@@ -101,6 +103,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   # Set scalfmm to default libraries
   set(SCALFMM_LIBRARIES "")
   set(SCALFMM_CXX_FLAGS "-std=c++11 -fpic -Wall")
+  MESSAGE(STATUS "FLAGS =$CALFMM_CXX_FLAGS")
   #
   #
   # Test if openmp is here
@@ -150,7 +153,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
       endif()
     endif()
     IF (APPLE)
-      set(SSE_FLAGS  "-msse4  -mfpmath=sse")   # -mtune=native -march=native
+#      set(SSE_FLAGS  "-msse4  -mfpmath=sse")   # -mtune=native -march=native
       set(SSE_FLAGS  "-msse3  -mfpmath=sse") 
       set(AVX_FLAGS "-mtune=native -march=avx")
       set(AVX2_FLAGS "-mtune=native -march=native -mmic")
@@ -648,7 +651,12 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
       link_libraries( ${EZTrace_LIBRARIES} -leztrace-memory)
       include_directories(${EZTrace_INCLUDE_DIRS})
       MESSAGE(STATUS "EZTRACE:  ${EZTrace_INCLUDE_DIRS}   ${EZTrace_LIBRARY_DIRS}  ${EZTrace_LIBRARIES}")
-      CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2L "Set to ON to trace M2L operator" ON  "SCALFMM_USE_EZTRACE" OFF )
+      CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_ALGO "Set to ON to trace the full algorithm (all operators)" ON  "SCALFMM_USE_EZTRACE" OFF )
+      CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_P2M   "Set to ON to trace P2M operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+      CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2M   "Set to ON to trace M2M operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+      CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2L   "Set to ON to trace M2L operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+      CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_L2L   "Set to ON to trace L2L operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+      CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_P2P   "Set to ON to trace P2P operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
 
     else(PKG_CONFIG_FOUND)
       MESSAGE(WARNING "PKG-CONFIG not found- EZTRACE Is set to NONE")
