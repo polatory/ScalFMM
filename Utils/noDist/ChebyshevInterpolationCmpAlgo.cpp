@@ -203,8 +203,8 @@ int main(int argc, char* argv[])
 		time.tic();
 		//  ---------------------------------------------
 //		algo->execute(FFmmNearField);   // Here the call of the FMM algorithm
-		algo->execute(FFmmFarField);   // Here the call of the FMM algorithm
-//		algo->execute();   // Here the call of the FMM algorithm
+//		algo->execute(FFmmFarField);   // Here the call of the FMM algorithm
+		algo->execute();   // Here the call of the FMM algorithm
 		//  ---------------------------------------------
 		time.tac();
 		std::cout << "Timers Far Field \n"
