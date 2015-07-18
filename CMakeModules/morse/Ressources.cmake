@@ -43,9 +43,9 @@ if(NOT DEFINED PROCESSOR_COUNT)
     if(APPLE)
         find_program(cmd_sys_pro "system_profiler")
         if(cmd_sys_pro)
-            execute_process(COMMAND ${cmd_sys_pro} OUTPUT_VARIABLE info)
-            string(REGEX REPLACE "^.*Total Number Of Cores: ([0-9]+).*$" "\\1"
-                NUMBER_OF_CPU "${info}")
+          execute_process(COMMAND ${cmd_sys_pro} SPHardwareDataType OUTPUT_VARIABLE info)
+            string(REGEX REPLACE "^.*Total Number of Cores: ([0-9]+).*$" "\\1"
+              NUMBER_OF_CPU "${info}")
         endif()
     endif()
 
