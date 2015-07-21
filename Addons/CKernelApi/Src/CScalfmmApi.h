@@ -481,6 +481,9 @@ typedef void (*Callback_P2P)(FSize nbParticles, const FSize* particleIndexes, FS
 
 /**
  * @brief Function to be filled by user's P2P
+ * @attention This function is symmetrc, thus when a call is done
+ * between target and cell[27], the user needs to apply the target
+ * field onto the 27 cells too.
  * @param nbParticles number of particle in current leaf
  * @param particleIndexes indexes of particles currently computed
  * @param sourceCell array of the neighbors source cells
@@ -499,6 +502,20 @@ typedef void (*Callback_P2PFull)(FSize nbParticles, const FSize* particleIndexes
  * @param userData datas specific to the user's kernel
  */
 typedef void (*Callback_P2PInner)(FSize nbParticles, const FSize* particleIndexes, void* userData);
+
+/**
+ * @brief Function to be filled by user's P2P
+ * @param nbParticles number of particle in current leaf
+ * @param particleIndexes indexes of particles currently computed
+ * @param nbSourceParticles number of particles in source leaf
+ * @param sourceParticleIndexes indexes of cource particles currently computed
+ * @param userData datas specific to the user's kernel
+ * @attention The fact that this callback is defined (and thus
+ * different from NULL or nullptr) means that it will be used, and
+ * thus if a call is done with cell1 as source and cell2 as target, no
+ * call will be done with cell2 as source and cell1 as target.
+ */
+typedef void (*Callback_P2PSym)(FSize nbParticles, const FSize* particleIndexes, FSize nbSourceParticles, const FSize* sourceParticleIndexes, void* userData);
 
 /**
  * @brief Function to be filled by user's method to reset a user's cell
@@ -527,6 +544,7 @@ typedef struct User_Scalfmm_Kernel_Descriptor {
     Callback_P2P p2p;
     Callback_P2PFull p2p_full;
     Callback_P2PInner p2pinner;
+    Callback_P2PSym p2p_sym;
 }Scalfmm_Kernel_Descriptor;
 
 
