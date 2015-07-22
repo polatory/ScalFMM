@@ -177,7 +177,7 @@ int main(int argc, char* argv[])
 		std::string  algoStr  = FParameters::getStr(argc,argv,"-algo",  "basic");
 
 		ForFmmClass              algo1(&tree, &kernels, inUserChunckSize);
-		ForBalFmmClass          algo4(&tree, &kernels, inUserChunckSize);
+        ForBalFmmClass          algo4(&tree, &kernels);
 		TaskFmmClass            algo2(&tree, &kernels );
 		SectionTaskFmmClass algo3(&tree, &kernels );
 
@@ -203,8 +203,8 @@ int main(int argc, char* argv[])
 		time.tic();
 		//  ---------------------------------------------
 //		algo->execute(FFmmNearField);   // Here the call of the FMM algorithm
-		algo->execute(FFmmFarField);   // Here the call of the FMM algorithm
-//		algo->execute();   // Here the call of the FMM algorithm
+//		algo->execute(FFmmFarField);   // Here the call of the FMM algorithm
+		algo->execute();   // Here the call of the FMM algorithm
 		//  ---------------------------------------------
 		time.tac();
 		std::cout << "Timers Far Field \n"

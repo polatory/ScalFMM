@@ -27,6 +27,7 @@
 #include "../Containers/FVector.hpp"
 
 #include "FCoreCommon.hpp"
+#include "FP2PExclusion.hpp"
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -45,7 +46,7 @@
  *
  * Upon destruction, this class does not deallocate pointers given to its constructor.
  */
-template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass, class P2PExclusionClass = FP2PMiddleExclusion>
 class FFmmAlgorithmSectionTask : public FAbstractAlgorithm, public FAlgorithmTimers {
     
     OctreeClass* const tree;  ///< The octree to work on
@@ -74,13 +75,14 @@ public:
 
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(inKernels, "kernels cannot be null");
+        FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
 
         this->kernels = new KernelClass*[MaxThreads];
-        #pragma omp parallel for schedule(static)
-        for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
+        #pragma omp parallel num_threads(MaxThreads)
+        {
             #pragma omp critical (InitFFmmAlgorithmSectionTask)
             {
-                this->kernels[idxThread] = new KernelClass(*inKernels);
+                this->kernels[omp_get_thread_num()] = new KernelClass(*inKernels);
             }
         }
 
@@ -327,7 +329,7 @@ protected:
         // There is a maximum of 26 neighbors
         ContainerClass* neighbors[27];
 
-        const int SizeShape = 3*3*3;
+        const int SizeShape = P2PExclusionClass::SizeShape;
         FVector<typename OctreeClass::Iterator> shapes[SizeShape];
 
         typename OctreeClass::Iterator octreeIterator(tree);
@@ -337,7 +339,7 @@ protected:
         // Coloring all the cells
         do{
             const FTreeCoordinate& coord = octreeIterator.getCurrentGlobalCoordinate();
-            const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
+            const int shapePosition = P2PExclusionClass::GetShapeIdx(coord);
 
             shapes[shapePosition].push(octreeIterator);
 

@@ -38,6 +38,7 @@
 #include <omp.h>
 
 #include "FCoreCommon.hpp"
+#include "FP2PExclusion.hpp"
 
 #include <memory>
 
@@ -61,7 +62,7 @@
  * --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes
  * ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
  */
-template<class FReal, class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class FReal, class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass, class P2PExclusionClass = FP2PMiddleExclusion>
 class FFmmAlgorithmThreadProcPeriodic : public FAbstractAlgorithm {
     OctreeClass* const tree;                 //< The octree to work on
     KernelClass** kernels;                   //< The kernels
@@ -83,7 +84,7 @@ class FFmmAlgorithmThreadProcPeriodic : public FAbstractAlgorithm {
 
     const int OctreeHeight;
 
-    const int leafLevelSeperationCriteria;
+    const int leafLevelSeparationCriteria;
 
 public:
     struct Interval{
@@ -117,11 +118,11 @@ public:
 
     void setKernel(KernelClass*const inKernels){
         this->kernels = new KernelClass*[MaxThreads];
-        #pragma omp parallel for schedule(static)
-        for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
+        #pragma omp parallel num_threads(MaxThreads)
+        {
             #pragma omp critical (InitFFmmAlgorithmThreadProcPeriodic)
             {
-                this->kernels[idxThread] = new KernelClass(*inKernels);
+                this->kernels[omp_get_thread_num()] = new KernelClass(*inKernels);
             }
         }
     }
@@ -146,12 +147,13 @@ public:
           numberOfLeafs(0),
           MaxThreads(omp_get_max_threads()), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
           OctreeHeight(tree->getHeight()),
-          leafLevelSeperationCriteria(inLeafLevelSeperationCriteria),
+          leafLevelSeparationCriteria(inLeafLevelSeperationCriteria),
           intervals(new Interval[inComm.processCount()]),
           workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]) {
 
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(-1 <= inUpperLevel, "inUpperLevel cannot be < -1");
+        FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
 
         FAbstractAlgorithm::setNbLevelsInTree(extendedTreeHeight());
 
@@ -787,7 +789,7 @@ protected:
                             // Find the M2L neigbors of a cell
                             const int counter = getPeriodicInteractionNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(),
                                                                                idxLevel,
-                                                                               neighborsIndexes, neighborsPosition, AllDirs, leafLevelSeperationCriteria);
+                                                                               neighborsIndexes, neighborsPosition, AllDirs, leafLevelSeparationCriteria);
 
                             memset(alreadySent, false, sizeof(bool) * nbProcess);
                             bool needOther = false;
@@ -913,7 +915,7 @@ protected:
                 for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
                     const int fackLevel = idxLevel + offsetRealTree;
 
-                    const int separationCriteria = (idxLevel != OctreeHeight-1 ? 1 : leafLevelSeperationCriteria);
+                    const int separationCriteria = (idxLevel != OctreeHeight-1 ? 1 : leafLevelSeparationCriteria);
 
                     if(!procHasWorkAtLevel(idxLevel, idProcess)){
                         avoidGotoLeftIterator.moveDown();
@@ -981,7 +983,7 @@ protected:
             for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
                 const int fackLevel = idxLevel + offsetRealTree;
 
-                const int separationCriteria = (fackLevel != OctreeHeight-1 ? 1 : leafLevelSeperationCriteria);
+                const int separationCriteria = (fackLevel != OctreeHeight-1 ? 1 : leafLevelSeparationCriteria);
 
                 if(!procHasWorkAtLevel(idxLevel, idProcess)){
                     avoidGotoLeftIterator.moveDown();
@@ -1347,7 +1349,7 @@ protected:
 
         // init
         const int LeafIndex = OctreeHeight - 1;
-        const int SizeShape = 3*3*3;
+        const int SizeShape = P2PExclusionClass::SizeShape;
 
         int shapeLeaf[SizeShape];
         memset(shapeLeaf,0,SizeShape*sizeof(int));
@@ -1510,7 +1512,7 @@ protected:
                     myLeafs[idxLeaf] = octreeIterator;
 
                     const FTreeCoordinate& coord = octreeIterator.getCurrentCell()->getCoordinate();
-                    const int shape = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
+                    const int shape = P2PExclusionClass::GetShapeIdx(coord);
                     shapeType[idxLeaf] = shape;
 
                     ++shapeLeaf[shape];

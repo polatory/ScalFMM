@@ -27,6 +27,7 @@
 #include "../Containers/FVector.hpp"
 
 #include "FCoreCommon.hpp"
+#include "FP2PExclusion.hpp"
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -39,7 +40,7 @@
  *
  * Of course this class does not deallocate pointer given in arguements.
  */
-template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass, class P2PExclusionClass = FP2PMiddleExclusion>
 class FFmmAlgorithmTask : public FAbstractAlgorithm, public FAlgorithmTimers {
 
 	OctreeClass* const tree;       //< The octree to work on
@@ -49,7 +50,7 @@ class FFmmAlgorithmTask : public FAbstractAlgorithm, public FAlgorithmTimers {
 
 	const int OctreeHeight;
 
-	const int leafLevelSeperationCriteria;
+    const int leafLevelSeparationCriteria;
 public:
 	/** The constructor need the octree and the kernels used for computation
 	 * @param inTree the octree to work on
@@ -58,20 +59,21 @@ public:
 	 */
 	FFmmAlgorithmTask(OctreeClass* const inTree, KernelClass* const inKernels, const int inLeafLevelSeperationCriteria = 1)
 : tree(inTree) , kernels(nullptr),
-  MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria)
+  MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()), leafLevelSeparationCriteria(inLeafLevelSeperationCriteria)
 {
 
 		FAssertLF(tree, "tree cannot be null");
 		FAssertLF(inKernels, "kernels cannot be null");
+        FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
 
 		this->kernels = new KernelClass*[MaxThreads];
-#pragma omp parallel for schedule(static)
-		for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-#pragma omp critical (InitFFmmAlgorithmTask)
-			{
-				this->kernels[idxThread] = new KernelClass(*inKernels);
-			}
-		}
+        #pragma omp parallel num_threads(MaxThreads)
+        {
+            #pragma omp critical (InitFFmmAlgorithmTask)
+            {
+                this->kernels[omp_get_thread_num()] = new KernelClass(*inKernels);
+            }
+        }
 
 		FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
 
@@ -239,7 +241,7 @@ protected:
 				// for each levels
 				for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
 					FLOG(FTic counterTimeLevel);
-					const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+                    const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
 					// for each cell we apply the M2L with all cells in the implicit interaction list
 					do{
 #pragma omp task firstprivate(octreeIterator) private(neighbors) shared(idxLevel)
@@ -286,7 +288,7 @@ protected:
 				// for each levels
 				for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
 					FLOG(FTic counterTimeLevel);
-					const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+                    const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
 					// for each cells
 					do{
 //#pragma omp task default(none) firstprivate(octreeIterator,separationCriteria)  private( neighbors) shared(idxLevel)
@@ -388,7 +390,7 @@ protected:
 				// There is a maximum of 26 neighbors
 				ContainerClass* neighbors[27];
 
-				const int SizeShape = 3*3*3;
+                const int SizeShape = P2PExclusionClass::SizeShape;
 				FVector<typename OctreeClass::Iterator> shapes[SizeShape];
 
 				typename OctreeClass::Iterator octreeIterator(tree);
@@ -397,7 +399,7 @@ protected:
 				// for each leafs
 				do{
 					const FTreeCoordinate& coord = octreeIterator.getCurrentGlobalCoordinate();
-					const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
+                    const int shapePosition = P2PExclusionClass::GetShapeIdx(coord);
 
 					shapes[shapePosition].push(octreeIterator);
 

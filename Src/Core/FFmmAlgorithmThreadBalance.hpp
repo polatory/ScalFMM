@@ -11,6 +11,7 @@
 #include "../Containers/FOctree.hpp"
 
 #include "FCoreCommon.hpp"
+#include "FP2PExclusion.hpp"
 
 #include <omp.h>
 #include <vector>
@@ -29,18 +30,18 @@
 *
 * This class does not deallocate pointers given to its constructor.
 */
-template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass, class P2PExclusionClass = FP2PMiddleExclusion>
 class FFmmAlgorithmThreadBalance : public FAbstractAlgorithm, public FAlgorithmTimers{
     OctreeClass* const tree;                  ///< The octree to work on.
     KernelClass** kernels;                    ///< The kernels.
 
-    static const int SizeShape = 3*3*3;
+    static const int SizeShape = P2PExclusionClass::SizeShape;
 
     const int MaxThreads;                     ///< The maximum number of threads.
 
     const int OctreeHeight;                   ///< The height of the given tree.
 
-    const int leafLevelSeperationCriteria;
+    const int leafLevelSeparationCriteria;
 
 public:
     /** Class constructor
@@ -57,15 +58,16 @@ public:
                                const int inLeafLevelSeperationCriteria = 1)
         : tree(inTree) , kernels(nullptr),
           MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()),
-          leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
+          leafLevelSeparationCriteria(inLeafLevelSeperationCriteria) {
         FAssertLF(tree, "tree cannot be null");
+        FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
 
         this->kernels = new KernelClass*[MaxThreads];
-#pragma omp parallel for schedule(static)
-        for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-#pragma omp critical (InitFFmmAlgorithmThreadBalance)
+        #pragma omp parallel num_threads(MaxThreads)
+        {
+            #pragma omp critical (InitFFmmAlgorithmThreadBalance)
             {
-                this->kernels[idxThread] = new KernelClass(*inKernels);
+                this->kernels[omp_get_thread_num()] = new KernelClass(*inKernels);
             }
         }
 
@@ -205,7 +207,7 @@ protected:
             do{
                 ++leafsNumber;
                 const FTreeCoordinate& coord = octreeIterator.getCurrentCell()->getCoordinate();
-                ++shapeLeaves[(coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3)];
+                ++shapeLeaves[P2PExclusionClass::GetShapeIdx(coord)];
             } while(octreeIterator.moveRight());
         }
 
@@ -346,6 +348,7 @@ protected:
                         workloadBufferThread[omp_get_thread_num()] = new WorkloadTemp[leafsNumber];
                     }
                     WorkloadTemp* workloadBuffer = workloadBufferThread[omp_get_thread_num()];
+                    memset(workloadBuffer, 0, sizeof(struct WorkloadTemp)*leafsNumber);
                     // Prepare the P2P
                     const int LeafIndex = OctreeHeight - 1;
                     leafsDataArray.reset(new LeafData[leafsNumber]);
@@ -365,7 +368,7 @@ protected:
                     // for each leafs
                     for(int idxLeaf = 0 ; idxLeaf < leafsNumber ; ++idxLeaf){
                         const FTreeCoordinate& coord = octreeIterator.getCurrentGlobalCoordinate();
-                        const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
+                        const int shapePosition = P2PExclusionClass::GetShapeIdx(coord);
 
                         const int positionToWork = startPosAtShape[shapePosition]++;
 
@@ -542,7 +545,7 @@ protected:
 
         // for each levels
         for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
-            const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+            const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
             FLOG(FTic counterTimeLevel);
             FLOG(computationCounter.tic());
             #pragma omp parallel

@@ -40,6 +40,7 @@
 #include <sys/time.h>
 
 #include "FCoreCommon.hpp"
+#include "FP2PExclusion.hpp"
 
 #include <memory>
 
@@ -63,7 +64,7 @@
  *        --tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20
  *        --track-fds=yes ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
  */
-template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass, class P2PExclusionClass = FP2PMiddleExclusion>
 class FFmmAlgorithmThreadProc : public FAbstractAlgorithm, public FAlgorithmTimers {
 private:
     OctreeClass* const tree;     ///< The octree to work on
@@ -82,7 +83,7 @@ private:
     const int idProcess;         ///< Current process id
     const int OctreeHeight;      ///< Tree height
 
-    const int leafLevelSeperationCriteria;
+    const int leafLevelSeparationCriteria;
 
     /** An interval is the morton index interval
      * that a proc uses (i.e. it holds data in this interval) */
@@ -150,17 +151,18 @@ public:
         nbProcess(inComm.processCount()),
         idProcess(inComm.processId()),
         OctreeHeight(tree->getHeight()),
-        leafLevelSeperationCriteria(inLeafLevelSeperationCriteria),
+        leafLevelSeparationCriteria(inLeafLevelSeperationCriteria),
         intervals(new Interval[inComm.processCount()]),
         workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]) {
         FAssertLF(tree, "tree cannot be null");
+        FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
 
         this->kernels = new KernelClass*[MaxThreads];
-        #pragma omp parallel for schedule(static)
-        for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
+        #pragma omp parallel num_threads(MaxThreads)
+        {
             #pragma omp critical (InitFFmmAlgorithmThreadProc)
             {
-                this->kernels[idxThread] = new KernelClass(*inKernels);
+                this->kernels[omp_get_thread_num()] = new KernelClass(*inKernels);
             }
         }
 
@@ -188,7 +190,10 @@ protected:
      */
     void executeCore(const unsigned operationsToProceed) override {
         // Count leaf
-        this->numberOfLeafs = 0;
+#ifdef SCALFMM_TRACE_ALGO
+    	eztrace_start();
+#endif
+	this->numberOfLeafs = 0;
         {
             Interval myFullInterval;
             {//Building the interval with the first and last leaves (and count the number of leaves)
@@ -260,31 +265,61 @@ protected:
                                             workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, comm.getComm()),  __LINE__ );
         }
 
+#ifdef SCALFMM_TRACE_ALGO
         Timers[P2MTimer].tic();
+	    eztrace_enter_event("P2M", EZTRACE_YELLOW);
+#endif
         if(operationsToProceed & FFmmP2M) bottomPass();
         Timers[P2MTimer].tac();
 
-        Timers[M2MTimer].tic();
-        if(operationsToProceed & FFmmM2M) upwardPass();
-        Timers[M2MTimer].tac();
+#ifdef SSCALFMM_TRACE_ALGO
+		eztrace_leave_event();
+	    eztrace_enter_event("M2M", EZTRACE_PINK);
+#endif
 
-        Timers[M2LTimer].tic();
+        Timers[M2MTimer].tic();
+	    if(operationsToProceed & FFmmM2M) upwardPass();
+      Timers[M2MTimer].tac();
+
+#ifdef SCALFMM_TRACE_ALGO
+	     eztrace_leave_event();
+	    eztrace_enter_event("M2L", EZTRACE_GREEN);
+#endif
+
+		Timers[M2LTimer].tic();
         if(operationsToProceed & FFmmM2L) transferPass();
         Timers[M2LTimer].tac();
 
-        Timers[L2LTimer].tic();
+ #ifdef SCALFMM_TRACE_ALGO
+		eztrace_leave_event();
+	    eztrace_enter_event("L2L", EZTRACE_PINK);
+#endif
+
+	    Timers[L2LTimer].tic();
         if(operationsToProceed & FFmmL2L) downardPass();
         Timers[L2LTimer].tac();
 
-        Timers[NearTimer].tic();
+#ifdef SCALFMM_TRACE_ALGO
+		eztrace_leave_event();
+	    eztrace_enter_event("L2P+P2P", EZTRACE_BLUE);
+#endif
+
+	    Timers[NearTimer].tic();
         if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) ) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
         Timers[NearTimer].tac();
 
+#ifdef SCALFMM_TRACE_ALGO
+		eztrace_leave_event();
+	    eztrace_stop();
+#endif
         // delete array
         delete []     iterArray;
-        delete [] iterArrayComm;
-        iterArray     = nullptr;
+        delete []     iterArrayComm;
+        iterArray          = nullptr;
         iterArrayComm = nullptr;
+#ifdef SCALFMM_TRACE_ALGO
+	  eztrace_stop();
+#endif
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -626,7 +661,7 @@ protected:
                     // for each levels
                     for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
 
-                        const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+                        const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
 
                         if(!procHasWorkAtLevel(idxLevel, idProcess)){
                             avoidGotoLeftIterator.moveDown();
@@ -784,7 +819,7 @@ protected:
                 // Now we can compute all the data
                 // for each levels
                 for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
-                    const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+                    const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
 
                     if(!procHasWorkAtLevel(idxLevel, idProcess)){
                         avoidGotoLeftIterator.moveDown();
@@ -851,7 +886,7 @@ protected:
             // compute the second time
             // for each levels
             for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
-                const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+                const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
 
                 if(!procHasWorkAtLevel(idxLevel, idProcess)){
                     avoidGotoLeftIterator.moveDown();
@@ -1199,7 +1234,7 @@ protected:
 
         // init
         const int LeafIndex = OctreeHeight - 1;
-        const int SizeShape = 3*3*3;
+        const int SizeShape = P2PExclusionClass::SizeShape;
 
         int shapeLeaf[SizeShape];
         memset(shapeLeaf,0,SizeShape*sizeof(int));
@@ -1360,7 +1395,7 @@ protected:
                     myLeafs[idxLeaf] = octreeIterator;
 
                     const FTreeCoordinate& coord = octreeIterator.getCurrentCell()->getCoordinate();
-                    const int shape = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
+                    const int shape = P2PExclusionClass::GetShapeIdx(coord);
                     shapeType[idxLeaf] = shape;
 
                     ++shapeLeaf[shape];

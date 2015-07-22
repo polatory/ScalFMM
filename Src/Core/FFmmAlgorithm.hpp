@@ -62,6 +62,7 @@ public:
 
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(kernels, "kernels cannot be null");
+        FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
 
         FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
 

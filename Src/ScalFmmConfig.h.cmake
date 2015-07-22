@@ -86,7 +86,12 @@
 ///////////////////////////////////////////////////////
 
 #cmakedefine SCALFMM_USE_EZTRACE
+#cmakedefine SCALFMM_TRACE_ALGO
+#cmakedefine SCALFMM_TRACE_P2P
+#cmakedefine SCALFMM_TRACE_P2M
 #cmakedefine SCALFMM_TRACE_M2L
+#cmakedefine SCALFMM_TRACE_L2L
+#cmakedefine SCALFMM_TRACE_L2P
 
 
 ///////////////////////////////////////////////////////

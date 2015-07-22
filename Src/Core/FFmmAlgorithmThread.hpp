@@ -27,6 +27,7 @@
 #include "../Containers/FOctree.hpp"
 
 #include "FCoreCommon.hpp"
+#include "FP2PExclusion.hpp"
 
 #include <omp.h>
 
@@ -45,7 +46,7 @@
 *
 * This class does not deallocate pointers given to its constructor.
 */
-template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass>
+template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass, class P2PExclusionClass = FP2PMiddleExclusion>
 class FFmmAlgorithmThread : public FAbstractAlgorithm, public FAlgorithmTimers{
     OctreeClass* const tree;                  ///< The octree to work on.
     KernelClass** kernels;                    ///< The kernels.
@@ -53,7 +54,7 @@ class FFmmAlgorithmThread : public FAbstractAlgorithm, public FAlgorithmTimers{
     typename OctreeClass::Iterator* iterArray;
     int leafsNumber;
 
-    static const int SizeShape = 3*3*3;
+    static const int SizeShape = P2PExclusionClass::SizeShape;
     int shapeLeaf[SizeShape];
 
     const int MaxThreads;                     ///< The maximum number of threads.
@@ -62,7 +63,7 @@ class FFmmAlgorithmThread : public FAbstractAlgorithm, public FAlgorithmTimers{
 
     int userChunkSize;
 
-    const int leafLevelSeperationCriteria;
+    const int leafLevelSeparationCriteria;
 
 public:
     /** Class constructor
@@ -79,15 +80,17 @@ public:
                         const int inUserChunkSize = 10, const int inLeafLevelSeperationCriteria = 1)
         : tree(inTree) , kernels(nullptr), iterArray(nullptr), leafsNumber(0),
           MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()),
-          userChunkSize(inUserChunkSize), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
+          userChunkSize(inUserChunkSize), leafLevelSeparationCriteria(inLeafLevelSeperationCriteria) {
         FAssertLF(tree, "tree cannot be null");
+        FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
+        FAssertLF(0 < userChunkSize, "Chunk size should be > 0");
         
         this->kernels = new KernelClass*[MaxThreads];
-        #pragma omp parallel for schedule(static)
-        for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread){
-            #pragma omp critical (InitFFmmAlgorithmThread) 
+        #pragma omp parallel num_threads(MaxThreads)
+        {
+            #pragma omp critical (InitFFmmAlgorithmThread)
             {
-                this->kernels[idxThread] = new KernelClass(*inKernels);
+                this->kernels[omp_get_thread_num()] = new KernelClass(*inKernels);
             }
         }
         
@@ -138,7 +141,7 @@ protected:
         do{
             ++leafsNumber;
             const FTreeCoordinate& coord = octreeIterator.getCurrentCell()->getCoordinate();
-            ++this->shapeLeaf[(coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3)];
+            ++this->shapeLeaf[P2PExclusionClass::GetShapeIdx(coord)];
 
         } while(octreeIterator.moveRight());
         iterArray = new typename OctreeClass::Iterator[leafsNumber];
@@ -296,7 +299,7 @@ protected:
         // for each levels
         for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
             FLOG(FTic counterTimeLevel);
-            const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeperationCriteria);
+            const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
             int numberOfCells = 0;
             // for each cells
             do{
@@ -439,7 +442,7 @@ protected:
                 //iterArray[leafs] = octreeIterator;
                 //++leafs;
                 const FTreeCoordinate& coord = octreeIterator.getCurrentGlobalCoordinate();
-                const int shapePosition = (coord.getX()%3)*9 + (coord.getY()%3)*3 + (coord.getZ()%3);
+                const int shapePosition = P2PExclusionClass::GetShapeIdx(coord);
 
                 omp_set_lock(&lockShape[shapePosition]);
                 const int positionToWork = startPosAtShape[shapePosition]++;
