@@ -47,7 +47,7 @@
 #include "Components/FTypedLeaf.hpp"
 #include "Containers/FOctree.hpp"
 #include "Utils/FTemplate.hpp"
-
+#include "Core/FCoreCommon.hpp"
 
 /**
  * @class FScalFMMEngine
@@ -62,16 +62,19 @@ protected:
     FVector<bool>* progress;
     int nbPart;
     FAlgorithmTimers * algoTimer;
-
+    FAbstractAlgorithm * abstrct;
 public:
 
-    FScalFMMEngine() : Algorithm(multi_thread), progress(nullptr), nbPart(0), algoTimer(nullptr){
+    FScalFMMEngine() : Algorithm(multi_thread), progress(nullptr), nbPart(0), algoTimer(nullptr), abstrct(nullptr){
         progress = new FVector<bool>();
     }
 
     virtual ~FScalFMMEngine() {
-        if(algoTimer){
-            delete algoTimer;
+        //Do not delete algoTimer because abstract and algoTimer are two pointers on the same thing
+        if(abstrct){
+            delete abstrct;
+            abstrct = nullptr;
+            algoTimer = nullptr;
         }
         delete progress;
     }

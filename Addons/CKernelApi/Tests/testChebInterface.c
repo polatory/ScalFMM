@@ -65,7 +65,7 @@ void cheb_resetCell(int level, long long morton_index, int* tree_position, doubl
  * @param number of particle (no default value)
  */
 int main(int argc, char ** av){
-    //omp_set_num_threads(1);
+    omp_set_num_threads(1);
     printf("Start\n");
     if(argc<2){
         printf("Use : %s nb_part (optionnal : TreeHeight) \nexiting\n",av[0]);
@@ -149,6 +149,7 @@ int main(int argc, char ** av){
     kernel.m2l_full = cheb_m2l_full;
     kernel.l2l = cheb_l2l;
     kernel.l2p = cheb_l2p;
+    kernel.p2p_sym = NULL;
     kernel.p2p_full = cheb_p2pFull;
     kernel.p2pinner = NULL;
     kernel.p2p = NULL;

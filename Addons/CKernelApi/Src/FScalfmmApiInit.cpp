@@ -5,7 +5,7 @@ extern "C" {
 
 #include "FInterEngine.hpp"
 #include "FUserKernelEngine.hpp"
-//#include "FAdaptEngine.hpp"
+
 
 extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,double* BoxCenter, */scalfmm_kernel_type KernelType,
                                        scalfmm_algorithm algo){

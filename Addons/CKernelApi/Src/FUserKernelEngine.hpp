@@ -164,6 +164,8 @@ public:
                      ContainerClass* const neighbors[27], const int ){
         if(kernel.p2pinner) kernel.p2pinner(targets->getNbParticles(), targets->getIndexes().data(), userData);
 
+
+
         if(kernel.p2p_full){
             //Create the arrays of size and indexes
             FSize nbPartPerNeighbors[27];
@@ -180,11 +182,21 @@ public:
             }
             kernel.p2p_full(targets->getNbParticles(),targets->getIndexes().data(),indicesPerNeighbors,nbPartPerNeighbors,userData);
         }
-        if(kernel.p2p){
-            for(int idx = 0 ; idx < 27 ; ++idx){
+        if(kernel.p2p_sym){
+            for(int idx = 0 ; idx < 14 ; ++idx){
                 if( neighbors[idx] ){
-                    kernel.p2p(targets->getNbParticles(), targets->getIndexes().data(),
-                               neighbors[idx]->getNbParticles(), neighbors[idx]->getIndexes().data(), userData);
+                    kernel.p2p_sym(targets->getNbParticles(), targets->getIndexes().data(),
+                                   neighbors[idx]->getNbParticles(), neighbors[idx]->getIndexes().data(), userData);
+                }
+            }
+        }
+        else{
+            if(kernel.p2p){
+                for(int idx = 0 ; idx < 27 ; ++idx){
+                    if( neighbors[idx] ){
+                        kernel.p2p(targets->getNbParticles(), targets->getIndexes().data(),
+                                   neighbors[idx]->getNbParticles(), neighbors[idx]->getIndexes().data(), userData);
+                    }
                 }
             }
         }
@@ -535,14 +547,13 @@ public:
 
     void execute_fmm(){
         FAssertLF(kernel,"No kernel set, please use scalfmm_user_kernel_config before calling the execute routine ... Exiting \n");
-        FAbstractAlgorithm * abstrct = nullptr;
         switch(FScalFMMEngine<FReal>::Algorithm){
         case 0:
             {
                 typedef FFmmAlgorithm<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassSeq;
                 AlgoClassSeq * algoSeq = new AlgoClassSeq(octree,kernel);
                 FScalFMMEngine<FReal>::algoTimer = algoSeq;
-                abstrct = algoSeq;
+                FScalFMMEngine<FReal>::abstrct = algoSeq;
                 //algoSeq->execute(); will be done later
                 break;
             }
@@ -551,7 +562,7 @@ public:
                 typedef FFmmAlgorithmThread<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassThread;
                 AlgoClassThread*  algoThread = new AlgoClassThread(octree,kernel);
                 FScalFMMEngine<FReal>::algoTimer = algoThread;
-                abstrct = algoThread;
+                FScalFMMEngine<FReal>::abstrct = algoThread;
                 //algoThread->execute(); will be done later
                 break;
             }
@@ -568,24 +579,25 @@ public:
                 typedef FFmmAlgorithmThreadTsm<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassTargetSource;
                 AlgoClassTargetSource* algoTS = new AlgoClassTargetSource(octree,kernel);
                 FScalFMMEngine<FReal>::algoTimer = algoTS;
-                abstrct = algoTS;
+                FScalFMMEngine<FReal>::abstrct = algoTS;
                 //algoTS->execute(); will be done later
                 break;
             }
         default :
             std::cout<< "No algorithm found (probably for strange reasons) : "<< FScalFMMEngine<FReal>::Algorithm <<" exiting" << std::endl;
         }
+
         if (FScalFMMEngine<FReal>::Algorithm != 2){
             if(upperLimit != 2){
-                abstrct->execute(FFmmP2M | FFmmM2M | FFmmM2L, upperLimit, treeHeight);
+                (FScalFMMEngine<FReal>::abstrct)->execute(FFmmP2M | FFmmM2M | FFmmM2L, upperLimit, treeHeight);
                 printf("\tUpPass finished\n");
                 internal_M2L();
                 printf("\tStrange M2L finished\n");
-                abstrct->execute(FFmmL2L | FFmmL2P | FFmmP2P, upperLimit, treeHeight);
+                (FScalFMMEngine<FReal>::abstrct)->execute(FFmmL2L | FFmmL2P | FFmmP2P, upperLimit, treeHeight);
                 printf("\tDownPass finished\n");
             }
             else{
-                abstrct->execute();
+                (FScalFMMEngine<FReal>::abstrct)->execute();
             }
         }
     }

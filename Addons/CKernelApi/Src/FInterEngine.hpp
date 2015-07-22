@@ -746,6 +746,7 @@ public:
                 AlgoClassSeq* algoSeq = new AlgoClassSeq(octree,kernel);
                 algoSeq->execute();
                 FScalFMMEngine<FReal>::algoTimer = algoSeq;
+                FScalFMMEngine<FReal>::abstrct = algoSeq;
                 break;
             }
         case 1:
@@ -754,6 +755,7 @@ public:
                 AlgoClassThread* algoThread = new AlgoClassThread(octree,kernel);
                 algoThread->execute();
                 FScalFMMEngine<FReal>::algoTimer = algoThread;
+                FScalFMMEngine<FReal>::abstrct = algoThread;
                 break;
             }
         case 2:
@@ -770,6 +772,7 @@ public:
                 AlgoClassTargetSource* algoTS = new AlgoClassTargetSource(octree,kernel);
                 algoTS->execute();
                 FScalFMMEngine<FReal>::algoTimer = algoTS;
+                FScalFMMEngine<FReal>::abstrct = algoTS;
                 break;
             }
         default :
