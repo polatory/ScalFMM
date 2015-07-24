@@ -58,9 +58,13 @@ protected:
     FTaskTimer taskTimeRecorder;
 #endif
 
+// Used with OPENMP_SUPPORT_PRIORITY
+    size_t p2pPrioCriteria;
+
+
 public:
     FGroupTaskDepAlgorithm(OctreeClass*const inTree, KernelClass* inKernels, const int inMaxThreads = -1)
-        : MaxThreads(inMaxThreads==-1?omp_get_max_threads():inMaxThreads), tree(inTree), kernels(nullptr)
+        : MaxThreads(inMaxThreads==-1?omp_get_max_threads():inMaxThreads), tree(inTree), kernels(nullptr), p2pPrioCriteria(0)
 #ifdef SCALFMM_TIME_OMPTASKS
             , taskTimeRecorder(MaxThreads)
 #endif
@@ -81,6 +85,8 @@ public:
             }
         }
 
+        rebuildInteractions();
+
         FLOG(FLog::Controller << "FGroupTaskDepAlgorithm (Max Thread " << MaxThreads << ")\n");
     }
 
@@ -91,13 +97,7 @@ public:
         delete[] kernels;
     }
 
-protected:
-    /**
-      * Runs the complete algorithm.
-      */
-    void executeCore(const unsigned operationsToProceed) override {
-        FLOG( FLog::Controller << "\tStart FGroupTaskDepAlgorithm\n" );
-
+    void rebuildInteractions(){
         #pragma omp parallel num_threads(MaxThreads)
         {
             #pragma omp single nowait
@@ -106,6 +106,25 @@ protected:
                 buildExternalInteractionVecs();
             }
         }
+
+#ifdef OPENMP_SUPPORT_PRIORITY
+        size_t nbLeaves = 0;
+        size_t nbParticles = 0;
+        for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
+            ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
+            nbLeaves += containers->getNumberOfLeavesInBlock();
+            nbParticles += containers->getNbParticlesInGroup();
+        }
+        p2pPrioCriteria = (nbParticles/nbLeaves);
+#endif
+    }
+
+protected:
+    /**
+      * Runs the complete algorithm.
+      */
+    void executeCore(const unsigned operationsToProceed) override {
+        FLOG( FLog::Controller << "\tStart FGroupTaskDepAlgorithm\n" );
 
         FTIME_TASKS(taskTimeRecorder.start());
 
@@ -318,7 +337,7 @@ protected:
 
             ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
 
-            #pragma omp task default(shared) firstprivate(leafCells, cellPoles, containers) depend(inout: cellPoles[0]) priority_if_supported(1)
+            #pragma omp task default(shared) firstprivate(leafCells, cellPoles, containers) depend(inout: cellPoles[0]) priority_if_supported(-4)
             {
                 FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(&taskTimeRecorder, (leafCells->getStartingIndex() << 16) | (0<<8) | 0, "P2M"));
                 KernelClass*const kernel = kernels[omp_get_thread_num()];
@@ -375,7 +394,7 @@ protected:
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
 
-                #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroups, subCellGroupPoles, nbSubCellGroups) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0][0], subCellGroupPoles[1][0], subCellGroupPoles[2][0], subCellGroupPoles[3][0], subCellGroupPoles[4][0], subCellGroupPoles[5][0], subCellGroupPoles[6][0], subCellGroupPoles[7][0], subCellGroupPoles[8][0])  priority_if_supported(1)
+                #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroups, subCellGroupPoles, nbSubCellGroups) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0][0], subCellGroupPoles[1][0], subCellGroupPoles[2][0], subCellGroupPoles[3][0], subCellGroupPoles[4][0], subCellGroupPoles[5][0], subCellGroupPoles[6][0], subCellGroupPoles[7][0], subCellGroupPoles[8][0])  priority_if_supported(-3)
                 {
                     FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(&taskTimeRecorder, (currentCells->getStartingIndex() << 16) | (idxLevel<<8) | 1, "M2M"));
                     KernelClass*const kernel = kernels[omp_get_thread_num()];
@@ -433,7 +452,7 @@ protected:
                     PoleCellClass* cellPoles = currentCells->getRawMultipoleBuffer();
                     LocalCellClass* cellLocals = currentCells->getRawLocalBuffer();
 
-                    #pragma omp task default(none) firstprivate(currentCells, cellPoles, cellLocals, idxLevel) depend(commute_if_supported: cellLocals[0]) depend(in: cellPoles[0])  priority_if_supported(1)
+#pragma omp task default(none) firstprivate(currentCells, cellPoles, cellLocals, idxLevel) depend(commute_if_supported: cellLocals[0]) depend(in: cellPoles[0])  priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-1?0:-2)
                     {
                         FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(&taskTimeRecorder, (currentCells->getStartingIndex() << 16) | (idxLevel<<8) | 2, "M2L"));
                         const MortonIndex blockStartIdx = currentCells->getStartingIndex();
@@ -497,7 +516,7 @@ protected:
                         LocalCellClass* cellOtherLocals = cellsOther->getRawLocalBuffer();
                         const std::vector<OutOfBlockInteraction>* outsideInteractions = &(*currentInteractions).interactions;
 
-                        #pragma omp task default(none) firstprivate(currentCells, cellPoles, cellLocals, outsideInteractions, cellsOther, cellOtherPoles, cellOtherLocals, idxLevel) depend(commute_if_supported: cellLocals[0], cellOtherLocals[0]) depend(in: cellPoles[0], cellOtherPoles[0])  priority_if_supported(1)
+                        #pragma omp task default(none) firstprivate(currentCells, cellPoles, cellLocals, outsideInteractions, cellsOther, cellOtherPoles, cellOtherLocals, idxLevel) depend(commute_if_supported: cellLocals[0], cellOtherLocals[0]) depend(in: cellPoles[0], cellOtherPoles[0])  priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-1?0:-2)
                         {
                             FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(&taskTimeRecorder, (cellsOther->getStartingIndex()) << 50 | (currentCells->getStartingIndex() << 16) | (idxLevel<<8) | 3, "M2L ext"));
                             KernelClass*const kernel = kernels[omp_get_thread_num()];
@@ -578,7 +597,7 @@ protected:
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
 
-                #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0], subCellLocalGroupsLocal[7][0], subCellLocalGroupsLocal[8][0]) depend(in: cellLocals[0])  priority_if_supported(1)
+                #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0], subCellLocalGroupsLocal[7][0], subCellLocalGroupsLocal[8][0]) depend(in: cellLocals[0])  priority_if_supported(-1)
                 {
                     FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(&taskTimeRecorder, (currentCells->getStartingIndex() << 16) | (idxLevel<<8) | 4, "L2L"));
                     KernelClass*const kernel = kernels[omp_get_thread_num()];
@@ -631,7 +650,7 @@ protected:
                 ParticleGroupClass* containers = (*iterParticles);
                 unsigned char* containersDown = containers->getRawAttributesBuffer();
 
-                #pragma omp task default(none) firstprivate(containers, containersDown) depend(commute_if_supported: containersDown[0])  priority_if_supported(1)
+                #pragma omp task default(none) firstprivate(containers, containersDown) depend(commute_if_supported: containersDown[0])  priority_if_supported((containers->getNbParticlesInGroup()/containers->getNumberOfLeavesInBlock())>size_t(p2pPrioCriteria*1.1)?-5:2)
                 {
                     FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(&taskTimeRecorder, (containers->getStartingIndex() << 16) | (0<<8) | 5, "P2P"));
                     const MortonIndex blockStartIdx = containers->getStartingIndex();
@@ -690,7 +709,7 @@ protected:
                     unsigned char* containersOtherDown = containersOther->getRawAttributesBuffer();
                     const std::vector<OutOfBlockInteraction>* outsideInteractions = &(*currentInteractions).interactions;
 
-                    #pragma omp task default(none) firstprivate(containers, containersDown, containersOther, containersOtherDown, outsideInteractions) depend(commute_if_supported: containersOtherDown[0], containersDown[0])  priority_if_supported(1)
+#pragma omp task default(none) firstprivate(containers, containersDown, containersOther, containersOtherDown, outsideInteractions) depend(commute_if_supported: containersOtherDown[0], containersDown[0])  priority_if_supported((containers->getNbParticlesInGroup()/containers->getNumberOfLeavesInBlock())>size_t(p2pPrioCriteria*1.1)?-5:2)
                     {
                         FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(&taskTimeRecorder, (containersOther->getStartingIndex()) << 50 | (containers->getStartingIndex() << 16) | (0<<8) | 6, "P2P ext"));
                         KernelClass*const kernel = kernels[omp_get_thread_num()];

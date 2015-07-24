@@ -174,6 +174,7 @@ public:
         cellHandles   = new std::vector<CellHandles>[tree->getHeight()];
 
         initCodelet();
+        rebuildInteractions();
 
 #ifdef STARPU_SUPPORT_ARBITER
         arbiterPole = starpu_arbiter_create();
@@ -237,6 +238,14 @@ public:
         starpu_shutdown();
     }
 
+    void rebuildInteractions(){
+        #pragma omp parallel
+        #pragma omp single
+        buildExternalInteractionVecs();
+
+        buildHandles();
+    }
+
 protected:
     /**
       * Runs the complete algorithm.
@@ -244,12 +253,6 @@ protected:
     void executeCore(const unsigned operationsToProceed) override {
         FLOG( FLog::Controller << "\tStart FGroupTaskStarPUAlgorithm\n" );
         const bool directOnly = (tree->getHeight() <= 2);
-
-#pragma omp parallel
-#pragma omp single
-        buildExternalInteractionVecs();
-
-        buildHandles();
 
         starpu_resume();
 
