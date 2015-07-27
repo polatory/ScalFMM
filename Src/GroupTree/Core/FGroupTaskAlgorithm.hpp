@@ -53,6 +53,8 @@ public:
             }
         }
 
+        rebuildInteractions();
+
         FLOG(FLog::Controller << "FGroupTaskAlgorithm (Max Thread " << MaxThreads << ")\n");
     }
 
@@ -63,13 +65,7 @@ public:
         delete[] kernels;
     }
 
-protected:
-    /**
-      * Runs the complete algorithm.
-      */
-    void executeCore(const unsigned operationsToProceed) override {
-        FLOG( FLog::Controller << "\tStart FGroupTaskAlgorithm\n" );
-
+    void rebuildInteractions(){
         #pragma omp parallel num_threads(MaxThreads)
         {
             #pragma omp single nowait
@@ -78,6 +74,14 @@ protected:
                 buildExternalInteractionVecs();
             }
         }
+    }
+
+protected:
+    /**
+      * Runs the complete algorithm.
+      */
+    void executeCore(const unsigned operationsToProceed) override {
+        FLOG( FLog::Controller << "\tStart FGroupTaskAlgorithm\n" );
 
         #pragma omp parallel num_threads(MaxThreads)
         {
