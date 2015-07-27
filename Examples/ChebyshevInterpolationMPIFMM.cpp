@@ -46,7 +46,9 @@
 #include "Utils/FParameters.hpp"
 #include "Utils/FParameterNames.hpp"
 
-
+#ifdef SCALFMM_USE_EZTRACE
+#include "eztrace.h"
+#endif
 /// \file
 //!
 //! \brief This program runs the MPI FMM with Chebyshev interpolation of 1/r kernel
@@ -87,7 +89,13 @@ int main(int argc, char* argv[])
     ///////// VAR INIT /////////////////////////////////////////////////
 
     // Initialize values for MPI
+#ifdef SCALFMM_USE_EZTRACE
+   eztrace_start();
+#endif
     FMpi app(argc,argv);
+#ifdef SCALFMM_USE_EZTRACE
+   eztrace_pause();
+#endif  
     //
     // Initialize timer
     FTic time;
