@@ -54,13 +54,12 @@ protected:
     OctreeClass*const tree;       //< The Tree
     KernelClass** kernels;        //< The kernels
 
+    // Used with OPENMP_SUPPORT_PRIORITY
+    size_t p2pPrioCriteria;
+
 #ifdef SCALFMM_TIME_OMPTASKS
     FTaskTimer taskTimeRecorder;
 #endif
-
-// Used with OPENMP_SUPPORT_PRIORITY
-    size_t p2pPrioCriteria;
-
 
 public:
     FGroupTaskDepAlgorithm(OctreeClass*const inTree, KernelClass* inKernels, const int inMaxThreads = -1)
