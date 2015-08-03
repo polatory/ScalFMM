@@ -326,8 +326,6 @@ protected:
 
         const int heightMinusOne = OctreeHeight - 1;
 
-        // There is a maximum of 26 neighbors
-        ContainerClass* neighbors[27];
 
         const int SizeShape = P2PExclusionClass::SizeShape;
         FVector<typename OctreeClass::Iterator> shapes[SizeShape];
@@ -352,8 +350,10 @@ protected:
             for(int iterLeaf = 0 ; iterLeaf < nbLeaf ; ++iterLeaf ){
                 typename OctreeClass::Iterator toWork = shapes[idxShape][iterLeaf];
                 // ToDO increase the granularity of the task
-                #pragma omp task   firstprivate(neighbors,toWork)
+                #pragma omp task   firstprivate(toWork)
                 {
+                    // There is a maximum of 26 neighbors
+                    ContainerClass* neighbors[27];
                     const int counter = tree->getLeafsNeighbors(neighbors, toWork.getCurrentGlobalCoordinate(),heightMinusOne);
                     kernels[omp_get_thread_num()]->P2P(toWork.getCurrentGlobalCoordinate(), toWork.getCurrentListTargets(),
                                          toWork.getCurrentListSrc(), neighbors, counter);

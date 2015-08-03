@@ -227,8 +227,7 @@ protected:
 #pragma omp parallel
 		{
 #pragma omp single nowait
-			{
-				const CellClass* neighbors[343];
+            {
 				typename OctreeClass::Iterator octreeIterator(tree);
 				// Goto the right level
 				octreeIterator.moveDown();
@@ -244,8 +243,9 @@ protected:
                     const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
 					// for each cell we apply the M2L with all cells in the implicit interaction list
 					do{
-#pragma omp task firstprivate(octreeIterator) private(neighbors) shared(idxLevel)
+#pragma omp task firstprivate(octreeIterator) shared(idxLevel)
 						{
+                            const CellClass* neighbors[343];
 							const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
 							if(counter){
 								kernels[omp_get_thread_num()]->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
@@ -273,8 +273,7 @@ protected:
 #pragma omp parallel
 		{
 #pragma omp single nowait
-			{
-				const CellClass* neighbors[343]; // to move in the // section
+            {
 
 				typename OctreeClass::Iterator octreeIterator(tree);
 				octreeIterator.moveDown();
@@ -291,16 +290,14 @@ protected:
                     const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
 					// for each cells
 					do{
-//#pragma omp task default(none) firstprivate(octreeIterator,separationCriteria)  private( neighbors) shared(idxLevel)
-//					{
-							const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
-						if(counter){
-#pragma omp task firstprivate(octreeIterator, neighbors, counter) shared(idxLevel)
-							{
-								kernels[omp_get_thread_num()]->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
-							}
-						}
-					//code here to update the chunk
+                        #pragma omp task default(none) firstprivate(octreeIterator,separationCriteria) shared(idxLevel)
+                        {
+                            const CellClass* neighbors[343];
+                                const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
+                            if(counter){
+                                    kernels[omp_get_thread_num()]->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
+                            }
+                        }
 
 					} while(octreeIterator.moveRight());
 
@@ -386,9 +383,7 @@ protected:
 		{
 
 #pragma omp single nowait
-			{
-				// There is a maximum of 26 neighbors
-				ContainerClass* neighbors[27];
+            {
 
                 const int SizeShape = P2PExclusionClass::SizeShape;
 				FVector<typename OctreeClass::Iterator> shapes[SizeShape];
@@ -411,12 +406,14 @@ protected:
 					const FSize nbLeaf = (shapes[idxShape].getSize());
 					for(FSize iterLeaf = 0 ; iterLeaf < nbLeaf ; ++iterLeaf ){
 						typename OctreeClass::Iterator toWork = shapes[idxShape][iterLeaf];
-#pragma omp task firstprivate(neighbors, toWork, l2pEnabled, p2pEnabled)
+#pragma omp task firstprivate(toWork, l2pEnabled, p2pEnabled)
 						{
 							if(l2pEnabled){
 								kernels[omp_get_thread_num()]->L2P(toWork.getCurrentCell(), toWork.getCurrentListTargets());
 							}
 							if(p2pEnabled){
+                                // There is a maximum of 26 neighbors
+                                ContainerClass* neighbors[27];
 								const int counter = tree->getLeafsNeighbors(neighbors, toWork.getCurrentGlobalCoordinate(),heightMinusOne);
 								kernels[omp_get_thread_num()]->P2P(toWork.getCurrentGlobalCoordinate(), toWork.getCurrentListTargets(),
 										toWork.getCurrentListSrc(), neighbors, counter);
