@@ -348,8 +348,8 @@ public:
             std::vector< std::pair<size_t,size_t> > allObjectives;
             allObjectives.resize(nbProcs);
             for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc){
-                allObjectives[idxProc].first  = balancer->getLeft(totalNumberOfLeavesInSimulation,nullptr,0,nullptr,nbProcs,idxProc);
-                allObjectives[idxProc].second = balancer->getRight(totalNumberOfLeavesInSimulation,nullptr,0,nullptr,nbProcs,idxProc);
+                allObjectives[idxProc].first  = balancer->getLeft(totalNumberOfLeavesInSimulation,nbProcs,idxProc);
+                allObjectives[idxProc].second = balancer->getRight(totalNumberOfLeavesInSimulation,nbProcs,idxProc);
             }
 
             // Ask for the pack to send

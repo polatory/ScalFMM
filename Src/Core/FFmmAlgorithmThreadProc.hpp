@@ -191,7 +191,7 @@ protected:
     void executeCore(const unsigned operationsToProceed) override {
         // Count leaf
 #ifdef SCALFMM_TRACE_ALGO
-    	eztrace_start();
+    	eztrace_resume();
 #endif
 	this->numberOfLeafs = 0;
         {
@@ -264,17 +264,16 @@ protected:
             FMpi::MpiAssert( MPI_Allgather( myIntervals.get(), int(sizeof(Interval)) * OctreeHeight, MPI_BYTE,
                                             workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, comm.getComm()),  __LINE__ );
         }
-
 #ifdef SCALFMM_TRACE_ALGO
-        Timers[P2MTimer].tic();
 	    eztrace_enter_event("P2M", EZTRACE_YELLOW);
 #endif
+        Timers[P2MTimer].tic();
         if(operationsToProceed & FFmmP2M) bottomPass();
         Timers[P2MTimer].tac();
 
 #ifdef SSCALFMM_TRACE_ALGO
-		eztrace_leave_event();
-	    eztrace_enter_event("M2M", EZTRACE_PINK);
+	eztrace_leave_event();
+	eztrace_enter_event("M2M", EZTRACE_PINK);
 #endif
 
         Timers[M2MTimer].tic();
