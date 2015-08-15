@@ -185,7 +185,7 @@ protected:
 					do{
 						// We need the current cell and the child
 						// child is an array (of 8 child) that may be null
-#pragma omp task firstprivate(octreeIterator) shared(idxLevel)
+#pragma omp task firstprivate(octreeIterator,idxLevel)
 						{
 							kernels[omp_get_thread_num()]->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
 						}
@@ -243,7 +243,7 @@ protected:
                     const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
 					// for each cell we apply the M2L with all cells in the implicit interaction list
 					do{
-#pragma omp task firstprivate(octreeIterator) shared(idxLevel)
+#pragma omp task firstprivate(octreeIterator,idxLevel)
 						{
                             const CellClass* neighbors[343];
 							const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
@@ -290,7 +290,7 @@ protected:
                     const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
 					// for each cells
 					do{
-                        #pragma omp task default(none) firstprivate(octreeIterator,separationCriteria) shared(idxLevel)
+                        #pragma omp task default(none) firstprivate(octreeIterator,separationCriteria,idxLevel)
                         {
                             const CellClass* neighbors[343];
                                 const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
@@ -347,7 +347,7 @@ protected:
 					FLOG(FTic counterTimeLevel);
 					// for each cells
 					do{
-#pragma omp task firstprivate(octreeIterator) shared(idxLevel)
+#pragma omp task firstprivate(octreeIterator,idxLevel)
 						{
 							kernels[omp_get_thread_num()]->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
 						}
