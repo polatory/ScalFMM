@@ -61,11 +61,7 @@ public:
         if(inTreeHeight > 2){
             int incPrio = 0;
 
-            prioP2MSend = incPrio++;
-            prioP2M     = incPrio++;
-
-            prioM2MSend = incPrio++;
-            prioM2M     = incPrio++;
+            prioL2P     = incPrio++;
 
             prioM2L     = incPrio;
             prioM2LExtern = incPrio;
@@ -76,11 +72,16 @@ public:
             incPrio += (treeHeight-2)-1 // M2L is done treeHeight-2 times
                        +(treeHeight-3)-1; // L2L is done treeHeight-3 times
 
+            prioM2M     = incPrio++;
+            prioM2MSend = incPrio++;
+
+            prioP2M     = incPrio++;
+            prioP2MSend = incPrio++;
+
             prioP2P     = incPrio;
             prioP2PExtern = incPrio;
             prioP2PMpi  = incPrio++;
 
-            prioL2P     = incPrio++;
             assert(incPrio == 6 + (treeHeight-2) + (treeHeight-3));
         }
         else{
@@ -324,13 +325,13 @@ public:
         return willBeSend?prioM2MSend:prioM2M;
     }
     int getPrioM2L(const int inLevel) const {
-        return prioM2L + (inLevel - 2)*2;
+        return prioM2L + (treeHeight - inLevel - 1)*2;
     }
     int getPrioM2LExtern(const int inLevel) const {
-        return prioM2LExtern + (inLevel - 2)*2;
+        return prioM2LExtern + (treeHeight - inLevel - 1)*2;
     }
     int getPrioL2L(const int inLevel) const {
-        return prioL2L + (inLevel - 2)*2;
+        return prioL2L + (treeHeight - inLevel - 1)*2;
     }
     int getPrioL2P() const {
         return prioL2P;
@@ -342,7 +343,7 @@ public:
         return prioP2PExtern;
     }
     int getPrioM2LMpi(const int inLevel) const {
-        return prioM2LMpi + (inLevel - 2)*2;
+        return prioM2LMpi + (treeHeight - inLevel - 1)*2;
     }
     int getPrioP2PMpi() const {
         return prioP2PMpi;
