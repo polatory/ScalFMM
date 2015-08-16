@@ -32,6 +32,7 @@
 #include "../../Src/GroupTree/Core/FGroupTaskAlgorithm.hpp"
 #ifdef SCALFMM_USE_OMP4
 #include "../../Src/GroupTree/Core/FGroupTaskDepAlgorithm.hpp"
+#include "Core/FFmmAlgorithmOmp4.hpp"
 #endif
 #ifdef SCALFMM_USE_STARPU
 #include "../../Src/GroupTree/Core/FGroupTaskStarpuAlgorithm.hpp"
@@ -65,7 +66,9 @@ const FParameterNames LocalOrder { {"-order"}, "Order of the kernel"};
 const FParameterNames LocalOptionOmpTask { {"-omp-task"}, "To use FFmmAlgorithmTask"};
 const FParameterNames LocalOptionOmpSection { {"-omp-section"}, "To use FFmmAlgorithmSectionTask"};
 const FParameterNames LocalOptionOmpBalance { {"-omp-balance"}, "To use FFmmAlgorithmThreadBalance"};
-
+#ifdef SCALFMM_USE_OMP4
+const FParameterNames LocalOptionOmp4 { {"-omp-taskdep"}, "To use FFmmAlgorithmOmp4"};
+#endif
 const FParameterNames LocalOptionClassic { {"-omp", "omp-classic"}, "In order to use classic parallelism"};
 const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
 const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
@@ -484,6 +487,17 @@ struct RunContainer{
                     time.tac();
                     std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
                 }
+#ifdef SCALFMM_USE_OMP4
+                else if(FParameters::existParameter(argc, argv, LocalOptionOmp4.options)){
+                    typedef FFmmAlgorithmOmp4<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+                    std::cout << "Using FFmmAlgorithmOmp4 " << std::endl;
+                    FmmClass algorithm(&tree, &kernels);
+                    time.tic();
+                    algorithm.execute();
+                    time.tac();
+                    std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
+                }
+#endif
                 else {
                     typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
                     std::cout << "Using FFmmAlgorithmThread " << std::endl;
@@ -684,7 +698,11 @@ int main(int argc, char* argv[]){
                          FParameterDefinitions::NbThreads,
                          LocalOptionBlocSize, LocalOptionNoValidate, LocalOptionClassic,
                          LocalOptionOmpTask, LocalOptionOmpSection, LocalOptionOmpBalance,
-                         LocalOrder);
+                         LocalOrder
+#ifdef SCALFMM_USE_OMP4
+                         , LocalOptionOmp4
+#endif
+                         );
 
     const int order = FParameters::getValue(argc,argv,LocalOrder.options, 5);
     FRunIf::Run<int, 3, 8, 1, RunContainer>(order, argc, argv);
