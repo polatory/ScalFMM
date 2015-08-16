@@ -16,6 +16,21 @@
 #include "FCoreCommon.hpp"
 #include "FP2PExclusion.hpp"
 
+#undef commute_if_supported
+#if OPENMP_SUPPORT_COMMUTE
+#define commute_if_supported commute
+#else
+#define commute_if_supported inout
+#endif
+
+#undef priority_if_supported
+#ifdef OPENMP_SUPPORT_PRIORITY
+#define priority_if_supported(x) priority(x)
+#else
+#define priority_if_supported(x)
+#endif
+
+
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
  * @class FFmmAlgorithmOmp4
@@ -38,6 +53,10 @@ class FFmmAlgorithmOmp4 : public FAbstractAlgorithm, public FAlgorithmTimers {
     const int OctreeHeight;
 
     const int leafLevelSeparationCriteria;
+
+    // Used with OPENMP_SUPPORT_PRIORITY
+    size_t p2pPrioCriteria;
+
 public:
     /** The constructor need the octree and the kernels used for computation
      * @param inTree the octree to work on
@@ -46,7 +65,8 @@ public:
      */
     FFmmAlgorithmOmp4(OctreeClass* const inTree, KernelClass* const inKernels, const int inLeafLevelSeperationCriteria = 1)
 : tree(inTree) , kernels(nullptr),
-  MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()), leafLevelSeparationCriteria(inLeafLevelSeperationCriteria)
+  MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()), leafLevelSeparationCriteria(inLeafLevelSeperationCriteria),
+      p2pPrioCriteria(0)
 {
 
         FAssertLF(tree, "tree cannot be null");
@@ -65,6 +85,21 @@ public:
         FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
 
         FLOG(FLog::Controller << "FFmmAlgorithmOmp4 (Max Thread " << omp_get_max_threads() << ")\n");
+
+#ifdef OPENMP_SUPPORT_PRIORITY
+        size_t nbLeaves = 0;
+        size_t nbParticles = 0;
+
+        typename OctreeClass::Iterator octreeIterator(tree);
+        octreeIterator.gotoBottomLeft();
+        // for each leafs
+        do{
+            ContainerClass* taskParticlesTgt = octreeIterator.getCurrentListTargets();
+            nbParticles += taskParticlesTgt->getNbParticles();
+            nbLeaves    += 1;
+        } while(octreeIterator.moveRight());
+        p2pPrioCriteria = (nbParticles/nbLeaves);
+#endif
 }
 
     /** Default destructor */
@@ -86,6 +121,11 @@ protected:
         {
             #pragma omp master
             {
+                Timers[NearTimer].tic();
+                if( operationsToProceed & FFmmP2P )
+                    directPass();
+                Timers[NearTimer].tac();
+
                 Timers[P2MTimer].tic();
                 if(operationsToProceed & FFmmP2M)
                     bottomPass();
@@ -106,10 +146,10 @@ protected:
                     downardPass();
                 Timers[L2LTimer].tac();
 
-                Timers[NearTimer].tic();
-                if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) )
-                    directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
-                Timers[NearTimer].tac();
+                Timers[L2PTimer].tic();
+                if( operationsToProceed & FFmmL2P)
+                    mergePass();
+                Timers[L2PTimer].tac();
 
                 #pragma omp taskwait
             }
@@ -134,7 +174,7 @@ protected:
             // and the list of particles
             CellClass* taskCell = octreeIterator.getCurrentCell();
             ContainerClass* taskParticles = octreeIterator.getCurrentListSrc();
-            #pragma omp task firstprivate(taskCell, taskParticles) depend(inout:taskCell[0]) depend(in:taskParticles[0])
+            #pragma omp task firstprivate(taskCell, taskParticles) depend(inout:taskCell[0]) depend(in:taskParticles[0]) priority_if_supported(9)
             {
                 kernels[omp_get_thread_num()]->P2M( taskCell , taskParticles);
             }
@@ -174,7 +214,7 @@ protected:
                 CellClass* taskCell = octreeIterator.getCurrentCell();
                 CellClass* taskChild[8];
                 memcpy(taskChild, octreeIterator.getCurrentChild(), 8*sizeof(CellClass*));
-#pragma omp task firstprivate(taskCell, taskChild, idxLevel) depend(inout:taskCell[0]) depend(in:taskChild[0][0],taskChild[1][0],taskChild[2][0],taskChild[3][0],taskChild[4][0],taskChild[5][0],taskChild[6][0],taskChild[7][0])
+#pragma omp task firstprivate(taskCell, taskChild, idxLevel) depend(inout:taskCell[0]) depend(in:taskChild[0][0],taskChild[1][0],taskChild[2][0],taskChild[3][0],taskChild[4][0],taskChild[5][0],taskChild[6][0],taskChild[7][0]) priority_if_supported(8)
                 {
                     kernels[omp_get_thread_num()]->M2M( taskCell , taskChild, idxLevel);
                 }
@@ -230,7 +270,7 @@ protected:
                 if(counter){
                     CellClass* taskCell = octreeIterator.getCurrentCell();
 
-    #pragma omp task firstprivate(taskCell,taskNeigh, idxLevel, counter) depend(inout:taskCell[0]) depend(in:taskNeigh[0][0],taskNeigh[1][0],taskNeigh[2][0],taskNeigh[3][0],taskNeigh[4][0],taskNeigh[5][0],taskNeigh[6][0],taskNeigh[7][0],taskNeigh[8][0],taskNeigh[9][0],taskNeigh[10][0],taskNeigh[11][0],taskNeigh[12][0],taskNeigh[13][0],taskNeigh[14][0],taskNeigh[15][0],taskNeigh[16][0],taskNeigh[17][0],taskNeigh[18][0],taskNeigh[19][0],taskNeigh[20][0],taskNeigh[21][0],taskNeigh[22][0],taskNeigh[23][0],taskNeigh[24][0],taskNeigh[25][0],taskNeigh[26][0],taskNeigh[27][0],taskNeigh[28][0],taskNeigh[29][0],taskNeigh[30][0],taskNeigh[31][0],taskNeigh[32][0],taskNeigh[33][0],taskNeigh[34][0],taskNeigh[35][0],taskNeigh[36][0],taskNeigh[37][0],taskNeigh[38][0],taskNeigh[39][0],taskNeigh[40][0],taskNeigh[41][0],taskNeigh[42][0],taskNeigh[43][0],taskNeigh[44][0],taskNeigh[45][0],taskNeigh[46][0],taskNeigh[47][0],taskNeigh[48][0],taskNeigh[49][0],taskNeigh[50][0],taskNeigh[51][0],taskNeigh[52][0],taskNeigh[53][0],taskNeigh[54][0],taskNeigh[55][0],taskNeigh[56][0],taskNeigh[57][0],taskNeigh[58][0],taskNeigh[59][0],taskNeigh[60][0],taskNeigh[61][0],taskNeigh[62][0],taskNeigh[63][0],taskNeigh[64][0],taskNeigh[65][0],taskNeigh[66][0],taskNeigh[67][0],taskNeigh[68][0],taskNeigh[69][0],taskNeigh[70][0],taskNeigh[71][0],taskNeigh[72][0],taskNeigh[73][0],taskNeigh[74][0],taskNeigh[75][0],taskNeigh[76][0],taskNeigh[77][0],taskNeigh[78][0],taskNeigh[79][0],taskNeigh[80][0],taskNeigh[81][0],taskNeigh[82][0],taskNeigh[83][0],taskNeigh[84][0],taskNeigh[85][0],taskNeigh[86][0],taskNeigh[87][0],taskNeigh[88][0],taskNeigh[89][0],taskNeigh[90][0],taskNeigh[91][0],taskNeigh[92][0],taskNeigh[93][0],taskNeigh[94][0],taskNeigh[95][0],taskNeigh[96][0],taskNeigh[97][0],taskNeigh[98][0],taskNeigh[99][0],taskNeigh[100][0],taskNeigh[101][0],taskNeigh[102][0],taskNeigh[103][0],taskNeigh[104][0],taskNeigh[105][0],taskNeigh[106][0],taskNeigh[107][0],taskNeigh[108][0],taskNeigh[109][0],taskNeigh[110][0],taskNeigh[111][0],taskNeigh[112][0],taskNeigh[113][0],taskNeigh[114][0],taskNeigh[115][0],taskNeigh[116][0],taskNeigh[117][0],taskNeigh[118][0],taskNeigh[119][0],taskNeigh[120][0],taskNeigh[121][0],taskNeigh[122][0],taskNeigh[123][0],taskNeigh[124][0],taskNeigh[125][0],taskNeigh[126][0],taskNeigh[127][0],taskNeigh[128][0],taskNeigh[129][0],taskNeigh[130][0],taskNeigh[131][0],taskNeigh[132][0],taskNeigh[133][0],taskNeigh[134][0],taskNeigh[135][0],taskNeigh[136][0],taskNeigh[137][0],taskNeigh[138][0],taskNeigh[139][0],taskNeigh[140][0],taskNeigh[141][0],taskNeigh[142][0],taskNeigh[143][0],taskNeigh[144][0],taskNeigh[145][0],taskNeigh[146][0],taskNeigh[147][0],taskNeigh[148][0],taskNeigh[149][0],taskNeigh[150][0],taskNeigh[151][0],taskNeigh[152][0],taskNeigh[153][0],taskNeigh[154][0],taskNeigh[155][0],taskNeigh[156][0],taskNeigh[157][0],taskNeigh[158][0],taskNeigh[159][0],taskNeigh[160][0],taskNeigh[161][0],taskNeigh[162][0],taskNeigh[163][0],taskNeigh[164][0],taskNeigh[165][0],taskNeigh[166][0],taskNeigh[167][0],taskNeigh[168][0],taskNeigh[169][0],taskNeigh[170][0],taskNeigh[171][0],taskNeigh[172][0],taskNeigh[173][0],taskNeigh[174][0],taskNeigh[175][0],taskNeigh[176][0],taskNeigh[177][0],taskNeigh[178][0],taskNeigh[179][0],taskNeigh[180][0],taskNeigh[181][0],taskNeigh[182][0],taskNeigh[183][0],taskNeigh[184][0],taskNeigh[185][0],taskNeigh[186][0],taskNeigh[187][0],taskNeigh[188][0],taskNeigh[189][0],taskNeigh[190][0],taskNeigh[191][0],taskNeigh[192][0],taskNeigh[193][0],taskNeigh[194][0],taskNeigh[195][0],taskNeigh[196][0],taskNeigh[197][0],taskNeigh[198][0],taskNeigh[199][0],taskNeigh[200][0],taskNeigh[201][0],taskNeigh[202][0],taskNeigh[203][0],taskNeigh[204][0],taskNeigh[205][0],taskNeigh[206][0],taskNeigh[207][0],taskNeigh[208][0],taskNeigh[209][0],taskNeigh[210][0],taskNeigh[211][0],taskNeigh[212][0],taskNeigh[213][0],taskNeigh[214][0],taskNeigh[215][0],taskNeigh[216][0],taskNeigh[217][0],taskNeigh[218][0],taskNeigh[219][0],taskNeigh[220][0],taskNeigh[221][0],taskNeigh[222][0],taskNeigh[223][0],taskNeigh[224][0],taskNeigh[225][0],taskNeigh[226][0],taskNeigh[227][0],taskNeigh[228][0],taskNeigh[229][0],taskNeigh[230][0],taskNeigh[231][0],taskNeigh[232][0],taskNeigh[233][0],taskNeigh[234][0],taskNeigh[235][0],taskNeigh[236][0],taskNeigh[237][0],taskNeigh[238][0],taskNeigh[239][0],taskNeigh[240][0],taskNeigh[241][0],taskNeigh[242][0],taskNeigh[243][0],taskNeigh[244][0],taskNeigh[245][0],taskNeigh[246][0],taskNeigh[247][0],taskNeigh[248][0],taskNeigh[249][0],taskNeigh[250][0],taskNeigh[251][0],taskNeigh[252][0],taskNeigh[253][0],taskNeigh[254][0],taskNeigh[255][0],taskNeigh[256][0],taskNeigh[257][0],taskNeigh[258][0],taskNeigh[259][0],taskNeigh[260][0],taskNeigh[261][0],taskNeigh[262][0],taskNeigh[263][0],taskNeigh[264][0],taskNeigh[265][0],taskNeigh[266][0],taskNeigh[267][0],taskNeigh[268][0],taskNeigh[269][0],taskNeigh[270][0],taskNeigh[271][0],taskNeigh[272][0],taskNeigh[273][0],taskNeigh[274][0],taskNeigh[275][0],taskNeigh[276][0],taskNeigh[277][0],taskNeigh[278][0],taskNeigh[279][0],taskNeigh[280][0],taskNeigh[281][0],taskNeigh[282][0],taskNeigh[283][0],taskNeigh[284][0],taskNeigh[285][0],taskNeigh[286][0],taskNeigh[287][0],taskNeigh[288][0],taskNeigh[289][0],taskNeigh[290][0],taskNeigh[291][0],taskNeigh[292][0],taskNeigh[293][0],taskNeigh[294][0],taskNeigh[295][0],taskNeigh[296][0],taskNeigh[297][0],taskNeigh[298][0],taskNeigh[299][0],taskNeigh[300][0],taskNeigh[301][0],taskNeigh[302][0],taskNeigh[303][0],taskNeigh[304][0],taskNeigh[305][0],taskNeigh[306][0],taskNeigh[307][0],taskNeigh[308][0],taskNeigh[309][0],taskNeigh[310][0],taskNeigh[311][0],taskNeigh[312][0],taskNeigh[313][0],taskNeigh[314][0],taskNeigh[315][0],taskNeigh[316][0],taskNeigh[317][0],taskNeigh[318][0],taskNeigh[319][0],taskNeigh[320][0],taskNeigh[321][0],taskNeigh[322][0],taskNeigh[323][0],taskNeigh[324][0],taskNeigh[325][0],taskNeigh[326][0],taskNeigh[327][0],taskNeigh[328][0],taskNeigh[329][0],taskNeigh[330][0],taskNeigh[331][0],taskNeigh[332][0],taskNeigh[333][0],taskNeigh[334][0],taskNeigh[335][0],taskNeigh[336][0],taskNeigh[337][0],taskNeigh[338][0],taskNeigh[339][0],taskNeigh[340][0],taskNeigh[341][0],taskNeigh[342][0])
+    #pragma omp task firstprivate(taskCell,taskNeigh, idxLevel, counter) depend(commute_if_supported:taskCell[0]) depend(in:taskNeigh[0][0],taskNeigh[1][0],taskNeigh[2][0],taskNeigh[3][0],taskNeigh[4][0],taskNeigh[5][0],taskNeigh[6][0],taskNeigh[7][0],taskNeigh[8][0],taskNeigh[9][0],taskNeigh[10][0],taskNeigh[11][0],taskNeigh[12][0],taskNeigh[13][0],taskNeigh[14][0],taskNeigh[15][0],taskNeigh[16][0],taskNeigh[17][0],taskNeigh[18][0],taskNeigh[19][0],taskNeigh[20][0],taskNeigh[21][0],taskNeigh[22][0],taskNeigh[23][0],taskNeigh[24][0],taskNeigh[25][0],taskNeigh[26][0],taskNeigh[27][0],taskNeigh[28][0],taskNeigh[29][0],taskNeigh[30][0],taskNeigh[31][0],taskNeigh[32][0],taskNeigh[33][0],taskNeigh[34][0],taskNeigh[35][0],taskNeigh[36][0],taskNeigh[37][0],taskNeigh[38][0],taskNeigh[39][0],taskNeigh[40][0],taskNeigh[41][0],taskNeigh[42][0],taskNeigh[43][0],taskNeigh[44][0],taskNeigh[45][0],taskNeigh[46][0],taskNeigh[47][0],taskNeigh[48][0],taskNeigh[49][0],taskNeigh[50][0],taskNeigh[51][0],taskNeigh[52][0],taskNeigh[53][0],taskNeigh[54][0],taskNeigh[55][0],taskNeigh[56][0],taskNeigh[57][0],taskNeigh[58][0],taskNeigh[59][0],taskNeigh[60][0],taskNeigh[61][0],taskNeigh[62][0],taskNeigh[63][0],taskNeigh[64][0],taskNeigh[65][0],taskNeigh[66][0],taskNeigh[67][0],taskNeigh[68][0],taskNeigh[69][0],taskNeigh[70][0],taskNeigh[71][0],taskNeigh[72][0],taskNeigh[73][0],taskNeigh[74][0],taskNeigh[75][0],taskNeigh[76][0],taskNeigh[77][0],taskNeigh[78][0],taskNeigh[79][0],taskNeigh[80][0],taskNeigh[81][0],taskNeigh[82][0],taskNeigh[83][0],taskNeigh[84][0],taskNeigh[85][0],taskNeigh[86][0],taskNeigh[87][0],taskNeigh[88][0],taskNeigh[89][0],taskNeigh[90][0],taskNeigh[91][0],taskNeigh[92][0],taskNeigh[93][0],taskNeigh[94][0],taskNeigh[95][0],taskNeigh[96][0],taskNeigh[97][0],taskNeigh[98][0],taskNeigh[99][0],taskNeigh[100][0],taskNeigh[101][0],taskNeigh[102][0],taskNeigh[103][0],taskNeigh[104][0],taskNeigh[105][0],taskNeigh[106][0],taskNeigh[107][0],taskNeigh[108][0],taskNeigh[109][0],taskNeigh[110][0],taskNeigh[111][0],taskNeigh[112][0],taskNeigh[113][0],taskNeigh[114][0],taskNeigh[115][0],taskNeigh[116][0],taskNeigh[117][0],taskNeigh[118][0],taskNeigh[119][0],taskNeigh[120][0],taskNeigh[121][0],taskNeigh[122][0],taskNeigh[123][0],taskNeigh[124][0],taskNeigh[125][0],taskNeigh[126][0],taskNeigh[127][0],taskNeigh[128][0],taskNeigh[129][0],taskNeigh[130][0],taskNeigh[131][0],taskNeigh[132][0],taskNeigh[133][0],taskNeigh[134][0],taskNeigh[135][0],taskNeigh[136][0],taskNeigh[137][0],taskNeigh[138][0],taskNeigh[139][0],taskNeigh[140][0],taskNeigh[141][0],taskNeigh[142][0],taskNeigh[143][0],taskNeigh[144][0],taskNeigh[145][0],taskNeigh[146][0],taskNeigh[147][0],taskNeigh[148][0],taskNeigh[149][0],taskNeigh[150][0],taskNeigh[151][0],taskNeigh[152][0],taskNeigh[153][0],taskNeigh[154][0],taskNeigh[155][0],taskNeigh[156][0],taskNeigh[157][0],taskNeigh[158][0],taskNeigh[159][0],taskNeigh[160][0],taskNeigh[161][0],taskNeigh[162][0],taskNeigh[163][0],taskNeigh[164][0],taskNeigh[165][0],taskNeigh[166][0],taskNeigh[167][0],taskNeigh[168][0],taskNeigh[169][0],taskNeigh[170][0],taskNeigh[171][0],taskNeigh[172][0],taskNeigh[173][0],taskNeigh[174][0],taskNeigh[175][0],taskNeigh[176][0],taskNeigh[177][0],taskNeigh[178][0],taskNeigh[179][0],taskNeigh[180][0],taskNeigh[181][0],taskNeigh[182][0],taskNeigh[183][0],taskNeigh[184][0],taskNeigh[185][0],taskNeigh[186][0],taskNeigh[187][0],taskNeigh[188][0],taskNeigh[189][0],taskNeigh[190][0],taskNeigh[191][0],taskNeigh[192][0],taskNeigh[193][0],taskNeigh[194][0],taskNeigh[195][0],taskNeigh[196][0],taskNeigh[197][0],taskNeigh[198][0],taskNeigh[199][0],taskNeigh[200][0],taskNeigh[201][0],taskNeigh[202][0],taskNeigh[203][0],taskNeigh[204][0],taskNeigh[205][0],taskNeigh[206][0],taskNeigh[207][0],taskNeigh[208][0],taskNeigh[209][0],taskNeigh[210][0],taskNeigh[211][0],taskNeigh[212][0],taskNeigh[213][0],taskNeigh[214][0],taskNeigh[215][0],taskNeigh[216][0],taskNeigh[217][0],taskNeigh[218][0],taskNeigh[219][0],taskNeigh[220][0],taskNeigh[221][0],taskNeigh[222][0],taskNeigh[223][0],taskNeigh[224][0],taskNeigh[225][0],taskNeigh[226][0],taskNeigh[227][0],taskNeigh[228][0],taskNeigh[229][0],taskNeigh[230][0],taskNeigh[231][0],taskNeigh[232][0],taskNeigh[233][0],taskNeigh[234][0],taskNeigh[235][0],taskNeigh[236][0],taskNeigh[237][0],taskNeigh[238][0],taskNeigh[239][0],taskNeigh[240][0],taskNeigh[241][0],taskNeigh[242][0],taskNeigh[243][0],taskNeigh[244][0],taskNeigh[245][0],taskNeigh[246][0],taskNeigh[247][0],taskNeigh[248][0],taskNeigh[249][0],taskNeigh[250][0],taskNeigh[251][0],taskNeigh[252][0],taskNeigh[253][0],taskNeigh[254][0],taskNeigh[255][0],taskNeigh[256][0],taskNeigh[257][0],taskNeigh[258][0],taskNeigh[259][0],taskNeigh[260][0],taskNeigh[261][0],taskNeigh[262][0],taskNeigh[263][0],taskNeigh[264][0],taskNeigh[265][0],taskNeigh[266][0],taskNeigh[267][0],taskNeigh[268][0],taskNeigh[269][0],taskNeigh[270][0],taskNeigh[271][0],taskNeigh[272][0],taskNeigh[273][0],taskNeigh[274][0],taskNeigh[275][0],taskNeigh[276][0],taskNeigh[277][0],taskNeigh[278][0],taskNeigh[279][0],taskNeigh[280][0],taskNeigh[281][0],taskNeigh[282][0],taskNeigh[283][0],taskNeigh[284][0],taskNeigh[285][0],taskNeigh[286][0],taskNeigh[287][0],taskNeigh[288][0],taskNeigh[289][0],taskNeigh[290][0],taskNeigh[291][0],taskNeigh[292][0],taskNeigh[293][0],taskNeigh[294][0],taskNeigh[295][0],taskNeigh[296][0],taskNeigh[297][0],taskNeigh[298][0],taskNeigh[299][0],taskNeigh[300][0],taskNeigh[301][0],taskNeigh[302][0],taskNeigh[303][0],taskNeigh[304][0],taskNeigh[305][0],taskNeigh[306][0],taskNeigh[307][0],taskNeigh[308][0],taskNeigh[309][0],taskNeigh[310][0],taskNeigh[311][0],taskNeigh[312][0],taskNeigh[313][0],taskNeigh[314][0],taskNeigh[315][0],taskNeigh[316][0],taskNeigh[317][0],taskNeigh[318][0],taskNeigh[319][0],taskNeigh[320][0],taskNeigh[321][0],taskNeigh[322][0],taskNeigh[323][0],taskNeigh[324][0],taskNeigh[325][0],taskNeigh[326][0],taskNeigh[327][0],taskNeigh[328][0],taskNeigh[329][0],taskNeigh[330][0],taskNeigh[331][0],taskNeigh[332][0],taskNeigh[333][0],taskNeigh[334][0],taskNeigh[335][0],taskNeigh[336][0],taskNeigh[337][0],taskNeigh[338][0],taskNeigh[339][0],taskNeigh[340][0],taskNeigh[341][0],taskNeigh[342][0]) priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-1?3:6)
                     {
                         if(counter){
                             kernels[omp_get_thread_num()]->M2L(  taskCell, taskNeigh, counter, idxLevel);
@@ -277,7 +317,7 @@ protected:
                 CellClass* taskChild[8];
                 memcpy(taskChild, octreeIterator.getCurrentChild(), 8*sizeof(CellClass*));
 
-#pragma omp task firstprivate(taskCell, taskChild, idxLevel) depend(in:taskCell[0]) depend(inout:taskChild[0][0],taskChild[1][0],taskChild[2][0],taskChild[3][0],taskChild[4][0],taskChild[5][0],taskChild[6][0],taskChild[7][0])
+#pragma omp task firstprivate(taskCell, taskChild, idxLevel) depend(in:taskCell[0]) depend(commute_if_supported:taskChild[0][0],taskChild[1][0],taskChild[2][0],taskChild[3][0],taskChild[4][0],taskChild[5][0],taskChild[6][0],taskChild[7][0]) priority_if_supported(7)
                 {
                     kernels[omp_get_thread_num()]->L2L( taskCell , taskChild, idxLevel);
                 }
@@ -299,65 +339,63 @@ protected:
     /////////////////////////////////////////////////////////////////////////////
 
     /** P2P */
-    void directPass(const bool p2pEnabled, const bool l2pEnabled){
+    void directPass(){
         FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
-        FLOG(FTic computationCounter);
-
         const int heightMinusOne = OctreeHeight - 1;
-
-        FLOG( computationCounter.tic() );
-
-        const int SizeShape = P2PExclusionClass::SizeShape;
-        FVector<typename OctreeClass::Iterator> shapes[SizeShape];
 
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
 
         // for each leafs
         do{
-            if(l2pEnabled){
-                CellClass* taskCell = octreeIterator.getCurrentCell();
-                ContainerClass* taskParticles = octreeIterator.getCurrentListTargets();
-                #pragma omp task firstprivate(taskCell, taskParticles) depend(in:taskCell[0]) depend(inout:taskParticles[0])
+            // There is a maximum of 26 neighbors
+            ContainerClass* neighbors[27];
+            const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),heightMinusOne);
+
+            ContainerClass* taskParticlesTgt = octreeIterator.getCurrentListTargets();
+            ContainerClass* taskParticlesSrc = octreeIterator.getCurrentListSrc();
+            const FTreeCoordinate coord = octreeIterator.getCurrentGlobalCoordinate();
+
+            if(taskParticlesTgt == taskParticlesSrc){
+                #pragma omp task firstprivate(neighbors, counter, taskParticlesTgt, coord) depend(commute_if_supported:taskParticlesTgt[0],neighbors[0][0],neighbors[1][0],neighbors[2][0],neighbors[3][0],neighbors[4][0],neighbors[5][0],neighbors[6][0],neighbors[7][0],neighbors[8][0],neighbors[9][0],neighbors[10][0],neighbors[11][0],neighbors[12][0],neighbors[13][0],neighbors[14][0],neighbors[15][0],neighbors[16][0],neighbors[17][0],neighbors[18][0],neighbors[19][0],neighbors[20][0],neighbors[21][0],neighbors[22][0],neighbors[23][0],neighbors[24][0],neighbors[25][0],neighbors[26][0]) priority_if_supported((taskParticlesTgt->getNbParticles())>size_t(p2pPrioCriteria*1.1)?7:1)
                 {
-                    kernels[omp_get_thread_num()]->L2P(taskCell, taskParticles);
+                    kernels[omp_get_thread_num()]->P2P(coord, taskParticlesTgt,
+                            taskParticlesTgt, neighbors, counter);
                 }
             }
-            if(p2pEnabled){
-                // There is a maximum of 26 neighbors
-                ContainerClass* neighbors[27];
-                const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),heightMinusOne);
-
-                ContainerClass* taskParticlesTgt = octreeIterator.getCurrentListTargets();
-                ContainerClass* taskParticlesSrc = octreeIterator.getCurrentListSrc();
-                const FTreeCoordinate coord = octreeIterator.getCurrentGlobalCoordinate();
-
-                if(taskParticlesTgt == taskParticlesSrc){
-                    #pragma omp task firstprivate(neighbors, counter, taskParticlesTgt, coord) depend(inout:taskParticlesTgt[0],neighbors[0][0],neighbors[1][0],neighbors[2][0],neighbors[3][0],neighbors[4][0],neighbors[5][0],neighbors[6][0],neighbors[7][0],neighbors[8][0],neighbors[9][0],neighbors[10][0],neighbors[11][0],neighbors[12][0],neighbors[13][0],neighbors[14][0],neighbors[15][0],neighbors[16][0],neighbors[17][0],neighbors[18][0],neighbors[19][0],neighbors[20][0],neighbors[21][0],neighbors[22][0],neighbors[23][0],neighbors[24][0],neighbors[25][0],neighbors[26][0])
-                    {
-                        kernels[omp_get_thread_num()]->P2P(coord, taskParticlesTgt,
-                                taskParticlesTgt, neighbors, counter);
-                    }
+            else{
+                #pragma omp task firstprivate(neighbors, counter, taskParticlesTgt, taskParticlesSrc, coord) depend(commute_if_supported:taskParticlesTgt[0]) depend(in:taskParticlesSrc[0],neighbors[0][0],neighbors[1][0],neighbors[2][0],neighbors[3][0],neighbors[4][0],neighbors[5][0],neighbors[6][0],neighbors[7][0],neighbors[8][0],neighbors[9][0],neighbors[10][0],neighbors[11][0],neighbors[12][0],neighbors[13][0],neighbors[14][0],neighbors[15][0],neighbors[16][0],neighbors[17][0],neighbors[18][0],neighbors[19][0],neighbors[20][0],neighbors[21][0],neighbors[22][0],neighbors[23][0],neighbors[24][0],neighbors[25][0],neighbors[26][0]) priority_if_supported((taskParticlesTgt->getNbParticles())>size_t(p2pPrioCriteria*1.1)?7:1)
+                {
+                    kernels[omp_get_thread_num()]->P2P(coord, taskParticlesTgt,
+                            taskParticlesSrc, neighbors, counter);
                 }
-                else{
-                    #pragma omp task firstprivate(neighbors, counter, taskParticlesTgt, taskParticlesSrc, coord) depend(inout:taskParticlesTgt[0]) depend(in:taskParticlesSrc[0],neighbors[0][0],neighbors[1][0],neighbors[2][0],neighbors[3][0],neighbors[4][0],neighbors[5][0],neighbors[6][0],neighbors[7][0],neighbors[8][0],neighbors[9][0],neighbors[10][0],neighbors[11][0],neighbors[12][0],neighbors[13][0],neighbors[14][0],neighbors[15][0],neighbors[16][0],neighbors[17][0],neighbors[18][0],neighbors[19][0],neighbors[20][0],neighbors[21][0],neighbors[22][0],neighbors[23][0],neighbors[24][0],neighbors[25][0],neighbors[26][0])
-                    {
-                        kernels[omp_get_thread_num()]->P2P(coord, taskParticlesTgt,
-                                taskParticlesSrc, neighbors, counter);
-                    }
-                }
-
             }
-
         } while(octreeIterator.moveRight());
 
-        FLOG( computationCounter.tac() );
+        FLOG( FLog::Controller << "\tFinished (@Direct Pass (P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
+    }
+
+    /** L2P */
+    void mergePass(){
+        FLOG( FLog::Controller.write("\tStart Direct Pass\n").write(FLog::Flush); );
+        FLOG(FTic counterTime);
+
+        typename OctreeClass::Iterator octreeIterator(tree);
+        octreeIterator.gotoBottomLeft();
+
+        // for each leafs
+        do{
+            CellClass* taskCell = octreeIterator.getCurrentCell();
+            ContainerClass* taskParticles = octreeIterator.getCurrentListTargets();
+            #pragma omp task firstprivate(taskCell, taskParticles) depend(in:taskCell[0]) depend(commute_if_supported:taskParticles[0]) priority_if_supported(1)
+            {
+                kernels[omp_get_thread_num()]->L2P(taskCell, taskParticles);
+            }
+        } while(octreeIterator.moveRight());
 
 
-
-        FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
-        FLOG( FLog::Controller << "\t\t Computation L2P + P2P : " << computationCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller << "\tFinished (@Merge Pass (L2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
     }
 
 };
