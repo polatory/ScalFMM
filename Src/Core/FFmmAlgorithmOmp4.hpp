@@ -86,6 +86,8 @@ public:
 
         FLOG(FLog::Controller << "FFmmAlgorithmOmp4 (Max Thread " << omp_get_max_threads() << ")\n");
 
+        FAssertLF(KernelClass::NeedFinishedM2LEvent() == false, "FFmmAlgorithmOmp4 cannot notify for M2L at level ending.");
+
 #ifdef OPENMP_SUPPORT_PRIORITY
         size_t nbLeaves = 0;
         size_t nbParticles = 0;

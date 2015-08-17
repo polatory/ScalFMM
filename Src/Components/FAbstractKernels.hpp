@@ -77,7 +77,7 @@ public:
        *
        * @return false
        */
-     bool needFinishedM2LEvent(){
+     constexpr static bool NeedFinishedM2LEvent(){
     	 	 return false;
      }
      /** This method can be optionally inherited

@@ -190,7 +190,7 @@ protected:
             do{
                 // We need the current cell and the child
                 // child is an array (of 8 child) that may be null
-                #pragma omp task firstprivate(octreeIterator) shared(idxLevel)
+                #pragma omp task firstprivate(octreeIterator,idxLevel)
                 {
                     kernels[omp_get_thread_num()]->M2M( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                 }
@@ -218,7 +218,12 @@ protected:
     
     eztrace_start();
 #endif
-    this->transferPassWithFinalize() ;
+    if(KernelClass::NeedFinishedM2LEvent()){
+        this->transferPassWithFinalize() ;
+    }
+    else{
+        this->transferPassWithoutFinalize() ;
+    }
 #ifdef SCALFMM_USE_EZTRACE
     eztrace_stop();
 #endif
@@ -246,7 +251,7 @@ protected:
             do{
                 const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
                 if(counter){
-                    #pragma omp task firstprivate(octreeIterator, neighbors, counter) shared(idxLevel)
+                    #pragma omp task firstprivate(octreeIterator, neighbors, counter,idxLevel)
                     {
                         kernels[omp_get_thread_num()]->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
                     }
@@ -269,6 +274,47 @@ protected:
             #pragma omp taskwait
             FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << " s\n" );
         }
+
+        FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << " s)\n" );
+    }
+
+   void transferPassWithoutFinalize(){
+        FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
+        FLOG(FTic counterTime);
+
+        const CellClass* neighbors[343];
+
+        typename OctreeClass::Iterator octreeIterator(tree);
+        octreeIterator.moveDown();
+
+        for(int idxLevel = 2 ; idxLevel < FAbstractAlgorithm::upperWorkingLevel ; ++idxLevel){
+            octreeIterator.moveDown();
+        }
+
+        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+        //
+        // for each levels
+        for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
+            FLOG(FTic counterTimeLevel);
+            const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
+            // for each cells
+            do{
+                const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
+                if(counter){
+                    #pragma omp task firstprivate(octreeIterator, neighbors, counter,idxLevel)
+                    {
+                        kernels[omp_get_thread_num()]->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
+                    }
+                }
+
+            } while(octreeIterator.moveRight());
+
+            avoidGotoLeftIterator.moveDown();
+            octreeIterator = avoidGotoLeftIterator;
+
+        }
+
+        #pragma omp taskwait
 
         FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << " s)\n" );
     }
@@ -296,7 +342,7 @@ protected:
             FLOG(FTic counterTimeLevel);
             // for each cells
             do{
-                #pragma omp task firstprivate(octreeIterator) shared(idxLevel)
+                #pragma omp task firstprivate(octreeIterator,idxLevel)
                 {
                     kernels[omp_get_thread_num()]->L2L( octreeIterator.getCurrentCell() , octreeIterator.getCurrentChild(), idxLevel);
                 }

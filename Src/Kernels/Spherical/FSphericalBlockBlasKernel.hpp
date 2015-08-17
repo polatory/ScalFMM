@@ -189,7 +189,7 @@ public:
         }
     }
     /** the needFinishedM2LEvent method is needed   */
-    bool needFinishedM2LEvent(){
+    constexpr static bool NeedFinishedM2LEvent(){
    	 	 return true ;
     }
     /** Do we have some computation to do in the buffers */

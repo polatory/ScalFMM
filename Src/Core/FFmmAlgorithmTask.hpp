@@ -209,18 +209,23 @@ protected:
 	/////////////////////////////////////////////////////////////////////////////
 
 	/** M2L  */
-	void transferPass(){
-      #ifdef SCALFMM_USE_EZTRACE
-	  
-	  eztrace_start();
-#endif
-		this->transferPassWithFinalize() ;
-#ifdef SCALFMM_USE_EZTRACE
-	  eztrace_stop();
-#endif
-	    }
+    void transferPass(){
+  #ifdef SCALFMM_USE_EZTRACE
 
-	void transferPassWithOutFinalize(){
+      eztrace_start();
+  #endif
+      if(KernelClass::NeedFinishedM2LEvent()){
+          this->transferPassWithFinalize() ;
+      }
+      else{
+          this->transferPassWithoutFinalize() ;
+      }
+  #ifdef SCALFMM_USE_EZTRACE
+      eztrace_stop();
+  #endif
+    }
+
+    void transferPassWithoutFinalize(){
 		FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
 		FLOG(FTic counterTime);
 

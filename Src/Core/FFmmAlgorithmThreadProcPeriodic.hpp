@@ -960,7 +960,7 @@ protected:
                     #pragma omp taskwait
 
                     for(int idxThread = 0 ; idxThread < omp_get_num_threads() ; ++idxThread){
-                        #pragma omp task  default(none) firstprivate(idxThread) shared(idxLevel)
+                        #pragma omp task  default(none) firstprivate(idxThread,idxLevel)
                         {
                             kernels[idxThread]->finishedLevelM2L(fackLevel);
                         }
