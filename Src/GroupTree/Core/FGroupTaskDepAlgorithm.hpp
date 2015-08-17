@@ -395,39 +395,81 @@ protected:
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
 
-                #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroups, subCellGroupPoles, nbSubCellGroups) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0][0], subCellGroupPoles[1][0], subCellGroupPoles[2][0], subCellGroupPoles[3][0], subCellGroupPoles[4][0], subCellGroupPoles[5][0], subCellGroupPoles[6][0], subCellGroupPoles[7][0], subCellGroupPoles[8][0])  priority_if_supported(8)
-                {
-                    FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(&taskTimeRecorder, (currentCells->getStartingIndex() << 16) | (idxLevel<<8) | 1, "M2M"));
-                    KernelClass*const kernel = kernels[omp_get_thread_num()];
-                    int idxSubCellGroup = 0;
-                    int idxChildCell = subCellGroups[0]->getFistChildIdx(currentCells->getCellMortonIndex(0));
-                    FAssertLF(idxChildCell != -1);
-                    CellClass childData[8];
 
-                    for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){
-                        CellClass cell = currentCells->getUpCell(cellIdx);
-                        FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(cellIdx));
-                        CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
-
-                        FAssertLF(idxSubCellGroup != nbSubCellGroups);
-
-                        while(idxSubCellGroup != nbSubCellGroups
-                              && (subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)>>3) == cell.getMortonIndex()){
-                            const int idxChild = ((subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)) & 7);
-                            FAssertLF(child[idxChild] == nullptr);
-                            childData[idxChild] = subCellGroups[idxSubCellGroup]->getUpCell(idxChildCell);
-                            FAssertLF(subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
-                            child[idxChild] = &childData[idxChild];
-                            idxChildCell += 1;
-                            if(idxChildCell == subCellGroups[idxSubCellGroup]->getNumberOfCellsInBlock()){
-                                idxChildCell = 0;
-                                idxSubCellGroup += 1;
-                            }
-                        }
-
-                        kernel->M2M(&cell, child, idxLevel);
-                    }
+                #define FGroupTaskDepAlgorithm_M2M_CORE { \
+                    FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(&taskTimeRecorder, (currentCells->getStartingIndex() << 16) | (idxLevel<<8) | 1, "M2M"));\
+                    KernelClass*const kernel = kernels[omp_get_thread_num()];\
+                    int idxSubCellGroup = 0;\
+                    int idxChildCell = subCellGroups[0]->getFistChildIdx(currentCells->getCellMortonIndex(0));\
+                    FAssertLF(idxChildCell != -1);\
+                    CellClass childData[8];\
+                    \
+                    for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){\
+                        CellClass cell = currentCells->getUpCell(cellIdx);\
+                        FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(cellIdx));\
+                        CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};\
+                        \
+                        FAssertLF(idxSubCellGroup != nbSubCellGroups);\
+                        \
+                        while(idxSubCellGroup != nbSubCellGroups\
+                              && (subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)>>3) == cell.getMortonIndex()){\
+                            const int idxChild = ((subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)) & 7);\
+                            FAssertLF(child[idxChild] == nullptr);\
+                            childData[idxChild] = subCellGroups[idxSubCellGroup]->getUpCell(idxChildCell);\
+                            FAssertLF(subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());\
+                            child[idxChild] = &childData[idxChild];\
+                            idxChildCell += 1;\
+                            if(idxChildCell == subCellGroups[idxSubCellGroup]->getNumberOfCellsInBlock()){\
+                                idxChildCell = 0;\
+                                idxSubCellGroup += 1;\
+                            }\
+                        }\
+                        \
+                        kernel->M2M(&cell, child, idxLevel);\
+                    }\
                 }
+
+                switch(nbSubCellGroups){
+                case 1:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroups, subCellGroupPoles, nbSubCellGroups) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0][0])  priority_if_supported(8)
+                    FGroupTaskDepAlgorithm_M2M_CORE
+                    break;
+                case 2:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroups, subCellGroupPoles, nbSubCellGroups) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0][0], subCellGroupPoles[1][0])  priority_if_supported(8)
+                    FGroupTaskDepAlgorithm_M2M_CORE
+                    break;
+                case 3:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroups, subCellGroupPoles, nbSubCellGroups) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0][0], subCellGroupPoles[1][0], subCellGroupPoles[2][0])  priority_if_supported(8)
+                    FGroupTaskDepAlgorithm_M2M_CORE
+                    break;
+                case 4:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroups, subCellGroupPoles, nbSubCellGroups) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0][0], subCellGroupPoles[1][0], subCellGroupPoles[2][0], subCellGroupPoles[3][0])  priority_if_supported(8)
+                    FGroupTaskDepAlgorithm_M2M_CORE
+                    break;
+                case 5:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroups, subCellGroupPoles, nbSubCellGroups) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0][0], subCellGroupPoles[1][0], subCellGroupPoles[2][0], subCellGroupPoles[3][0], subCellGroupPoles[4][0])  priority_if_supported(8)
+                    FGroupTaskDepAlgorithm_M2M_CORE
+                    break;
+                case 6:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroups, subCellGroupPoles, nbSubCellGroups) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0][0], subCellGroupPoles[1][0], subCellGroupPoles[2][0], subCellGroupPoles[3][0], subCellGroupPoles[4][0], subCellGroupPoles[5][0])  priority_if_supported(8)
+                    FGroupTaskDepAlgorithm_M2M_CORE
+                    break;
+                case 7:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroups, subCellGroupPoles, nbSubCellGroups) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0][0], subCellGroupPoles[1][0], subCellGroupPoles[2][0], subCellGroupPoles[3][0], subCellGroupPoles[4][0], subCellGroupPoles[5][0], subCellGroupPoles[6][0])  priority_if_supported(8)
+                    FGroupTaskDepAlgorithm_M2M_CORE
+                    break;
+                case 8:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroups, subCellGroupPoles, nbSubCellGroups) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0][0], subCellGroupPoles[1][0], subCellGroupPoles[2][0], subCellGroupPoles[3][0], subCellGroupPoles[4][0], subCellGroupPoles[5][0], subCellGroupPoles[6][0], subCellGroupPoles[7][0])  priority_if_supported(8)
+                    FGroupTaskDepAlgorithm_M2M_CORE
+                    break;
+                case 9:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroups, subCellGroupPoles, nbSubCellGroups) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0][0], subCellGroupPoles[1][0], subCellGroupPoles[2][0], subCellGroupPoles[3][0], subCellGroupPoles[4][0], subCellGroupPoles[5][0], subCellGroupPoles[6][0], subCellGroupPoles[7][0], subCellGroupPoles[8][0])  priority_if_supported(8)
+                    FGroupTaskDepAlgorithm_M2M_CORE
+                    break;
+                default:
+                    FAssertLF(0, "This must be impossible");
+                }
+
 
                 ++iterCells;
             }
@@ -598,36 +640,77 @@ protected:
                     FAssertLF( nbSubCellGroups <= 9 );
                 }
 
-                #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0], subCellLocalGroupsLocal[7][0], subCellLocalGroupsLocal[8][0]) depend(in: cellLocals[0])  priority_if_supported(7)
-                {
-                    FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(&taskTimeRecorder, (currentCells->getStartingIndex() << 16) | (idxLevel<<8) | 4, "L2L"));
-                    KernelClass*const kernel = kernels[omp_get_thread_num()];
-                    int idxSubCellGroup = 0;
-                    int idxChildCell = subCellGroups[0]->getFistChildIdx(currentCells->getCellMortonIndex(0));
-                    FAssertLF(idxChildCell != -1);
-                    CellClass childData[8];
 
-                    for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){
-                        CellClass cell = currentCells->getDownCell(cellIdx);
-                        FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(cellIdx));
-                        CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+                #define FGroupTaskDepAlgorithm_L2L_CORE {\
+                    FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(&taskTimeRecorder, (currentCells->getStartingIndex() << 16) | (idxLevel<<8) | 4, "L2L"));\
+                    KernelClass*const kernel = kernels[omp_get_thread_num()];\
+                    int idxSubCellGroup = 0;\
+                    int idxChildCell = subCellGroups[0]->getFistChildIdx(currentCells->getCellMortonIndex(0));\
+                    FAssertLF(idxChildCell != -1);\
+                    CellClass childData[8];\
+                    \
+                    for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){\
+                        CellClass cell = currentCells->getDownCell(cellIdx);\
+                        FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(cellIdx));\
+                        CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};\
+                        \
+                        while(idxSubCellGroup != nbSubCellGroups\
+                              && (subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)>>3) == cell.getMortonIndex()){\
+                            const int idxChild = ((subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)) & 7);\
+                            FAssertLF(child[idxChild] == nullptr);\
+                            childData[idxChild] = subCellGroups[idxSubCellGroup]->getDownCell(idxChildCell);\
+                            FAssertLF(subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());\
+                            child[idxChild] = &childData[idxChild];\
+                            idxChildCell += 1;\
+                            if(idxChildCell == subCellGroups[idxSubCellGroup]->getNumberOfCellsInBlock()){\
+                                idxChildCell = 0;\
+                                idxSubCellGroup += 1;\
+                            }\
+                        }\
+                        \
+                        kernel->L2L(&cell, child, idxLevel);\
+                    }\
+                }
 
-                        while(idxSubCellGroup != nbSubCellGroups
-                              && (subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)>>3) == cell.getMortonIndex()){
-                            const int idxChild = ((subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)) & 7);
-                            FAssertLF(child[idxChild] == nullptr);
-                            childData[idxChild] = subCellGroups[idxSubCellGroup]->getDownCell(idxChildCell);
-                            FAssertLF(subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
-                            child[idxChild] = &childData[idxChild];
-                            idxChildCell += 1;
-                            if(idxChildCell == subCellGroups[idxSubCellGroup]->getNumberOfCellsInBlock()){
-                                idxChildCell = 0;
-                                idxSubCellGroup += 1;
-                            }
-                        }
-
-                        kernel->L2L(&cell, child, idxLevel);
-                    }
+                switch(nbSubCellGroups){
+                case 1:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0]) depend(in: cellLocals[0])  priority_if_supported(7)
+                    FGroupTaskDepAlgorithm_L2L_CORE
+                    break;
+                case 2:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0]) depend(in: cellLocals[0])  priority_if_supported(7)
+                    FGroupTaskDepAlgorithm_L2L_CORE
+                    break;
+                case 3:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0]) depend(in: cellLocals[0])  priority_if_supported(7)
+                    FGroupTaskDepAlgorithm_L2L_CORE
+                    break;
+                case 4:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0]) depend(in: cellLocals[0])  priority_if_supported(7)
+                    FGroupTaskDepAlgorithm_L2L_CORE
+                    break;
+                case 5:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0]) depend(in: cellLocals[0])  priority_if_supported(7)
+                    FGroupTaskDepAlgorithm_L2L_CORE
+                    break;
+                case 6:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0]) depend(in: cellLocals[0])  priority_if_supported(7)
+                    FGroupTaskDepAlgorithm_L2L_CORE
+                    break;
+                case 7:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0]) depend(in: cellLocals[0])  priority_if_supported(7)
+                    FGroupTaskDepAlgorithm_L2L_CORE
+                    break;
+                case 8:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0], subCellLocalGroupsLocal[7][0]) depend(in: cellLocals[0])  priority_if_supported(7)
+                    FGroupTaskDepAlgorithm_L2L_CORE
+                    break;
+                case 9:
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0], subCellLocalGroupsLocal[7][0], subCellLocalGroupsLocal[8][0]) depend(in: cellLocals[0])  priority_if_supported(7)
+                    FGroupTaskDepAlgorithm_L2L_CORE
+                    break;
+                default:
+                    FAssertLF(0, "This must be impossible");
                 }
 
                 ++iterCells;
