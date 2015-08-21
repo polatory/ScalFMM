@@ -63,7 +63,7 @@ public:
       */
     FFmmAlgorithmPeriodic(OctreeClass* const inTree, const int inUpperLevel = 0, const int inLeafLevelSeperationCriteria = 1)
         : tree(inTree) , kernels(nullptr), OctreeHeight(tree->getHeight()),
-          nbLevelsAboveRoot(inUpperLevel), offsetRealTree(inUpperLevel + 3), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
+          nbLevelsAboveRoot(inUpperLevel), offsetRealTree(inUpperLevel + 2), leafLevelSeperationCriteria(inLeafLevelSeperationCriteria) {
 
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(-1 <= inUpperLevel, "inUpperLevel cannot be < -1");
@@ -90,10 +90,7 @@ public:
             // we know it is 3 (-1;+1)
             return 3;
         }
-        // Else we find the repetition in one dir and double it
-        const long long int oneDirectionRepetition = (1<<(nbLevelsAboveRoot+2)); // 2^nbLevelsAboveRoot in each dim
-        const long long int fullRepetition = 2 * oneDirectionRepetition;
-        return fullRepetition;
+        return 6 * (1 << nbLevelsAboveRoot);
     }
 
 
@@ -115,7 +112,7 @@ public:
     FReal extendedBoxWidth() const {
         // The simulation box is repeated is repeated 4 times if nbLevelsAboveRoot==-1
         // And then it doubles by two
-        return tree->getBoxWidth() * FReal(1<<(nbLevelsAboveRoot+3));
+        return tree->getBoxWidth() * FReal(1<<(nbLevelsAboveRoot+2));
     }
 
     /** This function has to be used to init the kernel with correct args
@@ -456,9 +453,9 @@ protected:
                 const CellClass* neighbors[343];
                 memset(neighbors, 0, sizeof(CellClass*) * 343);
                 int counter = 0;
-                for(int idxX = -2 ; idxX <= 1 ; ++idxX){
-                    for(int idxY = -2 ; idxY <= 1 ; ++idxY){
-                        for(int idxZ = -2 ; idxZ <= 1 ; ++idxZ){
+                for(int idxX = -3 ; idxX <= 2 ; ++idxX){
+                    for(int idxY = -3 ; idxY <= 2 ; ++idxY){
+                        for(int idxZ = -3 ; idxZ <= 2 ; ++idxZ){
                             if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
                                 neighbors[neighIndex(idxX,idxY,idxZ)] = &upperCells[idxUpperLevel-1];
                                 ++counter;
@@ -492,10 +489,18 @@ protected:
             {
                 CellClass* virtualChild[8];
                 memset(virtualChild, 0, sizeof(CellClass*) * 8);
-                for(int idxLevel = 2 ; idxLevel <= offsetRealTree-1  ; ++idxLevel){
+                for(int idxLevel = 2 ; idxLevel < offsetRealTree-1  ; ++idxLevel){
                     virtualChild[0] = &downerCells[idxLevel];
                     kernels->L2L( &downerCells[idxLevel-1], virtualChild, idxLevel);
                 }
+            }
+
+            {
+                CellClass* virtualChild[8];
+                memset(virtualChild, 0, sizeof(CellClass*) * 8);
+                const int idxLevel = offsetRealTree-1;
+                virtualChild[7] = &downerCells[idxLevel];
+                kernels->L2L( &downerCells[idxLevel-1], virtualChild, idxLevel);
             }
 
             // L2L from 0 to level 1

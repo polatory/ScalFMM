@@ -143,7 +143,7 @@ public:
      */
     FFmmAlgorithmThreadProcPeriodic(const FMpi::FComm& inComm, OctreeClass* const inTree,
                                     const int inUpperLevel = 2, const int inLeafLevelSeperationCriteria = 1)
-        : tree(inTree) , kernels(nullptr), comm(inComm), nbLevelsAboveRoot(inUpperLevel), offsetRealTree(inUpperLevel + 3),
+        : tree(inTree) , kernels(nullptr), comm(inComm), nbLevelsAboveRoot(inUpperLevel), offsetRealTree(inUpperLevel + 2),
           numberOfLeafs(0),
           MaxThreads(omp_get_max_threads()), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
           OctreeHeight(tree->getHeight()),
@@ -181,9 +181,7 @@ public:
             return 3;
         }
         // Else we find the repetition in one dir and double it
-        const long long int oneDirectionRepetition = (1<<(nbLevelsAboveRoot+2)); // 2^nbLevelsAboveRoot in each dim
-        const long long int fullRepetition = 2 * oneDirectionRepetition;
-        return fullRepetition;
+        return 6 * (1<<(nbLevelsAboveRoot));
     }
 
 
