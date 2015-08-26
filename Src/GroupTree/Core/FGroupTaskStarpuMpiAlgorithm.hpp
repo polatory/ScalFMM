@@ -191,13 +191,14 @@ public:
 
         cellHandles   = new std::vector<CellHandles>[tree->getHeight()];
 
-        initCodelet();
-        initCodeletMpi();
 #ifdef STARPU_SUPPORT_ARBITER
         arbiterPole = starpu_arbiter_create();
         arbiterLocal = starpu_arbiter_create();
         arbiterParticles = starpu_arbiter_create();
 #endif
+
+        initCodelet();
+        initCodeletMpi();
 
         FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max Worker " << starpu_worker_get_count() << ")\n");
 #ifdef STARPU_USE_CPU
