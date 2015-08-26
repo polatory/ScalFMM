@@ -138,7 +138,7 @@ public:
 
         struct starpu_conf conf;
         FAssertLF(starpu_conf_init(&conf) == 0);
-        FStarPUFmmPriorities::Controller().init(&conf, tree->getHeight(), inKernels);
+     //   FStarPUFmmPriorities::Controller().init(&conf, tree->getHeight(), inKernels);
         FAssertLF(starpu_init(&conf) == 0);
 
         starpu_pthread_mutex_t initMutex;
