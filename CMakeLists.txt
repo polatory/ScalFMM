@@ -101,7 +101,6 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   # Set scalfmm to default libraries
   set(SCALFMM_LIBRARIES "")
   set(SCALFMM_CXX_FLAGS "-std=c++11 -fpic -Wall")
-  MESSAGE(STATUS "FLAGS =$CALFMM_CXX_FLAGS")
   #
   #
   # Test if openmp is here
