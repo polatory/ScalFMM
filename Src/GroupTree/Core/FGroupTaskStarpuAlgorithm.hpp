@@ -728,6 +728,8 @@ protected:
     void bottomPass(){
         FLOG( FTic timer; );
 
+        FAssertLF(cellHandles[tree->getHeight()-1].size() == particleHandles.size());
+
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2m_cl,
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
@@ -958,6 +960,8 @@ protected:
 
     void mergePass(){
         FLOG( FTic timer; );
+
+        FAssertLF(cellHandles[tree->getHeight()-1].size() == particleHandles.size());
 
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&l2p_cl,
