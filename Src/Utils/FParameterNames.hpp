@@ -206,7 +206,7 @@ inline bool CheckValidParameters(const int argc, char* argv[], const std::vector
     for(int idxParameter = 1 ; idxParameter < argc ; ++idxParameter){
         bool paramExist = false;
         for(unsigned idxTest = 0 ; idxTest < options.size() ; ++idxTest){
-            paramExist = FParameters::existParameter(argc, argv, options[idxTest].options);
+            paramExist = FParameters::existParameter(1, &argv[idxParameter], options[idxTest].options);
             if(paramExist){
                 break;
             }
