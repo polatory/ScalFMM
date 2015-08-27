@@ -371,7 +371,7 @@ struct RunContainer{
             const bool prolate = FParameters::existParameter(argc,argv,LocalOptionProlate.options);
             const bool prolatenonunif = FParameters::existParameter(argc,argv,LocalOptionProlateNonUnif.options);
             FSphericalRandomLoader<FReal> loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000),
-                                                 !prolate && !prolatenonunif, false, false, prolate, false, prolatenonunif);
+                                                 false, false, false, prolate, false, prolatenonunif);
     #else
             const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
             FFmaGenericLoader<FReal> loader(filename);
@@ -574,7 +574,7 @@ struct RunContainer{
             const bool prolate = FParameters::existParameter(argc,argv,LocalOptionProlate.options);
             const bool prolatenonunif = FParameters::existParameter(argc,argv,LocalOptionProlateNonUnif.options);
             FSphericalRandomLoader<FReal> loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000),
-                                                 !prolate && !prolatenonunif, false, false, prolate, false, prolatenonunif);
+                                                 false, false, false, prolate, false, prolatenonunif);
     #else
             const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
             FFmaGenericLoader<FReal> loader(filename);
