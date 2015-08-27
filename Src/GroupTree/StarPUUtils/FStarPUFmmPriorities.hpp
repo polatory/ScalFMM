@@ -15,20 +15,20 @@
 #include "FStarPUHeteoprio.hpp"
 
 class FStarPUFmmPriorities{
-    int prioP2M;
-    int prioM2M;
+    int insertionPositionP2M;
+    int insertionPositionM2M;
 
-    int prioP2MSend;
-    int prioM2MSend;
+    int insertionPositionP2MSend;
+    int insertionPositionM2MSend;
 
-    int prioM2L;
-    int prioM2LExtern;
-    int prioL2L;
-    int prioL2P;
-    int prioP2P;
-    int prioP2PExtern;
-    int prioM2LMpi;
-    int prioP2PMpi;
+    int insertionPositionM2L;
+    int insertionPositionM2LExtern;
+    int insertionPositionL2L;
+    int insertionPositionL2P;
+    int insertionPositionP2P;
+    int insertionPositionP2PExtern;
+    int insertionPositionM2LMpi;
+    int insertionPositionP2PMpi;
 
     int treeHeight;
 
@@ -61,48 +61,48 @@ public:
         if(inTreeHeight > 2){
             int incPrio = 0;
 
-            prioP2MSend = incPrio++;
-            prioP2M     = incPrio++;
+            insertionPositionP2MSend = incPrio++;
+            insertionPositionP2M     = incPrio++;
 
-            prioM2MSend = incPrio++;
-            prioM2M     = incPrio++;
+            insertionPositionM2MSend = incPrio++;
+            insertionPositionM2M     = incPrio++;
 
-            prioM2L     = incPrio;
-            prioM2LExtern = incPrio;
-            prioM2LMpi  = incPrio++;
+            insertionPositionM2L     = incPrio;
+            insertionPositionM2LExtern = incPrio;
+            insertionPositionM2LMpi  = incPrio++;
 
-            prioL2L     = incPrio++;
+            insertionPositionL2L     = incPrio++;
 
             incPrio += (treeHeight-2)-1   // M2L is done treeHeight-2 times
                        +(treeHeight-3)-1; // L2L is done treeHeight-3 times
 
-            prioP2P       = incPrio;
-            prioP2PExtern = incPrio;
-            prioP2PMpi    = incPrio++;
+            insertionPositionP2P       = incPrio;
+            insertionPositionP2PExtern = incPrio;
+            insertionPositionP2PMpi    = incPrio++;
 
-            prioL2P     = incPrio++;
+            insertionPositionL2P     = incPrio++;
             assert(incPrio == 6 + (treeHeight-2) + (treeHeight-3));
         }
         else{
             int incPrio = 0;
 
-            prioP2MSend = -1;
-            prioP2M     = -1;
+            insertionPositionP2MSend = -1;
+            insertionPositionP2M     = -1;
 
-            prioM2MSend = -1;
-            prioM2M     = -1;
+            insertionPositionM2MSend = -1;
+            insertionPositionM2M     = -1;
 
-            prioM2L     = -1;
-            prioM2LExtern = -1;
-            prioM2LMpi  = -1;
+            insertionPositionM2L     = -1;
+            insertionPositionM2LExtern = -1;
+            insertionPositionM2LMpi  = -1;
 
-            prioL2L     = -1;
+            insertionPositionL2L     = -1;
 
-            prioP2P     = incPrio;
-            prioP2PExtern = incPrio;
-            prioP2PMpi  = incPrio++;
+            insertionPositionP2P     = incPrio;
+            insertionPositionP2PExtern = incPrio;
+            insertionPositionP2PMpi  = incPrio++;
 
-            prioL2P     = -1;
+            insertionPositionL2P     = -1;
             assert(incPrio == 1);
         }
     }
@@ -114,58 +114,58 @@ public:
         // CPU follows the real prio
         {
             int cpuCountPrio = 0;
-            //prioP2MSend = 0;
-            //prioP2M     = prioP2MSend+1;
+            //insertionPositionP2MSend = 0;
+            //insertionPositionP2M     = insertionPositionP2MSend+1;
             if( !workOnlyOnLeaves && capacities->supportP2M(FSTARPU_CPU_IDX)){
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = prioP2MSend;
-                heteroprio->buckets[prioP2MSend].valide_archs |= STARPU_CPU;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionP2MSend;
+                heteroprio->buckets[insertionPositionP2MSend].valide_archs |= STARPU_CPU;
 
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = prioP2M;
-                heteroprio->buckets[prioP2M].valide_archs |= STARPU_CPU;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionP2M;
+                heteroprio->buckets[insertionPositionP2M].valide_archs |= STARPU_CPU;
             }
-            //prioM2MSend = prioP2M+1;
-            //prioM2M     = prioM2MSend+1;
-            //assert(cpuCountPrio == prioM2MSend); // True if CPU support all TODO
+            //insertionPositionM2MSend = insertionPositionP2M+1;
+            //insertionPositionM2M     = insertionPositionM2MSend+1;
+            //assert(cpuCountPrio == insertionPositionM2MSend); // True if CPU support all TODO
             if(!workOnlyOnLeaves && capacities->supportM2M(FSTARPU_CPU_IDX)){
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = prioM2MSend;
-                heteroprio->buckets[prioM2MSend].valide_archs |= STARPU_CPU;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionM2MSend;
+                heteroprio->buckets[insertionPositionM2MSend].valide_archs |= STARPU_CPU;
 
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = prioM2M;
-                heteroprio->buckets[prioM2M].valide_archs |= STARPU_CPU;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionM2M;
+                heteroprio->buckets[insertionPositionM2M].valide_archs |= STARPU_CPU;
             }
 
-            // prioM2L       = prioM2M+1;
-            // prioM2LExtern = prioM2L;
-            // prioM2LMpi    = prioM2L;
-            // prioL2L     = prioM2L+1;
-            // assert(cpuCountPrio == prioM2L); // True if CPU support all TODO
+            // insertionPositionM2L       = insertionPositionM2M+1;
+            // insertionPositionM2LExtern = insertionPositionM2L;
+            // insertionPositionM2LMpi    = insertionPositionM2L;
+            // insertionPositionL2L     = insertionPositionM2L+1;
+            // assert(cpuCountPrio == insertionPositionM2L); // True if CPU support all TODO
             for(int idxLevel = 2 ; idxLevel < treeHeight ; ++idxLevel){
                 if(capacities->supportM2L(FSTARPU_CPU_IDX)){
-                    const int prioM2LAtLevel = getPrioM2L(idxLevel);
+                    const int prioM2LAtLevel = getInsertionPosM2L(idxLevel);
                     heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = prioM2LAtLevel;
                     heteroprio->buckets[prioM2LAtLevel].valide_archs |= STARPU_CPU;
                 }
                 if(idxLevel != treeHeight-1 && capacities->supportL2L(FSTARPU_CPU_IDX)){
-                    const int prioL2LAtLevel = getPrioL2L(idxLevel);
+                    const int prioL2LAtLevel = getInsertionPosL2L(idxLevel);
                     heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = prioL2LAtLevel;
                     heteroprio->buckets[prioL2LAtLevel].valide_archs |= STARPU_CPU;
                 }
             }
-            // assert(cpuCountPrio == prioP2P); // True if CPU support all TODO
+            // assert(cpuCountPrio == insertionPositionP2P); // True if CPU support all TODO
 
-            //prioP2P       = prioL2L + (treeHeight-3)*2+1 +1;
-            //prioP2PExtern = prioP2P;
-            //prioP2PMpi    = prioP2P;
+            //insertionPositionP2P       = insertionPositionL2L + (treeHeight-3)*2+1 +1;
+            //insertionPositionP2PExtern = insertionPositionP2P;
+            //insertionPositionP2PMpi    = insertionPositionP2P;
             if( capacities->supportP2P(FSTARPU_CPU_IDX)){
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = prioP2P;
-                heteroprio->buckets[prioP2P].valide_archs |= STARPU_CPU;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionP2P;
+                heteroprio->buckets[insertionPositionP2P].valide_archs |= STARPU_CPU;
             }
 
-            //assert(cpuCountPrio == prioL2P); // True if CPU support all TODO
-            //prioL2P     = prioP2PMpi+1;
+            //assert(cpuCountPrio == insertionPositionL2P); // True if CPU support all TODO
+            //insertionPositionL2P     = insertionPositionP2PMpi+1;
             if( !workOnlyOnLeaves && capacities->supportL2P(FSTARPU_CPU_IDX)){
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = prioL2P;
-                heteroprio->buckets[prioL2P].valide_archs |= STARPU_CPU;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionL2P;
+                heteroprio->buckets[insertionPositionL2P].valide_archs |= STARPU_CPU;
             }
 
             heteroprio->nb_prio_per_arch_index[FSTARPU_CPU_IDX] = unsigned(cpuCountPrio);
@@ -175,24 +175,24 @@ public:
         {
             int openclCountPrio = 0;
 
-            //prioP2P       = prioL2L + (treeHeight-3)*2+1 +1;
-            //prioP2PExtern = prioP2P;
-            //prioP2PMpi    = prioP2P;
+            //insertionPositionP2P       = insertionPositionL2L + (treeHeight-3)*2+1 +1;
+            //insertionPositionP2PExtern = insertionPositionP2P;
+            //insertionPositionP2PMpi    = insertionPositionP2P;
             if(capacities->supportP2P(FSTARPU_OPENCL_IDX)){
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = prioP2P;
-                heteroprio->buckets[prioP2P].factor_base_arch_index = FSTARPU_OPENCL_IDX;
-                heteroprio->buckets[prioP2P].valide_archs |= STARPU_OPENCL;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = insertionPositionP2P;
+                heteroprio->buckets[insertionPositionP2P].factor_base_arch_index = FSTARPU_OPENCL_IDX;
+                heteroprio->buckets[insertionPositionP2P].valide_archs |= STARPU_OPENCL;
 #ifdef STARPU_USE_CPU
-                heteroprio->buckets[prioP2P].slow_factors_per_index[FSTARPU_CPU_IDX] = 40.0f;
+                heteroprio->buckets[insertionPositionP2P].slow_factors_per_index[FSTARPU_CPU_IDX] = 40.0f;
 #endif
             }
 
-            // prioM2L       = prioM2M+1;
-            // prioM2LExtern = prioM2L;
-            // prioM2LMpi    = prioM2L;
+            // insertionPositionM2L       = insertionPositionM2M+1;
+            // insertionPositionM2LExtern = insertionPositionM2L;
+            // insertionPositionM2LMpi    = insertionPositionM2L;
             for(int idxLevel = 2 ; idxLevel < treeHeight ; ++idxLevel){
                 if(capacities->supportM2L(FSTARPU_OPENCL_IDX)){
-                    const int prioM2LAtLevel = getPrioM2L(idxLevel);
+                    const int prioM2LAtLevel = getInsertionPosM2L(idxLevel);
                     heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = prioM2LAtLevel;
                     heteroprio->buckets[prioM2LAtLevel].factor_base_arch_index = FSTARPU_OPENCL_IDX;
                     heteroprio->buckets[prioM2LAtLevel].valide_archs |= STARPU_OPENCL;
@@ -202,39 +202,39 @@ public:
                 }
             }
 
-            //prioP2MSend = 0;
-            //prioP2M     = prioP2MSend+1;
+            //insertionPositionP2MSend = 0;
+            //insertionPositionP2M     = insertionPositionP2MSend+1;
             if( !workOnlyOnLeaves && capacities->supportP2M(FSTARPU_OPENCL_IDX)){
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = prioP2MSend;
-                heteroprio->buckets[prioP2MSend].valide_archs |= STARPU_OPENCL;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = insertionPositionP2MSend;
+                heteroprio->buckets[insertionPositionP2MSend].valide_archs |= STARPU_OPENCL;
 
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = prioP2M;
-                heteroprio->buckets[prioP2M].valide_archs |= STARPU_OPENCL;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = insertionPositionP2M;
+                heteroprio->buckets[insertionPositionP2M].valide_archs |= STARPU_OPENCL;
             }
 
-            //prioM2MSend = prioP2M+1;
-            //prioM2M     = prioM2MSend+1;
+            //insertionPositionM2MSend = insertionPositionP2M+1;
+            //insertionPositionM2M     = insertionPositionM2MSend+1;
             if( !workOnlyOnLeaves && capacities->supportM2M(FSTARPU_OPENCL_IDX)){
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = prioM2MSend;
-                heteroprio->buckets[prioM2MSend].valide_archs |= STARPU_OPENCL;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = insertionPositionM2MSend;
+                heteroprio->buckets[insertionPositionM2MSend].valide_archs |= STARPU_OPENCL;
 
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = prioM2M;
-                heteroprio->buckets[prioM2M].valide_archs |= STARPU_OPENCL;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = insertionPositionM2M;
+                heteroprio->buckets[insertionPositionM2M].valide_archs |= STARPU_OPENCL;
             }
 
-            // prioL2L     = prioM2L+1;
+            // insertionPositionL2L     = insertionPositionM2L+1;
             for(int idxLevel = 2 ; idxLevel < treeHeight ; ++idxLevel){
                 if(idxLevel != treeHeight-1 && capacities->supportL2L(FSTARPU_OPENCL_IDX)){
-                    const int prioL2LAtLevel = getPrioL2L(idxLevel);
+                    const int prioL2LAtLevel = getInsertionPosL2L(idxLevel);
                     heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = prioL2LAtLevel;
                     heteroprio->buckets[prioL2LAtLevel].valide_archs |= STARPU_OPENCL;
                 }
             }
 
-            //prioL2P     = prioP2PMpi+1;
+            //insertionPositionL2P     = insertionPositionP2PMpi+1;
             if( !workOnlyOnLeaves && capacities->supportL2P(FSTARPU_OPENCL_IDX)){
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = prioL2P;
-                heteroprio->buckets[prioL2P].valide_archs |= STARPU_OPENCL;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_OPENCL_IDX][openclCountPrio++] = insertionPositionL2P;
+                heteroprio->buckets[insertionPositionL2P].valide_archs |= STARPU_OPENCL;
             }
 
             heteroprio->nb_prio_per_arch_index[FSTARPU_OPENCL_IDX] = unsigned(openclCountPrio);
@@ -244,24 +244,24 @@ public:
         {
             int openclCountPrio = 0;
 
-            //prioP2P       = prioL2L + (treeHeight-3)*2+1 +1;
-            //prioP2PExtern = prioP2P;
-            //prioP2PMpi    = prioP2P;
+            //insertionPositionP2P       = insertionPositionL2L + (treeHeight-3)*2+1 +1;
+            //insertionPositionP2PExtern = insertionPositionP2P;
+            //insertionPositionP2PMpi    = insertionPositionP2P;
             if(capacities->supportP2P(FSTARPU_CUDA_IDX)){
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = prioP2P;
-                heteroprio->buckets[prioP2P].valide_archs |= STARPU_CUDA;
-                heteroprio->buckets[prioP2P].factor_base_arch_index = FSTARPU_CUDA_IDX;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = insertionPositionP2P;
+                heteroprio->buckets[insertionPositionP2P].valide_archs |= STARPU_CUDA;
+                heteroprio->buckets[insertionPositionP2P].factor_base_arch_index = FSTARPU_CUDA_IDX;
 #ifdef STARPU_USE_CPU
-                heteroprio->buckets[prioP2P].slow_factors_per_index[FSTARPU_CPU_IDX] = 40.0f;
+                heteroprio->buckets[insertionPositionP2P].slow_factors_per_index[FSTARPU_CPU_IDX] = 40.0f;
 #endif
             }
 
-            // prioM2L       = prioM2M+1;
-            // prioM2LExtern = prioM2L;
-            // prioM2LMpi    = prioM2L;
+            // insertionPositionM2L       = insertionPositionM2M+1;
+            // insertionPositionM2LExtern = insertionPositionM2L;
+            // insertionPositionM2LMpi    = insertionPositionM2L;
             for(int idxLevel = 2 ; idxLevel < treeHeight ; ++idxLevel){
                 if(capacities->supportM2L(FSTARPU_CUDA_IDX)){
-                    const int prioM2LAtLevel = getPrioM2L(idxLevel);
+                    const int prioM2LAtLevel = getInsertionPosM2L(idxLevel);
                     heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = prioM2LAtLevel;
                     heteroprio->buckets[prioM2LAtLevel].valide_archs |= STARPU_CUDA;
                     heteroprio->buckets[prioM2LAtLevel].factor_base_arch_index = FSTARPU_CUDA_IDX;
@@ -271,39 +271,39 @@ public:
                 }
             }
 
-            //prioP2MSend = 0;
-            //prioP2M     = prioP2MSend+1;
+            //insertionPositionP2MSend = 0;
+            //insertionPositionP2M     = insertionPositionP2MSend+1;
             if( !workOnlyOnLeaves && capacities->supportP2M(FSTARPU_CUDA_IDX)){
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = prioP2MSend;
-                heteroprio->buckets[prioP2MSend].valide_archs |= STARPU_CUDA;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = insertionPositionP2MSend;
+                heteroprio->buckets[insertionPositionP2MSend].valide_archs |= STARPU_CUDA;
 
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = prioP2M;
-                heteroprio->buckets[prioP2M].valide_archs |= STARPU_CUDA;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = insertionPositionP2M;
+                heteroprio->buckets[insertionPositionP2M].valide_archs |= STARPU_CUDA;
             }
 
-            //prioM2MSend = prioP2M+1;
-            //prioM2M     = prioM2MSend+1;
+            //insertionPositionM2MSend = insertionPositionP2M+1;
+            //insertionPositionM2M     = insertionPositionM2MSend+1;
             if( !workOnlyOnLeaves && capacities->supportM2M(FSTARPU_CUDA_IDX)){
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = prioM2MSend;
-                heteroprio->buckets[prioM2MSend].valide_archs |= STARPU_CUDA;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = insertionPositionM2MSend;
+                heteroprio->buckets[insertionPositionM2MSend].valide_archs |= STARPU_CUDA;
 
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = prioM2M;
-                heteroprio->buckets[prioM2M].valide_archs |= STARPU_CUDA;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = insertionPositionM2M;
+                heteroprio->buckets[insertionPositionM2M].valide_archs |= STARPU_CUDA;
             }
 
-            // prioL2L     = prioM2L+1;
+            // insertionPositionL2L     = insertionPositionM2L+1;
             for(int idxLevel = 2 ; idxLevel < treeHeight ; ++idxLevel){
                 if(idxLevel != treeHeight-1 && capacities->supportL2L(FSTARPU_CUDA_IDX)){
-                    const int prioL2LAtLevel = getPrioL2L(idxLevel);
+                    const int prioL2LAtLevel = getInsertionPosL2L(idxLevel);
                     heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = prioL2LAtLevel;
                     heteroprio->buckets[prioL2LAtLevel].valide_archs |= STARPU_CUDA;
                 }
             }
 
-            //prioL2P     = prioP2PMpi+1;
+            //insertionPositionL2P     = insertionPositionP2PMpi+1;
             if( !workOnlyOnLeaves && capacities->supportL2P(FSTARPU_CUDA_IDX)){
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = prioL2P;
-                heteroprio->buckets[prioL2P].valide_archs |= STARPU_CUDA;
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][openclCountPrio++] = insertionPositionL2P;
+                heteroprio->buckets[insertionPositionL2P].valide_archs |= STARPU_CUDA;
             }
 
             heteroprio->nb_prio_per_arch_index[FSTARPU_CUDA_IDX] = int(openclCountPrio);
@@ -311,41 +311,41 @@ public:
 #endif
     }
 
-    int getPrioP2M() const {
-        return prioP2M;
+    int getInsertionPosP2M() const {
+        return insertionPositionP2M;
     }
-    int getPrioM2M(const int /*inLevel*/) const {
-        return prioM2M;
+    int getInsertionPosM2M(const int /*inLevel*/) const {
+        return insertionPositionM2M;
     }
-    int getPrioP2M(bool willBeSend) const {
-        return willBeSend?prioP2MSend:prioP2M;
+    int getInsertionPosP2M(bool willBeSend) const {
+        return willBeSend?insertionPositionP2MSend:insertionPositionP2M;
     }
-    int getPrioM2M(const int /*inLevel*/, bool willBeSend) const {
-        return willBeSend?prioM2MSend:prioM2M;
+    int getInsertionPosM2M(const int /*inLevel*/, bool willBeSend) const {
+        return willBeSend?insertionPositionM2MSend:insertionPositionM2M;
     }
-    int getPrioM2L(const int inLevel) const {
-        return prioM2L + (inLevel - 2)*2;
+    int getInsertionPosM2L(const int inLevel) const {
+        return insertionPositionM2L + (inLevel - 2)*2;
     }
-    int getPrioM2LExtern(const int inLevel) const {
-        return prioM2LExtern + (inLevel - 2)*2;
+    int getInsertionPosM2LExtern(const int inLevel) const {
+        return insertionPositionM2LExtern + (inLevel - 2)*2;
     }
-    int getPrioL2L(const int inLevel) const {
-        return prioL2L + (inLevel - 2)*2;
+    int getInsertionPosL2L(const int inLevel) const {
+        return insertionPositionL2L + (inLevel - 2)*2;
     }
-    int getPrioL2P() const {
-        return prioL2P;
+    int getInsertionPosL2P() const {
+        return insertionPositionL2P;
     }
-    int getPrioP2P() const {
-        return prioP2P;
+    int getInsertionPosP2P() const {
+        return insertionPositionP2P;
     }
-    int getPrioP2PExtern() const {
-        return prioP2PExtern;
+    int getInsertionPosP2PExtern() const {
+        return insertionPositionP2PExtern;
     }
-    int getPrioM2LMpi(const int inLevel) const {
-        return prioM2LMpi + (inLevel - 2)*2;
+    int getInsertionPosM2LMpi(const int inLevel) const {
+        return insertionPositionM2LMpi + (inLevel - 2)*2;
     }
-    int getPrioP2PMpi() const {
-        return prioP2PMpi;
+    int getInsertionPosP2PMpi() const {
+        return insertionPositionP2PMpi;
     }
 };
 
@@ -369,40 +369,40 @@ public:
 
     }
 
-    int getPrioP2M() const {
+    int getInsertionPosP2M() const {
         return 0;
     }
-    int getPrioM2M(const int /*inLevel*/) const {
+    int getInsertionPosM2M(const int /*inLevel*/) const {
         return 0;
     }
-    int getPrioP2M(bool willBeSend) const {
+    int getInsertionPosP2M(bool willBeSend) const {
         return 0;
     }
-    int getPrioM2M(const int /*inLevel*/, bool willBeSend) const {
+    int getInsertionPosM2M(const int /*inLevel*/, bool willBeSend) const {
         return 0;
     }
-    int getPrioM2L(const int inLevel) const {
+    int getInsertionPosM2L(const int inLevel) const {
         return 0;
     }
-    int getPrioM2LExtern(const int inLevel) const {
+    int getInsertionPosM2LExtern(const int inLevel) const {
         return 0;
     }
-    int getPrioL2L(const int inLevel) const {
+    int getInsertionPosL2L(const int inLevel) const {
         return 0;
     }
-    int getPrioL2P() const {
+    int getInsertionPosL2P() const {
         return 0;
     }
-    int getPrioP2P() const {
+    int getInsertionPosP2P() const {
         return 0;
     }
-    int getPrioP2PExtern() const {
+    int getInsertionPosP2PExtern() const {
         return 0;
     }
-    int getPrioM2LMpi(const int inLevel) const {
+    int getInsertionPosM2LMpi(const int inLevel) const {
         return 0;
     }
-    int getPrioP2PMpi() const {
+    int getInsertionPosP2PMpi() const {
         return 0;
     }
 };
