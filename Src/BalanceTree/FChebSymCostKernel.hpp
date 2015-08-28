@@ -197,7 +197,7 @@ public:
     }
     
     
-    void P2M(CellClass* const cell, const ContainerClass* const SourceParticles) {
+    void P2M(CellClass* const cell, const ContainerClass* const SourceParticles) override {
         FSize tmpCost = countFlopsP2M(SourceParticles->getNbParticles());
         flopsP2M += tmpCost;
         cell->addCost(tmpCost);
@@ -208,7 +208,7 @@ public:
 
     void M2M(CellClass* const FRestrict cell,
              const CellClass*const FRestrict *const FRestrict ChildCells,
-             const int /*TreeLevel*/) {
+             const int /*TreeLevel*/) override {
         FSize flops = 0;
         for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex)
             if (ChildCells[ChildIndex])    flops += countFlopsM2MorL2L();
@@ -221,17 +221,18 @@ public:
 
 
     void M2L(CellClass* const FRestrict cell,
-             const CellClass* SourceCells[343],
-             const int /* not needed */,
-             const int /* TreeLevel */)
+             const CellClass* /*SourceCells*/[],
+             const int positions[],
+             const int size,
+             const int /* TreeLevel */) override
         {
             FSize flops = 0;
             // count how ofter each of the 16 interactions is used
             memset(countExp, 0, sizeof(int) * 343);
-            for (unsigned int idx=0; idx<343; ++idx)
-                if (SourceCells[idx])    countExp[SymHandler->pindices[idx]]++;
+            for (int idx=0; idx<size; ++idx)
+                  countExp[SymHandler->pindices[positions[idx]]]++;
             // multiply (mat-mat-mul)
-            for (unsigned int pidx=0; pidx<343; ++pidx)
+            for (int pidx=0; pidx<343; ++pidx)
                 if (countExp[pidx])
                     flops += countFlopsM2L(countExp[pidx], SymHandler->LowRank[pidx])
                         + countExp[pidx]*nnodes;
@@ -243,7 +244,7 @@ public:
 
     void L2L(const CellClass* const FRestrict /* not needed */,
              CellClass* FRestrict *const FRestrict ChildCells,
-             const int /* TreeLevel*/) {
+             const int /* TreeLevel*/) override {
         FSize flops = 0;
         FSize tmpCost = 0;
         for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex)
@@ -260,7 +261,7 @@ public:
 
 
     void L2P(const CellClass* const cell,
-             ContainerClass* const TargetParticles) {
+             ContainerClass* const TargetParticles) override {
         //// 1.a) apply Sx
         //flopsL2P += countFlopsP2MorL2P(TargetParticlesParticles->getNbParticles()) + TargetParticles->getNbParticles();
         //// 1.b) apply Px (grad Sx)
@@ -281,8 +282,9 @@ public:
     void P2P(const FTreeCoordinate& LeafCellCoordinate, // needed for periodic boundary conditions
              ContainerClass* const FRestrict TargetParticles,
              const ContainerClass* const FRestrict SourceParticles,
-             ContainerClass* const NeighborSourceParticles[27],
-             const int /* size */) {
+             ContainerClass* const NeighborSourceParticles[],
+             const int positions[],
+             const int size) override {
         FSize tmpCost = 0;
         FSize srcPartCount = SourceParticles->getNbParticles();
         FSize tgtPartCount = TargetParticles->getNbParticles();
@@ -290,13 +292,11 @@ public:
         if ( TargetParticles != SourceParticles ) {
             tmpCost +=  countFlopsP2P() * tgtPartCount * srcPartCount;
 
-            for ( unsigned int idx = 0; idx < 27; ++idx ) {
-                if (NeighborSourceParticles[idx]) {
+            for ( int idx = 0; idx < size; ++idx ) {
                     tmpCost += 
                         countFlopsP2P() 
                         * tgtPartCount
-                        * NeighborSourceParticles[idx]->getNbParticles();                    
-                }
+                        * NeighborSourceParticles[idx]->getNbParticles();
             }
         } else {
             tmpCost +=
@@ -304,15 +304,13 @@ public:
                 * ((tgtPartCount * tgtPartCount
                     + tgtPartCount)
                    / 2);
-            for (unsigned int idx=0; idx<=13; ++idx)
+            for (int idx=0; idx < size && positions[idx]<=13; ++idx)
             {
-                if (NeighborSourceParticles[idx]) {
                     tmpCost += 
                         countFlopsP2Pmutual()
                         * tgtPartCount
                         * NeighborSourceParticles[idx]->getNbParticles();                    
                 }
-            }
         }
 
         flopsP2P += tmpCost;

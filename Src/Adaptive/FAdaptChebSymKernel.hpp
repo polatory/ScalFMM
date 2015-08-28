@@ -320,7 +320,7 @@ public:
     }
 
     void P2P(ContainerClass* target, const ContainerClass* sources)  override {
-        ContainerClass* sourcesArray[27] = { const_cast<ContainerClass*> (sources) };
+        ContainerClass* sourcesArray[1] = { const_cast<ContainerClass*> (sources) };
         DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::template P2PRemote(target,sourcesArray,1,MatrixKernel);
     }
 

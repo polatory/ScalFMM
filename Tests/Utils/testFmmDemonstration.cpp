@@ -111,7 +111,7 @@ public:
     void M2M(CellClass* const FRestrict , const CellClass*const FRestrict *const FRestrict , const int ) {
     }
 
-    void M2L(CellClass* const FRestrict , const CellClass* [], const int , const int ) {
+    void M2L(CellClass* const FRestrict , const CellClass* [], const int [], const int , const int ) {
     }
 
     void L2L(const CellClass* const FRestrict , CellClass* FRestrict *const FRestrict  , const int ) {
@@ -122,13 +122,14 @@ public:
 
     void P2P(const FTreeCoordinate& ,
                      ContainerClass* const FRestrict ,
-                     ContainerClass* const [27], const int ) {
+                     ContainerClass* const [],
+                    const int [], const int ) {
 
     }
 
     void P2P(const FTreeCoordinate& ,
                      ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
-                     ContainerClass* const [27], const int ){
+                     ContainerClass* const [], const int [], const int ){
 
     }
 };

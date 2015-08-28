@@ -35,42 +35,43 @@ public:
     }
 
     /** Do nothing */
-    virtual void P2M(CellClass* const , const ContainerClass* const ) {
+    virtual void P2M(CellClass* const /*targetCell*/, const ContainerClass* const /*sourceParticles*/) override {
 
     }
 
     /** Do nothing */
-    virtual void M2M(CellClass* const FRestrict , const CellClass*const FRestrict *const FRestrict , const int ) {
+    virtual void M2M(CellClass* const FRestrict /*parentCell*/, const CellClass*const FRestrict *const FRestrict /*children*/, const int /*level*/) override {
 
     }
 
     /** Do nothing */
-    virtual void M2L(CellClass* const FRestrict , const CellClass* [], const int , const int ) {
+    virtual void M2L(CellClass* const FRestrict /*targetLocal*/, const CellClass* /*sourceMultipoles*/[],
+                     const int /*relativePostions*/[], const int /*nbInteractions*/, const int /*level*/) override {
 
     }
 
     /** Do nothing */
-    virtual void L2L(const CellClass* const FRestrict , CellClass* FRestrict *const FRestrict  , const int ) {
+    virtual void L2L(const CellClass* const FRestrict /*parentCell*/, CellClass* FRestrict *const FRestrict  /*children*/, const int /*level*/) override {
 
     }
 
     /** Do nothing */
-    virtual void L2P(const CellClass* const , ContainerClass* const ){
+    virtual void L2P(const CellClass* const /*sourceCell*/, ContainerClass* const /*targetPaticles*/) override {
 
     }
 
 
     /** Do nothing */
-    virtual void P2P(const FTreeCoordinate& ,
-                     ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
-                     ContainerClass* const [27], const int ){
+    virtual void P2P(const FTreeCoordinate& /*treeCoord*/,
+                     ContainerClass* const FRestrict /*targetParticles*/, const ContainerClass* const FRestrict /*sourceParticles*/,
+                     ContainerClass* const /*neigbhorsParticles*/[], const int /*neighborPositions*/[], const int /*nbNeighbors*/) override {
 
     }
 
     /** Do nothing */
-    virtual void P2PRemote(const FTreeCoordinate& ,
-                     ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
-                     ContainerClass* const [27], const int ){
+    virtual void P2PRemote(const FTreeCoordinate& /*treeCoord*/,
+                           ContainerClass* const FRestrict /*targetParticles*/, const ContainerClass* const FRestrict /*sourceParticles*/,
+                           ContainerClass* const /*neigbhorsParticles*/[], const int /*neighborPositions*/[], const int /*nbNeighbors*/) override {
 
     }
 

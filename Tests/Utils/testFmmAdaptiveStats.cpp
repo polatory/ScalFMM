@@ -136,41 +136,41 @@ public:
         }
     }
 
-    void P2M(CellClass* const /*pole*/, const ContainerClass* const /*particles*/) {
+    void P2M(CellClass* const /*pole*/, const ContainerClass* const /*particles*/) override {
         nbFmmOperations += 1;
         nbFmmOperationsVerbose[0] += 1;
     }
 
-    void M2M(CellClass* const FRestrict /*pole*/, const CellClass *const FRestrict *const FRestrict /*child*/, const int /*level*/) {
+    void M2M(CellClass* const FRestrict /*pole*/, const CellClass *const FRestrict *const FRestrict /*child*/, const int /*level*/) override {
         nbFmmOperations += 1;
         nbFmmOperationsVerbose[1] += 1;
     }
 
-    void M2L(CellClass* const FRestrict /*pole*/, const CellClass* /*distantNeighbors*/[343], const int /*size*/, const int /*level*/) {
+    void M2L(CellClass* const FRestrict /*pole*/, const CellClass* /*distantNeighbors*/[], const int /*neighborPositions*/[], const int /*size*/, const int /*level*/) override {
         nbFmmOperations += 1;
         nbFmmOperationsVerbose[2] += 1;
     }
 
-    void L2L(const CellClass*const FRestrict /*local*/, CellClass* FRestrict *const FRestrict /*child*/, const int /*level*/) {
+    void L2L(const CellClass*const FRestrict /*local*/, CellClass* FRestrict *const FRestrict /*child*/, const int /*level*/) override {
         nbFmmOperations += 1;
         nbFmmOperationsVerbose[3] += 1;
     }
 
-    void L2P(const CellClass* const  /*local*/, ContainerClass*const /*particles*/){
+    void L2P(const CellClass* const  /*local*/, ContainerClass*const /*particles*/) override{
         nbFmmOperations += 1;
         nbFmmOperationsVerbose[4] += 1;
     }
 
     void P2P(const FTreeCoordinate& ,
                  ContainerClass* const FRestrict /*targets*/, const ContainerClass* const FRestrict /*sources*/,
-                 ContainerClass* const /*directNeighborsParticles*/[27], const int /*size*/){
+                 ContainerClass* const /*directNeighborsParticles*/[], const int /*neighborPosition*/[], const int /*size*/) override{
         nbFmmOperations += 1;
         nbFmmOperationsVerbose[5] += 1;
     }
 
     void P2PRemote(const FTreeCoordinate& ,
                  ContainerClass* const FRestrict /*targets*/, const ContainerClass* const FRestrict /*sources*/,
-                 ContainerClass* const /*directNeighborsParticles*/[27], const int /*size*/){
+                 ContainerClass* const /*directNeighborsParticles*/[],  const int /*neighborPosition*/[], const int /*size*/) override{
         nbFmmOperations += 1;
         nbFmmOperationsVerbose[5] += 1;
     }

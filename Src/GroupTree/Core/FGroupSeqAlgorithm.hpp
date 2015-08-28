@@ -143,8 +143,8 @@ protected:
                 std::vector<OutOfBlockInteraction> outsideInteractions;
 
                 { // Can be a task(inout:iterCells, out:outsideInteractions)
-                    CellClass interactionsData[343];
-                    const CellClass* interactions[343];
+                    CellClass interactionsData[189];
+                    const CellClass* interactions[189];
                     const MortonIndex blockStartIdx = (*iterCells)->getStartingIndex();
                     const MortonIndex blockEndIdx = (*iterCells)->getEndingIndex();
 
@@ -157,7 +157,6 @@ protected:
                         const FTreeCoordinate coord(cell.getCoordinate());
                         int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
 
-                        memset(interactions, 0, 343*sizeof(CellClass*));
                         int counterExistingCell = 0;
 
                         for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -166,9 +165,9 @@ protected:
                                 if(cellPos != -1){
                                     CellClass interCell = (*iterCells)->getUpCell(cellPos);
                                     FAssertLF(interCell.getMortonIndex() == interactionsIndexes[idxInter]);
-                                    FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
-                                    interactionsData[interactionsPosition[idxInter]] = interCell;
-                                    interactions[interactionsPosition[idxInter]] = &interactionsData[interactionsPosition[idxInter]];
+                                    interactionsPosition[counterExistingCell] = interactionsPosition[idxInter];
+                                    interactionsData[counterExistingCell] = interCell;
+                                    interactions[counterExistingCell] = &interactionsData[counterExistingCell];
                                     counterExistingCell += 1;
                                 }
                             }
@@ -182,7 +181,7 @@ protected:
                             }
                         }
 
-                        kernels->M2L( &cell , interactions, counterExistingCell, idxLevel);
+                        kernels->M2L( &cell , interactions, interactionsPosition, counterExistingCell, idxLevel);
                     }
                 }
 
@@ -206,8 +205,6 @@ protected:
                     }
 
                     { // Can be a task(in:currentOutInteraction, in:outsideInteractions, in:lastOutInteraction, inout:iterLeftCells, inout:iterCells)
-                        const CellClass* interactions[343];
-                        memset(interactions, 0, 343*sizeof(CellClass*));
 
                         for(int outInterIdx = currentOutInteraction ; outInterIdx < lastOutInteraction ; ++outInterIdx){
                             const int cellPos = (*iterLeftCells)->getCellIndex(outsideInteractions[outInterIdx].outIndex);
@@ -217,14 +214,11 @@ protected:
                                 CellClass cell = (*iterCells)->getCompleteCell(outsideInteractions[outInterIdx].insideIdxInBlock);
                                 FAssertLF(cell.getMortonIndex() == outsideInteractions[outInterIdx].insideIndex);
 
-                                interactions[outsideInteractions[outInterIdx].outPosition] = &interCell;
-                                const int counter = 1;
-                                kernels->M2L( &cell , interactions, counter, idxLevel);
-
-                                interactions[outsideInteractions[outInterIdx].outPosition] = nullptr;
-                                interactions[getOppositeInterIndex(outsideInteractions[outInterIdx].outPosition)] = &cell;
-                                kernels->M2L( &interCell , interactions, counter, idxLevel);
-                                interactions[getOppositeInterIndex(outsideInteractions[outInterIdx].outPosition)] = nullptr;
+                                const CellClass* ptCell = &interCell;
+                                kernels->M2L( &cell , &ptCell, &outsideInteractions[outInterIdx].outPosition, 1, idxLevel);
+                                const int otherPos = getOppositeInterIndex(outsideInteractions[outInterIdx].outPosition);
+                                ptCell = &cell;
+                                kernels->M2L( &interCell , &ptCell, &otherPos, 1, idxLevel);
                             }
                         }
                     }
@@ -333,9 +327,8 @@ protected:
                         FTreeCoordinate coord(mindex, tree->getHeight()-1);
                         int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
 
-                        ParticleContainerClass interactionsObjects[27];
-                        ParticleContainerClass* interactions[27];
-                        memset(interactions, 0, 27*sizeof(ParticleContainerClass*));
+                        ParticleContainerClass interactionsObjects[26];
+                        ParticleContainerClass* interactions[26];
                         int counterExistingCell = 0;
 
                         for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -343,8 +336,8 @@ protected:
                                 const int leafPos = (*iterParticles)->getLeafIndex(interactionsIndexes[idxInter]);
                                 if(leafPos != -1){
                                     interactionsObjects[counterExistingCell] = (*iterParticles)->template getLeaf<ParticleContainerClass>(leafPos);
-                                    FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
-                                    interactions[interactionsPosition[idxInter]] = &interactionsObjects[counterExistingCell];
+                                    interactionsPosition[counterExistingCell] = interactionsPosition[idxInter];
+                                    interactions[counterExistingCell] = &interactionsObjects[counterExistingCell];
                                     counterExistingCell += 1;
                                 }
                             }
@@ -358,7 +351,7 @@ protected:
                             }
                         }
 
-                        kernels->P2P( coord, &particles, &particles , interactions, counterExistingCell);
+                        kernels->P2P( coord, &particles, &particles , interactions, interactionsPosition, counterExistingCell);
                     }
                 }
 
@@ -391,15 +384,13 @@ protected:
                                 FAssertLF((*iterLeftParticles)->getLeafMortonIndex(leafPos) == outsideInteractions[outInterIdx].outIndex);
                                 FAssertLF((*iterParticles)->getLeafMortonIndex(outsideInteractions[outInterIdx].insideIdxInBlock) == outsideInteractions[outInterIdx].insideIndex);
 
-                                ParticleContainerClass* interactions[27];
-                                memset(interactions, 0, 27*sizeof(ParticleContainerClass*));
-                                interactions[outsideInteractions[outInterIdx].outPosition] = &interParticles;
-                                const int counter = 1;
-                                kernels->P2PRemote( FTreeCoordinate(outsideInteractions[outInterIdx].insideIndex, tree->getHeight()-1), &particles, &particles , interactions, counter);
-
-                                interactions[outsideInteractions[outInterIdx].outPosition] = nullptr;
-                                interactions[getOppositeNeighIndex(outsideInteractions[outInterIdx].outPosition)] = &particles;
-                                kernels->P2PRemote( FTreeCoordinate(outsideInteractions[outInterIdx].outIndex, tree->getHeight()-1), &interParticles, &interParticles , interactions, counter);
+                                ParticleContainerClass* ptrLeaf = &interParticles;
+                                kernels->P2PRemote( FTreeCoordinate(outsideInteractions[outInterIdx].insideIndex, tree->getHeight()-1),
+                                                    &particles, &particles , &ptrLeaf, &outsideInteractions[outInterIdx].outPosition, 1);
+                                const int otherPosition = getOppositeNeighIndex(outsideInteractions[outInterIdx].outPosition);
+                                ptrLeaf = &particles;
+                                kernels->P2PRemote( FTreeCoordinate(outsideInteractions[outInterIdx].outIndex, tree->getHeight()-1),
+                                                    &interParticles, &interParticles , &ptrLeaf, &otherPosition, 1);
                             }
                         }
                     }

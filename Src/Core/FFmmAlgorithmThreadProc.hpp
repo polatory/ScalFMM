@@ -845,12 +845,13 @@ protected:
                             #pragma omp task default(none) shared(numberOfCells,idxLevel) firstprivate(idxCell) //+ shared(chunckSize)
                             {
                                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                                const CellClass* neighbors[343];
+                                const CellClass* neighbors[342];
+                                int neighborPositions[342];
 
                                 const int nbCellToCompute = FMath::Min(chunckSize, numberOfCells-idxCell);
                                 for(int idxCellToCompute = idxCell ; idxCellToCompute < idxCell+nbCellToCompute ; ++idxCellToCompute){
-                                    const int counter = tree->getInteractionNeighbors(neighbors,  iterArray[idxCellToCompute].getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
-                                    if(counter) myThreadkernels->M2L( iterArray[idxCellToCompute].getCurrentCell() , neighbors, counter, idxLevel);
+                                    const int counter = tree->getInteractionNeighbors(neighbors,  neighborPositions, iterArray[idxCellToCompute].getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
+                                    if(counter) myThreadkernels->M2L( iterArray[idxCellToCompute].getCurrentCell() , neighbors, neighborPositions, counter, idxLevel);
                                 }
                             }
                         }
@@ -946,12 +947,12 @@ protected:
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     MortonIndex neighborsIndex[/*189+26+1*/216];
                     int neighborsPosition[/*189+26+1*/216];
-                    const CellClass* neighbors[343];
+                    const CellClass* neighbors[342];
+                    int neighborPositions[342];
 
                     #pragma omp for schedule(static) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         // compute indexes
-                        memset(neighbors, 0, 343 * sizeof(CellClass*));
                         const int counterNeighbors = iterArray[idxCell].getCurrentGlobalCoordinate().getInteractionNeighbors(idxLevel, neighborsIndex, neighborsPosition, separationCriteria);
 
                         int counter = 0;
@@ -963,15 +964,15 @@ protected:
                                 CellClass*const otherCell = tempTree.getCell(neighborsIndex[idxNeig], idxLevel);
 
                                 if(otherCell){
-                                    //otherCell->setMortonIndex(neighborsIndex[idxNeig]);
-                                    neighbors[ neighborsPosition[idxNeig] ] = otherCell;
+                                    neighbors[counter] = otherCell;
+                                    neighborPositions[counter] = neighborsPosition[idxNeig];
                                     ++counter;
                                 }
                             }
                         }
                         // need to compute
                         if(counter){
-                            myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
+                            myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, neighborPositions, counter, idxLevel);
                         }
                     }
 
@@ -1448,7 +1449,8 @@ protected:
                             {
                                 KernelClass* myThreadkernels = (kernels[omp_get_thread_num()]);
                                 // There is a maximum of 26 neighbors
-                                ContainerClass* neighbors[27];
+                                ContainerClass* neighbors[26];
+                                int neighborPositions[26];
 
                                 for(int idxTaskLeaf = idxLeafs ; idxTaskLeaf < (idxLeafs + nbLeavesInTask) ; ++idxTaskLeaf){
                                     LeafData& currentIter = leafsDataArray[idxTaskLeaf];
@@ -1457,9 +1459,9 @@ protected:
                                     }
                                     if(p2pEnabled){
                                         // need the current particles and neighbors particles
-                                        const int counter = tree->getLeafsNeighbors(neighbors, currentIter.coord, LeafIndex);
+                                        const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, currentIter.coord, LeafIndex);
                                         myThreadkernels->P2P( currentIter.coord,currentIter.targets,
-                                                          currentIter.sources, neighbors, counter);
+                                                          currentIter.sources, neighbors, neighborPositions, counter);
                                     }
                                 }
                             }
@@ -1485,9 +1487,10 @@ protected:
             if(p2pEnabled){
                 KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
                 // There is a maximum of 26 neighbors
-                ContainerClass* neighbors[27];
-                MortonIndex indexesNeighbors[27];
+                ContainerClass* neighbors[26];
+                MortonIndex indexesNeighbors[26];
                 int indexArray[26];
+                int neighborPositions[26];
                 // Box limite
                 FAssertLF(leafsNeedOtherData.getSize() < std::numeric_limits<int>::max());
                 const int nbLeafToProceed = int(leafsNeedOtherData.getSize());
@@ -1498,7 +1501,6 @@ protected:
 
                     // need the current particles and neighbors particles
                     int counter = 0;
-                    memset( neighbors, 0, sizeof(ContainerClass*) * 27);
 
                     // Take possible data
                     const int nbNeigh = currentIter.coord.getNeighborsIndexes(OctreeHeight, indexesNeighbors, indexArray);
@@ -1507,13 +1509,16 @@ protected:
                         if(indexesNeighbors[idxNeigh] < (intervals[idProcess].leftIndex) || (intervals[idProcess].rightIndex) < indexesNeighbors[idxNeigh]){
                             ContainerClass*const hypotheticNeighbor = otherP2Ptree.getLeafSrc(indexesNeighbors[idxNeigh]);
                             if(hypotheticNeighbor){
-                                neighbors[ indexArray[idxNeigh] ] = hypotheticNeighbor;
+                                neighbors[ counter ] = hypotheticNeighbor;
+                                neighborPositions[counter] = indexArray[idxNeigh];
                                 ++counter;
                             }
                         }
                     }
-                    myThreadkernels.P2PRemote( currentIter.cell->getCoordinate(), currentIter.targets,
-                                               currentIter.sources, neighbors, counter);
+                    if(counter){
+                        myThreadkernels.P2PRemote( currentIter.cell->getCoordinate(), currentIter.targets,
+                                               currentIter.sources, neighbors, neighborPositions, counter);
+                    }
 
                 }
 

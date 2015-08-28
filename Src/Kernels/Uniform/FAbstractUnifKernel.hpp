@@ -135,10 +135,8 @@ public:
                    const int TreeLevel) = 0;
 
 
-  virtual void M2L(CellClass* const FRestrict TargetCell,
-                   const CellClass* SourceCells[343],
-                   const int NumSourceCells,
-                   const int TreeLevel) = 0;
+  virtual void M2L(CellClass* const FRestrict TargetCell, const CellClass* SourceCells[],
+                   const int neighborPositions[], const int inSize, const int TreeLevel) = 0;
 
 
   virtual void L2L(const CellClass* const FRestrict ParentCell,
@@ -154,14 +152,16 @@ public:
   virtual void P2P(const FTreeCoordinate& /* LeafCellCoordinate */, // needed for periodic boundary conditions
                    ContainerClass* const FRestrict TargetParticles,
                    const ContainerClass* const FRestrict /*SourceParticles*/,
-                   ContainerClass* const NeighborSourceParticles[27],
+                   ContainerClass* const NeighborSourceParticles[],
+                   const int neighborPositions[],
                    const int /* size */) = 0;
 
 
   virtual void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                          ContainerClass* const FRestrict inTargets,
                          const ContainerClass* const FRestrict /*inSources*/,
-                         ContainerClass* const inNeighbors[27],
+                         ContainerClass* const inNeighbors[],
+                         const int neighborPositions[],
                          const int /*inSize*/) = 0;
 
 };

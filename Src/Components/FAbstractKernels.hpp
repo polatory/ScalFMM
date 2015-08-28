@@ -63,11 +63,25 @@ public:
         * M2L
         * Multipole to local
         * @param local the element to fill using distant neighbors
-        * @param distantNeighbors is an array containing fathers's direct neighbors's child - direct neigbors
+        * @param distantNeighbors is an array containing fathers's direct neighbors's child - direct neigbors (max 189)
+        * @param neighborPositions the relative position of the neighbor (between O and 342)
         * @param size the number of neighbors
         * @param inLevel the current level of the computation
+        *
+        * @code // the code was:
+        * @code  for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
+        * @code      if(distantNeighbors[idxNeigh]){
+        * @code           ...
+        * @code      }
+        * @code  }
+        * @code  // Now it must be :
+        * @code  for(int idxExistingNeigh = 0 ; idxExistingNeigh < size ; ++idxExistingNeigh){
+        * @code      const int idxNeigh = neighborPositions[idxExistingNeigh]
+        * @code      distantNeighbors[idxExistingNeigh]...
+        * @code  }
         */
-    virtual void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[343],
+    virtual void M2L(CellClass* const FRestrict local, const CellClass* distantNeighbors[],
+                     const int neighborPositions[],
                      const int size, const int inLevel) = 0;
 
 
@@ -113,12 +127,14 @@ public:
         * @param inLeafPosition tree coordinate of the leaf
         * @param targets current boxe targets particles
         * @param sources current boxe sources particles (can be == to targets)
-        * @param directNeighborsParticles the particles from direct neighbors (this is an array of list)
+        * @param directNeighborsParticles the particles from direct neighbors (this is an array of list)  max length = 26
+        * @param neighborPositions the relative position of the neighbors (between O and 25) max length = 26
         * @param size the number of direct neighbors
         */
     virtual void P2P(const FTreeCoordinate& inLeafPosition,
              ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
-             ContainerClass* const directNeighborsParticles[27], const int size) = 0;
+             ContainerClass* const directNeighborsParticles[], const int neighborPositions[],
+             const int size) = 0;
 
     /**
         * P2P
@@ -126,7 +142,8 @@ public:
         * @param inLeafPosition tree coordinate of the leaf
         * @param targets current boxe targets particles
         * @param sources current boxe sources particles (can be == to targets)
-        * @param directNeighborsParticles the particles from direct neighbors (this is an array of list)
+        * @param directNeighborsParticles the particles from direct neighbors (this is an array of list) max length = 26
+        * @param neighborPositions the relative position of the neighbors (between 0 and 25)  max length = 26
         * @param size the number of direct neighbors
         *
         * This method is called by the MPI algorithm with leaves from other hosts.
@@ -135,7 +152,8 @@ public:
         */
   virtual void P2PRemote(const FTreeCoordinate& /*inLeafPosition*/,
 			 ContainerClass* const FRestrict /*targets*/, const ContainerClass* const FRestrict /*sources*/,
-                           ContainerClass* const /*directNeighborsParticles*/[27], const int /*size*/) {
+             ContainerClass* const /*directNeighborsParticles*/[],
+             const int /*neighborPositions*/[], const int /*size*/) {
         FLOG( FLog::Controller.write("Warning, P2P remote is used but not implemented!").write(FLog::Flush) );
     }
 

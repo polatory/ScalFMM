@@ -232,7 +232,8 @@ protected:
         FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
 
-        const CellClass* neighbors[343];
+        const CellClass* neighbors[342];
+        int neighborPositions[342];
 
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.moveDown();
@@ -249,11 +250,11 @@ protected:
             const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
             // for each cells
             do{
-                const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
+                const int counter = tree->getInteractionNeighbors(neighbors, neighborPositions, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
                 if(counter){
-                    #pragma omp task firstprivate(octreeIterator, neighbors, counter,idxLevel)
+                    #pragma omp task firstprivate(octreeIterator, neighbors, neighborPositions, counter,idxLevel)
                     {
-                        kernels[omp_get_thread_num()]->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
+                        kernels[omp_get_thread_num()]->M2L( octreeIterator.getCurrentCell() , neighbors, neighborPositions, counter, idxLevel);
                     }
                 }
 
@@ -282,7 +283,8 @@ protected:
         FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
         FLOG(FTic counterTime);
 
-        const CellClass* neighbors[343];
+        const CellClass* neighbors[342];
+        int neighborPositions[342];
 
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.moveDown();
@@ -299,11 +301,11 @@ protected:
             const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
             // for each cells
             do{
-                const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
+                const int counter = tree->getInteractionNeighbors(neighbors, neighborPositions, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
                 if(counter){
-                    #pragma omp task firstprivate(octreeIterator, neighbors, counter,idxLevel)
+                    #pragma omp task firstprivate(octreeIterator, neighbors, neighborPositions, counter,idxLevel)
                     {
-                        kernels[omp_get_thread_num()]->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
+                        kernels[omp_get_thread_num()]->M2L( octreeIterator.getCurrentCell() , neighbors, neighborPositions, counter, idxLevel);
                     }
                 }
 
@@ -399,10 +401,11 @@ protected:
                 #pragma omp task   firstprivate(toWork)
                 {
                     // There is a maximum of 26 neighbors
-                    ContainerClass* neighbors[27];
-                    const int counter = tree->getLeafsNeighbors(neighbors, toWork.getCurrentGlobalCoordinate(),heightMinusOne);
+                    ContainerClass* neighbors[26];
+                    int neighborPositions[26];
+                    const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, toWork.getCurrentGlobalCoordinate(),heightMinusOne);
                     kernels[omp_get_thread_num()]->P2P(toWork.getCurrentGlobalCoordinate(), toWork.getCurrentListTargets(),
-                                         toWork.getCurrentListSrc(), neighbors, counter);
+                                         toWork.getCurrentListSrc(), neighbors, neighborPositions, counter);
                 }
             }
 

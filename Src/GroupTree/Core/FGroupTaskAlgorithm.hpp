@@ -406,8 +406,8 @@ protected:
                         const MortonIndex blockStartIdx = currentCells->getStartingIndex();
                         const MortonIndex blockEndIdx = currentCells->getEndingIndex();
                         KernelClass*const kernel = kernels[omp_get_thread_num()];
-                        const CellClass* interactions[343];
-                        CellClass interactionsData[343];
+                        const CellClass* interactions[189];
+                        CellClass interactionsData[189];
 
                         for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){
                             CellClass cell = currentCells->getDownCell(cellIdx);
@@ -419,7 +419,6 @@ protected:
                             const FTreeCoordinate coord(cell.getCoordinate());
                             int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
 
-                            memset(interactions, 0, 343*sizeof(CellClass*));
                             int counterExistingCell = 0;
 
                             for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -428,15 +427,15 @@ protected:
                                     if(cellPos != -1){
                                         CellClass interCell = currentCells->getUpCell(cellPos);
                                         FAssertLF(interCell.getMortonIndex() == interactionsIndexes[idxInter]);
-                                        FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
-                                        interactionsData[interactionsPosition[idxInter]] = interCell;
-                                        interactions[interactionsPosition[idxInter]] = &interactionsData[interactionsPosition[idxInter]];
+                                        interactionsPosition[counterExistingCell] = interactionsPosition[idxInter];
+                                        interactionsData[counterExistingCell] = interCell;
+                                        interactions[counterExistingCell] = &interactionsData[counterExistingCell];
                                         counterExistingCell += 1;
                                     }
                                 }
                             }
 
-                            kernel->M2L( &cell , interactions, counterExistingCell, idxLevel);
+                            kernel->M2L( &cell , interactions, interactionsPosition, counterExistingCell, idxLevel);
                         }
                     }
                     ++iterCells;
@@ -464,8 +463,6 @@ protected:
                         #pragma omp task default(none) firstprivate(currentCells, outsideInteractions, cellsOther, idxLevel)
                         {
                             KernelClass*const kernel = kernels[omp_get_thread_num()];
-                            const CellClass* interactions[343];
-                            memset(interactions, 0, 343*sizeof(CellClass*));
 
                             for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
                                 const int cellPos = cellsOther->getCellIndex((*outsideInteractions)[outInterIdx].outIndex);
@@ -475,14 +472,11 @@ protected:
                                     CellClass cell = currentCells->getCompleteCell((*outsideInteractions)[outInterIdx].insideIdxInBlock);
                                     FAssertLF(cell.getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
 
-                                    interactions[(*outsideInteractions)[outInterIdx].outPosition] = &interCell;
-                                    const int counter = 1;
-                                    kernel->M2L( &cell , interactions, counter, idxLevel);
-
-                                    interactions[(*outsideInteractions)[outInterIdx].outPosition] = nullptr;
-                                    interactions[getOppositeInterIndex((*outsideInteractions)[outInterIdx].outPosition)] = &cell;
-                                    kernel->M2L( &interCell , interactions, counter, idxLevel);
-                                    interactions[getOppositeInterIndex((*outsideInteractions)[outInterIdx].outPosition)] = nullptr;
+                                    const CellClass* ptCell = &interCell;
+                                    kernel->M2L( &cell , &ptCell, &(*outsideInteractions)[outInterIdx].outPosition, 1, idxLevel);
+                                    const int otherPos = getOppositeInterIndex((*outsideInteractions)[outInterIdx].outPosition);
+                                    ptCell = &cell;
+                                    kernel->M2L( &interCell , &ptCell, &otherPos, 1, idxLevel);
                                 }
                             }
                         }
@@ -499,8 +493,8 @@ protected:
             FLOG( timerOutBlock.tac() );
         }
         FLOG( FLog::Controller << "\t\t transferPass in " << timer.tacAndElapsed() << "s\n" );
-        FLOG( FLog::Controller << "\t\t\t inblock in  " << timerInBlock.elapsed() << "s\n" );
-        FLOG( FLog::Controller << "\t\t\t outblock in " << timerOutBlock.elapsed() << "s\n" );
+        FLOG( FLog::Controller << "\t\t\t inblock in  " << timerInBlock.cumulated() << "s\n" );
+        FLOG( FLog::Controller << "\t\t\t outblock in " << timerOutBlock.cumulated() << "s\n" );
     }
 
     void downardPass(){
@@ -605,9 +599,8 @@ protected:
                         FTreeCoordinate coord(mindex, tree->getHeight()-1);
                         int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
 
-                        ParticleContainerClass interactionsObjects[27];
-                        ParticleContainerClass* interactions[27];
-                        memset(interactions, 0, 27*sizeof(ParticleContainerClass*));
+                        ParticleContainerClass interactionsObjects[26];
+                        ParticleContainerClass* interactions[26];
                         int counterExistingCell = 0;
 
                         for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -615,14 +608,14 @@ protected:
                                 const int leafPos = containers->getLeafIndex(interactionsIndexes[idxInter]);
                                 if(leafPos != -1){
                                     interactionsObjects[counterExistingCell] = containers->template getLeaf<ParticleContainerClass>(leafPos);
-                                    FAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
-                                    interactions[interactionsPosition[idxInter]] = &interactionsObjects[counterExistingCell];
+                                    interactionsPosition[counterExistingCell] = interactionsPosition[idxInter];
+                                    interactions[counterExistingCell] = &interactionsObjects[counterExistingCell];
                                     counterExistingCell += 1;
                                 }
                             }
                         }
 
-                        kernel->P2P( coord, &particles, &particles , interactions, counterExistingCell);
+                        kernel->P2P( coord, &particles, &particles , interactions, interactionsPosition, counterExistingCell);
                     }
                 }
                 ++iterParticles;
@@ -657,17 +650,15 @@ protected:
                                 ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIdxInBlock);
 
                                 FAssertLF(containersOther->getLeafMortonIndex(leafPos) == (*outsideInteractions)[outInterIdx].outIndex);
-                                FAssertLF(containers->getLeafMortonIndex((*outsideInteractions)[outInterIdx].insideIdxInBlock) == (*outsideInteractions)[outInterIdx].insideIndex);
+                                FAssertLF(containers->getLeafMortonIndex((*outsideInteractions)[outInterIdx].insideIdxInBlock) == (*outsideInteractions)[outInterIdx].insideIndex);                              
 
-                                ParticleContainerClass* interactions[27];
-                                memset(interactions, 0, 27*sizeof(ParticleContainerClass*));
-                                interactions[(*outsideInteractions)[outInterIdx].outPosition] = &interParticles;
-                                const int counter = 1;
-                                kernel->P2PRemote( FTreeCoordinate((*outsideInteractions)[outInterIdx].insideIndex, tree->getHeight()-1), &particles, &particles , interactions, counter);
-
-                                interactions[(*outsideInteractions)[outInterIdx].outPosition] = nullptr;
-                                interactions[getOppositeNeighIndex((*outsideInteractions)[outInterIdx].outPosition)] = &particles;
-                                kernel->P2PRemote( FTreeCoordinate((*outsideInteractions)[outInterIdx].outIndex, tree->getHeight()-1), &interParticles, &interParticles , interactions, counter);
+                                ParticleContainerClass* ptrLeaf = &interParticles;
+                                kernel->P2PRemote( FTreeCoordinate((*outsideInteractions)[outInterIdx].insideIndex, tree->getHeight()-1),
+                                                    &particles, &particles , &ptrLeaf, &(*outsideInteractions)[outInterIdx].outPosition, 1);
+                                const int otherPosition = getOppositeNeighIndex((*outsideInteractions)[outInterIdx].outPosition);
+                                ptrLeaf = &particles;
+                                kernel->P2PRemote( FTreeCoordinate((*outsideInteractions)[outInterIdx].outIndex, tree->getHeight()-1),
+                                                    &interParticles, &interParticles , &ptrLeaf, &otherPosition, 1);
                             }
                         }
                     }
@@ -684,8 +675,8 @@ protected:
         FLOG( timerOutBlock.tac() );
 
         FLOG( FLog::Controller << "\t\t directPass in " << timer.tacAndElapsed() << "s\n" );
-        FLOG( FLog::Controller << "\t\t\t inblock  in " << timerInBlock.elapsed() << "s\n" );
-        FLOG( FLog::Controller << "\t\t\t outblock in " << timerOutBlock.elapsed() << "s\n" );
+        FLOG( FLog::Controller << "\t\t\t inblock  in " << timerInBlock.cumulated() << "s\n" );
+        FLOG( FLog::Controller << "\t\t\t outblock in " << timerOutBlock.cumulated() << "s\n" );
     }
 
     void mergePass(){

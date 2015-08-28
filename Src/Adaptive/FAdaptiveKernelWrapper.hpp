@@ -174,10 +174,12 @@ public:
 	 * Else we have to perform M2L or P2L.
 	 */
 	void M2L(FAdaptiveCell<CellClass, ContainerClass>* const FRestrict local,
-			const FAdaptiveCell<CellClass, ContainerClass>* distantNeighbors[343],
-			const int /*size*/, const int inLevel)  override {
+            const FAdaptiveCell<CellClass, ContainerClass>* distantNeighbors[],
+             const int positions[],
+            const int size, const int inLevel)  override {
 		// In case usual M2L can be done
-		const CellClass* normalDistantNeighbors[343];
+        const CellClass* normalDistantNeighbors[189];
+        int normalPositions[189];
 		int normalSize = 0;
 		// The current Adaptive cell
 		FAdaptiveCell<CellClass, ContainerClass>* currentAdaptiveCell = nullptr;
@@ -187,7 +189,7 @@ public:
 			currentAdaptiveCell  = local;
 			currentAdaptiveLevel = inLevel;
 			// Then we may have some M2L to do
-			memset(normalDistantNeighbors, 0, 343*sizeof(CellClass*));
+            memset(normalDistantNeighbors, 0, 189*sizeof(CellClass*));
 		}
 		else{
 			// Else we are working with a lower cell
@@ -195,77 +197,77 @@ public:
 			currentAdaptiveLevel= local->getSubAdaptiveLevel();
 		}
 
-		for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
-			if(distantNeighbors[idxNeigh]){
-                // If the current cell is Adaptive and the neighbor too
-				if(distantNeighbors[idxNeigh]->isAdaptive() && local->isAdaptive()){
-					if(distantNeighbors[idxNeigh]->hasDevelopment() && currentAdaptiveCell->hasDevelopment()){
-						// If both have development than we can use usual M2L
-						normalDistantNeighbors[idxNeigh] = distantNeighbors[idxNeigh]->getRealCell();
-						normalSize += 1;
-					}
-					else if(currentAdaptiveCell->hasDevelopment()){
-						// If only current cell has development the neighbor has particles
-                        for(int idxLeafSrc = 0 ; idxLeafSrc < distantNeighbors[idxNeigh]->getNbSubLeaves() ; ++idxLeafSrc){
-							kernel.P2L(currentAdaptiveCell->getRealCell(), currentAdaptiveLevel, distantNeighbors[idxNeigh]->getSubLeaf(idxLeafSrc));
-						}
-					}
-					else if(distantNeighbors[idxNeigh]->hasDevelopment()){
-						// If only current cell has particles the neighbor has development
-                        for(int idxLeafTgt = 0 ; idxLeafTgt < currentAdaptiveCell->getNbSubLeaves() ; ++idxLeafTgt){
-							kernel.M2P(distantNeighbors[idxNeigh]->getRealCell(), currentAdaptiveLevel, currentAdaptiveCell->getSubLeaf(idxLeafTgt));
-						}
-					}
-					else{
-						// If both have particles
-                        for(int idxLeafTgt = 0 ; idxLeafTgt < currentAdaptiveCell->getNbSubLeaves() ; ++idxLeafTgt){
-                            for(int idxLeafSrc = 0 ; idxLeafSrc < distantNeighbors[idxNeigh]->getNbSubLeaves() ; ++idxLeafSrc){
-                                kernel.P2P(currentAdaptiveCell->getSubLeaf(idxLeafTgt), distantNeighbors[idxNeigh]->getSubLeaf(idxLeafSrc));
-							}
-						}
-					}
-				}
-				else{
-					const FAdaptiveCell<CellClass, ContainerClass>* lowerAdaptiveCell = distantNeighbors[idxNeigh];
-					int lowerAdaptiveLevel       = inLevel;
-					// If we need to look at lower level to find the Adaptive cell
-					if(!distantNeighbors[idxNeigh]->isAdaptive()){
-						lowerAdaptiveCell  = distantNeighbors[idxNeigh]->getSubAdaptiveCell();
-						lowerAdaptiveLevel = distantNeighbors[idxNeigh]->getSubAdaptiveLevel();
-					}
+        for(int idxNeighExisting = 0 ; idxNeighExisting < size ; ++idxNeighExisting){
+            const int idxNeigh = positions[idxNeighExisting];
+            // If the current cell is Adaptive and the neighbor too
+            if(distantNeighbors[idxNeighExisting]->isAdaptive() && local->isAdaptive()){
+                if(distantNeighbors[idxNeighExisting]->hasDevelopment() && currentAdaptiveCell->hasDevelopment()){
+                    // If both have development than we can use usual M2L
+                    normalDistantNeighbors[normalSize] = distantNeighbors[idxNeighExisting]->getRealCell();
+                    normalPositions[normalSize] = idxNeigh;
+                    normalSize += 1;
+                }
+                else if(currentAdaptiveCell->hasDevelopment()){
+                    // If only current cell has development the neighbor has particles
+                    for(int idxLeafSrc = 0 ; idxLeafSrc < distantNeighbors[idxNeighExisting]->getNbSubLeaves() ; ++idxLeafSrc){
+                        kernel.P2L(currentAdaptiveCell->getRealCell(), currentAdaptiveLevel, distantNeighbors[idxNeighExisting]->getSubLeaf(idxLeafSrc));
+                    }
+                }
+                else if(distantNeighbors[idxNeighExisting]->hasDevelopment()){
+                    // If only current cell has particles the neighbor has development
+                    for(int idxLeafTgt = 0 ; idxLeafTgt < currentAdaptiveCell->getNbSubLeaves() ; ++idxLeafTgt){
+                        kernel.M2P(distantNeighbors[idxNeighExisting]->getRealCell(), currentAdaptiveLevel, currentAdaptiveCell->getSubLeaf(idxLeafTgt));
+                    }
+                }
+                else{
+                    // If both have particles
+                    for(int idxLeafTgt = 0 ; idxLeafTgt < currentAdaptiveCell->getNbSubLeaves() ; ++idxLeafTgt){
+                        for(int idxLeafSrc = 0 ; idxLeafSrc < distantNeighbors[idxNeighExisting]->getNbSubLeaves() ; ++idxLeafSrc){
+                            kernel.P2P(currentAdaptiveCell->getSubLeaf(idxLeafTgt), distantNeighbors[idxNeighExisting]->getSubLeaf(idxLeafSrc));
+                        }
+                    }
+                }
+            }
+            else{
+                const FAdaptiveCell<CellClass, ContainerClass>* lowerAdaptiveCell = distantNeighbors[idxNeighExisting];
+                int lowerAdaptiveLevel       = inLevel;
+                // If we need to look at lower level to find the Adaptive cell
+                if(!distantNeighbors[idxNeighExisting]->isAdaptive()){
+                    lowerAdaptiveCell  = distantNeighbors[idxNeighExisting]->getSubAdaptiveCell();
+                    lowerAdaptiveLevel = distantNeighbors[idxNeighExisting]->getSubAdaptiveLevel();
+                }
 
-					if(lowerAdaptiveCell->hasDevelopment() && currentAdaptiveCell->hasDevelopment()){
-						// We are doing a M2L with distant interaction
-                        kernel.M2L(currentAdaptiveCell->getRealCell(), currentAdaptiveLevel,
-								lowerAdaptiveCell->getRealCell(), lowerAdaptiveLevel);
-					}
-					else if(currentAdaptiveCell->hasDevelopment()){
-                        // If only current cell has development the neighbor has particles
-						for(int idxLeafSrc = 0 ; idxLeafSrc < lowerAdaptiveCell->getNbSubLeaves() ; ++idxLeafSrc){
-                            kernel.P2L(currentAdaptiveCell->getRealCell(), currentAdaptiveLevel, lowerAdaptiveCell->getSubLeaf(idxLeafSrc));
-						}
-					}
-					else if(lowerAdaptiveCell->hasDevelopment()){
-                        // If only current cell has particles the neighbor has development
-						for(int idxLeafTgt = 0 ; idxLeafTgt < currentAdaptiveCell->getNbSubLeaves() ; ++idxLeafTgt){
-                            kernel.M2P(lowerAdaptiveCell->getRealCell(), lowerAdaptiveLevel, currentAdaptiveCell->getSubLeaf(idxLeafTgt));
-						}
-					}
-					else{
-                        // If both have particles
-						for(int idxLeafTgt = 0 ; idxLeafTgt < currentAdaptiveCell->getNbSubLeaves() ; ++idxLeafTgt){
-                            for(int idxLeafSrc = 0 ; idxLeafSrc < lowerAdaptiveCell->getNbSubLeaves() ; ++idxLeafSrc){
-                                kernel.P2P(currentAdaptiveCell->getSubLeaf(idxLeafTgt), lowerAdaptiveCell->getSubLeaf(idxLeafSrc));
-							}
-						}
-					}
-				}
+                if(lowerAdaptiveCell->hasDevelopment() && currentAdaptiveCell->hasDevelopment()){
+                    // We are doing a M2L with distant interaction
+                    kernel.M2L(currentAdaptiveCell->getRealCell(), currentAdaptiveLevel,
+                            lowerAdaptiveCell->getRealCell(), lowerAdaptiveLevel);
+                }
+                else if(currentAdaptiveCell->hasDevelopment()){
+                    // If only current cell has development the neighbor has particles
+                    for(int idxLeafSrc = 0 ; idxLeafSrc < lowerAdaptiveCell->getNbSubLeaves() ; ++idxLeafSrc){
+                        kernel.P2L(currentAdaptiveCell->getRealCell(), currentAdaptiveLevel, lowerAdaptiveCell->getSubLeaf(idxLeafSrc));
+                    }
+                }
+                else if(lowerAdaptiveCell->hasDevelopment()){
+                    // If only current cell has particles the neighbor has development
+                    for(int idxLeafTgt = 0 ; idxLeafTgt < currentAdaptiveCell->getNbSubLeaves() ; ++idxLeafTgt){
+                        kernel.M2P(lowerAdaptiveCell->getRealCell(), lowerAdaptiveLevel, currentAdaptiveCell->getSubLeaf(idxLeafTgt));
+                    }
+                }
+                else{
+                    // If both have particles
+                    for(int idxLeafTgt = 0 ; idxLeafTgt < currentAdaptiveCell->getNbSubLeaves() ; ++idxLeafTgt){
+                        for(int idxLeafSrc = 0 ; idxLeafSrc < lowerAdaptiveCell->getNbSubLeaves() ; ++idxLeafSrc){
+                            kernel.P2P(currentAdaptiveCell->getSubLeaf(idxLeafTgt), lowerAdaptiveCell->getSubLeaf(idxLeafSrc));
+                        }
+                    }
+                }
 			}
 		}
 
 		// If we work on the current cell and it has development
 		if(normalSize){
-			kernel.M2L(local->getRealCell(), normalDistantNeighbors, normalSize, inLevel);
+            kernel.M2L(local->getRealCell(), normalDistantNeighbors, normalPositions, normalSize, inLevel);
         }
 	}
 
@@ -341,15 +343,15 @@ public:
 	/** This is a normal P2P */
 	void P2P(const FTreeCoordinate& inLeafPosition,
 			ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
-			ContainerClass* const directNeighborsParticles[27], const int size)  override {
-		kernel.P2P(inLeafPosition, targets, sources, directNeighborsParticles, size);
+            ContainerClass* const directNeighborsParticles[], const int positions[], const int size)  override {
+        kernel.P2P(inLeafPosition, targets, sources, directNeighborsParticles, positions, size);
 	}
 
 	/** This is a normal P2P */
 	void P2PRemote(const FTreeCoordinate& inLeafPosition,
 			ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
-			ContainerClass* const directNeighborsParticles[27], const int size) override {
-		kernel.P2PRemote(inLeafPosition, targets, sources, directNeighborsParticles, size);
+            ContainerClass* const directNeighborsParticles[], const int positions[], const int size) override {
+        kernel.P2PRemote(inLeafPosition, targets, sources, directNeighborsParticles, positions, size);
 	}
 
 };

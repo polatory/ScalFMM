@@ -196,7 +196,8 @@ protected:
 
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
-        const CellClass* neighbors[343];
+        const CellClass* neighbors[342];
+        int neighborPositions[342];
 
         // for each levels
         for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
@@ -208,19 +209,18 @@ protected:
                 CellClass* const currentCell = octreeIterator.getCurrentCell();
 
                 if(currentCell->hasTargetsChild()){
-                    const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),idxLevel, separationCriteria);
+                    const int counter = tree->getInteractionNeighbors(neighbors, neighborPositions, octreeIterator.getCurrentGlobalCoordinate(),idxLevel, separationCriteria);
                     if( counter ){
                         int counterWithSrc = 0;
-                        for(int idxRealNeighbors = 0 ; idxRealNeighbors < 343 ; ++idxRealNeighbors ){
-                            if(neighbors[idxRealNeighbors] && neighbors[idxRealNeighbors]->hasSrcChild()){
+                        for(int idxRealNeighbors = 0 ; idxRealNeighbors < counter ; ++idxRealNeighbors ){
+                            if(neighbors[idxRealNeighbors]->hasSrcChild()){
+                                neighbors[counterWithSrc] = neighbors[idxRealNeighbors];
+                                neighborPositions[counterWithSrc] = neighborPositions[idxRealNeighbors];
                                 ++counterWithSrc;
-                            }
-                            else{
-                                neighbors[idxRealNeighbors] = nullptr;
                             }
                         }
                         if(counterWithSrc){
-                            kernels->M2L( currentCell , neighbors, counterWithSrc, idxLevel);
+                            kernels->M2L( currentCell , neighbors, neighborPositions, counterWithSrc, idxLevel);
                         }
                     }
                 }
@@ -305,7 +305,8 @@ protected:
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         // There is a maximum of 26 neighbors
-        ContainerClass* neighbors[27];
+        ContainerClass* neighbors[26];
+        int neighborPositions[26];
         // for each leafs
         do{
             if( octreeIterator.getCurrentCell()->hasTargetsChild() ){
@@ -315,10 +316,9 @@ protected:
                 }
                 if(p2pEnabled){
                     // need the current particles and neighbors particles
-                    const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), heightMinusOne);
-                    neighbors[13] = octreeIterator.getCurrentListSrc();
+                    const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, octreeIterator.getCurrentGlobalCoordinate(), heightMinusOne);
                     kernels->P2PRemote( octreeIterator.getCurrentGlobalCoordinate(), octreeIterator.getCurrentListTargets(),
-                              octreeIterator.getCurrentListSrc() , neighbors, counter + 1);
+                              octreeIterator.getCurrentListSrc() , neighbors, neighborPositions, counter);
                 }
                 FLOG(computationCounter.tac());
                 FLOG(totalComputation += computationCounter.elapsed());

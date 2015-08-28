@@ -443,7 +443,7 @@ public:
       * \omega (q,a) = q \frac{a^{l}}{(l+|m|)!} P_{lm}(cos( \alpha ) )e^{-im \beta}
       * \f]
       */
-    void P2M(CellClass* const inPole, const ContainerClass* const inParticles ) {
+    void P2M(CellClass* const inPole, const ContainerClass* const inParticles )override {
         const FReal i_pow_m[4] = {0, FMath::FPiDiv2<FReal>(), FMath::FPi<FReal>(), -FMath::FPiDiv2<FReal>()};
         // w is the multipole moment
         FComplex<FReal>* FRestrict const w = inPole->getMultipole();
@@ -496,7 +496,7 @@ public:
       * then transfer using the formula
       * and finaly rotate back.
       */
-    void M2M(CellClass* const FRestrict inPole, const CellClass*const FRestrict *const FRestrict inChildren, const int inLevel) {
+    void M2M(CellClass* const FRestrict inPole, const CellClass*const FRestrict *const FRestrict inChildren, const int inLevel)override {
         // A buffer to copy the source w allocated once
         FComplex<FReal> source_w[SizeArray];
         // For all children
@@ -547,44 +547,43 @@ public:
       * then transfer using the formula
       * and finaly rotate back.
       */
-    void M2L(CellClass* const FRestrict inLocal, const CellClass* inInteractions[], const int /*inSize*/, const int inLevel) {
+    void M2L(CellClass* const FRestrict inLocal, const CellClass* inInteractions[],
+             const int neighborPositions[], const int inSize, const int inLevel)  override {
         // To copy the multipole data allocated once
         FComplex<FReal> source_w[SizeArray];
         // For all children
-        for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
-            // if interaction exits
-            if(inInteractions[idxNeigh]){
-                // Copy multipole data into buffer
-                FMemUtils::copyall(source_w, inInteractions[idxNeigh]->getMultipole(), SizeArray);
+        for(int idxExistingNeigh = 0 ; idxExistingNeigh < inSize ; ++idxExistingNeigh){
+            const int idxNeigh = neighborPositions[idxExistingNeigh];
+            // Copy multipole data into buffer
+            FMemUtils::copyall(source_w, inInteractions[idxExistingNeigh]->getMultipole(), SizeArray);
 
-                // Rotate
-                const FSpherical<FReal> sph = getSphericalInteraction(inLevel, idxNeigh);
-                rotateMultipole(source_w, sph.getPhiZero2Pi(), sph.getInclination());
+            // Rotate
+            const FSpherical<FReal> sph = getSphericalInteraction(inLevel, idxNeigh);
+            rotateMultipole(source_w, sph.getPhiZero2Pi(), sph.getInclination());
 
-                const FReal b = sph.getR();
-                // Transfer to u
-                FComplex<FReal> target_u[SizeArray];
-                for(int l = 0 ; l <= P ; ++l ){
-                    for(int m = 0 ; m <= l ; ++m ){
-                        // u{l,m}(a-b) = sum(j=|m|:P-l, (j+l)!/b^(j+l+1) w{j,-m}(a)
-                        FReal u_lm_real = 0.0;
-                        FReal u_lm_imag = 0.0;
-                        for(int j = m ; j <= P-l ; ++j ){
-                            const FReal coef = FMath::pow(FReal(-1.0),m) * ( fact(j+l) / FMath::pow(b,j+l+1));
-                            // because {l,-m} => {l,m} conjugate -1^m with -i
-                            u_lm_real += coef * source_w[atLm(j,m)].getReal();
-                            u_lm_imag -= coef * source_w[atLm(j,m)].getImag();
-                        }
-                        target_u[atLm(l,m)].setRealImag(u_lm_real,u_lm_imag);
+            const FReal b = sph.getR();
+            // Transfer to u
+            FComplex<FReal> target_u[SizeArray];
+            for(int l = 0 ; l <= P ; ++l ){
+                for(int m = 0 ; m <= l ; ++m ){
+                    // u{l,m}(a-b) = sum(j=|m|:P-l, (j+l)!/b^(j+l+1) w{j,-m}(a)
+                    FReal u_lm_real = 0.0;
+                    FReal u_lm_imag = 0.0;
+                    for(int j = m ; j <= P-l ; ++j ){
+                        const FReal coef = FMath::pow(FReal(-1.0),m) * ( fact(j+l) / FMath::pow(b,j+l+1));
+                        // because {l,-m} => {l,m} conjugate -1^m with -i
+                        u_lm_real += coef * source_w[atLm(j,m)].getReal();
+                        u_lm_imag -= coef * source_w[atLm(j,m)].getImag();
                     }
+                    target_u[atLm(l,m)].setRealImag(u_lm_real,u_lm_imag);
                 }
-
-                // Rotate it back
-                deRotateTaylor(target_u, sph.getPhiZero2Pi(), sph.getInclination());
-
-                // Sum
-                FMemUtils::addall(inLocal->getLocal(), target_u, SizeArray);
             }
+
+            // Rotate it back
+            deRotateTaylor(target_u, sph.getPhiZero2Pi(), sph.getInclination());
+
+            // Sum
+            FMemUtils::addall(inLocal->getLocal(), target_u, SizeArray);
         }
     }
 
@@ -599,7 +598,7 @@ public:
       * then transfer using the formula
       * and finaly rotate back.
       */
-    void L2L(const CellClass* const FRestrict inLocal, CellClass* FRestrict *const FRestrict  inChildren, const int inLevel) {
+    void L2L(const CellClass* const FRestrict inLocal, CellClass* FRestrict *const FRestrict  inChildren, const int inLevel)override {
         // To copy the source local allocated once
         FComplex<FReal> source_u[SizeArray];
         // For all children
@@ -657,7 +656,7 @@ public:
       * F_{ \phi } = -\frac{1}{r sin \phi} \sum_{j=0}^P \sum_{k=1}^j{(-2k) Im(u_{j,k} I_{j,k}(r, \theta, \phi)) }
       * \f]
       */
-    void L2P(const CellClass* const inLocal, ContainerClass* const inParticles){
+    void L2P(const CellClass* const inLocal, ContainerClass* const inParticles)override{
         const FReal i_pow_m[4] = {0, FMath::FPiDiv2<FReal>(), FMath::FPi<FReal>(), -FMath::FPiDiv2<FReal>()};
         // Take the local value from the cell
         const FComplex<FReal>* FRestrict const u = inLocal->getLocal();
@@ -798,17 +797,24 @@ public:
       * Calling this method in multi thread should be done carrefully.
       */
     void P2P(const FTreeCoordinate& /*inPosition*/,
-                     ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
-                     ContainerClass* const inNeighbors[27], const int /*inSize*/){
-        FP2PRT<FReal>::template FullMutual<ContainerClass>(inTargets,inNeighbors,14);
+             ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+             ContainerClass* const inNeighbors[], const int neighborPositions[],
+             const int inSize) override {
+        int nbNeighborsToCompute = 0;
+        while(nbNeighborsToCompute < inSize
+              && neighborPositions[nbNeighborsToCompute] < 14){
+            nbNeighborsToCompute += 1;
+        }
+        FP2PRT<FReal>::template FullMutual<ContainerClass>(inTargets,inNeighbors,nbNeighborsToCompute);
     }
 
 
     /** Use mutual even if it not useful and call particlesMutualInteraction */
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
-                   ContainerClass* const inNeighbors[27], const int /*inSize*/){
-        FP2PRT<FReal>::template FullRemote<ContainerClass>(inTargets,inNeighbors,27);
+                   ContainerClass* const inNeighbors[], const int neighborPositions[],
+                   const int inSize) override {
+        FP2PRT<FReal>::template FullRemote<ContainerClass>(inTargets,inNeighbors,inSize);
     }
 };
 

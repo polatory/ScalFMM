@@ -250,10 +250,11 @@ protected:
 					do{
 #pragma omp task firstprivate(octreeIterator,idxLevel)
 						{
-                            const CellClass* neighbors[343];
-							const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
+                            const CellClass* neighbors[342];
+                            int neighborPositions[342];
+                            const int counter = tree->getInteractionNeighbors(neighbors, neighborPositions, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
 							if(counter){
-								kernels[omp_get_thread_num()]->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
+                                kernels[omp_get_thread_num()]->M2L( octreeIterator.getCurrentCell() , neighbors, neighborPositions, counter, idxLevel);
 							}
 						}
 
@@ -297,10 +298,11 @@ protected:
 					do{
                         #pragma omp task default(none) firstprivate(octreeIterator,separationCriteria,idxLevel)
                         {
-                            const CellClass* neighbors[343];
-                                const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
+                            const CellClass* neighbors[342];
+                            int neighborPositions[342];
+                                const int counter = tree->getInteractionNeighbors(neighbors, neighborPositions, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
                             if(counter){
-                                    kernels[omp_get_thread_num()]->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
+                                    kernels[omp_get_thread_num()]->M2L( octreeIterator.getCurrentCell() , neighbors, neighborPositions, counter, idxLevel);
                             }
                         }
 
@@ -418,10 +420,11 @@ protected:
 							}
 							if(p2pEnabled){
                                 // There is a maximum of 26 neighbors
-                                ContainerClass* neighbors[27];
-								const int counter = tree->getLeafsNeighbors(neighbors, toWork.getCurrentGlobalCoordinate(),heightMinusOne);
+                                ContainerClass* neighbors[26];
+                                int neighborPositions[26];
+                                const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, toWork.getCurrentGlobalCoordinate(),heightMinusOne);
 								kernels[omp_get_thread_num()]->P2P(toWork.getCurrentGlobalCoordinate(), toWork.getCurrentListTargets(),
-										toWork.getCurrentListSrc(), neighbors, counter);
+                                        toWork.getCurrentListSrc(), neighbors, neighborPositions, counter);
 							}
 						}
 					}

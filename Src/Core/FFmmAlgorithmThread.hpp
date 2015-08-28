@@ -315,12 +315,13 @@ protected:
             #pragma omp parallel
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                const CellClass* neighbors[343];
+                const CellClass* neighbors[342];
+                int neighborPositions[342];
 
                 #pragma omp for  schedule(dynamic, chunkSize) nowait
                 for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
-                    const int counter = tree->getInteractionNeighbors(neighbors, iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
-                    if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, idxLevel);
+                    const int counter = tree->getInteractionNeighbors(neighbors, neighborPositions, iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
+                    if(counter) myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, neighborPositions, counter, idxLevel);
                 }
 
                 myThreadkernels->finishedLevelM2L(idxLevel);
@@ -462,7 +463,8 @@ protected:
 
             KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
-            ContainerClass* neighbors[27];
+            ContainerClass* neighbors[26];
+            int neighborPositions[26];
             int previous = 0;
 
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
@@ -477,9 +479,9 @@ protected:
                     if(p2pEnabled){
                         // need the current particles and neighbors particles
                         FLOG(if(!omp_get_thread_num()) computationCounterP2P.tic());
-                        const int counter = tree->getLeafsNeighbors(neighbors, currentIter.cell->getCoordinate(), LeafIndex);
+                        const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, currentIter.cell->getCoordinate(), LeafIndex);
                         myThreadkernels.P2P(currentIter.cell->getCoordinate(), currentIter.targets,
-                                            currentIter.sources, neighbors, counter);
+                                            currentIter.sources, neighbors, neighborPositions, counter);
                         FLOG(if(!omp_get_thread_num()) computationCounterP2P.tac());
                     }
                 }

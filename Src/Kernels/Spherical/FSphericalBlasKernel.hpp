@@ -181,15 +181,14 @@ public:
 	}
 
 	/** M2L with a cell and all the existing neighbors */
-	void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[343],
-			const int /*size*/, const int inLevel) {
+    void M2L(CellClass* const FRestrict inLocal, const CellClass* distantNeighbors[],
+             const int neighborPositions[], const int inSize, const int inLevel)  override {
 		// For all neighbors compute M2L
-		for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
-			if( distantNeighbors[idxNeigh] ){
-                const FComplex<FReal>* const transitionVector = preM2LTransitions[inLevel][idxNeigh];
-				multipoleToLocal(pole->getLocal(), distantNeighbors[idxNeigh]->getMultipole(), transitionVector);
-			}
-		}
+        for(int idxExistingNeigh = 0 ; idxExistingNeigh < inSize ; ++idxExistingNeigh){
+            const int idxNeigh = neighborPositions[idxExistingNeigh];
+            const FComplex<FReal>* const transitionVector = preM2LTransitions[inLevel][idxNeigh];
+            multipoleToLocal(inLocal->getLocal(), distantNeighbors[idxExistingNeigh]->getMultipole(), transitionVector);
+        }
 	}
 
 

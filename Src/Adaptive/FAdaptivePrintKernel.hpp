@@ -34,12 +34,10 @@ public:
         }
     }
 
-    void M2L(CellClass* const FRestrict local, const CellClass* interactions[], const int counter, const int level) override {
+    void M2L(CellClass* const FRestrict local, const CellClass* interactions[], const int /*positions*/[], const int counter, const int level) override {
         std::cout << "Usual] M2L Idx = " << local->getMortonIndex() << " at level " << level  << " with\n";
-        for(int idxInter = 0 ; idxInter < 8 ; ++idxInter){
-            if(interactions[idxInter]){
+        for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
                 std::cout << "\t Idx " << interactions[idxInter]->getMortonIndex() << "\n";
-            }
         }
     }
 
@@ -58,23 +56,19 @@ public:
 
     void P2P(const FTreeCoordinate& ,
                      ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict ,
-                     ContainerClass* const neighs[27], const int ) override {
+                     ContainerClass* const neighs[], const int /*positions*/[], const int size) override {
         std::cout << "Usual] P2P @" << targets << " has " << targets->getNbParticles() << " with\n";
-        for(int idxNeigh = 0 ; idxNeigh < 27 ; ++idxNeigh){
-            if(neighs[idxNeigh]){
+        for(int idxNeigh = 0 ; idxNeigh < size ; ++idxNeigh){
                 std::cout << "\t @" << neighs[idxNeigh]<< " has " << neighs[idxNeigh]->getNbParticles() << "\n";
-            }
         }
     }
 
     void P2PRemote(const FTreeCoordinate& ,
                      ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict ,
-                     ContainerClass* const neighs[27], const int ) override {
+                     ContainerClass* const neighs[], const int /*positions*/[], const int size) override {
         std::cout << "Usual] P2P remote @" << targets << " has " << targets->getNbParticles() << " with\n";
-        for(int idxNeigh = 0 ; idxNeigh < 27 ; ++idxNeigh){
-            if(neighs[idxNeigh]){
+        for(int idxNeigh = 0 ; idxNeigh < size ; ++idxNeigh){
                 std::cout << "\t @" << neighs[idxNeigh]<< " has " << neighs[idxNeigh]->getNbParticles() << "\n";
-            }
         }
     }
 

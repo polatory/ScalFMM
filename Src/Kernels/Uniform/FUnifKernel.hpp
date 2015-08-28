@@ -122,23 +122,19 @@ public:
     }
 
 
-    void M2L(CellClass* const FRestrict TargetCell,
-             const CellClass* SourceCells[343],
-             const int /*NumSourceCells*/,
-             const int TreeLevel)
-    {
+    void M2L(CellClass* const FRestrict TargetCell, const CellClass* SourceCells[],
+             const int neighborPositions[], const int inSize, const int TreeLevel)  override {
         const FReal CellWidth(AbstractBaseClass::BoxWidth / FReal(FMath::pow(2, TreeLevel)));
         const FReal scale(MatrixKernel->getScaleFactor(CellWidth));
 
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
             FComplex<FReal> *const TransformedLocalExpansion = TargetCell->getTransformedLocal(idxRhs);
 
-            for (int idx=0; idx<343; ++idx){
-                if (SourceCells[idx]){
-                    M2LHandler.applyFC(idx, TreeLevel, scale, 
-                                       SourceCells[idx]->getTransformedMultipole(idxRhs),
-                                       TransformedLocalExpansion);
-                }
+            for(int idxExistingNeigh = 0 ; idxExistingNeigh < inSize ; ++idxExistingNeigh){
+                const int idxNeigh = neighborPositions[idxExistingNeigh];
+                M2LHandler.applyFC(idxNeigh, TreeLevel, scale,
+                                   SourceCells[idxExistingNeigh]->getTransformedMultipole(idxRhs),
+                                   TransformedLocalExpansion);
             }
         }
     }
@@ -185,29 +181,34 @@ public:
 
     }
 
-    void P2P(const FTreeCoordinate& /* LeafCellCoordinate */, // needed for periodic boundary conditions
-             ContainerClass* const FRestrict TargetParticles,
-             const ContainerClass* const FRestrict /*SourceParticles*/,
-             ContainerClass* const NeighborSourceParticles[27],
-             const int /* size */)
-    {
+    void P2P(const FTreeCoordinate& /*inPosition*/,
+             ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+             ContainerClass* const inNeighbors[], const int neighborPositions[],
+             const int inSize) override {
         // Standard FMM separation criterion, i.e. max 27 neighbor clusters per leaf
-        if(LeafLevelSeparationCriterion==1) 
-            DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
+        if(LeafLevelSeparationCriterion==1) {
+            int nbNeighborsToCompute = 0;
+            while(nbNeighborsToCompute < inSize
+                  && neighborPositions[nbNeighborsToCompute] < 14){
+                nbNeighborsToCompute += 1;
+            }
+            DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2P(inTargets,inNeighbors,nbNeighborsToCompute,MatrixKernel);
+        }
         // Nearfield interactions are only computed within the target leaf
-        if(LeafLevelSeparationCriterion==0) 
-            DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2PRemote(TargetParticles,NeighborSourceParticles,0,MatrixKernel);
+        else if(LeafLevelSeparationCriterion==0){
+            DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,inSize,MatrixKernel);
+        }
         // If criterion equals -1 then no P2P need to be performed.
     }
 
 
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
-                   ContainerClass* const inNeighbors[27], const int /*inSize*/)
-    {
+                   ContainerClass* const inNeighbors[], const int /*neighborPositions*/[],
+                   const int inSize) override {
         // Standard FMM separation criterion, i.e. max 27 neighbor clusters per leaf
         if(LeafLevelSeparationCriterion==1) 
-            DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
+            DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,inSize,MatrixKernel);
         // Nearfield interactions are only computed within the target leaf
         if(LeafLevelSeparationCriterion==0) 
             DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,0,MatrixKernel);

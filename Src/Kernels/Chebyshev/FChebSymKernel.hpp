@@ -50,7 +50,7 @@ class FTreeCoordinate;
  */
 template < class FReal, class CellClass, class ContainerClass,   class MatrixKernelClass, int ORDER, int NVALS = 1>
 class FChebSymKernel
-    : public FAbstractChebKernel<FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+        : public FAbstractChebKernel<FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 {
     typedef FAbstractChebKernel<FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS> AbstractBaseClass;
     typedef SymmetryHandler<FReal, ORDER, MatrixKernelClass::Type> SymmetryHandlerClass;
@@ -112,10 +112,10 @@ public:
                    const FPoint<FReal>& inBoxCenter,
                    const MatrixKernelClass *const inMatrixKernel,
                    const FReal Epsilon)
-      : AbstractBaseClass(inTreeHeight, inBoxWidth, inBoxCenter),
-        MatrixKernel(inMatrixKernel),
-        SymHandler(new SymmetryHandlerClass(MatrixKernel, Epsilon, inBoxWidth, inTreeHeight)),
-        Loc(nullptr), Mul(nullptr), countExp(nullptr)
+        : AbstractBaseClass(inTreeHeight, inBoxWidth, inBoxCenter),
+          MatrixKernel(inMatrixKernel),
+          SymHandler(new SymmetryHandlerClass(MatrixKernel, Epsilon, inBoxWidth, inTreeHeight)),
+          Loc(nullptr), Mul(nullptr), countExp(nullptr)
     {
         this->allocateMemoryForPermutedExpansions();
 #ifdef LOG_TIMINGS
@@ -176,7 +176,7 @@ public:
 
 
     void P2M(CellClass* const LeafCell,
-                     const ContainerClass* const SourceParticles/*, const int level = AbstractBaseClass::TreeHeight*/)
+             const ContainerClass* const SourceParticles/*, const int level = AbstractBaseClass::TreeHeight*/)
     {
         // apply Sy
         const FPoint<FReal> LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
@@ -195,7 +195,7 @@ public:
             //   FBlas::scal(nnodes*2, FReal(0.), ParentCell->getMultipole(idxRhs));
             for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex){
                 // apply Sy
-               if (ChildCells[ChildIndex]){
+                if (ChildCells[ChildIndex]){
                     AbstractBaseClass::Interpolator->applyM2M(ChildIndex, ChildCells[ChildIndex]->getMultipole(idxRhs), ParentCell->getMultipole(idxRhs));
                 }
             }
@@ -204,50 +204,46 @@ public:
 
 
 
-    void M2L(CellClass* const FRestrict TargetCell,
-             const CellClass* SourceCells[343],
-             const int /*NumSourceCells*/,
-             const int TreeLevel)
-    {
+    void M2L(CellClass* const FRestrict TargetCell, const CellClass* SourceCells[],
+             const int neighborPositions[], const int inSize, const int TreeLevel)  override {
 #ifdef LOG_TIMINGS
         time.tic();
 #endif
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
             // permute and copy multipole expansion
             memset(countExp, 0, sizeof(int) * 343);
-            for (unsigned int idx=0; idx<343; ++idx) {
-                if (SourceCells[idx]) {
-                    const unsigned int pidx = SymHandler->pindices[idx];
-                    const unsigned int count = (countExp[pidx])++;
-                    FReal *const mul = Mul[pidx] + count*nnodes;
-                    const unsigned int *const pvec = SymHandler->pvectors[idx];
-                    const FReal *const MultiExp = SourceCells[idx]->getMultipole(idxRhs);
+            for(int idxExistingNeigh = 0 ; idxExistingNeigh < inSize ; ++idxExistingNeigh){
+                const int idx = neighborPositions[idxExistingNeigh];
+                const unsigned int pidx = SymHandler->pindices[idx];
+                const unsigned int count = (countExp[pidx])++;
+                FReal *const mul = Mul[pidx] + count*nnodes;
+                const unsigned int *const pvec = SymHandler->pvectors[idx];
+                const FReal *const MultiExp = SourceCells[idxExistingNeigh]->getMultipole(idxRhs);
 
-                    /*
+                /*
                     // no loop unrolling
                     for (unsigned int n=0; n<nnodes; ++n)
                         mul[pvec[n]] = MultiExp[n];
                     */
 
-                    // explicit loop unrolling
-                    for (unsigned int n=0; n<nnodes/4 * 4; n+=4) {
-                        mul[pvec[n  ]] = MultiExp[n];
-                        mul[pvec[n+1]] = MultiExp[n+1];
-                        mul[pvec[n+2]] = MultiExp[n+2];
-                        mul[pvec[n+3]] = MultiExp[n+3];
-                    }
-                    for (unsigned int n=nnodes/4 * 4; n<nnodes; ++n){
-                        mul[pvec[n]] = MultiExp[n];
-                    }
+                // explicit loop unrolling
+                for (unsigned int n=0; n<nnodes/4 * 4; n+=4) {
+                    mul[pvec[n  ]] = MultiExp[n];
+                    mul[pvec[n+1]] = MultiExp[n+1];
+                    mul[pvec[n+2]] = MultiExp[n+2];
+                    mul[pvec[n+3]] = MultiExp[n+3];
+                }
+                for (unsigned int n=nnodes/4 * 4; n<nnodes; ++n){
+                    mul[pvec[n]] = MultiExp[n];
                 }
             }
 
-    #ifdef LOG_TIMINGS
+#ifdef LOG_TIMINGS
             t_m2l_1 += time.tacAndElapsed();
-    #endif
+#endif
 
 
-    #ifdef COUNT_BLOCKED_INTERACTIONS ////////////////////////////////////
+#ifdef COUNT_BLOCKED_INTERACTIONS ////////////////////////////////////
             unsigned int count_lidx = 0;
             unsigned int count_interactions = 0;
             for (unsigned int idx=0; idx<343; ++idx)
@@ -260,12 +256,12 @@ public:
                 }
                 std::cout << std::endl;
             }
-    #endif ///////////////////////////////////////////////////////////////
+#endif ///////////////////////////////////////////////////////////////
 
 
-    #ifdef LOG_TIMINGS
+#ifdef LOG_TIMINGS
             time.tic();
-    #endif
+#endif
 
             // multiply (mat-mat-mul)
             FReal Compressed [nnodes * 24];
@@ -285,46 +281,45 @@ public:
                 }
             }
 
-    #ifdef LOG_TIMINGS
+#ifdef LOG_TIMINGS
             t_m2l_2 += time.tacAndElapsed();
-    #endif
+#endif
 
-    #ifdef LOG_TIMINGS
+#ifdef LOG_TIMINGS
             time.tic();
-    #endif
+#endif
 
             // permute and add contribution to local expansions
             FReal *const LocalExpansion = TargetCell->getLocal(idxRhs);
             memset(countExp, 0, sizeof(int) * 343);
-            for (unsigned int idx=0; idx<343; ++idx) {
-                if (SourceCells[idx]) {
-                    const unsigned int pidx = SymHandler->pindices[idx];
-                    const unsigned int count = (countExp[pidx])++;
-                    const FReal *const loc = Loc[pidx] + count*nnodes;
-                    const unsigned int *const pvec = SymHandler->pvectors[idx];
+            for(int idxExistingNeigh = 0 ; idxExistingNeigh < inSize ; ++idxExistingNeigh){
+                const int idx = neighborPositions[idxExistingNeigh];
+                const unsigned int pidx = SymHandler->pindices[idx];
+                const unsigned int count = (countExp[pidx])++;
+                const FReal *const loc = Loc[pidx] + count*nnodes;
+                const unsigned int *const pvec = SymHandler->pvectors[idx];
 
-                    /*
-                    // no loop unrolling
-                    for (unsigned int n=0; n<nnodes; ++n)
-                        LocalExpansion[n] += loc[pvec[n]];
-                    */
+                /*
+                // no loop unrolling
+                for (unsigned int n=0; n<nnodes; ++n)
+                    LocalExpansion[n] += loc[pvec[n]];
+                */
 
-                    // explicit loop unrolling
-                    for (unsigned int n=0; n<nnodes/4 * 4; n+=4) {
-                        LocalExpansion[n  ] += loc[pvec[n  ]];
-                        LocalExpansion[n+1] += loc[pvec[n+1]];
-                        LocalExpansion[n+2] += loc[pvec[n+2]];
-                        LocalExpansion[n+3] += loc[pvec[n+3]];
-                    }
-                    for (unsigned int n=nnodes/4 * 4; n<nnodes; ++n)
-                        LocalExpansion[n] += loc[pvec[n]];
-
+                // explicit loop unrolling
+                for (unsigned int n=0; n<nnodes/4 * 4; n+=4) {
+                    LocalExpansion[n  ] += loc[pvec[n  ]];
+                    LocalExpansion[n+1] += loc[pvec[n+1]];
+                    LocalExpansion[n+2] += loc[pvec[n+2]];
+                    LocalExpansion[n+3] += loc[pvec[n+3]];
                 }
+                for (unsigned int n=nnodes/4 * 4; n<nnodes; ++n)
+                    LocalExpansion[n] += loc[pvec[n]];
+
             }
 
-    #ifdef LOG_TIMINGS
+#ifdef LOG_TIMINGS
             t_m2l_3 += time.tacAndElapsed();
-    #endif
+#endif
         }
 
     }
@@ -332,22 +327,18 @@ public:
 
 
     /*
-    void M2L(CellClass* const FRestrict TargetCell,
-                     const CellClass* SourceCells[343],
-                     const int NumSourceCells,
-                     const int TreeLevel)
-    {
+    void M2L(CellClass* const FRestrict TargetCell, const CellClass* SourceCells[],
+             const int neighborPositions[], const int inSize, const int TreeLevel)  override {
         // permute and copy multipole expansion
         memset(countExp, 0, sizeof(int) * 343);
-        for (unsigned int idx=0; idx<343; ++idx) {
-            if (SourceCells[idx]) {
+            for(int idxExistingNeigh = 0 ; idxExistingNeigh < inSize ; ++idxExistingNeigh){
+                const int idx = neighborPositions[idxExistingNeigh];
                 const unsigned int pidx = SymHandler->pindices[idx];
                 const unsigned int count = (countExp[pidx])++;
-                const FReal *const MultiExp = SourceCells[idx]->getMultipole();
+                const FReal *const MultiExp = SourceCells[idxExistingNeigh]->getMultipole();
                 for (unsigned int n=0; n<nnodes; ++n)
                     Mul[pidx][count*nnodes + SymHandler->pvectors[idx][n]] = MultiExp[n];
             }
-        }
 
         // multiply (mat-mat-mul)
         FReal Compressed [nnodes * 30];
@@ -367,24 +358,20 @@ public:
         // permute and add contribution to local expansions
         FReal *const LocalExpansion = TargetCell->getLocal();
         memset(countExp, 0, sizeof(int) * 343);
-        for (unsigned int idx=0; idx<343; ++idx) {
-            if (SourceCells[idx]) {
+            for(int idxExistingNeigh = 0 ; idxExistingNeigh < inSize ; ++idxExistingNeigh){
+                const int idx = neighborPositions[idxExistingNeigh];
                 const unsigned int pidx = SymHandler->pindices[idx];
                 const unsigned int count = (countExp[pidx])++;
                 for (unsigned int n=0; n<nnodes; ++n)
                     LocalExpansion[n] += Loc[pidx][count*nnodes + SymHandler->pvectors[idx][n]];
             }
-        }
 
     }
     */
 
     /*
-        void M2L(CellClass* const FRestrict TargetCell,
-        const CellClass* SourceCells[343],
-        const int NumSourceCells,
-        const int TreeLevel)
-        {
+    void M2L(CellClass* const FRestrict TargetCell, const CellClass* SourceCells[],
+             const int neighborPositions[], const int inSize, const int TreeLevel)  override {
         FReal *const LocalExpansion = TargetCell->getLocal();
         const FReal CellWidth(BoxWidth / FReal(FMath::pow(2, TreeLevel)));
         const FReal scale(MatrixKernel->getScaleFactor(CellWidth));
@@ -395,9 +382,9 @@ public:
         for (int i=-3; i<=3; ++i) {
         for (int j=-3; j<=3; ++j) {
         for (int k=-3; k<=3; ++k) {
-                    
+
         const unsigned int idx = ((i+3) * 7 + (j+3)) * 7 + (k+3);
-                    
+
         if (SourceCells[idx]) {
         const FReal *const MultiExp = SourceCells[idx]->getMultipole();
 
@@ -443,16 +430,16 @@ public:
              ContainerClass* const TargetParticles)
     {
         const FPoint<FReal> LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
-//      // a) apply Sx
-//      AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,
-//                                                AbstractBaseClass::BoxWidthLeaf,
-//                                                LeafCell->getLocal(),
-//                                                TargetParticles);
-//      // b) apply Px (grad Sx)
-//      AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter,
-//                                                        AbstractBaseClass::BoxWidthLeaf,
-//                                                        LeafCell->getLocal(),
-//                                                        TargetParticles);
+        //      // a) apply Sx
+        //      AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,
+        //                                                AbstractBaseClass::BoxWidthLeaf,
+        //                                                LeafCell->getLocal(),
+        //                                                TargetParticles);
+        //      // b) apply Px (grad Sx)
+        //      AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter,
+        //                                                        AbstractBaseClass::BoxWidthLeaf,
+        //                                                        LeafCell->getLocal(),
+        //                                                        TargetParticles);
 
         // c) apply Sx and Px (grad Sx)
         AbstractBaseClass::Interpolator->applyL2PTotal(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
@@ -460,21 +447,24 @@ public:
 
     }
 
-    void P2P(const FTreeCoordinate& /* LeafCellCoordinate */, // needed for periodic boundary conditions
-             ContainerClass* const FRestrict TargetParticles,
-             const ContainerClass* const FRestrict /*SourceParticles*/,
-             ContainerClass* const NeighborSourceParticles[27],
-             const int /* size */)
-    {
-        DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
+    void P2P(const FTreeCoordinate& /*inPosition*/,
+             ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+             ContainerClass* const inNeighbors[], const int neighborPositions[],
+             const int inSize) override {
+        int nbNeighborsToCompute = 0;
+        while(nbNeighborsToCompute < inSize
+              && neighborPositions[nbNeighborsToCompute] < 14){
+            nbNeighborsToCompute += 1;
+        }
+        DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2P(inTargets,inNeighbors,nbNeighborsToCompute,MatrixKernel);
     }
 
 
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
-                   ContainerClass* const inNeighbors[27], const int /*inSize*/)
-    {
-        DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
+                   ContainerClass* const inNeighbors[], const int /*neighborPositions*/[],
+                   const int inSize) override {
+        DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,inSize,MatrixKernel);
     }
 
 };

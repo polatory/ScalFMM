@@ -133,7 +133,7 @@ public:
     }
 
     void P2M(CellClass* const pole,
-             const ContainerClass* const particles)
+             const ContainerClass* const particles)override
     {
         //Nb_Particule * [3 (: dx,dy,dz) + SizeVector*4 (: Classic operations) ] + SizeVector (: multiply multipole by coefficient)
         this->flopsP2M += (particles->getNbParticles())*(3+SizeVector*4)+SizeVector;
@@ -141,7 +141,7 @@ public:
 
     void M2M(CellClass* const FRestrict pole,
              const CellClass*const FRestrict *const FRestrict child,
-             const int inLevel)
+             const int inLevel)override
     {
         //Powers of expansions
         int a=0,b=0,c=0;
@@ -176,16 +176,14 @@ public:
     }
 
     void M2L(CellClass* const FRestrict local,             // Target cell
-             const CellClass* distantNeighbors[343],       // Sources to be read
-    const int /*size*/, const int inLevel)
+             const CellClass* distantNeighbors[],       // Sources to be read
+    const int /*positions*/[],
+    const int size, const int inLevel)override
     {
         unsigned int flops = 343;
-        for (unsigned int idx=0; idx<343; ++idx)
+        for (unsigned int idx=0; idx<size; ++idx)
         {
-            if (distantNeighbors[idx])
-            {
                 flops += 2+SizeVector*(2+SizeVector+2);
-            }
         }
         flopsM2L += flops;
         flopsPerLevelM2L[inLevel] += flops;
@@ -193,7 +191,7 @@ public:
 
     void L2L(const CellClass* const FRestrict fatherCell,
              CellClass* FRestrict * const FRestrict childCell,
-             const int inLevel)
+             const int inLevel)override
     {
         int ap, bp, cp, af, bf, cf;     //Indexes of expansion for father and child.
         unsigned int flops = 2;
@@ -227,7 +225,7 @@ public:
     }
 
     void L2P(const CellClass* const local,
-             ContainerClass* const particles)
+             ContainerClass* const particles)override
     {
         unsigned int flops = 12;
         FSize nbPart = particles->getNbParticles();
@@ -244,7 +242,7 @@ public:
 
     void P2P(const FTreeCoordinate& /*inLeafPosition*/,
              ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
-             ContainerClass* const directNeighborsParticles[27], const int /*size*/)
+             ContainerClass* const directNeighborsParticles[], const int /*positions*/, const int /*size*/)override
     {}
     
 };

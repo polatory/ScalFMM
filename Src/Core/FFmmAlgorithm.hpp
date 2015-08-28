@@ -190,7 +190,8 @@ protected:
 
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
-        const CellClass* neighbors[343];
+        const CellClass* neighbors[342];
+        int neighborPositions[342];
 
         // for each levels
         for(int idxLevel = FAbstractAlgorithm::upperWorkingLevel ; idxLevel < FAbstractAlgorithm::lowerWorkingLevel ; ++idxLevel ){
@@ -200,9 +201,9 @@ protected:
 
             // for each cells
             do{
-                const int counter = tree->getInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
+                const int counter = tree->getInteractionNeighbors(neighbors, neighborPositions, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
                 FLOG(computationCounter.tic());
-                if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, idxLevel);
+                if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, neighborPositions, counter, idxLevel);
                 FLOG(computationCounter.tac());
             } while(octreeIterator.moveRight());
 
@@ -282,7 +283,8 @@ protected:
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         // There is a maximum of 26 neighbors
-        ContainerClass* neighbors[27];
+        ContainerClass* neighbors[26];
+        int neighborPositions[26];
         // for each leafs
         do{
             if(l2pEnabled){
@@ -292,10 +294,10 @@ protected:
             }
             if(p2pEnabled){
                 // need the current particles and neighbors particles
-                const int counter = tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(),heightMinusOne);
+                const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, octreeIterator.getCurrentGlobalCoordinate(),heightMinusOne);
                 FLOG(computationCounterP2P.tic());
                 kernels->P2P(octreeIterator.getCurrentGlobalCoordinate(),octreeIterator.getCurrentListTargets(),
-                             octreeIterator.getCurrentListSrc(), neighbors, counter);
+                             octreeIterator.getCurrentListSrc(), neighbors, neighborPositions, counter);
                 FLOG(computationCounterP2P.tac());
             }
         } while(octreeIterator.moveRight());

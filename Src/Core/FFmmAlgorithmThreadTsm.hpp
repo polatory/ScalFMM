@@ -268,25 +268,25 @@ protected:
                 #pragma omp parallel
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                    const CellClass* neighbors[343];
+                    const CellClass* neighbors[342];
+                    int neighborPositions[342];
 
                     #pragma omp for  schedule(dynamic, chunkSize) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
                         if(currentCell->hasTargetsChild()){
-                            const int counter = tree->getInteractionNeighbors(neighbors, iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
+                            const int counter = tree->getInteractionNeighbors(neighbors, neighborPositions, iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
                             if( counter ){
                                 int counterWithSrc = 0;
-                                for(int idxRealNeighbors = 0 ; idxRealNeighbors < 343 ; ++idxRealNeighbors ){
-                                    if(neighbors[idxRealNeighbors] && neighbors[idxRealNeighbors]->hasSrcChild()){
+                                for(int idxRealNeighbors = 0 ; idxRealNeighbors < counter ; ++idxRealNeighbors ){
+                                    if(neighbors[idxRealNeighbors]->hasSrcChild()){
+                                        neighbors[counterWithSrc] = neighbors[idxRealNeighbors];
+                                        neighborPositions[counterWithSrc] = neighborPositions[idxRealNeighbors];
                                         ++counterWithSrc;
-                                    }
-                                    else{
-                                        neighbors[idxRealNeighbors] = nullptr;
                                     }
                                 }
                                 if(counterWithSrc){
-                                    myThreadkernels->M2L( currentCell , neighbors, counterWithSrc, idxLevel);
+                                    myThreadkernels->M2L( currentCell , neighbors, neighborPositions, counterWithSrc, idxLevel);
                                 }
                             }
                         }
@@ -387,7 +387,8 @@ protected:
         {
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
             // There is a maximum of 26 neighbors
-            ContainerClass* neighbors[27];
+            ContainerClass* neighbors[26];
+            int neighborPositions[26];
 
             #pragma omp for schedule(dynamic, chunkSize) nowait
             for(int idxLeafs = 0 ; idxLeafs < numberOfLeafs ; ++idxLeafs){
@@ -397,10 +398,9 @@ protected:
                     }
                     if(p2pEnabled){
                         // need the current particles and neighbors particles
-                        const int counter = tree->getLeafsNeighbors(neighbors, iterArray[idxLeafs].getCurrentGlobalCoordinate(),heightMinusOne);
-                        neighbors[13] = iterArray[idxLeafs].getCurrentListSrc();
+                        const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, iterArray[idxLeafs].getCurrentGlobalCoordinate(),heightMinusOne);
                         myThreadkernels->P2PRemote( iterArray[idxLeafs].getCurrentGlobalCoordinate(), iterArray[idxLeafs].getCurrentListTargets(),
-                                      iterArray[idxLeafs].getCurrentListSrc() , neighbors, counter + 1);
+                                      iterArray[idxLeafs].getCurrentListSrc() , neighbors, neighborPositions, counter);
                     }
                 }
             }

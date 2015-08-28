@@ -47,13 +47,13 @@ public:
     }
 
     /** Before upward */
-    void P2M(CellClass* const pole, const ContainerClass* const particles) {
+    void P2M(CellClass* const pole, const ContainerClass* const particles) override {
         // the pole represents all particles under
         pole->setDataUp(pole->getDataUp() + particles->getNbParticles());
     }
 
     /** During upward */
-    void M2M(CellClass* const FRestrict pole, const CellClass *const FRestrict *const FRestrict child, const int /*level*/) {
+    void M2M(CellClass* const FRestrict pole, const CellClass *const FRestrict *const FRestrict child, const int /*level*/) override {
         // A parent represents the sum of the child
         for(int idx = 0 ; idx < 8 ; ++idx){
             if(child[idx]){
@@ -63,17 +63,16 @@ public:
     }
 
     /** Before Downward */
-    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[343], const int /*size*/, const int /*level*/) {
+    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[], const int /*position*/[],
+            const int size, const int /*level*/) override {
         // The pole is impacted by what represent other poles
-        for(int idx = 0 ; idx < 343 ; ++idx){
-            if(distantNeighbors[idx]){
+        for(int idx = 0 ; idx < size ; ++idx){
                 pole->setDataDown(pole->getDataDown() + distantNeighbors[idx]->getDataUp());
-            }
         }
     }
 
     /** During Downward */
-    void L2L(const CellClass*const FRestrict local, CellClass* FRestrict *const FRestrict child, const int /*level*/) {
+    void L2L(const CellClass*const FRestrict local, CellClass* FRestrict *const FRestrict child, const int /*level*/) override {
         // Each child is impacted by the father
         for(int idx = 0 ; idx < 8 ; ++idx){
             if(child[idx]){
@@ -84,7 +83,7 @@ public:
     }
 
     /** After Downward */
-    void L2P(const CellClass* const  local, ContainerClass*const particles){
+    void L2P(const CellClass* const  local, ContainerClass*const particles) override {
         // The particles is impacted by the parent cell      
         long long int*const particlesAttributes = particles->getDataDown();
         for(FSize idxPart = 0 ; idxPart < particles->getNbParticles() ; ++idxPart){
@@ -96,16 +95,14 @@ public:
     /** After Downward */
     void P2P(const FTreeCoordinate& ,
                  ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
-                 ContainerClass* const directNeighborsParticles[27], const int ){
+                 ContainerClass* const directNeighborsParticles[], const int /*positions*/[], const int inSize) override {
         // Each particles targeted is impacted by the particles sources
         long long int inc = sources->getNbParticles();
         if(targets == sources){
             inc -= 1;
         }
-        for(int idx = 0 ; idx < 27 ; ++idx){
-            if( directNeighborsParticles[idx] ){
+        for(int idx = 0 ; idx < inSize ; ++idx){
                 inc += directNeighborsParticles[idx]->getNbParticles();
-            }
         }
 
         long long int*const particlesAttributes = targets->getDataDown();
@@ -117,13 +114,11 @@ public:
     /** After Downward */
     void P2PRemote(const FTreeCoordinate& ,
                    ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
-                 ContainerClass* const directNeighborsParticles[27], const int ){
+                 ContainerClass* const directNeighborsParticles[], const int /*positions*/[], const int inSize) override  {
         // Each particles targeted is impacted by the particles sources
         long long int inc = 0;
-        for(int idx = 0 ; idx < 27 ; ++idx){
-            if( directNeighborsParticles[idx] ){
+        for(int idx = 0 ; idx < inSize ; ++idx){
                 inc += directNeighborsParticles[idx]->getNbParticles();
-            }
         }
 
         long long int*const particlesAttributes = targets->getDataDown();

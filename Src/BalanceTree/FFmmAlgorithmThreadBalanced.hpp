@@ -320,19 +320,21 @@ protected:
                 // Cell count in zone (for this level)
                 int zoneCellCount         = costzones.at(threadNum).at(level).second;
                 // Array for cell neighbours
-                const CellClass* neighbours[343];
+                const CellClass* neighbours[342];
+                int neighborPositions[342];
                 
                 // Call M2L kernel on cells
                 while(zoneCellCount-- > 0) {
                     const int counter =
                         tree->getInteractionNeighbors(
-                            neighbours,
+                            neighbours, neighborPositions,
                             zoneIterator.getCurrentGlobalCoordinate(),
                             level);
                     if(counter)
                         myThreadkernels->M2L(
                             zoneIterator.getCurrentCell(),
                             neighbours,
+                            neighborPositions,
                             counter,
                             level);
                     zoneIterator.moveRight();
@@ -439,7 +441,8 @@ protected:
             // Cell count in zone (for this level)
             int zoneCellCount;
             // Cell neighbours
-            ContainerClass* neighbours[27];
+            ContainerClass* neighbours[26];
+            int neighborPositions[26];
             // Cell data
             LeafData leafdata;
             
@@ -474,7 +477,7 @@ protected:
                         if( p2pEnabled ) {
                             // needs the current particles and neighbours particles
                             const int counter =
-                                tree->getLeafsNeighbors(neighbours,
+                                tree->getLeafsNeighbors(neighbours,neighborPositions,
                                                         leafdata.cell->getCoordinate(),
                                                         OctreeHeight - 1); // Leaf level
 
@@ -482,6 +485,7 @@ protected:
                                                 leafdata.targets,
                                                 leafdata.sources,
                                                 neighbours,
+                                                neighborPositions,
                                                 counter);
                         }
 

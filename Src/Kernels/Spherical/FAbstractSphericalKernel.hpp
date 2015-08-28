@@ -144,7 +144,7 @@ public:
     }
 
     /** P2M with a cell and all its particles */
-    void P2M(CellClass* const inPole, const ContainerClass* const inParticles) {
+    void P2M(CellClass* const inPole, const ContainerClass* const inParticles) override {
         FComplex<FReal>* FRestrict const cellMultiPole = inPole->getMultipole();
         // Copying the position is faster than using cell position
         const FPoint<FReal> polePosition = getLeafCenter(inPole->getCoordinate());
@@ -162,7 +162,7 @@ public:
     }
 
     /** M2M with a cell and all its child */
-    void M2M(CellClass* const FRestrict inPole, const CellClass *const FRestrict *const FRestrict inChild, const int inLevel) {
+    void M2M(CellClass* const FRestrict inPole, const CellClass *const FRestrict *const FRestrict inChild, const int inLevel) override {
         FComplex<FReal>* FRestrict const multipole_exp_target = inPole->getMultipole();
         // iter on each child and process M2M
         const FComplex<FReal>* FRestrict const preM2MTransitionsAtLevel = preM2MTransitions[inLevel];
@@ -174,11 +174,11 @@ public:
     }
 
     /** M2L with a cell and all the existing neighbors */
-    virtual void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[343],
-             const int size, const int inLevel) = 0;
+    virtual void M2L(CellClass* const FRestrict inLocal, const CellClass* inInteractions[],
+                     const int neighborPositions[], const int inSize, const int inLevel) = 0;
 
     /** L2L with a cell and all its child */
-    void L2L(const CellClass* const FRestrict pole, CellClass* FRestrict *const FRestrict child, const int inLevel) {
+    void L2L(const CellClass* const FRestrict pole, CellClass* FRestrict *const FRestrict child, const int inLevel) override {
         // iter on each child and process L2L
         const FComplex<FReal>* FRestrict const preL2LTransitionsAtLevel = preL2LTransitions[inLevel];
         for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
@@ -189,7 +189,7 @@ public:
     }
 
     /** L2P with a cell and all its particles */
-    void L2P(const CellClass* const local, ContainerClass* const inParticles){
+    void L2P(const CellClass* const local, ContainerClass* const inParticles)override {
         const FComplex<FReal>* const cellLocal = local->getLocal();
         // Copying the position is faster than using cell position
         const FPoint<FReal> localPosition = getLeafCenter(local->getCoordinate());
@@ -211,32 +211,31 @@ public:
         }
     }
 
-    /** This P2P has to be used when target != sources
-      * It will proceed an direct interation no mutual
-      *
-      * It takes all the target particles from the current leaf,
-      * then it computes the sources/targets interaction in this leaf,
-      * then it computes the sources/targets inteactions between this leaf and the
-      * neighbors.
+    /** P2P
+      * This function proceed the P2P using particlesMutualInteraction
+      * The computation is done for interactions with an index <= 13.
+      * (13 means current leaf (x;y;z) = (0;0;0)).
+      * Calling this method in multi thread should be done carrefully.
       */
-    void P2P(const FTreeCoordinate& inLeafPosition,
-                  ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
-                  ContainerClass* const directNeighborsParticles[27], const int /*size*/){
-        FP2PRT<FReal>::template FullMutual<ContainerClass>(targets,directNeighborsParticles,14);
+    void P2P(const FTreeCoordinate& /*inPosition*/,
+             ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+             ContainerClass* const inNeighbors[], const int neighborPositions[],
+             const int inSize) override {
+        int nbNeighborsToCompute = 0;
+        while(nbNeighborsToCompute < inSize
+              && neighborPositions[nbNeighborsToCompute] < 14){
+            nbNeighborsToCompute += 1;
+        }
+        FP2PRT<FReal>::template FullMutual<ContainerClass>(inTargets,inNeighbors,nbNeighborsToCompute);
     }
 
-    /** This P2P has to be used when target != sources
-      * It will proceed an direct interation no mutual
-      *
-      * It takes all the target particles from the current leaf,
-      * then it computes the sources/targets interaction in this leaf,
-      * then it computes the sources/targets inteactions between this leaf and the
-      * neighbors.
-      */
-    void P2PRemote(const FTreeCoordinate& ,
-                  ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict ,
-                  ContainerClass* const directNeighborsParticles[27], const int /*size*/){
-        FP2PRT<FReal>::template FullRemote<ContainerClass>(targets,directNeighborsParticles,27);
+
+    /** Use mutual even if it not useful and call particlesMutualInteraction */
+    void P2PRemote(const FTreeCoordinate& /*inPosition*/,
+                   ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+                   ContainerClass* const inNeighbors[], const int neighborPositions[],
+                   const int inSize) override {
+        FP2PRT<FReal>::template FullRemote<ContainerClass>(inTargets,inNeighbors,inSize);
     }
 
 private:

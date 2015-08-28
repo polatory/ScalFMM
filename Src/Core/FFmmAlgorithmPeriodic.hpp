@@ -247,7 +247,8 @@ protected:
         typename OctreeClass::Iterator octreeIterator(tree);
         typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
 
-        const CellClass* neighbors[343];
+        const CellClass* neighbors[342];
+        int neighborPositions[342];
 
         // for each levels
         for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
@@ -256,9 +257,9 @@ protected:
             const int separationCriteria = (idxLevel != OctreeHeight-1 ? 1 : leafLevelSeperationCriteria);
             // for each cells
             do{
-                const int counter = tree->getPeriodicInteractionNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, AllDirs, separationCriteria);
+                const int counter = tree->getPeriodicInteractionNeighbors(neighbors, neighborPositions, octreeIterator.getCurrentGlobalCoordinate(), idxLevel, AllDirs, separationCriteria);
                 FLOG(computationCounter.tic());
-                if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, counter, fackLevel);
+                if(counter) kernels->M2L( octreeIterator.getCurrentCell() , neighbors, neighborPositions, counter, fackLevel);
                 FLOG(computationCounter.tac());
             } while(octreeIterator.moveRight());
             avoidGotoLeftIterator.moveDown();
@@ -327,8 +328,9 @@ protected:
         typename OctreeClass::Iterator octreeIterator(tree);
         octreeIterator.gotoBottomLeft();
         // There is a maximum of 26 neighbors
-        ContainerClass* neighbors[27];
-        FTreeCoordinate offsets[27];
+        ContainerClass* neighbors[26];
+        FTreeCoordinate offsets[26];
+        int neighborPositions[26];
         bool hasPeriodicLeaves;
         // for each leafs
         do{
@@ -340,18 +342,18 @@ protected:
             if(p2pEnabled){
                 // need the current particles and neighbors particles
                 const FTreeCoordinate centerOfLeaf = octreeIterator.getCurrentGlobalCoordinate();
-                const int counter = tree->getPeriodicLeafsNeighbors( neighbors, offsets, &hasPeriodicLeaves, centerOfLeaf, heightMinusOne, AllDirs);
+                const int counter = tree->getPeriodicLeafsNeighbors( neighbors, neighborPositions, offsets, &hasPeriodicLeaves, centerOfLeaf, heightMinusOne, AllDirs);
                 int periodicNeighborsCounter = 0;
 
                 if(hasPeriodicLeaves){
-                    ContainerClass* periodicNeighbors[27];
-                    memset(periodicNeighbors, 0, 27 * sizeof(ContainerClass*));
+                    ContainerClass* periodicNeighbors[26];
+                    int periodicNeighborPositions[26];
 
-                    for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
-                        if( neighbors[idxNeig] && !offsets[idxNeig].equals(0,0,0) ){
+                    for(int idxNeig = 0 ; idxNeig < counter ; ++idxNeig){
+                        if( !offsets[idxNeig].equals(0,0,0) ){
                             // Put periodic neighbors into other array
-                            periodicNeighbors[idxNeig] = neighbors[idxNeig];
-                            neighbors[idxNeig] = nullptr;
+                            periodicNeighbors[periodicNeighborsCounter] = neighbors[idxNeig];
+                            periodicNeighborPositions[periodicNeighborsCounter] = neighborPositions[idxNeig];
                             ++periodicNeighborsCounter;
 
                             FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
@@ -364,31 +366,33 @@ protected:
                                 positionsZ[idxPart] += boxWidth * FReal(offsets[idxNeig].getZ());
                             }
                         }
+                        else{
+                            neighbors[idxNeig-periodicNeighborsCounter] = neighbors[idxNeig];
+                            neighborPositions[idxNeig-periodicNeighborsCounter] = neighborPositions[idxNeig];
+                        }
                     }
 
                     FLOG(computationCounterP2P.tic());
                     kernels->P2PRemote(octreeIterator.getCurrentGlobalCoordinate(),octreeIterator.getCurrentListTargets(),
-                                 octreeIterator.getCurrentListSrc(), periodicNeighbors, periodicNeighborsCounter);
+                                 octreeIterator.getCurrentListSrc(), periodicNeighbors, periodicNeighborPositions, periodicNeighborsCounter);
                     FLOG(computationCounterP2P.tac());
 
-                    for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
-                        if( periodicNeighbors[idxNeig] ){
-                            FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
-                            FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
-                            FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
+                    for(int idxNeig = 0 ; idxNeig < periodicNeighborsCounter ; ++idxNeig){
+                        FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
+                        FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
+                        FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
 
-                            for(FSize idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
-                                positionsX[idxPart] -= boxWidth * FReal(offsets[idxNeig].getX());
-                                positionsY[idxPart] -= boxWidth * FReal(offsets[idxNeig].getY());
-                                positionsZ[idxPart] -= boxWidth * FReal(offsets[idxNeig].getZ());
-                            }
+                        for(FSize idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
+                            positionsX[idxPart] -= boxWidth * FReal(offsets[idxNeig].getX());
+                            positionsY[idxPart] -= boxWidth * FReal(offsets[idxNeig].getY());
+                            positionsZ[idxPart] -= boxWidth * FReal(offsets[idxNeig].getZ());
                         }
                     }
                 }
 
                 FLOG(computationCounterP2P.tic());
                 kernels->P2P(octreeIterator.getCurrentGlobalCoordinate(),octreeIterator.getCurrentListTargets(),
-                             octreeIterator.getCurrentListSrc(), neighbors, counter - periodicNeighborsCounter);
+                             octreeIterator.getCurrentListSrc(), neighbors, neighborPositions, counter - periodicNeighborsCounter);
                 FLOG(computationCounterP2P.tac());
             }
         } while(octreeIterator.moveRight());
@@ -450,32 +454,34 @@ protected:
             {
                 const int idxUpperLevel = 2;
 
-                const CellClass* neighbors[343];
-                memset(neighbors, 0, sizeof(CellClass*) * 343);
+                const CellClass* neighbors[342];
+                int neighborPositions[342];
                 int counter = 0;
                 for(int idxX = -3 ; idxX <= 2 ; ++idxX){
                     for(int idxY = -3 ; idxY <= 2 ; ++idxY){
                         for(int idxZ = -3 ; idxZ <= 2 ; ++idxZ){
                             if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
-                                neighbors[neighIndex(idxX,idxY,idxZ)] = &upperCells[idxUpperLevel-1];
+                                neighbors[counter] = &upperCells[idxUpperLevel-1];
+                                neighborPositions[counter] = neighIndex(idxX,idxY,idxZ);
                                 ++counter;
                             }
                         }
                     }
                 }
                 // compute M2L
-                kernels->M2L( &downerCells[idxUpperLevel-1] , neighbors, counter, idxUpperLevel);
+                kernels->M2L( &downerCells[idxUpperLevel-1] , neighbors, neighborPositions, counter, idxUpperLevel);
             }
 
             for(int idxUpperLevel = 3 ; idxUpperLevel <= offsetRealTree ; ++idxUpperLevel){
-                const CellClass* neighbors[343];
-                memset(neighbors, 0, sizeof(CellClass*) * 343);
+                const CellClass* neighbors[342];
+                int neighborPositions[342];
                 int counter = 0;
                 for(int idxX = -2 ; idxX <= 3 ; ++idxX){
                     for(int idxY = -2 ; idxY <= 3 ; ++idxY){
                         for(int idxZ = -2 ; idxZ <= 3 ; ++idxZ){
                             if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
-                                neighbors[neighIndex(idxX,idxY,idxZ)] = &upperCells[idxUpperLevel-1];
+                                neighbors[counter] = &upperCells[idxUpperLevel-1];
+                                neighborPositions[counter] = neighIndex(idxX,idxY,idxZ);
                                 ++counter;
                             }
                         }
@@ -483,7 +489,7 @@ protected:
                 }
 
                 // compute M2L
-                kernels->M2L( &downerCells[idxUpperLevel-1] , neighbors, counter, idxUpperLevel);
+                kernels->M2L( &downerCells[idxUpperLevel-1] , neighbors, neighborPositions, counter, idxUpperLevel);
             }
 
             {

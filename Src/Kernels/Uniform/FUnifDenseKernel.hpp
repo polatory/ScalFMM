@@ -107,11 +107,8 @@ public:
         }
     }
 
-    void M2L(CellClass* const FRestrict TargetCell,
-             const CellClass* SourceCells[343],
-             const int /*NumSourceCells*/,
-             const int TreeLevel)
-    {
+    void M2L(CellClass* const FRestrict TargetCell, const CellClass* SourceCells[],
+             const int /*neighborPositions*/[], const int inSize, const int TreeLevel)  override {
         const FReal CellWidth(AbstractBaseClass::BoxWidth / FReal(FMath::pow(2, TreeLevel)));
 
         // interpolation points of source (Y) and target (X) cell
@@ -120,17 +117,14 @@ public:
 
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
 
-            for (int idx=0; idx<343; ++idx){
-                if (SourceCells[idx]){
+            for(int idxExistingNeigh = 0 ; idxExistingNeigh < inSize ; ++idxExistingNeigh){
+                FUnifTensor<FReal,ORDER>::setRoots(AbstractBaseClass::getCellCenter(SourceCells[idxExistingNeigh]->getCoordinate(),TreeLevel), CellWidth, Y);
 
-                    FUnifTensor<FReal,ORDER>::setRoots(AbstractBaseClass::getCellCenter(SourceCells[idx]->getCoordinate(),TreeLevel), CellWidth, Y);
+                for (unsigned int m=0; m<AbstractBaseClass::nnodes; ++m)
+                    for (unsigned int n=0; n<AbstractBaseClass::nnodes; ++n){
+                        TargetCell->getLocal(idxRhs)[m]+=MatrixKernel->evaluate(X[m], Y[n]) * SourceCells[idxExistingNeigh]->getMultipole(idxRhs)[n];
+                    }
 
-                    for (unsigned int m=0; m<AbstractBaseClass::nnodes; ++m)
-                        for (unsigned int n=0; n<AbstractBaseClass::nnodes; ++n){
-                            TargetCell->getLocal(idxRhs)[m]+=MatrixKernel->evaluate(X[m], Y[n]) * SourceCells[idx]->getMultipole(idxRhs)[n];
-                        }
-
-                }
             }
         }
     }
@@ -168,21 +162,24 @@ public:
         }
     }
 
-    void P2P(const FTreeCoordinate& /* LeafCellCoordinate */, // needed for periodic boundary conditions
-             ContainerClass* const FRestrict TargetParticles,
-             const ContainerClass* const FRestrict /*SourceParticles*/,
-             ContainerClass* const NeighborSourceParticles[27],
-             const int /* size */)
-    {
-        DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2P(TargetParticles,NeighborSourceParticles,MatrixKernel);
+    void P2P(const FTreeCoordinate& /*inPosition*/,
+             ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+             ContainerClass* const inNeighbors[], const int neighborPositions[],
+             const int inSize) override {
+        int nbNeighborsToCompute = 0;
+        while(nbNeighborsToCompute < inSize
+              && neighborPositions[nbNeighborsToCompute] < 14){
+            nbNeighborsToCompute += 1;
+        }
+        DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2P(inTargets,inNeighbors,nbNeighborsToCompute,MatrixKernel);
     }
 
 
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
-                   ContainerClass* const inNeighbors[27], const int /*inSize*/)
-    {
-        DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,27,MatrixKernel);
+                   ContainerClass* const inNeighbors[], const int /*neighborPositions*/[],
+                   const int inSize) override {
+        DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,inSize,MatrixKernel);
     }
 
 };

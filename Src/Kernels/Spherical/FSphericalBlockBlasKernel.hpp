@@ -175,16 +175,15 @@ public:
     }
 
     /** M2L with a cell and all the existing neighbors */
-    void M2L(CellClass* const FRestrict pole, const CellClass* distantNeighbors[343],
-             const int /*size*/, const int inLevel) {
+    void M2L(CellClass* const FRestrict inLocal, const CellClass* distantNeighbors[],
+             const int neighborPositions[], const int inSize, const int inLevel)  override {
         // For all neighbors compute M2L
-        for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
-            if( distantNeighbors[idxNeigh] ){
-                interactions[idxNeigh].push(ComputationPair(distantNeighbors[idxNeigh]->getMultipole(), pole->getLocal()));
+        for(int idxExistingNeigh = 0 ; idxExistingNeigh < inSize ; ++idxExistingNeigh){
+            const int idxNeigh = neighborPositions[idxExistingNeigh];
+            interactions[idxNeigh].push(ComputationPair(distantNeighbors[idxExistingNeigh]->getMultipole(), inLocal->getLocal()));
 
-                if( interactions[idxNeigh].getSize() == BlockSize){
-                    multipoleToLocal( idxNeigh, inLevel);
-                }
+            if( interactions[idxNeigh].getSize() == BlockSize){
+                multipoleToLocal( idxNeigh, inLevel);
             }
         }
     }

@@ -543,7 +543,7 @@ public:
    * where \f$x_c\f$ is the centre of the cell and \f$x_j\f$ the \f$j^{th}\f$ particles and \f$q_j\f$ its charge and  \f$N\f$ the particle number.
    */
     void P2M(CellClass* const pole,
-             const ContainerClass* const particles)
+             const ContainerClass* const particles) override
     {
         //Copying cell center position once and for all
         const FPoint<FReal>& cellCenter = getLeafCenter(pole->getCoordinate());
@@ -608,7 +608,7 @@ public:
    */
     void M2M(CellClass* const FRestrict pole,
              const CellClass*const FRestrict *const FRestrict child,
-             const int inLevel)
+             const int inLevel)override
     {
         //Powers of expansions
         int a=0,b=0,c=0;
@@ -722,42 +722,37 @@ public:
    * current cell. The cell where we compute the local expansion.
    *
    */
-    void M2L(CellClass* const FRestrict local,             // Target cell
-             const CellClass* distantNeighbors[343],       // Sources to be read
-    const int /*size*/, const int inLevel)
-    {
+    void M2L(CellClass* const FRestrict inLocal, const CellClass* distantNeighbors[],
+             const int neighborPositions[], const int inSize, const int inLevel)  override {
         //Local expansion to be filled
-        FReal * FRestrict iterLocal = local->getLocal();
+        FReal * FRestrict iterLocal = inLocal->getLocal();
         //index for distant neighbors
-        int idxNeigh;
         FReal tmp1;
         int * ind;
         FReal * psiVector;
         const FReal * multipole;
         //Loop over all the possible neighbors
-        for(idxNeigh=0 ; idxNeigh<343 ; ++idxNeigh){
-            //Need to test if current neighbor is one of the interaction list
-            if(distantNeighbors[idxNeigh]){
+        for(int idxExistingNeigh = 0 ; idxExistingNeigh < inSize ; ++idxExistingNeigh){
+            const int idxNeigh = neighborPositions[idxExistingNeigh];
 
-                //Get the preComputed values for the derivative
-                psiVector = M2LpreComputedDerivatives[inLevel][idxNeigh];
-                //Multipole to be read
-                multipole = distantNeighbors[idxNeigh]->getMultipole();
+            //Get the preComputed values for the derivative
+            psiVector = M2LpreComputedDerivatives[inLevel][idxNeigh];
+            //Multipole to be read
+            multipole = distantNeighbors[idxExistingNeigh]->getMultipole();
 
-                //Iterating over local array : n
-                for(int i=0 ; i<SizeVector ; ++i)
+            //Iterating over local array : n
+            for(int i=0 ; i<SizeVector ; ++i)
+            {
+                //Get the right indexes set
+                ind = this->preComputedIndirections[i];
+                tmp1 = FReal(0);
+
+                //Iterating over multipole array
+                for (int j=0 ; j<SizeVector ; ++j)
                 {
-                    //Get the right indexes set
-                    ind = this->preComputedIndirections[i];
-                    tmp1 = FReal(0);
-
-                    //Iterating over multipole array
-                    for (int j=0 ; j<SizeVector ; ++j)
-                    {
-                        tmp1 += psiVector[ind[j]]*multipole[j];
-                    }
-                    iterLocal[i] += tmp1*_coeffPoly[i];
+                    tmp1 += psiVector[ind[j]]*multipole[j];
                 }
+                iterLocal[i] += tmp1*_coeffPoly[i];
             }
         }
     }
@@ -780,7 +775,7 @@ public:
 
     void L2L(const CellClass* const FRestrict fatherCell,
              CellClass* FRestrict * const FRestrict childCell,
-             const int inLevel)
+             const int inLevel) override
     {
         FPoint<FReal> locCenter = getCellCenter(fatherCell->getCoordinate(),inLevel);
 
@@ -872,7 +867,7 @@ public:
    * \f$j^{th}\f$ particles and \f$q_j\f$ its charge.
    */
     void L2P(const CellClass* const local,
-             ContainerClass* const particles)
+             ContainerClass* const particles) override
     {
         FPoint<FReal> locCenter = getLeafCenter(local->getCoordinate());
         //Iterator over particles
@@ -956,27 +951,31 @@ public:
         }
     }
 
-    /**
-   * P2P
-   * Particles to particles
-   * @param inLeafPosition tree coordinate of the leaf
-   * @param targets current boxe targets particles
-   * @param sources current boxe sources particles (can be == to targets)
-   * @param directNeighborsParticles the particles from direct neighbors (this is an array of list)
-   * @param size the number of direct neighbors
-   */
-    void P2P(const FTreeCoordinate& /*inLeafPosition*/,
-             ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
-             ContainerClass* const directNeighborsParticles[27], const int /*size*/)
-    {
-        FP2PRT<FReal>::template FullMutual<ContainerClass>(targets,directNeighborsParticles,14);
+    /** P2P
+      * This function proceed the P2P using particlesMutualInteraction
+      * The computation is done for interactions with an index <= 13.
+      * (13 means current leaf (x;y;z) = (0;0;0)).
+      * Calling this method in multi thread should be done carrefully.
+      */
+    void P2P(const FTreeCoordinate& /*inPosition*/,
+             ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+             ContainerClass* const inNeighbors[], const int neighborPositions[],
+             const int inSize) override {
+        int nbNeighborsToCompute = 0;
+        while(nbNeighborsToCompute < inSize
+              && neighborPositions[nbNeighborsToCompute] < 14){
+            nbNeighborsToCompute += 1;
+        }
+        FP2PRT<FReal>::template FullMutual<ContainerClass>(inTargets,inNeighbors,nbNeighborsToCompute);
     }
+
 
     /** Use mutual even if it not useful and call particlesMutualInteraction */
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
-                   ContainerClass* const inNeighbors[27], const int /*inSize*/){
-        FP2PRT<FReal>::template FullRemote<ContainerClass>(inTargets,inNeighbors,27);
+                   ContainerClass* const inNeighbors[], const int neighborPositions[],
+                   const int inSize) override {
+        FP2PRT<FReal>::template FullRemote<ContainerClass>(inTargets,inNeighbors,inSize);
     }
 
 };

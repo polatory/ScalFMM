@@ -940,16 +940,17 @@ protected:
                             #pragma omp task default(none) shared(numberOfCells,idxLevel) firstprivate(idxCell) //+ shared(chunckSize)
                             {
                                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
-                                const CellClass* neighbors[343];
+                                const CellClass* neighbors[342];
+                                int neighborPositions[342];
 
                                 const int nbCellToCompute = FMath::Min(chunckSize, numberOfCells-idxCell);
                                 for(int idxCellToCompute = idxCell ; idxCellToCompute < idxCell+nbCellToCompute ; ++idxCellToCompute){
-                                    const int counter = tree->getPeriodicInteractionNeighbors(neighbors,
+                                    const int counter = tree->getPeriodicInteractionNeighbors(neighbors, neighborPositions,
                                                                             iterArray[idxCellToCompute].getCurrentGlobalCoordinate(),
                                                                             idxLevel, AllDirs, separationCriteria);
 
                                     if(counter)
-                                        myThreadkernels->M2L( iterArray[idxCellToCompute].getCurrentCell() , neighbors, counter, fackLevel);
+                                        myThreadkernels->M2L( iterArray[idxCellToCompute].getCurrentCell() , neighbors, neighborPositions, counter, fackLevel);
                                 }
                             }
                         }
@@ -1042,15 +1043,12 @@ protected:
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     MortonIndex neighborsIndex[/*189+26+1*/216];
                     int neighborsPosition[/*189+26+1*/216];
-                    const CellClass* neighbors[343];
+                    const CellClass* neighbors[342];
+                    int neighborPositions[342];
 
                     #pragma omp for schedule(static) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
-                        // compute indexes
-                        memset(neighbors, 0, 343 * sizeof(CellClass*));
                         const int counterNeighbors = getPeriodicInteractionNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, neighborsIndex, neighborsPosition, AllDirs, separationCriteria);
-                        //const int counterNeighbors = iterArray[idxCell].getCurrentGlobalCoordinate().getInteractionNeighbors(idxLevel, neighborsIndex, neighborsPosition);
-
                         int counter = 0;
                         // does we receive this index from someone?
                         for(int idxNeig = 0 ;idxNeig < counterNeighbors ; ++idxNeig){
@@ -1061,14 +1059,15 @@ protected:
 
                                 if(otherCell){
                                     //otherCell->setMortonIndex(neighborsIndex[idxNeig]);
-                                    neighbors[ neighborsPosition[idxNeig] ] = otherCell;
+                                    neighbors[counter] = otherCell;
+                                    neighborPositions[counter] = neighborsPosition[idxNeig] ;
                                     ++counter;
                                 }
                             }
                         }
                         // need to compute
                         if(counter){
-                            myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, counter, fackLevel);
+                            myThreadkernels->M2L( iterArray[idxCell].getCurrentCell() , neighbors, neighborPositions, counter, fackLevel);
                         }
                     }
 
@@ -1566,8 +1565,9 @@ protected:
                                 KernelClass* myThreadkernels = (kernels[omp_get_thread_num()]);
 
                                 // There is a maximum of 26 neighbors
-                                ContainerClass* neighbors[27];
-                                FTreeCoordinate offsets[27];
+                                ContainerClass* neighbors[26];
+                                FTreeCoordinate offsets[26];
+                                int neighborPositions[26];
                                 bool hasPeriodicLeaves;
                                 for(int idxTaskLeaf = idxLeafs ; idxTaskLeaf < (idxLeafs + nbLeavesInTask) ; ++idxTaskLeaf){
                                     LeafData& currentIter = leafsDataArray[idxTaskLeaf];
@@ -1576,19 +1576,19 @@ protected:
                                     }
                                     if(p2pEnabled){
                                         // need the current particles and neighbors particles
-                                        const int counter = tree->getPeriodicLeafsNeighbors(neighbors, offsets, &hasPeriodicLeaves,
+                                        const int counter = tree->getPeriodicLeafsNeighbors(neighbors, neighborPositions, offsets, &hasPeriodicLeaves,
                                                                                             currentIter.coord, LeafIndex, AllDirs);
                                         int periodicNeighborsCounter = 0;
 
                                         if(hasPeriodicLeaves){
                                             ContainerClass* periodicNeighbors[27];
-                                            memset(periodicNeighbors, 0, 27 * sizeof(ContainerClass*));
+                                            int periodicNeighborPositions[26];
 
-                                            for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
-                                                if( neighbors[idxNeig] && !offsets[idxNeig].equals(0,0,0) ){
+                                            for(int idxNeig = 0 ; idxNeig < counter ; ++idxNeig){
+                                                if( !offsets[idxNeig].equals(0,0,0) ){
                                                     // Put periodic neighbors into other array
-                                                    periodicNeighbors[idxNeig] = neighbors[idxNeig];
-                                                    neighbors[idxNeig] = nullptr;
+                                                    periodicNeighbors[periodicNeighborsCounter] = neighbors[idxNeig];
+                                                    periodicNeighborPositions[periodicNeighborsCounter] = neighborPositions[idxNeig];
                                                     ++periodicNeighborsCounter;
 
                                                     FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
@@ -1601,10 +1601,14 @@ protected:
                                                         positionsZ[idxPart] += boxWidth * FReal(offsets[idxNeig].getZ());
                                                     }
                                                 }
+                                                else{
+                                                    neighbors[idxNeig-periodicNeighborsCounter] = neighbors[idxNeig];
+                                                    neighborPositions[idxNeig-periodicNeighborsCounter] = neighborPositions[idxNeig];
+                                                }
                                             }
 
                                             myThreadkernels->P2PRemote(currentIter.coord,currentIter.targets,
-                                                                       currentIter.sources, periodicNeighbors, periodicNeighborsCounter);
+                                                                       currentIter.sources, periodicNeighbors, periodicNeighborPositions, periodicNeighborsCounter);
 
                                             for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
                                                 if( periodicNeighbors[idxNeig] ){
@@ -1622,7 +1626,7 @@ protected:
                                         }
 
                                         myThreadkernels->P2P( currentIter.coord, currentIter.targets,
-                                                          currentIter.sources, neighbors, counter - periodicNeighborsCounter);
+                                                          currentIter.sources, neighbors, neighborPositions, counter - periodicNeighborsCounter);
                                     }
                                 }
 
@@ -1650,9 +1654,10 @@ protected:
         if(p2pEnabled){
             KernelClass& myThreadkernels = (*kernels[omp_get_thread_num()]);
             // There is a maximum of 26 neighbors
-            ContainerClass* neighbors[27];
-            MortonIndex indexesNeighbors[27];
+            ContainerClass* neighbors[26];
+            MortonIndex indexesNeighbors[26];
             int indexArray[26];
+            int neighborPositions[26];
             // Box limite
             const int limite = 1 << (this->OctreeHeight - 1);
             FAssertLF(leafsNeedOtherData.getSize() < std::numeric_limits<int>::max());
@@ -1664,7 +1669,6 @@ protected:
 
                 // need the current particles and neighbors particles
                 int counter = 0;
-                memset( neighbors, 0, sizeof(ContainerClass*) * 27);
 
                 // Take possible data
                 const int nbNeigh = getNeighborsIndexesPeriodic(currentIter.coord,limite,
@@ -1674,14 +1678,16 @@ protected:
                     if(indexesNeighbors[idxNeigh] < (intervals[idProcess].leftIndex) || (intervals[idProcess].rightIndex) < indexesNeighbors[idxNeigh]){
                         ContainerClass*const hypotheticNeighbor = otherP2Ptree.getLeafSrc(indexesNeighbors[idxNeigh]);
                         if(hypotheticNeighbor){
-                            neighbors[ indexArray[idxNeigh] ] = hypotheticNeighbor;
+                            neighbors[counter] = hypotheticNeighbor;
+                            neighborPositions[counter] = indexArray[idxNeigh];
                             ++counter;
                         }
                     }
                 }
-                myThreadkernels.P2PRemote( currentIter.coord, currentIter.targets,
-                                           currentIter.sources, neighbors, counter);
-
+                if(counter){
+                    myThreadkernels.P2PRemote( currentIter.coord, currentIter.targets,
+                                           currentIter.sources, neighbors, neighborPositions, counter);
+                }
             }
 
         }
@@ -1943,32 +1949,34 @@ protected:
             {
                 const int idxUpperLevel = 2;
 
-                const CellClass* neighbors[343];
-                memset(neighbors, 0, sizeof(CellClass*) * 343);
+                const CellClass* neighbors[342];
+                int neighborPositions[342];
                 int counter = 0;
                 for(int idxX = -2 ; idxX <= 1 ; ++idxX){
                     for(int idxY = -2 ; idxY <= 1 ; ++idxY){
                         for(int idxZ = -2 ; idxZ <= 1 ; ++idxZ){
                             if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
-                                neighbors[neighIndex(idxX,idxY,idxZ)] = &upperCells[idxUpperLevel-1];
+                                neighbors[counter] = &upperCells[idxUpperLevel-1];
+                                neighborPositions[counter] = neighIndex(idxX,idxY,idxZ);
                                 ++counter;
                             }
                         }
                     }
                 }
                 // compute M2L
-                kernels[0]->M2L( &downerCells[idxUpperLevel-1] , neighbors, counter, idxUpperLevel);
+                kernels[0]->M2L( &downerCells[idxUpperLevel-1] , neighbors, neighborPositions, counter, idxUpperLevel);
             }
 
             for(int idxUpperLevel = 3 ; idxUpperLevel <= offsetRealTree-1 ; ++idxUpperLevel){
-                const CellClass* neighbors[343];
-                memset(neighbors, 0, sizeof(CellClass*) * 343);
+                const CellClass* neighbors[342];
+                int neighborPositions[342];
                 int counter = 0;
                 for(int idxX = -2 ; idxX <= 3 ; ++idxX){
                     for(int idxY = -2 ; idxY <= 3 ; ++idxY){
                         for(int idxZ = -2 ; idxZ <= 3 ; ++idxZ){
                             if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
-                                neighbors[neighIndex(idxX,idxY,idxZ)] = &upperCells[idxUpperLevel-1];
+                                neighbors[counter] = &upperCells[idxUpperLevel-1];
+                                neighborPositions[counter] = neighIndex(idxX,idxY,idxZ);
                                 ++counter;
                             }
                         }
@@ -1976,18 +1984,19 @@ protected:
                 }
 
                 // compute M2L
-                kernels[0]->M2L( &downerCells[idxUpperLevel-1] , neighbors, counter, idxUpperLevel);
+                kernels[0]->M2L( &downerCells[idxUpperLevel-1] , neighbors, neighborPositions, counter, idxUpperLevel);
             }
             {
                 const int idxUpperLevel = offsetRealTree;
-                const CellClass* neighbors[343];
-                memset(neighbors, 0, sizeof(CellClass*) * 343);
+                const CellClass* neighbors[342];
+                int neighborPositions[342];
                 int counter = 0;
                 for(int idxX = -2 ; idxX <= 3 ; ++idxX){
                     for(int idxY = -2 ; idxY <= 3 ; ++idxY){
                         for(int idxZ = -2 ; idxZ <= 3 ; ++idxZ){
                             if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
-                                neighbors[neighIndex(idxX,idxY,idxZ)] = &rootCellFromProc;
+                                neighbors[counter] = &rootCellFromProc;
+                                neighborPositions[counter] = neighIndex(idxX,idxY,idxZ);
                                 ++counter;
                             }
                         }
@@ -1995,7 +2004,7 @@ protected:
                 }
 
                 // compute M2L
-                kernels[0]->M2L( &rootCellFromProc , neighbors, counter, idxUpperLevel);
+                kernels[0]->M2L( &rootCellFromProc , neighbors, neighborPositions, counter, idxUpperLevel);
             }
 
             {

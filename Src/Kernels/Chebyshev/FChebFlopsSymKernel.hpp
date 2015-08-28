@@ -175,7 +175,7 @@ public:
 	
 	
 	
-	void P2M(CellClass* const /* not needed */, const ContainerClass* const SourceParticles)
+    void P2M(CellClass* const /* not needed */, const ContainerClass* const SourceParticles) override
 	{
         flopsP2M += countFlopsP2M(int(SourceParticles->getNbParticles()));
 	}
@@ -184,7 +184,7 @@ public:
 
 	void M2M(CellClass* const FRestrict /* not needed */,
 					 const CellClass*const FRestrict *const FRestrict ChildCells,
-					 const int TreeLevel)
+                     const int TreeLevel) override
 	{
         unsigned int flops = 0;
         for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex)
@@ -197,15 +197,16 @@ public:
 
 
 	void M2L(CellClass* const FRestrict /* not needed */,
-					 const CellClass* SourceCells[343],
-					 const int /* not needed */,
-					 const int TreeLevel)
+                     const CellClass* SourceCells[],
+                    const int positions[],
+                     const int size,
+                     const int TreeLevel) override
 	{
         unsigned int flops = 0;
 		// count how ofter each of the 16 interactions is used
 		memset(countExp, 0, sizeof(int) * 343);
-        for (unsigned int idx=0; idx<343; ++idx)
-			if (SourceCells[idx])	countExp[SymHandler->pindices[idx]]++;
+        for (unsigned int idx=0; idx<size; ++idx)
+            countExp[SymHandler->pindices[positions[idx]]]++;
 		// multiply (mat-mat-mul)
         for (unsigned int pidx=0; pidx<343; ++pidx)
 			if (countExp[pidx])
@@ -217,7 +218,7 @@ public:
 
 	void L2L(const CellClass* const FRestrict /* not needed */,
 					 CellClass* FRestrict *const FRestrict ChildCells,
-					 const int TreeLevel)
+                     const int TreeLevel) override
 	{
         unsigned int flops = 0;
         for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex)
@@ -229,7 +230,7 @@ public:
 
 
 	void L2P(const CellClass* const /* not needed */,
-					 ContainerClass* const TargetParticles)
+                     ContainerClass* const TargetParticles) override
 	{
 		//// 1.a) apply Sx
         //flopsL2P += countFlopsP2MorL2P(TargetParticlesParticles->getNbParticles()) + TargetParticles->getNbParticles();
@@ -247,18 +248,17 @@ public:
 	void P2P(const FTreeCoordinate& /* LeafCellCoordinate */, // needed for periodic boundary conditions
 					 ContainerClass* const FRestrict TargetParticles,
 					 const ContainerClass* const FRestrict SourceParticles,
-					 ContainerClass* const NeighborSourceParticles[27],
-					 const int /* size */)
+                     ContainerClass* const NeighborSourceParticles[],
+                     const int neighborPositions[],
+                     const int size) override
 	{
 		if (TargetParticles != SourceParticles) {
             flopsP2P += countFlopsP2P() * TargetParticles->getNbParticles() * SourceParticles->getNbParticles();
-            for (unsigned int idx=0; idx<27; ++idx)
-				if (NeighborSourceParticles[idx])
+            for (unsigned int idx=0; idx<size; ++idx)
                     flopsP2P += countFlopsP2P() * TargetParticles->getNbParticles() * NeighborSourceParticles[idx]->getNbParticles();
 		} else {
             flopsP2P += countFlopsP2Pmutual() * ((TargetParticles->getNbParticles()*TargetParticles->getNbParticles()+TargetParticles->getNbParticles()) / 2);
-            for (unsigned int idx=0; idx<=13; ++idx)
-				if (NeighborSourceParticles[idx])
+            for (unsigned int idx=0; idx < size && neighborPositions[idx]<=13; ++idx)
                     flopsP2P += countFlopsP2Pmutual() * TargetParticles->getNbParticles() * NeighborSourceParticles[idx]->getNbParticles();
 		}
 	}
