@@ -333,11 +333,11 @@ if (FFTW_LOOK_FOR_MKL)
 else(FFTW_LOOK_FOR_MKL)
 
     if (FFTW_LOOK_FOR_THREADS)
-        set(FFTW_libs_to_find "fftw3${FFTW_PREC}_threads;fftw3${FFTW_PREC}")
+        set(FFTW_libs_to_find "fftw3${FFTW_PREC}_threads;fftw3${FFTW_PREC};fftw3")
     elseif (FFTW_LOOK_FOR_OMP)
-        set(FFTW_libs_to_find "fftw3${FFTW_PREC}_omp;fftw3${FFTW_PREC}")
+        set(FFTW_libs_to_find "fftw3${FFTW_PREC}_omp;fftw3${FFTW_PREC};fftw3")
     else()
-        set(FFTW_libs_to_find "fftw3${FFTW_PREC}")
+        set(FFTW_libs_to_find "fftw3${FFTW_PREC};fftw3")
     endif()
 
     # Try to find the fftw lib in the given paths
