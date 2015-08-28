@@ -376,7 +376,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
       # The package can be used with the following COMPONENTS:
       # MKL, THREADS|OMP and/or SIMPLE|DOUBLE|LONG|QUAD
       # Default is DOUBLE and without THREADS|OMP
-      find_package(FFTW) # not REQUIRED
+      find_package(FFTW COMPONENTS SIMPLE) # not REQUIRED
       if (FFTW_LIBRARY_DIRS_DEP)
         set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your MKL flags")
       endif()
