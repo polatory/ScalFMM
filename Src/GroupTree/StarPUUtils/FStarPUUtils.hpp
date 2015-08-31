@@ -15,10 +15,14 @@
 #if (STARPU_MAJOR_VERSION >= 1) && (STARPU_MINOR_VERSION >= 2)
 #define STARPU_SUPPORT_COMMUTE
 #define STARPU_SUPPORT_SCHEDULER
+#else
+#warning StarPU Commute is not supported
 #endif
 
 #if (STARPU_MAJOR_VERSION >= 1) && (STARPU_MINOR_VERSION >= 3)
 #define STARPU_SUPPORT_ARBITER
+#else
+#warning StarPU Arbiter is not supported
 #endif
 
 /////////////////////////////////////////////////////
