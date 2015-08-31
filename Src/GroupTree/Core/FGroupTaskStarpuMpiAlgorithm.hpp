@@ -130,9 +130,7 @@ protected:
     FStarPUPtrInterface* wrapperptr;
 
 #ifdef STARPU_SUPPORT_ARBITER
-    starpu_arbiter_t arbiterPole;
-    starpu_arbiter_t arbiterLocal;
-    starpu_arbiter_t arbiterParticles;
+    starpu_arbiter_t arbiterGlobal;
 #endif
 public:
     FGroupTaskStarPUMpiAlgorithm(const FMpi::FComm& inComm, OctreeClass*const inTree, KernelClass* inKernels)
@@ -192,9 +190,7 @@ public:
         cellHandles   = new std::vector<CellHandles>[tree->getHeight()];
 
 #ifdef STARPU_SUPPORT_ARBITER
-        arbiterPole = starpu_arbiter_create();
-        arbiterLocal = starpu_arbiter_create();
-        arbiterParticles = starpu_arbiter_create();
+        arbiterGlobal = starpu_arbiter_create();
 #endif
 
         initCodelet();
@@ -249,9 +245,7 @@ public:
 
 
 #ifdef STARPU_SUPPORT_ARBITER
-        starpu_arbiter_destroy(arbiterPole);
-        starpu_arbiter_destroy(arbiterLocal);
-        starpu_arbiter_destroy(arbiterParticles);
+        starpu_arbiter_destroy(arbiterGlobal);
 #endif
         starpu_mpi_shutdown();
         starpu_shutdown();
@@ -1108,8 +1102,8 @@ protected:
                                               (uintptr_t)currentCells->getRawLocalBuffer(), currentCells->getLocalBufferSizeInByte());
                 cellHandles[idxLevel][idxGroup].intervalSize = int(currentCells->getEndingIndex() - currentCells->getStartingIndex());
 #ifdef STARPU_SUPPORT_ARBITER
-                starpu_data_assign_arbiter(cellHandles[idxLevel][idxGroup].up, arbiterPole);
-                starpu_data_assign_arbiter(cellHandles[idxLevel][idxGroup].down, arbiterLocal);
+                starpu_data_assign_arbiter(cellHandles[idxLevel][idxGroup].up, arbiterGlobal);
+                starpu_data_assign_arbiter(cellHandles[idxLevel][idxGroup].down, arbiterGlobal);
 #endif
             }
         }
@@ -1123,7 +1117,7 @@ protected:
                                               (uintptr_t)containers->getRawAttributesBuffer(), containers->getAttributesBufferSizeInByte());
                 particleHandles[idxGroup].intervalSize = int(containers->getEndingIndex() - containers->getStartingIndex());
 #ifdef STARPU_SUPPORT_ARBITER
-                starpu_data_assign_arbiter(particleHandles[idxGroup].down, arbiterParticles);
+                starpu_data_assign_arbiter(particleHandles[idxGroup].down, arbiterGlobal);
 #endif
             }
         }
