@@ -1314,6 +1314,9 @@ protected:
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
                     STARPU_RW, cellHandles[tree->getHeight()-1][idxGroup].up,
                     STARPU_R, particleHandles[idxGroup].symb,
+        #ifdef STARPU_USE_TASK_NAME
+                            STARPU_NAME, p2m_cl.name,
+        #endif
                     0);
         }
 
@@ -1375,6 +1378,9 @@ protected:
                 task->cl_arg = arg_buffer;
                 task->cl_arg_size = arg_buffer_size;
                 task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
+#ifdef STARPU_USE_TASK_NAME
+                task->name = task->cl->name;
+#endif
                 FAssertLF(starpu_task_submit(task) == 0);
             }
 
@@ -1456,6 +1462,9 @@ protected:
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
                     task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
+#ifdef STARPU_USE_TASK_NAME
+                task->name = task->cl->name;
+#endif
                     FAssertLF(starpu_task_submit(task) == 0);
                 }
             }
@@ -1521,6 +1530,9 @@ protected:
                             (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
                             STARPU_R, remoteCellGroups[idxLevel][interactionid].handleSymb,
                             STARPU_R, remoteCellGroups[idxLevel][interactionid].handleUp,
+                   #ifdef STARPU_USE_TASK_NAME
+                                       STARPU_NAME, m2l_cl_inout_mpi.name,
+                   #endif
                             0);
                 }
             }
@@ -1546,6 +1558,9 @@ protected:
                                    STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                    STARPU_R, cellHandles[idxLevel][idxGroup].up,
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
+                   #ifdef STARPU_USE_TASK_NAME
+                                       STARPU_NAME, m2l_cl_in.name,
+                   #endif
                         0);
             }
             FLOG( timerInBlock.tac() );
@@ -1568,6 +1583,9 @@ protected:
                                STARPU_R, cellHandles[idxLevel][interactionid].symb,
                                STARPU_R, cellHandles[idxLevel][interactionid].up,
                                (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
+                   #ifdef STARPU_USE_TASK_NAME
+                                       STARPU_NAME, m2l_cl_inout.name,
+                   #endif
                             0);
                 }
             }
@@ -1724,6 +1742,9 @@ protected:
                         task->cl_arg = arg_buffer;
                         task->cl_arg_size = arg_buffer_size;
                         task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
+#ifdef STARPU_USE_TASK_NAME
+                task->name = task->cl->name;
+#endif
                         FAssertLF(starpu_task_submit(task) == 0);
                     }
                 }
@@ -1778,6 +1799,9 @@ protected:
                 task->cl_arg = arg_buffer;
                 task->cl_arg_size = arg_buffer_size;
                 task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
+#ifdef STARPU_USE_TASK_NAME
+                task->name = task->cl->name;
+#endif
                 FAssertLF(starpu_task_submit(task) == 0);
             }
         }
@@ -1802,6 +1826,9 @@ protected:
                         STARPU_R, particleHandles[idxGroup].symb,
                         (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
                         STARPU_R, remoteParticleGroupss[interactionid].handleSymb,
+                   #ifdef STARPU_USE_TASK_NAME
+                                       STARPU_NAME, p2p_cl_inout_mpi.name,
+                   #endif
                         0);
             }
         }
@@ -1825,6 +1852,9 @@ protected:
                                STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2P(),
                                STARPU_R, particleHandles[idxGroup].symb,
                                (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
+                   #ifdef STARPU_USE_TASK_NAME
+                                       STARPU_NAME, p2p_cl_in.name,
+                   #endif
                     0);
         }
         FLOG( timerInBlock.tac() );
@@ -1842,6 +1872,9 @@ protected:
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
                         STARPU_R, particleHandles[interactionid].symb,
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[interactionid].down,
+                   #ifdef STARPU_USE_TASK_NAME
+                                       STARPU_NAME, p2p_cl_inout.name,
+                   #endif
                         0);
             }
         }
@@ -1867,6 +1900,9 @@ protected:
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].down,
                     STARPU_R, particleHandles[idxGroup].symb,
                     (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
+        #ifdef STARPU_USE_TASK_NAME
+                            STARPU_NAME, l2p_cl.name,
+        #endif
                     0);
         }
 

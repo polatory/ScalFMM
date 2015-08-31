@@ -12,7 +12,7 @@
 
 /////////////////////////////////////////////////////
 
-#if (STARPU_MAJOR_VERSION >= 1) && (STARPU_MINOR_VERSION >= 2)
+#if (STARPU_MAJOR_VERSION >= 1) && (STARPU_MINOR_VERSION >= 3)
 #define STARPU_SUPPORT_COMMUTE
 #define STARPU_SUPPORT_SCHEDULER
 #else
@@ -23,6 +23,10 @@
 #define STARPU_SUPPORT_ARBITER
 #else
 #warning StarPU Arbiter is not supported
+#endif
+
+#if (STARPU_MAJOR_VERSION >= 1) && (STARPU_MINOR_VERSION >= 3)
+#define STARPU_USE_TASK_NAME
 #endif
 
 /////////////////////////////////////////////////////
