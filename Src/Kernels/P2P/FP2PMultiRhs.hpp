@@ -84,6 +84,22 @@ namespace FP2P {
             }
         }
     }
+  }
+
+  template <class FReal, class ContainerClass, typename MatrixKernelClass>
+  inline void InnerMultiRhs(ContainerClass* const FRestrict inTargets, const MatrixKernelClass *const MatrixKernel){
+
+    const FSize nbParticlesTargets = inTargets->getNbParticles();
+    const FReal*const targetsPhysicalValues = inTargets->getPhysicalValuesArray();
+    const FReal*const targetsX = inTargets->getPositions()[0];
+    const FReal*const targetsY = inTargets->getPositions()[1];
+    const FReal*const targetsZ = inTargets->getPositions()[2];
+    FReal*const targetsForcesX = inTargets->getForcesXArray();
+    FReal*const targetsForcesY = inTargets->getForcesYArray();
+    FReal*const targetsForcesZ = inTargets->getForcesZArray();
+    FReal*const targetsPotentials = inTargets->getPotentialsArray();
+    const int NVALS = inTargets->getNVALS();
+    const FSize targetsLD  = inTargets->getLeadingDimension();
 
     for(FSize idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
         for(FSize idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){

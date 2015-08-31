@@ -181,18 +181,14 @@ public:
 
     }
 
-    void P2P(const FTreeCoordinate& /*inPosition*/,
+    void P2P(const FTreeCoordinate& inPosition,
              ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
              ContainerClass* const inNeighbors[], const int neighborPositions[],
              const int inSize) override {
         // Standard FMM separation criterion, i.e. max 27 neighbor clusters per leaf
-        if(LeafLevelSeparationCriterion==1) {
-            int nbNeighborsToCompute = 0;
-            while(nbNeighborsToCompute < inSize
-                  && neighborPositions[nbNeighborsToCompute] < 14){
-                nbNeighborsToCompute += 1;
-            }
-            DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2P(inTargets,inNeighbors,nbNeighborsToCompute,MatrixKernel);
+        if(LeafLevelSeparationCriterion==1) {            
+            P2POuter(inPosition, inTargets, inNeighbors, neighborPositions, inSize);
+            DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PInner(inTargets,MatrixKernel);
         }
         // Nearfield interactions are only computed within the target leaf
         else if(LeafLevelSeparationCriterion==0){
@@ -201,6 +197,17 @@ public:
         // If criterion equals -1 then no P2P need to be performed.
     }
 
+    void P2POuter(const FTreeCoordinate& /*inLeafPosition*/,
+             ContainerClass* const FRestrict inTargets,
+             ContainerClass* const inNeighbors[], const int neighborPositions[],
+             const int inSize) override {
+        int nbNeighborsToCompute = 0;
+        while(nbNeighborsToCompute < inSize
+              && neighborPositions[nbNeighborsToCompute] < 14){
+            nbNeighborsToCompute += 1;
+        }
+        DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2P(inTargets,inNeighbors,nbNeighborsToCompute,MatrixKernel);
+    }
 
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,

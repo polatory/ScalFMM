@@ -56,7 +56,7 @@ class FTreeCoordinate;
  */
 
 template<class FReal, class CellClass, class ContainerClass, class MatrixKernelClass, int ORDER, int NVALS = 1>
-class FAdaptiveUnifKernel : FUnifKernel<FReal,CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+class FAdaptiveUnifKernel : public FUnifKernel<FReal,CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
         , public FAbstractAdaptiveKernel<CellClass, ContainerClass> {
     //
     typedef FUnifKernel<FReal,CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	KernelBaseClass;

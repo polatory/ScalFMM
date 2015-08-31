@@ -322,6 +322,34 @@ public:
         cell->addNearCost(tmpCost);
         countP2P++;
     }
+
+    void P2POuter(const FTreeCoordinate& LeafCellCoordinate, // needed for periodic boundary conditions
+             ContainerClass* const FRestrict TargetParticles,
+             ContainerClass* const NeighborSourceParticles[],
+             const int positions[],
+             const int size) override {
+        FSize tmpCost = 0;
+        FSize tgtPartCount = TargetParticles->getNbParticles();
+
+        {
+            for (int idx=0; idx < size && positions[idx]<=13; ++idx)
+            {
+                    tmpCost +=
+                        countFlopsP2Pmutual()
+                        * tgtPartCount
+                        * NeighborSourceParticles[idx]->getNbParticles();
+                }
+        }
+
+        flopsP2P += tmpCost;
+
+        CellClass* cell = _tree->getCell(
+            LeafCellCoordinate.getMortonIndex(_treeHeight - 1),
+            _treeHeight - 1);
+
+        cell->addNearCost(tmpCost);
+        countP2P++;
+    }
 };
 
 

@@ -168,6 +168,13 @@ public:
         nbFmmOperationsVerbose[5] += 1;
     }
 
+    void P2POuter(const FTreeCoordinate& ,
+                 ContainerClass* const FRestrict /*targets*/,
+                 ContainerClass* const /*directNeighborsParticles*/[], const int /*neighborPosition*/[], const int /*size*/) override{
+        nbFmmOperations += 1;
+        nbFmmOperationsVerbose[5] += 1;
+    }
+
     void P2PRemote(const FTreeCoordinate& ,
                  ContainerClass* const FRestrict /*targets*/, const ContainerClass* const FRestrict /*sources*/,
                  ContainerClass* const /*directNeighborsParticles*/[],  const int /*neighborPosition*/[], const int /*size*/) override{

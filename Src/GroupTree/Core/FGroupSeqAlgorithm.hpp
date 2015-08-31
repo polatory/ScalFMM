@@ -385,12 +385,12 @@ protected:
                                 FAssertLF((*iterParticles)->getLeafMortonIndex(outsideInteractions[outInterIdx].insideIdxInBlock) == outsideInteractions[outInterIdx].insideIndex);
 
                                 ParticleContainerClass* ptrLeaf = &interParticles;
-                                kernels->P2PRemote( FTreeCoordinate(outsideInteractions[outInterIdx].insideIndex, tree->getHeight()-1),
-                                                    &particles, &particles , &ptrLeaf, &outsideInteractions[outInterIdx].outPosition, 1);
+                                kernels->P2POuter( FTreeCoordinate(outsideInteractions[outInterIdx].insideIndex, tree->getHeight()-1),
+                                                    &particles , &ptrLeaf, &outsideInteractions[outInterIdx].outPosition, 1);
                                 const int otherPosition = getOppositeNeighIndex(outsideInteractions[outInterIdx].outPosition);
                                 ptrLeaf = &particles;
-                                kernels->P2PRemote( FTreeCoordinate(outsideInteractions[outInterIdx].outIndex, tree->getHeight()-1),
-                                                    &interParticles, &interParticles , &ptrLeaf, &otherPosition, 1);
+                                kernels->P2POuter( FTreeCoordinate(outsideInteractions[outInterIdx].outIndex, tree->getHeight()-1),
+                                                    &interParticles , &ptrLeaf, &otherPosition, 1);
                             }
                         }
                     }

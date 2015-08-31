@@ -101,37 +101,39 @@ public:
         delete[] indexForEachParticle;
     }
 
-    void P2M(CellClass* const cell, const ContainerClass* const particles) {
+    void P2M(CellClass* const cell, const ContainerClass* const particles)  override  {
         for(FSize idxPart = 0 ; idxPart < particles->getSize() ; ++idxPart){
             // save the current morton index for each particles
             indexForEachParticle[ particles->getIndexes()[idxPart] ] = cell->getMortonIndex();
         }
     }
 
-    void M2M(CellClass* const FRestrict , const CellClass*const FRestrict *const FRestrict , const int ) {
+    void M2M(CellClass* const FRestrict , const CellClass*const FRestrict *const FRestrict , const int )  override  {
     }
 
-    void M2L(CellClass* const FRestrict , const CellClass* [], const int [], const int , const int ) {
+    void M2L(CellClass* const FRestrict , const CellClass* [], const int [], const int , const int )  override  {
     }
 
-    void L2L(const CellClass* const FRestrict , CellClass* FRestrict *const FRestrict  , const int ) {
+    void L2L(const CellClass* const FRestrict , CellClass* FRestrict *const FRestrict  , const int ) override  {
     }
 
-    void L2P(const CellClass* const , ContainerClass* const ){
-    }
-
-    void P2P(const FTreeCoordinate& ,
-                     ContainerClass* const FRestrict ,
-                     ContainerClass* const [],
-                    const int [], const int ) {
-
+    void L2P(const CellClass* const , ContainerClass* const ) override {
     }
 
     void P2P(const FTreeCoordinate& ,
                      ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
-                     ContainerClass* const [], const int [], const int ){
+                     ContainerClass* const [], const int [], const int ) override {
 
     }
+
+
+    void P2POuter(const FTreeCoordinate& ,
+                     ContainerClass* const FRestrict ,
+                     ContainerClass* const [],
+                    const int [], const int ) override {
+
+    }
+
 };
 
 

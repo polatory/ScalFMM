@@ -111,6 +111,22 @@ public:
         }
     }
 
+    void P2POuter(const FTreeCoordinate& /*inLeafPosition*/,
+             ContainerClass* const FRestrict targets,
+             ContainerClass* const directNeighborsParticles[], const int neighborPositions[],
+             const int inSize) override {
+        long long int inc = 0;
+
+        for(int idx = 0 ; idx < inSize ; ++idx){
+                inc += directNeighborsParticles[idx]->getNbParticles();
+        }
+
+        long long int*const particlesAttributes = targets->getDataDown();
+        for(FSize idxPart = 0 ; idxPart < targets->getNbParticles() ; ++idxPart){
+            particlesAttributes[idxPart] += inc;
+        }
+    }
+
     /** After Downward */
     void P2PRemote(const FTreeCoordinate& ,
                    ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,

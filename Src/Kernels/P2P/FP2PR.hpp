@@ -151,6 +151,22 @@ static void GenericFullMutual(ContainerClass* const FRestrict inTargets, Contain
             }
         }
     }
+}
+
+template <class FReal, class ContainerClass, class ComputeClass, int NbFRealInComputeClass>
+static void GenericInner(ContainerClass* const FRestrict inTargets){
+
+    const FSize nbParticlesTargets = inTargets->getNbParticles();
+    const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
+    const FReal*const targetsX = inTargets->getPositions()[0];
+    const FReal*const targetsY = inTargets->getPositions()[1];
+    const FReal*const targetsZ = inTargets->getPositions()[2];
+    FReal*const targetsForcesX = inTargets->getForcesX();
+    FReal*const targetsForcesY = inTargets->getForcesY();
+    FReal*const targetsForcesZ = inTargets->getForcesZ();
+    FReal*const targetsPotentials = inTargets->getPotentials();
+
+    const ComputeClass mOne = FMath::One<ComputeClass>();
 
     {//In this part, we compute (vectorially) the interaction
         //within the target leaf.
@@ -319,6 +335,11 @@ struct FP2PRT<double>{
     }
 
     template <class ContainerClass>
+    static void Inner(ContainerClass* const FRestrict inTargets){
+        FP2PR::GenericInner<double, ContainerClass, __m256d, 4>(inTargets);
+    }
+
+    template <class ContainerClass>
     static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                const int limiteNeighbors){
         FP2PR::GenericFullRemote<double, ContainerClass, __m256d, 4>(inTargets, inNeighbors, limiteNeighbors);
@@ -331,6 +352,11 @@ struct FP2PRT<float>{
     static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                            const int limiteNeighbors){
         FP2PR::GenericFullMutual<float, ContainerClass, __m256, 8>(inTargets, inNeighbors, limiteNeighbors);
+    }
+
+    template <class ContainerClass>
+    static void Inner(ContainerClass* const FRestrict inTargets){
+        FP2PR::GenericFullMutual<float, ContainerClass, __m256, 8>(inTargets);
     }
 
     template <class ContainerClass>
@@ -349,6 +375,11 @@ struct FP2PRT<double>{
     }
 
     template <class ContainerClass>
+    static void Inner(ContainerClass* const FRestrict inTargets){
+        FP2PR::GenericInner<double, ContainerClass, __m512d, 8>(inTargets);
+    }
+
+    template <class ContainerClass>
     static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                const int limiteNeighbors){
         FP2PR::GenericFullRemote<double, ContainerClass, __m512d, 8>(inTargets, inNeighbors, limiteNeighbors);
@@ -361,6 +392,11 @@ struct FP2PRT<float>{
     static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                            const int limiteNeighbors){
         FP2PR::GenericFullMutual<float, ContainerClass, __m512, 16>(inTargets, inNeighbors, limiteNeighbors);
+    }
+
+    template <class ContainerClass>
+    static void Inner(ContainerClass* const FRestrict inTargets){
+        FP2PR::GenericFullMutual<float, ContainerClass, __m512, 16>(inTargets);
     }
 
     template <class ContainerClass>
@@ -380,6 +416,11 @@ struct FP2PRT<double>{
     }
 
     template <class ContainerClass>
+    static void Inner(ContainerClass* const FRestrict inTargets){
+        FP2PR::GenericInner<double, ContainerClass, __m128d, 2>(inTargets);
+    }
+
+    template <class ContainerClass>
     static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                const int limiteNeighbors){
         FP2PR::GenericFullRemote<double, ContainerClass, __m128d, 2>(inTargets, inNeighbors, limiteNeighbors);
@@ -392,6 +433,11 @@ struct FP2PRT<float>{
     static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                            const int limiteNeighbors){
         FP2PR::GenericFullMutual<float, ContainerClass, __m128, 4>(inTargets, inNeighbors, limiteNeighbors);
+    }
+
+    template <class ContainerClass>
+    static void Inner(ContainerClass* const FRestrict inTargets){
+        FP2PR::GenericInner<float, ContainerClass, __m128, 4>(inTargets);
     }
 
     template <class ContainerClass>
@@ -411,6 +457,11 @@ struct FP2PRT<double>{
     }
 
     template <class ContainerClass>
+    static void Inner(ContainerClass* const FRestrict inTargets){
+        FP2PR::GenericInner<double, ContainerClass, double, 1>(inTargets);
+    }
+
+    template <class ContainerClass>
     static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                const int limiteNeighbors){
         FP2PR::GenericFullRemote<double, ContainerClass, double, 1>(inTargets, inNeighbors, limiteNeighbors);
@@ -423,6 +474,11 @@ struct FP2PRT<float>{
     static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                            const int limiteNeighbors){
         FP2PR::GenericFullMutual<float, ContainerClass, float, 1>(inTargets, inNeighbors, limiteNeighbors);
+    }
+
+    template <class ContainerClass>
+    static void Inner(ContainerClass* const FRestrict inTargets){
+        FP2PR::GenericInner<float, ContainerClass, float, 1>(inTargets);
     }
 
     template <class ContainerClass>

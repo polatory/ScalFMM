@@ -55,7 +55,7 @@ class FTreeCoordinate;
  */
 
 template<class FReal, class CellClass, class ContainerClass, class MatrixKernelClass, int ORDER, int NVALS = 1>
-class FAdaptiveChebSymKernel : FChebSymKernel<FReal,CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
+class FAdaptiveChebSymKernel : public FChebSymKernel<FReal,CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
         , public FAbstractAdaptiveKernel<CellClass, ContainerClass> {
     //
     typedef FChebSymKernel<FReal,CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>	KernelBaseClass;

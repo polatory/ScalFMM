@@ -162,8 +162,16 @@ public:
         }
     }
 
-    void P2P(const FTreeCoordinate& /*inPosition*/,
+    void P2P(const FTreeCoordinate& inPosition,
              ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+             ContainerClass* const inNeighbors[], const int neighborPositions[],
+             const int inSize) override {
+        P2POuter(inPosition, inTargets, inNeighbors, neighborPositions, inSize);
+        DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PInner(inTargets,MatrixKernel);
+    }
+
+    void P2POuter(const FTreeCoordinate& /*inLeafPosition*/,
+             ContainerClass* const FRestrict inTargets,
              ContainerClass* const inNeighbors[], const int neighborPositions[],
              const int inSize) override {
         int nbNeighborsToCompute = 0;

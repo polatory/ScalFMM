@@ -156,6 +156,11 @@ public:
             const int SourcePositions[],
 		   const int /* size */) = 0;
 
+  virtual void P2POuter(const FTreeCoordinate& inLeafPosition,
+           ContainerClass* const FRestrict targets,
+           ContainerClass* const directNeighborsParticles[], const int neighborPositions[],
+           const int size) = 0;
+
 
   virtual void P2PRemote(const FTreeCoordinate& /*inPosition*/,
 			 ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,

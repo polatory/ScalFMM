@@ -217,8 +217,16 @@ public:
       * (13 means current leaf (x;y;z) = (0;0;0)).
       * Calling this method in multi thread should be done carrefully.
       */
-    void P2P(const FTreeCoordinate& /*inPosition*/,
+    void P2P(const FTreeCoordinate& inPosition,
              ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+             ContainerClass* const inNeighbors[], const int neighborPositions[],
+             const int inSize) override {
+        FP2PRT<FReal>::template Inner<ContainerClass>(inTargets);
+        P2POuter(inPosition, inTargets, inNeighbors, neighborPositions, inSize);
+    }
+
+    void P2POuter(const FTreeCoordinate& /*inLeafPosition*/,
+             ContainerClass* const FRestrict inTargets,
              ContainerClass* const inNeighbors[], const int neighborPositions[],
              const int inSize) override {
         int nbNeighborsToCompute = 0;

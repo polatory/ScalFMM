@@ -205,10 +205,10 @@ public:
         unsigned int flops = 0;
 		// count how ofter each of the 16 interactions is used
 		memset(countExp, 0, sizeof(int) * 343);
-        for (unsigned int idx=0; idx<size; ++idx)
+        for (int idx=0; idx<size; ++idx)
             countExp[SymHandler->pindices[positions[idx]]]++;
 		// multiply (mat-mat-mul)
-        for (unsigned int pidx=0; pidx<343; ++pidx)
+        for (int pidx=0; pidx<343; ++pidx)
 			if (countExp[pidx])
 				flops += countFlopsM2L(countExp[pidx], SymHandler->LowRank[pidx]) + countExp[pidx]*nnodes;
 		flopsM2L += flops;
@@ -254,15 +254,24 @@ public:
 	{
 		if (TargetParticles != SourceParticles) {
             flopsP2P += countFlopsP2P() * TargetParticles->getNbParticles() * SourceParticles->getNbParticles();
-            for (unsigned int idx=0; idx<size; ++idx)
+            for (int idx=0; idx<size; ++idx)
                     flopsP2P += countFlopsP2P() * TargetParticles->getNbParticles() * NeighborSourceParticles[idx]->getNbParticles();
 		} else {
             flopsP2P += countFlopsP2Pmutual() * ((TargetParticles->getNbParticles()*TargetParticles->getNbParticles()+TargetParticles->getNbParticles()) / 2);
-            for (unsigned int idx=0; idx < size && neighborPositions[idx]<=13; ++idx)
+            for (int idx=0; idx < size && neighborPositions[idx]<=13; ++idx)
                     flopsP2P += countFlopsP2Pmutual() * TargetParticles->getNbParticles() * NeighborSourceParticles[idx]->getNbParticles();
 		}
 	}
 
+    void P2POuter(const FTreeCoordinate& /* LeafCellCoordinate */, // needed for periodic boundary conditions
+                     ContainerClass* const FRestrict TargetParticles,
+                     ContainerClass* const NeighborSourceParticles[],
+                     const int neighborPositions[],
+                     const int size) override
+    {
+        for (int idx=0; idx < size && neighborPositions[idx]<=13; ++idx)
+                flopsP2P += countFlopsP2Pmutual() * TargetParticles->getNbParticles() * NeighborSourceParticles[idx]->getNbParticles();
+    }
 
 };
 

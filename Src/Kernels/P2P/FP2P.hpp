@@ -263,6 +263,21 @@ inline void FullMutualKIJ(ContainerClass* const FRestrict inTargets, ContainerCl
             }
         }
     }
+}
+
+template <class FReal, class ContainerClass, typename MatrixKernelClass>
+inline void InnerKIJ(ContainerClass* const FRestrict inTargets, const MatrixKernelClass *const MatrixKernel){
+
+    // get information on tensorial aspect of matrix kernel
+    const int ncmp = MatrixKernelClass::NCMP;
+    const int applyTab[9] = {0,1,2,
+                             1,3,4,
+                             2,4,5};
+
+    const FSize nbParticlesTargets = inTargets->getNbParticles();
+    const FReal*const targetsX = inTargets->getPositions()[0];
+    const FReal*const targetsY = inTargets->getPositions()[1];
+    const FReal*const targetsZ = inTargets->getPositions()[2];
 
     for(FSize idxTarget = 0 ; idxTarget < nbParticlesTargets ; ++idxTarget){
         for(FSize idxSource = idxTarget + 1 ; idxSource < nbParticlesTargets ; ++idxSource){
@@ -436,6 +451,20 @@ static void GenericFullMutual(ContainerClass* const FRestrict inTargets, Contain
             }
         }
     }
+}
+
+template <class FReal, class ContainerClass, class MatrixKernelClass, class ComputeClass, int NbFRealInComputeClass>
+static void GenericInner(ContainerClass* const FRestrict inTargets, const MatrixKernelClass *const MatrixKernel){
+
+    const FSize nbParticlesTargets = inTargets->getNbParticles();
+    const FReal*const targetsPhysicalValues = inTargets->getPhysicalValues();
+    const FReal*const targetsX = inTargets->getPositions()[0];
+    const FReal*const targetsY = inTargets->getPositions()[1];
+    const FReal*const targetsZ = inTargets->getPositions()[2];
+    FReal*const targetsForcesX = inTargets->getForcesX();
+    FReal*const targetsForcesY = inTargets->getForcesY();
+    FReal*const targetsForcesZ = inTargets->getForcesZ();
+    FReal*const targetsPotentials = inTargets->getPotentials();
 
     {//In this part, we compute (vectorially) the interaction
         //within the target leaf.
@@ -589,6 +618,12 @@ struct FP2PT<double>{
         FP2P::GenericFullMutual<double, ContainerClass, MatrixKernelClass, __m256d, 4>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
     }
 
+
+    template <class ContainerClass, class MatrixKernelClass>
+    static void Inner(ContainerClass* const FRestrict inTargets, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericInner<double, ContainerClass, MatrixKernelClass, __m256d, 4>(inTargets, MatrixKernel);
+    }
+
     template <class ContainerClass, class MatrixKernelClass>
     static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                            const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
@@ -602,6 +637,11 @@ struct FP2PT<float>{
     static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                            const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
         FP2P::GenericFullMutual<float, ContainerClass, MatrixKernelClass, __m256, 8>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
+
+    template <class ContainerClass, class MatrixKernelClass>
+    static void Inner(ContainerClass* const FRestrict inTargets, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericInner<float, ContainerClass, MatrixKernelClass, __m256, 8>(inTargets, MatrixKernel);
     }
 
     template <class ContainerClass, class MatrixKernelClass>
@@ -620,6 +660,11 @@ struct FP2PT<double>{
     }
 
     template <class ContainerClass, class MatrixKernelClass>
+    static void Inner(ContainerClass* const FRestrict inTargets, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericInner<double, ContainerClass, MatrixKernelClass, __m512d, 8>(inTargets, MatrixKernel);
+    }
+
+    template <class ContainerClass, class MatrixKernelClass>
     static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                            const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
         FP2P::GenericFullRemote<double, ContainerClass, MatrixKernelClass, __m512d, 8>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
@@ -632,6 +677,12 @@ struct FP2PT<float>{
     static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                            const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
         FP2P::GenericFullMutual<float, ContainerClass, MatrixKernelClass, __m512, 16>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
+
+
+    template <class ContainerClass, class MatrixKernelClass>
+    static void Inner(ContainerClass* const FRestrict inTargets, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericInner<float, ContainerClass, MatrixKernelClass, __m512, 16>(inTargets, MatrixKernel);
     }
 
     template <class ContainerClass, class MatrixKernelClass>
@@ -647,6 +698,12 @@ struct FP2PT<double>{
     static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                            const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
         FP2P::GenericFullMutual<double, ContainerClass, MatrixKernelClass, __m128d, 2>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
+
+
+    template <class ContainerClass, class MatrixKernelClass>
+    static void Inner(ContainerClass* const FRestrict inTargets, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericInner<double, ContainerClass, MatrixKernelClass, __m128d, 2>(inTargets, MatrixKernel);
     }
 
     template <class ContainerClass, class MatrixKernelClass>
@@ -665,6 +722,12 @@ struct FP2PT<float>{
     }
 
     template <class ContainerClass, class MatrixKernelClass>
+    static void Inner(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+                           const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericInner<float, ContainerClass, MatrixKernelClass, __m128, 4>(inTargets, MatrixKernel);
+    }
+
+    template <class ContainerClass, class MatrixKernelClass>
     static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                            const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
         FP2P::GenericFullRemote<float, ContainerClass, MatrixKernelClass, __m128, 4>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
@@ -680,6 +743,11 @@ struct FP2PT<double>{
     }
 
     template <class ContainerClass, class MatrixKernelClass>
+    static void Inner(ContainerClass* const FRestrict inTargets, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericInner<double, ContainerClass, MatrixKernelClass, double, 1>(inTargets, MatrixKernel);
+    }
+
+    template <class ContainerClass, class MatrixKernelClass>
     static void FullRemote(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                            const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
         FP2P::GenericFullRemote<double, ContainerClass, MatrixKernelClass, double, 1>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
@@ -692,6 +760,11 @@ struct FP2PT<float>{
     static void FullMutual(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
                            const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
         FP2P::GenericFullMutual<float, ContainerClass, MatrixKernelClass, float, 1>(inTargets, inNeighbors, limiteNeighbors, MatrixKernel);
+    }
+
+    template <class ContainerClass, class MatrixKernelClass>
+    static void Inner(ContainerClass* const FRestrict inTargets, const MatrixKernelClass *const MatrixKernel){
+        FP2P::GenericInner<float, ContainerClass, MatrixKernelClass, float, 1>(inTargets, MatrixKernel);
     }
 
     template <class ContainerClass, class MatrixKernelClass>

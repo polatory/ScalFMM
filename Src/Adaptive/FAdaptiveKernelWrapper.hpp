@@ -347,6 +347,13 @@ public:
         kernel.P2P(inLeafPosition, targets, sources, directNeighborsParticles, positions, size);
 	}
 
+    /** This is a normal P2P */
+    void P2POuter(const FTreeCoordinate& inLeafPosition,
+            ContainerClass* const FRestrict targets,
+            ContainerClass* const directNeighborsParticles[], const int positions[], const int size)  override {
+        kernel.P2POuter(inLeafPosition, targets, directNeighborsParticles, positions, size);
+    }
+
 	/** This is a normal P2P */
 	void P2PRemote(const FTreeCoordinate& inLeafPosition,
 			ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
