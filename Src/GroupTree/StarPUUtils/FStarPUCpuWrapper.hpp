@@ -110,60 +110,58 @@ public:
                                         nullptr);
 
         FStarPUPtrInterface* worker = nullptr;
-        int nbSubCellGroups = 0;
         int idxLevel = 0;
         int intervalSize;
-        starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel, &intervalSize);
+        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &intervalSize);
 
-        CellContainerClass* subCellGroups[9];
-        memset(subCellGroups, 0, 9*sizeof(CellContainerClass*));
-        for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            subCellGroups[idxSubGroup] = new CellContainerClass(
-                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[(idxSubGroup*2)+2]),
-                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[(idxSubGroup*2)+2]),
-                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[(idxSubGroup*2)+3]),
+        CellContainerClass subCellGroup(
+                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
+                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]),
                         nullptr);
-        }
 
-        worker->get<ThisClass>(FSTARPU_CPU_IDX)->upwardPassPerform(&currentCells, subCellGroups, nbSubCellGroups, idxLevel);
-
-        for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            delete subCellGroups[idxSubGroup];
-        }
+        worker->get<ThisClass>(FSTARPU_CPU_IDX)->upwardPassPerform(&currentCells, &subCellGroup, idxLevel);
     }
 
     void upwardPassPerform(CellContainerClass*const currentCells,
-                           CellContainerClass* subCellGroups[9],
-                            const int nbSubCellGroups, const int idxLevel){
-        FAssertLF(nbSubCellGroups != 0);
+                           CellContainerClass* subCellGroup,
+                           const int idxLevel){
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
-        int idxSubCellGroup = 0;
-        int idxChildCell = subCellGroups[0]->getFistChildIdx(currentCells->getCellMortonIndex(0));
+
+        const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
+        const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
+
+        int idxParentCell = currentCells->getCellIndex(firstParent);
+        FAssertLF(idxParentCell != -1);
+
+        int idxChildCell = subCellGroup->getFistChildIdx(firstParent);
         FAssertLF(idxChildCell != -1);
         CellClass childData[8];
 
-        for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){
-            CellClass cell = currentCells->getUpCell(cellIdx);
-            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(cellIdx));
-            CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+        while(true){
+            CellClass cell = currentCells->getUpCell(idxParentCell);
+            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(idxParentCell));
+            const CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
-            FAssertLF(idxSubCellGroup != nbSubCellGroups);
+            FAssertLF(cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
 
-            while(idxSubCellGroup != nbSubCellGroups
-                  && (subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)>>3) == cell.getMortonIndex()){
-                const int idxChild = ((subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)) & 7);
+            do{
+                const int idxChild = ((subCellGroup->getCellMortonIndex(idxChildCell)) & 7);
                 FAssertLF(child[idxChild] == nullptr);
-                childData[idxChild] = subCellGroups[idxSubCellGroup]->getUpCell(idxChildCell);
-                FAssertLF(subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
+                childData[idxChild] = subCellGroup->getUpCell(idxChildCell);
+                FAssertLF(subCellGroup->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
                 child[idxChild] = &childData[idxChild];
+
                 idxChildCell += 1;
-                if(idxChildCell == subCellGroups[idxSubCellGroup]->getNumberOfCellsInBlock()){
-                    idxChildCell = 0;
-                    idxSubCellGroup += 1;
-                }
-            }
+            }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
 
             kernel->M2M(&cell, child, idxLevel);
+
+            if(currentCells->getCellMortonIndex(idxParentCell) == lastParent){
+                break;
+            }
+
+            idxParentCell += 1;
         }
     }
 
@@ -269,42 +267,58 @@ public:
     static void transferInoutPassCallback(void *buffers[], void *cl_arg){
         CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                                         STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
-                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]));
-        CellContainerClass externalCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]),
-                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[3]),
-                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[4]),
-                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[5]));
+                                        nullptr,
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        CellContainerClass externalCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]),
+                                        nullptr);
 
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
         const std::vector<OutOfBlockInteraction>* outsideInteractions;
         int intervalSize;
-        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions, &intervalSize);
+        int mode = 0;
+        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions, &intervalSize, &mode);
 
-        worker->get<ThisClass>(FSTARPU_CPU_IDX)->transferInoutPassPerform(&currentCells, &externalCells, idxLevel, outsideInteractions);
+        worker->get<ThisClass>(FSTARPU_CPU_IDX)->transferInoutPassPerform(&currentCells, &externalCells, idxLevel, outsideInteractions, mode);
     }
 
 
     void transferInoutPassPerform(CellContainerClass*const currentCells,
                                   CellContainerClass*const cellsOther,
                                   const int idxLevel,
-                                  const std::vector<OutOfBlockInteraction>* outsideInteractions){
+                                  const std::vector<OutOfBlockInteraction>* outsideInteractions,
+                                  const int mode){
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
-        for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-            const int cellPos = cellsOther->getCellIndex((*outsideInteractions)[outInterIdx].outIndex);
-            if(cellPos != -1){
-                CellClass interCell = cellsOther->getCompleteCell(cellPos);
-                FAssertLF(interCell.getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
-                CellClass cell = currentCells->getCompleteCell((*outsideInteractions)[outInterIdx].insideIdxInBlock);
-                FAssertLF(cell.getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
+        if(mode == 1){
+            for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
+                const int cellPos = cellsOther->getCellIndex((*outsideInteractions)[outInterIdx].outIndex);
+                if(cellPos != -1){
+                    CellClass interCell = cellsOther->getUpCell(cellPos);
+                    FAssertLF(interCell.getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
+                    CellClass cell = currentCells->getDownCell((*outsideInteractions)[outInterIdx].insideIdxInBlock);
+                    FAssertLF(cell.getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
 
-                const CellClass* ptCell = &interCell;
-                kernel->M2L( &cell , &ptCell, &(*outsideInteractions)[outInterIdx].outPosition, 1, idxLevel);
-                const int otherPos = getOppositeInterIndex((*outsideInteractions)[outInterIdx].outPosition);
-                ptCell = &cell;
-                kernel->M2L( &interCell , &ptCell, &otherPos, 1, idxLevel);
+                    const CellClass* ptCell = &interCell;
+                    kernel->M2L( &cell , &ptCell, &(*outsideInteractions)[outInterIdx].outPosition, 1, idxLevel);
+                }
+            }
+        }
+        else{
+            for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
+                const int cellPos = currentCells->getCellIndex((*outsideInteractions)[outInterIdx].outIndex);
+                if(cellPos != -1){
+                    CellClass cell = cellsOther->getUpCell((*outsideInteractions)[outInterIdx].insideIdxInBlock);
+                    FAssertLF(cell.getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
+                    CellClass interCell = currentCells->getDownCell(cellPos);
+                    FAssertLF(interCell.getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
+
+                    const int otherPos = getOppositeInterIndex((*outsideInteractions)[outInterIdx].outPosition);
+                    const CellClass* ptCell = &cell;
+                    kernel->M2L( &interCell , &ptCell, &otherPos, 1, idxLevel);
+                }
             }
         }
     }
@@ -319,58 +333,58 @@ public:
                                         (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
 
         FStarPUPtrInterface* worker = nullptr;
-        int nbSubCellGroups = 0;
         int idxLevel = 0;
         int intervalSize;
-        starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel, &intervalSize);
+        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &intervalSize);
 
-        CellContainerClass* subCellGroups[9];
-        memset(subCellGroups, 0, 9*sizeof(CellContainerClass*));
-        for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            subCellGroups[idxSubGroup] = new CellContainerClass(
-                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[(idxSubGroup*2)+2]),
-                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[(idxSubGroup*2)+2]),
+        CellContainerClass subCellGroup(
+                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
                         nullptr,
-                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[(idxSubGroup*2)+3]));
-        }
+                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]));
 
-        worker->get<ThisClass>(FSTARPU_CPU_IDX)->downardPassPerform(&currentCells, subCellGroups, nbSubCellGroups, idxLevel);
-
-        for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            delete subCellGroups[idxSubGroup];
-        }
+        worker->get<ThisClass>(FSTARPU_CPU_IDX)->downardPassPerform(&currentCells, &subCellGroup, idxLevel);
     }
 
     void downardPassPerform(CellContainerClass*const currentCells,
-                            CellContainerClass* subCellGroups[9],
-                             const int nbSubCellGroups, const int idxLevel){
-        FAssertLF(nbSubCellGroups != 0);
+                            CellContainerClass* subCellGroup,
+                            const int idxLevel){
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
-        int idxSubCellGroup = 0;
-        int idxChildCell = subCellGroups[0]->getFistChildIdx(currentCells->getCellMortonIndex(0));
+
+        const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
+        const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
+
+        int idxParentCell = currentCells->getCellIndex(firstParent);
+        FAssertLF(idxParentCell != -1);
+
+        int idxChildCell = subCellGroup->getFistChildIdx(firstParent);
         FAssertLF(idxChildCell != -1);
         CellClass childData[8];
 
-        for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){
-            CellClass cell = currentCells->getDownCell(cellIdx);
-            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(cellIdx));
+        while(true){
+            CellClass cell = currentCells->getDownCell(idxParentCell);
+            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(idxParentCell));
             CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
-            while(idxSubCellGroup != nbSubCellGroups
-                  && (subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)>>3) == cell.getMortonIndex()){
-                const int idxChild = ((subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell)) & 7);
+            FAssertLF(cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+
+            do{
+                const int idxChild = ((subCellGroup->getCellMortonIndex(idxChildCell)) & 7);
                 FAssertLF(child[idxChild] == nullptr);
-                childData[idxChild] = subCellGroups[idxSubCellGroup]->getDownCell(idxChildCell);
-                FAssertLF(subCellGroups[idxSubCellGroup]->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
+                childData[idxChild] = subCellGroup->getDownCell(idxChildCell);
+                FAssertLF(subCellGroup->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
                 child[idxChild] = &childData[idxChild];
+
                 idxChildCell += 1;
-                if(idxChildCell == subCellGroups[idxSubCellGroup]->getNumberOfCellsInBlock()){
-                    idxChildCell = 0;
-                    idxSubCellGroup += 1;
-                }
-            }
+            }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
 
             kernel->L2L(&cell, child, idxLevel);
+
+            if(currentCells->getCellMortonIndex(idxParentCell) == lastParent){
+                break;
+            }
+
+            idxParentCell += 1;
         }
     }
 
