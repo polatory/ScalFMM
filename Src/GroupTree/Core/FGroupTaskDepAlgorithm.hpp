@@ -36,13 +36,12 @@
 enum FGroupTaskDepAlgorithm_Priorities{
     FGroupTaskDepAlgorithm_Prio_P2M = 5,
     FGroupTaskDepAlgorithm_Prio_M2M = 4,
-    FGroupTaskDepAlgorithm_Prio_L2L_High = 3,
-    FGroupTaskDepAlgorithm_Prio_P2P_Big = 2,
-    FGroupTaskDepAlgorithm_Prio_M2L_High = 1,
-    FGroupTaskDepAlgorithm_Prio_L2L = 0,
-    FGroupTaskDepAlgorithm_Prio_M2L = -1,
-    FGroupTaskDepAlgorithm_Prio_P2P_Small = -2,
-    FGroupTaskDepAlgorithm_Prio_L2P = -3
+    FGroupTaskDepAlgorithm_Prio_M2L_High = 3,
+    FGroupTaskDepAlgorithm_Prio_L2L = 2,
+    FGroupTaskDepAlgorithm_Prio_P2P_Big = 1,
+    FGroupTaskDepAlgorithm_Prio_M2L = 0,
+    FGroupTaskDepAlgorithm_Prio_L2P = -1,
+    FGroupTaskDepAlgorithm_Prio_P2P_Small = -2
 };
 #else
 #define priority_if_supported(x)
@@ -67,16 +66,13 @@ protected:
     OctreeClass*const tree;       //< The Tree
     KernelClass** kernels;        //< The kernels
 
-    // Used with OPENMP_SUPPORT_PRIORITY
-    size_t p2pPrioCriteria;
-
 #ifdef SCALFMM_TIME_OMPTASKS
     FTaskTimer taskTimeRecorder;
 #endif
 
 public:
     FGroupTaskDepAlgorithm(OctreeClass*const inTree, KernelClass* inKernels, const int inMaxThreads = -1)
-        : MaxThreads(inMaxThreads==-1?omp_get_max_threads():inMaxThreads), tree(inTree), kernels(nullptr), p2pPrioCriteria(0)
+        : MaxThreads(inMaxThreads==-1?omp_get_max_threads():inMaxThreads), tree(inTree), kernels(nullptr)
 #ifdef SCALFMM_TIME_OMPTASKS
             , taskTimeRecorder(MaxThreads)
 #endif
@@ -118,17 +114,6 @@ public:
                 buildExternalInteractionVecs();
             }
         }
-
-#ifdef OPENMP_SUPPORT_PRIORITY
-        size_t nbLeaves = 0;
-        size_t nbParticles = 0;
-        for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
-            ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
-            nbLeaves += containers->getNumberOfLeavesInBlock();
-            nbParticles += containers->getNbParticlesInGroup();
-        }
-        p2pPrioCriteria = (nbParticles/nbLeaves);
-#endif
     }
 
 protected:
@@ -679,39 +664,39 @@ protected:
 
                 switch(nbSubCellGroups){
                 case 1:
-                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0]) depend(in: cellLocals[0])  priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-2?FGroupTaskDepAlgorithm_Prio_L2L:FGroupTaskDepAlgorithm_Prio_L2L_High)
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0]) depend(in: cellLocals[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_L2L)
                     FGroupTaskDepAlgorithm_L2L_CORE
                     break;
                 case 2:
-                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0]) depend(in: cellLocals[0])  priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-2?FGroupTaskDepAlgorithm_Prio_L2L:FGroupTaskDepAlgorithm_Prio_L2L_High)
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0]) depend(in: cellLocals[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_L2L)
                     FGroupTaskDepAlgorithm_L2L_CORE
                     break;
                 case 3:
-                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0]) depend(in: cellLocals[0])  priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-2?FGroupTaskDepAlgorithm_Prio_L2L:FGroupTaskDepAlgorithm_Prio_L2L_High)
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0]) depend(in: cellLocals[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_L2L)
                     FGroupTaskDepAlgorithm_L2L_CORE
                     break;
                 case 4:
-                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0]) depend(in: cellLocals[0])  priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-2?FGroupTaskDepAlgorithm_Prio_L2L:FGroupTaskDepAlgorithm_Prio_L2L_High)
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0]) depend(in: cellLocals[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_L2L)
                     FGroupTaskDepAlgorithm_L2L_CORE
                     break;
                 case 5:
-                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0]) depend(in: cellLocals[0])  priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-2?FGroupTaskDepAlgorithm_Prio_L2L:FGroupTaskDepAlgorithm_Prio_L2L_High)
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0]) depend(in: cellLocals[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_L2L)
                     FGroupTaskDepAlgorithm_L2L_CORE
                     break;
                 case 6:
-                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0]) depend(in: cellLocals[0])  priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-2?FGroupTaskDepAlgorithm_Prio_L2L:FGroupTaskDepAlgorithm_Prio_L2L_High)
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0]) depend(in: cellLocals[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_L2L)
                     FGroupTaskDepAlgorithm_L2L_CORE
                     break;
                 case 7:
-                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0]) depend(in: cellLocals[0])  priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-2?FGroupTaskDepAlgorithm_Prio_L2L:FGroupTaskDepAlgorithm_Prio_L2L_High)
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0]) depend(in: cellLocals[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_L2L)
                     FGroupTaskDepAlgorithm_L2L_CORE
                     break;
                 case 8:
-                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0], subCellLocalGroupsLocal[7][0]) depend(in: cellLocals[0])  priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-2?FGroupTaskDepAlgorithm_Prio_L2L:FGroupTaskDepAlgorithm_Prio_L2L_High)
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0], subCellLocalGroupsLocal[7][0]) depend(in: cellLocals[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_L2L)
                     FGroupTaskDepAlgorithm_L2L_CORE
                     break;
                 case 9:
-                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0], subCellLocalGroupsLocal[7][0], subCellLocalGroupsLocal[8][0]) depend(in: cellLocals[0])  priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-2?FGroupTaskDepAlgorithm_Prio_L2L:FGroupTaskDepAlgorithm_Prio_L2L_High)
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroups, subCellLocalGroupsLocal, nbSubCellGroups) depend(commute_if_supported: subCellLocalGroupsLocal[0][0], subCellLocalGroupsLocal[1][0], subCellLocalGroupsLocal[2][0], subCellLocalGroupsLocal[3][0], subCellLocalGroupsLocal[4][0], subCellLocalGroupsLocal[5][0], subCellLocalGroupsLocal[6][0], subCellLocalGroupsLocal[7][0], subCellLocalGroupsLocal[8][0]) depend(in: cellLocals[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_L2L)
                     FGroupTaskDepAlgorithm_L2L_CORE
                     break;
                 default:
@@ -739,7 +724,7 @@ protected:
                 ParticleGroupClass* containers = (*iterParticles);
                 unsigned char* containersDown = containers->getRawAttributesBuffer();
 
-                #pragma omp task default(none) firstprivate(containers, containersDown) depend(commute_if_supported: containersDown[0])  priority_if_supported((containers->getNbParticlesInGroup()/containers->getNumberOfLeavesInBlock())>size_t(p2pPrioCriteria*1.1)?FGroupTaskDepAlgorithm_Prio_P2P_Big:FGroupTaskDepAlgorithm_Prio_P2P_Small)
+                #pragma omp task default(none) firstprivate(containers, containersDown) depend(commute_if_supported: containersDown[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_P2P_Big)
                 {
                     FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(&taskTimeRecorder, (containers->getStartingIndex() << 16) | (0<<8) | 5, "P2P"));
                     const MortonIndex blockStartIdx = containers->getStartingIndex();
@@ -797,7 +782,7 @@ protected:
                     unsigned char* containersOtherDown = containersOther->getRawAttributesBuffer();
                     const std::vector<OutOfBlockInteraction>* outsideInteractions = &(*currentInteractions).interactions;
 
-#pragma omp task default(none) firstprivate(containers, containersDown, containersOther, containersOtherDown, outsideInteractions) depend(commute_if_supported: containersOtherDown[0], containersDown[0])  priority_if_supported((containers->getNbParticlesInGroup()/containers->getNumberOfLeavesInBlock())>size_t(p2pPrioCriteria*1.1)?FGroupTaskDepAlgorithm_Prio_P2P_Big:FGroupTaskDepAlgorithm_Prio_P2P_Small)
+#pragma omp task default(none) firstprivate(containers, containersDown, containersOther, containersOtherDown, outsideInteractions) depend(commute_if_supported: containersOtherDown[0], containersDown[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_P2P_Small)
                     {
                         FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(&taskTimeRecorder, (containersOther->getStartingIndex()) << 50 | (containers->getStartingIndex() << 16) | (0<<8) | 6, "P2P ext"));
                         KernelClass*const kernel = kernels[omp_get_thread_num()];
