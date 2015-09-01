@@ -17,7 +17,7 @@
 #include "FP2PExclusion.hpp"
 
 #undef commute_if_supported
-#if OPENMP_SUPPORT_COMMUTE
+#ifdef OPENMP_SUPPORT_COMMUTE
 #define commute_if_supported commute
 #else
 #define commute_if_supported inout

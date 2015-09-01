@@ -248,7 +248,7 @@ protected:
         FLOG( FTic timer );
 
         // Running the kernel from the lowest up to the topmost
-        for(auto level = FAbstractAlgorithm::lowerWorkingLevel-2;
+        for(int level = FAbstractAlgorithm::lowerWorkingLevel-2;
             level >= FAbstractAlgorithm::upperWorkingLevel;
             level--) {
 
