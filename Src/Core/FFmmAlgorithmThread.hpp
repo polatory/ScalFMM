@@ -189,7 +189,7 @@ protected:
             ++leafs;
         } while(octreeIterator.moveRight());
 
-        const int chunkSize = getChunkSize(leafs);
+        const int chunkSize = this->getChunkSize(leafs);
 
         FLOG(FTic computationCounter);
         #pragma omp parallel
@@ -242,7 +242,7 @@ protected:
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
 
-            const int chunkSize = getChunkSize(numberOfCells);
+            const int chunkSize = this->getChunkSize(numberOfCells);
 
             FLOG(computationCounter.tic());
             #pragma omp parallel
@@ -309,7 +309,7 @@ protected:
             avoidGotoLeftIterator.moveDown();
             octreeIterator = avoidGotoLeftIterator;
 
-            const int chunkSize = getChunkSize(numberOfCells);
+            const int chunkSize = this->getChunkSize(numberOfCells);
 
             FLOG(computationCounter.tic());
             #pragma omp parallel
@@ -368,7 +368,7 @@ protected:
             octreeIterator = avoidGotoLeftIterator;
 
             FLOG(computationCounter.tic());
-            const int chunkSize = getChunkSize(numberOfCells);
+            const int chunkSize = this->getChunkSize(numberOfCells);
             #pragma omp parallel
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
@@ -469,7 +469,7 @@ protected:
 
             for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                 const int endAtThisShape = this->shapeLeaf[idxShape] + previous;
-                const int chunkSize = getChunkSize(endAtThisShape-previous);
+                const int chunkSize = this->getChunkSize(endAtThisShape-previous);
                 #pragma omp for schedule(dynamic, chunkSize)
                 for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; ++idxLeafs){
                     LeafData& currentIter = leafsDataArray[idxLeafs];
