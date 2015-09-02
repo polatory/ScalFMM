@@ -267,7 +267,7 @@ static void _starpu_heteroprio_bucket_release(struct _starpu_heteroprio_bucket* 
 
 
 /* HETEROPRIO_MAX_PREFETCH Represent the number of task stored in each worker queue if possible */
-#define HETEROPRIO_MAX_PREFETCH 2
+#define HETEROPRIO_MAX_PREFETCH 1
 #if HETEROPRIO_MAX_PREFETCH <= 0
 #error HETEROPRIO_MAX_PREFETCH == 1 means no prefetch so HETEROPRIO_MAX_PREFETCH must >= 1
 #endif
