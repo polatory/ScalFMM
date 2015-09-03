@@ -49,7 +49,7 @@ struct FWrappeCell{
 struct OutOfBlockInteraction{
     MortonIndex outIndex;
     MortonIndex insideIndex;
-    int outPosition;
+    int relativeOutPosition;
     int insideIdxInBlock;
 } __attribute__ ((aligned (DefaultStructAlign)));
 
@@ -725,7 +725,7 @@ __kernel  void FOpenCL__transferInoutPassPerformMpi(__global unsigned char* curr
 
             struct FWrappeCell interactions[343];
             FSetToNullptr343(interactions);
-            interactions[outsideInteractions[outInterIdx].outPosition] = interCell;
+            interactions[outsideInteractions[outInterIdx].relativeOutPosition] = interCell;
             const int counter = 1;
             M2L( cell , interactions, counter, idxLevel, userkernel);
         }
@@ -800,12 +800,12 @@ __kernel void FOpenCL__transferInoutPassPerform(__global unsigned char* currentC
 
             struct FWrappeCell interactions[343];
             FSetToNullptr343(interactions);
-            interactions[outsideInteractions[outInterIdx].outPosition] = interCell;
+            interactions[outsideInteractions[outInterIdx].relativeOutPosition] = interCell;
             const int counter = 1;
             M2L( cell , interactions, counter, idxLevel, userkernel);
 
-            interactions[outsideInteractions[outInterIdx].outPosition].symb = NULLPTR;
-            interactions[FMGetOppositeInterIndex(outsideInteractions[outInterIdx].outPosition)] = cell;
+            interactions[outsideInteractions[outInterIdx].relativeOutPosition].symb = NULLPTR;
+            interactions[FMGetOppositeInterIndex(outsideInteractions[outInterIdx].relativeOutPosition)] = cell;
             M2L( interCell , interactions, counter, idxLevel, userkernel);
         }
     }
@@ -884,7 +884,7 @@ __kernel void FOpenCL__directInoutPassPerformMpi(__global unsigned char* contain
             struct FOpenCLGroupAttachedLeaf particles = FOpenCLGroupOfParticles_getLeaf(&containers, outsideInteractions[outInterIdx].insideIdxInBlock);
             FOpenCLAssertLF(FOpenCLGroupOfParticles_getLeafMortonIndex(&containers, outsideInteractions[outInterIdx].insideIdxInBlock) == outsideInteractions[outInterIdx].insideIndex);
 
-            P2PRemote( GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1), particles, particles , interParticles, outsideInteractions[outInterIdx].outPosition, userkernel);
+            P2PRemote( GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1), particles, particles , interParticles, outsideInteractions[outInterIdx].relativeOutPosition, userkernel);
         }
     }
 }
@@ -951,9 +951,9 @@ __kernel void FOpenCL__directInoutPassPerform(__global unsigned char* containers
             FOpenCLAssertLF(particles.nbParticles);
             FOpenCLAssertLF(interParticles.nbParticles);
 
-            P2PRemote( GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1), particles, particles , interParticles, outsideInteractions[outInterIdx].outPosition, userkernel );
+            P2PRemote( GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1), particles, particles , interParticles, outsideInteractions[outInterIdx].relativeOutPosition, userkernel );
 
-            P2PRemote( GetPositionFromMorton(outsideInteractions[outInterIdx].outIndex, treeHeight-1), interParticles, interParticles , particles, FMGetOppositeNeighIndex(outsideInteractions[outInterIdx].outPosition), userkernel);
+            P2PRemote( GetPositionFromMorton(outsideInteractions[outInterIdx].outIndex, treeHeight-1), interParticles, interParticles , particles, FMGetOppositeNeighIndex(outsideInteractions[outInterIdx].relativeOutPosition), userkernel);
         }
     }
 }

@@ -9,8 +9,9 @@
 struct  alignas(FStarPUDefaultAlign::StructAlign) OutOfBlockInteraction{
     MortonIndex outIndex;
     MortonIndex insideIndex;
-    int outPosition;
+    int relativeOutPosition;
     int insideIdxInBlock;
+    int outsideIdxInBlock;
     // To sort
     bool operator <=(const OutOfBlockInteraction& other) const{
         return outIndex <= other.outIndex;

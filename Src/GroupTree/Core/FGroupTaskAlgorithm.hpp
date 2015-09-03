@@ -118,155 +118,94 @@ protected:
      *
      */
     void buildExternalInteractionVecs(){
-        FLOG( FTic timer; FTic leafTimer; FTic cellTimer; );
-        // Reset interactions
-        externalInteractionsAllLevel.clear();
-        externalInteractionsLeafLevel.clear();
-        // One per level + leaf level
-        externalInteractionsAllLevel.resize(tree->getHeight());
+            FLOG( FTic timer; FTic leafTimer; FTic cellTimer; );
+            // Reset interactions
+            externalInteractionsAllLevel.clear();
+            externalInteractionsLeafLevel.clear();
+            // One per level + leaf level
+            externalInteractionsAllLevel.resize(tree->getHeight());
 
-        // First leaf level
-        {
-            // We create one big vector per block
-            externalInteractionsLeafLevel.resize(tree->getNbParticleGroup());
+            // First leaf level
+            {
+                // We create one big vector per block
+                externalInteractionsLeafLevel.resize(tree->getNbParticleGroup());
 
-            for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
-                // Create the vector
-                ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
+                for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
+                    // Create the vector
+                    ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
 
-                std::vector<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel[idxGroup];
+                    std::vector<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel[idxGroup];
 
-                #pragma omp task default(none) firstprivate(idxGroup, containers, externalInteractions)
-                { // Can be a task(inout:iterCells)
-                    std::vector<OutOfBlockInteraction> outsideInteractions;
-                    const MortonIndex blockStartIdx = containers->getStartingIndex();
-                    const MortonIndex blockEndIdx   = containers->getEndingIndex();
-
-                    for(int leafIdx = 0 ; leafIdx < containers->getNumberOfLeavesInBlock() ; ++leafIdx){
-                        const MortonIndex mindex = containers->getLeafMortonIndex(leafIdx);
-                        // ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(leafIdx);
-
-                        MortonIndex interactionsIndexes[26];
-                        int interactionsPosition[26];
-                        FTreeCoordinate coord(mindex, tree->getHeight()-1);
-                        int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
-
-                        for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                            if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                                // Inside block interaction, do nothing
-                            }
-                            else if(interactionsIndexes[idxInter] < mindex){
-                                OutOfBlockInteraction property;
-                                property.insideIndex = mindex;
-                                property.outIndex    = interactionsIndexes[idxInter];
-                                property.outPosition = interactionsPosition[idxInter];
-                                property.insideIdxInBlock = leafIdx;
-                                outsideInteractions.push_back(property);
-                            }
-                        }
-                    }
-
-                    // Sort to match external order
-                    FQuickSort<OutOfBlockInteraction, int>::QsSequential(outsideInteractions.data(),int(outsideInteractions.size()));
-
-                    int currentOutInteraction = 0;
-                    for(int idxLeftGroup = 0 ; idxLeftGroup < idxGroup && currentOutInteraction < int(outsideInteractions.size()) ; ++idxLeftGroup){
-                        ParticleGroupClass* leftContainers = tree->getParticleGroup(idxLeftGroup);
-                        const MortonIndex blockStartIdxOther    = leftContainers->getStartingIndex();
-                        const MortonIndex blockEndIdxOther      = leftContainers->getEndingIndex();
-
-                        while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther){
-                            currentOutInteraction += 1;
-                        }
-
-                        int lastOutInteraction = currentOutInteraction;
-                        while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdxOther){
-                            lastOutInteraction += 1;
-                        }
-
-                        const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
-                        if(nbInteractionsBetweenBlocks){
-                            externalInteractions->emplace_back();
-                            BlockInteractions<ParticleGroupClass>* interactions = &externalInteractions->back();
-                            interactions->otherBlock = leftContainers;
-                            interactions->interactions.resize(nbInteractionsBetweenBlocks);
-                            std::copy(outsideInteractions.begin() + currentOutInteraction,
-                                      outsideInteractions.begin() + lastOutInteraction,
-                                      interactions->interactions.begin());
-                        }
-
-                        currentOutInteraction = lastOutInteraction;
-                    }
-                }
-            }
-        }
-        FLOG( leafTimer.tac(); );
-        FLOG( cellTimer.tic(); );
-        {
-            for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
-                externalInteractionsAllLevel[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
-
-                for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
-                    CellContainerClass* currentCells = tree->getCellGroup(idxLevel, idxGroup);
-
-                    std::vector<BlockInteractions<CellContainerClass>>* externalInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup];
-
-                    #pragma omp task default(none) firstprivate(idxGroup, currentCells, idxLevel, externalInteractions)
-                    {
+                    #pragma omp task default(none) firstprivate(idxGroup, containers, externalInteractions)
+                    { // Can be a task(inout:iterCells)
                         std::vector<OutOfBlockInteraction> outsideInteractions;
-                        const MortonIndex blockStartIdx = currentCells->getStartingIndex();
-                        const MortonIndex blockEndIdx   = currentCells->getEndingIndex();
+                        const MortonIndex blockStartIdx = containers->getStartingIndex();
+                        const MortonIndex blockEndIdx   = containers->getEndingIndex();
 
-                        for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){
-                            const MortonIndex mindex = currentCells->getCellMortonIndex(cellIdx);
+                        for(int leafIdx = 0 ; leafIdx < containers->getNumberOfLeavesInBlock() ; ++leafIdx){
+                            const MortonIndex mindex = containers->getLeafMortonIndex(leafIdx);
+                            // ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(leafIdx);
 
-                            MortonIndex interactionsIndexes[189];
-                            int interactionsPosition[189];
-                            const FTreeCoordinate coord(mindex, idxLevel);
-                            int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
+                            MortonIndex interactionsIndexes[26];
+                            int interactionsPosition[26];
+                            FTreeCoordinate coord(mindex, tree->getHeight()-1);
+                            int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
 
                             for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
                                 if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                                    // Nothing to do
+                                    // Inside block interaction, do nothing
                                 }
                                 else if(interactionsIndexes[idxInter] < mindex){
                                     OutOfBlockInteraction property;
                                     property.insideIndex = mindex;
                                     property.outIndex    = interactionsIndexes[idxInter];
-                                    property.outPosition = interactionsPosition[idxInter];
-                                    property.insideIdxInBlock = cellIdx;
+                                    property.relativeOutPosition = interactionsPosition[idxInter];
+                                    property.insideIdxInBlock = leafIdx;
+                                    property.outsideIdxInBlock = -1;
                                     outsideInteractions.push_back(property);
                                 }
                             }
                         }
 
-                        // Manage outofblock interaction
+                        // Sort to match external order
                         FQuickSort<OutOfBlockInteraction, int>::QsSequential(outsideInteractions.data(),int(outsideInteractions.size()));
 
                         int currentOutInteraction = 0;
                         for(int idxLeftGroup = 0 ; idxLeftGroup < idxGroup && currentOutInteraction < int(outsideInteractions.size()) ; ++idxLeftGroup){
-                            CellContainerClass* leftCells   = tree->getCellGroup(idxLevel, idxLeftGroup);
-                            const MortonIndex blockStartIdxOther = leftCells->getStartingIndex();
-                            const MortonIndex blockEndIdxOther   = leftCells->getEndingIndex();
+                            ParticleGroupClass* leftContainers = tree->getParticleGroup(idxLeftGroup);
+                            const MortonIndex blockStartIdxOther    = leftContainers->getStartingIndex();
+                            const MortonIndex blockEndIdxOther      = leftContainers->getEndingIndex();
 
-                            while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther){
+                            while(currentOutInteraction < int(outsideInteractions.size())
+                                  && (outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther
+                                      || leftContainers->getLeafIndex(outsideInteractions[currentOutInteraction].outIndex) == -1)
+                                  && outsideInteractions[currentOutInteraction].outIndex < blockEndIdxOther){
                                 currentOutInteraction += 1;
                             }
 
                             int lastOutInteraction = currentOutInteraction;
+                            int copyExistingInteraction = currentOutInteraction;
                             while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdxOther){
+                                const int leafPos = leftContainers->getLeafIndex(outsideInteractions[lastOutInteraction].outIndex);
+                                if(leafPos != -1){
+                                    if(copyExistingInteraction != lastOutInteraction){
+                                        outsideInteractions[copyExistingInteraction] = outsideInteractions[lastOutInteraction];
+                                    }
+                                    outsideInteractions[copyExistingInteraction].outsideIdxInBlock = leafPos;
+                                    copyExistingInteraction += 1;
+                                }
                                 lastOutInteraction += 1;
                             }
 
-                            // Create interactions
-                            const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
+                            const int nbInteractionsBetweenBlocks = (copyExistingInteraction-currentOutInteraction);
                             if(nbInteractionsBetweenBlocks){
                                 externalInteractions->emplace_back();
-                                BlockInteractions<CellContainerClass>* interactions = &externalInteractions->back();
-                                interactions->otherBlock = leftCells;
+                                BlockInteractions<ParticleGroupClass>* interactions = &externalInteractions->back();
+                                interactions->otherBlock = leftContainers;
+                                interactions->otherBlockId = idxLeftGroup;
                                 interactions->interactions.resize(nbInteractionsBetweenBlocks);
                                 std::copy(outsideInteractions.begin() + currentOutInteraction,
-                                          outsideInteractions.begin() + lastOutInteraction,
+                                          outsideInteractions.begin() + copyExistingInteraction,
                                           interactions->interactions.begin());
                             }
 
@@ -275,15 +214,104 @@ protected:
                     }
                 }
             }
+            FLOG( leafTimer.tac(); );
+            FLOG( cellTimer.tic(); );
+            {
+                for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
+                    externalInteractionsAllLevel[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
+
+                    for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
+                        CellContainerClass* currentCells = tree->getCellGroup(idxLevel, idxGroup);
+
+                        std::vector<BlockInteractions<CellContainerClass>>* externalInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup];
+
+                        #pragma omp task default(none) firstprivate(idxGroup, currentCells, idxLevel, externalInteractions)
+                        {
+                            std::vector<OutOfBlockInteraction> outsideInteractions;
+                            const MortonIndex blockStartIdx = currentCells->getStartingIndex();
+                            const MortonIndex blockEndIdx   = currentCells->getEndingIndex();
+
+                            for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){
+                                const MortonIndex mindex = currentCells->getCellMortonIndex(cellIdx);
+
+                                MortonIndex interactionsIndexes[189];
+                                int interactionsPosition[189];
+                                const FTreeCoordinate coord(mindex, idxLevel);
+                                int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
+
+                                for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+                                    if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                                        // Nothing to do
+                                    }
+                                    else if(interactionsIndexes[idxInter] < mindex){
+                                        OutOfBlockInteraction property;
+                                        property.insideIndex = mindex;
+                                        property.outIndex    = interactionsIndexes[idxInter];
+                                        property.relativeOutPosition = interactionsPosition[idxInter];
+                                        property.insideIdxInBlock = cellIdx;
+                                        property.outsideIdxInBlock = -1;
+                                        outsideInteractions.push_back(property);
+                                    }
+                                }
+                            }
+
+                            // Manage outofblock interaction
+                            FQuickSort<OutOfBlockInteraction, int>::QsSequential(outsideInteractions.data(),int(outsideInteractions.size()));
+
+                            int currentOutInteraction = 0;
+                            for(int idxLeftGroup = 0 ; idxLeftGroup < idxGroup && currentOutInteraction < int(outsideInteractions.size()) ; ++idxLeftGroup){
+                                CellContainerClass* leftCells   = tree->getCellGroup(idxLevel, idxLeftGroup);
+                                const MortonIndex blockStartIdxOther = leftCells->getStartingIndex();
+                                const MortonIndex blockEndIdxOther   = leftCells->getEndingIndex();
+
+                                while(currentOutInteraction < int(outsideInteractions.size())
+                                      && (outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther
+                                          || leftCells->getCellIndex(outsideInteractions[currentOutInteraction].outIndex) == -1)
+                                      && outsideInteractions[currentOutInteraction].outIndex < blockEndIdxOther){
+                                    currentOutInteraction += 1;
+                                }
+
+                                int lastOutInteraction = currentOutInteraction;
+                                int copyExistingInteraction = currentOutInteraction;
+                                while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdxOther){
+                                    const int cellPos = leftCells->getCellIndex(outsideInteractions[lastOutInteraction].outIndex);
+                                    if(cellPos != -1){
+                                        if(copyExistingInteraction != lastOutInteraction){
+                                            outsideInteractions[copyExistingInteraction] = outsideInteractions[lastOutInteraction];
+                                        }
+                                        outsideInteractions[copyExistingInteraction].outsideIdxInBlock = cellPos;
+                                        copyExistingInteraction += 1;
+                                    }
+                                    lastOutInteraction += 1;
+                                }
+
+                                // Create interactions
+                                const int nbInteractionsBetweenBlocks = (copyExistingInteraction-currentOutInteraction);
+                                if(nbInteractionsBetweenBlocks){
+                                    externalInteractions->emplace_back();
+                                    BlockInteractions<CellContainerClass>* interactions = &externalInteractions->back();
+                                    interactions->otherBlock = leftCells;
+                                    interactions->otherBlockId = idxLeftGroup;
+                                    interactions->interactions.resize(nbInteractionsBetweenBlocks);
+                                    std::copy(outsideInteractions.begin() + currentOutInteraction,
+                                              outsideInteractions.begin() + copyExistingInteraction,
+                                              interactions->interactions.begin());
+                                }
+
+                                currentOutInteraction = lastOutInteraction;
+                            }
+                        }
+                    }
+                }
+            }
+            FLOG( cellTimer.tac(); );
+
+            #pragma omp taskwait
+
+            FLOG( FLog::Controller << "\t\t Prepare in " << timer.tacAndElapsed() << "s\n" );
+            FLOG( FLog::Controller << "\t\t\t Prepare at leaf level in   " << leafTimer.elapsed() << "s\n" );
+            FLOG( FLog::Controller << "\t\t\t Prepare at other levels in " << cellTimer.elapsed() << "s\n" );
         }
-        FLOG( cellTimer.tac(); );
-
-        #pragma omp taskwait
-
-        FLOG( FLog::Controller << "\t\t Prepare in " << timer.tacAndElapsed() << "s\n" );
-        FLOG( FLog::Controller << "\t\t\t Prepare at leaf level in   " << leafTimer.elapsed() << "s\n" );
-        FLOG( FLog::Controller << "\t\t\t Prepare at other levels in " << cellTimer.elapsed() << "s\n" );
-    }
 
 
     void bottomPass(){
@@ -465,19 +493,16 @@ protected:
                             KernelClass*const kernel = kernels[omp_get_thread_num()];
 
                             for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-                                const int cellPos = cellsOther->getCellIndex((*outsideInteractions)[outInterIdx].outIndex);
-                                if(cellPos != -1){
-                                    CellClass interCell = cellsOther->getCompleteCell(cellPos);
-                                    FAssertLF(interCell.getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
-                                    CellClass cell = currentCells->getCompleteCell((*outsideInteractions)[outInterIdx].insideIdxInBlock);
-                                    FAssertLF(cell.getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
+                                CellClass interCell = cellsOther->getCompleteCell((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
+                                FAssertLF(interCell.getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
+                                CellClass cell = currentCells->getCompleteCell((*outsideInteractions)[outInterIdx].insideIdxInBlock);
+                                FAssertLF(cell.getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
 
-                                    const CellClass* ptCell = &interCell;
-                                    kernel->M2L( &cell , &ptCell, &(*outsideInteractions)[outInterIdx].outPosition, 1, idxLevel);
-                                    const int otherPos = getOppositeInterIndex((*outsideInteractions)[outInterIdx].outPosition);
-                                    ptCell = &cell;
-                                    kernel->M2L( &interCell , &ptCell, &otherPos, 1, idxLevel);
-                                }
+                                const CellClass* ptCell = &interCell;
+                                kernel->M2L( &cell , &ptCell, &(*outsideInteractions)[outInterIdx].relativeOutPosition, 1, idxLevel);
+                                const int otherPos = getOppositeInterIndex((*outsideInteractions)[outInterIdx].relativeOutPosition);
+                                ptCell = &cell;
+                                kernel->M2L( &interCell , &ptCell, &otherPos, 1, idxLevel);
                             }
                         }
 
@@ -644,22 +669,19 @@ protected:
                     {
                         KernelClass*const kernel = kernels[omp_get_thread_num()];
                         for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-                            const int leafPos = containersOther->getLeafIndex((*outsideInteractions)[outInterIdx].outIndex);
-                            if(leafPos != -1){
-                                ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>(leafPos);
-                                ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIdxInBlock);
+                            ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
+                            ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIdxInBlock);
 
-                                FAssertLF(containersOther->getLeafMortonIndex(leafPos) == (*outsideInteractions)[outInterIdx].outIndex);
-                                FAssertLF(containers->getLeafMortonIndex((*outsideInteractions)[outInterIdx].insideIdxInBlock) == (*outsideInteractions)[outInterIdx].insideIndex);                              
+                            FAssertLF(containersOther->getLeafMortonIndex((*outsideInteractions)[outInterIdx].outsideIdxInBlock) == (*outsideInteractions)[outInterIdx].outIndex);
+                            FAssertLF(containers->getLeafMortonIndex((*outsideInteractions)[outInterIdx].insideIdxInBlock) == (*outsideInteractions)[outInterIdx].insideIndex);
 
-                                ParticleContainerClass* ptrLeaf = &interParticles;
-                                kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].insideIndex, tree->getHeight()-1),
-                                                    &particles , &ptrLeaf, &(*outsideInteractions)[outInterIdx].outPosition, 1);
-                                const int otherPosition = getOppositeNeighIndex((*outsideInteractions)[outInterIdx].outPosition);
-                                ptrLeaf = &particles;
-                                kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].outIndex, tree->getHeight()-1),
-                                                    &interParticles , &ptrLeaf, &otherPosition, 1);
-                            }
+                            ParticleContainerClass* ptrLeaf = &interParticles;
+                            kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].insideIndex, tree->getHeight()-1),
+                                                &particles , &ptrLeaf, &(*outsideInteractions)[outInterIdx].relativeOutPosition, 1);
+                            const int otherPosition = getOppositeNeighIndex((*outsideInteractions)[outInterIdx].relativeOutPosition);
+                            ptrLeaf = &particles;
+                            kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].outIndex, tree->getHeight()-1),
+                                                &interParticles , &ptrLeaf, &otherPosition, 1);
                         }
                     }
                     // only one task but need to wait for it

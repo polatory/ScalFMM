@@ -8,7 +8,7 @@ typedef long long int MortonIndex;
 struct OutOfBlockInteraction{
     MortonIndex outIndex;
     MortonIndex insideIndex;
-    int outPosition;
+    int relativeOutPosition;
 } __attribute__ ((aligned (DefaultStructAlign)));
 struct Uptr9{
     __global unsigned char* ptrs[9];

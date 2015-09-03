@@ -104,8 +104,8 @@ protected:
     std::vector<ParticleHandles> particleHandles;
 
     starpu_codelet p2m_cl;
-    starpu_codelet m2m_cl[9];
-    starpu_codelet l2l_cl[9];
+    starpu_codelet m2m_cl;
+    starpu_codelet l2l_cl;
     starpu_codelet l2p_cl;
 
     starpu_codelet m2l_cl_in;
@@ -132,6 +132,18 @@ protected:
 #ifdef STARPU_SUPPORT_ARBITER
     starpu_arbiter_t arbiterGlobal;
 #endif
+
+#ifdef STARPU_USE_TASK_NAME
+    std::vector<std::unique_ptr<char[]>> m2mTaskNames;
+    std::vector<std::unique_ptr<char[]>> m2lTaskNames;
+    std::vector<std::unique_ptr<char[]>> m2lOuterTaskNames;
+    std::vector<std::unique_ptr<char[]>> l2lTaskNames;
+    std::unique_ptr<char[]> p2mTaskNames;
+    std::unique_ptr<char[]> l2pTaskNames;
+    std::unique_ptr<char[]> p2pTaskNames;
+    std::unique_ptr<char[]> p2pOuterTaskNames;
+#endif
+
 public:
     FGroupTaskStarPUMpiAlgorithm(const FMpi::FComm& inComm, OctreeClass*const inTree, KernelClass* inKernels)
         :   comm(inComm), tree(inTree), originalCpuKernel(inKernels),
@@ -205,6 +217,37 @@ public:
 #endif
 #ifdef SCALFMM_ENABLE_CUDA_KERNEL
         FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max CUDA " << starpu_cuda_worker_get_count() << ")\n");
+#endif
+
+        buildTaskNames();
+    }
+
+    void buildTaskNames(){
+#ifdef STARPU_USE_TASK_NAME
+        const int namesLength = 128;
+        m2mTaskNames.resize(tree->getHeight());
+        m2lTaskNames.resize(tree->getHeight());
+        m2lOuterTaskNames.resize(tree->getHeight());
+        l2lTaskNames.resize(tree->getHeight());
+        for(int idxLevel = 0 ; idxLevel < tree->getHeight() ; ++idxLevel){
+            m2mTaskNames[idxLevel].reset(new char[namesLength]);
+            snprintf(m2mTaskNames[idxLevel].get(), namesLength, "M2M-level-%d", idxLevel);
+            m2lTaskNames[idxLevel].reset(new char[namesLength]);
+            snprintf(m2lTaskNames[idxLevel].get(), namesLength, "M2L-level-%d", idxLevel);
+            m2lOuterTaskNames[idxLevel].reset(new char[namesLength]);
+            snprintf(m2lOuterTaskNames[idxLevel].get(), namesLength, "M2L-out-level-%d", idxLevel);
+            l2lTaskNames[idxLevel].reset(new char[namesLength]);
+            snprintf(l2lTaskNames[idxLevel].get(), namesLength, "L2L-level-%d", idxLevel);
+        }
+
+        p2mTaskNames.reset(new char[namesLength]);
+        snprintf(p2mTaskNames.get(), namesLength, "P2M");
+        l2pTaskNames.reset(new char[namesLength]);
+        snprintf(l2pTaskNames.get(), namesLength, "L2P");
+        p2pTaskNames.reset(new char[namesLength]);
+        snprintf(p2pTaskNames.get(), namesLength, "P2P");
+        p2pOuterTaskNames.reset(new char[namesLength]);
+        snprintf(p2pOuterTaskNames.get(), namesLength, "P2P-out");
 #endif
     }
 
@@ -319,64 +362,59 @@ protected:
         p2m_cl.modes[2] = STARPU_R;
         p2m_cl.name = "p2m_cl";
 
-        memset(m2m_cl, 0, sizeof(m2m_cl[0])*9);
-        memset(l2l_cl, 0, sizeof(l2l_cl[0])*9);
-        for(int idx = 0 ; idx < 9 ; ++idx){
+        memset(&m2m_cl, 0, sizeof(m2m_cl));
 #ifdef STARPU_USE_CPU
-            if(originalCpuKernel->supportM2M(FSTARPU_CPU_IDX)){
-                m2m_cl[idx].cpu_funcs[0] = StarPUCpuWrapperClass::upwardPassCallback;
-                m2m_cl[idx].where |= STARPU_CPU;
-            }
-#endif
-#ifdef SCALFMM_ENABLE_CUDA_KERNEL
-            if(originalCpuKernel->supportM2M(FSTARPU_CUDA_IDX)){
-                m2m_cl[idx].cuda_funcs[0] = StarPUCudaWrapperClass::upwardPassCallback;
-                m2m_cl[idx].where |= STARPU_CUDA;
-            }
-#endif
-#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
-            if(originalCpuKernel->supportM2M(FSTARPU_OPENCL_IDX)){
-                m2m_cl[idx].opencl_funcs[0] = StarPUOpenClWrapperClass::upwardPassCallback;
-                m2m_cl[idx].where |= STARPU_OPENCL;
-            }
-#endif
-            m2m_cl[idx].nbuffers = (idx+2)*2;
-            m2m_cl[idx].dyn_modes = (starpu_data_access_mode*)malloc(m2m_cl[idx].nbuffers*sizeof(starpu_data_access_mode));
-            m2m_cl[idx].dyn_modes[0] = STARPU_R;
-            m2m_cl[idx].dyn_modes[1] = STARPU_RW;
-            m2m_cl[idx].name = "m2m_cl";
-
-#ifdef STARPU_USE_CPU
-            if(originalCpuKernel->supportL2L(FSTARPU_CPU_IDX)){
-                l2l_cl[idx].cpu_funcs[0] = StarPUCpuWrapperClass::downardPassCallback;
-                l2l_cl[idx].where |= STARPU_CPU;
-            }
-#endif
-#ifdef SCALFMM_ENABLE_CUDA_KERNEL
-            if(originalCpuKernel->supportL2L(FSTARPU_CUDA_IDX)){
-                l2l_cl[idx].cuda_funcs[0] = StarPUCudaWrapperClass::downardPassCallback;
-                l2l_cl[idx].where |= STARPU_CUDA;
-            }
-#endif
-#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
-            if(originalCpuKernel->supportL2L(FSTARPU_OPENCL_IDX)){
-                l2l_cl[idx].opencl_funcs[0] = StarPUOpenClWrapperClass::downardPassCallback;
-                l2l_cl[idx].where |= STARPU_OPENCL;
-            }
-#endif
-            l2l_cl[idx].nbuffers = (idx+2)*2;
-            l2l_cl[idx].dyn_modes = (starpu_data_access_mode*)malloc(l2l_cl[idx].nbuffers*sizeof(starpu_data_access_mode));
-            l2l_cl[idx].dyn_modes[0] = STARPU_R;
-            l2l_cl[idx].dyn_modes[1] = STARPU_R;
-            l2l_cl[idx].name = "l2l_cl";
-
-            for(int idxBuffer = 0 ; idxBuffer <= idx ; ++idxBuffer){
-                m2m_cl[idx].dyn_modes[(idxBuffer*2)+2] = STARPU_R;
-                m2m_cl[idx].dyn_modes[(idxBuffer*2)+3] = STARPU_R;
-                l2l_cl[idx].dyn_modes[(idxBuffer*2)+2] = STARPU_R;
-                l2l_cl[idx].dyn_modes[(idxBuffer*2)+3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
-            }
+        if(originalCpuKernel->supportM2M(FSTARPU_CPU_IDX)){
+            m2m_cl.cpu_funcs[0] = StarPUCpuWrapperClass::upwardPassCallback;
+            m2m_cl.where |= STARPU_CPU;
         }
+#endif
+#ifdef SCALFMM_ENABLE_CUDA_KERNEL
+        if(originalCpuKernel->supportM2M(FSTARPU_CUDA_IDX)){
+            m2m_cl.cuda_funcs[0] = StarPUCudaWrapperClass::upwardPassCallback;
+            m2m_cl.where |= STARPU_CUDA;
+        }
+#endif
+#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
+        if(originalCpuKernel->supportM2M(FSTARPU_OPENCL_IDX)){
+            m2m_cl.opencl_funcs[0] = StarPUOpenClWrapperClass::upwardPassCallback;
+            m2m_cl.where |= STARPU_OPENCL;
+        }
+#endif
+        m2m_cl.nbuffers = 4;
+        m2m_cl.dyn_modes = (starpu_data_access_mode*)malloc(m2m_cl.nbuffers*sizeof(starpu_data_access_mode));
+        m2m_cl.dyn_modes[0] = STARPU_R;
+        m2m_cl.dyn_modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
+        m2m_cl.name = "m2m_cl";
+        m2m_cl.dyn_modes[2] = STARPU_R;
+        m2m_cl.dyn_modes[3] = STARPU_R;
+
+        memset(&l2l_cl, 0, sizeof(l2l_cl));
+#ifdef STARPU_USE_CPU
+        if(originalCpuKernel->supportL2L(FSTARPU_CPU_IDX)){
+            l2l_cl.cpu_funcs[0] = StarPUCpuWrapperClass::downardPassCallback;
+            l2l_cl.where |= STARPU_CPU;
+        }
+#endif
+#ifdef SCALFMM_ENABLE_CUDA_KERNEL
+        if(originalCpuKernel->supportL2L(FSTARPU_CUDA_IDX)){
+            l2l_cl.cuda_funcs[0] = StarPUCudaWrapperClass::downardPassCallback;
+            l2l_cl.where |= STARPU_CUDA;
+        }
+#endif
+#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
+        if(originalCpuKernel->supportL2L(FSTARPU_OPENCL_IDX)){
+            l2l_cl.opencl_funcs[0] = StarPUOpenClWrapperClass::downardPassCallback;
+            l2l_cl.where |= STARPU_OPENCL;
+        }
+#endif
+        l2l_cl.nbuffers = 4;
+        l2l_cl.dyn_modes = (starpu_data_access_mode*)malloc(l2l_cl.nbuffers*sizeof(starpu_data_access_mode));
+        l2l_cl.dyn_modes[0] = STARPU_R;
+        l2l_cl.dyn_modes[1] = STARPU_R;
+        l2l_cl.name = "l2l_cl";
+        l2l_cl.dyn_modes[2] = STARPU_R;
+        l2l_cl.dyn_modes[3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
 
         memset(&l2p_cl, 0, sizeof(l2p_cl));
 #ifdef STARPU_USE_CPU
@@ -477,6 +515,7 @@ protected:
         m2l_cl_in.modes[1] = STARPU_R;
         m2l_cl_in.modes[2] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
         m2l_cl_in.name = "m2l_cl_in";
+
         memset(&m2l_cl_inout, 0, sizeof(m2l_cl_inout));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportM2LExtern(FSTARPU_CPU_IDX)){
@@ -496,13 +535,11 @@ protected:
             m2l_cl_inout.where |= STARPU_OPENCL;
         }
 #endif
-        m2l_cl_inout.nbuffers = 6;
+        m2l_cl_inout.nbuffers = 4;
         m2l_cl_inout.modes[0] = STARPU_R;
-        m2l_cl_inout.modes[1] = STARPU_R;
-        m2l_cl_inout.modes[2] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
+        m2l_cl_inout.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
+        m2l_cl_inout.modes[2] = STARPU_R;
         m2l_cl_inout.modes[3] = STARPU_R;
-        m2l_cl_inout.modes[4] = STARPU_R;
-        m2l_cl_inout.modes[5] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
         m2l_cl_inout.name = "m2l_cl_inout";
     }
 
@@ -735,7 +772,7 @@ protected:
                                 OutOfBlockInteraction property;
                                 property.insideIndex = mindex;
                                 property.outIndex    = interactionsIndexes[idxInter];
-                                property.outPosition = interactionsPosition[idxInter];
+                                property.relativeOutPosition = interactionsPosition[idxInter];
                                 property.insideIdxInBlock = idxCell;
                                 outsideInteractions.push_back(property);
                             }
@@ -838,7 +875,7 @@ protected:
                                     OutOfBlockInteraction property;
                                     property.insideIndex = mindex;
                                     property.outIndex    = interactionsIndexes[idxInter];
-                                    property.outPosition = interactionsPosition[idxInter];
+                                    property.relativeOutPosition = interactionsPosition[idxInter];
                                     outsideInteractions.push_back(property);
                                 }
                             }
@@ -1100,7 +1137,7 @@ protected:
                                               (uintptr_t)currentCells->getRawMultipoleBuffer(), currentCells->getMultipoleBufferSizeInByte());
                 starpu_variable_data_register(&cellHandles[idxLevel][idxGroup].down, 0,
                                               (uintptr_t)currentCells->getRawLocalBuffer(), currentCells->getLocalBufferSizeInByte());
-                cellHandles[idxLevel][idxGroup].intervalSize = int(currentCells->getEndingIndex() - currentCells->getStartingIndex());
+                cellHandles[idxLevel][idxGroup].intervalSize = int(currentCells->getNumberOfCellsInBlock());
 #ifdef STARPU_SUPPORT_ARBITER
                 starpu_data_assign_arbiter(cellHandles[idxLevel][idxGroup].up, arbiterGlobal);
                 starpu_data_assign_arbiter(cellHandles[idxLevel][idxGroup].down, arbiterGlobal);
@@ -1115,7 +1152,7 @@ protected:
                                               (uintptr_t)containers->getRawBuffer(), containers->getBufferSizeInByte());
                 starpu_variable_data_register(&particleHandles[idxGroup].down, 0,
                                               (uintptr_t)containers->getRawAttributesBuffer(), containers->getAttributesBufferSizeInByte());
-                particleHandles[idxGroup].intervalSize = int(containers->getEndingIndex() - containers->getStartingIndex());
+                particleHandles[idxGroup].intervalSize = int(containers->getNumberOfLeavesInBlock());
 #ifdef STARPU_SUPPORT_ARBITER
                 starpu_data_assign_arbiter(particleHandles[idxGroup].down, arbiterGlobal);
 #endif
@@ -1171,8 +1208,9 @@ protected:
                                 OutOfBlockInteraction property;
                                 property.insideIndex = mindex;
                                 property.outIndex    = interactionsIndexes[idxInter];
-                                property.outPosition = interactionsPosition[idxInter];
+                                property.relativeOutPosition = interactionsPosition[idxInter];
                                 property.insideIdxInBlock = leafIdx;
+                                property.outsideIdxInBlock = -1;
                                 outsideInteractions.push_back(property);
                             }
                         }
@@ -1187,16 +1225,28 @@ protected:
                         const MortonIndex blockStartIdxOther    = leftContainers->getStartingIndex();
                         const MortonIndex blockEndIdxOther      = leftContainers->getEndingIndex();
 
-                        while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther){
+                        while(currentOutInteraction < int(outsideInteractions.size())
+                              && (outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther
+                                  || leftContainers->getLeafIndex(outsideInteractions[currentOutInteraction].outIndex) == -1)
+                              && outsideInteractions[currentOutInteraction].outIndex < blockEndIdxOther){
                             currentOutInteraction += 1;
                         }
 
                         int lastOutInteraction = currentOutInteraction;
+                        int copyExistingInteraction = currentOutInteraction;
                         while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdxOther){
+                            const int leafPos = leftContainers->getLeafIndex(outsideInteractions[lastOutInteraction].outIndex);
+                            if(leafPos != -1){
+                                if(copyExistingInteraction != lastOutInteraction){
+                                    outsideInteractions[copyExistingInteraction] = outsideInteractions[lastOutInteraction];
+                                }
+                                outsideInteractions[copyExistingInteraction].outsideIdxInBlock = leafPos;
+                                copyExistingInteraction += 1;
+                            }
                             lastOutInteraction += 1;
                         }
 
-                        const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
+                        const int nbInteractionsBetweenBlocks = (copyExistingInteraction-currentOutInteraction);
                         if(nbInteractionsBetweenBlocks){
                             externalInteractions->emplace_back();
                             BlockInteractions<ParticleGroupClass>* interactions = &externalInteractions->back();
@@ -1204,7 +1254,7 @@ protected:
                             interactions->otherBlockId = idxLeftGroup;
                             interactions->interactions.resize(nbInteractionsBetweenBlocks);
                             std::copy(outsideInteractions.begin() + currentOutInteraction,
-                                      outsideInteractions.begin() + lastOutInteraction,
+                                      outsideInteractions.begin() + copyExistingInteraction,
                                       interactions->interactions.begin());
                         }
 
@@ -1246,8 +1296,9 @@ protected:
                                     OutOfBlockInteraction property;
                                     property.insideIndex = mindex;
                                     property.outIndex    = interactionsIndexes[idxInter];
-                                    property.outPosition = interactionsPosition[idxInter];
+                                    property.relativeOutPosition = interactionsPosition[idxInter];
                                     property.insideIdxInBlock = cellIdx;
+                                    property.outsideIdxInBlock = -1;
                                     outsideInteractions.push_back(property);
                                 }
                             }
@@ -1262,17 +1313,29 @@ protected:
                             const MortonIndex blockStartIdxOther = leftCells->getStartingIndex();
                             const MortonIndex blockEndIdxOther   = leftCells->getEndingIndex();
 
-                            while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther){
+                            while(currentOutInteraction < int(outsideInteractions.size())
+                                  && (outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther
+                                      || leftCells->getCellIndex(outsideInteractions[currentOutInteraction].outIndex) == -1)
+                                  && outsideInteractions[currentOutInteraction].outIndex < blockEndIdxOther){
                                 currentOutInteraction += 1;
                             }
 
                             int lastOutInteraction = currentOutInteraction;
+                            int copyExistingInteraction = currentOutInteraction;
                             while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdxOther){
+                                const int cellPos = leftCells->getCellIndex(outsideInteractions[lastOutInteraction].outIndex);
+                                if(cellPos != -1){
+                                    if(copyExistingInteraction != lastOutInteraction){
+                                        outsideInteractions[copyExistingInteraction] = outsideInteractions[lastOutInteraction];
+                                    }
+                                    outsideInteractions[copyExistingInteraction].outsideIdxInBlock = cellPos;
+                                    copyExistingInteraction += 1;
+                                }
                                 lastOutInteraction += 1;
                             }
 
                             // Create interactions
-                            const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
+                            const int nbInteractionsBetweenBlocks = (copyExistingInteraction-currentOutInteraction);
                             if(nbInteractionsBetweenBlocks){
                                 externalInteractions->emplace_back();
                                 BlockInteractions<CellContainerClass>* interactions = &externalInteractions->back();
@@ -1280,7 +1343,7 @@ protected:
                                 interactions->otherBlockId = idxLeftGroup;
                                 interactions->interactions.resize(nbInteractionsBetweenBlocks);
                                 std::copy(outsideInteractions.begin() + currentOutInteraction,
-                                          outsideInteractions.begin() + lastOutInteraction,
+                                          outsideInteractions.begin() + copyExistingInteraction,
                                           interactions->interactions.begin());
                             }
 
@@ -1314,9 +1377,9 @@ protected:
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
                     STARPU_RW, cellHandles[tree->getHeight()-1][idxGroup].up,
                     STARPU_R, particleHandles[idxGroup].symb,
-        #ifdef STARPU_USE_TASK_NAME
-                            STARPU_NAME, p2m_cl.name,
-        #endif
+#ifdef STARPU_USE_TASK_NAME
+                    STARPU_NAME, p2mTaskNames.get(),
+#endif
                     0);
         }
 
@@ -1336,11 +1399,6 @@ protected:
                     && idxSubGroup < tree->getNbCellGroupAtLevel(idxLevel+1) ; ++idxGroup){
                 CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
 
-                struct starpu_task* const task = starpu_task_create();
-                task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*20);
-                task->dyn_handles[0] = cellHandles[idxLevel][idxGroup].symb;
-                task->dyn_handles[1] = cellHandles[idxLevel][idxGroup].up;
-
                 // Skip current group if needed
                 if( tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= (currentCells->getStartingIndex()<<3) ){
                     ++idxSubGroup;
@@ -1349,39 +1407,67 @@ protected:
                 }
 
                 // Copy at max 8 groups
-                int nbSubCellGroups = 0;
-                task->dyn_handles[(nbSubCellGroups*2) + 2] = cellHandles[idxLevel+1][idxSubGroup].symb;
-                task->dyn_handles[(nbSubCellGroups*2) + 3] = cellHandles[idxLevel+1][idxSubGroup].up;
-                nbSubCellGroups += 1;
+                {
+
+                    struct starpu_task* const task = starpu_task_create();
+                    task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*20);
+                    task->dyn_handles[0] = cellHandles[idxLevel][idxGroup].symb;
+                    task->dyn_handles[1] = cellHandles[idxLevel][idxGroup].up;
+
+                    task->dyn_handles[2] = cellHandles[idxLevel+1][idxSubGroup].symb;
+                    task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].up;
+
+                    // put the right codelet
+                    task->cl = &m2m_cl;
+                    // put args values
+                    char *arg_buffer;
+                    size_t arg_buffer_size;
+                    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                                             STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                             STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                             0);
+                    task->cl_arg = arg_buffer;
+                    task->cl_arg_size = arg_buffer_size;
+                    task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
+    #ifdef STARPU_USE_TASK_NAME
+                    task->name = m2mTaskNames[idxLevel].get();
+    #endif
+                    FAssertLF(starpu_task_submit(task) == 0);
+                }
 
                 while(tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= (((currentCells->getEndingIndex()-1)<<3)+7)
                       && (idxSubGroup+1) != tree->getNbCellGroupAtLevel(idxLevel+1)
                       && tree->getCellGroup(idxLevel+1, idxSubGroup+1)->getStartingIndex() <= ((currentCells->getEndingIndex()-1)<<3)+7 ){
                     idxSubGroup += 1;
-                    task->dyn_handles[(nbSubCellGroups*2) + 2] = cellHandles[idxLevel+1][idxSubGroup].symb;
-                    task->dyn_handles[(nbSubCellGroups*2) + 3] = cellHandles[idxLevel+1][idxSubGroup].up;
-                    nbSubCellGroups += 1;
-                    FAssertLF( nbSubCellGroups <= 9 );
+
+                    struct starpu_task* const task = starpu_task_create();
+                    task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*20);
+                    task->dyn_handles[0] = cellHandles[idxLevel][idxGroup].symb;
+                    task->dyn_handles[1] = cellHandles[idxLevel][idxGroup].up;
+
+                    task->dyn_handles[2] = cellHandles[idxLevel+1][idxSubGroup].symb;
+                    task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].up;
+
+                    // put the right codelet
+                    task->cl = &m2m_cl;
+                    // put args values
+                    char *arg_buffer;
+                    size_t arg_buffer_size;
+                    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                                             STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                             STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                             0);
+                    task->cl_arg = arg_buffer;
+                    task->cl_arg_size = arg_buffer_size;
+                    task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
+    #ifdef STARPU_USE_TASK_NAME
+                    task->name = m2mTaskNames[idxLevel].get();
+    #endif
+                    FAssertLF(starpu_task_submit(task) == 0);
                 }
 
-                // put the right codelet
-                task->cl = &m2m_cl[nbSubCellGroups-1];
-                // put args values
-                char *arg_buffer;
-                size_t arg_buffer_size;
-                starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                                         STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                                         STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
-                                         STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                                         STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-                                         0);
-                task->cl_arg = arg_buffer;
-                task->cl_arg_size = arg_buffer_size;
-                task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
-#ifdef STARPU_USE_TASK_NAME
-                task->name = task->cl->name;
-#endif
-                FAssertLF(starpu_task_submit(task) == 0);
             }
 
             /////////////////////////////////////////////////////////////
@@ -1559,7 +1645,7 @@ protected:
                                    STARPU_R, cellHandles[idxLevel][idxGroup].up,
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
                    #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, m2l_cl_in.name,
+                                       STARPU_NAME, m2lTaskNames[idxLevel].get(),
                    #endif
                         0);
             }
@@ -1571,22 +1657,39 @@ protected:
                     const int interactionid = externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].otherBlockId;
                     const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].interactions;
 
+                    int mode = 1;
                     starpu_insert_task(&m2l_cl_inout,
-                            STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                            STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                            STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                            STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                       STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                       STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                       STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                       STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                       STARPU_VALUE, &mode, sizeof(int),
                                        STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
-                               STARPU_R, cellHandles[idxLevel][idxGroup].symb,
-                               STARPU_R, cellHandles[idxLevel][idxGroup].up,
-                               (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
-                               STARPU_R, cellHandles[idxLevel][interactionid].symb,
-                               STARPU_R, cellHandles[idxLevel][interactionid].up,
-                               (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
+                                       STARPU_R, cellHandles[idxLevel][idxGroup].symb,
+                                       (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
+                                       STARPU_R, cellHandles[idxLevel][interactionid].symb,
+                                       STARPU_R, cellHandles[idxLevel][interactionid].up,
                    #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, m2l_cl_inout.name,
+                                       STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
                    #endif
-                            0);
+                                       0);
+
+                    mode = 2;
+                    starpu_insert_task(&m2l_cl_inout,
+                                       STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                       STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                       STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                       STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                       STARPU_VALUE, &mode, sizeof(int),
+                                       STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
+                                       STARPU_R, cellHandles[idxLevel][interactionid].symb,
+                                       (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
+                                       STARPU_R, cellHandles[idxLevel][idxGroup].symb,
+                                       STARPU_R, cellHandles[idxLevel][idxGroup].up,
+                   #ifdef STARPU_USE_TASK_NAME
+                                       STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
+                   #endif
+                                       0);
                 }
             }
             FLOG( timerOutBlock.tac() );
@@ -1759,11 +1862,6 @@ protected:
                     && idxSubGroup < tree->getNbCellGroupAtLevel(idxLevel+1) ; ++idxGroup){
                 CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
 
-                struct starpu_task* const task = starpu_task_create();
-                task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*20);
-                task->dyn_handles[0] = cellHandles[idxLevel][idxGroup].symb;
-                task->dyn_handles[1] = cellHandles[idxLevel][idxGroup].down;
-
                 // Skip current group if needed
                 if( tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= (currentCells->getStartingIndex()<<3) ){
                     ++idxSubGroup;
@@ -1771,39 +1869,64 @@ protected:
                     FAssertLF( (tree->getCellGroup(idxLevel+1, idxSubGroup)->getStartingIndex()>>3) == currentCells->getStartingIndex() );
                 }
                 // Copy at max 8 groups
-                int nbSubCellGroups = 0;
-                task->dyn_handles[(nbSubCellGroups*2) + 2] = cellHandles[idxLevel+1][idxSubGroup].symb;
-                task->dyn_handles[(nbSubCellGroups*2) + 3] = cellHandles[idxLevel+1][idxSubGroup].down;
-                nbSubCellGroups += 1;
+                {
+                    struct starpu_task* const task = starpu_task_create();
+                    task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*20);
+                    task->dyn_handles[0] = cellHandles[idxLevel][idxGroup].symb;
+                    task->dyn_handles[1] = cellHandles[idxLevel][idxGroup].down;
+
+                    task->dyn_handles[2] = cellHandles[idxLevel+1][idxSubGroup].symb;
+                    task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].down;
+
+                    // put the right codelet
+                    task->cl = &l2l_cl;
+                    // put args values
+                    char *arg_buffer;
+                    size_t arg_buffer_size;
+                    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                                             STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                             STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                             0);
+                    task->cl_arg = arg_buffer;
+                    task->cl_arg_size = arg_buffer_size;
+                    task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
+    #ifdef STARPU_USE_TASK_NAME
+                    task->name = l2lTaskNames[idxLevel].get();
+    #endif
+                    FAssertLF(starpu_task_submit(task) == 0);
+                }
                 while(tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= (((currentCells->getEndingIndex()-1)<<3)+7)
                       && (idxSubGroup+1) != tree->getNbCellGroupAtLevel(idxLevel+1)
                       && tree->getCellGroup(idxLevel+1, idxSubGroup+1)->getStartingIndex() <= ((currentCells->getEndingIndex()-1)<<3)+7 ){
                     idxSubGroup += 1;
-                    task->dyn_handles[(nbSubCellGroups*2) + 2] = cellHandles[idxLevel+1][idxSubGroup].symb;
-                    task->dyn_handles[(nbSubCellGroups*2) + 3] = cellHandles[idxLevel+1][idxSubGroup].down;
-                    nbSubCellGroups += 1;
-                    FAssertLF( nbSubCellGroups <= 9 );
-                }
 
-                // put the right codelet
-                task->cl = &l2l_cl[nbSubCellGroups-1];
-                // put args values
-                char *arg_buffer;
-                size_t arg_buffer_size;
-                starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                                         STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                                         STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
-                                         STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                                         STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-                                         0);
-                task->cl_arg = arg_buffer;
-                task->cl_arg_size = arg_buffer_size;
-                task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
-#ifdef STARPU_USE_TASK_NAME
-                task->name = task->cl->name;
-#endif
-                FAssertLF(starpu_task_submit(task) == 0);
-            }
+                    struct starpu_task* const task = starpu_task_create();
+                    task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*20);
+                    task->dyn_handles[0] = cellHandles[idxLevel][idxGroup].symb;
+                    task->dyn_handles[1] = cellHandles[idxLevel][idxGroup].down;
+
+                    task->dyn_handles[2] = cellHandles[idxLevel+1][idxSubGroup].symb;
+                    task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].down;
+
+                    // put the right codelet
+                    task->cl = &l2l_cl;
+                    // put args values
+                    char *arg_buffer;
+                    size_t arg_buffer_size;
+                    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                                             STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                             STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                             0);
+                    task->cl_arg = arg_buffer;
+                    task->cl_arg_size = arg_buffer_size;
+                    task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
+    #ifdef STARPU_USE_TASK_NAME
+                    task->name = l2lTaskNames[idxLevel].get();
+    #endif
+                    FAssertLF(starpu_task_submit(task) == 0);
+                }
         }
         FLOG( FLog::Controller << "\t\t downardPass in " << timer.tacAndElapsed() << "s\n" );
     }
@@ -1853,7 +1976,7 @@ protected:
                                STARPU_R, particleHandles[idxGroup].symb,
                                (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
                    #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, p2p_cl_in.name,
+                                       STARPU_NAME, p2pTaskNames.get(),
                    #endif
                     0);
         }
@@ -1873,7 +1996,7 @@ protected:
                         STARPU_R, particleHandles[interactionid].symb,
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[interactionid].down,
                    #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, p2p_cl_inout.name,
+                                       STARPU_NAME, p2pOuterTaskNames.get(),
                    #endif
                         0);
             }
@@ -1901,7 +2024,7 @@ protected:
                     STARPU_R, particleHandles[idxGroup].symb,
                     (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
         #ifdef STARPU_USE_TASK_NAME
-                            STARPU_NAME, l2p_cl.name,
+                            STARPU_NAME, l2pTaskNames.get(),
         #endif
                     0);
         }
