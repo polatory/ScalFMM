@@ -91,6 +91,7 @@ protected:
     starpu_codelet p2m_cl;
     starpu_codelet m2m_cl;
     starpu_codelet l2l_cl;
+    starpu_codelet l2l_cl_nocommute;
     starpu_codelet l2p_cl;
 
     starpu_codelet m2l_cl_in;
@@ -297,9 +298,12 @@ protected:
 
         if(operationsToProceed & FFmmM2M && !directOnly) upwardPass();
 
-        if(operationsToProceed & FFmmM2L && !directOnly) transferPass();
+        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::upperWorkingLevel, FAbstractAlgorithm::lowerWorkingLevel-1 , true, true);
+        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, false, false);
 
         if(operationsToProceed & FFmmL2L && !directOnly) downardPass();
+
+        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, true, true);
 
         if( operationsToProceed & FFmmP2P ) directPass();
 
@@ -389,6 +393,33 @@ protected:
         l2l_cl.name = "l2l_cl";
         l2l_cl.dyn_modes[2] = STARPU_R;
         l2l_cl.dyn_modes[3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
+
+        memset(&l2l_cl_nocommute, 0, sizeof(l2l_cl_nocommute));
+#ifdef STARPU_USE_CPU
+        if(originalCpuKernel->supportL2L(FSTARPU_CPU_IDX)){
+            l2l_cl_nocommute.cpu_funcs[0] = StarPUCpuWrapperClass::downardPassCallback;
+            l2l_cl_nocommute.where |= STARPU_CPU;
+        }
+#endif
+#ifdef SCALFMM_ENABLE_CUDA_KERNEL
+        if(originalCpuKernel->supportL2L(FSTARPU_CUDA_IDX)){
+            l2l_cl_nocommute.cuda_funcs[0] = StarPUCudaWrapperClass::downardPassCallback;
+            l2l_cl_nocommute.where |= STARPU_CUDA;
+        }
+#endif
+#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
+        if(originalCpuKernel->supportL2L(FSTARPU_OPENCL_IDX)){
+            l2l_cl_nocommute.opencl_funcs[0] = StarPUOpenClWrapperClass::downardPassCallback;
+            l2l_cl_nocommute.where |= STARPU_OPENCL;
+        }
+#endif
+        l2l_cl_nocommute.nbuffers = 4;
+        l2l_cl_nocommute.dyn_modes = (starpu_data_access_mode*)malloc(l2l_cl_nocommute.nbuffers*sizeof(starpu_data_access_mode));
+        l2l_cl_nocommute.dyn_modes[0] = STARPU_R;
+        l2l_cl_nocommute.dyn_modes[1] = STARPU_R;
+        l2l_cl_nocommute.name = "l2l_cl";
+        l2l_cl_nocommute.dyn_modes[2] = STARPU_R;
+        l2l_cl_nocommute.dyn_modes[3] = STARPU_RW;
 
         memset(&l2p_cl, 0, sizeof(l2p_cl));
 #ifdef STARPU_USE_CPU
@@ -868,69 +899,72 @@ protected:
     /// Transfer Pass
     /////////////////////////////////////////////////////////////////////////////////////
 
-    void transferPass(){
+    void transferPass(const int fromLevel, const int toLevel, const bool inner, const bool outer){
         FLOG( FTic timer; );
         FLOG( FTic timerInBlock; FTic timerOutBlock; );
-        for(int idxLevel = FAbstractAlgorithm::lowerWorkingLevel-1 ; idxLevel >= FAbstractAlgorithm::upperWorkingLevel ; --idxLevel){
-            FLOG( timerInBlock.tic() );
-            for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
-                starpu_insert_task(&m2l_cl_in,
-                                   STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                                   STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                                   STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-                                   STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2L(idxLevel),
-                                   STARPU_R, cellHandles[idxLevel][idxGroup].symb,
-                                   STARPU_R, cellHandles[idxLevel][idxGroup].up,
-                                   (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
-                   #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, m2lTaskNames[idxLevel].get(),
-                   #endif
-                                   0);
-            }
-            FLOG( timerInBlock.tac() );
-
-            FLOG( timerOutBlock.tic() );
-            for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
-                for(int idxInteraction = 0; idxInteraction < int(externalInteractionsAllLevel[idxLevel][idxGroup].size()) ; ++idxInteraction){
-                    const int interactionid = externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].otherBlockId;
-                    const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].interactions;
-
-                    int mode = 1;
-                    starpu_insert_task(&m2l_cl_inout,
+        for(int idxLevel = fromLevel ; idxLevel < toLevel ; ++idxLevel){
+            if(inner){
+                FLOG( timerInBlock.tic() );
+                for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
+                    starpu_insert_task(&m2l_cl_in,
                                        STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                        STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                                       STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                        STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-                                       STARPU_VALUE, &mode, sizeof(int),
-                                       STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
-                                       STARPU_R, cellHandles[idxLevel][idxGroup].symb,
-                                       (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
-                                       STARPU_R, cellHandles[idxLevel][interactionid].symb,
-                                       STARPU_R, cellHandles[idxLevel][interactionid].up,
-                   #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
-                   #endif
-                                       0);
-
-                    mode = 2;
-                    starpu_insert_task(&m2l_cl_inout,
-                                       STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                                       STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                                       STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                                       STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-                                       STARPU_VALUE, &mode, sizeof(int),
-                                       STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
-                                       STARPU_R, cellHandles[idxLevel][interactionid].symb,
-                                       (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
+                                       STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2L(idxLevel),
                                        STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                        STARPU_R, cellHandles[idxLevel][idxGroup].up,
-                   #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
-                   #endif
+                                       (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
+                       #ifdef STARPU_USE_TASK_NAME
+                                           STARPU_NAME, m2lTaskNames[idxLevel].get(),
+                       #endif
                                        0);
                 }
+                FLOG( timerInBlock.tac() );
             }
-            FLOG( timerOutBlock.tac() );
+            if(outer){
+                FLOG( timerOutBlock.tic() );
+                for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
+                    for(int idxInteraction = 0; idxInteraction < int(externalInteractionsAllLevel[idxLevel][idxGroup].size()) ; ++idxInteraction){
+                        const int interactionid = externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].otherBlockId;
+                        const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].interactions;
+
+                        int mode = 1;
+                        starpu_insert_task(&m2l_cl_inout,
+                                           STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                           STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                           STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                           STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                           STARPU_VALUE, &mode, sizeof(int),
+                                           STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
+                                           STARPU_R, cellHandles[idxLevel][idxGroup].symb,
+                                           (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
+                                           STARPU_R, cellHandles[idxLevel][interactionid].symb,
+                                           STARPU_R, cellHandles[idxLevel][interactionid].up,
+                       #ifdef STARPU_USE_TASK_NAME
+                                           STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
+                       #endif
+                                           0);
+
+                        mode = 2;
+                        starpu_insert_task(&m2l_cl_inout,
+                                           STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                           STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                           STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                           STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                           STARPU_VALUE, &mode, sizeof(int),
+                                           STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
+                                           STARPU_R, cellHandles[idxLevel][interactionid].symb,
+                                           (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
+                                           STARPU_R, cellHandles[idxLevel][idxGroup].symb,
+                                           STARPU_R, cellHandles[idxLevel][idxGroup].up,
+                       #ifdef STARPU_USE_TASK_NAME
+                                           STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
+                       #endif
+                                           0);
+                    }
+                }
+                FLOG( timerOutBlock.tac() );
+            }
         }
         FLOG( FLog::Controller << "\t\t transferPass in " << timer.tacAndElapsed() << "s\n" );
         FLOG( FLog::Controller << "\t\t\t inblock in  " << timerInBlock.elapsed() << "s\n" );
@@ -966,7 +1000,7 @@ protected:
                     task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].down;
 
                     // put the right codelet
-                    task->cl = &l2l_cl;
+                    task->cl = (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2 ? &l2l_cl_nocommute : &l2l_cl);
                     // put args values
                     char *arg_buffer;
                     size_t arg_buffer_size;
@@ -997,7 +1031,7 @@ protected:
                     task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].down;
 
                     // put the right codelet
-                    task->cl = &l2l_cl;
+                    task->cl = (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2 ? &l2l_cl_nocommute : &l2l_cl);
                     // put args values
                     char *arg_buffer;
                     size_t arg_buffer_size;
@@ -1027,20 +1061,6 @@ protected:
         FLOG( FTic timer; );
         FLOG( FTic timerInBlock; FTic timerOutBlock; );
 
-        FLOG( timerInBlock.tic() );
-        for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
-            starpu_insert_task(&p2p_cl_in,
-                               STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                               STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
-                               STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2P(),
-                               STARPU_R, particleHandles[idxGroup].symb,
-                               (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
-                   #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, p2pTaskNames.get(),
-                   #endif
-                               0);
-        }
-        FLOG( timerInBlock.tac() );
         FLOG( timerOutBlock.tic() );
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             for(int idxInteraction = 0; idxInteraction < int(externalInteractionsLeafLevel[idxGroup].size()) ; ++idxInteraction){
@@ -1062,6 +1082,20 @@ protected:
             }
         }
         FLOG( timerOutBlock.tac() );
+        FLOG( timerInBlock.tic() );
+        for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
+            starpu_insert_task(&p2p_cl_in,
+                               STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                               STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
+                               STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2P(),
+                               STARPU_R, particleHandles[idxGroup].symb,
+                               (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
+                   #ifdef STARPU_USE_TASK_NAME
+                                       STARPU_NAME, p2pTaskNames.get(),
+                   #endif
+                               0);
+        }
+        FLOG( timerInBlock.tac() );
 
         FLOG( FLog::Controller << "\t\t directPass in " << timer.tacAndElapsed() << "s\n" );
         FLOG( FLog::Controller << "\t\t\t inblock  in " << timerInBlock.elapsed() << "s\n" );

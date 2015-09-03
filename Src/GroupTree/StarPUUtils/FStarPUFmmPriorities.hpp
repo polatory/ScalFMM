@@ -174,12 +174,17 @@ public:
                     heteroprio->buckets[prioL2LAtLevel].valide_archs |= STARPU_CPU;
                 }
             }
+
             if( capacities->supportP2P(FSTARPU_CPU_IDX)){
                 FLOG( FLog::Controller << "\t CPU prio P2P "  << cpuCountPrio << " bucket " << insertionPositionP2P << "\n" );
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionP2P;
                 heteroprio->buckets[insertionPositionP2P].valide_archs |= STARPU_CPU;
             }
-
+            if( capacities->supportP2P(FSTARPU_CPU_IDX)){
+                FLOG( FLog::Controller << "\t CPU prio P2P Extern "  << cpuCountPrio << " bucket " << insertionPositionP2PExtern << "\n" );
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionP2PExtern;
+                heteroprio->buckets[insertionPositionP2PExtern].valide_archs |= STARPU_CPU;
+            }
             if(capacities->supportM2L(FSTARPU_CPU_IDX)){
                 const int prioM2LAtLevel = getInsertionPosM2L(treeHeight-1);
                 FLOG( FLog::Controller << "\t CPU prio M2L "  << cpuCountPrio << " bucket " << prioM2LAtLevel << "\n" );
@@ -190,11 +195,6 @@ public:
                 FLOG( FLog::Controller << "\t CPU prio L2P "  << cpuCountPrio << " bucket " << insertionPositionL2P << "\n" );
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionL2P;
                 heteroprio->buckets[insertionPositionL2P].valide_archs |= STARPU_CPU;
-            }
-            if( capacities->supportP2P(FSTARPU_CPU_IDX)){
-                FLOG( FLog::Controller << "\t CPU prio P2P Extern "  << cpuCountPrio << " bucket " << insertionPositionP2PExtern << "\n" );
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionP2PExtern;
-                heteroprio->buckets[insertionPositionP2PExtern].valide_archs |= STARPU_CPU;
             }
             heteroprio->nb_prio_per_arch_index[FSTARPU_CPU_IDX] = unsigned(cpuCountPrio);
             FLOG( FLog::Controller << "\t CPU Priorities: "  << cpuCountPrio << "\n" );
