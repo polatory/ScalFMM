@@ -102,9 +102,17 @@ namespace FMemUtils {
 
     /** Delete all */
     template <class TypeClass>
-    inline void DeleteAll(TypeClass*const array[], const int size){
+    inline void DeleteAllArray(TypeClass*const array[], const int size){
         for(int idx = 0 ; idx < size ; ++idx){
             delete[] array[idx];
+        }
+    }
+
+    /** Delete all */
+    template <class TypeClass>
+    inline void DeleteAll(TypeClass*const array[], const int size){
+        for(int idx = 0 ; idx < size ; ++idx){
+            delete array[idx];
         }
     }
 }

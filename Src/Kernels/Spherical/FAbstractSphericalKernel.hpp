@@ -136,10 +136,10 @@ public:
     /** Default destructor */
     virtual ~FAbstractSphericalKernel(){
         if(preL2LTransitions.isLast()){
-            FMemUtils::DeleteAll(preL2LTransitions.getPtr(), treeHeight);
+            FMemUtils::DeleteAllArray(preL2LTransitions.getPtr(), treeHeight);
         }
         if(preM2MTransitions.isLast()){
-            FMemUtils::DeleteAll(preM2MTransitions.getPtr(), treeHeight);
+            FMemUtils::DeleteAllArray(preM2MTransitions.getPtr(), treeHeight);
         }
     }
 

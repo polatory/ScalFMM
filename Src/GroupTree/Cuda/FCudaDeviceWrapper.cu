@@ -171,7 +171,7 @@ __global__  void FCuda__transferInoutPassPerformMpi(unsigned char* currentCellsP
 
             typename CellContainerClass::CompleteCellClass interactions[343];
             memset(interactions, 0, 343*sizeof(interactions[0]));
-            interactions[outsideInteractions[outInterIdx].outPosition] = interCell;
+            interactions[outsideInteractions[outInterIdx].relativeOutPosition] = interCell;
             const int counter = 1;
             kernel->M2L( cell , interactions, counter, idxLevel);
         }
@@ -295,12 +295,12 @@ __global__ void FCuda__transferInoutPassPerform(unsigned char* currentCellsPtr, 
 
             typename CellContainerClass::CompleteCellClass interactions[343];
             memset(interactions, 0, 343*sizeof(interactions[0]));
-            interactions[outsideInteractions[outInterIdx].outPosition] = interCell;
+            interactions[outsideInteractions[outInterIdx].relativeOutPosition] = interCell;
             const int counter = 1;
             kernel->M2L( cell , interactions, counter, idxLevel);
 
-            interactions[outsideInteractions[outInterIdx].outPosition].symb = nullptr;
-            interactions[FMGetOppositeInterIndex(outsideInteractions[outInterIdx].outPosition)] = cell;
+            interactions[outsideInteractions[outInterIdx].relativeOutPosition].symb = nullptr;
+            interactions[FMGetOppositeInterIndex(outsideInteractions[outInterIdx].relativeOutPosition)] = cell;
             kernel->M2L( interCell , interactions, counter, idxLevel);
         }
     }
@@ -444,7 +444,7 @@ __global__ void FCuda__directInoutPassPerformMpi(unsigned char* containersPtr, s
             ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(outsideInteractions[outInterIdx].insideIdxInBlock);
             ParticleGroupClass* interactions[27];
             memset(interactions, 0, 27*sizeof(ParticleGroupClass*));
-            interactions[outsideInteractions[outInterIdx].outPosition] = &interParticles;
+            interactions[outsideInteractions[outInterIdx].relativeOutPosition] = &interParticles;
             const int counter = 1;
             kernel->P2PRemote( FCudaTreeCoordinate::GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1), &particles, &particles , interactions, counter);
         }
@@ -561,12 +561,12 @@ __global__ void FCuda__directInoutPassPerform(unsigned char* containersPtr, std:
 
             ParticleGroupClass* interactions[27];
             memset(interactions, 0, 27*sizeof(ParticleGroupClass*));
-            interactions[outsideInteractions[outInterIdx].outPosition] = &interParticles;
+            interactions[outsideInteractions[outInterIdx].relativeOutPosition] = &interParticles;
             const int counter = 1;
             kernel->P2PRemote( FCudaTreeCoordinate::GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1), &particles, &particles , interactions, counter);
 
-            interactions[outsideInteractions[outInterIdx].outPosition] = nullptr;
-            interactions[FMGetOppositeNeighIndex(outsideInteractions[outInterIdx].outPosition)] = &particles;
+            interactions[outsideInteractions[outInterIdx].relativeOutPosition] = nullptr;
+            interactions[FMGetOppositeNeighIndex(outsideInteractions[outInterIdx].relativeOutPosition)] = &particles;
             kernel->P2PRemote( FCudaTreeCoordinate::GetPositionFromMorton(outsideInteractions[outInterIdx].outIndex, treeHeight-1), &interParticles, &interParticles , interactions, counter);
         }
     }

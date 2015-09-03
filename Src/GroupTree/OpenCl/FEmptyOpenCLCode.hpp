@@ -20,7 +20,7 @@ public:
                 struct OutOfBlockInteraction{\
                     MortonIndex outIndex;\
                     MortonIndex insideIndex;\
-                    int outPosition;\
+                    int relativeOutPosition;\
                     int insideIdxInBlock;\
                 } __attribute__ ((aligned (DefaultStructAlign)));\
                 struct Uptr9{\

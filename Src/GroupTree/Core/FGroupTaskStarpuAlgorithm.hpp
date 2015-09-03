@@ -39,6 +39,8 @@
 #endif
 
 
+#include "Containers/FBoolArray.hpp"
+
 template <class OctreeClass, class CellContainerClass, class KernelClass, class ParticleGroupClass, class StarPUCpuWrapperClass
           #ifdef SCALFMM_ENABLE_CUDA_KERNEL
           , class StarPUCudaWrapperClass = FStarPUCudaWrapper<KernelClass, FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
@@ -655,8 +657,9 @@ protected:
                                 OutOfBlockInteraction property;
                                 property.insideIndex = mindex;
                                 property.outIndex    = interactionsIndexes[idxInter];
-                                property.outPosition = interactionsPosition[idxInter];
+                                property.relativeOutPosition = interactionsPosition[idxInter];
                                 property.insideIdxInBlock = leafIdx;
+                                property.outsideIdxInBlock = -1;
                                 outsideInteractions.push_back(property);
                             }
                         }
@@ -671,16 +674,28 @@ protected:
                         const MortonIndex blockStartIdxOther    = leftContainers->getStartingIndex();
                         const MortonIndex blockEndIdxOther      = leftContainers->getEndingIndex();
 
-                        while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther){
+                        while(currentOutInteraction < int(outsideInteractions.size())
+                              && (outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther
+                                  || leftContainers->getLeafIndex(outsideInteractions[currentOutInteraction].outIndex) == -1)
+                              && outsideInteractions[currentOutInteraction].outIndex < blockEndIdxOther){
                             currentOutInteraction += 1;
                         }
 
                         int lastOutInteraction = currentOutInteraction;
+                        int copyExistingInteraction = currentOutInteraction;
                         while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdxOther){
+                            const int leafPos = leftContainers->getLeafIndex(outsideInteractions[lastOutInteraction].outIndex);
+                            if(leafPos != -1){
+                                if(copyExistingInteraction != lastOutInteraction){
+                                    outsideInteractions[copyExistingInteraction] = outsideInteractions[lastOutInteraction];
+                                }
+                                outsideInteractions[copyExistingInteraction].outsideIdxInBlock = leafPos;
+                                copyExistingInteraction += 1;
+                            }
                             lastOutInteraction += 1;
                         }
 
-                        const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
+                        const int nbInteractionsBetweenBlocks = (copyExistingInteraction-currentOutInteraction);
                         if(nbInteractionsBetweenBlocks){
                             externalInteractions->emplace_back();
                             BlockInteractions<ParticleGroupClass>* interactions = &externalInteractions->back();
@@ -688,7 +703,7 @@ protected:
                             interactions->otherBlockId = idxLeftGroup;
                             interactions->interactions.resize(nbInteractionsBetweenBlocks);
                             std::copy(outsideInteractions.begin() + currentOutInteraction,
-                                      outsideInteractions.begin() + lastOutInteraction,
+                                      outsideInteractions.begin() + copyExistingInteraction,
                                       interactions->interactions.begin());
                         }
 
@@ -730,8 +745,9 @@ protected:
                                     OutOfBlockInteraction property;
                                     property.insideIndex = mindex;
                                     property.outIndex    = interactionsIndexes[idxInter];
-                                    property.outPosition = interactionsPosition[idxInter];
+                                    property.relativeOutPosition = interactionsPosition[idxInter];
                                     property.insideIdxInBlock = cellIdx;
+                                    property.outsideIdxInBlock = -1;
                                     outsideInteractions.push_back(property);
                                 }
                             }
@@ -746,17 +762,29 @@ protected:
                             const MortonIndex blockStartIdxOther = leftCells->getStartingIndex();
                             const MortonIndex blockEndIdxOther   = leftCells->getEndingIndex();
 
-                            while(currentOutInteraction < int(outsideInteractions.size()) && outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther){
+                            while(currentOutInteraction < int(outsideInteractions.size())
+                                  && (outsideInteractions[currentOutInteraction].outIndex < blockStartIdxOther
+                                      || leftCells->getCellIndex(outsideInteractions[currentOutInteraction].outIndex) == -1)
+                                  && outsideInteractions[currentOutInteraction].outIndex < blockEndIdxOther){
                                 currentOutInteraction += 1;
                             }
 
                             int lastOutInteraction = currentOutInteraction;
+                            int copyExistingInteraction = currentOutInteraction;
                             while(lastOutInteraction < int(outsideInteractions.size()) && outsideInteractions[lastOutInteraction].outIndex < blockEndIdxOther){
+                                const int cellPos = leftCells->getCellIndex(outsideInteractions[lastOutInteraction].outIndex);
+                                if(cellPos != -1){
+                                    if(copyExistingInteraction != lastOutInteraction){
+                                        outsideInteractions[copyExistingInteraction] = outsideInteractions[lastOutInteraction];
+                                    }
+                                    outsideInteractions[copyExistingInteraction].outsideIdxInBlock = cellPos;
+                                    copyExistingInteraction += 1;
+                                }
                                 lastOutInteraction += 1;
                             }
 
                             // Create interactions
-                            const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
+                            const int nbInteractionsBetweenBlocks = (copyExistingInteraction-currentOutInteraction);
                             if(nbInteractionsBetweenBlocks){
                                 externalInteractions->emplace_back();
                                 BlockInteractions<CellContainerClass>* interactions = &externalInteractions->back();
@@ -764,7 +792,7 @@ protected:
                                 interactions->otherBlockId = idxLeftGroup;
                                 interactions->interactions.resize(nbInteractionsBetweenBlocks);
                                 std::copy(outsideInteractions.begin() + currentOutInteraction,
-                                          outsideInteractions.begin() + lastOutInteraction,
+                                          outsideInteractions.begin() + copyExistingInteraction,
                                           interactions->interactions.begin());
                             }
 

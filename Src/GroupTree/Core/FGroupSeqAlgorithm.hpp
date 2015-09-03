@@ -175,7 +175,7 @@ protected:
                                 OutOfBlockInteraction property;
                                 property.insideIndex = mindex;
                                 property.outIndex    = interactionsIndexes[idxInter];
-                                property.outPosition = interactionsPosition[idxInter];
+                                property.relativeOutPosition = interactionsPosition[idxInter];
                                 property.insideIdxInBlock = cellIdx;
                                 outsideInteractions.push_back(property);
                             }
@@ -215,8 +215,8 @@ protected:
                                 FAssertLF(cell.getMortonIndex() == outsideInteractions[outInterIdx].insideIndex);
 
                                 const CellClass* ptCell = &interCell;
-                                kernels->M2L( &cell , &ptCell, &outsideInteractions[outInterIdx].outPosition, 1, idxLevel);
-                                const int otherPos = getOppositeInterIndex(outsideInteractions[outInterIdx].outPosition);
+                                kernels->M2L( &cell , &ptCell, &outsideInteractions[outInterIdx].relativeOutPosition, 1, idxLevel);
+                                const int otherPos = getOppositeInterIndex(outsideInteractions[outInterIdx].relativeOutPosition);
                                 ptCell = &cell;
                                 kernels->M2L( &interCell , &ptCell, &otherPos, 1, idxLevel);
                             }
@@ -345,7 +345,7 @@ protected:
                                 OutOfBlockInteraction property;
                                 property.insideIndex = mindex;
                                 property.outIndex    = interactionsIndexes[idxInter];
-                                property.outPosition = interactionsPosition[idxInter];
+                                property.relativeOutPosition = interactionsPosition[idxInter];
                                 property.insideIdxInBlock = leafIdx;
                                 outsideInteractions.push_back(property);
                             }
@@ -386,8 +386,8 @@ protected:
 
                                 ParticleContainerClass* ptrLeaf = &interParticles;
                                 kernels->P2POuter( FTreeCoordinate(outsideInteractions[outInterIdx].insideIndex, tree->getHeight()-1),
-                                                    &particles , &ptrLeaf, &outsideInteractions[outInterIdx].outPosition, 1);
-                                const int otherPosition = getOppositeNeighIndex(outsideInteractions[outInterIdx].outPosition);
+                                                    &particles , &ptrLeaf, &outsideInteractions[outInterIdx].relativeOutPosition, 1);
+                                const int otherPosition = getOppositeNeighIndex(outsideInteractions[outInterIdx].relativeOutPosition);
                                 ptrLeaf = &particles;
                                 kernels->P2POuter( FTreeCoordinate(outsideInteractions[outInterIdx].outIndex, tree->getHeight()-1),
                                                     &interParticles , &ptrLeaf, &otherPosition, 1);
