@@ -102,7 +102,7 @@ public:
             insertionPositionP2PMpi    = insertionPositionP2PExtern;
             FLOG( FLog::Controller << "\t P2P MPI "  << insertionPositionP2PMpi << "\n" );
 
-            assert(incPrio == 8 + (treeHeight-2) + (treeHeight-2) + (treeHeight-2));
+            assert(incPrio == 8 + (treeHeight-3) + (treeHeight-3) + (treeHeight-3));
         }
         else{
             int incPrio = 0;
