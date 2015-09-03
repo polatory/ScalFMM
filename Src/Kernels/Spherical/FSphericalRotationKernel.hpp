@@ -317,7 +317,7 @@ protected:
             delete[] (ass_Legendre_func_Array);
             delete[] (_precomputed_exp_I_chi_array);
             delete[] (_precomputed_exp_I_omega_array);
-            FMemUtils::DeleteAll( rcc_tmp_transposed, devP);
+            FMemUtils::DeleteAllArray( rcc_tmp_transposed, devP);
             delete[] rcc_tmp_transposed;
         }
 
@@ -335,8 +335,8 @@ protected:
         }
 
         ~RotationM2LTransfer(){
-            FMemUtils::DeleteAll( rcc_outer, devP);
-            FMemUtils::DeleteAll( rcc_inner, devP);
+            FMemUtils::DeleteAllArray( rcc_outer, devP);
+            FMemUtils::DeleteAllArray( rcc_inner, devP);
             delete[] rcc_outer;
             delete[] rcc_inner;
             delete[] outer_array;

@@ -90,7 +90,7 @@ public:
     /** Destructor */
     ~FSphericalKernel(){
         if( preM2LTransitions.isLast() ){
-            FMemUtils::DeleteAll(preM2LTransitions.getPtr(), Parent::treeHeight);
+            FMemUtils::DeleteAllArray(preM2LTransitions.getPtr(), Parent::treeHeight);
         }
     }
 

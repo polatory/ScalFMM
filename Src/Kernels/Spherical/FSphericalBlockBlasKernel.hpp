@@ -170,7 +170,7 @@ public:
                     }
                 }
             }
-            FMemUtils::DeleteAll(preM2LTransitions.getPtr(), Parent::treeHeight);
+            FMemUtils::DeleteAllArray(preM2LTransitions.getPtr(), Parent::treeHeight);
         }
     }
 
