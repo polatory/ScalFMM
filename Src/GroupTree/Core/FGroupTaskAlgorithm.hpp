@@ -202,7 +202,6 @@ protected:
                                 externalInteractions->emplace_back();
                                 BlockInteractions<ParticleGroupClass>* interactions = &externalInteractions->back();
                                 interactions->otherBlock = leftContainers;
-                                interactions->otherBlockId = idxLeftGroup;
                                 interactions->interactions.resize(nbInteractionsBetweenBlocks);
                                 std::copy(outsideInteractions.begin() + currentOutInteraction,
                                           outsideInteractions.begin() + copyExistingInteraction,
@@ -291,7 +290,6 @@ protected:
                                     externalInteractions->emplace_back();
                                     BlockInteractions<CellContainerClass>* interactions = &externalInteractions->back();
                                     interactions->otherBlock = leftCells;
-                                    interactions->otherBlockId = idxLeftGroup;
                                     interactions->interactions.resize(nbInteractionsBetweenBlocks);
                                     std::copy(outsideInteractions.begin() + currentOutInteraction,
                                               outsideInteractions.begin() + copyExistingInteraction,
@@ -367,9 +365,9 @@ protected:
                 while((*iterChildCells)->getEndingIndex() <= (((currentCells->getEndingIndex()-1)<<3)+7)
                       && (++iterChildCells) != endChildCells
                       && (*iterChildCells)->getStartingIndex() <= ((currentCells->getEndingIndex()-1)<<3)+7 ){
+                    FAssertLF( nbSubCellGroups < 9 );
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
                     nbSubCellGroups += 1;
-                    FAssertLF( nbSubCellGroups <= 9 );
                 }
 
                 #pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups)
@@ -551,9 +549,9 @@ protected:
                 while((*iterChildCells)->getEndingIndex() <= (((currentCells->getEndingIndex()-1)<<3)+7)
                       && (++iterChildCells) != endChildCells
                       && (*iterChildCells)->getStartingIndex() <= ((currentCells->getEndingIndex()-1)<<3)+7 ){
+                    FAssertLF( nbSubCellGroups < 9 );
                     subCellGroups[nbSubCellGroups] = (*iterChildCells);
                     nbSubCellGroups += 1;
-                    FAssertLF( nbSubCellGroups <= 9 );
                 }
 
                 #pragma omp task default(none) firstprivate(idxLevel, currentCells, subCellGroups, nbSubCellGroups)

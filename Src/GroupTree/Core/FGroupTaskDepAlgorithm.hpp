@@ -241,7 +241,6 @@ protected:
                                 externalInteractions->emplace_back();
                                 BlockInteractions<ParticleGroupClass>* interactions = &externalInteractions->back();
                                 interactions->otherBlock = leftContainers;
-                                interactions->otherBlockId = idxLeftGroup;
                                 interactions->interactions.resize(nbInteractionsBetweenBlocks);
                                 std::copy(outsideInteractions.begin() + currentOutInteraction,
                                           outsideInteractions.begin() + copyExistingInteraction,
@@ -330,7 +329,6 @@ protected:
                                     externalInteractions->emplace_back();
                                     BlockInteractions<CellContainerClass>* interactions = &externalInteractions->back();
                                     interactions->otherBlock = leftCells;
-                                    interactions->otherBlockId = idxLeftGroup;
                                     interactions->interactions.resize(nbInteractionsBetweenBlocks);
                                     std::copy(outsideInteractions.begin() + currentOutInteraction,
                                               outsideInteractions.begin() + copyExistingInteraction,
