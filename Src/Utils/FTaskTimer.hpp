@@ -8,7 +8,6 @@
 #include "../Containers/FVector.hpp"
 
 #include <unordered_set>
-#include <omp.h>
 
 
 #ifdef SCALFMM_TIME_OMPTASKS
@@ -45,16 +44,17 @@ protected:
 
 public:
 
-    explicit FTaskTimer(const int inNbThreads = -1)
-            : nbThreads(inNbThreads>0?inNbThreads:omp_get_max_threads()), threadEvents(nullptr),
+    explicit FTaskTimer(const int inNbThreads)
+            : nbThreads(inNbThreads), threadEvents(nullptr),
                 startingTime(0) {
         FLOG( FLog::Controller << "\tFTaskTimer is used\n" );
 
         threadEvents = new ThreadData*[nbThreads];
-        #pragma omp parallel num_threads(nbThreads)
-        {
-            threadEvents[omp_get_thread_num()] = new ThreadData;
-        }
+        memset(threadEvents, 0, sizeof(threadEvents[0])*nbThreads);
+    }
+
+    void init(const int threadId){
+        threadEvents[threadId] = new ThreadData;
     }
 
     ~FTaskTimer(){
@@ -66,9 +66,8 @@ public:
 
     void start(){
         FLOG( FLog::Controller << "\tFTaskTimer starts\n" );
-        #pragma omp parallel num_threads(nbThreads)
-        {
-            threadEvents[omp_get_thread_num()]->events.clear();
+        for(int idxThread = 0 ; idxThread < nbThreads ; ++idxThread){
+            threadEvents[idxThread]->events.clear();
         }
         startingTime = FTic::GetTime();
     }
@@ -118,18 +117,18 @@ public:
         char taskText[MaxTextLength];
 
     public:
-        ScopeEvent(FTaskTimer* eventsManager, const long long int inTaskId, const char inText[MaxTextLength])
+        ScopeEvent(const int threadId, FTaskTimer* eventsManager, const long long int inTaskId, const char inText[MaxTextLength])
             : eventStartingTime(FTic::GetTime()), measureStartingTime(eventsManager->startingTime),
-              myEvents(eventsManager->threadEvents[omp_get_thread_num()]),
+              myEvents(eventsManager->threadEvents[threadId]),
               taskId(inTaskId){
             taskText[0] = '\0';
             strncpy(taskText, inText, MaxTextLength);
         }
 
         template <class FirstParameters, class ... Parameters>
-        ScopeEvent(FTaskTimer* eventsManager, const long long int inTaskId, const char inTextFormat, FirstParameters fparam, Parameters ... params)
+        ScopeEvent(const int threadId, FTaskTimer* eventsManager, const long long int inTaskId, const char inTextFormat, FirstParameters fparam, Parameters ... params)
             : eventStartingTime(FTic::GetTime()), measureStartingTime(eventsManager->startingTime),
-              myEvents(eventsManager->threadEvents[omp_get_thread_num()]),
+              myEvents(eventsManager->threadEvents[threadId]),
               taskId(inTaskId){
             snprintf(taskText, MaxTextLength, inTextFormat, fparam, params...);
         }

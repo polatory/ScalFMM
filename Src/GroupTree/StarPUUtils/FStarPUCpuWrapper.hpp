@@ -35,6 +35,8 @@
 
 #include "FStarPUUtils.hpp"
 
+#include "../../Utils/FTaskTimer.hpp"
+
 template <class CellContainerClass, class CellClass, class KernelClass,
           class ParticleGroupClass, class ParticleContainerClass>
 class FStarPUCpuWrapper {
@@ -51,14 +53,25 @@ protected:
     const int treeHeight;
     KernelClass* kernels[STARPU_MAXCPUS];        //< The kernels
 
+#ifdef SCALFMM_TIME_OMPTASKS
+    FTaskTimer taskTimeRecorder;
+#endif
+
 public:
-    FStarPUCpuWrapper(const int inTreeHeight): treeHeight(inTreeHeight){
+    FStarPUCpuWrapper(const int inTreeHeight): treeHeight(inTreeHeight)
+#ifdef SCALFMM_TIME_OMPTASKS
+      , taskTimeRecorder(STARPU_MAXCPUS)
+#endif
+    {
         memset(kernels, 0, sizeof(KernelClass*)*STARPU_MAXCPUS);
     }
 
     void initKernel(const int workerId, KernelClass* originalKernel){
         FAssertLF(kernels[workerId] == nullptr);
         kernels[workerId] = new KernelClass(*originalKernel);
+#ifdef SCALFMM_TIME_OMPTASKS
+        taskTimeRecorder.init(starpu_worker_get_id());
+#endif
     }
 
     void releaseKernel(const int workerId){
@@ -88,6 +101,7 @@ public:
     }
 
     void bottomPassPerform(CellContainerClass* leafCells, ParticleGroupClass* containers){
+        FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(starpu_worker_get_id(), &taskTimeRecorder, (leafCells->getStartingIndex() << 16) | (0<<8) | 0, "P2M"));
         FAssertLF(leafCells->getNumberOfCellsInBlock() == containers->getNumberOfLeavesInBlock());
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
@@ -126,6 +140,7 @@ public:
     void upwardPassPerform(CellContainerClass*const currentCells,
                            CellContainerClass* subCellGroup,
                            const int idxLevel){
+        FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(starpu_worker_get_id(), &taskTimeRecorder, (currentCells->getStartingIndex() << 16) | (idxLevel<<8) | 1, "M2M"));
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
         const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
@@ -228,6 +243,7 @@ public:
     }
 
     void transferInPassPerform(CellContainerClass*const currentCells, const int idxLevel){
+        FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(starpu_worker_get_id(), &taskTimeRecorder, (currentCells->getStartingIndex() << 16) | (idxLevel<<8) | 2, "M2L"));
         const MortonIndex blockStartIdx = currentCells->getStartingIndex();
         const MortonIndex blockEndIdx = currentCells->getEndingIndex();
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
@@ -293,6 +309,7 @@ public:
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
         if(mode == 1){
+            FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(starpu_worker_get_id(), &taskTimeRecorder, (cellsOther->getStartingIndex()) << 50 | (currentCells->getStartingIndex() << 16) | (idxLevel<<8) | 3, "M2L-ext"));
             for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
                 CellClass interCell = cellsOther->getUpCell((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
                 FAssertLF(interCell.getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
@@ -304,6 +321,7 @@ public:
             }
         }
         else{
+            FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(starpu_worker_get_id(), &taskTimeRecorder, (currentCells->getStartingIndex()) << 50 | (cellsOther->getStartingIndex() << 16) | (idxLevel<<8) | 3, "M2L-ext"));
             for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
                 CellClass cell = cellsOther->getUpCell((*outsideInteractions)[outInterIdx].insideIdxInBlock);
                 FAssertLF(cell.getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
@@ -343,6 +361,7 @@ public:
     void downardPassPerform(CellContainerClass*const currentCells,
                             CellContainerClass* subCellGroup,
                             const int idxLevel){
+        FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(starpu_worker_get_id(), &taskTimeRecorder, (currentCells->getStartingIndex() << 16) | (idxLevel<<8) | 4, "L2L"));
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
         const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
@@ -436,6 +455,7 @@ public:
     }
 
     void directInPassPerform(ParticleGroupClass* containers){
+        FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(starpu_worker_get_id(), &taskTimeRecorder, (containers->getStartingIndex() << 16) | (0<<8) | 5, "P2P"));
         const MortonIndex blockStartIdx = containers->getStartingIndex();
         const MortonIndex blockEndIdx = containers->getEndingIndex();
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
@@ -486,7 +506,8 @@ public:
 
     void directInoutPassPerform(ParticleGroupClass* containers, ParticleGroupClass* containersOther,
                                 const std::vector<OutOfBlockInteraction>* outsideInteractions){
-        KernelClass*const kernel = kernels[omp_get_thread_num()];
+        FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(starpu_worker_get_id(), &taskTimeRecorder, (containersOther->getStartingIndex()) << 50 | (containers->getStartingIndex() << 16) | (0<<8) | 6, "P2P-ext"));
+        KernelClass*const kernel = kernels[starpu_worker_get_id()];
         for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
             ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
             ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIdxInBlock);
@@ -524,6 +545,7 @@ public:
     }
 
     void mergePassPerform(CellContainerClass* leafCells, ParticleGroupClass* containers){
+        FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(starpu_worker_get_id(), &taskTimeRecorder, (leafCells->getStartingIndex() << 16) | (0<<8) | 7, "L2P"));
         FAssertLF(leafCells->getNumberOfCellsInBlock() == containers->getNumberOfLeavesInBlock());
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
