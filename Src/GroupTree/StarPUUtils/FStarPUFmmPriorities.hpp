@@ -180,7 +180,7 @@ public:
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionP2P;
                 heteroprio->buckets[insertionPositionP2P].valide_archs |= STARPU_CPU;
             }
-            if( capacities->supportP2P(FSTARPU_CPU_IDX)){
+            if( capacities->supportP2PExtern(FSTARPU_CPU_IDX)){
                 FLOG( FLog::Controller << "\t CPU prio P2P Extern "  << cpuCountPrio << " bucket " << insertionPositionP2PExtern << "\n" );
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionP2PExtern;
                 heteroprio->buckets[insertionPositionP2PExtern].valide_archs |= STARPU_CPU;
