@@ -67,7 +67,7 @@ public:
     void start(){
         FLOG( FLog::Controller << "\tFTaskTimer starts\n" );
         for(int idxThread = 0 ; idxThread < nbThreads ; ++idxThread){
-            threadEvents[idxThread]->events.clear();
+            if(threadEvents[idxThread]) threadEvents[idxThread]->events.clear();
         }
         startingTime = FTic::GetTime();
     }
@@ -86,7 +86,9 @@ public:
 
         FSize totalEvents = 0;
         for(int idxThread = 0 ; idxThread < nbThreads ; ++idxThread){
-            totalEvents += threadEvents[idxThread]->events.getSize();
+            if(threadEvents[idxThread]){
+                totalEvents += threadEvents[idxThread]->events.getSize();
+            }
         }
         fprintf(foutput, "global{@duration=%e;@max threads=%d;@nb events=%lld}\n",
                 duration, nbThreads, totalEvents);
@@ -95,12 +97,14 @@ public:
         ensureUniqueness.reserve(totalEvents);
 
         for(int idxThread = 0 ; idxThread < nbThreads ; ++idxThread){
-            for(int idxEvent = 0 ; idxEvent < threadEvents[idxThread]->events.getSize() ; ++idxEvent){
-                const EventDescriptor& event = threadEvents[idxThread]->events[idxEvent];
-                fprintf(foutput, "event{@id=%lld;@duration=%e;@start=%e;@text=%s}\n",
-                        event.eventId, event.duration, event.start, event.text);
-                FAssertLF(ensureUniqueness.find(event.eventId) == ensureUniqueness.end());
-                ensureUniqueness.insert(event.eventId);
+            if(threadEvents[idxThread]){
+                for(int idxEvent = 0 ; idxEvent < threadEvents[idxThread]->events.getSize() ; ++idxEvent){
+                    const EventDescriptor& event = threadEvents[idxThread]->events[idxEvent];
+                    fprintf(foutput, "event{@id=%lld;@duration=%e;@start=%e;@text=%s}\n",
+                            event.eventId, event.duration, event.start, event.text);
+                    FAssertLF(ensureUniqueness.find(event.eventId) == ensureUniqueness.end());
+                    ensureUniqueness.insert(event.eventId);
+                }
             }
         }
 

@@ -303,6 +303,10 @@ protected:
         FLOG( FLog::Controller << "\tStart FGroupTaskStarPUAlgorithm\n" );
         const bool directOnly = (tree->getHeight() <= 2);
 
+#ifdef STARPU_USE_CPU
+        FTIME_TASKS(cpuWrapper.taskTimeRecorder.start());
+#endif
+
         starpu_resume();
 
         if(operationsToProceed & FFmmP2M && !directOnly) bottomPass();
@@ -325,6 +329,11 @@ protected:
 
         starpu_task_wait_for_all();
         starpu_pause();
+
+#ifdef STARPU_USE_CPU
+        FTIME_TASKS(cpuWrapper.taskTimeRecorder.end());
+        FTIME_TASKS(cpuWrapper.taskTimeRecorder.saveToDisk("/tmp/taskstime-FGroupTaskStarPUAlgorithm.txt"));
+#endif
     }
 
 
