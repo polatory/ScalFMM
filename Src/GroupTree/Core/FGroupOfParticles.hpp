@@ -83,6 +83,8 @@ protected:
     bool deleteBuffer;
 
 public:
+    typedef AttributeClass ParticleDataType;
+
     /**
      * Init from a given buffer
      * @param inBuffer
