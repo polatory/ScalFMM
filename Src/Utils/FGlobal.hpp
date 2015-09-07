@@ -79,7 +79,7 @@ typedef long long MortonIndex;
         #include <xmmintrin.h>
         #define Prefetch_Read0(X)  _mm_prefetch((char*)(X), _MM_HINT_T0);
         inline void Prefetch_Write0_core(const char* ptr){
-            asm("prefetchw %0": : "g"(ptr) :);
+            asm("prefetchw (%0)": : "g"(ptr) :);
         }
         #define Prefetch_Write0(X) Prefetch_Write0_core((const char*)X);
         #define Prefetch_Read1(X)  _mm_prefetch((char*)(X), _MM_HINT_T1);
