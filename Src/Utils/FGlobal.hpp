@@ -76,21 +76,37 @@ typedef long long MortonIndex;
 ///////////////////////////////////////////////////////
 
 #ifdef __GNUC__
-    #define Prefetch_Read(X)  __builtin_prefetch(X)
-    #define Prefetch_Write(X) __builtin_prefetch(X,1,1)
+        #define Prefetch_Read0(X)  __builtin_prefetch(X,0,2)
+        #define Prefetch_Write0(X) __builtin_prefetch(X,1,2)
+        #define Prefetch_Read1(X)  __builtin_prefetch(X,0,2)
+        #define Prefetch_Write1(X) __builtin_prefetch(X,1,2)
+        #define Prefetch_Read2(X)  __builtin_prefetch(X,0,2)
+        #define Prefetch_Write2(X) __builtin_prefetch(X,1,2)
 #else
     #ifdef __INTEL_COMPILER
-	#ifdef ScalFMM_USE_AVX2
-                #define Prefetch_Read(X)  _mm512_prefetch(X,_MM_HINT_T0)
-                #define Prefetch_Write(X) _mm512_prefetch(X,_MM_HINT_T0)
+    #ifdef SCALFMM_USE_AVX2
+                #define Prefetch_Read0(X)  _mm512_prefetch(X,_MM_HINT_T0)
+                #define Prefetch_Write0(X) _mm512_prefetch(X,_MM_HINT_T0)
+                #define Prefetch_Read1(X)  _mm512_prefetch(X,_MM_HINT_T1)
+                #define Prefetch_Write1(X) _mm512_prefetch(X,_MM_HINT_T1)
+                #define Prefetch_Read2(X)  _mm512_prefetch(X,_MM_HINT_T2)
+                #define Prefetch_Write2(X) _mm512_prefetch(X,_MM_HINT_T2)
         #else
-        	#define Prefetch_Read(X)  _mm_prefetch(X,_MM_HINT_T0)
-	        #define Prefetch_Write(X) _mm_prefetch(X,_MM_HINT_T0)
+                #define Prefetch_Read0(X)  _mm_prefetch(X,_MM_HINT_T0)
+                #define Prefetch_Write0(X) _mm_prefetch(X,_MM_HINT_T0)
+                #define Prefetch_Read1(X)  _mm_prefetch(X,_MM_HINT_T1)
+                #define Prefetch_Write1(X) _mm_prefetch(X,_MM_HINT_T1)
+                #define Prefetch_Read2(X)  _mm_prefetch(X,_MM_HINT_T2)
+                #define Prefetch_Write2(X) _mm_prefetch(X,_MM_HINT_T2)
 	#endif
     #else
         #warning compiler is not defined
-        #define Prefetch_Read(X)
-        #define Prefetch_Write(X)
+        #define Prefetch_Read0(X)
+        #define Prefetch_Write0(X)
+        #define Prefetch_Read1(X)
+        #define Prefetch_Write1(X)
+        #define Prefetch_Read2(X)
+        #define Prefetch_Write2(X)
     #endif
 #endif
 

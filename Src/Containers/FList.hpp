@@ -233,9 +233,8 @@ public:
         /** To gotoNext on the list */
         void gotoNext(){
             if( hasNotFinished() ){
-                // TODO bug! printf("%s %p to %p\n",((*iter) != 0?"Not null":"Null"), *iter, &((*iter)->next));
                 iter = &((*iter)->next);
-                if( (*iter)->next ) Prefetch_Write( (*iter)->next->next);
+                if( (*iter)->next ) Prefetch_Write0( (*iter)->next->next);
             }
         }
 
@@ -310,7 +309,7 @@ public:
         void gotoNext(){
             if(this->iter){
                 this->iter = this->iter->next;
-                if(this->iter) Prefetch_Read(this->iter->next);
+                if(this->iter) Prefetch_Read0(this->iter->next);
             }
         }
 
