@@ -244,6 +244,17 @@ protected:
             dest[idxVal] += FComplex<double>(ptrSrc[2*idxVal], ptrSrc[2*idxVal+1]);
         }
     }
+    static void Equal(double dest[], const double src[], const int nbElements){
+        for(int idxVal = 0 ; idxVal < nbElements ; ++idxVal){
+            dest[idxVal] = src[idxVal];
+        }
+    }
+    static void Equal(FComplex<double> dest[], const fftw_complex src[], const int nbElements){
+        const double* ptrSrc = reinterpret_cast<const double*>(src);
+        for(int idxVal = 0 ; idxVal < nbElements ; ++idxVal){
+            dest[idxVal] = FComplex<double>(ptrSrc[2*idxVal], ptrSrc[2*idxVal+1]);
+        }
+    }
     static void Bind_fftw_alloc(double** ptr, const int size){
         *ptr = (double*) fftw_malloc(sizeof(double) * size);
         //SpErrAEH(*ptr);
@@ -299,6 +310,17 @@ protected:
             dest[idxVal] += FComplex<float>(ptrSrc[2*idxVal], ptrSrc[2*idxVal+1]);
         }
     }
+    static void Equal(float dest[], const float src[], const int nbElements){
+        for(int idxVal = 0 ; idxVal < nbElements ; ++idxVal){
+            dest[idxVal] = src[idxVal];
+        }
+    }
+    static void Equal(FComplex<float> dest[], const fftwf_complex src[], const int nbElements){
+        const float* ptrSrc = reinterpret_cast<const float*>(src);
+        for(int idxVal = 0 ; idxVal < nbElements ; ++idxVal){
+            dest[idxVal] = FComplex<float>(ptrSrc[2*idxVal], ptrSrc[2*idxVal+1]);
+        }
+    }    
     static void Bind_fftw_alloc(float** ptr, const int size){
         *ptr = (float*) fftwf_malloc(sizeof(float) * size);
         //SpErrAEH(*ptr);
@@ -438,31 +460,31 @@ public:
         }
     }
     /** Compute the DFT using signalToTransform temporal values
-    * The result is added (+=) to resultSignal
+    * The result is equal (=) to resultSignal
     */
     void applyDFT(const ValueClassSrc signalToTransform[], ValueClassDest resultSignal[]) const {
         memcpy(timeSignal, signalToTransform, sizeof(ValueClassSrc) * nbPoints);
         memset(freqSignal,0,sizeof(ValueClassDestFftw) * nbPoints);
         Bind_fftw_execute( plan_d2s );
-        PlusEqual(resultSignal, freqSignal, nbPoints);
+        Equal(resultSignal, freqSignal, nbPoints);
     }
     /** Compute the inverse DFT using signalToTransform frequency values
-    * The result is added (+=) to resultSignal
+    * The result is equal (=) to resultSignal
     */
     void applyIDFT(const ValueClassDest signalToTransform[], ValueClassSrc resultSignal[]) const {
         memcpy(freqSignal, signalToTransform, sizeof(ValueClassDest) * nbPoints);
         memset(timeSignal,0,sizeof(ValueClassSrcFftw) * nbPoints);
         Bind_fftw_execute( plan_s2d );
-        PlusEqual(resultSignal, timeSignal, nbPoints);
+        Equal(resultSignal, timeSignal, nbPoints);
     }
     /** Compute the inverse DFT using signalToTransform frequency values
-    * The result is added (+=) to resultSignal
+    * The result is equal (=) to resultSignal
     */
     void applyIDFTNorm(const ValueClassDest signalToTransform[], ValueClassSrc resultSignal[]) const {
         memcpy(freqSignal, signalToTransform, sizeof(ValueClassDest) * nbPoints);
         memset(timeSignal,0,sizeof(ValueClassSrcFftw) * nbPoints);
         Bind_fftw_execute( plan_s2d );
-        PlusEqual(resultSignal, timeSignal, nbPoints);
+        Equal(resultSignal, timeSignal, nbPoints);
         normalize(resultSignal);
     }
     void applyIDFTNormConj(const ValueClassDest signalToTransform[], ValueClassSrc resultSignal[]) const {
@@ -476,9 +498,52 @@ public:
         }
         memset(timeSignal,0,sizeof(ValueClassSrcFftw) * nbPoints);
         Bind_fftw_execute( plan_s2d );
+        Equal(resultSignal, timeSignal, nbPoints);
+        normalize(resultSignal);
+    }
+    /** Compute the DFT using signalToTransform temporal values
+    * The result is added (+=) to resultSignal
+    */
+    void applyDFTAdd(const ValueClassSrc signalToTransform[], ValueClassDest resultSignal[]) const {
+        memcpy(timeSignal, signalToTransform, sizeof(ValueClassSrc) * nbPoints);
+        memset(freqSignal,0,sizeof(ValueClassDestFftw) * nbPoints);
+        Bind_fftw_execute( plan_d2s );
+        PlusEqual(resultSignal, freqSignal, nbPoints);
+    }
+    /** Compute the inverse DFT using signalToTransform frequency values
+    * The result is added (+=) to resultSignal
+    */
+    void applyIDFTAdd(const ValueClassDest signalToTransform[], ValueClassSrc resultSignal[]) const {
+        memcpy(freqSignal, signalToTransform, sizeof(ValueClassDest) * nbPoints);
+        memset(timeSignal,0,sizeof(ValueClassSrcFftw) * nbPoints);
+        Bind_fftw_execute( plan_s2d );
+        PlusEqual(resultSignal, timeSignal, nbPoints);
+    }
+    /** Compute the inverse DFT using signalToTransform frequency values
+    * The result is added (+=) to resultSignal
+    */
+    void applyIDFTAddNorm(const ValueClassDest signalToTransform[], ValueClassSrc resultSignal[]) const {
+        memcpy(freqSignal, signalToTransform, sizeof(ValueClassDest) * nbPoints);
+        memset(timeSignal,0,sizeof(ValueClassSrcFftw) * nbPoints);
+        Bind_fftw_execute( plan_s2d );
         PlusEqual(resultSignal, timeSignal, nbPoints);
         normalize(resultSignal);
     }
+    void applyIDFTAddNormConj(const ValueClassDest signalToTransform[], ValueClassSrc resultSignal[]) const {
+        freqSignal[0][0] = signalToTransform[0].getReal();
+        freqSignal[0][1] = signalToTransform[0].getImag();
+        for(int idx = 1 ; idx <= nbPoints/2 ; ++idx){
+            freqSignal[idx][0] = signalToTransform[idx].getReal();
+            freqSignal[idx][1] = signalToTransform[idx].getImag();
+            freqSignal[nbPoints-idx][0] =  signalToTransform[idx].getReal();
+            freqSignal[nbPoints-idx][1] = -signalToTransform[idx].getImag();
+        }
+        memset(timeSignal,0,sizeof(ValueClassSrcFftw) * nbPoints);
+        Bind_fftw_execute( plan_s2d );
+        PlusEqual(resultSignal, timeSignal, nbPoints);
+        normalize(resultSignal);
+    }
+
     void normalize(double* resultSignal) const {
         const double realNbPoints = static_cast<double>(nbPoints);
         for(int idxVal = 0 ; idxVal < nbPoints ; ++idxVal){
