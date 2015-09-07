@@ -145,13 +145,17 @@ public:
              const int /*TreeLevel*/)
     {
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
+
             // 1) Apply Inverse Discete Fourier Transform
+            FReal localExp[AbstractBaseClass::nnodes];
             M2LHandler.unapplyZeroPaddingAndDFT(ParentCell->getTransformedLocal(idxRhs),
-                                                const_cast<CellClass*>(ParentCell)->getLocal(idxRhs));
+                                                localExp);
+            FBlas::add(AbstractBaseClass::nnodes,const_cast<FReal*>(ParentCell->getLocal(idxRhs)),localExp);
+
             // 2) apply Sx
             for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex){
                 if (ChildCells[ChildIndex]){
-                    AbstractBaseClass::Interpolator->applyL2L(ChildIndex, ParentCell->getLocal(idxRhs), ChildCells[ChildIndex]->getLocal(idxRhs));
+                    AbstractBaseClass::Interpolator->applyL2L(ChildIndex, localExp, ChildCells[ChildIndex]->getLocal(idxRhs));
                 }
             }
         }
@@ -162,21 +166,24 @@ public:
     {
         const FPoint<FReal> LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
 
+        FReal localExp[NVALS*AbstractBaseClass::nnodes];
+
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
 
             // 1)  Apply Inverse Discete Fourier Transform
             M2LHandler.unapplyZeroPaddingAndDFT(LeafCell->getTransformedLocal(idxRhs), 
-                                                const_cast<CellClass*>(LeafCell)->getLocal(idxRhs));
+                                                localExp + idxRhs*AbstractBaseClass::nnodes);
+            FBlas::add(AbstractBaseClass::nnodes,const_cast<FReal*>(LeafCell->getLocal(idxRhs)),localExp + idxRhs*AbstractBaseClass::nnodes);
 
         }
 
         // 2.a) apply Sx
         AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
-                                                  LeafCell->getLocal(0), TargetParticles);
+                                                  localExp, TargetParticles);
 
         // 2.b) apply Px (grad Sx)
         AbstractBaseClass::Interpolator->applyL2PGradient(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
-                                                          LeafCell->getLocal(0), TargetParticles);
+                                                          localExp, TargetParticles);
 
 
     }
