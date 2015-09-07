@@ -96,6 +96,13 @@ public:
         rebuildInteractions();
 
         FLOG(FLog::Controller << "FGroupTaskDepAlgorithm (Max Thread " << MaxThreads << ")\n");
+
+#ifdef SCALFMM_TIME_OMPTASKS
+        #pragma omp parallel num_threads(MaxThreads)
+        {
+            taskTimeRecorder.init(omp_get_thread_num());
+        }
+#endif
     }
 
     ~FGroupTaskDepAlgorithm(){
