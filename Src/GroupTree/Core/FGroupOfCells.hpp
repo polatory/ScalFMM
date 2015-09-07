@@ -294,14 +294,14 @@ public:
     }
 
     /** Return the address of the cell if it exists (or NULL) */
-    CompositeCellClass getUpCell(const MortonIndex cellPos){
+    CompositeCellClass getUpCell(const int cellPos){
         FAssertLF(cellMultipoles);
         FAssertLF(cellPos < blockHeader->numberOfCellsInBlock);
         return CompositeCellClass(&blockCells[cellPos], &cellMultipoles[cellPos], nullptr);
     }
 
     /** Return the address of the cell if it exists (or NULL) */
-    CompositeCellClass getDownCell(const MortonIndex cellPos){
+    CompositeCellClass getDownCell(const int cellPos){
         FAssertLF(cellLocals);
         FAssertLF(cellPos < blockHeader->numberOfCellsInBlock);
         return CompositeCellClass(&blockCells[cellPos], nullptr, &cellLocals[cellPos]);
