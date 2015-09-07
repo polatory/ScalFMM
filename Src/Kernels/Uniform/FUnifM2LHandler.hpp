@@ -264,7 +264,7 @@ public:
         Dft.applyIDFTNorm(FX,Px);
         // Unapply Zero Padding
         for (unsigned int j=0; j<nnodes; ++j)
-            x[j]+=Px[node_diff[nnodes-j-1]];
+            x[j]=Px[node_diff[nnodes-j-1]];
     }
 
     /**
@@ -444,7 +444,7 @@ public:
         Dft.applyIDFTNorm(FX,Px);
         // Unapply Zero Padding
         for (unsigned int j=0; j<nnodes; ++j)
-            x[j]+=Px[node_diff[nnodes-j-1]];
+            x[j]=Px[node_diff[nnodes-j-1]];
     }
 
     /**
