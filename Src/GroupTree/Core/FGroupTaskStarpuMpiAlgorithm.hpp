@@ -106,6 +106,7 @@ protected:
     starpu_codelet p2m_cl;
     starpu_codelet m2m_cl;
     starpu_codelet l2l_cl;
+    starpu_codelet l2l_cl_nocommute;
     starpu_codelet l2p_cl;
 
     starpu_codelet m2l_cl_in;
@@ -115,6 +116,13 @@ protected:
     starpu_codelet p2p_cl_in;
     starpu_codelet p2p_cl_inout;
     starpu_codelet p2p_cl_inout_mpi;
+
+
+#ifdef STARPU_USE_REDUX
+    starpu_codelet p2p_redux_init;
+    starpu_codelet p2p_redux_perform;
+    starpu_codelet p2p_redux_read;
+#endif
 
 #ifdef STARPU_USE_CPU
     StarPUCpuWrapperClass cpuWrapper;
@@ -169,6 +177,8 @@ public:
         FAssertLF(starpu_init(&conf) == 0);
         FAssertLF(starpu_mpi_init ( 0, 0, 0 ) == 0);
 
+        starpu_malloc_set_align(32);
+
         starpu_pthread_mutex_t initMutex;
         starpu_pthread_mutex_init(&initMutex, NULL);
 #ifdef STARPU_USE_CPU
@@ -207,6 +217,7 @@ public:
 
         initCodelet();
         initCodeletMpi();
+        rebuildInteractions();
 
         FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max Worker " << starpu_worker_get_count() << ")\n");
 #ifdef STARPU_USE_CPU
@@ -294,13 +305,8 @@ public:
         starpu_shutdown();
     }
 
-protected:
-    /**
-      * Runs the complete algorithm.
-      */
-    void executeCore(const unsigned operationsToProceed) override {
-        FLOG( FLog::Controller << "\tStart FGroupTaskStarPUMpiAlgorithm\n" );
-        const bool directOnly = (tree->getHeight() <= 2);
+    void rebuildInteractions(){
+        setenv("OMP_WAIT_POLICY", "PASSIVE", 1);
 
         #pragma omp parallel
         #pragma omp single
@@ -310,6 +316,21 @@ protected:
         #pragma omp parallel
         #pragma omp single
         buildRemoteInteractionsAndHandles();
+
+        omp_set_num_threads(1);
+    }
+
+protected:
+    /**
+      * Runs the complete algorithm.
+      */
+    void executeCore(const unsigned operationsToProceed) override {
+        FLOG( FLog::Controller << "\tStart FGroupTaskStarPUMpiAlgorithm\n" );
+        const bool directOnly = (tree->getHeight() <= 2);
+
+#ifdef STARPU_USE_CPU
+        FTIME_TASKS(cpuWrapper.taskTimeRecorder.start());
+#endif
 
         starpu_resume();
         postRecvAllocatedBlocks();
@@ -321,18 +342,29 @@ protected:
         if(operationsToProceed & FFmmM2M && !directOnly) upwardPass();
         if(operationsToProceed & FFmmM2L && !directOnly) insertCellsSend();
 
-        if(operationsToProceed & FFmmM2L && !directOnly) transferPass();
+        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::upperWorkingLevel, FAbstractAlgorithm::lowerWorkingLevel-1 , true, true);
+        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, false, false);
         if(operationsToProceed & FFmmM2L && !directOnly) transferPassMpi();
 
         if(operationsToProceed & FFmmL2L && !directOnly) downardPass();
 
+        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, true, true);
+
         if( operationsToProceed & FFmmP2P ) directPass();
         if( operationsToProceed & FFmmP2P ) directPassMpi();
 
-        if( operationsToProceed & FFmmL2P  && !directOnly) mergePass();
+        if( operationsToProceed & FFmmL2P && !directOnly) mergePass();
+#ifdef STARPU_USE_REDUX
+        if( operationsToProceed & FFmmL2P && !directOnly) readParticle();
+#endif
 
         starpu_task_wait_for_all();
         starpu_pause();
+
+#ifdef STARPU_USE_CPU
+        FTIME_TASKS(cpuWrapper.taskTimeRecorder.end());
+        FTIME_TASKS(cpuWrapper.taskTimeRecorder.saveToDisk("/tmp/taskstime-FGroupTaskStarPUAlgorithm.txt"));
+#endif
     }
 
 
@@ -416,6 +448,33 @@ protected:
         l2l_cl.dyn_modes[2] = STARPU_R;
         l2l_cl.dyn_modes[3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
 
+        memset(&l2l_cl_nocommute, 0, sizeof(l2l_cl_nocommute));
+#ifdef STARPU_USE_CPU
+        if(originalCpuKernel->supportL2L(FSTARPU_CPU_IDX)){
+            l2l_cl_nocommute.cpu_funcs[0] = StarPUCpuWrapperClass::downardPassCallback;
+            l2l_cl_nocommute.where |= STARPU_CPU;
+        }
+#endif
+#ifdef SCALFMM_ENABLE_CUDA_KERNEL
+        if(originalCpuKernel->supportL2L(FSTARPU_CUDA_IDX)){
+            l2l_cl_nocommute.cuda_funcs[0] = StarPUCudaWrapperClass::downardPassCallback;
+            l2l_cl_nocommute.where |= STARPU_CUDA;
+        }
+#endif
+#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
+        if(originalCpuKernel->supportL2L(FSTARPU_OPENCL_IDX)){
+            l2l_cl_nocommute.opencl_funcs[0] = StarPUOpenClWrapperClass::downardPassCallback;
+            l2l_cl_nocommute.where |= STARPU_OPENCL;
+        }
+#endif
+        l2l_cl_nocommute.nbuffers = 4;
+        l2l_cl_nocommute.dyn_modes = (starpu_data_access_mode*)malloc(l2l_cl_nocommute.nbuffers*sizeof(starpu_data_access_mode));
+        l2l_cl_nocommute.dyn_modes[0] = STARPU_R;
+        l2l_cl_nocommute.dyn_modes[1] = STARPU_R;
+        l2l_cl_nocommute.name = "l2l_cl";
+        l2l_cl_nocommute.dyn_modes[2] = STARPU_R;
+        l2l_cl_nocommute.dyn_modes[3] = STARPU_RW;
+
         memset(&l2p_cl, 0, sizeof(l2p_cl));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportL2P(FSTARPU_CPU_IDX)){
@@ -439,7 +498,11 @@ protected:
         l2p_cl.modes[0] = STARPU_R;
         l2p_cl.modes[1] = STARPU_R;
         l2p_cl.modes[2] = STARPU_R;
+#ifdef STARPU_USE_REDUX
+        l2p_cl.modes[3] = STARPU_REDUX;
+#else
         l2p_cl.modes[3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
+#endif
         l2p_cl.name = "l2p_cl";
 
         memset(&p2p_cl_in, 0, sizeof(p2p_cl_in));
@@ -463,7 +526,11 @@ protected:
 #endif
         p2p_cl_in.nbuffers = 2;
         p2p_cl_in.modes[0] = STARPU_R;
+#ifdef STARPU_USE_REDUX
+        p2p_cl_in.modes[1] = STARPU_REDUX;
+#else
         p2p_cl_in.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
+#endif
         p2p_cl_in.name = "p2p_cl_in";
         memset(&p2p_cl_inout, 0, sizeof(p2p_cl_inout));
 #ifdef STARPU_USE_CPU
@@ -486,9 +553,17 @@ protected:
 #endif
         p2p_cl_inout.nbuffers = 4;
         p2p_cl_inout.modes[0] = STARPU_R;
+#ifdef STARPU_USE_REDUX
+        p2p_cl_inout.modes[1] = STARPU_REDUX;
+#else
         p2p_cl_inout.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
+#endif
         p2p_cl_inout.modes[2] = STARPU_R;
+#ifdef STARPU_USE_REDUX
+        p2p_cl_inout.modes[3] = STARPU_REDUX;
+#else
         p2p_cl_inout.modes[3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
+#endif
         p2p_cl_inout.name = "p2p_cl_inout";
 
         memset(&m2l_cl_in, 0, sizeof(m2l_cl_in));
@@ -542,6 +617,50 @@ protected:
         m2l_cl_inout.modes[3] = STARPU_R;
         m2l_cl_inout.name = "m2l_cl_inout";
     }
+
+#ifdef STARPU_USE_REDUX
+        memset(&p2p_redux_init, 0, sizeof(p2p_redux_init));
+#ifdef STARPU_USE_CPU
+        p2p_redux_init.cpu_funcs[0] = FStarPUReduxCpu::InitData<typename ParticleGroupClass::ParticleDataType>;
+        p2p_redux_init.where |= STARPU_CPU;
+#endif
+        p2p_redux_init.nbuffers = 1;
+        p2p_redux_init.modes[0] = STARPU_RW;
+        p2p_redux_init.name = "p2p_redux_init";
+
+        memset(&p2p_redux_perform, 0, sizeof(p2p_redux_perform));
+#ifdef STARPU_USE_CPU
+        p2p_redux_perform.cpu_funcs[0] = FStarPUReduxCpu::ReduceData<typename ParticleGroupClass::ParticleDataType>;
+        p2p_redux_perform.where |= STARPU_CPU;
+#endif
+        p2p_redux_perform.nbuffers = 2;
+        p2p_redux_perform.modes[0] = STARPU_RW;
+        p2p_redux_perform.modes[1] = STARPU_R;
+        p2p_redux_perform.name = "p2p_redux_perform";
+
+        memset(&p2p_redux_read, 0, sizeof(p2p_redux_read));
+#ifdef STARPU_USE_CPU
+        if(originalCpuKernel->supportL2P(FSTARPU_CPU_IDX)){
+            p2p_redux_read.cpu_funcs[0] = FStarPUReduxCpu::EmptyCodelet<typename ParticleGroupClass::ParticleDataType>;
+            p2p_redux_read.where |= STARPU_CPU;
+        }
+#endif
+#ifdef SCALFMM_ENABLE_CUDA_KERNEL
+        if(originalCpuKernel->supportL2P(FSTARPU_CUDA_IDX)){
+            p2p_redux_read.cuda_funcs[0] = FStarPUReduxCpu::EmptyCodelet<typename ParticleGroupClass::ParticleDataType>;
+            p2p_redux_read.where |= STARPU_CUDA;
+        }
+#endif
+#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
+        if(originalCpuKernel->supportL2P(FSTARPU_OPENCL_IDX)){
+            p2p_redux_read.opencl_funcs[0] = FStarPUReduxCpu::EmptyCodelet<typename ParticleGroupClass::ParticleDataType>;
+            p2p_redux_read.where |= STARPU_OPENCL;
+        }
+#endif
+        p2p_redux_read.nbuffers = 1;
+        p2p_redux_read.modes[0] = STARPU_R;
+        p2p_redux_read.name = "p2p_redux_read";
+#endif
 
     /** dealloc in a starpu way all the defined handles */
     void cleanHandle(){
@@ -1152,10 +1271,15 @@ protected:
                                               (uintptr_t)containers->getRawBuffer(), containers->getBufferSizeInByte());
                 starpu_variable_data_register(&particleHandles[idxGroup].down, 0,
                                               (uintptr_t)containers->getRawAttributesBuffer(), containers->getAttributesBufferSizeInByte());
-                particleHandles[idxGroup].intervalSize = int(containers->getNumberOfLeavesInBlock());
+#ifdef STARPU_USE_REDUX
+                 starpu_data_set_reduction_methods(particleHandles[idxGroup].down, &p2p_redux_perform,
+                                                   &p2p_redux_init);
+#else
 #ifdef STARPU_SUPPORT_ARBITER
                 starpu_data_assign_arbiter(particleHandles[idxGroup].down, arbiterGlobal);
-#endif
+#endif // STARPU_SUPPORT_ARBITER
+#endif // STARPU_USE_REDUX
+                particleHandles[idxGroup].intervalSize = int(containers->getNumberOfLeavesInBlock());
             }
         }
     }
@@ -1630,11 +1754,12 @@ protected:
     /// Transfer Pass
     /////////////////////////////////////////////////////////////////////////////////////
 
-    void transferPass(){
+    void transferPass(const int fromLevel, const int toLevel, const bool inner, const bool outer){
         FLOG( FTic timer; );
         FLOG( FTic timerInBlock; FTic timerOutBlock; );
-        for(int idxLevel = FAbstractAlgorithm::lowerWorkingLevel-1 ; idxLevel >= FAbstractAlgorithm::upperWorkingLevel ; --idxLevel){
-            FLOG( timerInBlock.tic() );
+        for(int idxLevel = fromLevel ; idxLevel < toLevel ; ++idxLevel){
+            if(inner){
+                FLOG( timerInBlock.tic() );
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
                 starpu_insert_task(&m2l_cl_in,
                         STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
@@ -1650,8 +1775,10 @@ protected:
                         0);
             }
             FLOG( timerInBlock.tac() );
+}
+            if(outer){
+                FLOG( timerOutBlock.tic() );
 
-            FLOG( timerOutBlock.tic() );
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
                 for(int idxInteraction = 0; idxInteraction < int(externalInteractionsAllLevel[idxLevel][idxGroup].size()) ; ++idxInteraction){
                     const int interactionid = externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].otherBlockId;
@@ -1693,6 +1820,7 @@ protected:
                 }
             }
             FLOG( timerOutBlock.tac() );
+}
         }
         FLOG( FLog::Controller << "\t\t transferPass in " << timer.tacAndElapsed() << "s\n" );
         FLOG( FLog::Controller << "\t\t\t inblock in  " << timerInBlock.elapsed() << "s\n" );
@@ -1879,7 +2007,7 @@ protected:
                     task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].down;
 
                     // put the right codelet
-                    task->cl = &l2l_cl;
+                    task->cl = (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2 ? &l2l_cl_nocommute : &l2l_cl);
                     // put args values
                     char *arg_buffer;
                     size_t arg_buffer_size;
@@ -1910,7 +2038,7 @@ protected:
                     task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].down;
 
                     // put the right codelet
-                    task->cl = &l2l_cl;
+                    task->cl = (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2 ? &l2l_cl_nocommute : &l2l_cl);
                     // put args values
                     char *arg_buffer;
                     size_t arg_buffer_size;
@@ -1967,41 +2095,53 @@ protected:
         FLOG( FTic timer; );
         FLOG( FTic timerInBlock; FTic timerOutBlock; );
 
-        FLOG( timerInBlock.tic() );
-        for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
-            starpu_insert_task(&p2p_cl_in,
-                    STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                    STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
-                               STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2P(),
-                               STARPU_R, particleHandles[idxGroup].symb,
-                               (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
-                   #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, p2pTaskNames.get(),
-                   #endif
-                    0);
-        }
-        FLOG( timerInBlock.tac() );
         FLOG( timerOutBlock.tic() );
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             for(int idxInteraction = 0; idxInteraction < int(externalInteractionsLeafLevel[idxGroup].size()) ; ++idxInteraction){
                 const int interactionid = externalInteractionsLeafLevel[idxGroup][idxInteraction].otherBlockId;
                 const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions;
                 starpu_insert_task(&p2p_cl_inout,
-                        STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                        STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                        STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
+                                   STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                   STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                   STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
                                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2PExtern(),
-                        STARPU_R, particleHandles[idxGroup].symb,
+                                   STARPU_R, particleHandles[idxGroup].symb,
+                   #ifdef STARPU_USE_REDUX
+                                       STARPU_REDUX, particleHandles[idxGroup].down,
+                   #else
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
-                        STARPU_R, particleHandles[interactionid].symb,
+                   #endif
+                                   STARPU_R, particleHandles[interactionid].symb,
+                   #ifdef STARPU_USE_REDUX
+                                       STARPU_REDUX, particleHandles[interactionid].down,
+                   #else
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[interactionid].down,
+                   #endif
                    #ifdef STARPU_USE_TASK_NAME
                                        STARPU_NAME, p2pOuterTaskNames.get(),
                    #endif
-                        0);
+                                   0);
             }
         }
         FLOG( timerOutBlock.tac() );
+        FLOG( timerInBlock.tic() );
+        for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
+            starpu_insert_task(&p2p_cl_in,
+                               STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                               STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
+                               STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2P(),
+                               STARPU_R, particleHandles[idxGroup].symb,
+                   #ifdef STARPU_USE_REDUX
+                                       STARPU_REDUX, particleHandles[idxGroup].down,
+                   #else
+                               (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
+                   #endif
+                   #ifdef STARPU_USE_TASK_NAME
+                                       STARPU_NAME, p2pTaskNames.get(),
+                   #endif
+                               0);
+        }
+        FLOG( timerInBlock.tac() );
 
         FLOG( FLog::Controller << "\t\t directPass in " << timer.tacAndElapsed() << "s\n" );
         FLOG( FLog::Controller << "\t\t\t inblock  in " << timerInBlock.elapsed() << "s\n" );
@@ -2022,7 +2162,11 @@ protected:
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].down,
                     STARPU_R, particleHandles[idxGroup].symb,
+#ifdef STARPU_USE_REDUX
+                    STARPU_REDUX, particleHandles[idxGroup].down,
+#else
                     (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
+#endif
         #ifdef STARPU_USE_TASK_NAME
                             STARPU_NAME, l2pTaskNames.get(),
         #endif
@@ -2031,6 +2175,25 @@ protected:
 
         FLOG( FLog::Controller << "\t\t L2P in " << timer.tacAndElapsed() << "s\n" );
     }
+
+
+#ifdef STARPU_USE_REDUX
+    void readParticle(){
+        FLOG( FTic timer; );
+
+        FAssertLF(cellHandles[tree->getHeight()-1].size() == particleHandles.size());
+
+        for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
+            starpu_insert_task(&p2p_redux_read,
+                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosL2P(),
+                    STARPU_R, particleHandles[idxGroup].down,
+#ifdef STARPU_USE_TASK_NAME
+                    STARPU_NAME, "read-particle",
+#endif
+                    0);
+        }
+    }
+#endif
 };
 
 #endif // FGROUPTASKSTARPUMPIALGORITHM_HPP

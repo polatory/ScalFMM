@@ -288,11 +288,15 @@ public:
     }
 
     void rebuildInteractions(){
+        setenv("OMP_WAIT_POLICY", "PASSIVE", 1);
+
         #pragma omp parallel
         #pragma omp single
         buildExternalInteractionVecs();
 
         buildHandles();
+
+        omp_set_num_threads(1);
     }
 
 protected:

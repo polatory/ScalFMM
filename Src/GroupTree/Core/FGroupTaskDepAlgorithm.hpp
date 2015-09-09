@@ -142,9 +142,11 @@ protected:
 
                 if(operationsToProceed & FFmmM2M) upwardPass();
 
-                if(operationsToProceed & FFmmM2L) transferPass();
+                if(operationsToProceed & FFmmM2L) transferPass( FAbstractAlgorithm::upperWorkingLevel,FAbstractAlgorithm::lowerWorkingLevel-1);
 
                 if(operationsToProceed & FFmmL2L) downardPass();
+
+                if(operationsToProceed & FFmmM2L) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel);
 
                 if( operationsToProceed & FFmmL2P ) mergePass();
 
@@ -473,10 +475,10 @@ protected:
         FLOG( FLog::Controller << "\t\t upwardPass in " << timer.tacAndElapsed() << "s\n" );
     }
 
-    void transferPass(){
+    void transferPass(const int startLevel, const int endLevel){
         FLOG( FTic timer; );
         FLOG( FTic timerInBlock; FTic timerOutBlock; );
-        for(int idxLevel = FAbstractAlgorithm::lowerWorkingLevel-1 ; idxLevel >= FAbstractAlgorithm::upperWorkingLevel ; --idxLevel){
+        for(int idxLevel = startLevel ; idxLevel < endLevel ; ++idxLevel){
             FLOG( timerInBlock.tic() );
             {
                 typename OctreeClass::CellGroupIterator iterCells = tree->cellsBegin(idxLevel);
