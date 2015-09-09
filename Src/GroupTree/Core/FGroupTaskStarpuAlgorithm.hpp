@@ -109,6 +109,8 @@ protected:
     starpu_codelet p2p_redux_read;
 #endif
 
+    const bool noCommuteAtLastLevel;
+
 #ifdef STARPU_USE_CPU
     StarPUCpuWrapperClass cpuWrapper;
 #endif
@@ -140,7 +142,8 @@ protected:
 public:
     FGroupTaskStarPUAlgorithm(OctreeClass*const inTree, KernelClass* inKernels)
         : tree(inTree), originalCpuKernel(inKernels),
-          cellHandles(nullptr),
+          cellHandles(nullptr),          
+          noCommuteAtLastLevel(getenv("SCALFMM_NO_COMMUTE_LAST_L2L") != NULL && getenv("SCALFMM_NO_COMMUTE_LAST_L2L")[0] != '0'?true:false),
       #ifdef STARPU_USE_CPU
           cpuWrapper(tree->getHeight()),
       #endif
@@ -212,6 +215,7 @@ public:
 #ifdef SCALFMM_ENABLE_CUDA_KERNEL
         FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max CUDA " << starpu_cuda_worker_get_count() << ")\n");
 #endif
+        FLOG(FLog::Controller << "SCALFMM_NO_COMMUTE_LAST_L2L " << noCommuteAtLastLevel << "\n");
 
         buildTaskNames();
     }
@@ -1118,7 +1122,12 @@ protected:
                     task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].down;
 
                     // put the right codelet
-                    task->cl = (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2 ? &l2l_cl_nocommute : &l2l_cl);
+                    if(noCommuteAtLastLevel){
+                        task->cl = (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2 ? &l2l_cl_nocommute : &l2l_cl);
+                    }
+                    else{
+                        task->cl = &l2l_cl;
+                    }
                     // put args values
                     char *arg_buffer;
                     size_t arg_buffer_size;
@@ -1149,7 +1158,12 @@ protected:
                     task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].down;
 
                     // put the right codelet
-                    task->cl = (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2 ? &l2l_cl_nocommute : &l2l_cl);
+                    if(noCommuteAtLastLevel){
+                        task->cl = (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2 ? &l2l_cl_nocommute : &l2l_cl);
+                    }
+                    else{
+                        task->cl = &l2l_cl;
+                    }
                     // put args values
                     char *arg_buffer;
                     size_t arg_buffer_size;

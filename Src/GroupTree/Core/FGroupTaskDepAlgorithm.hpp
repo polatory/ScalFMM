@@ -34,14 +34,14 @@
 #ifdef OPENMP_SUPPORT_PRIORITY
 #define priority_if_supported(x) priority(x)
 enum FGroupTaskDepAlgorithm_Priorities{
-    FGroupTaskDepAlgorithm_Prio_P2M = 5,
-    FGroupTaskDepAlgorithm_Prio_M2M = 4,
-    FGroupTaskDepAlgorithm_Prio_M2L_High = 3,
-    FGroupTaskDepAlgorithm_Prio_L2L = 2,
-    FGroupTaskDepAlgorithm_Prio_P2P_Big = 1,
-    FGroupTaskDepAlgorithm_Prio_M2L = 0,
-    FGroupTaskDepAlgorithm_Prio_L2P = -1,
-    FGroupTaskDepAlgorithm_Prio_P2P_Small = -2
+    FGroupTaskDepAlgorithm_Prio_P2M = 9,
+    FGroupTaskDepAlgorithm_Prio_M2M = 8,
+    FGroupTaskDepAlgorithm_Prio_M2L_High = 7,
+    FGroupTaskDepAlgorithm_Prio_L2L = 6,
+    FGroupTaskDepAlgorithm_Prio_P2P_Big = 5,
+    FGroupTaskDepAlgorithm_Prio_M2L = 4,
+    FGroupTaskDepAlgorithm_Prio_L2P = 3,
+    FGroupTaskDepAlgorithm_Prio_P2P_Small = 2
 };
 #else
 #define priority_if_supported(x)
@@ -65,6 +65,7 @@ protected:
     const int MaxThreads;         //< The number of threads
     OctreeClass*const tree;       //< The Tree
     KernelClass** kernels;        //< The kernels
+    const bool noCommuteAtLastLevel;
 
 #ifdef SCALFMM_TIME_OMPTASKS
     FTaskTimer taskTimeRecorder;
@@ -72,7 +73,8 @@ protected:
 
 public:
     FGroupTaskDepAlgorithm(OctreeClass*const inTree, KernelClass* inKernels, const int inMaxThreads = -1)
-        : MaxThreads(inMaxThreads==-1?omp_get_max_threads():inMaxThreads), tree(inTree), kernels(nullptr)
+        : MaxThreads(inMaxThreads==-1?omp_get_max_threads():inMaxThreads), tree(inTree), kernels(nullptr),
+          noCommuteAtLastLevel(getenv("SCALFMM_NO_COMMUTE_LAST_L2L") != NULL && getenv("SCALFMM_NO_COMMUTE_LAST_L2L")[0] != '0'?true:false)
 #ifdef SCALFMM_TIME_OMPTASKS
             , taskTimeRecorder(MaxThreads)
 #endif
@@ -103,6 +105,7 @@ public:
             taskTimeRecorder.init(omp_get_thread_num());
         }
 #endif
+        FLOG(FLog::Controller << "SCALFMM_NO_COMMUTE_LAST_L2L " << noCommuteAtLastLevel << "\n");
     }
 
     ~FGroupTaskDepAlgorithm(){
@@ -627,45 +630,90 @@ protected:
                     subCellGroup = (*iterChildCells);
                     subCellLocalGroupsLocal = (*iterChildCells)->getRawLocalBuffer();
 
-                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroup, subCellLocalGroupsLocal) depend(commute_if_supported: subCellLocalGroupsLocal[0]) depend(in: cellLocals[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_L2L)
-                    {
-                        KernelClass*const kernel = kernels[omp_get_thread_num()];
+                    if(noCommuteAtLastLevel == false || idxLevel != FAbstractAlgorithm::lowerWorkingLevel - 2){
+                        #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroup, subCellLocalGroupsLocal) depend(commute_if_supported: subCellLocalGroupsLocal[0]) depend(in: cellLocals[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_L2L)
+                        {
+                            KernelClass*const kernel = kernels[omp_get_thread_num()];
 
-                        const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
-                        const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
-                        FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, ((lastParent * 20) + idxLevel) * 8 + 4, "L2L"));
+                            const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
+                            const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
+                            FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, ((lastParent * 20) + idxLevel) * 8 + 4, "L2L"));
 
-                        int idxParentCell = currentCells->getCellIndex(firstParent);
-                        FAssertLF(idxParentCell != -1);
+                            int idxParentCell = currentCells->getCellIndex(firstParent);
+                            FAssertLF(idxParentCell != -1);
 
-                        int idxChildCell = subCellGroup->getFistChildIdx(firstParent);
-                        FAssertLF(idxChildCell != -1);
-                        CellClass childData[8];
+                            int idxChildCell = subCellGroup->getFistChildIdx(firstParent);
+                            FAssertLF(idxChildCell != -1);
+                            CellClass childData[8];
 
-                        while(true){
-                            CellClass cell = currentCells->getDownCell(idxParentCell);
-                            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(idxParentCell));
-                            CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+                            while(true){
+                                CellClass cell = currentCells->getDownCell(idxParentCell);
+                                FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(idxParentCell));
+                                CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
-                            FAssertLF(cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+                                FAssertLF(cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
 
-                            do{
-                                const int idxChild = ((subCellGroup->getCellMortonIndex(idxChildCell)) & 7);
-                                FAssertLF(child[idxChild] == nullptr);
-                                childData[idxChild] = subCellGroup->getDownCell(idxChildCell);
-                                FAssertLF(subCellGroup->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
-                                child[idxChild] = &childData[idxChild];
+                                do{
+                                    const int idxChild = ((subCellGroup->getCellMortonIndex(idxChildCell)) & 7);
+                                    FAssertLF(child[idxChild] == nullptr);
+                                    childData[idxChild] = subCellGroup->getDownCell(idxChildCell);
+                                    FAssertLF(subCellGroup->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
+                                    child[idxChild] = &childData[idxChild];
 
-                                idxChildCell += 1;
-                            }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+                                    idxChildCell += 1;
+                                }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
 
-                            kernel->L2L(&cell, child, idxLevel);
+                                kernel->L2L(&cell, child, idxLevel);
 
-                            if(currentCells->getCellMortonIndex(idxParentCell) == lastParent){
-                                break;
+                                if(currentCells->getCellMortonIndex(idxParentCell) == lastParent){
+                                    break;
+                                }
+
+                                idxParentCell += 1;
                             }
+                        }
+                    }
+                    else{
+                        #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroup, subCellLocalGroupsLocal) depend(inout: subCellLocalGroupsLocal[0]) depend(in: cellLocals[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_L2L)
+                        {
+                            KernelClass*const kernel = kernels[omp_get_thread_num()];
 
-                            idxParentCell += 1;
+                            const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
+                            const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
+                            FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, ((lastParent * 20) + idxLevel) * 8 + 4, "L2L"));
+
+                            int idxParentCell = currentCells->getCellIndex(firstParent);
+                            FAssertLF(idxParentCell != -1);
+
+                            int idxChildCell = subCellGroup->getFistChildIdx(firstParent);
+                            FAssertLF(idxChildCell != -1);
+                            CellClass childData[8];
+
+                            while(true){
+                                CellClass cell = currentCells->getDownCell(idxParentCell);
+                                FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(idxParentCell));
+                                CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+
+                                FAssertLF(cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+
+                                do{
+                                    const int idxChild = ((subCellGroup->getCellMortonIndex(idxChildCell)) & 7);
+                                    FAssertLF(child[idxChild] == nullptr);
+                                    childData[idxChild] = subCellGroup->getDownCell(idxChildCell);
+                                    FAssertLF(subCellGroup->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
+                                    child[idxChild] = &childData[idxChild];
+
+                                    idxChildCell += 1;
+                                }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+
+                                kernel->L2L(&cell, child, idxLevel);
+
+                                if(currentCells->getCellMortonIndex(idxParentCell) == lastParent){
+                                    break;
+                                }
+
+                                idxParentCell += 1;
+                            }
                         }
                     }
 
