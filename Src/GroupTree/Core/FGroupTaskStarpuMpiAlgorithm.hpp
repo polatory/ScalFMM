@@ -44,21 +44,23 @@
 #include "../OpenCl/FEmptyOpenCLCode.hpp"
 #endif
 
+#include "../StarPUUtils/FStarPUReduxCpu.hpp"
+
 
 template <class OctreeClass, class CellContainerClass, class KernelClass, class ParticleGroupClass, class StarPUCpuWrapperClass
-#ifdef SCALFMM_ENABLE_CUDA_KERNEL
-    , class StarPUCudaWrapperClass = FStarPUCudaWrapper<KernelClass, FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
-                                                        FCudaGroupOfParticles<int, 0, 0, int>, FCudaGroupAttachedLeaf<int, 0, 0, int>, FCudaEmptyKernel<int> >
-#endif
-#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
-    , class StarPUOpenClWrapperClass = FStarPUOpenClWrapper<KernelClass, FOpenCLDeviceWrapper<KernelClass>>
-#endif
+          #ifdef SCALFMM_ENABLE_CUDA_KERNEL
+          , class StarPUCudaWrapperClass = FStarPUCudaWrapper<KernelClass, FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
+                                                              FCudaGroupOfParticles<int, 0, 0, int>, FCudaGroupAttachedLeaf<int, 0, 0, int>, FCudaEmptyKernel<int> >
+          #endif
+          #ifdef SCALFMM_ENABLE_OPENCL_KERNEL
+          , class StarPUOpenClWrapperClass = FStarPUOpenClWrapper<KernelClass, FOpenCLDeviceWrapper<KernelClass>>
+          #endif
           >
 class FGroupTaskStarPUMpiAlgorithm : public FAbstractAlgorithm {
 protected:
     typedef FGroupTaskStarPUMpiAlgorithm<OctreeClass, CellContainerClass, KernelClass, ParticleGroupClass, StarPUCpuWrapperClass
 #ifdef SCALFMM_ENABLE_CUDA_KERNEL
-        , StarPUCudaWrapperClass
+    , StarPUCudaWrapperClass
 #endif
 #ifdef SCALFMM_ENABLE_OPENCL_KERNEL
     , StarPUOpenClWrapperClass
@@ -156,16 +158,16 @@ public:
     FGroupTaskStarPUMpiAlgorithm(const FMpi::FComm& inComm, OctreeClass*const inTree, KernelClass* inKernels)
         :   comm(inComm), tree(inTree), originalCpuKernel(inKernels),
           cellHandles(nullptr),
-#ifdef STARPU_USE_CPU
-            cpuWrapper(tree->getHeight()),
-#endif
-#ifdef SCALFMM_ENABLE_CUDA_KERNEL
-            cudaWrapper(tree->getHeight()),
-#endif
-#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
-            openclWrapper(tree->getHeight()),
-#endif
-            wrapperptr(&wrappers){
+      #ifdef STARPU_USE_CPU
+          cpuWrapper(tree->getHeight()),
+      #endif
+      #ifdef SCALFMM_ENABLE_CUDA_KERNEL
+          cudaWrapper(tree->getHeight()),
+      #endif
+      #ifdef SCALFMM_ENABLE_OPENCL_KERNEL
+          openclWrapper(tree->getHeight()),
+      #endif
+          wrapperptr(&wrappers){
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(inKernels, "kernels cannot be null");
 
@@ -308,13 +310,13 @@ public:
     void rebuildInteractions(){
         setenv("OMP_WAIT_POLICY", "PASSIVE", 1);
 
-        #pragma omp parallel
-        #pragma omp single
+#pragma omp parallel
+#pragma omp single
         buildExternalInteractionVecs();
         buildHandles();
 
-        #pragma omp parallel
-        #pragma omp single
+#pragma omp parallel
+#pragma omp single
         buildRemoteInteractionsAndHandles();
 
         omp_set_num_threads(1);
@@ -339,24 +341,24 @@ protected:
 
         if(operationsToProceed & FFmmP2M && !directOnly) bottomPass();
 
-        if(operationsToProceed & FFmmM2M && !directOnly) upwardPass();
+//        if(operationsToProceed & FFmmM2M && !directOnly) upwardPass();
         if(operationsToProceed & FFmmM2L && !directOnly) insertCellsSend();
 
-        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::upperWorkingLevel, FAbstractAlgorithm::lowerWorkingLevel-1 , true, true);
-        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, false, false);
-        if(operationsToProceed & FFmmM2L && !directOnly) transferPassMpi();
+//        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::upperWorkingLevel, FAbstractAlgorithm::lowerWorkingLevel-1 , true, true);
+//        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, false, false);
+//        if(operationsToProceed & FFmmM2L && !directOnly) transferPassMpi();
 
-        if(operationsToProceed & FFmmL2L && !directOnly) downardPass();
+//        if(operationsToProceed & FFmmL2L && !directOnly) downardPass();
 
-        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, true, true);
+//        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, true, true);
 
         if( operationsToProceed & FFmmP2P ) directPass();
         if( operationsToProceed & FFmmP2P ) directPassMpi();
 
-        if( operationsToProceed & FFmmL2P && !directOnly) mergePass();
-#ifdef STARPU_USE_REDUX
-        if( operationsToProceed & FFmmL2P && !directOnly) readParticle();
-#endif
+//        if( operationsToProceed & FFmmL2P && !directOnly) mergePass();
+//#ifdef STARPU_USE_REDUX
+//        if( operationsToProceed & FFmmL2P && !directOnly) readParticle();
+//#endif
 
         starpu_task_wait_for_all();
         starpu_pause();
@@ -616,7 +618,7 @@ protected:
         m2l_cl_inout.modes[2] = STARPU_R;
         m2l_cl_inout.modes[3] = STARPU_R;
         m2l_cl_inout.name = "m2l_cl_inout";
-    }
+
 
 #ifdef STARPU_USE_REDUX
         memset(&p2p_redux_init, 0, sizeof(p2p_redux_init));
@@ -661,6 +663,7 @@ protected:
         p2p_redux_read.modes[0] = STARPU_R;
         p2p_redux_read.name = "p2p_redux_read";
 #endif
+    }
 
     /** dealloc in a starpu way all the defined handles */
     void cleanHandle(){
@@ -873,7 +876,7 @@ protected:
 
                 std::vector<BlockInteractions<CellContainerClass>>* externalInteractions = &externalInteractionsAllLevelMpi[idxLevel][idxGroup];
 
-                #pragma omp task default(none) firstprivate(idxGroup, currentCells, idxLevel, externalInteractions)
+#pragma omp task default(none) firstprivate(idxGroup, currentCells, idxLevel, externalInteractions)
                 {
                     std::vector<OutOfBlockInteraction> outsideInteractions;
 
@@ -893,6 +896,7 @@ protected:
                                 property.outIndex    = interactionsIndexes[idxInter];
                                 property.relativeOutPosition = interactionsPosition[idxInter];
                                 property.insideIdxInBlock = idxCell;
+                                property.outsideIdxInBlock = -1;
                                 outsideInteractions.push_back(property);
                             }
                         }
@@ -903,7 +907,7 @@ protected:
 
                     int currentOutInteraction = 0;
                     for(int idxOtherGroup = 0 ; idxOtherGroup < int(processesBlockInfos[idxLevel].size())
-                                                && currentOutInteraction < int(outsideInteractions.size()) ; ++idxOtherGroup){
+                        && currentOutInteraction < int(outsideInteractions.size()) ; ++idxOtherGroup){
                         // Skip my blocks
                         if(idxOtherGroup == nbBlocksBeforeMinPerLevel[idxLevel]){
                             idxOtherGroup += tree->getNbCellGroupAtLevel(idxLevel);
@@ -929,7 +933,7 @@ protected:
                         const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
                         if(nbInteractionsBetweenBlocks){
                             if(remoteCellGroups[idxLevel][idxOtherGroup].ptrSymb == nullptr){
-                                #pragma omp critical(CreateM2LRemotes)
+#pragma omp critical(CreateM2LRemotes)
                                 {
                                     if(remoteCellGroups[idxLevel][idxOtherGroup].ptrSymb == nullptr){
                                         const size_t nbBytesInBlockSymb = processesBlockInfos[idxLevel][idxOtherGroup].bufferSizeSymb;
@@ -975,7 +979,7 @@ protected:
 
                 std::vector<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevelMpi[idxGroup];
 
-                #pragma omp task default(none) firstprivate(idxGroup, containers, externalInteractions)
+#pragma omp task default(none) firstprivate(idxGroup, containers, externalInteractions)
                 { // Can be a task(inout:iterCells)
                     std::vector<OutOfBlockInteraction> outsideInteractions;
 
@@ -995,6 +999,7 @@ protected:
                                     property.insideIndex = mindex;
                                     property.outIndex    = interactionsIndexes[idxInter];
                                     property.relativeOutPosition = interactionsPosition[idxInter];
+                                    property.outsideIdxInBlock = -1;
                                     outsideInteractions.push_back(property);
                                 }
                             }
@@ -1006,7 +1011,7 @@ protected:
 
                     int currentOutInteraction = 0;
                     for(int idxOtherGroup = 0 ; idxOtherGroup < int(processesBlockInfos[tree->getHeight()-1].size())
-                                                && currentOutInteraction < int(outsideInteractions.size()) ; ++idxOtherGroup){
+                        && currentOutInteraction < int(outsideInteractions.size()) ; ++idxOtherGroup){
                         // Skip my blocks
                         if(idxOtherGroup == nbBlocksBeforeMinPerLevel[tree->getHeight()-1]){
                             idxOtherGroup += tree->getNbCellGroupAtLevel(tree->getHeight()-1);
@@ -1031,7 +1036,7 @@ protected:
                         const int nbInteractionsBetweenBlocks = (lastOutInteraction-currentOutInteraction);
                         if(nbInteractionsBetweenBlocks){
                             if(remoteParticleGroupss[idxOtherGroup].ptrSymb == nullptr){
-                                #pragma omp critical(CreateM2LRemotes)
+#pragma omp critical(CreateM2LRemotes)
                                 {
                                     if(remoteParticleGroupss[idxOtherGroup].ptrSymb == nullptr){
                                         const size_t nbBytesInBlock = processesBlockInfos[tree->getHeight()-1][idxOtherGroup].leavesBufferSize;
@@ -1084,16 +1089,16 @@ protected:
                              " and dest is " << processesBlockInfos[idxLevel][idxHandle].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 1) << "\n");
 
                         starpu_mpi_irecv_detached( remoteCellGroups[idxLevel][idxHandle].handleSymb,
-                                                    processesBlockInfos[idxLevel][idxHandle].owner,
-                                                    getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 0),
-                                                    comm.getComm(), 0, 0 );
+                                                   processesBlockInfos[idxLevel][idxHandle].owner,
+                                                   getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 0),
+                                                   comm.getComm(), 0, 0 );
                         starpu_mpi_irecv_detached( remoteCellGroups[idxLevel][idxHandle].handleUp,
-                                                    processesBlockInfos[idxLevel][idxHandle].owner,
-                                                    getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 1),
-                                                    comm.getComm(), 0, 0 );
+                                                   processesBlockInfos[idxLevel][idxHandle].owner,
+                                                   getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 1),
+                                                   comm.getComm(), 0, 0 );
 
                         toRecv.push_back({processesBlockInfos[idxLevel][idxHandle].owner,
-                                            comm.processId(), idxLevel, idxHandle});
+                                          comm.processId(), idxLevel, idxHandle});
                     }
                 }
             }
@@ -1102,15 +1107,15 @@ protected:
             for(int idxHandle = 0 ; idxHandle < int(remoteParticleGroupss.size()) ; ++idxHandle){
                 if(remoteParticleGroupss[idxHandle].ptrSymb){
                     FLOG(FLog::Controller << "[SMpi] Post a recv during P2P for Idx " << processesBlockInfos[tree->getHeight()-1][idxHandle].firstIndex <<
-                         " and dest is " << processesBlockInfos[tree->getHeight()-1][idxHandle].owner << " tag " << getTag(tree->getHeight(),processesBlockInfos[tree->getHeight()-1][idxHandle].firstIndex, 0) << "\n");
+                                                                                                                                                           " and dest is " << processesBlockInfos[tree->getHeight()-1][idxHandle].owner << " tag " << getTag(tree->getHeight(),processesBlockInfos[tree->getHeight()-1][idxHandle].firstIndex, 0) << "\n");
 
                     starpu_mpi_irecv_detached( remoteParticleGroupss[idxHandle].handleSymb,
-                                                processesBlockInfos[tree->getHeight()-1][idxHandle].owner,
-                                                getTag(tree->getHeight(),processesBlockInfos[tree->getHeight()-1][idxHandle].firstIndex, 0),
-                                                comm.getComm(), 0, 0 );
+                                               processesBlockInfos[tree->getHeight()-1][idxHandle].owner,
+                            getTag(tree->getHeight(),processesBlockInfos[tree->getHeight()-1][idxHandle].firstIndex, 0),
+                            comm.getComm(), 0, 0 );
 
                     toRecv.push_back({processesBlockInfos[tree->getHeight()-1][idxHandle].owner,
-                                        comm.processId(), tree->getHeight(), idxHandle});
+                                      comm.processId(), tree->getHeight(), idxHandle});
                 }
             }
         }
@@ -1133,8 +1138,8 @@ protected:
                 // How much to send to each
                 std::unique_ptr<int[]> nbBlocksToSendToEach(new int[comm.processCount()]);
                 FMpi::Assert(MPI_Gather(&nbBlocksToRecvFromEach[idxProc], 1,
-                                 MPI_INT, nbBlocksToSendToEach.get(), 1,
-                                 MPI_INT, idxProc, comm.getComm() ), __LINE__);
+                                        MPI_INT, nbBlocksToSendToEach.get(), 1,
+                                        MPI_INT, idxProc, comm.getComm() ), __LINE__);
 
                 std::unique_ptr<int[]> displs(new int[comm.processCount()]);
                 displs[0] = 0;
@@ -1150,13 +1155,13 @@ protected:
                 }
 
                 FMpi::Assert(MPI_Gatherv( nullptr, 0, MPI_BYTE,
-                                 toSend.data(),
-                                 nbBlocksToSendToEach.get(), displs.get(),
-                                 MPI_BYTE, idxProc, comm.getComm()), __LINE__);
+                                          toSend.data(),
+                                          nbBlocksToSendToEach.get(), displs.get(),
+                                          MPI_BYTE, idxProc, comm.getComm()), __LINE__);
             }
             else{
                 FMpi::Assert(MPI_Gather(&nbBlocksToRecvFromEach[idxProc], 1,
-                                 MPI_INT, 0, 0, MPI_INT, idxProc, comm.getComm() ), __LINE__);
+                                        MPI_INT, 0, 0, MPI_INT, idxProc, comm.getComm() ), __LINE__);
                 FMpi::Assert(MPI_Gatherv(
                                  &toRecv[offset], int(nbBlocksToRecvFromEach[idxProc]*sizeof(MpiDependency)), MPI_BYTE,
                                  0, 0, 0, MPI_BYTE, idxProc, comm.getComm() ), __LINE__);
@@ -1179,8 +1184,8 @@ protected:
                      " and dest is " << sd.dest << " tag " << getTag(tree->getHeight(),tree->getParticleGroup(localId)->getStartingIndex(), 0) <<  "\n");
 
                 starpu_mpi_isend_detached( particleHandles[localId].symb, sd.dest,
-                        getTag(tree->getHeight(),tree->getParticleGroup(localId)->getStartingIndex(), 0),
-                        comm.getComm(), 0/*callback*/, 0/*arg*/ );
+                                           getTag(tree->getHeight(),tree->getParticleGroup(localId)->getStartingIndex(), 0),
+                                           comm.getComm(), 0/*callback*/, 0/*arg*/ );
             }
         }
     }
@@ -1272,8 +1277,8 @@ protected:
                 starpu_variable_data_register(&particleHandles[idxGroup].down, 0,
                                               (uintptr_t)containers->getRawAttributesBuffer(), containers->getAttributesBufferSizeInByte());
 #ifdef STARPU_USE_REDUX
-                 starpu_data_set_reduction_methods(particleHandles[idxGroup].down, &p2p_redux_perform,
-                                                   &p2p_redux_init);
+                starpu_data_set_reduction_methods(particleHandles[idxGroup].down, &p2p_redux_perform,
+                                                  &p2p_redux_init);
 #else
 #ifdef STARPU_SUPPORT_ARBITER
                 starpu_data_assign_arbiter(particleHandles[idxGroup].down, arbiterGlobal);
@@ -1309,7 +1314,7 @@ protected:
 
                 std::vector<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel[idxGroup];
 
-                #pragma omp task default(none) firstprivate(idxGroup, containers, externalInteractions)
+#pragma omp task default(none) firstprivate(idxGroup, containers, externalInteractions)
                 { // Can be a task(inout:iterCells)
                     std::vector<OutOfBlockInteraction> outsideInteractions;
                     const MortonIndex blockStartIdx = containers->getStartingIndex();
@@ -1398,7 +1403,7 @@ protected:
 
                     std::vector<BlockInteractions<CellContainerClass>>* externalInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup];
 
-                    #pragma omp task default(none) firstprivate(idxGroup, currentCells, idxLevel, externalInteractions)
+#pragma omp task default(none) firstprivate(idxGroup, currentCells, idxLevel, externalInteractions)
                     {
                         std::vector<OutOfBlockInteraction> outsideInteractions;
                         const MortonIndex blockStartIdx = currentCells->getStartingIndex();
@@ -1479,7 +1484,7 @@ protected:
         }
         FLOG( cellTimer.tac(); );
 
-        #pragma omp taskwait
+#pragma omp taskwait
 
         FLOG( FLog::Controller << "\t\t Prepare in " << timer.tacAndElapsed() << "s\n" );
         FLOG( FLog::Controller << "\t\t\t Prepare at leaf level in   " << leafTimer.elapsed() << "s\n" );
@@ -1495,15 +1500,15 @@ protected:
 
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2m_cl,
-                    STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                    STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
+                               STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                               STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
                     STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2M(),
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
                     STARPU_RW, cellHandles[tree->getHeight()-1][idxGroup].up,
                     STARPU_R, particleHandles[idxGroup].symb,
-#ifdef STARPU_USE_TASK_NAME
+        #ifdef STARPU_USE_TASK_NAME
                     STARPU_NAME, p2mTaskNames.get(),
-#endif
+        #endif
                     0);
         }
 
@@ -1520,7 +1525,7 @@ protected:
             int idxSubGroup = 0;
 
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel)
-                    && idxSubGroup < tree->getNbCellGroupAtLevel(idxLevel+1) ; ++idxGroup){
+                && idxSubGroup < tree->getNbCellGroupAtLevel(idxLevel+1) ; ++idxGroup){
                 CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
 
                 // Skip current group if needed
@@ -1530,7 +1535,6 @@ protected:
                     FAssertLF( (tree->getCellGroup(idxLevel+1, idxSubGroup)->getStartingIndex()>>3) == currentCells->getStartingIndex() );
                 }
 
-                // Copy at max 8 groups
                 {
 
                     struct starpu_task* const task = starpu_task_create();
@@ -1554,9 +1558,9 @@ protected:
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
                     task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
-    #ifdef STARPU_USE_TASK_NAME
+#ifdef STARPU_USE_TASK_NAME
                     task->name = m2mTaskNames[idxLevel].get();
-    #endif
+#endif
                     FAssertLF(starpu_task_submit(task) == 0);
                 }
 
@@ -1586,9 +1590,9 @@ protected:
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
                     task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
-    #ifdef STARPU_USE_TASK_NAME
+#ifdef STARPU_USE_TASK_NAME
                     task->name = m2mTaskNames[idxLevel].get();
-    #endif
+#endif
                     FAssertLF(starpu_task_submit(task) == 0);
                 }
 
@@ -1617,65 +1621,65 @@ protected:
                         unsigned char* memoryBlockSymb = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlockSymb);
                         remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptrSymb = memoryBlockSymb;
                         starpu_variable_data_register(&remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handleSymb, 0,
-                                                      (uintptr_t)remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptrSymb, nbBytesInBlockSymb);
+                                (uintptr_t)remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptrSymb, nbBytesInBlockSymb);
 
                         const size_t nbBytesInBlockUp = processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].bufferSizeUp;
                         unsigned char* memoryBlockUp = (unsigned char*)FAlignedMemory::AllocateBytes<32>(nbBytesInBlockUp);
                         remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptrUp = memoryBlockUp;
                         starpu_variable_data_register(&remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handleUp, 0,
-                                                      (uintptr_t)remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptrUp, nbBytesInBlockUp);
+                                (uintptr_t)remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].ptrUp, nbBytesInBlockUp);
                     }
 
                     FLOG(FLog::Controller << "[SMpi] Post a recv during M2M for Idx " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex <<
-                         " and owner is " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, 0) << "\n");
+                                                                                                                                                                         " and owner is " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, 0) << "\n");
                     FLOG(FLog::Controller << "[SMpi] Post a recv during M2M for Idx " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex <<
-                         " and owner is " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, 1) << "\n");
+                                                                                                                                                                         " and owner is " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, 1) << "\n");
 
                     starpu_mpi_irecv_detached ( remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handleSymb,
-                                                processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner,
-                                                getTag(idxLevel,processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, 0),
-                                                comm.getComm(), 0/*callback*/, 0/*arg*/ );
+                            processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner,
+                            getTag(idxLevel,processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, 0),
+                            comm.getComm(), 0/*callback*/, 0/*arg*/ );
                     starpu_mpi_irecv_detached ( remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handleUp,
-                                                processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner,
-                                                getTag(idxLevel,processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, 1),
-                                                comm.getComm(), 0/*callback*/, 0/*arg*/ );
+                            processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner,
+                            getTag(idxLevel,processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, 1),
+                            comm.getComm(), 0/*callback*/, 0/*arg*/ );
 
 
                     idxBlockToRecv += 1;
                 }
                 FAssertLF(idxBlockToRecv < 8);
                 if(idxBlockToRecv){// Perform the work
-                    struct starpu_task* const task = starpu_task_create();
-                    task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*20);
-                    task->dyn_handles[0] = cellHandles[idxLevel][tree->getNbCellGroupAtLevel(idxLevel)-1].symb;
-                    task->dyn_handles[1] = cellHandles[idxLevel][tree->getNbCellGroupAtLevel(idxLevel)-1].up;
-
                     // Copy at max 8 groups
                     int nbSubCellGroups = 0;
                     while(nbSubCellGroups < idxBlockToRecv){
-                        task->dyn_handles[(nbSubCellGroups*2) + 2] = remoteCellGroups[idxLevel+1][firstOtherBlock + nbSubCellGroups].handleSymb;
-                        task->dyn_handles[(nbSubCellGroups*2) + 3] = remoteCellGroups[idxLevel+1][firstOtherBlock + nbSubCellGroups].handleUp;
-                        nbSubCellGroups += 1;
-                    }
+                        struct starpu_task* const task = starpu_task_create();
+                        task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*20);
+                        task->dyn_handles[0] = cellHandles[idxLevel][tree->getNbCellGroupAtLevel(idxLevel)-1].symb;
+                        task->dyn_handles[1] = cellHandles[idxLevel][tree->getNbCellGroupAtLevel(idxLevel)-1].up;
 
-                    // put the right codelet
-                    task->cl = &m2m_cl[nbSubCellGroups-1];
-                    // put args values
-                    char *arg_buffer;
-                    size_t arg_buffer_size;
-                    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                                             STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                                             STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
-                                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                                             STARPU_VALUE, &cellHandles[idxLevel][tree->getNbCellGroupAtLevel(idxLevel)-1].intervalSize, sizeof(int),
-                                             0);
-                    task->cl_arg = arg_buffer;
-                    task->cl_arg_size = arg_buffer_size;
-                    task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
-#ifdef STARPU_USE_TASK_NAME
-                task->name = task->cl->name;
-#endif
-                    FAssertLF(starpu_task_submit(task) == 0);
+                        task->dyn_handles[2] = remoteCellGroups[idxLevel+1][firstOtherBlock + nbSubCellGroups].handleSymb;
+                        task->dyn_handles[3] = remoteCellGroups[idxLevel+1][firstOtherBlock + nbSubCellGroups].handleUp;
+                        nbSubCellGroups += 1;
+
+                        // put the right codelet
+                        task->cl = &m2m_cl;
+                        // put args values
+                        char *arg_buffer;
+                        size_t arg_buffer_size;
+                        starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                                                 STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                                 STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
+                                                 STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                                 STARPU_VALUE, &cellHandles[idxLevel][tree->getNbCellGroupAtLevel(idxLevel)-1].intervalSize, sizeof(int),
+                                0);
+                        task->cl_arg = arg_buffer;
+                        task->cl_arg_size = arg_buffer_size;
+                        task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
+    #ifdef STARPU_USE_TASK_NAME
+                        task->name = task->cl->name;
+    #endif
+                        FAssertLF(starpu_task_submit(task) == 0);
+                    }
                 }
             }
             // Find what to send
@@ -1731,19 +1735,19 @@ protected:
                     const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsAllLevelMpi[idxLevel][idxGroup][idxInteraction].interactions;
 
                     starpu_insert_task(&m2l_cl_inout_mpi,
-                            STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                            STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                            STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                       STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                       STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                       STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                        STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                        STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LMpi(idxLevel),
-                            STARPU_R, cellHandles[idxLevel][idxGroup].symb,
-                            (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
-                            STARPU_R, remoteCellGroups[idxLevel][interactionid].handleSymb,
-                            STARPU_R, remoteCellGroups[idxLevel][interactionid].handleUp,
+                                       STARPU_R, cellHandles[idxLevel][idxGroup].symb,
+                                       (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
+                                       STARPU_R, remoteCellGroups[idxLevel][interactionid].handleSymb,
+                                       STARPU_R, remoteCellGroups[idxLevel][interactionid].handleUp,
                    #ifdef STARPU_USE_TASK_NAME
                                        STARPU_NAME, m2l_cl_inout_mpi.name,
                    #endif
-                            0);
+                                       0);
                 }
             }
         }
@@ -1760,67 +1764,67 @@ protected:
         for(int idxLevel = fromLevel ; idxLevel < toLevel ; ++idxLevel){
             if(inner){
                 FLOG( timerInBlock.tic() );
-            for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
-                starpu_insert_task(&m2l_cl_in,
-                        STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                        STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                        STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-                                   STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2L(idxLevel),
-                                   STARPU_R, cellHandles[idxLevel][idxGroup].symb,
-                                   STARPU_R, cellHandles[idxLevel][idxGroup].up,
-                                   (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
+                for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
+                    starpu_insert_task(&m2l_cl_in,
+                                       STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                       STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                       STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                       STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2L(idxLevel),
+                                       STARPU_R, cellHandles[idxLevel][idxGroup].symb,
+                                       STARPU_R, cellHandles[idxLevel][idxGroup].up,
+                                       (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
                    #ifdef STARPU_USE_TASK_NAME
                                        STARPU_NAME, m2lTaskNames[idxLevel].get(),
                    #endif
-                        0);
+                                       0);
+                }
+                FLOG( timerInBlock.tac() );
             }
-            FLOG( timerInBlock.tac() );
-}
             if(outer){
                 FLOG( timerOutBlock.tic() );
 
-            for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
-                for(int idxInteraction = 0; idxInteraction < int(externalInteractionsAllLevel[idxLevel][idxGroup].size()) ; ++idxInteraction){
-                    const int interactionid = externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].otherBlockId;
-                    const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].interactions;
+                for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
+                    for(int idxInteraction = 0; idxInteraction < int(externalInteractionsAllLevel[idxLevel][idxGroup].size()) ; ++idxInteraction){
+                        const int interactionid = externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].otherBlockId;
+                        const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].interactions;
 
-                    int mode = 1;
-                    starpu_insert_task(&m2l_cl_inout,
-                                       STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                                       STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                                       STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                                       STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-                                       STARPU_VALUE, &mode, sizeof(int),
-                                       STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
-                                       STARPU_R, cellHandles[idxLevel][idxGroup].symb,
-                                       (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
-                                       STARPU_R, cellHandles[idxLevel][interactionid].symb,
-                                       STARPU_R, cellHandles[idxLevel][interactionid].up,
+                        int mode = 1;
+                        starpu_insert_task(&m2l_cl_inout,
+                                           STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                           STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                           STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                           STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                           STARPU_VALUE, &mode, sizeof(int),
+                                           STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
+                                           STARPU_R, cellHandles[idxLevel][idxGroup].symb,
+                                           (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
+                                           STARPU_R, cellHandles[idxLevel][interactionid].symb,
+                                           STARPU_R, cellHandles[idxLevel][interactionid].up,
                    #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
+                                           STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
                    #endif
-                                       0);
+                                           0);
 
-                    mode = 2;
-                    starpu_insert_task(&m2l_cl_inout,
-                                       STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                                       STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                                       STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                                       STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-                                       STARPU_VALUE, &mode, sizeof(int),
-                                       STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
-                                       STARPU_R, cellHandles[idxLevel][interactionid].symb,
-                                       (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
-                                       STARPU_R, cellHandles[idxLevel][idxGroup].symb,
-                                       STARPU_R, cellHandles[idxLevel][idxGroup].up,
+                        mode = 2;
+                        starpu_insert_task(&m2l_cl_inout,
+                                           STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                           STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                           STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                           STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                           STARPU_VALUE, &mode, sizeof(int),
+                                           STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
+                                           STARPU_R, cellHandles[idxLevel][interactionid].symb,
+                                           (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
+                                           STARPU_R, cellHandles[idxLevel][idxGroup].symb,
+                                           STARPU_R, cellHandles[idxLevel][idxGroup].up,
                    #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
+                                           STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
                    #endif
-                                       0);
+                                           0);
+                    }
                 }
+                FLOG( timerOutBlock.tac() );
             }
-            FLOG( timerOutBlock.tac() );
-}
         }
         FLOG( FLog::Controller << "\t\t transferPass in " << timer.tacAndElapsed() << "s\n" );
         FLOG( FLog::Controller << "\t\t\t inblock in  " << timerInBlock.elapsed() << "s\n" );
@@ -1867,12 +1871,12 @@ protected:
 
                         starpu_mpi_isend_detached( cellHandles[idxLevel][idxLastBlock].symb,
                                                    processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner,
-                                                   getTag(idxLevel,tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex(), 0),
-                                                   comm.getComm(), 0/*callback*/, 0/*arg*/ );
+                                getTag(idxLevel,tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex(), 0),
+                                comm.getComm(), 0/*callback*/, 0/*arg*/ );
                         starpu_mpi_isend_detached( cellHandles[idxLevel][idxLastBlock].down,
                                                    processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner,
-                                                   getTag(idxLevel,tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex(), 2),
-                                                   comm.getComm(), 0/*callback*/, 0/*arg*/ );
+                                getTag(idxLevel,tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex(), 2),
+                                comm.getComm(), 0/*callback*/, 0/*arg*/ );
 
                         lastProcSend = processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner;
                     }
@@ -1929,11 +1933,6 @@ protected:
                                                 comm.getComm(), 0/*callback*/, 0/*arg*/ );
 
                     {
-                        struct starpu_task* const task = starpu_task_create();
-                        task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*20);
-                        task->dyn_handles[0] = remoteCellGroups[idxLevel][firstOtherBlock].handleSymb;
-                        task->dyn_handles[1] = remoteCellGroups[idxLevel][firstOtherBlock].handleDown;
-
                         const MortonIndex parentStartingIdx = processesBlockInfos[idxLevel][firstOtherBlock].firstIndex;
                         const MortonIndex parentEndingIdx = processesBlockInfos[idxLevel][firstOtherBlock].lastIndex;
 
@@ -1946,37 +1945,68 @@ protected:
                         }
                         // Copy at max 8 groups
                         int nbSubCellGroups = 0;
-                        task->dyn_handles[(nbSubCellGroups*2) + 2] = cellHandles[idxLevel+1][idxSubGroup].symb;
-                        task->dyn_handles[(nbSubCellGroups*2) + 3] = cellHandles[idxLevel+1][idxSubGroup].down;
+                        {
+                            struct starpu_task* const task = starpu_task_create();
+                            task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*20);
+                            task->dyn_handles[0] = remoteCellGroups[idxLevel][firstOtherBlock].handleSymb;
+                            task->dyn_handles[1] = remoteCellGroups[idxLevel][firstOtherBlock].handleDown;
+                            task->dyn_handles[2] = cellHandles[idxLevel+1][idxSubGroup].symb;
+                            task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].down;
+
+                            // put the right codelet
+                            task->cl = &l2l_cl;
+                            // put args values
+                            char *arg_buffer;
+                            size_t arg_buffer_size;
+                            starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                                                     STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                                     STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
+                                                     STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                                     STARPU_VALUE, &remoteCellGroups[idxLevel][firstOtherBlock].intervalSize, sizeof(int),// TODO !
+                                                     0);
+                            task->cl_arg = arg_buffer;
+                            task->cl_arg_size = arg_buffer_size;
+                            task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
+    #ifdef STARPU_USE_TASK_NAME
+                            task->name = task->cl->name;
+    #endif
+                            FAssertLF(starpu_task_submit(task) == 0);
+                        }
+
                         nbSubCellGroups += 1;
                         while(tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= ((parentEndingIdx<<3)+7)
                               && (idxSubGroup + 1) != tree->getNbCellGroupAtLevel(idxLevel+1)
                               && tree->getCellGroup(idxLevel+1, idxSubGroup+1)->getStartingIndex() <= (parentEndingIdx<<3)+7 ){
                             idxSubGroup += 1;
-                            task->dyn_handles[(nbSubCellGroups*2) + 2] = cellHandles[idxLevel+1][idxSubGroup].symb;
-                            task->dyn_handles[(nbSubCellGroups*2) + 3] = cellHandles[idxLevel+1][idxSubGroup].down;
+                            struct starpu_task* const task = starpu_task_create();
+                            task->dyn_handles = (starpu_data_handle_t*)malloc(sizeof(starpu_data_handle_t)*20);
+                            task->dyn_handles[0] = remoteCellGroups[idxLevel][firstOtherBlock].handleSymb;
+                            task->dyn_handles[1] = remoteCellGroups[idxLevel][firstOtherBlock].handleDown;
+                            task->dyn_handles[2] = cellHandles[idxLevel+1][idxSubGroup].symb;
+                            task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].down;
+
+                            // put the right codelet
+                            task->cl = &l2l_cl;
+                            // put args values
+                            char *arg_buffer;
+                            size_t arg_buffer_size;
+                            starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                                                     STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                                     STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
+                                                     STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                                     STARPU_VALUE, &remoteCellGroups[idxLevel][firstOtherBlock].intervalSize, sizeof(int),// TODO !
+                                                     0);
+                            task->cl_arg = arg_buffer;
+                            task->cl_arg_size = arg_buffer_size;
+                            task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
+    #ifdef STARPU_USE_TASK_NAME
+                            task->name = task->cl->name;
+    #endif
+                            FAssertLF(starpu_task_submit(task) == 0);
+
                             nbSubCellGroups += 1;
                             FAssertLF( nbSubCellGroups <= 9 );
                         }
-
-                        // put the right codelet
-                        task->cl = &l2l_cl[nbSubCellGroups-1];
-                        // put args values
-                        char *arg_buffer;
-                        size_t arg_buffer_size;
-                        starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                                                 STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                                                 STARPU_VALUE, &nbSubCellGroups, sizeof(nbSubCellGroups),
-                                                 STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                                                 STARPU_VALUE, &remoteCellGroups[idxLevel][firstOtherBlock].intervalSize, sizeof(int),// TODO !
-                                                 0);
-                        task->cl_arg = arg_buffer;
-                        task->cl_arg_size = arg_buffer_size;
-                        task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
-#ifdef STARPU_USE_TASK_NAME
-                task->name = task->cl->name;
-#endif
-                        FAssertLF(starpu_task_submit(task) == 0);
                     }
                 }
             }
@@ -1987,7 +2017,7 @@ protected:
             int idxSubGroup = 0;
 
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel)
-                    && idxSubGroup < tree->getNbCellGroupAtLevel(idxLevel+1) ; ++idxGroup){
+                && idxSubGroup < tree->getNbCellGroupAtLevel(idxLevel+1) ; ++idxGroup){
                 CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
 
                 // Skip current group if needed
@@ -2019,9 +2049,9 @@ protected:
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
                     task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
-    #ifdef STARPU_USE_TASK_NAME
+#ifdef STARPU_USE_TASK_NAME
                     task->name = l2lTaskNames[idxLevel].get();
-    #endif
+#endif
                     FAssertLF(starpu_task_submit(task) == 0);
                 }
                 while(tree->getCellGroup(idxLevel+1, idxSubGroup)->getEndingIndex() <= (((currentCells->getEndingIndex()-1)<<3)+7)
@@ -2050,11 +2080,12 @@ protected:
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
                     task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
-    #ifdef STARPU_USE_TASK_NAME
+#ifdef STARPU_USE_TASK_NAME
                     task->name = l2lTaskNames[idxLevel].get();
-    #endif
+#endif
                     FAssertLF(starpu_task_submit(task) == 0);
                 }
+            }
         }
         FLOG( FLog::Controller << "\t\t downardPass in " << timer.tacAndElapsed() << "s\n" );
     }
@@ -2070,17 +2101,17 @@ protected:
                 const int interactionid = externalInteractionsLeafLevelMpi[idxGroup][idxInteraction].otherBlockId;
                 const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsLeafLevelMpi[idxGroup][idxInteraction].interactions;
                 starpu_insert_task(&p2p_cl_inout_mpi,
-                        STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                        STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                   STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                   STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                    STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
                                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2PMpi(),
-                        STARPU_R, particleHandles[idxGroup].symb,
-                        (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
-                        STARPU_R, remoteParticleGroupss[interactionid].handleSymb,
+                                   STARPU_R, particleHandles[idxGroup].symb,
+                                   (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
+                                   STARPU_R, remoteParticleGroupss[interactionid].handleSymb,
                    #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, p2p_cl_inout_mpi.name,
+                                   STARPU_NAME, p2p_cl_inout_mpi.name,
                    #endif
-                        0);
+                                   0);
             }
         }
 
@@ -2107,18 +2138,18 @@ protected:
                                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2PExtern(),
                                    STARPU_R, particleHandles[idxGroup].symb,
                    #ifdef STARPU_USE_REDUX
-                                       STARPU_REDUX, particleHandles[idxGroup].down,
+                                   STARPU_REDUX, particleHandles[idxGroup].down,
                    #else
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
                    #endif
                                    STARPU_R, particleHandles[interactionid].symb,
                    #ifdef STARPU_USE_REDUX
-                                       STARPU_REDUX, particleHandles[interactionid].down,
+                                   STARPU_REDUX, particleHandles[interactionid].down,
                    #else
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[interactionid].down,
                    #endif
                    #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, p2pOuterTaskNames.get(),
+                                   STARPU_NAME, p2pOuterTaskNames.get(),
                    #endif
                                    0);
             }
@@ -2132,12 +2163,12 @@ protected:
                                STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2P(),
                                STARPU_R, particleHandles[idxGroup].symb,
                    #ifdef STARPU_USE_REDUX
-                                       STARPU_REDUX, particleHandles[idxGroup].down,
+                               STARPU_REDUX, particleHandles[idxGroup].down,
                    #else
                                (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
                    #endif
                    #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, p2pTaskNames.get(),
+                               STARPU_NAME, p2pTaskNames.get(),
                    #endif
                                0);
         }
@@ -2156,19 +2187,19 @@ protected:
 
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&l2p_cl,
-                    STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                    STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
-                               STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosL2P(),
+                               STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                               STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
+                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosL2P(),
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].down,
                     STARPU_R, particleHandles[idxGroup].symb,
-#ifdef STARPU_USE_REDUX
+        #ifdef STARPU_USE_REDUX
                     STARPU_REDUX, particleHandles[idxGroup].down,
-#else
+        #else
                     (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
-#endif
+        #endif
         #ifdef STARPU_USE_TASK_NAME
-                            STARPU_NAME, l2pTaskNames.get(),
+                    STARPU_NAME, l2pTaskNames.get(),
         #endif
                     0);
         }
@@ -2185,12 +2216,12 @@ protected:
 
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2p_redux_read,
-                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosL2P(),
-                    STARPU_R, particleHandles[idxGroup].down,
-#ifdef STARPU_USE_TASK_NAME
-                    STARPU_NAME, "read-particle",
-#endif
-                    0);
+                               STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosL2P(),
+                               STARPU_R, particleHandles[idxGroup].down,
+                   #ifdef STARPU_USE_TASK_NAME
+                               STARPU_NAME, "read-particle",
+                   #endif
+                               0);
         }
     }
 #endif

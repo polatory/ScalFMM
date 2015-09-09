@@ -63,6 +63,8 @@ protected:
     bool deleteBuffer;
 
 public:
+    typedef int ParticleDataType;// TODO this is not working!
+
     /**
      * Init from a given buffer
      * @param inBuffer
