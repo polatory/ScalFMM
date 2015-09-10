@@ -142,6 +142,9 @@ int main(int argc, char* argv[]){
     GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
     groupalgo.execute();
 
+    std::cout << "Wait Others... " << std::endl;
+    mpiComm.global().barrier();
+
     groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass cell, GroupContainerClass* leaf){
         const FSize nbPartsInLeaf = leaf->getNbParticles();
         const long long int* dataDown = leaf->getDataDown();
@@ -151,6 +154,7 @@ int main(int argc, char* argv[]){
             }
         }
     });
+
 
 
     typedef FTestCell                   CellClass;

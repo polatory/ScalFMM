@@ -431,7 +431,8 @@ public:
                 ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>(leafPos);
                 FAssertLF(containersOther->getLeafMortonIndex(leafPos) == (*outsideInteractions)[outInterIdx].outIndex);
                 ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIdxInBlock);
-                FAssertLF(containers->getLeafMortonIndex(leafPos) == (*outsideInteractions)[outInterIdx].insideIndex);
+                FAssertLF(containers->getLeafMortonIndex((*outsideInteractions)[outInterIdx].insideIdxInBlock) == (*outsideInteractions)[outInterIdx].insideIndex,
+                        containers->getLeafMortonIndex((*outsideInteractions)[outInterIdx].insideIdxInBlock), " != ", (*outsideInteractions)[outInterIdx].insideIndex);
                 ParticleContainerClass* ptrLeaf = &interParticles;
                 kernel->P2PRemote( FTreeCoordinate((*outsideInteractions)[outInterIdx].insideIndex, treeHeight-1), &particles, &particles ,
                                    &ptrLeaf, &(*outsideInteractions)[outInterIdx].relativeOutPosition, 1);

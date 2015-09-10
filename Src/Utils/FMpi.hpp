@@ -246,6 +246,10 @@ public:
             reset();
             delete[]  procsIdArray ;
         }
+
+        void barrier() const {
+            FMpi::Assert(MPI_Barrier(getComm()), __LINE__);
+        }
     };
 
     ////////////////////////////////////////////////////////
