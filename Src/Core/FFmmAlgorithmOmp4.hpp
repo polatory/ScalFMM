@@ -26,20 +26,23 @@
 #undef priority_if_supported
 #ifdef OPENMP_SUPPORT_PRIORITY
 #define priority_if_supported(x) priority(x)
+
+enum FFmmAlgorithmOmp4_Priorities{
+    FFmmAlgorithmOmp4_Prio_P2M = 9,
+    FFmmAlgorithmOmp4_Prio_M2M = 8,
+    FFmmAlgorithmOmp4_Prio_M2L_High = 7,
+    FFmmAlgorithmOmp4_Prio_L2L = 6,
+    FFmmAlgorithmOmp4_Prio_P2P_Big = 5,
+    FFmmAlgorithmOmp4_Prio_M2L = 4,
+    FFmmAlgorithmOmp4_Prio_L2P = 3,
+    FFmmAlgorithmOmp4_Prio_P2P_Small = 2
+};
+
 #else
 #define priority_if_supported(x)
 #endif
-enum FFmmAlgorithmOmp4_Priorities{
-    FFmmAlgorithmOmp4_Prio_P2M = 5,
-    FFmmAlgorithmOmp4_Prio_M2M = 4,
-    FFmmAlgorithmOmp4_Prio_L2L_High = 3,
-    FFmmAlgorithmOmp4_Prio_P2P_Big = 2,
-    FFmmAlgorithmOmp4_Prio_M2L_High = 1,
-    FFmmAlgorithmOmp4_Prio_L2L = 0,
-    FFmmAlgorithmOmp4_Prio_M2L = -1,
-    FFmmAlgorithmOmp4_Prio_P2P_Small = -2,
-    FFmmAlgorithmOmp4_Prio_L2P = -3
-};
+
+
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -451,49 +454,49 @@ protected:
 
                 switch(counterFill){
                 case 1:
-                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0]) priority_if_supported(idxLevel==heightMinusOne-1?FFmmAlgorithmOmp4_Prio_L2L:FFmmAlgorithmOmp4_Prio_L2L_High)
+                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0]) priority_if_supported(FFmmAlgorithmOmp4_Prio_L2L)
                     {
                     kernels[omp_get_thread_num()]->L2L( taskCell , taskChild, idxLevel);
                     }
                     break;
                 case 2:
-                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0],taskChildLocal[1][0]) priority_if_supported(idxLevel==heightMinusOne-1?FFmmAlgorithmOmp4_Prio_L2L:FFmmAlgorithmOmp4_Prio_L2L_High)
+                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0],taskChildLocal[1][0]) priority_if_supported(FFmmAlgorithmOmp4_Prio_L2L)
                     {
                     kernels[omp_get_thread_num()]->L2L( taskCell , taskChild, idxLevel);
                     }
                     break;
                 case 3:
-                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0],taskChildLocal[1][0],taskChildLocal[2][0]) priority_if_supported(idxLevel==heightMinusOne-1?FFmmAlgorithmOmp4_Prio_L2L:FFmmAlgorithmOmp4_Prio_L2L_High)
+                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0],taskChildLocal[1][0],taskChildLocal[2][0]) priority_if_supported(FFmmAlgorithmOmp4_Prio_L2L)
                     {
                     kernels[omp_get_thread_num()]->L2L( taskCell , taskChild, idxLevel);
                     }
                     break;
                 case 4:
-                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0],taskChildLocal[1][0],taskChildLocal[2][0],taskChildLocal[3][0]) priority_if_supported(idxLevel==heightMinusOne-1?FFmmAlgorithmOmp4_Prio_L2L:FFmmAlgorithmOmp4_Prio_L2L_High)
+                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0],taskChildLocal[1][0],taskChildLocal[2][0],taskChildLocal[3][0]) priority_if_supported(FFmmAlgorithmOmp4_Prio_L2L)
                     {
                     kernels[omp_get_thread_num()]->L2L( taskCell , taskChild, idxLevel);
                     }
                     break;
                 case 5:
-                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0],taskChildLocal[1][0],taskChildLocal[2][0],taskChildLocal[3][0],taskChildLocal[4][0]) priority_if_supported(idxLevel==heightMinusOne-1?FFmmAlgorithmOmp4_Prio_L2L:FFmmAlgorithmOmp4_Prio_L2L_High)
+                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0],taskChildLocal[1][0],taskChildLocal[2][0],taskChildLocal[3][0],taskChildLocal[4][0]) priority_if_supported(FFmmAlgorithmOmp4_Prio_L2L)
                     {
                     kernels[omp_get_thread_num()]->L2L( taskCell , taskChild, idxLevel);
                     }
                     break;
                 case 6:
-                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0],taskChildLocal[1][0],taskChildLocal[2][0],taskChildLocal[3][0],taskChildLocal[4][0],taskChildLocal[5][0]) priority_if_supported(idxLevel==heightMinusOne-1?FFmmAlgorithmOmp4_Prio_L2L:FFmmAlgorithmOmp4_Prio_L2L_High)
+                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0],taskChildLocal[1][0],taskChildLocal[2][0],taskChildLocal[3][0],taskChildLocal[4][0],taskChildLocal[5][0]) priority_if_supported(FFmmAlgorithmOmp4_Prio_L2L)
                     {
                     kernels[omp_get_thread_num()]->L2L( taskCell , taskChild, idxLevel);
                     }
                     break;
                 case 7:
-                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0],taskChildLocal[1][0],taskChildLocal[2][0],taskChildLocal[3][0],taskChildLocal[4][0],taskChildLocal[5][0],taskChildLocal[6][0]) priority_if_supported(idxLevel==heightMinusOne-1?FFmmAlgorithmOmp4_Prio_L2L:FFmmAlgorithmOmp4_Prio_L2L_High)
+                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0],taskChildLocal[1][0],taskChildLocal[2][0],taskChildLocal[3][0],taskChildLocal[4][0],taskChildLocal[5][0],taskChildLocal[6][0]) priority_if_supported(FFmmAlgorithmOmp4_Prio_L2L)
                     {
                     kernels[omp_get_thread_num()]->L2L( taskCell , taskChild, idxLevel);
                     }
                     break;
                 case 8:
-                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0],taskChildLocal[1][0],taskChildLocal[2][0],taskChildLocal[3][0],taskChildLocal[4][0],taskChildLocal[5][0],taskChildLocal[6][0],taskChildLocal[7][0]) priority_if_supported(idxLevel==heightMinusOne-1?FFmmAlgorithmOmp4_Prio_L2L:FFmmAlgorithmOmp4_Prio_L2L_High)
+                    #pragma omp task firstprivate(taskCell, taskCellLocal, taskChild, taskChildLocal, idxLevel) depend(in:taskCellLocal[0]) depend(commute_if_supported:taskChildLocal[0][0],taskChildLocal[1][0],taskChildLocal[2][0],taskChildLocal[3][0],taskChildLocal[4][0],taskChildLocal[5][0],taskChildLocal[6][0],taskChildLocal[7][0]) priority_if_supported(FFmmAlgorithmOmp4_Prio_L2L)
                     {
                     kernels[omp_get_thread_num()]->L2L( taskCell , taskChild, idxLevel);
                     }
