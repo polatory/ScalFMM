@@ -70,6 +70,7 @@ const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of t
 const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
 const FParameterNames LocalOptionProlate { {"-prolate"}, "To generate prolate distribution"};
 const FParameterNames LocalOptionProlateNonUnif { {"-prolate-nonunif"}, "To generate prolate distribution"};
+const FParameterNames LocalOptionNonUnif { {"-nonunif"}, "To generate non uniform"};
 
 #include <cstdlib>
 #include <time.h>
@@ -370,8 +371,9 @@ struct RunContainer{
     #ifdef RANDOM_PARTICLES
             const bool prolate = FParameters::existParameter(argc,argv,LocalOptionProlate.options);
             const bool prolatenonunif = FParameters::existParameter(argc,argv,LocalOptionProlateNonUnif.options);
+            const bool nonunif = FParameters::existParameter(argc,argv,LocalOptionNonUnif.options);
             FSphericalRandomLoader<FReal> loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000),
-                                                 false, false, false, prolate, false, prolatenonunif);
+                                                 nonunif, false, false, prolate, false, prolatenonunif);
     #else
             const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
             FFmaGenericLoader<FReal> loader(filename);
@@ -573,8 +575,9 @@ struct RunContainer{
     #ifdef RANDOM_PARTICLES
             const bool prolate = FParameters::existParameter(argc,argv,LocalOptionProlate.options);
             const bool prolatenonunif = FParameters::existParameter(argc,argv,LocalOptionProlateNonUnif.options);
+            const bool nonunif = FParameters::existParameter(argc,argv,LocalOptionNonUnif.options);
             FSphericalRandomLoader<FReal> loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000),
-                                                 false, false, false, prolate, false, prolatenonunif);
+                                                 nonunif, false, false, prolate, false, prolatenonunif);
     #else
             const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
             FFmaGenericLoader<FReal> loader(filename);
@@ -687,7 +690,7 @@ int main(int argc, char* argv[]){
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::OctreeSubHeight,
                      #ifdef RANDOM_PARTICLES
-                         FParameterDefinitions::NbParticles, LocalOptionProlate,LocalOptionProlateNonUnif,
+                         FParameterDefinitions::NbParticles, LocalOptionProlate,LocalOptionProlateNonUnif,LocalOptionNonUnif,
                      #else
                          FParameterDefinitions::InputFile,
                      #endif
