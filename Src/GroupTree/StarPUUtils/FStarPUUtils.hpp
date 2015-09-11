@@ -12,9 +12,8 @@
 
 /////////////////////////////////////////////////////
 
-#if (STARPU_MAJOR_VERSION >= 1) && (STARPU_MINOR_VERSION >= 3)
+#if (STARPU_MAJOR_VERSION >= 1) && (STARPU_MINOR_VERSION >= 3) && defined(SCALFMM_STARPU_USE_COMMUTE)
 #define STARPU_SUPPORT_COMMUTE
-#define STARPU_SUPPORT_SCHEDULER
 #else
 #warning StarPU Commute is not supported
 #endif
@@ -25,9 +24,22 @@
 #warning StarPU Arbiter is not supported
 #endif
 
+#if (STARPU_MAJOR_VERSION >= 1) && (STARPU_MINOR_VERSION >= 3) && defined(SCALFMM_STARPU_USE_PRIO)
+#define STARPU_SUPPORT_SCHEDULER
+#else
+#warning Scheduler is not supported
+#endif
+
 #if (STARPU_MAJOR_VERSION >= 1) && (STARPU_MINOR_VERSION >= 3)
 #define STARPU_USE_TASK_NAME
 #endif
+
+#ifdef SCALFMM_STARPU_USE_REDUX
+#define STARPU_USE_REDUX
+#else
+#warning Redux is not supported
+#endif
+
 
 /////////////////////////////////////////////////////
 
@@ -63,9 +75,6 @@
     #endif
 #endif
 
-/////////////////////////////////////////////////////
-
-#define STARPU_USE_REDUX
 
 /////////////////////////////////////////////////////
 

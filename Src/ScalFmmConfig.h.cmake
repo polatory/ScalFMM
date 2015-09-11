@@ -137,4 +137,12 @@ const std::string SCALFMMCompileLibs("@SCALFMM_COMPILE_LIBS@");
 
 #cmakedefine SCALFMM_TIME_OMPTASKS
 
+///////////////////////////////////////////////////////
+// To control starpu config
+///////////////////////////////////////////////////////
+
+#cmakedefine SCALFMM_STARPU_USE_COMMUTE
+#cmakedefine SCALFMM_STARPU_USE_REDUX
+#cmakedefine SCALFMM_STARPU_USE_PRIO
+
 #endif // CONFIG_H
