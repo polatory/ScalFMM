@@ -308,7 +308,8 @@ public:
     }
 
     void rebuildInteractions(){
-        setenv("OMP_WAIT_POLICY", "PASSIVE", 1);
+        FAssertLF(getenv("OMP_WAIT_POLICY") == nullptr
+                || strcmp(getenv("OMP_WAIT_POLICY"), "PASSIVE") != 0);
 
 #pragma omp parallel
 #pragma omp single
@@ -318,8 +319,6 @@ public:
 #pragma omp parallel
 #pragma omp single
         buildRemoteInteractionsAndHandles();
-
-        omp_set_num_threads(1);
     }
 
 protected:
