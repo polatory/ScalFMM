@@ -359,7 +359,14 @@ struct RunContainer{
         typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
         const MatrixKernelClass MatrixKernel;
         const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
-        omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
+        FVector<FSize> threadsList;
+        if(FParameters::existParameter(argc,argv,FParameterDefinitions::NbThreads.options)){
+            threadsList = FParameters::getListOfValues<FSize>(argc,argv,FParameterDefinitions::NbThreads.options);
+            std::cout << "Ask for " << threadsList.getSize() << " threads config" << std::endl;
+        }
+        else{
+            threadsList.push(omp_get_max_threads());
+        }
 
         if(FParameters::existParameter(argc, argv, LocalOptionClassic.options)){
             std::cout << "\n>> Using " << omp_get_max_threads() << " omp threads.\n" << std::endl;
@@ -461,91 +468,105 @@ struct RunContainer{
                           << time.elapsed() << "s)." << std::endl;
             } // -----------------------------------------------------
 
-            { // -----------------------------------------------------
-                std::cout << "\nLagrange/Uniform grid FMM (ORDER="<< ORDER << ") ... " << std::endl;
-                KernelClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
-                if(FParameters::existParameter(argc, argv, LocalOptionOmpBalance.options)){
-                    typedef FFmmAlgorithmThreadBalance<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-                    std::cout << "Using FFmmAlgorithmThreadBalance " << std::endl;
-                    FmmClass algorithm(&tree, &kernels);
-                    time.tic();
-                    algorithm.execute();
-                    time.tac();
-                    std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
-                }
-                else if(FParameters::existParameter(argc, argv, LocalOptionOmpTask.options)){
-                    typedef FFmmAlgorithmTask<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-                    std::cout << "Using FFmmAlgorithmTask " << std::endl;
-                    FmmClass algorithm(&tree, &kernels);
-                    time.tic();
-                    algorithm.execute();
-                    time.tac();
-                    std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
-                }
-                else if(FParameters::existParameter(argc, argv, LocalOptionOmpSection.options)){
-                    typedef FFmmAlgorithmSectionTask<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-                    std::cout << "Using FFmmAlgorithmSectionTask " << std::endl;
-                    FmmClass algorithm(&tree, &kernels);
-                    time.tic();
-                    algorithm.execute();
-                    time.tac();
-                    std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
-                }
-#ifdef SCALFMM_USE_OMP4
-                else if(FParameters::existParameter(argc, argv, LocalOptionOmp4.options)){
-                    typedef FFmmAlgorithmOmp4<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-                    std::cout << "Using FFmmAlgorithmOmp4 " << std::endl;
-                    FmmClass algorithm(&tree, &kernels);
-                    time.tic();
-                    algorithm.execute();
-                    time.tac();
-                    std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
-                }
-#endif
-                else {
-                    typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-                    std::cout << "Using FFmmAlgorithmThread " << std::endl;
-                    FmmClass algorithm(&tree, &kernels);
-                    time.tic();
-                    algorithm.execute();
-                    time.tac();
-                    std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
-                }
-            } // -----------------------------------------------------
+
+            for(FSize idxThread = 0 ; idxThread < threadsList.getSize() ; ++idxThread){
+
+                omp_set_num_threads(int(threadsList[idxThread]));
+                std::cout << "\n>> Using " << omp_get_max_threads() << " omp threads.\n" << std::endl;
+
+                { // -----------------------------------------------------
+                    std::cout << "\nLagrange/Uniform grid FMM (ORDER="<< ORDER << ") ... " << std::endl;
+                    KernelClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
+                    if(FParameters::existParameter(argc, argv, LocalOptionOmpBalance.options)){
+                        typedef FFmmAlgorithmThreadBalance<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+                        std::cout << "Using FFmmAlgorithmThreadBalance " << std::endl;
+                        FmmClass algorithm(&tree, &kernels);
+                        time.tic();
+                        algorithm.execute();
+                        time.tac();
+                        std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
+                    }
+                    else if(FParameters::existParameter(argc, argv, LocalOptionOmpTask.options)){
+                        typedef FFmmAlgorithmTask<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+                        std::cout << "Using FFmmAlgorithmTask " << std::endl;
+                        FmmClass algorithm(&tree, &kernels);
+                        time.tic();
+                        algorithm.execute();
+                        time.tac();
+                        std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
+                    }
+                    else if(FParameters::existParameter(argc, argv, LocalOptionOmpSection.options)){
+                        typedef FFmmAlgorithmSectionTask<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+                        std::cout << "Using FFmmAlgorithmSectionTask " << std::endl;
+                        FmmClass algorithm(&tree, &kernels);
+                        time.tic();
+                        algorithm.execute();
+                        time.tac();
+                        std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
+                    }
+    #ifdef SCALFMM_USE_OMP4
+                    else if(FParameters::existParameter(argc, argv, LocalOptionOmp4.options)){
+                        typedef FFmmAlgorithmOmp4<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+                        std::cout << "Using FFmmAlgorithmOmp4 " << std::endl;
+                        FmmClass algorithm(&tree, &kernels);
+                        time.tic();
+                        algorithm.execute();
+                        time.tac();
+                        std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
+                    }
+    #endif
+                    else {
+                        typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+                        std::cout << "Using FFmmAlgorithmThread " << std::endl;
+                        FmmClass algorithm(&tree, &kernels);
+                        time.tic();
+                        algorithm.execute();
+                        time.tac();
+                        std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
+                    }
+                } // -----------------------------------------------------
 
 
-            if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
-                // -----------------------------------------------------
-                FMath::FAccurater<FReal> potentialDiff;
-                FMath::FAccurater<FReal> fx, fy, fz;
+                if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
+                    // -----------------------------------------------------
+                    FMath::FAccurater<FReal> potentialDiff;
+                    FMath::FAccurater<FReal> fx, fy, fz;
 
-                { // Check that each particle has been summed with all other
+                    { // Check that each particle has been summed with all other
 
-                    tree.forEachLeaf([&](LeafClass* leaf){
-                        const FReal*const potentials = leaf->getTargets()->getPotentials();
-                        const FReal*const forcesX = leaf->getTargets()->getForcesX();
-                        const FReal*const forcesY = leaf->getTargets()->getForcesY();
-                        const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
-                        const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-                        const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
+                        tree.forEachLeaf([&](LeafClass* leaf){
+                            const FReal*const potentials = leaf->getTargets()->getPotentials();
+                            const FReal*const forcesX = leaf->getTargets()->getForcesX();
+                            const FReal*const forcesY = leaf->getTargets()->getForcesY();
+                            const FReal*const forcesZ = leaf->getTargets()->getForcesZ();
+                            const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                            const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
 
-                        for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
-                            const FSize indexPartOrig = indexes[idxPart];
+                            for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
+                                const FSize indexPartOrig = indexes[idxPart];
 
-                            potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
-                            fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
-                            fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
-                            fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
-                        }
-                    });
-                }
+                                potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
+                                fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);
+                                fy.add(particles[indexPartOrig].forces[1],forcesY[idxPart]);
+                                fz.add(particles[indexPartOrig].forces[2],forcesZ[idxPart]);
+                            }
+                        });
+                    }
 
-                // Print for information
-                std::cout << "Potential " << potentialDiff << std::endl;
-                std::cout << "Fx " << fx << std::endl;
-                std::cout << "Fy " << fy << std::endl;
-                std::cout << "Fz " << fz << std::endl;
-            } // -----------------------------------------------------
+                    // Print for information
+                    std::cout << "Potential " << potentialDiff << std::endl;
+                    std::cout << "Fx " << fx << std::endl;
+                    std::cout << "Fy " << fy << std::endl;
+                    std::cout << "Fz " << fz << std::endl;
+                } // -----------------------------------------------------
+
+                tree.forEachCell([&](CellClass* cell){
+                    cell->resetToInitialState();
+                });
+                tree.forEachLeaf([&](LeafClass* leaf){
+                    leaf->getTargets()->resetForcesAndPotential();
+                });
+            }
         }
         else{
             typedef FUnifCellPODCore         GroupCellSymbClass;
@@ -553,6 +574,7 @@ struct RunContainer{
             typedef FUnifCellPODLocal<FReal,ORDER> GroupCellDownClass;
             typedef FUnifCellPOD<FReal,ORDER>      GroupCellClass;
 
+            if(threadsList.getSize()) omp_set_num_threads(int(threadsList[0]));
             std::cout << "\n>> Using " << omp_get_max_threads() << " omp threads.\n" << std::endl;
 
             typedef FP2PGroupParticleContainer<FReal>          GroupContainerClass;

@@ -24,6 +24,8 @@
 
 #include <vector>
 
+#include "../Containers/FVector.hpp"
+
 #include "FAssert.hpp"
 
 /** This file proposes some methods
@@ -42,11 +44,12 @@ namespace FParameters{
 	 * <code> const int argInt = userParemetersAt<int>(1,-1); </code>
 	 */
 	template <class VariableType>
-    inline const VariableType StrToOther(const char* const str, const VariableType& defaultValue = VariableType()){
+    inline const VariableType StrToOther(const char* const str, const VariableType& defaultValue = VariableType(), bool* hasWorked = nullptr){
 		std::istringstream iss(str,std::istringstream::in);
-		VariableType value;
+        VariableType value = defaultValue;
 		iss >> value;
         FAssertLF(iss.eof());
+        if(hasWorked) (*hasWorked) = bool(iss.eof());
 		if( /*iss.tellg()*/ iss.eof() ) return value;
 		return defaultValue;
 	}
@@ -180,6 +183,54 @@ namespace FParameters{
         return inDefault;
     }
 
+
+    template <class ValueType>
+    inline FVector<ValueType> getListOfValues(const int argc, const char* const * const argv, const std::vector<const char*>& inNames, const char separator = ';'){
+        const char* valuesStr = getStr( argc, argv, inNames, nullptr);
+        if(valuesStr == nullptr){
+            return FVector<ValueType>();
+        }
+
+        FVector<char> word;
+        FVector<ValueType> res;
+        int idxCharStart = 0;
+        int idxCharEnd = 0;
+        while(valuesStr[idxCharEnd] != '\0'){
+            if(valuesStr[idxCharEnd] == separator){
+                const int lengthWord = idxCharEnd-idxCharStart;
+                if(lengthWord){
+                    word.clear();
+                    word.memocopy(&valuesStr[idxCharStart], lengthWord);
+                    word.push('\0');
+                    bool hasWorked;
+                    const ValueType val = StrToOther(word.data(), ValueType(), &hasWorked);
+                    if(hasWorked){
+                        res.push(val);
+                    }
+                }
+                idxCharEnd  += 1;
+                idxCharStart = idxCharEnd;
+            }
+            else{
+                idxCharEnd  += 1;
+            }
+        }
+        {
+            const int lengthWord = idxCharEnd-idxCharStart;
+            if(lengthWord){
+                word.clear();
+                word.memocopy(&valuesStr[idxCharStart], lengthWord);
+                word.push('\0');
+                bool hasWorked;
+                const ValueType val = StrToOther(word.data(), ValueType(), &hasWorked);
+                if(hasWorked){
+                    res.push(val);
+                }
+            }
+        }
+
+        return res;
+    }
 }
 
 
