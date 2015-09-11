@@ -574,9 +574,6 @@ struct RunContainer{
             typedef FUnifCellPODLocal<FReal,ORDER> GroupCellDownClass;
             typedef FUnifCellPOD<FReal,ORDER>      GroupCellClass;
 
-            if(threadsList.getSize()) omp_set_num_threads(int(threadsList[0]));
-            std::cout << "\n>> Using " << omp_get_max_threads() << " omp threads.\n" << std::endl;
-
             typedef FP2PGroupParticleContainer<FReal>          GroupContainerClass;
             typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
     #ifdef SCALFMM_USE_STARPU
@@ -585,6 +582,8 @@ struct RunContainer{
             typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
             std::cout << "Using FGroupTaskStarPUAlgorithm" << std::endl;
     #elif defined(SCALFMM_USE_OMP4)
+            if(threadsList.getSize()) omp_set_num_threads(int(threadsList[0]));
+            std::cout << "\n>> Using " << omp_get_max_threads() << " omp threads.\n" << std::endl;
             typedef FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
             // Set the number of threads
             omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
@@ -592,6 +591,8 @@ struct RunContainer{
                     GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
             std::cout << "Using FGroupTaskDepAlgorithm" << std::endl;
     #else
+            if(threadsList.getSize()) omp_set_num_threads(int(threadsList[0]));
+            std::cout << "\n>> Using " << omp_get_max_threads() << " omp threads.\n" << std::endl;
             typedef FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
             //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
             typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
