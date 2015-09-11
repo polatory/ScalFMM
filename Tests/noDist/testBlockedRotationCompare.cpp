@@ -72,6 +72,13 @@ const FParameterNames LocalOptionProlate { {"-prolate"}, "To generate prolate di
 const FParameterNames LocalOptionProlateNonUnif { {"-prolate-nonunif"}, "To generate prolate distribution"};
 const FParameterNames LocalOptionNonUnif { {"-nonunif"}, "To generate non uniform"};
 
+#ifdef SCALFMM_USE_STARPU
+const FParameterNames LocalOptionGroupStarPU { {"-group-starpu"}, "To use FGroupTaskStarpuAlgorithm"};
+#endif
+#ifdef SCALFMM_USE_OMP4
+const FParameterNames LocalOptionGroupOmp4 { {"-group-omp4"}, "To use FGroupTaskDepAlgorithm"};
+#endif
+
 #include <cstdlib>
 #include <time.h>
 
@@ -550,24 +557,7 @@ struct RunContainer{
 
             typedef FP2PGroupParticleContainer<FReal>          GroupContainerClass;
             typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
-    #ifdef SCALFMM_USE_STARPU
-            typedef FStarPUAllCpuCapacities<FRotationKernel<FReal,GroupCellClass,GroupContainerClass,ORDER>> GroupKernelClass;
-            typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
-            typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
-            std::cout << "Using FGroupTaskStarPUAlgorithm" << std::endl;
-    #elif defined(SCALFMM_USE_OMP4)
-            typedef FRotationKernel<FReal,GroupCellClass,GroupContainerClass,ORDER> GroupKernelClass;
-            // Set the number of threads
-            omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
-            typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass,
-                    GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
-            std::cout << "Using FGroupTaskDepAlgorithm" << std::endl;
-    #else
-            typedef FRotationKernel<FReal,GroupCellClass,GroupContainerClass,ORDER> GroupKernelClass;
-            //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
-            typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
-            std::cout << "Using FGroupTaskAlgorithm" << std::endl;
-    #endif
+
             // Get params
             const int groupSize     = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 250);
 
@@ -605,12 +595,46 @@ struct RunContainer{
             std::cout << "Tree created in " << timer.tacAndElapsed() << "s\n";
 
             // Run the algorithm
-            GroupKernelClass groupkernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-            GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
+#ifdef SCALFMM_USE_STARPU
+            if(FParameters::existParameter(argc, argv, LocalOptionGroupStarPU.options)){
+                typedef FStarPUAllCpuCapacities<FRotationKernel<FReal,GroupCellClass,GroupContainerClass,ORDER>> GroupKernelClass;
+                typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
+                typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
+                std::cout << "Using FGroupTaskStarPUAlgorithm" << std::endl;
+                GroupKernelClass groupkernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+                GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
+                timer.tic();
+                groupalgo.execute();
+                std::cout << "Done  " << "(@Algorithm = " << timer.tacAndElapsed() << "s)." << std::endl;
+            } else
+#endif
+#ifdef SCALFMM_USE_OMP4
+            if(FParameters::existParameter(argc, argv, LocalOptionGroupOmp4.options)){
+                typedef FRotationKernel<FReal,GroupCellClass,GroupContainerClass,ORDER> GroupKernelClass;
+                // Set the number of threads
+                omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
+                typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass,
+                        GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
+                std::cout << "Using FGroupTaskDepAlgorithm" << std::endl;
+                GroupKernelClass groupkernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+                GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
+                timer.tic();
+                groupalgo.execute();
+                std::cout << "Done  " << "(@Algorithm = " << timer.tacAndElapsed() << "s)." << std::endl;
+            } else
+#endif
+            {
+                typedef FRotationKernel<FReal,GroupCellClass,GroupContainerClass,ORDER> GroupKernelClass;
+                //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
+                typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
+                std::cout << "Using FGroupTaskAlgorithm" << std::endl;
+                GroupKernelClass groupkernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+                GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
+                timer.tic();
+                groupalgo.execute();
+                std::cout << "Done  " << "(@Algorithm = " << timer.tacAndElapsed() << "s)." << std::endl;
+            }
 
-            timer.tic();
-            groupalgo.execute();
-            std::cout << "Done  " << "(@Algorithm = " << timer.tacAndElapsed() << "s)." << std::endl;
 
             // Validate the result
             if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
@@ -699,7 +723,10 @@ int main(int argc, char* argv[]){
                          LocalOptionOmpTask, LocalOptionOmpSection, LocalOptionOmpBalance,
                          LocalOrder
 #ifdef SCALFMM_USE_OMP4
-                         , LocalOptionOmp4
+                         , LocalOptionOmp4, LocalOptionGroupOmp4
+#endif
+#ifdef SCALFMM_USE_STARPU
+                         , LocalOptionGroupStarPU
 #endif
                          );
 
