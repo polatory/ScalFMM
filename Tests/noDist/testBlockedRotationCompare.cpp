@@ -557,6 +557,13 @@ struct RunContainer{
                     std::cout << "Fy " << fy << std::endl;
                     std::cout << "Fz " << fz << std::endl;
                 } // -----------------------------------------------------
+
+                tree.forEachCell([&](CellClass* cell){
+                    cell->resetToInitialState();
+                });
+                tree.forEachLeaf([&](LeafClass* leaf){
+                    leaf->getTargets()->resetForcesAndPotential();
+                });
             }
         }
         else{
