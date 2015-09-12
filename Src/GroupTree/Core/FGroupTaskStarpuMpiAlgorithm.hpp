@@ -311,7 +311,7 @@ public:
 
     void rebuildInteractions(){
         FAssertLF(getenv("OMP_WAIT_POLICY") == nullptr
-                || strcmp(getenv("OMP_WAIT_POLICY"), "PASSIVE") != 0);
+                || strcmp(getenv("OMP_WAIT_POLICY"), "PASSIVE") == 0);
 
 #pragma omp parallel
 #pragma omp single
