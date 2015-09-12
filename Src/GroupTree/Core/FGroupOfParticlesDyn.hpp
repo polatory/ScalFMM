@@ -103,7 +103,7 @@ public:
             totalDown += sizePerLeafDown[idxLeaf];
         }
 
-        FAssertLF(int(inEndingIndex-inStartingIndex) >= inNumberOfLeaves);
+        FAssertLF((inEndingIndex-inStartingIndex) >= MortonIndex(inNumberOfLeaves));
         // Total number of bytes in the block
         const size_t memoryToAllocSymb = sizeof(BlockHeader)
                                     + (inNumberOfLeaves*sizeof(LeafHeader))
@@ -209,8 +209,8 @@ public:
     }
 
     /** The size of the interval endingIndex-startingIndex (set from the constructor) */
-    int getSizeOfInterval() const {
-        return int(blockHeader->endingIndex-blockHeader->startingIndex);
+    MortonIndex getSizeOfInterval() const {
+        return (blockHeader->endingIndex-blockHeader->startingIndex);
     }
 
     /** Return true if inIndex should be located in the current block */

@@ -101,8 +101,8 @@ public:
     }
 
     /** The size of the interval endingIndex-startingIndex (set from the constructor) */
-    int getSizeOfInterval() const {
-        return int(blockHeader->endingIndex-blockHeader->startingIndex);
+    MortonIndex getSizeOfInterval() const {
+        return (blockHeader->endingIndex-blockHeader->startingIndex);
     }
 
     /** Return true if inIndex should be located in the current block */

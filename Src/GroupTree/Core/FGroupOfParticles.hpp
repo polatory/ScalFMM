@@ -136,7 +136,7 @@ public:
         const FSize nbParticlesAllocatedInGroup = RoundToUpperParticles(nbParticlesInGroup+(MemoryAlignementParticles-1)*inNumberOfLeaves);
 
         // Find the number of leaf to allocate in the blocks
-        FAssertLF(int(inEndingIndex-inStartingIndex) >= inNumberOfLeaves);
+        FAssertLF((inEndingIndex-inStartingIndex) >= MortonIndex(inNumberOfLeaves));
         // Total number of bytes in the block
         const size_t sizeOfOneParticle = (3*sizeof(FReal) + NbSymbAttributes*sizeof(AttributeClass));
         const size_t memoryToAlloc = sizeof(BlockHeader)
@@ -252,8 +252,8 @@ public:
     }
 
     /** The size of the interval endingIndex-startingIndex (set from the constructor) */
-    int getSizeOfInterval() const {
-        return int(blockHeader->endingIndex-blockHeader->startingIndex);
+    MortonIndex getSizeOfInterval() const {
+        return (blockHeader->endingIndex-blockHeader->startingIndex);
     }
 
     /** Return true if inIndex should be located in the current block */

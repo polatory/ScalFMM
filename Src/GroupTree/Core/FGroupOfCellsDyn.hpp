@@ -130,7 +130,7 @@ public:
         : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), cellSizes(nullptr),
           cellIndexes(nullptr), blockCells(nullptr),
           cellMultipoles(nullptr), cellLocals(nullptr), deleteBuffer(true){
-        FAssertLF(int(inEndingIndex-inStartingIndex) >= inNumberOfCells);
+        FAssertLF((inEndingIndex-inStartingIndex) >= MortonIndex(inNumberOfCells));
         // Total number of bytes in the block
         const size_t memoryToAlloc = sizeof(BlockHeader) + sizeof(CellClassSizes)
                 + (inNumberOfCells*sizeof(MortonIndex))
@@ -252,8 +252,8 @@ public:
     }
 
     /** The size of the interval endingIndex-startingIndex (set from the constructor) */
-    int getSizeOfInterval() const {
-        return int(blockHeader->endingIndex-blockHeader->startingIndex);
+    MortonIndex getSizeOfInterval() const {
+        return (blockHeader->endingIndex-blockHeader->startingIndex);
     }
 
     /** Return true if inIndex should be located in the current block */

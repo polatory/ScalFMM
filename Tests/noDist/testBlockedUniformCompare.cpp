@@ -586,7 +586,6 @@ struct RunContainer{
             std::cout << "\n>> Using " << omp_get_max_threads() << " omp threads.\n" << std::endl;
             typedef FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
             // Set the number of threads
-            omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
             typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass,
                     GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
             std::cout << "Using FGroupTaskDepAlgorithm" << std::endl;

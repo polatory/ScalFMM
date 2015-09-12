@@ -452,7 +452,7 @@ MortonIndex FOpenCLGroupOfCells_getEndingIndex(const struct FOpenCLGroupOfCells*
 int FOpenCLGroupOfCells_getNumberOfCellsInBlock(const struct FOpenCLGroupOfCells* group) {
     return group->blockHeader->numberOfCellsInBlock;
 }
-int FOpenCLGroupOfCells_getSizeOfInterval(const struct FOpenCLGroupOfCells* group) {
+MortonIndex FOpenCLGroupOfCells_getSizeOfInterval(const struct FOpenCLGroupOfCells* group) {
     return group->blockHeader->endingIndex - group->blockHeader->startingIndex;
 }
 bool FOpenCLGroupOfCells_isInside(const struct FOpenCLGroupOfCells* group, const MortonIndex inIndex){
