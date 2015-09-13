@@ -85,7 +85,13 @@ int main(int argc, char* argv[]){
 
     // open particle file
     std::cout << "Opening : " << filename << "\n" << std::endl;
-    FRandomLoader<FReal> loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000),
+    const int totalParticles = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000);
+    const int localParticles = totalParticles/mpiComm.global().processCount();
+
+    std::cout << " totalParticles " << totalParticles << std::endl;
+    std::cout << " localParticles " << localParticles << std::endl;
+
+    FRandomLoader<FReal> loader(localParticles,
                                 1.0, FPoint<FReal>(0,0,0), mpiComm.global().processId());
     FAssertLF(loader.isOpen());
 
