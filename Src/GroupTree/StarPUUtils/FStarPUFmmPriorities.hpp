@@ -29,8 +29,6 @@ class FStarPUFmmPriorities{
     int insertionPositionL2P;
     int insertionPositionP2P;
     int insertionPositionP2PExtern;
-    int insertionPositionM2LMpi;
-    int insertionPositionP2PMpi;
 
     int treeHeight;
 
@@ -79,8 +77,6 @@ public:
             FLOG( FLog::Controller << "\t M2L "  << insertionPositionM2L << "\n" );
             insertionPositionM2LExtern = incPrio++;
             FLOG( FLog::Controller << "\t M2L Outer "  << insertionPositionM2LExtern << "\n" );
-            insertionPositionM2LMpi  = insertionPositionM2LExtern;
-            FLOG( FLog::Controller << "\t M2L MPI "  << insertionPositionM2LMpi << "\n" );
 
             insertionPositionL2L     = incPrio++;
             FLOG( FLog::Controller << "\t L2L "  << insertionPositionL2L << "\n" );
@@ -100,8 +96,6 @@ public:
 
             insertionPositionP2PExtern = incPrio++;
             FLOG( FLog::Controller << "\t P2P Outer "  << insertionPositionP2PExtern << "\n" );
-            insertionPositionP2PMpi    = insertionPositionP2PExtern;
-            FLOG( FLog::Controller << "\t P2P MPI "  << insertionPositionP2PMpi << "\n" );
 
             assert(incPrio == 8 + (treeHeight-3) + (treeHeight-3) + (treeHeight-3));
         }
@@ -116,14 +110,12 @@ public:
 
             insertionPositionM2L     = -1;
             insertionPositionM2LExtern = -1;
-            insertionPositionM2LMpi  = -1;
             insertionPositionM2LLastLevel = -1;
 
             insertionPositionL2L     = -1;
 
             insertionPositionP2P     = incPrio++;
             insertionPositionP2PExtern = insertionPositionP2P;
-            insertionPositionP2PMpi  = insertionPositionP2P;
 
             insertionPositionL2P     = -1;
             assert(incPrio == 1);
@@ -380,12 +372,6 @@ public:
     int getInsertionPosP2PExtern() const {
         return insertionPositionP2PExtern;
     }
-    int getInsertionPosM2LMpi(const int inLevel) const {
-        return insertionPositionM2LMpi + (inLevel - 2)*3;
-    }
-    int getInsertionPosP2PMpi() const {
-        return insertionPositionP2PMpi;
-    }
 };
 
 #else // STARPU_SUPPORT_SCHEDULER
@@ -436,12 +422,6 @@ public:
         return 0;
     }
     int getInsertionPosP2PExtern() const {
-        return 0;
-    }
-    int getInsertionPosM2LMpi(const int inLevel) const {
-        return 0;
-    }
-    int getInsertionPosP2PMpi() const {
         return 0;
     }
 };

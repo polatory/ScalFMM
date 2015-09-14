@@ -1774,7 +1774,7 @@ protected:
                                        STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                        STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                    #ifdef STARPU_SUPPORT_SCHEDULER
-                                       STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LMpi(idxLevel),
+                                       STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
                    #endif
                                        STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                        (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
@@ -2153,7 +2153,7 @@ protected:
                                    STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                    STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
                    #ifdef STARPU_SUPPORT_SCHEDULER
-                                   STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2PMpi(),
+                                   STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2PExtern(),
                    #endif
                                    STARPU_R, particleHandles[idxGroup].symb,
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
