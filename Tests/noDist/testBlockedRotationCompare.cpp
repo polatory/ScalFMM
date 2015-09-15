@@ -523,6 +523,7 @@ struct RunContainer{
                         std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
                     }
                 } // -----------------------------------------------------
+                std::cout.flush();
 
 
                 if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
