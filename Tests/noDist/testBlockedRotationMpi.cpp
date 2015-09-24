@@ -61,6 +61,10 @@ int main(int argc, char* argv[]){
                          LocalOptionBlocSize, LocalOptionNoValidate,
                          LocalOptionOmp,LocalOptionStarpu);
 
+    const bool execStarpu = FParameters::existParameter(argc, argv, LocalOptionStarpu.options);
+    const bool execOmp = FParameters::existParameter(argc, argv, LocalOptionOmp.options);
+    FAssertLF(execOmp || execStarpu, "You must choose at least one of the two algo -starpu or -omp");
+
     typedef double FReal;
     // Initialize the types
     static const int ORDER = 5;
@@ -145,7 +149,7 @@ int main(int argc, char* argv[]){
     FLOG(std::cout << "My last index is " << leftLimite << "\n");
     FLOG(std::cout << "My left limite is " << myLeftLimite << "\n");
 
-    if(FParameters::existParameter(argc, argv, LocalOptionStarpu.options) == true){
+    if(execStarpu){
         std::cout << " Using Starpu " << std::endl;
 
         typedef FRotationCellPODCore         GroupCellSymbClass;
@@ -196,7 +200,7 @@ int main(int argc, char* argv[]){
     }
 
 
-    if(FParameters::existParameter(argc, argv, LocalOptionOmp.options) == true){
+    if(execomp){
         std::cout << " Using Classic " << std::endl;
 
         typedef FP2PParticleContainer<FReal> ContainerClass;
