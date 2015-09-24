@@ -422,6 +422,12 @@ struct RunContainer{
                 time.tic();
                 {
                     for(FSize idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
+                        FReal fx = 0;
+                        FReal fy = 0;
+                        FReal fz = 0;
+                        FReal potential = 0;
+
+                        #pragma omp parallel for reduction(+:fx,fy,fz,potential)
                         for(FSize idxOther =  idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
                             FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                                   particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
@@ -433,6 +439,10 @@ struct RunContainer{
                                     &particles[idxOther].forces[2], &particles[idxOther].potential,
                                     &MatrixKernel);
                         }
+                        particles[idxTarget].forces[0] += fx;
+                        particles[idxTarget].forces[1] += fy;
+                        particles[idxTarget].forces[2] += fz;
+                        particles[idxTarget].potential += potential;
                     }
                 }
                 time.tac();
@@ -674,14 +684,25 @@ struct RunContainer{
                 FReal*const allDirectforcesZ = allParticles.getForcesZ();
 
                 for(int idxTgt = 0 ; idxTgt < offsetParticles ; ++idxTgt){
+                    FReal fx = 0;
+                    FReal fy = 0;
+                    FReal fz = 0;
+                    FReal potential = 0;
+
+                    #pragma omp parallel for reduction(+:fx,fy,fz,potential)
                     for(int idxMutual = idxTgt + 1 ; idxMutual < offsetParticles ; ++idxMutual){
                         FP2PR::MutualParticles(
                                     allPosX[idxTgt],allPosY[idxTgt],allPosZ[idxTgt], allPhysicalValues[idxTgt],
-                                    &allDirectforcesX[idxTgt], &allDirectforcesY[idxTgt], &allDirectforcesZ[idxTgt], &allDirectPotentials[idxTgt],
+                                    &fx, &fy, &fz, &potential,
                                     allPosX[idxMutual],allPosY[idxMutual],allPosZ[idxMutual], allPhysicalValues[idxMutual],
                                     &allDirectforcesX[idxMutual], &allDirectforcesY[idxMutual], &allDirectforcesZ[idxMutual], &allDirectPotentials[idxMutual]
                                     );
                     }
+
+                    allDirectforcesX[idxTgt] += fx;
+                    allDirectforcesY[idxTgt] += fy;
+                    allDirectforcesZ[idxTgt] += fz;
+                    allDirectPotentials[idxTgt] += potential;
                 }
 
                 FMath::FAccurater<FReal> potentialDiff;
