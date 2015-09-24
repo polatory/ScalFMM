@@ -190,15 +190,18 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
                 const FSize nbBytesInMessage = int(FMath::Min(IndexType(FQS_MAX_MPI_BYTES), totalByteToRecv-idxSize));
                 FAssertLF(nbBytesInMessage < std::numeric_limits<int>::max());
                 FMpi::Assert( MPI_Irecv(&ptrDataToRecv[idxSize], int(nbBytesInMessage), MPI_BYTE, pack.idProc,
-                              int(FMpi::TagQuickSort + idxSize), currentComm.getComm(), &currentRequest) , __LINE__);
+                              int(FMpi::TagQuickSort + idxSize/FQS_MAX_MPI_BYTES), currentComm.getComm(), &currentRequest) , __LINE__);
 
                 requests.push_back(currentRequest);
             }
         }
         FAssertLF(whatToRecvFromWho.size() <= requests.size());
+        FLOG( FLog::Controller << "Wait for " << requests.size() << " request \n" );
+        FLOG( FLog::Controller.flush());
         // Wait to complete
         FMpi::Assert( MPI_Waitall(int(requests.size()), requests.data(), MPI_STATUSES_IGNORE),  __LINE__ );
         FLOG( FLog::Controller << currentComm.processId() << "] Recv Done \n"; )
+                FLOG( FLog::Controller.flush());
         // Copy to ouput variables
         (*inPartRecv) = recvBuffer;
         (*inNbElementsRecv) = totalToRecv;
@@ -230,15 +233,18 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
                 const IndexType nbBytesInMessage = int(FMath::Min(IndexType(FQS_MAX_MPI_BYTES), totalByteToSend-idxSize));
                 FAssertLF(nbBytesInMessage < std::numeric_limits<int>::max());
                 FMpi::Assert( MPI_Isend((SortType*)&ptrDataToSend[idxSize], int(nbBytesInMessage), MPI_BYTE , pack.idProc,
-                              int(FMpi::TagQuickSort + idxSize), currentComm.getComm(), &currentRequest) , __LINE__);
+                              int(FMpi::TagQuickSort + idxSize/FQS_MAX_MPI_BYTES), currentComm.getComm(), &currentRequest) , __LINE__);
 
                 requests.push_back(currentRequest);
             }
         }
         FAssertLF(whatToSendToWho.size() <= requests.size());
+        FLOG( FLog::Controller << "Wait for " << requests.size() << " request \n" );
+        FLOG( FLog::Controller.flush());
         // Wait to complete
         FMpi::Assert( MPI_Waitall(int(requests.size()), requests.data(), MPI_STATUSES_IGNORE),  __LINE__ );
         FLOG( FLog::Controller << currentComm.processId() << "] Send Done \n"; )
+                FLOG( FLog::Controller.flush());
     }
 
     static CompareType SelectPivot(const SortType workingArray[], const IndexType currentSize, const FMpi::FComm& currentComm, bool* shouldStop){
