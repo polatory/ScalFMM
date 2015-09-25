@@ -582,17 +582,17 @@ if(MUMPS_LIBRARIES)
         list(APPEND REQUIRED_LIBS "${METIS_LIBRARIES}")
     endif()
     # Fortran
-    if (CMAKE_Fortran_COMPILER MATCHES ".+gfortran.*")
+    if (CMAKE_C_COMPILER_ID MATCHES "GNU")
         find_library(
             FORTRAN_gfortran_LIBRARY
             NAMES gfortran
             HINTS ${_lib_env}
             )
         mark_as_advanced(FORTRAN_gfortran_LIBRARY)
-        if (FORTRAN_gfortran_LIBRARY AND CMAKE_C_COMPILER_ID STREQUAL "GNU")
-            list(APPEND REQUIRED_LIBS "-lgfortran")
+        if (FORTRAN_gfortran_LIBRARY)
+            list(APPEND REQUIRED_LIBS "${FORTRAN_gfortran_LIBRARY}")
         endif()
-    elseif (CMAKE_Fortran_COMPILER MATCHES ".+ifort.*")
+    elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
         find_library(
             FORTRAN_ifcore_LIBRARY
             NAMES ifcore
@@ -600,7 +600,7 @@ if(MUMPS_LIBRARIES)
             )
         mark_as_advanced(FORTRAN_ifcore_LIBRARY)
         if (FORTRAN_ifcore_LIBRARY)
-            list(APPEND REQUIRED_LIBS "-lifcore")
+            list(APPEND REQUIRED_LIBS "${FORTRAN_ifcore_LIBRARY}")
         endif()
     endif()
     # EXTRA LIBS such that pthread, m, rt
