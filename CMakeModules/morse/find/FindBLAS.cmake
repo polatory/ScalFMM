@@ -482,7 +482,7 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
             find_library(
                 FORTRAN_ifcore_LIBRARY
                 NAMES ifcore
-                HINTS ${_lib_env}
+                HINTS ${_libdir}
                 )
             mark_as_advanced(FORTRAN_ifcore_LIBRARY)
             if (FORTRAN_ifcore_LIBRARY)
