@@ -431,12 +431,14 @@ if(FFTW_LIBRARIES)
     endif()
     # MKL
     if(FFTW_LOOK_FOR_MKL)
-        list(APPEND REQUIRED_LIBS "${CMAKE_THREAD_LIBS_INIT};-lm")
+        list(APPEND REQUIRED_LIBS "${CMAKE_THREAD_LIBS_INIT}")
         if (CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
             list(APPEND REQUIRED_LDFLAGS "-Wl,--no-as-needed")
         endif()
     endif()
-    if(UNIX OR WIN32)
+    # m
+    find_library(M_LIBRARY NAMES m)
+    if(M_LIBRARY)
         list(APPEND REQUIRED_LIBS "-lm")
     endif()
 

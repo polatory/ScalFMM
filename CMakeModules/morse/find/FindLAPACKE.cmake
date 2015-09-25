@@ -304,15 +304,31 @@ if (LAPACK_FOUND)
             endif()
             # Fortran
             if (CMAKE_Fortran_COMPILER MATCHES ".+gfortran.*")
-                list(APPEND REQUIRED_LIBS "-lgfortran")
+                find_library(
+                    FORTRAN_gfortran_LIBRARY
+                    NAMES gfortran
+                    HINTS ${_lib_env}
+                    )
+                mark_as_advanced(FORTRAN_gfortran_LIBRARY)
+                if (FORTRAN_gfortran_LIBRARY AND CMAKE_C_COMPILER_ID STREQUAL "GNU")
+                    list(APPEND REQUIRED_LIBS "-lgfortran")
+                endif()
             elseif (CMAKE_Fortran_COMPILER MATCHES ".+ifort.*")
-                list(APPEND REQUIRED_LIBS "-lifcore")
+                find_library(
+                    FORTRAN_ifcore_LIBRARY
+                    NAMES ifcore
+                    HINTS ${_lib_env}
+                    )
+                mark_as_advanced(FORTRAN_ifcore_LIBRARY)
+                if (FORTRAN_ifcore_LIBRARY)
+                    list(APPEND REQUIRED_LIBS "-lifcore")
+                endif()
             endif()
             # m
-            if(UNIX OR WIN32)
+            find_library(M_LIBRARY NAMES m HINTS ${_lib_env})
+            if(M_LIBRARY)
                 list(APPEND REQUIRED_LIBS "-lm")
             endif()
-
             # set required libraries for link
             set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
             set(CMAKE_REQUIRED_LIBRARIES)

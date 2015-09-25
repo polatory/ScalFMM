@@ -310,6 +310,7 @@ subs = {
     ('CORE_s',         'CORE_d',         'CORE_s',         'CORE_d'          ),
     ('cpu_gpu_s',      'cpu_gpu_d',      'cpu_gpu_c',      'cpu_gpu_z'       ),
     ('cublasS',        'cublasD',        'cublasC',        'cublasZ'         ),
+    ('CUDA_s',         'CUDA_d',         'CUDA_c',         'CUDA_z'          ),
     ('example_s',      'example_d',      'example_c',      'example_z'       ),
     ('ipt_s',          'ipt_d',          'ipt_c',          'ipt_z'           ),
     ('LAPACKE_s',      'LAPACKE_d',      'LAPACKE_c',      'LAPACKE_z'       ),
@@ -624,6 +625,10 @@ subs = {
     ('ssytd2',         'dsytd2',         'chetd2',         'zhetd2'          ),
     ('ssytrd',         'dsytrd',         'chetrd',         'zhetrd'          ),
     ('ssytrf',         'dsytrf',         'chetrf',         'zhetrf'          ),
+
+    # ----- Auxiliary routines with precision
+    ('sgemerge',       'dgemerge',       'cgemerge',       'zgemerge'        ),
+    ('sparfb',         'dparfb',         'cparfb',         'zparfb'          ),
 
     # BLAS, without precision
     # must be after BLAS with precision

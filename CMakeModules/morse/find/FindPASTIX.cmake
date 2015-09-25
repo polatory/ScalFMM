@@ -617,9 +617,25 @@ if(PASTIX_LIBRARIES)
     endif()
     # Fortran
     if (CMAKE_Fortran_COMPILER MATCHES ".+gfortran.*")
-        list(APPEND REQUIRED_LIBS "-lgfortran")
+        find_library(
+            FORTRAN_gfortran_LIBRARY
+            NAMES gfortran
+            HINTS ${_lib_env}
+            )
+        mark_as_advanced(FORTRAN_gfortran_LIBRARY)
+        if (FORTRAN_gfortran_LIBRARY AND CMAKE_C_COMPILER_ID STREQUAL "GNU")
+            list(APPEND REQUIRED_LIBS "-lgfortran")
+        endif()
     elseif (CMAKE_Fortran_COMPILER MATCHES ".+ifort.*")
-        list(APPEND REQUIRED_LIBS "-lifcore")
+        find_library(
+            FORTRAN_ifcore_LIBRARY
+            NAMES ifcore
+            HINTS ${_lib_env}
+            )
+        mark_as_advanced(FORTRAN_ifcore_LIBRARY)
+        if (FORTRAN_ifcore_LIBRARY)
+            list(APPEND REQUIRED_LIBS "-lifcore")
+        endif()
     endif()
     # EXTRA LIBS such that pthread, m, rt
     list(APPEND REQUIRED_LIBS ${PASTIX_EXTRA_LIBRARIES})
