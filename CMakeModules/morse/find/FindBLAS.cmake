@@ -457,7 +457,38 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
     endif()
 
     if (UNIX AND NOT WIN32)
-        set(LM "-lm")
+        # m
+        find_library(M_LIBRARY
+            NAMES m
+            HINTS ${_libdir})
+        if(M_LIBRARY)
+            set(LM "-lm")
+        else()
+            set(LM "")
+        endif()
+        # Fortran
+        set(LGFORTRAN "")
+        if (CMAKE_C_COMPILER_ID MATCHES "GNU")
+            find_library(
+                FORTRAN_gfortran_LIBRARY
+                NAMES gfortran
+                HINTS ${_libdir}
+                )
+            mark_as_advanced(FORTRAN_gfortran_LIBRARY)
+            if (FORTRAN_gfortran_LIBRARY)
+                set(LGFORTRAN "${FORTRAN_gfortran_LIBRARY}")
+            endif()
+        elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
+            find_library(
+                FORTRAN_ifcore_LIBRARY
+                NAMES ifcore
+                HINTS ${_libdir}
+                )
+            mark_as_advanced(FORTRAN_ifcore_LIBRARY)
+            if (FORTRAN_ifcore_LIBRARY)
+                set(LGFORTRAN "{FORTRAN_ifcore_LIBRARY}")
+            endif()
+        endif()
         set(BLAS_COMPILER_FLAGS "")
         if (NOT BLA_VENDOR STREQUAL "Intel10_64lp_seq")
             if (CMAKE_C_COMPILER_ID STREQUAL "Intel")
@@ -1038,7 +1069,7 @@ if (BLA_VENDOR STREQUAL "Generic" OR BLA_VENDOR STREQUAL "All")
             sgemm
             ""
             "${SEARCH_LIB}"
-            ""
+            "${LGFORTRAN}"
             )
         endif()
     endforeach ()

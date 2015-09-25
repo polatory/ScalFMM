@@ -206,7 +206,8 @@ if(PARMETIS_LIBRARIES)
     endif()
     set(REQUIRED_LIBS "${PARMETIS_LIBRARIES}")
     # m
-    if(UNIX OR WIN32)
+    find_library(M_LIBRARY NAMES m)
+    if(M_LIBRARY)
         list(APPEND REQUIRED_LIBS "-lm")
     endif()
 

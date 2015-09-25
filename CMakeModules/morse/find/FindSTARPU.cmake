@@ -749,10 +749,26 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) 
             endif()
         endif()
         # Fortran
-        if (CMAKE_Fortran_COMPILER MATCHES ".+gfortran.*")
-            list(APPEND REQUIRED_LIBS "-lgfortran")
-        elseif (CMAKE_Fortran_COMPILER MATCHES ".+ifort.*")
-            list(APPEND REQUIRED_LIBS "-lifcore")
+        if (CMAKE_C_COMPILER_ID MATCHES "GNU")
+            find_library(
+                FORTRAN_gfortran_LIBRARY
+                NAMES gfortran
+                HINTS ${_lib_env}
+                )
+            mark_as_advanced(FORTRAN_gfortran_LIBRARY)
+            if (FORTRAN_gfortran_LIBRARY AND CMAKE_C_COMPILER_ID STREQUAL "GNU")
+                list(APPEND REQUIRED_LIBS "${FORTRAN_gfortran_LIBRARY}")
+            endif()
+        elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
+            find_library(
+                FORTRAN_ifcore_LIBRARY
+                NAMES ifcore
+                HINTS ${_lib_env}
+                )
+            mark_as_advanced(FORTRAN_ifcore_LIBRARY)
+            if (FORTRAN_ifcore_LIBRARY)
+                list(APPEND REQUIRED_LIBS "${FORTRAN_ifcore_LIBRARY}")
+            endif()
         endif()
 
         # set required libraries for link
