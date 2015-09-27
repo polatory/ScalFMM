@@ -130,6 +130,9 @@ protected:
             for(int idx = 0 ; idx < 3 ; ++idx){
                 memcpy(newData + (allocatedParticles * idx), positions[idx], sizeof(FReal) * nbParticles);
                 positions[idx] = newData + (allocatedParticles * idx);
+                for(FSize idxEmpty = nbParticles ; idxEmpty < allocatedParticles ; ++idxEmpty){
+                    positions[idx][idxEmpty] = std::numeric_limits<FReal>::infinity();
+                }
             }
             // copy attributes
             AttributeClass* startAddress = reinterpret_cast<AttributeClass*>(positions[2] + allocatedParticles);
