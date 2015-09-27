@@ -68,6 +68,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   option( SCALFMM_USE_MEM_STATS        "Set to ON to profile memory"                 OFF )
   option( SCALFMM_ATTACHE_SOURCE       "Set to ON to compile with -g"                OFF )
   option( SCALFMM_USE_ADDONS           "Set to ON to compile add ons"                OFF )
+  option( SCALFMM_USE_SIGNALS          "Set to ON to catch various signal an print backtrace"  OFF )
   if( APPLE ) # to fix problem with  GCC and avx
     CMAKE_DEPENDENT_OPTION( SCALFMM_USE_SSE              "Set to ON to compile with SSE support (and use intrinsec SSE P2P)" ON "CPUOPTION_SSE3;NOT CPUOPTION_AVX2" OFF  )
     CMAKE_DEPENDENT_OPTION( SCALFMM_USE_AVX              "Set to ON to compile with AVX support (and use intrinsec AVX P2P)" OFF "CPUOPTION_AVX; NOT CPUOPTION_AVX2" OFF  )
@@ -679,6 +680,18 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     endif(PKG_CONFIG_FOUND)
 
   endif(SCALFMM_USE_EZTRACE)
+  
+  ##################################################################
+  #
+  #   To catch signals
+  #
+  ##################################################################  
+    if((WIN32 OR (${CMAKE_SYSTEM_NAME} MATCHES "Windows")) AND SCALFMM_USE_SIGNALS)
+	    # We are on Windows and we cannot catch signals
+	    message( FATAL_ERROR "Catching the signals requieres an UNIX system." )
+    else()
+	    SET(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS} -rdynamic")
+    endif()
   ##################################################################
   #                                                                #
   #                     END SETTING VARIABLES                      #
