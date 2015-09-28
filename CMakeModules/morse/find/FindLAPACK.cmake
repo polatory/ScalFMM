@@ -330,17 +330,18 @@ if(BLAS_FOUND)
     endif(NOT BLA_VENDOR)
   endif ($ENV{BLA_VENDOR} MATCHES ".+")
 
+if (UNIX AND NOT WIN32)
+  # m
+  find_library(M_LIBRARY NAMES m)
+  if(M_LIBRARY)
+    set(LM "-lm")
+  else()
+    set(LM "")
+  endif()
+endif()
+
 #intel lapack
 if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
-  if (UNIX AND NOT WIN32)
-    # m
-    find_library(M_LIBRARY NAMES m)
-    if(M_LIBRARY)
-      set(LM "-lm")
-    else()
-      set(LM "")
-    endif()
-  endif()
   if (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
     if(LAPACK_FIND_QUIETLY OR NOT LAPACK_FIND_REQUIRED)
       find_PACKAGE(Threads)
@@ -477,7 +478,7 @@ if (BLA_VENDOR STREQUAL "Generic" OR
     cheev
     ""
     "lapack"
-    "${BLAS_LIBRARIES}"
+    "${BLAS_LIBRARIES};${LM}"
     ""
     )
   endif ( NOT LAPACK_LIBRARIES )
