@@ -150,5 +150,6 @@ const std::string SCALFMMCompileLibs("@SCALFMM_COMPILE_LIBS@");
 #cmakedefine SCALFMM_STARPU_USE_COMMUTE
 #cmakedefine SCALFMM_STARPU_USE_REDUX
 #cmakedefine SCALFMM_STARPU_USE_PRIO
+#cmakedefine SCALFMM_STARPU_FORCE_NO_SCHEDULER
 
 #endif // CONFIG_H

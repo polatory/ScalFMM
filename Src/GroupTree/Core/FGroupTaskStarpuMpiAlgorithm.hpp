@@ -175,7 +175,7 @@ public:
 
         struct starpu_conf conf;
         FAssertLF(starpu_conf_init(&conf) == 0);
-#ifdef STARPU_SUPPORT_SCHEDULER
+#ifdef SCALFMM_STARPU_USE_PRIO
         FStarPUFmmPriorities::Controller().init(&conf, tree->getHeight(), inKernels);
 #endif
         FAssertLF(starpu_init(&conf) == 0);
@@ -1527,7 +1527,7 @@ protected:
             starpu_insert_task(&p2m_cl,
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
-        #ifdef STARPU_SUPPORT_SCHEDULER
+        #ifdef SCALFMM_STARPU_USE_PRIO
                     STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2M(),
         #endif
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
@@ -1584,7 +1584,7 @@ protected:
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
-#ifdef STARPU_SUPPORT_SCHEDULER
+#ifdef SCALFMM_STARPU_USE_PRIO
                     task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
 #endif
 #ifdef STARPU_USE_TASK_NAME
@@ -1618,7 +1618,7 @@ protected:
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
-#ifdef STARPU_SUPPORT_SCHEDULER
+#ifdef SCALFMM_STARPU_USE_PRIO
                     task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
 #endif
 #ifdef STARPU_USE_TASK_NAME
@@ -1705,7 +1705,7 @@ protected:
                                 0);
                         task->cl_arg = arg_buffer;
                         task->cl_arg_size = arg_buffer_size;
-#ifdef STARPU_SUPPORT_SCHEDULER
+#ifdef SCALFMM_STARPU_USE_PRIO
                         task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
 #endif
     #ifdef STARPU_USE_TASK_NAME
@@ -1773,7 +1773,7 @@ protected:
                                        STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                        STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                        STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-                   #ifdef STARPU_SUPPORT_SCHEDULER
+                   #ifdef SCALFMM_STARPU_USE_PRIO
                                        STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
                    #endif
                                        STARPU_R, cellHandles[idxLevel][idxGroup].symb,
@@ -1805,7 +1805,7 @@ protected:
                                        STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                        STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                        STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-                   #ifdef STARPU_SUPPORT_SCHEDULER
+                   #ifdef SCALFMM_STARPU_USE_PRIO
                                        STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2L(idxLevel),
                    #endif
                                        STARPU_R, cellHandles[idxLevel][idxGroup].symb,
@@ -1833,7 +1833,7 @@ protected:
                                            STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                            STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                            STARPU_VALUE, &mode, sizeof(int),
-                   #ifdef STARPU_SUPPORT_SCHEDULER
+                   #ifdef SCALFMM_STARPU_USE_PRIO
                                            STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
                    #endif
                                            STARPU_R, cellHandles[idxLevel][idxGroup].symb,
@@ -1852,7 +1852,7 @@ protected:
                                            STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                            STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                            STARPU_VALUE, &mode, sizeof(int),
-                   #ifdef STARPU_SUPPORT_SCHEDULER
+                   #ifdef SCALFMM_STARPU_USE_PRIO
                                            STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
                    #endif
                                            STARPU_R, cellHandles[idxLevel][interactionid].symb,
@@ -2007,7 +2007,7 @@ protected:
                                                      0);
                             task->cl_arg = arg_buffer;
                             task->cl_arg_size = arg_buffer_size;
-#ifdef STARPU_SUPPORT_SCHEDULER
+#ifdef SCALFMM_STARPU_USE_PRIO
                             task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
 #endif
     #ifdef STARPU_USE_TASK_NAME
@@ -2040,7 +2040,7 @@ protected:
                                                      0);
                             task->cl_arg = arg_buffer;
                             task->cl_arg_size = arg_buffer_size;
-#ifdef STARPU_SUPPORT_SCHEDULER
+#ifdef SCALFMM_STARPU_USE_PRIO
                             task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
 #endif
     #ifdef STARPU_USE_TASK_NAME
@@ -2092,7 +2092,7 @@ protected:
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
-#ifdef STARPU_SUPPORT_SCHEDULER
+#ifdef SCALFMM_STARPU_USE_PRIO
                     task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
 #endif
 #ifdef STARPU_USE_TASK_NAME
@@ -2125,7 +2125,7 @@ protected:
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
-#ifdef STARPU_SUPPORT_SCHEDULER
+#ifdef SCALFMM_STARPU_USE_PRIO
                     task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
 #endif
 #ifdef STARPU_USE_TASK_NAME
@@ -2152,7 +2152,7 @@ protected:
                                    STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                    STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                    STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
-                   #ifdef STARPU_SUPPORT_SCHEDULER
+                   #ifdef SCALFMM_STARPU_USE_PRIO
                                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2PExtern(),
                    #endif
                                    STARPU_R, particleHandles[idxGroup].symb,
@@ -2185,7 +2185,7 @@ protected:
                                    STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                    STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                    STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
-                   #ifdef STARPU_SUPPORT_SCHEDULER
+                   #ifdef SCALFMM_STARPU_USE_PRIO
                                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2PExtern(),
                    #endif
                                    STARPU_R, particleHandles[idxGroup].symb,
@@ -2212,7 +2212,7 @@ protected:
             starpu_insert_task(&p2p_cl_in,
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
-                   #ifdef STARPU_SUPPORT_SCHEDULER
+                   #ifdef SCALFMM_STARPU_USE_PRIO
                                STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2P(),
                    #endif
                                STARPU_R, particleHandles[idxGroup].symb,
@@ -2243,7 +2243,7 @@ protected:
             starpu_insert_task(&l2p_cl,
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
-        #ifdef STARPU_SUPPORT_SCHEDULER
+        #ifdef SCALFMM_STARPU_USE_PRIO
                     STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosL2P(),
         #endif
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
@@ -2272,7 +2272,7 @@ protected:
 
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2p_redux_read,
-                   #ifdef STARPU_SUPPORT_SCHEDULER
+                   #ifdef SCALFMM_STARPU_USE_PRIO
                                STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosL2P(),
                    #endif
                                STARPU_R, particleHandles[idxGroup].down,
