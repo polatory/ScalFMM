@@ -557,7 +557,7 @@ protected:
 
                         #pragma omp task default(none) firstprivate(currentCells, cellLocals, outsideInteractions, cellsOther, cellOtherPoles, idxLevel) depend(commute_if_supported: cellLocals[0]) depend(in: cellOtherPoles[0])  priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-1?FGroupTaskDepAlgorithm_Prio_M2L:FGroupTaskDepAlgorithm_Prio_M2L_High)
                         {
-                            FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, (((currentCells->getStartingIndex()<<1) ^ cellsOther->getStartingIndex()) * 20 + idxLevel) * 8 + 3, "M2L-ext"));
+                            FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, (((currentCells->getStartingIndex()+1) * (cellsOther->getStartingIndex()+2)) * 20 + idxLevel) * 8 + 3, "M2L-ext"));
                             KernelClass*const kernel = kernels[omp_get_thread_num()];
 
                             for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
@@ -573,7 +573,7 @@ protected:
 
                         #pragma omp task default(none) firstprivate(currentCells, cellPoles, outsideInteractions, cellsOther, cellOtherLocals, idxLevel) depend(commute_if_supported: cellOtherLocals[0]) depend(in: cellPoles[0])  priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-1?FGroupTaskDepAlgorithm_Prio_M2L:FGroupTaskDepAlgorithm_Prio_M2L_High)
                         {
-                            FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, (((currentCells->getStartingIndex()) ^ (cellsOther->getStartingIndex()<<1)) * 20 + idxLevel) * 8 + 3, "M2L-ext"));
+                            FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, (((currentCells->getStartingIndex()+1) * (cellsOther->getStartingIndex()+1)) * 20 + idxLevel) * 8 + 3, "M2L-ext"));
                             KernelClass*const kernel = kernels[omp_get_thread_num()];
 
                             for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
@@ -810,7 +810,7 @@ protected:
 
 #pragma omp task default(none) firstprivate(containers, containersDown, containersOther, containersOtherDown, outsideInteractions) depend(commute_if_supported: containersOtherDown[0], containersDown[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_P2P_Small)
                     {
-                        FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, (containersOther->getStartingIndex() ^ containers->getStartingIndex())*20*8 + 6, "P2P-ext"));
+                        FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, ((containersOther->getStartingIndex()+1) * (containers->getStartingIndex()+1))*20*8 + 6, "P2P-ext"));
                         KernelClass*const kernel = kernels[omp_get_thread_num()];
                         for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
                             ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
