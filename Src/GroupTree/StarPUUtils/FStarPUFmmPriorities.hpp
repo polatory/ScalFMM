@@ -374,6 +374,8 @@ public:
     }
 };
 
+FStarPUFmmPriorities FStarPUFmmPriorities::controller;
+
 #elif defined(SCALFMM_STARPU_USE_PRIO)// STARPU_SUPPORT_SCHEDULER
 
 class FStarPUFmmPriorities{
@@ -438,9 +440,10 @@ public:
     }
 };
 
+FStarPUFmmPriorities FStarPUFmmPriorities::controller;
+
 #endif // SCALFMM_STARPU_USE_PRIO - STARPU_SUPPORT_SCHEDULER
 
-FStarPUFmmPriorities FStarPUFmmPriorities::controller;
 
 
 #endif // FSTARPUFMMPRIORITIES_HPP
