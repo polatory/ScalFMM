@@ -319,18 +319,17 @@ protected:
 
         starpu_resume();
 
+        if( operationsToProceed & FFmmP2P ) directPass();
+
         if(operationsToProceed & FFmmP2M && !directOnly) bottomPass();
 
         if(operationsToProceed & FFmmM2M && !directOnly) upwardPass();
 
         if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::upperWorkingLevel, FAbstractAlgorithm::lowerWorkingLevel-1 , true, true);
-        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, false, false);
 
         if(operationsToProceed & FFmmL2L && !directOnly) downardPass();
 
         if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, true, true);
-
-        if( operationsToProceed & FFmmP2P ) directPass();
 
         if( operationsToProceed & FFmmL2P && !directOnly) mergePass();
 #ifdef STARPU_USE_REDUX
