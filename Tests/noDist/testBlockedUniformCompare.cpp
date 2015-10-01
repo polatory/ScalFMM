@@ -60,6 +60,11 @@
 
 #include "Utils/FTemplate.hpp"
 
+#ifdef MEMORY_USAGE
+#include <sys/time.h>
+#include <sys/resource.h>
+#endif
+
 #define RANDOM_PARTICLES
 
 const FParameterNames LocalOrder { {"-order"}, "Order of the kernel"};
@@ -650,6 +655,13 @@ struct RunContainer{
             timer.tic();
             groupalgo.execute();
             std::cout << "Done  " << "(@Algorithm = " << timer.tacAndElapsed() << "s)." << std::endl;
+
+    #ifdef MEMORY_USAGE
+            // Get the maximum resident set size (RSS) in kilobytes
+            struct rusage usage;
+            getrusage(RUSAGE_SELF, &usage);
+            fprintf(stderr, "(@RSS = %ldKB\n", usage.ru_maxrss);
+    #endif
 
             // Validate the result
             if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
