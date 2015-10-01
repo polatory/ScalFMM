@@ -541,7 +541,12 @@ struct RunContainer{
                     }
                 } // -----------------------------------------------------
 
-
+    #ifdef MEMORY_USAGE
+                // Get the maximum resident set size (RSS) in kilobytes
+                struct rusage usage;
+                getrusage(RUSAGE_SELF, &usage);
+                std::cout << "Done  " << "(@RSS = " << usage.ru_maxrss << "KB)." << std::endl;
+    #endif
                 if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
                     // -----------------------------------------------------
                     FMath::FAccurater<FReal> potentialDiff;
