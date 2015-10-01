@@ -660,7 +660,7 @@ struct RunContainer{
             // Get the maximum resident set size (RSS) in kilobytes
             struct rusage usage;
             getrusage(RUSAGE_SELF, &usage);
-            fprintf(stderr, "(@RSS = %ldKB\n", usage.ru_maxrss);
+            std::cout << "Done  " << "(@RSS = " << usage.ru_maxrss << "KB)." << std::endl;
     #endif
 
             // Validate the result
