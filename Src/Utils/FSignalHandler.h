@@ -7,6 +7,10 @@
 #include <functional>
 #include <vector>
 
+/** We protect almost every thing if SCALFMM_USE_SIGNALS is undef
+  * because is failled to compile with Clang.
+  */
+
 // Function in FSignalHandler.cpp
 bool f_install_signal_handler();
 
@@ -25,9 +29,11 @@ protected:
 
     /** A signal has been sent */
     void intercept(const int signalReceived){
+#ifdef SCALFMM_USE_SIGNALS
         for(unsigned idx = 0 ; idx < callbacks.size() ; ++idx){
             callbacks[idx](signalReceived);
         }
+#endif
     }
 
     friend void f_sig_handler(int signalReceived);
@@ -41,11 +47,14 @@ public:
 
     /** Add a callback to the listeners list */
     void registerCallback(std::function<void(int)> aCallback){
+#ifdef SCALFMM_USE_SIGNALS
         callbacks.push_back(aCallback);
+#endif
     }
 
     /** Remove some listeners */
     void unregisterCallback(std::function<void(int)> aCallback){
+#ifdef SCALFMM_USE_SIGNALS
         using fptr = void(*)(int);
 
         unsigned idx = 0 ;
@@ -62,6 +71,7 @@ public:
         }
 
         callbacks.resize(callbacks.size() - idxCopy);
+#endif
     }
 
     bool isInstalled(){
