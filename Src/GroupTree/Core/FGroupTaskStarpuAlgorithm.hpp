@@ -976,6 +976,7 @@ protected:
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;                   
+                    task->cl_arg_free = 1;
 #ifdef SCALFMM_STARPU_USE_PRIO
                     task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
 #endif
@@ -1010,6 +1011,7 @@ protected:
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
+                    task->cl_arg_free = 1;
 
 #ifdef SCALFMM_STARPU_USE_PRIO
                     task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
@@ -1152,6 +1154,7 @@ protected:
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
+                    task->cl_arg_free = 1;
 #ifdef SCALFMM_STARPU_USE_PRIO
                     task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
 #endif
@@ -1190,6 +1193,7 @@ protected:
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
+                    task->cl_arg_free = 1;
 #ifdef SCALFMM_STARPU_USE_PRIO
                     task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
 #endif
