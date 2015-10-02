@@ -17,15 +17,23 @@ namespace FBinding {
 #define FBINDING_ENABLE
 #endif
 
-inline int GetThreadBinding(){
+inline long GetThreadBinding(){
     // Mask will contain the current affinity
 #ifdef FBINDING_ENABLE
-    unsigned long mask = 0;
+    cpu_set_t mask;
+    CPU_ZERO(&mask);
     // We need the thread pid (even if we are in openmp)
     pid_t tid = (pid_t) syscall(SYS_gettid);
     // Get the affinity
     FAssertLF(sched_getaffinity(tid, sizeof(mask), (cpu_set_t*)&mask) != -1);
-    return int(mask>>1);
+
+    long cpus = 0;
+    for(size_t idxCpu = 0 ; idxCpu < sizeof(long)*8-1 ; ++idxCpu){
+        if(CPU_ISSET(idxCpu, &mask)){
+            cpus |= (1 << idxCpu);
+        }
+    }
+    return cpus;
 #endif
     return -1;
 }
