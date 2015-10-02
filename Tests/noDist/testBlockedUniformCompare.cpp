@@ -57,7 +57,7 @@
 
 #include "Components/FSimpleLeaf.hpp"
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
-
+#include "Utils/FBinding.hpp"
 #include "Utils/FTemplate.hpp"
 
 #ifdef MEMORY_USAGE
@@ -656,6 +656,10 @@ struct RunContainer{
             // Run the algorithm
             GroupKernelClass groupkernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
             GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
+
+            std::cout << "I am bind to " << (FBinding::GetThreadBinding()) << std::endl;
+            FBinding::BindThreadToAnyProcs();
+            std::cout << "And now I am bind to " << (FBinding::GetThreadBinding()) << std::endl;
 
             timer.tic();
             groupalgo.execute();
