@@ -196,7 +196,7 @@ public:
 #endif
         starpu_pthread_mutex_destroy(&initMutex);
 
-        starpu_pause();
+        //starpu_pause();
 
         cellHandles   = new std::vector<CellHandles>[tree->getHeight()];
 
@@ -252,7 +252,7 @@ public:
     }
 
     ~FGroupTaskStarPUAlgorithm(){
-        starpu_resume();
+        //starpu_resume();
 
         cleanHandle();
         delete[] cellHandles;
@@ -298,8 +298,8 @@ public:
                 || strcmp(getenv("OMP_WAIT_POLICY"), "PASSIVE") == 0
                 || strcmp(getenv("OMP_WAIT_POLICY"), "passive") == 0);
 
-        #pragma omp parallel
-        #pragma omp single
+        //#pragma omp parallel
+        //#pragma omp single
         buildExternalInteractionVecs();
 
         buildHandles();
@@ -317,7 +317,7 @@ protected:
         FTIME_TASKS(cpuWrapper.taskTimeRecorder.start());
 #endif
 
-        starpu_resume();
+        //starpu_resume();
 
         if( operationsToProceed & FFmmP2P ) directPass();
 
@@ -337,7 +337,7 @@ protected:
 #endif
 
         starpu_task_wait_for_all();
-        starpu_pause();
+        //starpu_pause();
 
 #ifdef STARPU_USE_CPU
         FTIME_TASKS(cpuWrapper.taskTimeRecorder.end());
@@ -729,7 +729,7 @@ protected:
 
                 std::vector<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel[idxGroup];
 
-#pragma omp task default(none) firstprivate(idxGroup, containers, externalInteractions)
+//#pragma omp task default(none) firstprivate(idxGroup, containers, externalInteractions)
                 { // Can be a task(inout:iterCells)
                     std::vector<OutOfBlockInteraction> outsideInteractions;
                     const MortonIndex blockStartIdx = containers->getStartingIndex();
@@ -818,7 +818,7 @@ protected:
 
                     std::vector<BlockInteractions<CellContainerClass>>* externalInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup];
 
-#pragma omp task default(none) firstprivate(idxGroup, currentCells, idxLevel, externalInteractions)
+//#pragma omp task default(none) firstprivate(idxGroup, currentCells, idxLevel, externalInteractions)
                     {
                         std::vector<OutOfBlockInteraction> outsideInteractions;
                         const MortonIndex blockStartIdx = currentCells->getStartingIndex();
@@ -899,7 +899,7 @@ protected:
         }
         FLOG( cellTimer.tac(); );
 
-#pragma omp taskwait
+//#pragma omp taskwait
 
         FLOG( FLog::Controller << "\t\t Prepare in " << timer.tacAndElapsed() << "s\n" );
         FLOG( FLog::Controller << "\t\t\t Prepare at leaf level in   " << leafTimer.elapsed() << "s\n" );
