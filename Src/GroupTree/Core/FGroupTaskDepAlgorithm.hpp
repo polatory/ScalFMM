@@ -139,6 +139,8 @@ protected:
         {
             #pragma omp single nowait
             {
+                FLOG( FTic timerSoumission; );
+
                 if( operationsToProceed & FFmmP2P ) directPass();
 
                 if(operationsToProceed & FFmmP2M) bottomPass();
@@ -153,6 +155,7 @@ protected:
 
                 if( operationsToProceed & FFmmL2P ) mergePass();
 
+                FLOG( FLog::Controller << "\t\t Submitting the tasks took " << timerSoumission.tacAndElapsed() << "s\n" );
                 #pragma omp taskwait
             }
         }

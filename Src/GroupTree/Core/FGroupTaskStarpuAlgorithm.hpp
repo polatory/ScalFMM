@@ -318,6 +318,7 @@ protected:
 #endif
 
         //starpu_resume();
+        FLOG( FTic timerSoumission; );
 
         if( operationsToProceed & FFmmP2P ) directPass();
 
@@ -336,6 +337,7 @@ protected:
         if( operationsToProceed & FFmmL2P && !directOnly) readParticle();
 #endif
 
+        FLOG( FLog::Controller << "\t\t Submitting the tasks took " << timerSoumission.tacAndElapsed() << "s\n" );
         starpu_task_wait_for_all();
         //starpu_pause();
 
