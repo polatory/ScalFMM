@@ -741,54 +741,6 @@ protected:
         FLOG( FTic timer; );
         FLOG( FTic timerInBlock; FTic timerOutBlock; );
 
-        FLOG( timerInBlock.tic() );
-        {
-            typename OctreeClass::ParticleGroupIterator iterParticles = tree->leavesBegin();
-            const typename OctreeClass::ParticleGroupIterator endParticles = tree->leavesEnd();
-
-            while(iterParticles != endParticles){
-                ParticleGroupClass* containers = (*iterParticles);
-                unsigned char* containersDown = containers->getRawAttributesBuffer();
-
-                #pragma omp task default(none) firstprivate(containers, containersDown) depend(commute_if_supported: containersDown[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_P2P_Big)
-                {
-                    FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, containers->getStartingIndex()*20*8 + 5, "P2P"));
-                    const MortonIndex blockStartIdx = containers->getStartingIndex();
-                    const MortonIndex blockEndIdx = containers->getEndingIndex();
-                    KernelClass*const kernel = kernels[omp_get_thread_num()];
-
-                    for(int leafIdx = 0 ; leafIdx < containers->getNumberOfLeavesInBlock() ; ++leafIdx){
-                        ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(leafIdx);
-                        const MortonIndex mindex = containers->getLeafMortonIndex(leafIdx);
-
-                        MortonIndex interactionsIndexes[26];
-                        int interactionsPosition[26];
-                        FTreeCoordinate coord(mindex, tree->getHeight()-1);
-                        int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
-
-                        ParticleContainerClass interactionsObjects[26];
-                        ParticleContainerClass* interactions[26];
-                        int counterExistingCell = 0;
-
-                        for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
-                            if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                                const int leafPos = containers->getLeafIndex(interactionsIndexes[idxInter]);
-                                if(leafPos != -1){
-                                    interactionsObjects[counterExistingCell] = containers->template getLeaf<ParticleContainerClass>(leafPos);
-                                    interactionsPosition[counterExistingCell] = interactionsPosition[idxInter];
-                                    interactions[counterExistingCell] = &interactionsObjects[counterExistingCell];
-                                    counterExistingCell += 1;
-                                }
-                            }
-                        }
-
-                        kernel->P2P( coord, &particles, &particles , interactions, interactionsPosition, counterExistingCell);
-                    }
-                }
-                ++iterParticles;
-            }
-        }
-        FLOG( timerInBlock.tac() );
         FLOG( timerOutBlock.tic() );
         {
             typename OctreeClass::ParticleGroupIterator iterParticles = tree->leavesBegin();
@@ -837,6 +789,54 @@ protected:
             }
         }
         FLOG( timerOutBlock.tac() );
+        FLOG( timerInBlock.tic() );
+        {
+            typename OctreeClass::ParticleGroupIterator iterParticles = tree->leavesBegin();
+            const typename OctreeClass::ParticleGroupIterator endParticles = tree->leavesEnd();
+
+            while(iterParticles != endParticles){
+                ParticleGroupClass* containers = (*iterParticles);
+                unsigned char* containersDown = containers->getRawAttributesBuffer();
+
+                #pragma omp task default(none) firstprivate(containers, containersDown) depend(commute_if_supported: containersDown[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_P2P_Big)
+                {
+                    FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, containers->getStartingIndex()*20*8 + 5, "P2P"));
+                    const MortonIndex blockStartIdx = containers->getStartingIndex();
+                    const MortonIndex blockEndIdx = containers->getEndingIndex();
+                    KernelClass*const kernel = kernels[omp_get_thread_num()];
+
+                    for(int leafIdx = 0 ; leafIdx < containers->getNumberOfLeavesInBlock() ; ++leafIdx){
+                        ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(leafIdx);
+                        const MortonIndex mindex = containers->getLeafMortonIndex(leafIdx);
+
+                        MortonIndex interactionsIndexes[26];
+                        int interactionsPosition[26];
+                        FTreeCoordinate coord(mindex, tree->getHeight()-1);
+                        int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
+
+                        ParticleContainerClass interactionsObjects[26];
+                        ParticleContainerClass* interactions[26];
+                        int counterExistingCell = 0;
+
+                        for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+                            if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                                const int leafPos = containers->getLeafIndex(interactionsIndexes[idxInter]);
+                                if(leafPos != -1){
+                                    interactionsObjects[counterExistingCell] = containers->template getLeaf<ParticleContainerClass>(leafPos);
+                                    interactionsPosition[counterExistingCell] = interactionsPosition[idxInter];
+                                    interactions[counterExistingCell] = &interactionsObjects[counterExistingCell];
+                                    counterExistingCell += 1;
+                                }
+                            }
+                        }
+
+                        kernel->P2P( coord, &particles, &particles , interactions, interactionsPosition, counterExistingCell);
+                    }
+                }
+                ++iterParticles;
+            }
+        }
+        FLOG( timerInBlock.tac() );
 
         FLOG( FLog::Controller << "\t\t directPass in " << timer.tacAndElapsed() << "s\n" );
         FLOG( FLog::Controller << "\t\t\t inblock  in " << timerInBlock.elapsed() << "s\n" );
