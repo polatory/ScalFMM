@@ -131,7 +131,7 @@ protected:
                 memcpy(newData + (allocatedParticles * idx), positions[idx], sizeof(FReal) * nbParticles);
                 positions[idx] = newData + (allocatedParticles * idx);
                 for(FSize idxEmpty = nbParticles ; idxEmpty < allocatedParticles ; ++idxEmpty){
-                    positions[idx][idxEmpty] = std::numeric_limits<FReal>::infinity();
+                    positions[idx][idxEmpty] = std::numeric_limits<FReal>::max()/2;
                 }
             }
             // copy attributes
