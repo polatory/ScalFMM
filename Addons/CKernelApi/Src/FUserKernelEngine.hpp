@@ -22,7 +22,7 @@
 #define FUSERKERNELENGINE_HPP
 
 #include "FScalFMMEngine.hpp"
-
+#include <vector>
 
 /**
  * @brief CoreCell : Cell used to store User datas
@@ -31,6 +31,7 @@ class CoreCell : public FBasicCell, public FExtendCellType {
     // Mutable in order to work with the API
     mutable void* userData;
 
+protected:
     //Static members to be initialised before octree creation
     static Scalfmm_Cell_Descriptor user_cell_descriptor;
 
@@ -70,7 +71,13 @@ public:
      * it back to the user defined kernel function)
      */
     void* getContainer() const {
-        return userData;
+        if(userData){
+            return userData;
+        }
+        else{
+            //std::cout << "UserDatas not initialised\n";
+            return nullptr; //pareil que userdata, finalement
+        }
     }
 
 };
@@ -116,26 +123,23 @@ public:
     }
 
     /** Do nothing */
-    virtual void M2L(CellClass* const FRestrict cell, const CellClass* interactions[], const int , const int level) {
+    virtual void M2L(CellClass* const FRestrict cell, const CellClass* distanNeighbors[],
+                     const int neighborPositions[], const int size,const int level) {
         if(kernel.m2l_full){//all 343 interactions will be computed directly
             //First, copy the fmm cell inside an array of user cells
-            void * userCellArray[343];
-            for(int i=0 ; i<343 ; ++i){
-                if(interactions[i] != nullptr){
-                    userCellArray[i] = interactions[i]->getContainer();
-                }
-                else{
-                    userCellArray[i] = nullptr;
-                }
+            std::vector<void *> userCellArray;
+            userCellArray.resize(size);
+            for(int i=0 ; i<size ; ++i){
+                userCellArray[i] = distanNeighbors[i]->getContainer();
             }
-            kernel.m2l_full(level,cell->getContainer(),userCellArray,userData);
+            kernel.m2l_full(level,cell->getContainer(),neighborPositions,size,userCellArray.data(),userData);
+            FAssertLF("m2l_full temporary disabled ...\n");
         }
         else{
             if(kernel.m2l){
-                for(int idx = 0 ; idx < 343 ; ++idx){
-                    if( interactions[idx] ){
-                        kernel.m2l(level, cell->getContainer(), idx, interactions[idx]->getContainer(), userData);
-                    }
+                for(int idx = 0 ; idx < size ; ++idx){
+                    const int idxNeigh = neighborPositions[idx];
+                    kernel.m2l(level, cell->getContainer(), idxNeigh, distanNeighbors[idx]->getContainer(), userData);
                 }
             }
         }
@@ -152,51 +156,48 @@ public:
         }
     }
 
-    /** Do nothing */
     virtual void L2P(const CellClass* const cell, ContainerClass* const container){
+        //        std::cout << "L2P with "<< container->getNbParticles() <<" - over "<< cell<< " and "<<cell->getContainer() <<" Indexes : ["<<container->getIndexes()[0] <<"]\n";
         if(kernel.l2p) kernel.l2p(cell->getContainer(), container->getNbParticles(), container->getIndexes().data(), userData);
     }
 
+    virtual void P2POuter(const FTreeCoordinate& inLeafPosition,
+                          ContainerClass* const FRestrict targets,
+                          ContainerClass* const directNeighborsParticles[], const int neighborPositions[],
+                          const int size){
+        for(int idx = 0 ; idx < size ; ++idx){
+            kernel.p2p(targets->getNbParticles(),targets.getIndexes().data(),
+                       directNeighborsParticles[idx]->getNbParticles(),
+        }
+    }
 
-    /** Do nothing */
-    virtual void P2P(const FTreeCoordinate& ,
-                     ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
-                     ContainerClass* const neighbors[27], const int ){
+
+    virtual void P2P(const FTreeCoordinate& inLeafPosition,
+                     ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
+                     ContainerClass* const neighbors[],const int sourcePosition[], const int size){
         if(kernel.p2pinner) kernel.p2pinner(targets->getNbParticles(), targets->getIndexes().data(), userData);
-
-
 
         if(kernel.p2p_full){
             //Create the arrays of size and indexes
-            FSize nbPartPerNeighbors[27];
-            const FSize * indicesPerNeighbors[27];
-            for(int idx=0 ; idx<27 ; ++idx){
-                if(neighbors[idx]){
-                    nbPartPerNeighbors[idx] = neighbors[idx]->getNbParticles();
-                    indicesPerNeighbors[idx] = neighbors[idx]->getIndexes().data();
-                }
-                else{
-                    nbPartPerNeighbors[idx] = 0;
-                    indicesPerNeighbors[idx] = nullptr;
-                }
+            FSize * nbPartPerNeighbors = new FSize[size];
+            const FSize ** indicesPerNeighbors = new const FSize*[size];
+            for(int idx=0 ; idx<size ; ++idx){
+                nbPartPerNeighbors[idx] = neighbors[idx]->getNbParticles();
+                indicesPerNeighbors[idx] = neighbors[idx]->getIndexes().data();
             }
-            kernel.p2p_full(targets->getNbParticles(),targets->getIndexes().data(),indicesPerNeighbors,nbPartPerNeighbors,userData);
+            kernel.p2p_full(targets->getNbParticles(),targets->getIndexes().data(),indicesPerNeighbors,nbPartPerNeighbors,sourcePosition,size,userData);
         }
         if(kernel.p2p_sym){
-            for(int idx = 0 ; idx < 14 ; ++idx){
-                if( neighbors[idx] ){
-                    kernel.p2p_sym(targets->getNbParticles(), targets->getIndexes().data(),
-                                   neighbors[idx]->getNbParticles(), neighbors[idx]->getIndexes().data(), userData);
-                }
+            for(int idx = 0 ; ((idx < size) && (idx < 14)) ; ++idx){
+                kernel.p2p_sym(targets->getNbParticles(), targets->getIndexes().data(),
+                               neighbors[idx]->getNbParticles(), neighbors[idx]->getIndexes().data(), userData);
             }
         }
         else{
             if(kernel.p2p){
-                for(int idx = 0 ; idx < 27 ; ++idx){
-                    if( neighbors[idx] ){
-                        kernel.p2p(targets->getNbParticles(), targets->getIndexes().data(),
-                                   neighbors[idx]->getNbParticles(), neighbors[idx]->getIndexes().data(), userData);
-                    }
+                for(int idx = 0 ; idx < size ; ++idx){
+                    kernel.p2p(targets->getNbParticles(), targets->getIndexes().data(),
+                               neighbors[idx]->getNbParticles(), neighbors[idx]->getIndexes().data(), userData);
                 }
             }
         }
@@ -205,7 +206,7 @@ public:
     /** Do nothing */
     virtual void P2PRemote(const FTreeCoordinate& ,
                      ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
-                     ContainerClass* const [27], const int ){
+                           ContainerClass* const *, const int *, const int ){
     }
 
     //Getter
@@ -231,11 +232,11 @@ class FUserKernelEngine : public FScalFMMEngine<FReal>{
 
 private:
     //Typedefs
-    typedef FP2PParticleContainerIndexed<FReal>           ContainerClass;
+    using ContainerClass = FP2PParticleContainerIndexed<FReal>;
 
     //Typedefs :
-    typedef FOctree<FReal,CoreCell,ContainerClass,LeafClass>            OctreeClass;
-    typedef CoreKernel<CoreCell,ContainerClass>           CoreKernelClass;
+    using OctreeClass = FOctree<FReal,CoreCell,ContainerClass,LeafClass>;
+    using CoreKernelClass =  CoreKernel<CoreCell,ContainerClass>;
 
     //For arranger classes
 
@@ -243,17 +244,49 @@ private:
     OctreeClass * octree;
     CoreKernelClass * kernel;
     int upperLimit;
-    int treeHeight;
-
     // ArrangerClass * arranger;
     // ArrangerClassTyped * arrangerTyped;
     // ArrangerClassPeriodic * arrangerPeriodic;
 
+protected:
+    int treeHeight;
+    FPoint<FReal> boxCenter;
+    FPoint<FReal> boxCorner;
+    FReal boxWidth;
+    FReal boxWidthAtLeafLevel;
+
+
+    FPoint<FReal> getBoxCenter() const {
+        return boxCenter;
+    }
+    FPoint<FReal> getBoxCorner() const {
+        return boxCorner;
+    }
+    FReal getBoxWidth() const {
+        return boxWidth;
+    }
+    FReal getBoxWidthAtLeafLevel() const {
+        return boxWidthAtLeafLevel;
+    }
+    int getTreeHeight() const {
+        return treeHeight;
+    }
+    OctreeClass* getTree() const {
+        return octree;
+    }
+    CoreKernelClass * getKernelPtr() const {
+        return kernel;
+    }
+
 
 public:
-    FUserKernelEngine(/*int TreeHeight, double BoxWidth , double * BoxCenter, */scalfmm_kernel_type KernelType) :
-        octree(nullptr), kernel(nullptr), upperLimit(2), treeHeight(0) /*,arranger(nullptr)*/ {
+    FUserKernelEngine(/*int TreeHeight, double BoxWidth , double * BoxCenter, */scalfmm_kernel_type KernelType, scalfmm_algorithm algo) :
+        octree(nullptr), kernel(nullptr), upperLimit(2), treeHeight(0), boxCenter(0,0,0), boxCorner(0,0,0), boxWidth(0) /*,arranger(nullptr)*/ {
         FScalFMMEngine<FReal>::kernelType = KernelType;
+        FScalFMMEngine<FReal>::Algorithm = algo;
+    }
+
+    FUserKernelEngine() : octree(nullptr), kernel(nullptr), upperLimit(2), treeHeight(0) {
     }
 
 
@@ -270,26 +303,27 @@ public:
         }
     }
 
-    void user_kernel_config( Scalfmm_Kernel_Descriptor userKernel, void * userDatas){
+    virtual void user_kernel_config( Scalfmm_Kernel_Descriptor userKernel, void * userDatas){
         if(!kernel){
             kernel = new CoreKernelClass(userKernel,userDatas);
         }
     }
 
-    void build_tree(int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
+    virtual void build_tree(int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
         CoreCell::Init(user_cell_descriptor);
         this->treeHeight = TreeHeight;
+        this->boxCenter = FPoint<FReal>(BoxCenter[0],BoxCenter[1],BoxCenter[2]);
+        this->boxWidth = BoxWidth;
+        boxCorner.setX(boxCenter.getX() - boxWidth/2.0);
+        boxCorner.setY(boxCenter.getY() - boxWidth/2.0);
+        boxCorner.setZ(boxCenter.getZ() - boxWidth/2.0);
+        this->boxWidthAtLeafLevel = BoxWidth/(2<<TreeHeight);
         printf("Tree Height : %d \n",TreeHeight);
         this->octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint<FReal>(BoxCenter));
     }
 
     void reset_tree(Callback_reset_cell cellReset){
         double boxwidth = octree->getBoxWidth();
-        FPoint<FReal> BoxCenter = octree->getBoxCenter();
-        double boxCorner[3];
-        boxCorner[0] = BoxCenter.getX() - boxwidth/2.0;
-        boxCorner[1] = BoxCenter.getY() - boxwidth/2.0;
-        boxCorner[2] = BoxCenter.getZ() - boxwidth/2.0;
         //apply user function reset on each user's cell
         octree->forEachCellWithLevel([&](CoreCell * currCell,const int currLevel){
                 if(currCell->getContainer()){
@@ -297,9 +331,9 @@ public:
                     int arrayCoord[3] = {currCoord.getX(),currCoord.getY(),currCoord.getZ()};
                     MortonIndex    currMorton = currCoord.getMortonIndex(currLevel);
                     double position[3];
-                    position[0] = boxCorner[0] + currCoord.getX()*boxwidth/double(1<<currLevel);
-                    position[1] = boxCorner[1] + currCoord.getY()*boxwidth/double(1<<currLevel);
-                    position[2] = boxCorner[2] + currCoord.getZ()*boxwidth/double(1<<currLevel);
+                    position[0] = boxCorner.getX() + currCoord.getX()*boxwidth/double(1<<currLevel);
+                    position[1] = boxCorner.getY() + currCoord.getY()*boxwidth/double(1<<currLevel);
+                    position[2] = boxCorner.getZ() + currCoord.getZ()*boxwidth/double(1<<currLevel);
                     cellReset(currLevel,currMorton,arrayCoord,position,currCell->getContainer(),kernel->getUserKernelDatas());
                 }
             });
@@ -362,7 +396,7 @@ public:
         FScalFMMEngine<FReal>::template generic_get_positions_xyz_npart<ContainerClass,LeafClass,CoreCell>(octree,NbPositions,idxOfParticles,positionsToFill,type);
     }
 
-    void get_positions( int NbPositions, double *X, double *Y , double *Z, PartType type){
+    void get_positions(int NbPositions, double *X, double *Y , double *Z, PartType type){
         FScalFMMEngine<FReal>::template generic_get_positions<ContainerClass,LeafClass,CoreCell>(octree,NbPositions,X,Y,Z,type);
     }
 
@@ -423,7 +457,7 @@ public:
     /*
      * Call the user allocator on userDatas member field of each cell
      */
-    void init_cell(){
+    virtual void init_cell(){
         void * generic_ptr = nullptr;
         if(kernel){
             generic_ptr = kernel->getUserKernelDatas();
@@ -432,11 +466,6 @@ public:
             std::cout <<"Warning, no user kernel data set, need to call kernel config first"<< std::endl;
         }
         double boxwidth = octree->getBoxWidth();
-        FPoint<FReal> BoxCenter = octree->getBoxCenter();
-        double boxCorner[3];
-        boxCorner[0] = BoxCenter.getX() - boxwidth/2.0;
-        boxCorner[1] = BoxCenter.getY() - boxwidth/2.0;
-        boxCorner[2] = BoxCenter.getZ() - boxwidth/2.0;
         //apply user function on each cell
         octree->forEachCellWithLevel([&](CoreCell * currCell,const int currLevel){
                 if(!(currCell->getContainer())){
@@ -444,9 +473,9 @@ public:
                     int arrayCoord[3] = {currCoord.getX(),currCoord.getY(),currCoord.getZ()};
                     MortonIndex    currMorton = currCoord.getMortonIndex(currLevel);
                     double position[3];
-                    position[0] = boxCorner[0] + currCoord.getX()*boxwidth/double(1<<currLevel);
-                    position[1] = boxCorner[1] + currCoord.getY()*boxwidth/double(1<<currLevel);
-                    position[2] = boxCorner[2] + currCoord.getZ()*boxwidth/double(1<<currLevel);
+                    position[0] = boxCorner.getX() + currCoord.getX()*boxwidth/double(1<<currLevel);
+                    position[1] = boxCorner.getY() + currCoord.getY()*boxwidth/double(1<<currLevel);
+                    position[2] = boxCorner.getZ() + currCoord.getZ()*boxwidth/double(1<<currLevel);
                     currCell->setContainer(CoreCell::GetInit()(currLevel,currMorton,arrayCoord,position,generic_ptr));
                 }
             });
@@ -545,7 +574,7 @@ public:
 
     }
 
-    void execute_fmm(){
+    virtual void execute_fmm(){
         FAssertLF(kernel,"No kernel set, please use scalfmm_user_kernel_config before calling the execute routine ... Exiting \n");
         switch(FScalFMMEngine<FReal>::Algorithm){
         case 0:
@@ -602,7 +631,7 @@ public:
         }
     }
 
-    void intern_dealloc_handle(Callback_free_cell userDeallocator){
+    virtual void intern_dealloc_handle(Callback_free_cell userDeallocator){
         free_cell(userDeallocator);
     }
 };

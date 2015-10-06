@@ -34,27 +34,35 @@ void cheb_free_cell(void * inCell){
  * @brief Wrapper to FMM operators (refer to CScalfmmApi.h to get the
  * detailed descriptions)
  */
-void cheb_p2m(void* cellData, FSize nbParticlesInLeaf, const FSize* particleIndexes, void* userData){
+void cheb_p2m(void* cellData, FSize nbParticlesInLeaf, const FSize* particleIndexes,
+              void* userData){
     ChebKernel_P2M(cellData,nbParticlesInLeaf,particleIndexes,userData);
 }
-void cheb_m2m(int level, void* parentCell, int childPosition, void* childCell, void* userData){
+void cheb_m2m(int level, void* parentCell, int childPosition, void* childCell,
+              void* userData){
     ChebKernel_M2M(level,parentCell,childPosition,childCell,userData);
 }
-void cheb_m2l_full(int level, void* targetCell, void* sourceCell[343], void* userData){
-    ChebKernel_M2L(level, targetCell, sourceCell, userData);
+void cheb_m2l_full(int level, void* targetCell,const int* neighborPosition, const int size, void** sourceCell,
+                   void* userData){
+    ChebKernel_M2L(level, targetCell, neighborPosition, size, sourceCell, userData);
 }
-void cheb_l2l(int level, void* parentCell, int childPosition, void* childCell, void* userData){
+void cheb_l2l(int level, void* parentCell, int childPosition, void* childCell,
+              void* userData){
     ChebKernel_L2L( level, parentCell, childPosition, childCell,  userData);
 }
-void cheb_l2p(void* leafCell, FSize nbParticles, const FSize* particleIndexes, void* userData){
+void cheb_l2p(void* leafCell, FSize nbParticles, const FSize* particleIndexes,
+              void* userData){
     ChebKernel_L2P( leafCell, nbParticles, particleIndexes, userData);
 }
 void cheb_p2pFull(FSize nbParticles, const FSize* particleIndexes,
-                  const FSize * sourceParticleIndexes[27], FSize sourceNbPart[27],void* userData) {
-    ChebKernel_P2P(nbParticles, particleIndexes, sourceParticleIndexes, sourceNbPart, userData);
+                  const FSize ** sourceParticleIndexes, FSize* sourceNbPart,const int * sourcePosition,
+                  const int size, void* userData) {
+    ChebKernel_P2P(nbParticles, particleIndexes, sourceParticleIndexes, sourceNbPart,sourcePosition,size,
+                   userData);
 }
 
-void cheb_resetCell(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell, void * userData){
+void cheb_resetCell(int level, long long morton_index, int* tree_position,
+                    double* spatial_position, void * userCell, void * userData){
     ChebCell_reset(level,morton_index,tree_position,spatial_position,userCell,userData);
 }
 
@@ -91,15 +99,15 @@ int main(int argc, char ** av){
         printf("Creating Particles:\n");
         FSize idxPart;
         for(idxPart = 0 ; idxPart < nbPart ; ++idxPart){
-            particleXYZ[idxPart*3]   = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[0];
-            particleXYZ[idxPart*3+1] = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[1];
-            particleXYZ[idxPart*3+2] = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[2];
+            particleXYZ[idxPart*3]   = (random()/(double)(RAND_MAX))*boxWidth
+                - boxWidth/2 + boxCenter[0];
+            particleXYZ[idxPart*3+1] = (random()/(double)(RAND_MAX))*boxWidth
+                - boxWidth/2 + boxCenter[1];
+            particleXYZ[idxPart*3+2] = (random()/(double)(RAND_MAX))*boxWidth
+                - boxWidth/2 + boxCenter[2];
             physicalValues[idxPart] = 1.0;
-
         }
-
     }
-
     {//This part will write generated particles to a file at ScalFMM
      //format in order to verify numercal results
         /* FILE * fd = fopen("input.fma","w"); */
@@ -171,7 +179,8 @@ int main(int argc, char ** av){
     userDatas.insertedPositions = particleXYZ;                                       // Set the position
     userDatas.myPhyValues = physicalValues;                                          // Set the physical values
 
-    //Create as many array of forces as there are threads in order to void concurrent write
+    //Create as many array of forces as there are threads in order to
+    //void concurrent write
     double ** forcesToStore = malloc(sizeof(double*)*nb_threads);
     //For each array, initialisation
     for(idThreads=0 ; idThreads<nb_threads ; ++idThreads){

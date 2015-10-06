@@ -50,13 +50,21 @@ void ChebKernelStruct_free(void * kernel);
 
 void ChebKernel_P2M(void * leafCell, FSize nbParticles,const FSize* particleIndexes, void* kernel);
 void ChebKernel_M2M(int level, void* parentCell, int childPosition, void* childCell, void* kernel);
-void ChebKernel_M2L(int level, void* targetCell, void* sourceCell[343], void* kernel);
+//Change here to somethong nearer M2L defined in Src/Components/FAbstractKernels.hpp
+void ChebKernel_M2L(int level, void* targetCell,const int*neighborPositions,int size, void** sourceCell, void* kernel);
 void ChebKernel_L2L(int level, void* parentCell, int childPosition, void* childCell, void* kernel);
 void ChebKernel_L2P(void* leafCell, FSize nbParticles, const FSize* particleIndexes, void* kernel);
 void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes,
-                    const FSize * sourceParticleIndexes[27], FSize sourceNbPart[27],void* userData);
+                    const FSize ** sourceParticleIndexes, FSize * sourceNbPart,
+                    const int * sourcePosition,const int size,void* userData);
 
 void ChebCell_reset(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell, void * kernel);
+
+FSize ChebCell_getSize(int level,void * userData, long long morton_index);
+
+void ChebCell_copy(void * userDatas, FSize size, void * memoryAllocated);
+
+void* ChebCell_restore(int level, void * arrayTobeRead);
 
 typedef struct myUserDatas{
     ChebKernelStruct * kernelStruct;

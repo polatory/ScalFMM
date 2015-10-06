@@ -6,8 +6,9 @@ extern "C" {
 #include "FInterEngine.hpp"
 #include "FUserKernelEngine.hpp"
 
-
-extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,double* BoxCenter, */scalfmm_kernel_type KernelType,
+extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,
+                                         double* BoxCenter, */
+                                       scalfmm_kernel_type KernelType,
                                        scalfmm_algorithm algo){
     ScalFmmCoreHandle<double> * handle = new ScalFmmCoreHandle<double>();
     typedef double FReal;
@@ -19,7 +20,7 @@ extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,double* 
             typedef FP2PParticleContainerIndexed<FReal>           ContainerClass;
             typedef FTypedLeaf<FReal,ContainerClass>                                         LeafClass;
 
-            handle->engine = new FUserKernelEngine<FReal,LeafClass>(/*TreeHeight, BoxWidth, BoxCenter, */KernelType);
+            handle->engine = new FUserKernelEngine<FReal,LeafClass>(/*TreeHeight, BoxWidth, BoxCenter, */KernelType,algo);
             break;
 
         case 1:
@@ -61,7 +62,7 @@ extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,double* 
                 typedef FP2PParticleContainerIndexed<FReal>                            ContainerClass;
                 typedef FSimpleLeaf<FReal,ContainerClass>                                   LeafClass;
 
-                handle->engine = new FUserKernelEngine<FReal,LeafClass>(/*TreeHeight, BoxWidth, BoxCenter, */KernelType);
+                handle->engine = new FUserKernelEngine<FReal,LeafClass>(/*TreeHeight, BoxWidth, BoxCenter, */KernelType,algo);
                 break;
 
             case 1:
@@ -101,6 +102,33 @@ extern "C" void scalfmm_dealloc_handle(scalfmm_handle handle, Callback_free_cell
     delete ((ScalFmmCoreHandle<double> *) handle)->engine ;
     delete (ScalFmmCoreHandle<double> *) handle;
 }
+
+
+/**
+ * @brief Init function for distributed version (MPI).
+ *
+ */
+#ifdef SCALFMM_USE_MPI
+
+#include "Utils/FMpi.hpp"
+#include "FUserKernelDistrEngine.hpp"
+
+extern "C" scalfmm_handle scalfmm_init_distributed( scalfmm_kernel_type KernelType,
+                                                    scalfmm_algorithm algo,
+                                                    const MPI_Comm comm){
+
+    ScalFmmCoreHandle<double> * handle = new ScalFmmCoreHandle<double>();
+
+    //Only the User Defined Kernel version (UDK) is available.
+    typedef double FReal;
+    typedef FP2PParticleContainerIndexed<FReal>                            ContainerClass;
+    typedef FSimpleLeaf<FReal,ContainerClass>                                   LeafClass;
+
+    handle->engine = (new FUserKernelDistrEngine<FReal,LeafClass>(KernelType,algo,comm));
+    return handle;
+}
+
+#endif
 
 /**
  * This parts implements all the function defined in FChebInterface.h
@@ -229,21 +257,17 @@ extern "C" void  ChebKernel_M2M(int level, void* parentCell, int childPosition, 
                                                                         parentChebCell->getMultipole(0));
 }
 
-extern "C" void ChebKernel_M2L(int level, void* targetCell,  void* sourceCell[343], void* inKernel){
+extern "C" void ChebKernel_M2L(int level, void* targetCell, const int*neighborPositions,int size,
+                               void** sourceCell, void* inKernel){
     //Get our structures
     ChebCellStruct * targetCellStruct = reinterpret_cast<ChebCellStruct *>(targetCell);
     //get real cheb cell
     FChebCell<double,7>* const targetChebCell = targetCellStruct->cell;
 
     //copy to an array of FChebCell
-    const FChebCell<double,7>* arrayOfChebCell[343];
-    for(int i=0; i<343 ; ++i){
-        if(sourceCell[i] != nullptr){
-            arrayOfChebCell[i] = reinterpret_cast<ChebCellStruct*>(sourceCell[i])->cell;
-        }
-        else{
-            arrayOfChebCell[i] = nullptr;
-        }
+    FChebCell<double,7> const ** arrayOfChebCell = new const FChebCell<double,7>*[size];
+    for(int i=0; i<size ; ++i){
+        arrayOfChebCell[i] = reinterpret_cast<ChebCellStruct*>(sourceCell[i])->cell;
     }
 
     //Identify thread number
@@ -251,7 +275,8 @@ extern "C" void ChebKernel_M2L(int level, void* targetCell,  void* sourceCell[34
 
     //Get the kernel
     ChebKernelStruct * inKernelStruct = reinterpret_cast<UserData*>(inKernel)->kernelStruct;
-    inKernelStruct->kernel[id_thread]->M2L(targetChebCell,arrayOfChebCell,0,level);
+    inKernelStruct->kernel[id_thread]->M2L(targetChebCell,arrayOfChebCell,neighborPositions,size,level);
+    delete [] arrayOfChebCell;
 }
 
 extern "C" void ChebKernel_L2L(int level, void* parentCell, int childPosition, void* childCell, void* inKernel){
@@ -314,8 +339,8 @@ extern "C" void ChebKernel_L2P(void* leafCell, FSize nbParticles, const FSize* p
 }
 
 
-void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes,
-                    const FSize * sourceParticleIndexes[27],FSize sourceNbPart[27],void* inKernel){
+void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes, const FSize ** sourceParticleIndexes,FSize* sourceNbPart,
+                    const int * sourcePosition,const int size, void* inKernel){
 
     //Create temporary FSimpleLeaf for target
     FP2PParticleContainerIndexed<double>* tempContTarget = new FP2PParticleContainerIndexed<double>();
@@ -328,9 +353,9 @@ void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes,
         tempContTarget->push(pos,particleIndexes[i],Phi);
     }
 
-    //Create 27 FSimpleLeaf for 27 sources
-    FP2PParticleContainerIndexed<double>* tempContSources[27];
-    for(int idSource=0; idSource<27 ; ++idSource){
+    //Create size FSimpleLeaf for the size sources
+    FP2PParticleContainerIndexed<double>** tempContSources = new FP2PParticleContainerIndexed<double>*[size];
+    for(int idSource=0; idSource<size ; ++idSource){
         if(sourceNbPart[idSource] != 0){
             //Create container
             tempContSources[idSource] = new FP2PParticleContainerIndexed<double>();
@@ -362,7 +387,7 @@ void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes,
     //Empty tree coordinate
     int coord[3] = {0,0,0};
 
-    inKernelStruct->kernel[id_thread]->P2P(FTreeCoordinate(coord),tempContTarget,nullptr,tempContSources,0);
+    inKernelStruct->kernel[id_thread]->P2P(FTreeCoordinate(coord),tempContTarget,nullptr,tempContSources,sourcePosition,size);
 
     //get back forces & potentials
     double * forcesToFill = reinterpret_cast<UserData *>(inKernel)->forcesComputed[id_thread];
@@ -378,7 +403,7 @@ void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes,
 
     //Note that sources are also modified.
     //get back sources forces
-    for(int idSource = 0 ; idSource < 27 ; ++idSource){
+    for(int idSource = 0 ; idSource < size ; ++idSource){
         const FVector<FSize>& indexesSource = tempContSources[idSource]->getIndexes();
         const FSize nbPartInSource = sourceNbPart[idSource];
         for(int idxSourcePart = 0; idxSourcePart < nbPartInSource ; ++idxSourcePart){
@@ -390,16 +415,91 @@ void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes,
     }
 
     //Release memory
-    for(int idSource=0; idSource<27 ; ++idSource){
+    for(int idSource=0; idSource<size ; ++idSource){
         if(tempContSources[idSource]) delete tempContSources[idSource];
     }
-    delete tempContTarget;
+    delete    tempContTarget;
+    delete [] tempContSources;
 }
 
 void ChebCell_reset(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell,void * inKernel){
     ChebCellStruct *  cellStruct = reinterpret_cast<ChebCellStruct *>(userCell);
     FChebCell<double,7>* chebCell = cellStruct->cell;
     chebCell->resetToInitialState();
+}
+
+FSize ChebCell_getSize(int level,void * userData, long long morton_index){
+    //Create fake one and ask for its size
+    FChebCell<double,7>* chebCell = new FChebCell<double,7>();
+    //then return what size is needed to store a cell
+    FSize sizeToReturn = chebCell->getSavedSize();
+    delete chebCell;
+    return sizeToReturn;
+}
+
+/**
+ * This is what the memory looks like
+ * : [Morton]    [Coord][Multipole]        [Local]
+ * : [1*longlong][3*int][double*VectorSize][double*VectorSize]
+ */
+void ChebCell_copy(void * userDatas, FSize size, void * memoryAllocated){
+    //First cast inside outr struct
+    ChebCellStruct *  cellStruct = reinterpret_cast<ChebCellStruct *>(userDatas);
+    //Then get the FChebCell
+    FChebCell<double,7>* chebCell = cellStruct->cell;
+    //I know for sure there is enough place inside memory Allocated
+    FSize cursor = 0;
+
+    char * toWrite = static_cast<char * >(memoryAllocated);
+
+    //Morton first
+    long long here;
+    here = chebCell->getMortonIndex();
+    memcpy(&toWrite[cursor],&here, sizeof(long long));
+    cursor += sizeof(long long);
+
+    //FTreeCordinate then
+    int coord[3] = {chebCell->getCoordinate().getX(),
+                    chebCell->getCoordinate().getY(),
+                    chebCell->getCoordinate().getZ()};
+    memcpy(&toWrite[cursor],coord, sizeof(int)*3);
+    cursor += 3*sizeof(int);
+    //Upward datas
+    memcpy(&toWrite[cursor],chebCell->getMultipole(0),chebCell->getVectorSize()*sizeof(double));
+    cursor += sizeof(double)*chebCell->getVectorSize();
+    //Downward datas
+    memcpy(&toWrite[cursor],chebCell->getLocal(0),chebCell->getVectorSize()*sizeof(double));
+    cursor += sizeof(double)*chebCell->getVectorSize();
+}
+
+/**
+ * This is what the memory looks like
+ * : [Morton]    [Coord][Multipole]        [Local]
+ * : [1*longlong][3*int][double*VectorSize][double*VectorSize]
+ */
+void* ChebCell_restore(int level, void * arrayTobeRead){
+    FSize cursor = 0;
+    //First read Morton
+    long long morton = (static_cast<long long *>(arrayTobeRead))[0];
+    cursor += sizeof(long long);
+    //Then Coord :
+    int * coord = reinterpret_cast<int*>(&(static_cast<char*>(arrayTobeRead))[cursor]);
+    cursor += sizeof(int)*3;
+
+    //Create target Cell and Struct
+    ChebCellStruct *  cellStruct = ChebCellStruct_create(morton,coord);
+
+    //Then copy inside this cell the Multipole and the Local
+    double * mult = reinterpret_cast<double*>(&(static_cast<char*>(arrayTobeRead))[cursor]);
+    memcpy((cellStruct->cell)->getMultipole(0),mult,((cellStruct->cell)->getVectorSize())*sizeof(double));
+    cursor += (cellStruct->cell)->getVectorSize()*sizeof(double);
+
+    double * local = reinterpret_cast<double*>(&(static_cast<char*>(arrayTobeRead))[cursor]);
+    memcpy((cellStruct->cell)->getLocal(0),local,((cellStruct->cell)->getVectorSize())*sizeof(double));
+    cursor += (cellStruct->cell)->getVectorSize()*sizeof(double);
+
+    //Yeah, can return, finally !!
+    return cellStruct;
 }
 
 #endif
