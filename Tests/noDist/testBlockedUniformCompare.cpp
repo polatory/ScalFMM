@@ -77,6 +77,7 @@ const FParameterNames LocalOptionOmp4 { {"-omp-taskdep"}, "To use FFmmAlgorithmO
 const FParameterNames LocalOptionClassic { {"-omp", "omp-classic"}, "In order to use classic parallelism"};
 const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
 const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
+const FParameterNames LocalOptionFMMValidate { {"-fmm-validation"}, "To check with usual FMM"};
 const FParameterNames LocalOptionProlate { {"-prolate"}, "To generate prolate distribution"};
 const FParameterNames LocalOptionProlateNonUnif { {"-prolate-nonunif"}, "To generate prolate distribution"};
 const FParameterNames LocalOptionNonUnif { {"-nonunif"}, "To generate non uniform"};
@@ -751,6 +752,126 @@ struct RunContainer{
                 std::cout << "Error : fy " << fy << "\n";
                 std::cout << "Error : fz " << fz << "\n";
             }
+            if(FParameters::existParameter(argc, argv, LocalOptionFMMValidate.options) == true){
+                {
+                    FSize offsetParticles = 0;
+                    FReal*const allPhysicalValues = allParticles.getPhysicalValues();
+                    FReal*const allPosX = const_cast<FReal*>( allParticles.getPositions()[0]);
+                    FReal*const allPosY = const_cast<FReal*>( allParticles.getPositions()[1]);
+                    FReal*const allPosZ = const_cast<FReal*>( allParticles.getPositions()[2]);
+
+                    FReal*const allDirectPotentials = allParticles.getPotentials();
+                    FReal*const allDirectforcesX = allParticles.getForcesX();
+                    FReal*const allDirectforcesY = allParticles.getForcesY();
+                    FReal*const allDirectforcesZ = allParticles.getForcesZ();
+
+                    groupedTree.template forEachCellLeaf<FP2PGroupParticleContainer<FReal> >([&](GroupCellClass cellTarget, FP2PGroupParticleContainer<FReal> * leafTarget){
+                        const FReal*const physicalValues = leafTarget->getPhysicalValues();
+                        const FReal*const posX = leafTarget->getPositions()[0];
+                        const FReal*const posY = leafTarget->getPositions()[1];
+                        const FReal*const posZ = leafTarget->getPositions()[2];
+
+                        const FReal*const pot = leafTarget->getPotentials();
+                        const FReal*const fx = leafTarget->getForcesX();
+                        const FReal*const fy = leafTarget->getForcesY();
+                        const FReal*const fz = leafTarget->getForcesZ();
+
+                        const FSize nbPartsInLeafTarget = leafTarget->getNbParticles();
+
+                        for(FSize idxPart = 0 ; idxPart < nbPartsInLeafTarget ; ++idxPart){
+                            allPhysicalValues[offsetParticles + idxPart] = physicalValues[idxPart];
+                            allPosX[offsetParticles + idxPart] = posX[idxPart];
+                            allPosY[offsetParticles + idxPart] = posY[idxPart];
+                            allPosZ[offsetParticles + idxPart] = posZ[idxPart];
+                            allDirectPotentials[offsetParticles + idxPart] = pot[idxPart];
+                            allDirectforcesX[offsetParticles + idxPart] = fx[idxPart];
+                            allDirectforcesY[offsetParticles + idxPart] = fy[idxPart];
+                            allDirectforcesZ[offsetParticles + idxPart] = fz[idxPart];
+                        }
+
+                        offsetParticles += nbPartsInLeafTarget;
+                    });
+
+                    FAssertLF(offsetParticles == loader.getNumberOfParticles());
+                }
+
+                // typedefs
+                typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+                typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
+                typedef FUnifCell<FReal,ORDER> CellClass;
+                typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
+                typedef FUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+
+                // init oct-tree
+                const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
+                OctreeClass tree(NbLevels, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
+
+                FTic time;
+                { // -----------------------------------------------------
+                    std::cout << "Creating & Inserting " << loader.getNumberOfParticles()
+                              << " particles ..." << std::endl;
+                    std::cout << "\tHeight : " << NbLevels << " \t sub-height : " << SubTreeHeight << std::endl;
+                    time.tic();
+
+                    FReal*const allPhysicalValues = allParticles.getPhysicalValues();
+                    FReal*const allPosX = const_cast<FReal*>( allParticles.getPositions()[0]);
+                    FReal*const allPosY = const_cast<FReal*>( allParticles.getPositions()[1]);
+                    FReal*const allPosZ = const_cast<FReal*>( allParticles.getPositions()[2]);
+
+                    for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+                        // put in tree
+                        tree.insert(FPoint<FReal>(allPosX[idxPart], allPosY[idxPart], allPosZ[idxPart]), idxPart, allPhysicalValues[idxPart]);
+                    }
+
+                    time.tac();
+                    std::cout << "Done  " << "(@Creating and Inserting Particles = "
+                              << time.elapsed() << "s)." << std::endl;
+                } // -----------------------------------------------------
+
+                {
+                    KernelClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
+                    typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+                    std::cout << "Using FFmmAlgorithmThread " << std::endl;
+                    FmmClass algorithm(&tree, &kernels);
+                    time.tic();
+                    algorithm.execute();
+                    time.tac();
+                    std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
+                }
+
+                {
+                    FReal*const allDirectPotentials = allParticles.getPotentials();
+                    FReal*const allDirectforcesX = allParticles.getForcesX();
+                    FReal*const allDirectforcesY = allParticles.getForcesY();
+                    FReal*const allDirectforcesZ = allParticles.getForcesZ();
+
+                    FMath::FAccurater<FReal> potentialDiff;
+                    FMath::FAccurater<FReal> fx, fy, fz;
+                    FSize offsetParticles = 0;
+                    tree.forEachCellLeaf([&](CellClass* cellTarget, LeafClass* leaf){
+                        ContainerClass * leafTarget = leaf->getTargets();
+                        const FReal*const potentials = leafTarget->getPotentials();
+                        const FReal*const forcesX = leafTarget->getForcesX();
+                        const FReal*const forcesY = leafTarget->getForcesY();
+                        const FReal*const forcesZ = leafTarget->getForcesZ();
+                        const FSize nbPartsInLeafTarget = leafTarget->getNbParticles();
+
+                        for(int idxTgt = 0 ; idxTgt < nbPartsInLeafTarget ; ++idxTgt){
+                            potentialDiff.add(allDirectPotentials[idxTgt + offsetParticles], potentials[idxTgt]);
+                            fx.add(allDirectforcesX[idxTgt + offsetParticles], forcesX[idxTgt]);
+                            fy.add(allDirectforcesY[idxTgt + offsetParticles], forcesY[idxTgt]);
+                            fz.add(allDirectforcesZ[idxTgt + offsetParticles], forcesZ[idxTgt]);
+                        }
+
+                        offsetParticles += nbPartsInLeafTarget;
+                    });
+
+                    std::cout << "Error : Potential " << potentialDiff << "\n";
+                    std::cout << "Error : fx " << fx << "\n";
+                    std::cout << "Error : fy " << fy << "\n";
+                    std::cout << "Error : fz " << fz << "\n";
+                }
+            }
         }
 
     }
@@ -768,7 +889,7 @@ int main(int argc, char* argv[]){
                          FParameterDefinitions::NbThreads,
                          LocalOptionBlocSize, LocalOptionNoValidate, LocalOptionClassic,
                          LocalOptionOmpTask, LocalOptionOmpSection, LocalOptionOmpBalance,
-                         LocalOrder
+                         LocalOrder, LocalOptionFMMValidate
 #ifdef SCALFMM_USE_OMP4
                          , LocalOptionOmp4
 #endif
