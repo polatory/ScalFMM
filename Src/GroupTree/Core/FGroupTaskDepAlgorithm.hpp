@@ -417,7 +417,7 @@ protected:
                     subCellGroup = (*iterChildCells);
                     subCellGroupPoles = (*iterChildCells)->getRawMultipoleBuffer();
 
-                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroup, subCellGroupPoles) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_M2M)
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroup, subCellGroupPoles) depend(commute_if_supported: cellPoles[0]) depend(in: subCellGroupPoles[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_M2M)
                     {
                         KernelClass*const kernel = kernels[omp_get_thread_num()];
                         const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
