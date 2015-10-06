@@ -165,10 +165,10 @@ public:
                           ContainerClass* const FRestrict targets,
                           ContainerClass* const directNeighborsParticles[], const int neighborPositions[],
                           const int size){
-        for(int idx = 0 ; idx < size ; ++idx){
-            kernel.p2p(targets->getNbParticles(),targets.getIndexes().data(),
-                       directNeighborsParticles[idx]->getNbParticles(),
-        }
+        // for(int idx = 0 ; idx < size ; ++idx){
+        //     kernel.p2p(targets->getNbParticles(),targets.getIndexes().data(),
+        //                directNeighborsParticles[idx]->getNbParticles(),
+        // }
     }
 
 
