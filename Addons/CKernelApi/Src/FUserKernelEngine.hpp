@@ -431,6 +431,10 @@ public:
         FScalFMMEngine<FReal>::template generic_set_positions_npart<ContainerClass,LeafClass,CoreCell>(octree,NbPositions,idxOfParticles,X,Y,Z,type);
     }
 
+    virtual void apply_on_each_leaf(Callback_finalize_leaf function){
+        generic_apply_on_each_leaf<ContainerClass,CoreCell>(octree,kernel->getUserKernelDatas(),function);
+    }
+
     template<class ContainerClass,class CellClass>
     void generic_apply_on_each_leaf(FOctree<FReal,CellClass,ContainerClass,LeafClass>* octreeIn,
                                     void * kernelUserData,
