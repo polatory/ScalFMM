@@ -832,6 +832,15 @@ public:
         FAssertLF(0,"This feature is not available with Chebyshev Kernel, please use your own kernel or do not use it.\n Exiting anyways...\n");
     }
 
+    virtual void create_local_partition(int nbPoints, double * particleXYZ, double ** localArrayFilled, FSize ** indexesFilled, FSize * outputNbPoint){
+        FAssertLF(0,"Either no MPI used or wrong initiation function called\n");
+    }
+    virtual void create_global_partition(int nbPoints, double * particleXYZ, double ** localArrayFilled, FSize ** indexesFilled, FSize * outputNbPoint){
+        FAssertLF(0,"Either no MPI used or wrong initiation function called\n");
+    }
+    virtual void generic_partition(FSize nbThings, size_t sizeofthing, void * arrayOfThing, void ** newArray){
+        FAssertLF(0,"Either no MPI used or wrong initiation function called\n");
+    }
 };
 
 template<class FReal>
@@ -1056,5 +1065,22 @@ extern "C" void scalfmm_print_everything(scalfmm_handle Handle){
 extern "C" void scalfmm_set_upper_limit(scalfmm_handle Handle, int upperLimit){
     ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_upper_limit(upperLimit);
 }
+
+#ifdef SCALFMM_USE_MPI
+extern "C" void scalfmm_create_local_partition(scalfmm_handle handle, int nbPoints, double * particleXYZ, double ** localArrayFilled,
+                                               FSize ** indexesFilled, FSize * outputNbPoint){
+    ((ScalFmmCoreHandle<double> * ) handle)->engine->create_local_partition(nbPoints,particleXYZ,localArrayFilled,indexesFilled,outputNbPoint);
+}
+
+extern "C" void scalfmm_create_global_partition(scalfmm_handle handle, int nbPoints, double * particleXYZ, double ** localArrayFilled,
+                                                FSize ** indexesFilled, FSize * outputNbPoint){
+    ((ScalFmmCoreHandle<double> * ) handle)->engine->create_global_partition(nbPoints,particleXYZ,localArrayFilled,indexesFilled,outputNbPoint);
+}
+
+extern "C" void scalfmm_generic_partition(scalfmm_handle handle, FSize nbThings, size_t sizeofthing, void * arrayOfThing, void ** newArray){
+    ((ScalFmmCoreHandle<double> * ) handle)->engine->generic_partition(nbThings,sizeofthing,arrayOfThing,newArray);
+}
+
+#endif
 
 #endif

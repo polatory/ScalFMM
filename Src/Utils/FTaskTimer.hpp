@@ -29,6 +29,7 @@ protected:
         double duration;
         double start;
         long long int eventId;
+        int threadId;
     };
 
     struct ThreadData{
@@ -100,8 +101,8 @@ public:
             if(threadEvents[idxThread]){
                 for(int idxEvent = 0 ; idxEvent < threadEvents[idxThread]->events.getSize() ; ++idxEvent){
                     const EventDescriptor& event = threadEvents[idxThread]->events[idxEvent];
-                    fprintf(foutput, "event{@id=%lld;@duration=%e;@start=%e;@text=%s}\n",
-                            event.eventId, event.duration, event.start, event.text);
+                    fprintf(foutput, "event{@id=%lld;@thread=%d;@duration=%e;@start=%e;@text=%s}\n",
+                            event.eventId, event.threadId, event.duration, event.start, event.text);
                     FAssertLF(ensureUniqueness.find(event.eventId) == ensureUniqueness.end());
                     ensureUniqueness.insert(event.eventId);
                 }
@@ -113,6 +114,7 @@ public:
 
     class ScopeEvent{
     protected:
+        const int threadId;
         const double eventStartingTime;
         const double measureStartingTime;
         ThreadData*const  myEvents;
@@ -121,18 +123,18 @@ public:
         char taskText[MaxTextLength];
 
     public:
-        ScopeEvent(const int threadId, FTaskTimer* eventsManager, const long long int inTaskId, const char inText[MaxTextLength])
-            : eventStartingTime(FTic::GetTime()), measureStartingTime(eventsManager->startingTime),
-              myEvents(eventsManager->threadEvents[threadId]),
+        ScopeEvent(const int inThreadId, FTaskTimer* eventsManager, const long long int inTaskId, const char inText[MaxTextLength])
+            : threadId(inThreadId), eventStartingTime(FTic::GetTime()), measureStartingTime(eventsManager->startingTime),
+              myEvents(eventsManager->threadEvents[inThreadId]),
               taskId(inTaskId){
             taskText[0] = '\0';
             strncpy(taskText, inText, MaxTextLength);
         }
 
         template <class FirstParameters, class ... Parameters>
-        ScopeEvent(const int threadId, FTaskTimer* eventsManager, const long long int inTaskId, const char inTextFormat, FirstParameters fparam, Parameters ... params)
-            : eventStartingTime(FTic::GetTime()), measureStartingTime(eventsManager->startingTime),
-              myEvents(eventsManager->threadEvents[threadId]),
+        ScopeEvent(const int inThreadId, FTaskTimer* eventsManager, const long long int inTaskId, const char inTextFormat, FirstParameters fparam, Parameters ... params)
+            : threadId(inThreadId), eventStartingTime(FTic::GetTime()), measureStartingTime(eventsManager->startingTime),
+              myEvents(eventsManager->threadEvents[inThreadId]),
               taskId(inTaskId){
             snprintf(taskText, MaxTextLength, inTextFormat, fparam, params...);
         }
@@ -140,8 +142,9 @@ public:
         ~ScopeEvent(){
             EventDescriptor event;
             event.duration = FTic::GetTime()-eventStartingTime;
-            event.eventId = taskId;
-            event.start = eventStartingTime-measureStartingTime;
+            event.eventId  = taskId;
+            event.threadId = threadId;
+            event.start    = eventStartingTime-measureStartingTime;
             strncpy(event.text, taskText, MaxTextLength);
             myEvents->events.push(event);
         }
@@ -156,6 +159,7 @@ public:
 static const int MaxTextLength = 16;
 
 struct EventDescriptor{
+    int threadId;
     char text[MaxTextLength];
     double duration;
     double start;
@@ -184,10 +188,10 @@ int main(int argc, char** argv){
         char line[1024];
         fgets(line, 1024, ftime);
         // written format "event{@id=%lld;@duration=%e;@start=%e;@text=%s}\n"
-        assert(sscanf(line,"event{@id=%lld;@duration=%lf;@start=%lf;@text=%[^}]s%*[^\n]\n",
-            &events[idxEvent].eventId,&events[idxEvent].duration,&events[idxEvent].start,events[idxEvent].text) == 4);
-        printf("event{@id=%lld;@duration=%lf;@start=%lf;@text=%s}\n",
-                events[idxEvent].eventId, events[idxEvent].duration, events[idxEvent].start, events[idxEvent].text);
+        assert(sscanf(line,"event{@id=%lld;@thread=%d;@duration=%lf;@start=%lf;@text=%[^}]s%*[^\n]\n",
+            &events[idxEvent].eventId,&events[idxEvent].threadId,&events[idxEvent].duration,&events[idxEvent].start,events[idxEvent].text) == 5);
+        printf("event{@id=%lld;@thread=%d;@duration=%lf;@start=%lf;@text=%s}\n",
+                events[idxEvent].eventId,events[idxEvent].threadId,events[idxEvent].duration, events[idxEvent].start, events[idxEvent].text);
     }
 
     fclose(ftime);

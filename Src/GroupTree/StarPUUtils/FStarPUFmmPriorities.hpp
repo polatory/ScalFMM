@@ -374,13 +374,27 @@ public:
     }
 };
 
-#else // STARPU_SUPPORT_SCHEDULER
+FStarPUFmmPriorities FStarPUFmmPriorities::controller;
+
+#elif defined(SCALFMM_STARPU_USE_PRIO)// STARPU_SUPPORT_SCHEDULER
 
 class FStarPUFmmPriorities{
     static FStarPUFmmPriorities controller;
 
+    enum Priorities{
+        Prio_P2M = 9 - 5,
+        Prio_M2M = 8 - 5,
+        Prio_M2L_High = 7 - 5,
+        Prio_L2L = 6 - 5,
+        Prio_P2P_Big = 5 - 5,
+        Prio_M2L = 4 - 5,
+        Prio_L2P = 3 - 5,
+        Prio_P2P_Small = 2 - 5
+    };
 
-    FStarPUFmmPriorities(){
+    int treeHeight;
+
+    FStarPUFmmPriorities() : treeHeight(0){
     }
 
 public:
@@ -389,46 +403,47 @@ public:
     }
 
 
-    void init(struct starpu_conf* /*conf*/, const int /*inTreeHeight*/,
+    void init(struct starpu_conf* /*conf*/, const int inTreeHeight,
               FStarPUKernelCapacities* /*inCapacities*/){
-
+        treeHeight = inTreeHeight;
     }
 
     int getInsertionPosP2M() const {
-        return 0;
+        return Prio_P2M;
     }
     int getInsertionPosM2M(const int /*inLevel*/) const {
-        return 0;
+        return Prio_M2M;
     }
-    int getInsertionPosP2M(bool willBeSend) const {
-        return 0;
+    int getInsertionPosP2M(bool /*willBeSend*/) const {
+        return Prio_P2M;
     }
-    int getInsertionPosM2M(const int /*inLevel*/, bool willBeSend) const {
-        return 0;
+    int getInsertionPosM2M(const int /*inLevel*/, bool /*willBeSend*/) const {
+        return Prio_M2M;
     }
     int getInsertionPosM2L(const int inLevel) const {
-        return 0;
+        return inLevel == treeHeight-1 ? Prio_M2L: Prio_M2L_High;
     }
     int getInsertionPosM2LExtern(const int inLevel) const {
-        return 0;
+        return inLevel == treeHeight-1 ? Prio_M2L : Prio_M2L_High;
     }
-    int getInsertionPosL2L(const int inLevel) const {
-        return 0;
+    int getInsertionPosL2L(const int /*inLevel*/) const {
+        return Prio_L2L;
     }
     int getInsertionPosL2P() const {
-        return 0;
+        return Prio_L2P;
     }
     int getInsertionPosP2P() const {
-        return 0;
+        return Prio_P2P_Big;
     }
     int getInsertionPosP2PExtern() const {
-        return 0;
+        return Prio_P2P_Small;
     }
 };
 
-#endif // STARPU_SUPPORT_SCHEDULER
-
 FStarPUFmmPriorities FStarPUFmmPriorities::controller;
+
+#endif // SCALFMM_STARPU_USE_PRIO - STARPU_SUPPORT_SCHEDULER
+
 
 
 #endif // FSTARPUFMMPRIORITIES_HPP

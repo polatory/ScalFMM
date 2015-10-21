@@ -92,7 +92,8 @@ typedef enum scalfmm_algorithm_config {
     multi_thread = 1, /* Use the Multi thread version of Scalfmm*/
     periodic = 2,    /* Use the periodic version of Scalfmm*/
     source_target = 3, /* USe the source/target algorithm */
-    adaptiv = 4 /*Temporary*/
+    adaptiv = 4, /*Temporary*/
+    mpi = 5
 } scalfmm_algorithm;
 
 
@@ -135,10 +136,34 @@ scalfmm_handle scalfmm_init( scalfmm_kernel_type KernelType,scalfmm_algorithm al
 typedef void* (*Callback_init_cell)(int level, long long morton_index, int* tree_position, double* spatial_position, void * inDatas);
 
 /**
- * Function to destroy what have bee initialized by the user (should
- * be give in Scalfmm_dealloc_handle)
+ * @brief Function to destroy what have bee initialized by the user
+ * (should be give in Scalfmm_dealloc_handle)
  */
 typedef void (*Callback_free_cell)(void*);
+
+
+/**
+ * @brief Callback used to know the size of userData.
+ * @param level current level of current cell
+ * @param userData Datas that will be serialize
+ * @param morton_index of the current cell
+ */
+typedef FSize (*Callback_get_cell_size)(int level, void * userDatas, long long morton_index);
+
+/**
+ * @brief Callback used to serialize userdata inside an array of size
+ * given above.
+ * @param level current level of current cell
+ * @param userData Datas that will be serialize
+ * @param morton_index of the current cell
+ */
+typedef void (*Callback_copy_cell)(void * userDatas, FSize size, void * memoryAllocated);
+
+/**
+ * @brief Callback used to initialize again userDat from what's have
+ * been stored inside an array with Callback_copy_cell.
+ */
+typedef void * (*Callback_restore_cell)(int level, void * arrayTobeRead);
 
 
 /**
@@ -148,6 +173,9 @@ typedef void (*Callback_free_cell)(void*);
 typedef struct User_Scalfmm_Cell_Descriptor{
     Callback_free_cell user_free_cell;
     Callback_init_cell user_init_cell;
+    Callback_get_cell_size user_get_size;
+    Callback_copy_cell user_copy_cell;
+    Callback_restore_cell user_restore_cell;
 }Scalfmm_Cell_Descriptor;
 
 
@@ -448,7 +476,7 @@ typedef void (*Callback_M2L_Ext)(int level, void* targetCell, void* sourceCell, 
  * @param sourceCell array of cell to be read
  * @param userData datas specific to the user's kernel
  */
-typedef void (*Callback_M2LFull)(int level, void* targetCell, void* sourceCell[343], void* userData);
+typedef void (*Callback_M2LFull)(int level, void* targetCell, const int * neighborPosition, const int size, void** sourceCell, void* userData);
 
 /**
  * @brief Function to be filled by user's L2L
@@ -482,17 +510,20 @@ typedef void (*Callback_P2P)(FSize nbParticles, const FSize* particleIndexes, FS
 /**
  * @brief Function to be filled by user's P2P
  * @attention This function is symmetrc, thus when a call is done
- * between target and cell[27], the user needs to apply the target
- * field onto the 27 cells too.
+ * between target and neighbors cell, the user needs to apply the target
+ * field onto the neighbors cells too.
  * @param nbParticles number of particle in current leaf
  * @param particleIndexes indexes of particles currently computed
  * @param sourceCell array of the neighbors source cells
  * @param sourceParticleIndexes array of indices of source particles currently computed
  * @param sourceNbPart array containing the number of part in each neighbors
+ * @param sourcePosition array containing relative position of the neighbor
+ * @param size : size of the arrays (thus, number of existing neighbor cell)
  * @param userData datas specific to the user's kernel
  */
 typedef void (*Callback_P2PFull)(FSize nbParticles, const FSize* particleIndexes,
-                                 const FSize * sourceParticleIndexes[27],FSize sourceNbPart[27], void* userData);
+                                 const FSize ** sourceParticleIndexes,FSize * sourceNbPart,
+                                 const int * sourcePosition, const int size, void* userData);
 
 
 /**
@@ -630,6 +661,10 @@ int scalfmm_get_nb_timers(scalfmm_handle handle);
  */
 void scalfmm_get_timers(scalfmm_handle handle,double * Timers);
 
+/////////////////////////////////////////////////////////////////////
+///////////////        Algorithms functions         /////////////////
+/////////////////////////////////////////////////////////////////////
+
 
 /**
  * @brief Set the upper limit int the tree for applying FMM : standard
@@ -639,6 +674,62 @@ void scalfmm_get_timers(scalfmm_handle handle,double * Timers);
  * @param upperLimit : int  than 2.
  */
 void scalfmm_set_upper_limit(scalfmm_handle handle, int upperLimit);
+
+/////////////////////////////////////////////////////////////////////
+///////////////        Distributed Version         //////////////////
+/////////////////////////////////////////////////////////////////////
+
+#ifdef SCALFMM_USE_MPI
+#warning "IS_THAT_REALLY_WORKING"
+//YES
+
+/**
+ * @brief Init scalfmm library with MPI
+ * @param Same as in Init
+ * @param comm Mpi Communicator
+ */
+scalfmm_handle scalfmm_init_distributed( scalfmm_kernel_type KernelType,scalfmm_algorithm algo, const MPI_Comm comm);
+
+/**
+ * @brief Those function are to be called before the insert method
+ * @param Handle scalfmm_handle provided by scalfmm_init_distributed.
+ * @param nbPoints Number of particles (if local, then it's the number
+ * of particles given to that proc, if global, then it's the total
+ * number of particles)
+ * @param particleXYZ Array of Position. The size is in both case nbPoints.
+ * @param localArrayFilled Array that will be filled with particles
+ * once the partitionning done. Can be inserted with no changes.
+ * @param indexesFilled Array that store the global index of each part
+ * in the localArrayFilled.
+ * @param stride stride between two attributes inside attr.
+ * @param attr array of attribute to be distributed alongside the positions.
+ */
+void scalfmm_create_local_partition(scalfmm_handle handle, int nbPoints, double * particleXYZ, double ** localArrayFilled,
+                                    FSize ** indexesFilled, FSize * outputNbPoint);
+
+void scalfmm_create_global_partition(scalfmm_handle handle, int nbPoints, double * particleXYZ, double ** localArrayFilled,
+                                     FSize ** indexesFilled, FSize * outputNbPoint);
+
+/**
+ * @brief Once the partition done, one can call this fct in order to
+ * partition "things" following the same scheme. Note that arrays must
+ * be in the same order as the original parts.
+ * @param handle scalfmm_handle provided by scalfmm_init_distributed.
+ * @param nbThings number of items
+ * @param sizeofthing size of ONE item
+ * @param arrayOfThing array of items to be sorted/partitionned
+ * @param newArray output array
+ */
+void scalfmm_generic_partition(scalfmm_handle handle, FSize nbThings, size_t sizeofthing, void * arrayOfThing, void ** newArray);
+
+/**
+ * @brief This fct will call delete on its arg, in order to free the
+ * memory allocated inside scalfmm, but given back to the user.
+ */
+void scalfmm_call_delete(void * array);
+
+#endif
+
 
 
 #endif

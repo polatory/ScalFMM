@@ -139,6 +139,8 @@ protected:
         {
             #pragma omp single nowait
             {
+                FLOG( FTic timerSoumission; );
+
                 if( operationsToProceed & FFmmP2P ) directPass();
 
                 if(operationsToProceed & FFmmP2M) bottomPass();
@@ -153,6 +155,7 @@ protected:
 
                 if( operationsToProceed & FFmmL2P ) mergePass();
 
+                FLOG( FLog::Controller << "\t\t Submitting the tasks took " << timerSoumission.tacAndElapsed() << "s\n" );
                 #pragma omp taskwait
             }
         }
@@ -417,7 +420,7 @@ protected:
                     subCellGroup = (*iterChildCells);
                     subCellGroupPoles = (*iterChildCells)->getRawMultipoleBuffer();
 
-                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroup, subCellGroupPoles) depend(inout: cellPoles[0]) depend(in: subCellGroupPoles[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_M2M)
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroup, subCellGroupPoles) depend(commute_if_supported: cellPoles[0]) depend(in: subCellGroupPoles[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_M2M)
                     {
                         KernelClass*const kernel = kernels[omp_get_thread_num()];
                         const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
@@ -557,7 +560,7 @@ protected:
 
                         #pragma omp task default(none) firstprivate(currentCells, cellLocals, outsideInteractions, cellsOther, cellOtherPoles, idxLevel) depend(commute_if_supported: cellLocals[0]) depend(in: cellOtherPoles[0])  priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-1?FGroupTaskDepAlgorithm_Prio_M2L:FGroupTaskDepAlgorithm_Prio_M2L_High)
                         {
-                            FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, (((currentCells->getStartingIndex()<<1) ^ cellsOther->getStartingIndex()) * 20 + idxLevel) * 8 + 3, "M2L-ext"));
+                            FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, (((currentCells->getStartingIndex()+1) * (cellsOther->getStartingIndex()+2)) * 20 + idxLevel) * 8 + 3, "M2L-ext"));
                             KernelClass*const kernel = kernels[omp_get_thread_num()];
 
                             for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
@@ -573,7 +576,7 @@ protected:
 
                         #pragma omp task default(none) firstprivate(currentCells, cellPoles, outsideInteractions, cellsOther, cellOtherLocals, idxLevel) depend(commute_if_supported: cellOtherLocals[0]) depend(in: cellPoles[0])  priority_if_supported(idxLevel==FAbstractAlgorithm::lowerWorkingLevel-1?FGroupTaskDepAlgorithm_Prio_M2L:FGroupTaskDepAlgorithm_Prio_M2L_High)
                         {
-                            FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, (((currentCells->getStartingIndex()) ^ (cellsOther->getStartingIndex()<<1)) * 20 + idxLevel) * 8 + 3, "M2L-ext"));
+                            FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, (((currentCells->getStartingIndex()+1) * (cellsOther->getStartingIndex()+1)) * 20 + idxLevel) * 8 + 3, "M2L-ext"));
                             KernelClass*const kernel = kernels[omp_get_thread_num()];
 
                             for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
@@ -741,6 +744,54 @@ protected:
         FLOG( FTic timer; );
         FLOG( FTic timerInBlock; FTic timerOutBlock; );
 
+        FLOG( timerOutBlock.tic() );
+        {
+            typename OctreeClass::ParticleGroupIterator iterParticles = tree->leavesBegin();
+            const typename OctreeClass::ParticleGroupIterator endParticles = tree->leavesEnd();
+
+            typename std::vector<std::vector<BlockInteractions<ParticleGroupClass>>>::iterator externalInteractionsIter = externalInteractionsLeafLevel.begin();
+
+            while(iterParticles != endParticles){
+                typename std::vector<BlockInteractions<ParticleGroupClass>>::iterator currentInteractions = (*externalInteractionsIter).begin();
+                const typename std::vector<BlockInteractions<ParticleGroupClass>>::iterator currentInteractionsEnd = (*externalInteractionsIter).end();
+
+                ParticleGroupClass* containers = (*iterParticles);
+                unsigned char* containersDown = containers->getRawAttributesBuffer();
+
+                while(currentInteractions != currentInteractionsEnd){
+                    ParticleGroupClass* containersOther = (*currentInteractions).otherBlock;
+                    unsigned char* containersOtherDown = containersOther->getRawAttributesBuffer();
+                    const std::vector<OutOfBlockInteraction>* outsideInteractions = &(*currentInteractions).interactions;
+
+#pragma omp task default(none) firstprivate(containers, containersDown, containersOther, containersOtherDown, outsideInteractions) depend(commute_if_supported: containersOtherDown[0], containersDown[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_P2P_Small)
+                    {
+                        FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, ((containersOther->getStartingIndex()+1) * (containers->getStartingIndex()+1))*20*8 + 6, "P2P-ext"));
+                        KernelClass*const kernel = kernels[omp_get_thread_num()];
+                        for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
+                            ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
+                            ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIdxInBlock);
+
+                            FAssertLF(containersOther->getLeafMortonIndex((*outsideInteractions)[outInterIdx].outsideIdxInBlock) == (*outsideInteractions)[outInterIdx].outIndex);
+                            FAssertLF(containers->getLeafMortonIndex((*outsideInteractions)[outInterIdx].insideIdxInBlock) == (*outsideInteractions)[outInterIdx].insideIndex);
+
+                            ParticleContainerClass* ptrLeaf = &interParticles;
+                            kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].insideIndex, tree->getHeight()-1),
+                                                &particles , &ptrLeaf, &(*outsideInteractions)[outInterIdx].relativeOutPosition, 1);
+                            const int otherPosition = getOppositeNeighIndex((*outsideInteractions)[outInterIdx].relativeOutPosition);
+                            ptrLeaf = &particles;
+                            kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].outIndex, tree->getHeight()-1),
+                                                &interParticles , &ptrLeaf, &otherPosition, 1);
+                        }
+                    }
+
+                    ++currentInteractions;
+                }
+
+                ++iterParticles;
+                ++externalInteractionsIter;
+            }
+        }
+        FLOG( timerOutBlock.tac() );
         FLOG( timerInBlock.tic() );
         {
             typename OctreeClass::ParticleGroupIterator iterParticles = tree->leavesBegin();
@@ -789,54 +840,6 @@ protected:
             }
         }
         FLOG( timerInBlock.tac() );
-        FLOG( timerOutBlock.tic() );
-        {
-            typename OctreeClass::ParticleGroupIterator iterParticles = tree->leavesBegin();
-            const typename OctreeClass::ParticleGroupIterator endParticles = tree->leavesEnd();
-
-            typename std::vector<std::vector<BlockInteractions<ParticleGroupClass>>>::iterator externalInteractionsIter = externalInteractionsLeafLevel.begin();
-
-            while(iterParticles != endParticles){
-                typename std::vector<BlockInteractions<ParticleGroupClass>>::iterator currentInteractions = (*externalInteractionsIter).begin();
-                const typename std::vector<BlockInteractions<ParticleGroupClass>>::iterator currentInteractionsEnd = (*externalInteractionsIter).end();
-
-                ParticleGroupClass* containers = (*iterParticles);
-                unsigned char* containersDown = containers->getRawAttributesBuffer();
-
-                while(currentInteractions != currentInteractionsEnd){
-                    ParticleGroupClass* containersOther = (*currentInteractions).otherBlock;
-                    unsigned char* containersOtherDown = containersOther->getRawAttributesBuffer();
-                    const std::vector<OutOfBlockInteraction>* outsideInteractions = &(*currentInteractions).interactions;
-
-#pragma omp task default(none) firstprivate(containers, containersDown, containersOther, containersOtherDown, outsideInteractions) depend(commute_if_supported: containersOtherDown[0], containersDown[0])  priority_if_supported(FGroupTaskDepAlgorithm_Prio_P2P_Small)
-                    {
-                        FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, (containersOther->getStartingIndex() ^ containers->getStartingIndex())*20*8 + 6, "P2P-ext"));
-                        KernelClass*const kernel = kernels[omp_get_thread_num()];
-                        for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-                            ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
-                            ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIdxInBlock);
-
-                            FAssertLF(containersOther->getLeafMortonIndex((*outsideInteractions)[outInterIdx].outsideIdxInBlock) == (*outsideInteractions)[outInterIdx].outIndex);
-                            FAssertLF(containers->getLeafMortonIndex((*outsideInteractions)[outInterIdx].insideIdxInBlock) == (*outsideInteractions)[outInterIdx].insideIndex);
-
-                            ParticleContainerClass* ptrLeaf = &interParticles;
-                            kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].insideIndex, tree->getHeight()-1),
-                                                &particles , &ptrLeaf, &(*outsideInteractions)[outInterIdx].relativeOutPosition, 1);
-                            const int otherPosition = getOppositeNeighIndex((*outsideInteractions)[outInterIdx].relativeOutPosition);
-                            ptrLeaf = &particles;
-                            kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].outIndex, tree->getHeight()-1),
-                                                &interParticles , &ptrLeaf, &otherPosition, 1);
-                        }
-                    }
-
-                    ++currentInteractions;
-                }
-
-                ++iterParticles;
-                ++externalInteractionsIter;
-            }
-        }
-        FLOG( timerOutBlock.tac() );
 
         FLOG( FLog::Controller << "\t\t directPass in " << timer.tacAndElapsed() << "s\n" );
         FLOG( FLog::Controller << "\t\t\t inblock  in " << timerInBlock.elapsed() << "s\n" );

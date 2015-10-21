@@ -307,10 +307,10 @@ public:
                                   const int idxLevel,
                                   const std::vector<OutOfBlockInteraction>* outsideInteractions,
                                   const int mode){
-        FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(starpu_worker_get_id(), &taskTimeRecorder, (((currentCells->getStartingIndex()<<1) ^ cellsOther->getStartingIndex()) * 20 + idxLevel) * 8 + 3, "M2L-ext"));
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
 
         if(mode == 1){
+            FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(starpu_worker_get_id(), &taskTimeRecorder, (((currentCells->getStartingIndex()+1) * (cellsOther->getStartingIndex()+2)) * 20 + idxLevel) * 8 + 3, "M2L-ext"));
             for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
                 CellClass interCell = cellsOther->getUpCell((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
                 FAssertLF(interCell.getMortonIndex() == (*outsideInteractions)[outInterIdx].outIndex);
@@ -322,6 +322,7 @@ public:
             }
         }
         else{
+            FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(starpu_worker_get_id(), &taskTimeRecorder, (((currentCells->getStartingIndex()+1) * (cellsOther->getStartingIndex()+1)) * 20 + idxLevel) * 8 + 3, "M2L-ext"));
             for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
                 CellClass cell = cellsOther->getUpCell((*outsideInteractions)[outInterIdx].insideIdxInBlock);
                 FAssertLF(cell.getMortonIndex() == (*outsideInteractions)[outInterIdx].insideIndex);
@@ -507,7 +508,7 @@ public:
 
     void directInoutPassPerform(ParticleGroupClass* containers, ParticleGroupClass* containersOther,
                                 const std::vector<OutOfBlockInteraction>* outsideInteractions){
-        FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(starpu_worker_get_id(), &taskTimeRecorder, (containersOther->getStartingIndex() ^ containers->getStartingIndex())*20*8 + 6, "P2P-ext"));
+        FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(starpu_worker_get_id(), &taskTimeRecorder, ((containersOther->getStartingIndex()+1) * (containers->getStartingIndex()+1))*20*8 + 6, "P2P-ext"));
         KernelClass*const kernel = kernels[starpu_worker_get_id()];
         for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
             ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
