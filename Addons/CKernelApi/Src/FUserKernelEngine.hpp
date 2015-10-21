@@ -188,7 +188,7 @@ public:
             kernel.p2p_full(targets->getNbParticles(),targets->getIndexes().data(),indicesPerNeighbors,nbPartPerNeighbors,sourcePosition,size,userData);
         }
         if(kernel.p2p_sym){
-            for(int idx = 0 ; ((idx < size) && (idx < 14)) ; ++idx){
+            for(int idx = 0 ; ((idx < size) && (sourcePosition[idx] < 14)) ; ++idx){
                 kernel.p2p_sym(targets->getNbParticles(), targets->getIndexes().data(),
                                neighbors[idx]->getNbParticles(), neighbors[idx]->getIndexes().data(), userData);
             }
@@ -431,28 +431,28 @@ public:
         FScalFMMEngine<FReal>::template generic_set_positions_npart<ContainerClass,LeafClass,CoreCell>(octree,NbPositions,idxOfParticles,X,Y,Z,type);
     }
 
-
-    // void update_tree(){
-    //     if(arranger){
-    //         arranger->rearrange();
-    //         //then, we need to re-allocate cells user data for the
-    //         //cells created during the process and free user datas for
-    //         //the cells removed during the process
-    //         init_cell();
-    //     }
-    //     else{
-    //         if(FScalFMMEngine<FReal>::Algorithm == 2){ //case in wich the periodic algorithm is used
-    //             arranger = new ArrangerClassPeriodic(octree);
-    //             arranger->rearrange();
-    //             init_cell();
-    //         }
-    //         else{
-    //             arranger = new ArrangerClass(octree);
-    //             arranger->rearrange();
-    //             init_cell();
-    //         }
-    //     }
-    // }
+    template<class ContainerClass,class CellClass>
+    void generic_apply_on_each_leaf(FOctree<FReal,CellClass,ContainerClass,LeafClass>* octreeIn,
+                                    void * kernelUserData,
+                                    Callback_finalize_leaf function){
+        if(octreeIn){
+            octreeIn->forEachCellLeaf([&](CoreCell * currCell, LeafClass * leaf){
+                    int lvl = octreeIn->getHeight();
+                    MortonIndex currMorton = currCell->getMortonIndex();
+                    //Computation of the Center from Coordinate
+                    FTreeCoordinate treeCoord = currCell->getCoordinate();
+                    double boxWidthLeafLevel = octreeIn->getBoxWidth() / (2 << lvl);
+                    FPoint<double> absolutCoord = FPoint<double>(treeCoord.getX()*boxWidthLeafLevel,
+                                                                 treeCoord.getY()*boxWidthLeafLevel,
+                                                                 treeCoord.getZ()*boxWidthLeafLevel);
+                    FPoint<double> leafCenter = absolutCoord + (octreeIn->getBoxCenter()-octreeIn->getBoxWidth()) + boxWidthLeafLevel/2;
+                    function(lvl,leaf->getSrc()->getNbParticles(),leaf->getSrc()->getIndexes().data(),currMorton,leafCenter.getDataValue(),
+                             currCell->getContainer(),kernelUserData);
+                });
+        }else{
+            std::cout << "Need to Build the tree and insert the parts First\n" << std::endl;
+        }
+    }
 
     /*
      * Call the user allocator on userDatas member field of each cell

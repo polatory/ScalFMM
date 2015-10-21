@@ -173,7 +173,9 @@ public:
     virtual void set_potentials_npart( int nbParts, int* idxOfParticles, FReal * potentialsToRead, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
-
+    virtual void apply_on_each_leaf(Callback_finalize_leaf function){
+        FAssertLF(0,"No tree instancied, exiting ...\n");
+    }
 
 
     /** Test ... */
@@ -451,6 +453,7 @@ public:
         }
         update_tree();
     }
+
 
     template<class ContainerClass,class LeafClass,class CellClass>
     void generic_set_positions(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
@@ -1064,6 +1067,10 @@ extern "C" void scalfmm_print_everything(scalfmm_handle Handle){
 
 extern "C" void scalfmm_set_upper_limit(scalfmm_handle Handle, int upperLimit){
     ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_upper_limit(upperLimit);
+}
+
+extern "C" void scalfmm_apply_on_leaf(scalfmm_handle Handle, Callback_finalize_leaf function){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->apply_on_each_leaf(function);
 }
 
 #ifdef SCALFMM_USE_MPI

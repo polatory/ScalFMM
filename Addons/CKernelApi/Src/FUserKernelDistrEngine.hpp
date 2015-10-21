@@ -637,10 +637,18 @@ public:
             });
     }
 
+    void apply_on_each_leaf(Callback_finalize_leaf function){
+        if(octreeDist){
+            FUserKernelEngine<FReal,LeafClass>::template generic_apply_on_each_leaf<ContainerClass,CoreCellDist>(octreeDist,kernel->getUserKernelDatas(),function);
+        }else{
+            std::cout << "Need to Build the tree and insert the parts First\n" << std::endl;
+        }
+    }
+
 
     void execute_fmm(){
         FAssertLF(octreeDist,
-                  "No kernel set, please use scalfmm_user_kernel_config before calling the execute routine ... Exiting \n");
+                  "No Tree set, please use scalfmm_user_kernel_config before calling the execute routine ... Exiting \n");
         //Only one config shall work , so let's use it
         switch(FScalFMMEngine<FReal>::Algorithm){
         case 5:

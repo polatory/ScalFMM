@@ -159,6 +159,22 @@ typedef FSize (*Callback_get_cell_size)(int level, void * userDatas, long long m
  */
 typedef void (*Callback_copy_cell)(void * userDatas, FSize size, void * memoryAllocated);
 
+
+/**
+ * @brief Callback called if scalfmm_finalize_cell is called.
+ * @param level current level of leaves (ie height of the tree)
+ * @param nbParts Number of particles inside that leaf
+ * @param idxParts array of size nbParts, containing the indices of each parts
+ * @param morton_index of the current cell
+ * @param center of the current leaf (3 double)
+ * @param userData cell user data
+ * @param userData Kernel user data
+ */
+typedef void (*Callback_finalize_leaf)(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
+                                       void * cellDatas, void * userDatas);
+
+
+
 /**
  * @brief Callback used to initialize again userDat from what's have
  * been stored inside an array with Callback_copy_cell.
@@ -610,6 +626,13 @@ void scalfmm_user_kernel_config(scalfmm_handle Handle, Scalfmm_Kernel_Descriptor
  * @param Handle scalfmm_handle provided by scalfmm_init
  */
 void scalfmm_execute_fmm(scalfmm_handle Handle);
+
+/**
+ * @brief This function apply the call back on each leaf. Should be
+ * called after insert_parts.
+ * @param
+ */
+void scalfmm_apply_on_leaf(scalfmm_handle Handle, Callback_finalize_leaf function);
 
 
 /////////////////////////////////////////////////////////////////////
