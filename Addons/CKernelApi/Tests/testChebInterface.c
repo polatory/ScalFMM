@@ -66,6 +66,15 @@ void cheb_resetCell(int level, long long morton_index, int* tree_position,
     ChebCell_reset(level,morton_index,tree_position,spatial_position,userCell,userData);
 }
 
+/**
+ * This function is mainly a display of its args...
+ */
+void on_leaf(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
+             void * cellDatas, void * userDatas){
+    printf("I'm leaf at %lld pos, of center [%e %e %e], containing %lld parts\n",
+           morton_index,center[0],center[1],center[2],nbParts);
+}
+
 
 
 /**
@@ -219,6 +228,9 @@ int main(int argc, char ** av){
     int ite=0, max_ite=1;
     while(ite<max_ite){
         //Execute FMM
+
+        scalfmm_apply_on_leaf(handle,on_leaf);
+
         tic(&interface_timer);
         scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
         tac(&interface_timer);
