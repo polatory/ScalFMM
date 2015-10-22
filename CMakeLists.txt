@@ -683,7 +683,10 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
 	    # We are on Windows and we cannot catch signals
 	    message( FATAL_ERROR "Catching the signals requieres an UNIX system." )
     else()
-	    SET(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS} -rdynamic")
+        IF( NOT APPLE)
+	      SET(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS} -rdynamic")
+	      ENDIF()
+	      
     endif()
   ##################################################################
   #                                                                #
