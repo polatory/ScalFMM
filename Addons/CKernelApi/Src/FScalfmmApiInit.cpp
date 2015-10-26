@@ -371,8 +371,7 @@ void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes, const FSize
                 double Phi = reinterpret_cast<UserData *>(inKernel)->myPhyValues[indSource[i]];
                 tempContSources[idSource]->push(pos,indSource[i],Phi);
             }
-        }
-        else{
+        } else{
             tempContSources[idSource] = nullptr;
         }
     }

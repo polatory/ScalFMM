@@ -73,6 +73,7 @@ typedef struct myUserDatas{
     double ** forcesComputed;
     //In the same way we store multiples forces array.
     double ** potentials;
+    double totalEnergy;
 }UserData;
 
 

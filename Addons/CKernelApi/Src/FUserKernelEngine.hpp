@@ -179,13 +179,17 @@ public:
 
         if(kernel.p2p_full){
             //Create the arrays of size and indexes
-            FSize * nbPartPerNeighbors = new FSize[size];
-            const FSize ** indicesPerNeighbors = new const FSize*[size];
-            for(int idx=0 ; idx<size ; ++idx){
-                nbPartPerNeighbors[idx] = neighbors[idx]->getNbParticles();
-                indicesPerNeighbors[idx] = neighbors[idx]->getIndexes().data();
+            if(size != 0){
+                FSize * nbPartPerNeighbors = new FSize[size];
+                const FSize ** indicesPerNeighbors = new const FSize*[size];
+                for(int idx=0 ; idx<size ; ++idx){
+                    nbPartPerNeighbors[idx] = neighbors[idx]->getNbParticles();
+                    indicesPerNeighbors[idx] = neighbors[idx]->getIndexes().data();
+                }
+                kernel.p2p_full(targets->getNbParticles(),targets->getIndexes().data(),indicesPerNeighbors,nbPartPerNeighbors,sourcePosition,size,userData);
+            }else{
+                kernel.p2p_full(targets->getNbParticles(),targets->getIndexes().data(),nullptr,nullptr,sourcePosition,0,userData);
             }
-            kernel.p2p_full(targets->getNbParticles(),targets->getIndexes().data(),indicesPerNeighbors,nbPartPerNeighbors,sourcePosition,size,userData);
         }
         if(kernel.p2p_sym){
             for(int idx = 0 ; ((idx < size) && (sourcePosition[idx] < 14)) ; ++idx){
