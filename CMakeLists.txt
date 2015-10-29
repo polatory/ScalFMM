@@ -14,13 +14,13 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 project(SCALFMM C CXX)
 
 # check if compiling into source directories
-string(COMPARE EQUAL "${CMAKE_SOURCE_DIR}" "${CMAKE_BINARY_DIR}" insource)
+string(COMPARE EQUAL "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}" insource)
 if(insource)
   message(FATAL_ERROR "${PROJECT_NAME} requires an out of source build. Goto ./Build and tapes cmake ../")
 endif(insource)
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules/)
-set(SCALFMM_CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules)
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/)
+set(SCALFMM_CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules)
 #
 # Adds the CMAKE_DEPENDENT_OPTION command
 INCLUDE(CMakeDependentOption)
@@ -40,7 +40,7 @@ set(SCALFMM_VERSION  "${SCALFMM_MAJOR_VERSION}.${SCALFMM_MINOR_VERSION}.${SCALFM
 
 set( MORSE_DISTRIB_DIR "" CACHE PATH "Directory of MORSE distribution")
 
-if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
+if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/")
 
   # Add extra cmake module path and initialize morse cmake modules
   # --------------------------------------------------------------
@@ -48,9 +48,9 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     list(APPEND CMAKE_MODULE_PATH ${MORSE_DISTRIB_DIR}/cmake_modules)
     list(APPEND CMAKE_MODULE_PATH "${MORSE_DISTRIB_DIR}/cmake_modules/morse")
     set(MORSE_CMAKE_MODULE_PATH ${MORSE_DISTRIB_DIR}/cmake_modules/morse )
-  elseif(EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
-    list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules/morse/)
-    set(MORSE_CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMakeModules/morse )
+  elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/")
+    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/)
+    set(MORSE_CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse )
   endif()
   include(MorseInit)
   #
@@ -459,7 +459,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
         set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${CUDA_LIBRARIES}")
       endif()
       
-      set(CUDA_NEEDED_INCLUDE_DIRS ${CMAKE_BINARY_DIR}/Src)
+      set(CUDA_NEEDED_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/Src)
     endif()
 
     # Find StarPU with a list of optional components
@@ -705,7 +705,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
     LIST(APPEND SCALFMM_COMPILE_LIBS   ${lib_var})        
   endforeach()
   configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake
-    ${CMAKE_BINARY_DIR}/Src/ScalFmmConfig.h  )
+    ${CMAKE_CURRENT_BINARY_DIR}/Src/ScalFmmConfig.h  )
   #
   ##################################################################
   #                      Build - lib                               #
@@ -822,7 +822,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   set(CPACK_SOURCE_GENERATOR "TGZ")
   set(CPACK_SOURCE_PACKAGE_FILE_NAME  "SCALFMM-${SCALFMM_MAJOR_VERSION}.${SCALFMM_MINOR_VERSION}-${CPACK_PACKAGE_VERSION_PATCH}")
   set(CPACK_SOURCE_IGNORE_FILES "\\\\.git;.DS_Store;.*~;/*.aux;/*.idx;/*.log;/*.out;/*.toc;/*.ilg;scalfmm.pro*;org.eclipse.core.resources.prefs;.cproject;.project")
-  list(APPEND CPACK_SOURCE_IGNORE_FILES  "${CMAKE_BINARY_DIR};${CMAKE_SOURCE_DIR}/Utils/;Notes;Deprecated;/Build*;/noDist/;/Bench;ToRemove;Olivier")
+  list(APPEND CPACK_SOURCE_IGNORE_FILES  "${CMAKE_CURRENT_BINARY_DIR};${CMAKE_CURRENT_SOURCE_DIR}/Utils/;Notes;Deprecated;/Build*;/noDist/;/Bench;ToRemove;Olivier")
   # Uniform;GroupTree;Adaptive;testUnif*;/*Lagrange*")
   #list(APPEND CPACK_SOURCE_IGNORE_FILES  "Stages;Uniform;Adaptive;testUnif*;*Lagrange*" )
   #
@@ -858,7 +858,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   #                               END                              #
   ##################################################################
 
-else(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
+else(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/")
 
   message(STATUS "MORSE_DISTRIB_DIR is not set")
   message(STATUS "Please indicate where is located your MORSE distribution directory."
@@ -866,4 +866,4 @@ else(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
   message(STATUS "If you are a MORSE developer, you normally have access to the svn repository of the MORSE_DISTRIB_DIR: "
     "svn checkout svn+ssh://yourlogin@scm.gforge.inria.fr/svnroot/morse/trunk/morse_distrib")
 
-endif(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_SOURCE_DIR}/CMakeModules/morse/")
+endif(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/")
