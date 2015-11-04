@@ -10,6 +10,10 @@
 #include "../../Src/Kernels/Chebyshev/FChebInterface.h"
 
 
+// ==== CMAKE =====
+// @FUSE_MPI
+// ================
+
 /**
  * This file is an example of the user defined kernel API, with link
  * to our Chebyshev Kernel
