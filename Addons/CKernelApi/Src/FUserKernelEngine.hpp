@@ -22,6 +22,7 @@
 #define FUSERKERNELENGINE_HPP
 
 #include "FScalFMMEngine.hpp"
+#include "FUserLeafContainer.hpp"
 #include <vector>
 
 /**
@@ -47,6 +48,15 @@ public:
     static Callback_free_cell GetFree(){
         return user_cell_descriptor.user_free_cell;
     }
+
+    static Callback_init_leaf GetInitLeaf(){
+        return user_cell_descriptor.user_init_leaf;
+    }
+
+    static Callback_free_leaf GetFreeLeaf(){
+        return user_cell_descriptor.user_free_leaf;
+    }
+
 
     CoreCell() : userData(nullptr) {
     }
@@ -108,7 +118,7 @@ public:
 
     /** Do nothing */
     virtual void P2M(CellClass* const cell, const ContainerClass* const container) {
-        if(kernel.p2m) kernel.p2m(cell->getContainer(), container->getNbParticles(), container->getIndexes().data(), userData);
+        if(kernel.p2m) kernel.p2m(cell->getContainer(), container->getContainer(), container->getNbParticles(), container->getIndexes().data(), userData);
     }
 
     /** Do nothing */
@@ -158,7 +168,7 @@ public:
 
     virtual void L2P(const CellClass* const cell, ContainerClass* const container){
         //        std::cout << "L2P with "<< container->getNbParticles() <<" - over "<< cell<< " and "<<cell->getContainer() <<" Indexes : ["<<container->getIndexes()[0] <<"]\n";
-        if(kernel.l2p) kernel.l2p(cell->getContainer(), container->getNbParticles(), container->getIndexes().data(), userData);
+        if(kernel.l2p) kernel.l2p(cell->getContainer(),container->getContainer(), container->getNbParticles(), container->getIndexes().data(), userData);
     }
 
     virtual void P2POuter(const FTreeCoordinate& inLeafPosition,
@@ -175,33 +185,32 @@ public:
     virtual void P2P(const FTreeCoordinate& inLeafPosition,
                      ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
                      ContainerClass* const neighbors[],const int sourcePosition[], const int size){
-        if(kernel.p2pinner) kernel.p2pinner(targets->getNbParticles(), targets->getIndexes().data(), userData);
+        if(kernel.p2pinner) kernel.p2pinner(targets->getContainer(),targets->getNbParticles(), targets->getIndexes().data(), userData);
 
         if(kernel.p2p_full){
             //Create the arrays of size and indexes
-            if(size != 0){
-                FSize * nbPartPerNeighbors = new FSize[size];
-                const FSize ** indicesPerNeighbors = new const FSize*[size];
-                for(int idx=0 ; idx<size ; ++idx){
-                    nbPartPerNeighbors[idx] = neighbors[idx]->getNbParticles();
-                    indicesPerNeighbors[idx] = neighbors[idx]->getIndexes().data();
-                }
-                kernel.p2p_full(targets->getNbParticles(),targets->getIndexes().data(),indicesPerNeighbors,nbPartPerNeighbors,sourcePosition,size,userData);
-            }else{
-                kernel.p2p_full(targets->getNbParticles(),targets->getIndexes().data(),nullptr,nullptr,sourcePosition,0,userData);
+            FSize * nbPartPerNeighbors = new FSize[size];
+            const FSize ** indicesPerNeighbors = new const FSize*[size];
+            //create artificial array of void * :
+            void ** arrayOfUserContainer = new void *[size];
+            for(int idx=0 ; idx<size ; ++idx){
+                nbPartPerNeighbors[idx] = neighbors[idx]->getNbParticles();
+                indicesPerNeighbors[idx] = neighbors[idx]->getIndexes().data();
+                arrayOfUserContainer[idx] = neighbors[idx]->getContainer();
             }
+            kernel.p2p_full(targets->getContainer(),targets->getNbParticles(),targets->getIndexes().data(),arrayOfUserContainer,indicesPerNeighbors,nbPartPerNeighbors,sourcePosition,size,userData);
         }
         if(kernel.p2p_sym){
             for(int idx = 0 ; ((idx < size) && (sourcePosition[idx] < 14)) ; ++idx){
-                kernel.p2p_sym(targets->getNbParticles(), targets->getIndexes().data(),
-                               neighbors[idx]->getNbParticles(), neighbors[idx]->getIndexes().data(), userData);
+                kernel.p2p_sym(targets->getContainer(),targets->getNbParticles(), targets->getIndexes().data(),
+                               neighbors[idx]->getContainer(),neighbors[idx]->getNbParticles(), neighbors[idx]->getIndexes().data(), userData);
             }
         }
         else{
             if(kernel.p2p){
                 for(int idx = 0 ; idx < size ; ++idx){
-                    kernel.p2p(targets->getNbParticles(), targets->getIndexes().data(),
-                               neighbors[idx]->getNbParticles(), neighbors[idx]->getIndexes().data(), userData);
+                    kernel.p2p(targets->getContainer(),targets->getNbParticles(), targets->getIndexes().data(),
+                               neighbors[idx]->getContainer(),neighbors[idx]->getNbParticles(), neighbors[idx]->getIndexes().data(), userData);
                 }
             }
         }
@@ -236,7 +245,7 @@ class FUserKernelEngine : public FScalFMMEngine<FReal>{
 
 private:
     //Typedefs
-    using ContainerClass = FP2PParticleContainerIndexed<FReal>;
+    using ContainerClass = FUserLeafContainer<FReal>;
 
     //Typedefs :
     using OctreeClass = FOctree<FReal,CoreCell,ContainerClass,LeafClass>;
@@ -285,7 +294,7 @@ protected:
 
 public:
     FUserKernelEngine(/*int TreeHeight, double BoxWidth , double * BoxCenter, */scalfmm_kernel_type KernelType, scalfmm_algorithm algo) :
-        octree(nullptr), kernel(nullptr), upperLimit(2), treeHeight(0), boxCenter(0,0,0), boxCorner(0,0,0), boxWidth(0) /*,arranger(nullptr)*/ {
+        octree(nullptr), kernel(nullptr), upperLimit(2),treeHeight(0), boxCenter(0,0,0), boxCorner(0,0,0), boxWidth(0) /*,arranger(nullptr)*/ {
         FScalFMMEngine<FReal>::kernelType = KernelType;
         FScalFMMEngine<FReal>::Algorithm = algo;
     }
@@ -487,10 +496,27 @@ public:
                     currCell->setContainer(CoreCell::GetInit()(currLevel,currMorton,arrayCoord,position,generic_ptr));
                 }
             });
+        //Then init leaves
+        octree->forEachCellLeaf([&](CoreCell * currCell, LeafClass * leaf){
+            FTreeCoordinate currCoord = currCell->getCoordinate();
+            int currLevel = octree->getHeight();
+            MortonIndex    currMorton = currCoord.getMortonIndex(currLevel);
+            double position[3];
+            position[0] = boxCorner.getX() + currCoord.getX()*boxwidth/double(1<<currLevel);
+            position[1] = boxCorner.getY() + currCoord.getY()*boxwidth/double(1<<currLevel);
+            position[2] = boxCorner.getZ() + currCoord.getZ()*boxwidth/double(1<<currLevel);
+            leaf->getSrc()->setContainer(CoreCell::GetInitLeaf()(currLevel,leaf->getSrc()->getNbParticles(),
+                                                                 leaf->getSrc()->getIndexes().data(), currMorton,
+                                                                 position, currCell->getContainer(), this->kernel));
+            });
+
     }
 
 
-    void free_cell(Callback_free_cell user_cell_deallocator){
+    void free_cell(Callback_free_cell user_cell_deallocator, Callback_free_leaf free_leaf){
+        octree->forEachCellLeaf([&](CoreCell * currCell, LeafClass * leaf){
+                free_leaf(currCell->getContainer(),leaf->getSrc()->getNbParticles(), leaf->getSrc()->getIndexes().data(),leaf,this->kernel);
+            });
         octree->forEachCell([&](CoreCell * currCell){
                 if(currCell->getContainer()){
                     user_cell_deallocator(currCell->getContainer());
@@ -640,7 +666,7 @@ public:
     }
 
     virtual void intern_dealloc_handle(Callback_free_cell userDeallocator){
-        free_cell(userDeallocator);
+        free_cell(userDeallocator, CoreCell::GetFreeLeaf());
     }
 };
 

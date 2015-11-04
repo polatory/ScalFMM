@@ -17,10 +17,10 @@ extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,
 
         switch(KernelType){
         case 0:
-            typedef FP2PParticleContainerIndexed<FReal>           ContainerClass;
-            typedef FTypedLeaf<FReal,ContainerClass>                                         LeafClass;
+            typedef FUserLeafContainer<FReal>                                               UserContainerClass;
+            typedef FTypedLeaf<FReal,UserContainerClass>                                         UserLeafClass;
 
-            handle->engine = new FUserKernelEngine<FReal,LeafClass>(/*TreeHeight, BoxWidth, BoxCenter, */KernelType,algo);
+            handle->engine = new FUserKernelEngine<FReal,UserLeafClass>(/*TreeHeight, BoxWidth, BoxCenter, */KernelType,algo);
             break;
 
         case 1:
@@ -59,10 +59,10 @@ extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,
             //No Source/Targets distinction
             switch(KernelType){
             case 0:
-                typedef FP2PParticleContainerIndexed<FReal>                            ContainerClass;
-                typedef FSimpleLeaf<FReal,ContainerClass>                                   LeafClass;
+                typedef FUserLeafContainer<FReal>                            UserContainerClass;
+                typedef FSimpleLeaf<FReal,UserContainerClass>                         UserLeafClass;
 
-                handle->engine = new FUserKernelEngine<FReal,LeafClass>(/*TreeHeight, BoxWidth, BoxCenter, */KernelType,algo);
+                handle->engine = new FUserKernelEngine<FReal,UserLeafClass>(/*TreeHeight, BoxWidth, BoxCenter, */KernelType,algo);
                 break;
 
             case 1:
@@ -121,8 +121,8 @@ extern "C" scalfmm_handle scalfmm_init_distributed( scalfmm_kernel_type KernelTy
 
     //Only the User Defined Kernel version (UDK) is available.
     typedef double FReal;
-    typedef FP2PParticleContainerIndexed<FReal>                            ContainerClass;
-    typedef FSimpleLeaf<FReal,ContainerClass>                                   LeafClass;
+    typedef FUserLeafContainer<FReal>                            ContainerClass;
+    typedef FSimpleLeaf<FReal,ContainerClass>                         LeafClass;
 
     handle->engine = (new FUserKernelDistrEngine<FReal,LeafClass>(KernelType,algo,comm));
     return handle;

@@ -173,6 +173,28 @@ typedef void (*Callback_copy_cell)(void * userDatas, FSize size, void * memoryAl
 typedef void (*Callback_finalize_leaf)(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
                                        void * cellDatas, void * userDatas);
 
+/**
+ * @brief Callback to initialise data inside the Leaves
+ * @param level current level of leaves (ie height of the tree)
+ * @param nbParts Number of particles inside that leaf"
+ * @param idxParts array of size nbParts, containing the indices of each parts
+ * @param morton_index of the current cell
+ * @param center of the current leaf (3 double)
+ * @param userData cell user data
+ * @param userData Kernel user data
+ */
+typedef void* (*Callback_init_leaf)(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
+                                    void * cellDatas, void * userDatas);
+
+/**
+ * @brief Callback to free data inside the Leaves
+ * @param nbParts Number of particles inside that leaf
+ * @param idxParts array of size nbParts, containing the indices of each parts
+ * @param cellDatas ptr to the cell.
+ * @param leafData leaf to destroy
+ * @param ptr to userData.
+ */
+typedef void (*Callback_free_leaf)(void * cellDatas, FSize nbParts, const FSize * idxParts, void * leafData, void * userDatas);
 
 
 /**
@@ -192,6 +214,8 @@ typedef struct User_Scalfmm_Cell_Descriptor{
     Callback_get_cell_size user_get_size;
     Callback_copy_cell user_copy_cell;
     Callback_restore_cell user_restore_cell;
+    Callback_init_leaf user_init_leaf;
+    Callback_free_leaf user_free_leaf;
 }Scalfmm_Cell_Descriptor;
 
 
@@ -447,11 +471,12 @@ void scalfmm_algorithm_config(scalfmm_handle Handle,scalfmm_algorithm config);
 /**
  * @brief Function to be filled by user's P2M
  * @param nbParticles number of particle in current leaf
- * @param leafCell current leaf
+ * @param cellData current cell
+ * @param leafData currentLeaf
  * @param particleIndexes indexes of particles currently computed
  * @param userData datas specific to the user's kernel
  */
-typedef void (*Callback_P2M)(void* leafCell, FSize nbParticles, const FSize* particleIndexes, void* userData);
+typedef void (*Callback_P2M)(void* cellData, void * leafData, FSize nbParticles, const FSize* particleIndexes, void* userData);
 
 /**
  * @brief Function to be filled by user's M2M
@@ -506,54 +531,63 @@ typedef void (*Callback_L2L)(int level, void* parentCell, int childPosition, voi
 
 /**
  * @brief Function to be filled by user's L2P
- * @param leafCell leaf to be filled
+ * @param cellData cell to be read
+ * @param leafData leaf to be written
  * @param nbParticles number of particles in the current leaf
  * @param particleIndexes indexes of particles currently computed
  * @param userData datas specific to the user's kernel
  */
-typedef void (*Callback_L2P)(void* leafCell, FSize nbParticles,const FSize* particleIndexes, void* userData);
+typedef void (*Callback_L2P)(void* cellData, void * leafData, FSize nbParticles,const FSize* particleIndexes, void* userData);
 
 /**
  * @brief Function to be filled by user's P2P
+ * @param targetLeaf ptr to user target leaf
  * @param nbParticles number of particle in current leaf
  * @param particleIndexes indexes of particles currently computed
+ * @param sourceLeaf ptr to user source leaf
  * @param nbSourceParticles number of particles in source leaf
  * @param sourceParticleIndexes indexes of cource particles currently computed
  * @param userData datas specific to the user's kernel
  */
-typedef void (*Callback_P2P)(FSize nbParticles, const FSize* particleIndexes, FSize nbSourceParticles, const FSize* sourceParticleIndexes, void* userData);
+typedef void (*Callback_P2P)(void * targetLeaf, FSize nbParticles, const FSize* particleIndexes,
+                             void * sourceLeaf, FSize nbSourceParticles, const FSize* sourceParticleIndexes, void* userData);
 
 /**
  * @brief Function to be filled by user's P2P
- * @attention This function is symmetrc, thus when a call is done
+ * @attention This function is symmetric, thus when a call is done
  * between target and neighbors cell, the user needs to apply the target
  * field onto the neighbors cells too.
+ * @param targetLeaf ptr to user target leaf
  * @param nbParticles number of particle in current leaf
  * @param particleIndexes indexes of particles currently computed
- * @param sourceCell array of the neighbors source cells
+ * @param sourceLeaves array of ptr to user source leaves.
  * @param sourceParticleIndexes array of indices of source particles currently computed
  * @param sourceNbPart array containing the number of part in each neighbors
  * @param sourcePosition array containing relative position of the neighbor
  * @param size : size of the arrays (thus, number of existing neighbor cell)
  * @param userData datas specific to the user's kernel
  */
-typedef void (*Callback_P2PFull)(FSize nbParticles, const FSize* particleIndexes,
+typedef void (*Callback_P2PFull)(void * targetLeaf, FSize nbParticles, const FSize* particleIndexes,
+                                 void ** sourceLeaves,
                                  const FSize ** sourceParticleIndexes,FSize * sourceNbPart,
                                  const int * sourcePosition, const int size, void* userData);
 
 
 /**
  * @brief Function to be filled by user's P2P inside the leaf
+ * @param targetLeaf ptr to user target leaf
  * @param nbParticles number of particle in current leaf
  * @param particleIndexes indexes of particles currently computed
  * @param userData datas specific to the user's kernel
  */
-typedef void (*Callback_P2PInner)(FSize nbParticles, const FSize* particleIndexes, void* userData);
+typedef void (*Callback_P2PInner)(void * targetLeaf,FSize nbParticles, const FSize* particleIndexes, void* userData);
 
 /**
  * @brief Function to be filled by user's P2P
+ * @param targetLeaf ptr to user target leaf
  * @param nbParticles number of particle in current leaf
  * @param particleIndexes indexes of particles currently computed
+ * @praram sourceLeaf ptr to user source leaf
  * @param nbSourceParticles number of particles in source leaf
  * @param sourceParticleIndexes indexes of cource particles currently computed
  * @param userData datas specific to the user's kernel
@@ -562,7 +596,8 @@ typedef void (*Callback_P2PInner)(FSize nbParticles, const FSize* particleIndexe
  * thus if a call is done with cell1 as source and cell2 as target, no
  * call will be done with cell2 as source and cell1 as target.
  */
-typedef void (*Callback_P2PSym)(FSize nbParticles, const FSize* particleIndexes, FSize nbSourceParticles, const FSize* sourceParticleIndexes, void* userData);
+typedef void (*Callback_P2PSym)(void * targetLeaf, FSize nbParticles, const FSize* particleIndexes,
+                                void * sourceLeaf, FSize nbSourceParticles, const FSize* sourceParticleIndexes, void* userData);
 
 /**
  * @brief Function to be filled by user's method to reset a user's cell

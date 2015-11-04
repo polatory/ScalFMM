@@ -31,10 +31,26 @@ void cheb_free_cell(void * inCell){
 }
 
 /**
+ * No need for leaf function
+ */
+void * cheb_init_leaf(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
+                    void * cellDatas, void * userDatas){
+    //Do nothing
+    return NULL;
+}
+
+/**
+ * No need for leaf function
+ */
+void cheb_free_leaf(void * cellDatas, FSize nbParts, const FSize * idxParts, void * leafData, void * userDatas){
+    //Do nothing
+}
+
+/**
  * @brief Wrapper to FMM operators (refer to CScalfmmApi.h to get the
  * detailed descriptions)
  */
-void cheb_p2m(void* cellData, FSize nbParticlesInLeaf, const FSize* particleIndexes,
+void cheb_p2m(void* cellData, void * leafData, FSize nbParticlesInLeaf, const FSize* particleIndexes,
               void* userData){
     ChebKernel_P2M(cellData,nbParticlesInLeaf,particleIndexes,userData);
 }
@@ -50,11 +66,12 @@ void cheb_l2l(int level, void* parentCell, int childPosition, void* childCell,
               void* userData){
     ChebKernel_L2L( level, parentCell, childPosition, childCell,  userData);
 }
-void cheb_l2p(void* leafCell, FSize nbParticles, const FSize* particleIndexes,
+void cheb_l2p(void* leafCell, void * leafData, FSize nbParticles, const FSize* particleIndexes,
               void* userData){
     ChebKernel_L2P( leafCell, nbParticles, particleIndexes, userData);
 }
-void cheb_p2pFull(FSize nbParticles, const FSize* particleIndexes,
+void cheb_p2pFull(void * targetLeaf, FSize nbParticles, const FSize* particleIndexes,
+                  void ** sourceLeaves,
                   const FSize ** sourceParticleIndexes, FSize* sourceNbPart,const int * sourcePosition,
                   const int size, void* userData) {
     ChebKernel_P2P(nbParticles, particleIndexes, sourceParticleIndexes, sourceNbPart,sourcePosition,size,
@@ -142,6 +159,8 @@ int main(int argc, char ** av){
     struct User_Scalfmm_Cell_Descriptor cellDescriptor;
     cellDescriptor.user_init_cell = cheb_init_cell;
     cellDescriptor.user_free_cell = cheb_free_cell;
+    cellDescriptor.user_init_leaf = cheb_init_leaf;
+    cellDescriptor.user_free_leaf = cheb_free_leaf;
 
     //Struct for ref cheb kernel
     struct User_Scalfmm_Cell_Descriptor user_descr;
