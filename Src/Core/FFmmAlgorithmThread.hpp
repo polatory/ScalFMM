@@ -415,8 +415,6 @@ protected:
         };
         LeafData* const leafsDataArray = new LeafData[this->leafsNumber];
 
-        const int LeafIndex = OctreeHeight - 1;
-
         int startPosAtShape[SizeShape];
         startPosAtShape[0] = 0;
         for(int idxShape = 1 ; idxShape < SizeShape ; ++idxShape){
@@ -479,7 +477,7 @@ protected:
                     if(p2pEnabled){
                         // need the current particles and neighbors particles
                         FLOG(if(!omp_get_thread_num()) computationCounterP2P.tic());
-                        const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, currentIter.cell->getCoordinate(), LeafIndex);
+                        const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, currentIter.cell->getCoordinate(), OctreeHeight-1);
                         myThreadkernels.P2P(currentIter.cell->getCoordinate(), currentIter.targets,
                                             currentIter.sources, neighbors, neighborPositions, counter);
                         FLOG(if(!omp_get_thread_num()) computationCounterP2P.tac());

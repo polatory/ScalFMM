@@ -1233,7 +1233,6 @@ protected:
         OctreeClass otherP2Ptree( tree->getHeight(), tree->getSubHeight(), tree->getBoxWidth(), tree->getBoxCenter() );
 
         // init
-        const int LeafIndex = OctreeHeight - 1;
         const int SizeShape = P2PExclusionClass::SizeShape;
 
         int shapeLeaf[SizeShape];
@@ -1459,7 +1458,7 @@ protected:
                                     }
                                     if(p2pEnabled){
                                         // need the current particles and neighbors particles
-                                        const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, currentIter.coord, LeafIndex);
+                                        const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, currentIter.coord, OctreeHeight-1);
                                         myThreadkernels->P2P( currentIter.coord,currentIter.targets,
                                                           currentIter.sources, neighbors, neighborPositions, counter);
                                     }

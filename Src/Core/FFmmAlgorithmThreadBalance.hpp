@@ -381,7 +381,7 @@ protected:
                         const FSize nbPartInLeaf = octreeIterator.getCurrentListTargets()->getNbParticles();
                         workloadBuffer[positionToWork].amountOfWork = nbPartInLeaf*nbPartInLeaf;
                         ContainerClass* neighbors[27];
-                        tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), LeafIndex);
+                        tree->getLeafsNeighbors(neighbors, octreeIterator.getCurrentGlobalCoordinate(), OctreeHeight-1);
                         for(int idxNeigh = 0 ; idxNeigh < 27 ; ++idxNeigh){
                             if(neighbors[idxNeigh]){
                                 workloadBuffer[positionToWork].amountOfWork +=
@@ -657,8 +657,6 @@ protected:
         FLOG(FTic computationCounter);
         FLOG(FTic computationCounterP2P);
 
-        const int LeafIndex = OctreeHeight - 1;
-
         #pragma omp parallel
         {
             FLOG(if(!omp_get_thread_num()) computationCounter.tic());
@@ -674,7 +672,7 @@ protected:
                     LeafData& currentIter = leafsDataArray[idxLeafs];
                     // need the current particles and neighbors particles
                     FLOG(if(!omp_get_thread_num()) computationCounterP2P.tic());
-                    const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, currentIter.coord, LeafIndex);
+                    const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, currentIter.coord, OctreeHeight-1);
                     myThreadkernels.P2P(currentIter.coord, currentIter.targets,
                                         currentIter.sources, neighbors, neighborPositions, counter);
                     FLOG(if(!omp_get_thread_num()) computationCounterP2P.tac());
