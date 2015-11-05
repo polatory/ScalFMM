@@ -128,7 +128,7 @@ private:
     using Parent = FUserKernelEngine<FReal,LeafClass>;
 
     //Same as in Parent class.
-    using ContainerClass = FP2PParticleContainerIndexed<FReal>;
+    using ContainerClass = FUserLeafContainer<FReal>;
     using OctreeClass = FOctree<FReal,CoreCellDist,ContainerClass,LeafClass>;
     using CoreKernelClass =  CoreKernel<CoreCellDist,ContainerClass>;
 
