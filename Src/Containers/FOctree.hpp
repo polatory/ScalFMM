@@ -263,7 +263,7 @@ public:
      * octreeIterator.gotoBottomLeft();
      * for(int idx = 0 ; idx < NbLevels - 1; ++idx ){
      *     do{
-     *         // ... 
+     *         // ...
      *     } while(octreeIterator.moveRight());
      *     octreeIterator.moveUp();
      *     octreeIterator.gotoLeft();
@@ -361,12 +361,12 @@ public:
             // union object, they compare equal (after conversion to void*, if
             // necessary). If two pointers point to elements of the same array
             // or one beyond the end of the array, the pointer to the object
-            // with the higher subscript compares higher. 
-            // 
+            // with the higher subscript compares higher.
+            //
             // This is why we compare the 'tree' component of the 'current' union
             return this->current.tree == other.current.tree &&
-                this->currentLocalLevel == other.currentLocalLevel &&
-                this->currentLocalIndex == other.currentLocalIndex ;
+                    this->currentLocalLevel == other.currentLocalLevel &&
+                    this->currentLocalIndex == other.currentLocalIndex ;
         }
 
         /** \brief Inequality operator
@@ -862,8 +862,8 @@ public:
      * @return the number of neighbors
      */
     int getInteractionNeighbors(const CellClass* inNeighbors[343],
-                const FTreeCoordinate& workingCell,
-                const int inLevel, const int neighSeparation = 1) const{
+    const FTreeCoordinate& workingCell,
+    const int inLevel, const int neighSeparation = 1) const{
         // reset
         memset(inNeighbors, 0, sizeof(CellClass*) * 343);
 
@@ -926,9 +926,9 @@ public:
      * @return the number of neighbors
      */
     int getInteractionNeighbors(const CellClass* inNeighbors[342],
-                               int inNeighborPositions[343],
-                const FTreeCoordinate& workingCell,
-                const int inLevel, const int neighSeparation = 1) const{
+    int inNeighborPositions[343],
+    const FTreeCoordinate& workingCell,
+    const int inLevel, const int neighSeparation = 1) const{
         // Then take each child of the parent's neighbors if not in directNeighbors
         // Father coordinate
         const FTreeCoordinate parentCell(workingCell.getX()>>1,workingCell.getY()>>1,workingCell.getZ()>>1);
@@ -981,7 +981,7 @@ public:
         return idxNeighbors;
     }
 
-    /** This function fills an array with all the neighbors of a cell, 
+    /** This function fills an array with all the neighbors of a cell,
      * i.e. Child of parent's neighbors, direct neighbors and cell itself.
      * This is called for instance when the nearfield also needs to be approximated
      * in that cas we only call this function at the leaf level.
@@ -992,8 +992,8 @@ public:
      * @return the number of neighbors
      */
     int getFullNeighborhood(const CellClass* inNeighbors[343],
-                const FTreeCoordinate& workingCell,
-                const int inLevel) const{
+    const FTreeCoordinate& workingCell,
+    const int inLevel) const{
         // reset
         memset(inNeighbors, 0, sizeof(CellClass*) * 343);
 
@@ -1053,9 +1053,9 @@ public:
      * @return the number of neighbors
      */
     int getFullNeighborhood(const CellClass* inNeighbors[342],
-                            int inNeighborPositions[342],
-                            const FTreeCoordinate& workingCell,
-                            const int inLevel) const{
+    int inNeighborPositions[342],
+    const FTreeCoordinate& workingCell,
+    const int inLevel) const{
         // reset
         // Then take each child of the parent's neighbors
         // Father coordinate
@@ -1113,8 +1113,8 @@ public:
      * @return the number of neighbors
      */
     int getPeriodicInteractionNeighbors(const CellClass* inNeighbors[343],
-                const FTreeCoordinate& workingCell,
-                const int inLevel, const int inDirection, const int neighSeparation = 1) const{
+    const FTreeCoordinate& workingCell,
+    const int inLevel, const int inDirection, const int neighSeparation = 1) const{
 
         // Then take each child of the parent's neighbors if not in directNeighbors
         // Father coordinate
@@ -1214,8 +1214,8 @@ public:
      * @return the number of neighbors
      */
     int getPeriodicInteractionNeighbors(const CellClass* inNeighbors[342], int inNeighborPositions[342],
-                const FTreeCoordinate& workingCell,
-                const int inLevel, const int inDirection, const int neighSeparation = 1) const{
+    const FTreeCoordinate& workingCell,
+    const int inLevel, const int inDirection, const int neighSeparation = 1) const{
 
         // Then take each child of the parent's neighbors if not in directNeighbors
         // Father coordinate
@@ -1503,7 +1503,7 @@ public:
      * @return the number of neighbors
      */
     int getPeriodicLeafsNeighbors(ContainerClass* inNeighbors[27], FTreeCoordinate outOffsets[27], bool*const isPeriodic,
-    const FTreeCoordinate& center, const int inLevel, const int inDirection){
+                const FTreeCoordinate& center, const int inLevel, const int inDirection){
 
         const int boxLimite = FMath::pow2(inLevel);
 
