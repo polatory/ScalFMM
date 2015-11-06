@@ -96,6 +96,7 @@ public:
         std::unique_ptr<IndexedParticle[]> particleIndexes(new IndexedParticle[numberOfParticle]);
 
         FLOG(copyTimer.tic());
+        #pragma omp parallel for schedule(static)
         for(FSize idxParts=0; idxParts<numberOfParticle ; ++idxParts ){
             // Get the Morton Index
             const FTreeCoordinate host(

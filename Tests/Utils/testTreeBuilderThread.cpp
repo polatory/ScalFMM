@@ -68,12 +68,11 @@ int main(int argc, char** argv){
 
     // -----------------------------------------------------
 
-    OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
-
-    // -----------------------------------------------------
-
     {
         ContainerClass particles;
+        particles.reserve(loader.getNumberOfParticles());
+
+        FTic timer;
 
         for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
             FPoint<FReal> particlePosition;
@@ -81,8 +80,34 @@ int main(int argc, char** argv){
             loader.fillParticle(&particlePosition,&physicalValue);
             particles.push(particlePosition, physicalValue );
         }
+        std::cout << "Load the file in " << timer.tacAndElapsed() << "s\n";
 
-        FTreeBuilder<FReal,OctreeClass, LeafClass>::BuildTreeFromArray(&tree, particles);
+        timer.tic();
+        {
+            const FReal*const partX = particles.getPositions()[0];
+            const FReal*const partY = particles.getPositions()[1];
+            const FReal*const partZ = particles.getPositions()[2];
+            const FReal*const physicalValues = particles.getPhysicalValues();
+
+            OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+
+            for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+                const FPoint<FReal> particlePosition(
+                            partX[idxPart], partY[idxPart], partZ[idxPart]
+                            );
+                tree.insert(particlePosition, physicalValues[idxPart] );
+            }
+        }
+        std::cout << "Create the tree in sequential " << timer.tacAndElapsed() << "s\n";
+
+        timer.tic();
+        {
+            OctreeClass tree(NbLevels, SizeSubLevels, loader.getBoxWidth(), loader.getCenterOfBox());
+            // This will modify particles!
+            FTreeBuilder<FReal,OctreeClass, LeafClass>::BuildTreeFromArray(&tree, particles);
+        }
+        std::cout << "Create the tree in parallel " << timer.tacAndElapsed() << "s\n";
+
     }
 
     // -----------------------------------------------------
