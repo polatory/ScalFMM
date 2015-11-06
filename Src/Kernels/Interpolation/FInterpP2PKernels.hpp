@@ -28,7 +28,7 @@ struct DirectInteractionComputer
 
   template <typename ContainerClass, typename MatrixKernelClass>
   static void P2PRemote( ContainerClass* const FRestrict inTargets,
-                         ContainerClass* const inNeighbors[],
+                         const ContainerClass* const inNeighbors[],
                          const int inSize,
                          const MatrixKernelClass *const MatrixKernel){
       FP2P::FullRemoteKIJ<FReal, ContainerClass, MatrixKernelClass>(inTargets,inNeighbors,inSize,MatrixKernel);
@@ -56,7 +56,7 @@ struct DirectInteractionComputer<FReal, 1,NVALS>
 
   template <typename ContainerClass, typename MatrixKernelClass>
   static void P2PRemote( ContainerClass* const FRestrict inTargets,
-                         ContainerClass* const inNeighbors[],
+                         const ContainerClass* const inNeighbors[],
                          const int inSize,
                          const MatrixKernelClass *const MatrixKernel){
       FP2P::FullRemoteMultiRhs<FReal, ContainerClass, MatrixKernelClass>(inTargets,inNeighbors,inSize,MatrixKernel);
@@ -83,7 +83,7 @@ struct DirectInteractionComputer<FReal, 1,1>
 
   template <typename ContainerClass, typename MatrixKernelClass>
   static void P2PRemote( ContainerClass* const FRestrict inTargets,
-                         ContainerClass* const inNeighbors[],
+                         const ContainerClass* const inNeighbors[],
                          const int inSize,
                          const MatrixKernelClass *const MatrixKernel){
       FP2PT<FReal>::template FullRemote<ContainerClass,MatrixKernelClass>(inTargets,inNeighbors,inSize,MatrixKernel);

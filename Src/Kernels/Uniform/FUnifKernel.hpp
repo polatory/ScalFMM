@@ -189,13 +189,20 @@ public:
     }
 
     void P2P(const FTreeCoordinate& inPosition,
-             ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+             ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict inSources,
              ContainerClass* const inNeighbors[], const int neighborPositions[],
              const int inSize) override {
         // Standard FMM separation criterion, i.e. max 27 neighbor clusters per leaf
-        if(LeafLevelSeparationCriterion==1) {            
-            P2POuter(inPosition, inTargets, inNeighbors, neighborPositions, inSize);
-            DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PInner(inTargets,MatrixKernel);
+        if(LeafLevelSeparationCriterion==1) {
+            if(inTargets == inSources){
+                P2POuter(inPosition, inTargets, inNeighbors, neighborPositions, inSize);
+                DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PInner(inTargets,MatrixKernel);
+            }
+            else{
+                const ContainerClass* const srcPtr[1] = {inSources};
+                DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,srcPtr,1,MatrixKernel);
+                DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,inSize,MatrixKernel);
+            }
         }
         // Nearfield interactions are only computed within the target leaf
         else if(LeafLevelSeparationCriterion==0){

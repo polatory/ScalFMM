@@ -315,6 +315,10 @@ protected:
                     kernels->L2P(octreeIterator.getCurrentCell(), octreeIterator.getCurrentListTargets());
                 }
                 if(p2pEnabled){
+                    if(octreeIterator.getCurrentCell()->hasSrcChild()){
+                        kernels->P2P( octreeIterator.getCurrentGlobalCoordinate(), octreeIterator.getCurrentListTargets(),
+                                      octreeIterator.getCurrentListSrc() , neighbors, neighborPositions, 0);
+                    }
                     // need the current particles and neighbors particles
                     const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, octreeIterator.getCurrentGlobalCoordinate(), heightMinusOne);
                     kernels->P2PRemote( octreeIterator.getCurrentGlobalCoordinate(), octreeIterator.getCurrentListTargets(),

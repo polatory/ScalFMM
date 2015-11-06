@@ -398,6 +398,10 @@ protected:
                     }
                     if(p2pEnabled){
                         // need the current particles and neighbors particles
+                        if(iterArray[idxLeafs].getCurrentCell()->hasSrcChild()){
+                            myThreadkernels->P2P( iterArray[idxLeafs].getCurrentGlobalCoordinate(), iterArray[idxLeafs].getCurrentListTargets(),
+                                          iterArray[idxLeafs].getCurrentListSrc() , neighbors, neighborPositions, 0);
+                        }
                         const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, iterArray[idxLeafs].getCurrentGlobalCoordinate(),heightMinusOne);
                         myThreadkernels->P2PRemote( iterArray[idxLeafs].getCurrentGlobalCoordinate(), iterArray[idxLeafs].getCurrentListTargets(),
                                       iterArray[idxLeafs].getCurrentListSrc() , neighbors, neighborPositions, counter);

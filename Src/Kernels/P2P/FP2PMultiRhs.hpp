@@ -140,7 +140,7 @@ namespace FP2P {
    * FullRemoteMultiRhs (generic version)
    */
 template <class FReal, class ContainerClass, typename MatrixKernelClass>
-inline void FullRemoteMultiRhs(ContainerClass* const FRestrict inTargets, ContainerClass* const inNeighbors[],
+inline void FullRemoteMultiRhs(ContainerClass* const FRestrict inTargets, const ContainerClass* const inNeighbors[],
                        const int limiteNeighbors, const MatrixKernelClass *const MatrixKernel){
 
     const FSize nbParticlesTargets = inTargets->getNbParticles();

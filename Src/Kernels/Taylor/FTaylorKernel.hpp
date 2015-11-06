@@ -958,11 +958,18 @@ public:
       * Calling this method in multi thread should be done carrefully.
       */
     void P2P(const FTreeCoordinate& inPosition,
-             ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
+             ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict inSources,
              ContainerClass* const inNeighbors[], const int neighborPositions[],
              const int inSize) override {
-        FP2PRT<FReal>::template Inner<ContainerClass>(inTargets);
-        P2POuter(inPosition, inTargets, inNeighbors, neighborPositions, inSize);
+        if(inTargets == inSources){
+            FP2PRT<FReal>::template Inner<ContainerClass>(inTargets);
+            P2POuter(inPosition, inTargets, inNeighbors, neighborPositions, inSize);
+        }
+        else{
+            const ContainerClass* const srcPtr[1] = {inSources};
+            FP2PRT<FReal>::template FullRemote<ContainerClass>(inTargets,srcPtr,1);
+            FP2PRT<FReal>::template FullRemote<ContainerClass>(inTargets,inNeighbors,inSize);
+        }
     }
 
     void P2POuter(const FTreeCoordinate& /*inLeafPosition*/,
