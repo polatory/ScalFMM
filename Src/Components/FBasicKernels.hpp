@@ -79,7 +79,7 @@ public:
     /** Do nothing */
     virtual void P2PRemote(const FTreeCoordinate& /*treeCoord*/,
                            ContainerClass* const FRestrict /*targetParticles*/, const ContainerClass* const FRestrict /*sourceParticles*/,
-                           ContainerClass* const /*neigbhorsParticles*/[], const int /*neighborPositions*/[], const int /*nbNeighbors*/) override {
+                           const ContainerClass* const /*neigbhorsParticles*/[], const int /*neighborPositions*/[], const int /*nbNeighbors*/) override {
 
     }
 

@@ -249,7 +249,7 @@ public:
 
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
-                   ContainerClass* const inNeighbors[], const int /*neighborPositions*/[],
+                   const ContainerClass* const inNeighbors[], const int /*neighborPositions*/[],
                    const int inSize) override {
         DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,inSize,MatrixKernel);
     }

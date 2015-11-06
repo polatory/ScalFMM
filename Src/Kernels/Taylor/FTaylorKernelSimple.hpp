@@ -898,7 +898,7 @@ public:
     /** Use mutual even if it not useful and call particlesMutualInteraction */
     void P2PRemote(const FTreeCoordinate& /*inPosition*/,
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
-                   ContainerClass* const inNeighbors[], const int neighborPositions[],
+                   const ContainerClass* const inNeighbors[], const int neighborPositions[],
                    const int inSize) override {
         FP2PRT<FReal>::template FullRemote<ContainerClass>(inTargets,inNeighbors,inSize);
     }

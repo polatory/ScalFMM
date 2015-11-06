@@ -65,7 +65,7 @@ public:
 
     void P2PRemote(const FTreeCoordinate& ,
                      ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict ,
-                     ContainerClass* const neighs[], const int /*positions*/[], const int size) override {
+                     const ContainerClass* const neighs[], const int /*positions*/[], const int size) override {
         std::cout << "Usual] P2P remote @" << targets << " has " << targets->getNbParticles() << " with\n";
         for(int idxNeigh = 0 ; idxNeigh < size ; ++idxNeigh){
                 std::cout << "\t @" << neighs[idxNeigh]<< " has " << neighs[idxNeigh]->getNbParticles() << "\n";

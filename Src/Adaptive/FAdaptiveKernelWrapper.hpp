@@ -357,7 +357,7 @@ public:
 	/** This is a normal P2P */
 	void P2PRemote(const FTreeCoordinate& inLeafPosition,
 			ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict sources,
-            ContainerClass* const directNeighborsParticles[], const int positions[], const int size) override {
+            const ContainerClass* const directNeighborsParticles[], const int positions[], const int size) override {
         kernel.P2PRemote(inLeafPosition, targets, sources, directNeighborsParticles, positions, size);
 	}
 

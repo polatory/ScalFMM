@@ -164,7 +164,7 @@ public:
 
   virtual void P2PRemote(const FTreeCoordinate& /*inPosition*/,
 			 ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
-             ContainerClass* const inNeighbors[], const int SourcePositions[], const int /*inSize*/) = 0;
+             const ContainerClass* const inNeighbors[], const int SourcePositions[], const int /*inSize*/) = 0;
 
 };
 

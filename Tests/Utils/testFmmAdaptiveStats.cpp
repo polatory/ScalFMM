@@ -177,7 +177,7 @@ public:
 
     void P2PRemote(const FTreeCoordinate& ,
                  ContainerClass* const FRestrict /*targets*/, const ContainerClass* const FRestrict /*sources*/,
-                 ContainerClass* const /*directNeighborsParticles*/[],  const int /*neighborPosition*/[], const int /*size*/) override{
+                 const ContainerClass* const /*directNeighborsParticles*/[],  const int /*neighborPosition*/[], const int /*size*/) override{
         nbFmmOperations += 1;
         nbFmmOperationsVerbose[5] += 1;
     }

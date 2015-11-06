@@ -130,7 +130,7 @@ public:
     /** After Downward */
     void P2PRemote(const FTreeCoordinate& ,
                    ContainerClass* const FRestrict targets, const ContainerClass* const FRestrict /*sources*/,
-                 ContainerClass* const directNeighborsParticles[], const int /*positions*/[], const int inSize) override  {
+                 const ContainerClass* const directNeighborsParticles[], const int /*positions*/[], const int inSize) override  {
         // Each particles targeted is impacted by the particles sources
         long long int inc = 0;
         for(int idx = 0 ; idx < inSize ; ++idx){
