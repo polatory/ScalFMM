@@ -83,6 +83,7 @@ private:
     const int idProcess;         ///< Current process id
     const int OctreeHeight;      ///< Tree height
 
+    const int userChunkSize;
     const int leafLevelSeparationCriteria;
 
     /** An interval is the morton index interval
@@ -140,7 +141,9 @@ public:
      *
      * An assert is launched if one of the arguments is null
      */
-    FFmmAlgorithmThreadProc(const FMpi::FComm& inComm, OctreeClass* const inTree, KernelClass* const inKernels, const int inLeafLevelSeperationCriteria = 1) :
+    FFmmAlgorithmThreadProc(const FMpi::FComm& inComm, OctreeClass* const inTree,
+                            KernelClass* const inKernels,
+                            const int inUserChunkSize = 10, const int inLeafLevelSeperationCriteria = 1) :
         tree(inTree),
         kernels(nullptr),
         comm(inComm),
@@ -151,6 +154,7 @@ public:
         nbProcess(inComm.processCount()),
         idProcess(inComm.processId()),
         OctreeHeight(tree->getHeight()),
+        userChunkSize(inUserChunkSize),
         leafLevelSeparationCriteria(inLeafLevelSeperationCriteria),
         intervals(new Interval[inComm.processCount()]),
         workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]) {
@@ -349,7 +353,7 @@ protected:
             // Each thread get its own kernel
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
             // Parallel iteration on the leaves
-#pragma omp for nowait
+#pragma omp for nowait schedule(dynamic, userChunkSize)
             for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
                 myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentListSrc());
             }
@@ -582,7 +586,7 @@ protected:
                 }//End Of Single section
 
                 // All threads proceed the M2M
-                #pragma omp for nowait
+                #pragma omp for nowait schedule(dynamic, userChunkSize)
                 for( int idxCell = nbCellsToSkip ; idxCell < nbCellsForThreads ; ++idxCell){
                     myThreadkernels->M2M( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }
@@ -840,7 +844,7 @@ protected:
 
                     FLOG(computationCounter.tic());
                     {
-                        const int chunckSize = FMath::Max(1, numberOfCells/(omp_get_num_threads()*omp_get_num_threads()));
+                        const int chunckSize = userChunkSize;
                         for(int idxCell = 0 ; idxCell < numberOfCells ; idxCell += chunckSize){
                             #pragma omp task default(none) shared(numberOfCells,idxLevel) firstprivate(idxCell) //+ shared(chunckSize)
                             {
@@ -950,7 +954,7 @@ protected:
                     const CellClass* neighbors[342];
                     int neighborPositions[342];
 
-                    #pragma omp for schedule(static) nowait
+                    #pragma omp for  schedule(dynamic, userChunkSize) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         // compute indexes
                         const int counterNeighbors = iterArray[idxCell].getCurrentGlobalCoordinate().getInteractionNeighbors(idxLevel, neighborsIndex, neighborsPosition, separationCriteria);
@@ -1160,7 +1164,7 @@ protected:
                     FLOG(computationCounter.tic());
                 }
                 // Threads are working on all the cell of our working interval at that level
-                #pragma omp for nowait
+                #pragma omp for nowait  schedule(dynamic, userChunkSize)
                 for(int idxCell = nbCellsToSkip ; idxCell < totalNbCellsAtLevel ; ++idxCell){
                     myThreadkernels->L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }
@@ -1440,7 +1444,7 @@ protected:
 
                     for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                         const int endAtThisShape = shapeLeaf[idxShape] + previous;
-                        const int chunckSize = FMath::Max(1, (endAtThisShape-previous)/(omp_get_num_threads()*omp_get_num_threads()));
+                        const int chunckSize = userChunkSize;
 
                         for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; idxLeafs += chunckSize){
                             const int nbLeavesInTask = FMath::Min(endAtThisShape-idxLeafs, chunckSize);
@@ -1494,7 +1498,7 @@ protected:
                 FAssertLF(leafsNeedOtherData.getSize() < std::numeric_limits<int>::max());
                 const int nbLeafToProceed = int(leafsNeedOtherData.getSize());
 
-#pragma omp for schedule(static)
+#pragma omp for  schedule(dynamic, userChunkSize)
                 for(int idxLeafs = 0 ; idxLeafs < nbLeafToProceed ; ++idxLeafs){
                     LeafData currentIter = leafsNeedOtherData[idxLeafs];
 
