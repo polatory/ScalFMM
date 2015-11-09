@@ -174,6 +174,7 @@ public:
 
         FLOG(FLog::Controller << "FFmmAlgorithmThreadProc\n");
         FLOG(FLog::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
+        FLOG(FLog::Controller << "Chunck Size = " << userChunkSize << "\n");
     }
 
     /// Default destructor
