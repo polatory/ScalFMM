@@ -110,9 +110,21 @@ public:
 
 
     FReal extendedBoxWidth() const {
-        // The simulation box is repeated is repeated 4 times if nbLevelsAboveRoot==-1
-        // And then it doubles by two
-        return tree->getBoxWidth() * FReal(1<<(nbLevelsAboveRoot+2));
+        if( nbLevelsAboveRoot == -1 ){
+            return tree->getBoxWidth()*2;
+        }
+        else{
+            return tree->getBoxWidth() * FReal(4<<(nbLevelsAboveRoot));
+        }
+    }
+
+    FReal extendedBoxWidthBoundary() const {
+        if( nbLevelsAboveRoot == -1 ){
+            return tree->getBoxWidth()*4;
+        }
+        else{
+            return tree->getBoxWidth() * FReal(8<<(nbLevelsAboveRoot));
+        }
     }
 
     /** This function has to be used to init the kernel with correct args
@@ -123,14 +135,44 @@ public:
       * @return the center the kernel should use
       */
     FPoint<FReal> extendedBoxCenter() const {
-        const FReal originalBoxWidth     = tree->getBoxWidth();
-        const FReal originalBoxWidthDiv2 = originalBoxWidth/2.0;
-        const FPoint<FReal> originalBoxCenter   = tree->getBoxCenter();
+        if( nbLevelsAboveRoot == -1 ){
+            const FReal originalBoxWidth            = tree->getBoxWidth();
+            const FPoint<FReal> originalBoxCenter   = tree->getBoxCenter();
+            const FReal originalBoxWidthDiv2        = originalBoxWidth/2.0;
+            return FPoint<FReal>( originalBoxCenter.getX() + originalBoxWidthDiv2,
+                                         originalBoxCenter.getY() + originalBoxWidthDiv2,
+                                         originalBoxCenter.getZ() + originalBoxWidthDiv2);
+        }
+        else{
+            const FReal originalBoxWidth     = tree->getBoxWidth();
+            const FReal originalBoxWidthDiv2 = originalBoxWidth/2.0;
+            const FPoint<FReal> originalBoxCenter   = tree->getBoxCenter();
 
-        const FReal offset = extendedBoxWidth()/FReal(2.0);
-        return FPoint<FReal>( originalBoxCenter.getX() - originalBoxWidthDiv2 + offset,
+            const FReal offset = extendedBoxWidth()/FReal(2.0);
+            return FPoint<FReal>( originalBoxCenter.getX() - originalBoxWidthDiv2 + offset,
                        originalBoxCenter.getY() - originalBoxWidthDiv2 + offset,
                        originalBoxCenter.getZ() - originalBoxWidthDiv2 + offset);
+        }
+    }
+
+    FPoint<FReal> extendedBoxCenterBoundary() const {
+        if( nbLevelsAboveRoot == -1 ){
+            const FReal originalBoxWidth            = tree->getBoxWidth();
+            const FPoint<FReal> originalBoxCenter   = tree->getBoxCenter();
+            const FReal originalBoxWidthDiv2        = originalBoxWidth/2.0;
+            return FPoint<FReal>( originalBoxCenter.getX() + originalBoxWidthDiv2,
+                                         originalBoxCenter.getY() + originalBoxWidthDiv2,
+                                         originalBoxCenter.getZ() + originalBoxWidthDiv2);
+        }
+        else{
+            const FReal originalBoxWidth     = tree->getBoxWidth();
+            const FReal originalBoxWidthDiv2 = originalBoxWidth/2.0;
+            const FPoint<FReal> originalBoxCenter   = tree->getBoxCenter();
+
+            return FPoint<FReal>( originalBoxCenter.getX() + originalBoxWidthDiv2,
+                       originalBoxCenter.getY() + originalBoxWidthDiv2,
+                       originalBoxCenter.getZ() + originalBoxWidthDiv2);
+        }
     }
 
     /** This function has to be used to init the kernel with correct args
@@ -142,6 +184,11 @@ public:
     int extendedTreeHeight() const {
         // The real height
         return OctreeHeight + offsetRealTree;
+    }
+
+    int extendedTreeHeightBoundary() const {
+        // The real height
+        return OctreeHeight + offsetRealTree + 1;
     }
 
 protected:
@@ -351,6 +398,7 @@ protected:
 
                     for(int idxNeig = 0 ; idxNeig < counter ; ++idxNeig){
                         if( !offsets[idxNeig].equals(0,0,0) ){
+                            FAssertLF(octreeIterator.getCurrentListTargets() != neighbors[idxNeig]);
                             // Put periodic neighbors into other array
                             FReal*const positionsX = neighbors[idxNeig]->getWPositions()[0];
                             FReal*const positionsY = neighbors[idxNeig]->getWPositions()[1];
