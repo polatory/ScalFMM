@@ -29,6 +29,7 @@
 
 #include "Core/FFmmAlgorithmPeriodic.hpp"
 #include "Core/FFmmAlgorithm.hpp"
+#include "Core/FFmmAlgorithmThread.hpp"
 
 #include "FUTester.hpp"
 #include "Utils/FMath.hpp"
@@ -57,11 +58,10 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
     template <class FReal, class CellClass, class ContainerClass, class KernelClass, class MatrixKernelClass,
               class LeafClass, class OctreeClass, class FmmClass>
-    void RunTest()	{
+    void RunTest(const int PeriodicDeep){
         // Configs
         const int NbLevels      = 4;
         const int SizeSubLevels = 2;
-        const int PeriodicDeep  = -1;
 
         const FSize NbParticles     = 16;
         FRandomLoader<FReal> loader(NbParticles);
@@ -135,16 +135,19 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
                    totalRepetitions, algo.theoricalRepetition()*algo.theoricalRepetition()*algo.theoricalRepetition());
             uassert(totalRepetitions == algo.theoricalRepetition()*algo.theoricalRepetition()*algo.theoricalRepetition());
 
+            #pragma omp parallel for
             for(FSize idxTarget = 0 ; idxTarget < loader.getNumberOfParticles() ; ++idxTarget){
-                for(FSize idxOther =  idxTarget + 1 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
-                    FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
-                                          particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
-                                          &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
-                            &particles[idxTarget].forces[2],&particles[idxTarget].potential,
-                            particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                            particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
-                            &particles[idxOther].forces[0],&particles[idxOther].forces[1],
-                            &particles[idxOther].forces[2],&particles[idxOther].potential,&MatrixKernel);
+                for(FSize idxOther =  0 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
+                    if(idxTarget != idxOther){
+                        FP2P::NonMutualParticles(
+                                particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
+                                particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
+                                particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
+                                &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
+                                &particles[idxTarget].forces[2],&particles[idxTarget].potential,
+                                &MatrixKernel);
+                    }
 
                 }
                 for(int idxX = min.getX() ; idxX <= max.getX() ; ++idxX){
@@ -468,7 +471,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
             const int diffLevel = algo.extendedTreeHeightBoundary()-NbLevels;
             const int idxLevel = NbLevels-1;
             const int offsetAtLevel = (PeriodicDeep == -1? 1<<idxLevel : (3 << idxLevel));
-            {
+            do {
                 const FTreeCoordinate realCoord = iter.getCurrentGlobalCoordinate();
                 const FTreeCoordinate boundaryCoord(realCoord.getX() + offsetAtLevel,
                                                     realCoord.getY() + offsetAtLevel,
@@ -528,9 +531,9 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
             const int diffLevel = algo.extendedTreeHeightBoundary()-NbLevels;
 
-            for(int idxLevel = NbLevels-1 ; idxLevel >= 2 ; --idxLevel){
+            for(int idxLevel = NbLevels-1 ; idxLevel >= 1 ; --idxLevel){
                 const int offsetAtLevel = (PeriodicDeep == -1? 1<<idxLevel : (3 << idxLevel));
-                {
+                do {
                     const FTreeCoordinate realCoord = iter.getCurrentGlobalCoordinate();
                     const FTreeCoordinate boundaryCoord(realCoord.getX() + offsetAtLevel,
                                                         realCoord.getY() + offsetAtLevel,
@@ -591,7 +594,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
     /** TestChebSymKernel */
     void TestChebSymKernel(){
-        const unsigned int ORDER = 5;
+        const unsigned int ORDER = 7;
         typedef double FReal;
         typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
         typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
@@ -600,14 +603,17 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
         typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
         typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
         typedef FFmmAlgorithmPeriodic<FReal,OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-        typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClassNonPer;
+        //typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClassNonPer;
+        typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClassNonPer;
         // run test
-        RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>();
-        //RunTestUpward<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass,FmmClassNonPer>(-1);
-        //RunTestUpward<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass,FmmClassNonPer>(0);
-        //RunTestUpward<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass,FmmClassNonPer>(1);
-        //RunTestFake<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass,FmmClassNonPer>(-1);
-        //RunTestFake<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass,FmmClassNonPer>(0);
+        RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(-1);
+        RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(0);
+        //RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(1);
+        RunTestUpward<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass,FmmClassNonPer>(-1);
+        RunTestUpward<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass,FmmClassNonPer>(0);
+        RunTestUpward<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass,FmmClassNonPer>(1);
+        RunTestFake<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass,FmmClassNonPer>(-1);
+        RunTestFake<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass,FmmClassNonPer>(0);
     }
 
 

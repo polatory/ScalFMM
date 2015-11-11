@@ -410,6 +410,7 @@ protected:
                                 positionsZ[idxPart] += boxWidth * FReal(offsets[idxNeig].getZ());
                             }
 
+                            offsets[periodicNeighborsCounter] = offsets[idxNeig];
                             periodicNeighbors[periodicNeighborsCounter] = neighbors[idxNeig];
                             periodicNeighborPositions[periodicNeighborsCounter] = neighborPositions[idxNeig];
                             ++periodicNeighborsCounter;
