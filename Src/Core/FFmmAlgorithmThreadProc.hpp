@@ -30,6 +30,7 @@
 #include "../Containers/FBoolArray.hpp"
 #include "../Containers/FOctree.hpp"
 #include "../Containers/FLightOctree.hpp"
+#include "../Utils/FEnv.hpp"
 
 #include "../Containers/FBufferWriter.hpp"
 #include "../Containers/FBufferReader.hpp"
@@ -150,7 +151,7 @@ public:
         iterArray(nullptr),
         iterArrayComm(nullptr),
         numberOfLeafs(0),
-        MaxThreads(omp_get_max_threads()),
+        MaxThreads(FEnv::GetValue("SCALFMM_ALGO_NUM_THREADS",omp_get_max_threads())),
         nbProcess(inComm.processCount()),
         idProcess(inComm.processId()),
         OctreeHeight(tree->getHeight()),

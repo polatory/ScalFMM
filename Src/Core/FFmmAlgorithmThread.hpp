@@ -23,6 +23,7 @@
 #include "../Utils/FTic.hpp"
 #include "../Utils/FGlobal.hpp"
 #include "Utils/FAlgorithmTimers.hpp"
+#include "../Utils/FEnv.hpp"
 
 #include "../Containers/FOctree.hpp"
 
@@ -79,7 +80,7 @@ public:
     FFmmAlgorithmThread(OctreeClass* const inTree, KernelClass* const inKernels,
                         const int inUserChunkSize = 10, const int inLeafLevelSeperationCriteria = 1)
         : tree(inTree) , kernels(nullptr), iterArray(nullptr), leafsNumber(0),
-          MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()),
+          MaxThreads(FEnv::GetValue("SCALFMM_ALGO_NUM_THREADS",omp_get_max_threads())), OctreeHeight(tree->getHeight()),
           userChunkSize(inUserChunkSize), leafLevelSeparationCriteria(inLeafLevelSeperationCriteria) {
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");

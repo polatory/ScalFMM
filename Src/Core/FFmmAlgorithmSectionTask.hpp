@@ -22,6 +22,7 @@
 #include "../Utils/FLog.hpp"
 
 #include "../Utils/FTic.hpp"
+#include "../Utils/FEnv.hpp"
 
 #include "../Containers/FOctree.hpp"
 #include "../Containers/FVector.hpp"
@@ -69,7 +70,7 @@ public:
                              const int inLeafLevelSeparationCriteria = 1) :
         tree(inTree) ,
         kernels(0),
-        MaxThreads(omp_get_max_threads()),
+        MaxThreads(FEnv::GetValue("SCALFMM_ALGO_NUM_THREADS",omp_get_max_threads())),
         OctreeHeight(tree->getHeight()),
         leafLevelSeparationCriteria(inLeafLevelSeparationCriteria) {
 

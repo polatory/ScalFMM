@@ -23,6 +23,7 @@
 #include "../Utils/FTic.hpp"
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FMemUtils.hpp"
+#include "../Utils/FEnv.hpp"
 
 #include "../Containers/FBoolArray.hpp"
 #include "../Containers/FOctree.hpp"
@@ -32,6 +33,7 @@
 #include "../Containers/FBufferReader.hpp"
 #include "../Containers/FMpiBufferWriter.hpp"
 #include "../Containers/FMpiBufferReader.hpp"
+#include "../Utils/FEnv.hpp"
 
 #include "../Utils/FMpi.hpp"
 
@@ -145,7 +147,7 @@ public:
                                     const int inUpperLevel = 2, const int inLeafLevelSeperationCriteria = 1)
         : tree(inTree) , kernels(nullptr), comm(inComm), nbLevelsAboveRoot(inUpperLevel), offsetRealTree(inUpperLevel + 2),
           numberOfLeafs(0),
-          MaxThreads(omp_get_max_threads()), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
+          MaxThreads(FEnv::GetValue("SCALFMM_ALGO_NUM_THREADS",omp_get_max_threads())), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
           OctreeHeight(tree->getHeight()),
           leafLevelSeparationCriteria(inLeafLevelSeperationCriteria),
           intervals(new Interval[inComm.processCount()]),

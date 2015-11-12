@@ -12,6 +12,7 @@
 #include "../Containers/FOctree.hpp"
 #include "../Containers/FVector.hpp"
 #include "../Utils/FAlgorithmTimers.hpp"
+#include "../Utils/FEnv.hpp"
 
 #include "FCoreCommon.hpp"
 #include "FP2PExclusion.hpp"
@@ -115,7 +116,7 @@ public:
      */
     FFmmAlgorithmOmp4(OctreeClass* const inTree, KernelClass* const inKernels, const int inLeafLevelSeperationCriteria = 1)
 : tree(inTree) , kernels(nullptr),
-  MaxThreads(omp_get_max_threads()), OctreeHeight(tree->getHeight()), leafLevelSeparationCriteria(inLeafLevelSeperationCriteria),
+  MaxThreads(FEnv::GetValue("SCALFMM_ALGO_NUM_THREADS",omp_get_max_threads())), OctreeHeight(tree->getHeight()), leafLevelSeparationCriteria(inLeafLevelSeperationCriteria),
       p2pPrioCriteria(0)
 {
 

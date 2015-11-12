@@ -37,6 +37,7 @@
 
 #include "../Src/BalanceTree/FCoordColour.hpp"
 #include "../Src/BalanceTree/FCostZones.hpp"
+#include "../Utils/FEnv.hpp"
 
 
 #include <vector>
@@ -122,7 +123,7 @@ public:
         const std::vector<std::vector<ZoneBoundClass>>& leafCostzones) :
         tree(inTree) , 
         kernels(nullptr),
-        MaxThreads(omp_get_max_threads()),
+        MaxThreads(FEnv::GetValue("SCALFMM_ALGO_NUM_THREADS",omp_get_max_threads())),
         OctreeHeight(tree->getHeight()),
         costzones(internalCostzones),
         leafcostzones(leafCostzones) {
@@ -136,11 +137,11 @@ public:
         // Allocation of one kernel per thread (in case of impossible concurent use)
         this->kernels = new KernelClass*[MaxThreads];
         // Allocation is done so that kernels are closest to their core.
-        #pragma omp parallel for schedule(static)
-        for(int idxThread = 0 ; idxThread < MaxThreads ; ++idxThread) {
+        #pragma omp parallel num_threads(MaxThreads)
+        {
             #pragma omp critical (InitFFmmAlgorithmThreadBalanced)
             {
-                this->kernels[idxThread] = new KernelClass(*inKernel);
+                this->kernels[omp_get_thread_num()] = new KernelClass(*inKernel);
             }
         }
 
@@ -208,7 +209,7 @@ protected:
         FLOG( std::cerr << "\tStart Bottom Pass" << std::endl );
         FLOG( FTic timer );
 
-        #pragma omp parallel 
+        #pragma omp parallel num_threads(MaxThreads)
         {
             // Thread index ( = zone index )
             const int threadIdx = omp_get_thread_num();
@@ -255,7 +256,7 @@ protected:
             FLOG( FTic levelTimer );
             FLOG( std::cerr << "\t\t>> Level " << level << std::flush);
 
-            #pragma omp parallel 
+            #pragma omp parallel num_threads(MaxThreads)
             {
                 // Thread index ( = zone index)
                 const int threadNum = omp_get_thread_num(); 
@@ -308,7 +309,7 @@ protected:
             FLOG( std::cerr << "\t\t>> Level " << level << std::flush );
             FLOG( FTic levelTimer );
 
-            #pragma omp parallel 
+            #pragma omp parallel num_threads(MaxThreads)
             {
 
                 // Thread index ( = zone index)
@@ -374,7 +375,7 @@ protected:
             FLOG( std::cerr << "\t\t>> Level " << level << std::flush);
             FLOG( FTic levelTimer );
 
-            #pragma omp parallel
+            #pragma omp parallel num_threads(MaxThreads)
             {
                 // Thread index ( = zone index)
                 const int threadNum = omp_get_thread_num(); 
@@ -430,7 +431,7 @@ protected:
             ContainerClass* sources; ///< Sources for P2P kernel
         };
 
-        #pragma omp parallel
+        #pragma omp parallel num_threads(MaxThreads)
         {
             // Thread index ( = zone index)
             const int threadNum = omp_get_thread_num(); 
