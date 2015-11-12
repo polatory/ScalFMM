@@ -218,8 +218,8 @@ public:
 
     /** Do nothing */
     virtual void P2PRemote(const FTreeCoordinate& ,
-                     ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
-                           ContainerClass* const *, const int *, const int ){
+                           ContainerClass* const FRestrict , const ContainerClass* const FRestrict ,
+                           ContainerClass const *const  *, const int *, const int ){
     }
 
     //Getter
@@ -464,7 +464,7 @@ public:
                                                                  treeCoord.getZ()*boxWidthLeafLevel);
                     FPoint<double> leafCenter = absolutCoord + (octreeIn->getBoxCenter()-octreeIn->getBoxWidth()) + boxWidthLeafLevel/2;
                     function(lvl,leaf->getSrc()->getNbParticles(),leaf->getSrc()->getIndexes().data(),currMorton,leafCenter.getDataValue(),
-                             currCell->getContainer(),kernelUserData);
+                             currCell->getContainer(),leaf->getSrc()->getContainer(),kernelUserData);
                 });
         }else{
             std::cout << "Need to Build the tree and insert the parts First\n" << std::endl;

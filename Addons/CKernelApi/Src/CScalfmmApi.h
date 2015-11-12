@@ -171,7 +171,7 @@ typedef void (*Callback_copy_cell)(void * userDatas, FSize size, void * memoryAl
  * @param userData Kernel user data
  */
 typedef void (*Callback_finalize_leaf)(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
-                                       void * cellDatas, void * userDatas);
+                                       void * cellDatas,void * leafDatas, void * userDatas);
 
 /**
  * @brief Callback to initialise data inside the Leaves
@@ -180,7 +180,7 @@ typedef void (*Callback_finalize_leaf)(int level, FSize nbParts, const FSize * i
  * @param idxParts array of size nbParts, containing the indices of each parts
  * @param morton_index of the current cell
  * @param center of the current leaf (3 double)
- * @param userData cell user data
+ * @param userData leaf user data
  * @param userData Kernel user data
  */
 typedef void* (*Callback_init_leaf)(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],

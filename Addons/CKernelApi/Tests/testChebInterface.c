@@ -87,9 +87,9 @@ void cheb_resetCell(int level, long long morton_index, int* tree_position,
  * This function is mainly a display of its args...
  */
 void on_leaf(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
-             void * cellDatas, void * userDatas){
-    printf("I'm leaf at %lld pos, of center [%e %e %e], containing %lld parts\n",
-           morton_index,center[0],center[1],center[2],nbParts);
+             void * cellDatas, void * leafData, void * userDatas){
+    /* printf("I'm leaf at %lld pos, of center [%e %e %e], containing %lld parts\n", */
+    /*        morton_index,center[0],center[1],center[2],nbParts); */
 }
 
 
@@ -333,10 +333,10 @@ int main(int argc, char ** av){
                     nbPartOkay++;
                 }
                 else{
-                    /* printf("id : %lld : %e, %e, %e, %e, ChebInterf Pot : %e  Cheb Pot : %e \n", */
-                    /*        idxPart,diffX,diffY,diffZ,diffPot, */
-                    /*        potentialToStore[0][idxPart], */
-                    /*        potentialsRef[idxPart]); */
+                    printf("id : %lld : %e, %e, %e, %e, ChebInterf Pot : %e  Cheb Pot : %e \n",
+                           idxPart,diffX,diffY,diffZ,diffPot,
+                           potentialToStore[0][idxPart],
+                           potentialsRef[idxPart]);
                 }
                 //That part is to verify with our usual exec' if everything is alright
                 if(idxPart == 0 || idxPart == nbPart/2 || idxPart == nbPart-1){
