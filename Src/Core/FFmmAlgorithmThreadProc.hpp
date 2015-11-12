@@ -349,7 +349,7 @@ protected:
         } while(octreeIterator.moveRight());
 
         FLOG(computationCounter.tic());
-#pragma omp parallel
+#pragma omp parallel num_threads(MaxThreads)
         {
             // Each thread get its own kernel
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
@@ -452,7 +452,7 @@ protected:
             }
 
             FLOG(parallelCounter.tic());
-            #pragma omp parallel
+            #pragma omp parallel num_threads(MaxThreads)
             {
                 KernelClass* myThreadkernels = (kernels[omp_get_thread_num()]);
                 //This single section post and receive the comms, and then do the M2M associated with it.
@@ -641,7 +641,7 @@ protected:
         FMpiBufferReader**const recvBuffer = new FMpiBufferReader*[nbProcess * OctreeHeight];
         memset(recvBuffer, 0, sizeof(FMpiBufferReader*) * nbProcess * OctreeHeight);
 
-        #pragma omp parallel
+        #pragma omp parallel num_threads(MaxThreads)
         {
             #pragma omp master
             {
@@ -947,7 +947,7 @@ protected:
 
                 // Compute this cells
                 FLOG(computationCounter.tic());
-                #pragma omp parallel
+                #pragma omp parallel num_threads(MaxThreads)
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     MortonIndex neighborsIndex[/*189+26+1*/216];
@@ -1080,7 +1080,7 @@ protected:
                 }
             }
 
-            #pragma omp parallel
+            #pragma omp parallel num_threads(MaxThreads)
             {
                 KernelClass* myThreadkernels = (kernels[omp_get_thread_num()]);
                 #pragma omp single nowait
@@ -1251,7 +1251,7 @@ protected:
         FSize partsToSend[nbProcess];
         memset(partsToSend, 0, sizeof(FSize) * nbProcess);
 
-#pragma omp parallel
+#pragma omp parallel num_threads(MaxThreads)
         {
 #pragma omp master // MUST WAIT to fill leafsNeedOther
             if(p2pEnabled){

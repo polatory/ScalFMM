@@ -215,7 +215,7 @@ protected:
         std::unique_ptr<WorkloadTemp*[]> workloadBufferThread(new WorkloadTemp*[MaxThreads]);
         memset(workloadBufferThread.get(), 0, MaxThreads*sizeof(WorkloadTemp*));
 
-        #pragma omp parallel
+        #pragma omp parallel num_threads(MaxThreads)
         {
             #pragma omp single
             {
@@ -452,7 +452,7 @@ protected:
         FLOG(FTic counterTime);
 
         FLOG(FTic computationCounter);
-        #pragma omp parallel
+        #pragma omp parallel num_threads(MaxThreads)
         {
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
             const int nbCellsToCompute = workloadP2M[omp_get_thread_num()].nbElements;
@@ -491,7 +491,7 @@ protected:
             FLOG(FTic counterTimeLevel);
 
             FLOG(computationCounter.tic());
-            #pragma omp parallel
+            #pragma omp parallel num_threads(MaxThreads)
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                 const int nbCellsToCompute = workloadM2M[idxLevel][omp_get_thread_num()].nbElements;
@@ -547,7 +547,7 @@ protected:
             const int separationCriteria = (idxLevel != FAbstractAlgorithm::lowerWorkingLevel-1 ? 1 : leafLevelSeparationCriteria);
             FLOG(FTic counterTimeLevel);
             FLOG(computationCounter.tic());
-            #pragma omp parallel
+            #pragma omp parallel num_threads(MaxThreads)
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                 const int nbCellsToCompute = workloadM2L[idxLevel][omp_get_thread_num()].nbElements;
@@ -595,7 +595,7 @@ protected:
             FLOG(FTic counterTimeLevel);
 
             FLOG(computationCounter.tic());
-            #pragma omp parallel
+            #pragma omp parallel num_threads(MaxThreads)
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                 const int nbCellsToCompute = workloadL2L[idxLevel][omp_get_thread_num()].nbElements;
@@ -626,7 +626,7 @@ protected:
     /////////////////////////////////////////////////////////////////////////////
 
     void L2P(){
-        #pragma omp parallel
+        #pragma omp parallel num_threads(MaxThreads)
         {
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
             const int nbCellsToCompute = workloadL2P[omp_get_thread_num()].nbElements;
@@ -656,7 +656,7 @@ protected:
         FLOG(FTic computationCounter);
         FLOG(FTic computationCounterP2P);
 
-        #pragma omp parallel
+        #pragma omp parallel num_threads(MaxThreads)
         {
             FLOG(if(!omp_get_thread_num()) computationCounter.tic());
 

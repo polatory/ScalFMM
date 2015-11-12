@@ -106,7 +106,7 @@ protected:
       */
     void executeCore(const unsigned operationsToProceed) override {
         Timers[P2MTimer].tic();
-        #pragma omp parallel
+        #pragma omp parallel num_threads(MaxThreads)
         {
             #pragma omp sections 
             {

@@ -130,7 +130,7 @@ protected:
 		FLOG( FLog::Controller.write("\tStart Bottom Pass\n").write(FLog::Flush) );
 		FLOG(FTic counterTime);
 
-#pragma omp parallel
+#pragma omp parallel num_threads(MaxThreads)
 		{
 #pragma omp single nowait
 			{
@@ -163,7 +163,7 @@ protected:
 		FLOG( FLog::Controller.write("\tStart Upward Pass\n").write(FLog::Flush); );
 		FLOG(FTic counterTime);
 
-#pragma omp parallel
+#pragma omp parallel num_threads(MaxThreads)
 		{
 #pragma omp single nowait
 			{
@@ -229,7 +229,7 @@ protected:
 		FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
 		FLOG(FTic counterTime);
 
-#pragma omp parallel
+#pragma omp parallel num_threads(MaxThreads)
 		{
 #pragma omp single nowait
             {
@@ -276,7 +276,7 @@ protected:
 
 		FLOG( FLog::Controller.write("\tStart Downward Pass (M2L)\n").write(FLog::Flush); );
 		FLOG(FTic counterTime);
-#pragma omp parallel
+#pragma omp parallel num_threads(MaxThreads)
 		{
 #pragma omp single nowait
             {
@@ -335,7 +335,7 @@ protected:
 		FLOG( FLog::Controller.write("\tStart Downward Pass (L2L)\n").write(FLog::Flush); );
 		FLOG(FTic counterTime);
 
-#pragma omp parallel
+#pragma omp parallel num_threads(MaxThreads)
 		{
 #pragma omp single nowait
 			{
@@ -386,7 +386,7 @@ protected:
 
 		const int heightMinusOne = OctreeHeight - 1;
 
-#pragma omp parallel
+#pragma omp parallel num_threads(MaxThreads)
 		{
 
 #pragma omp single nowait

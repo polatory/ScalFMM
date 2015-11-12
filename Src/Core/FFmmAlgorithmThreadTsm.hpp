@@ -141,7 +141,7 @@ protected:
         const int chunkSize = FMath::Max(1 , numberOfLeafs/(omp_get_max_threads()*omp_get_max_threads()));
 
         FLOG(FTic computationCounter);
-        #pragma omp parallel
+        #pragma omp parallel num_threads(MaxThreads)
         {
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
             #pragma omp for nowait schedule(dynamic, chunkSize)
@@ -198,7 +198,7 @@ protected:
             const int chunkSize = FMath::Max(1 , numberOfCells/(omp_get_max_threads()*omp_get_max_threads()));
 
             FLOG(computationCounter.tic());
-            #pragma omp parallel
+            #pragma omp parallel num_threads(MaxThreads)
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                 #pragma omp for nowait schedule(dynamic, chunkSize)
@@ -265,7 +265,7 @@ protected:
                 const int chunkSize = FMath::Max(1 , numberOfCells/(omp_get_max_threads()*omp_get_max_threads()));
 
                 FLOG(computationCounter.tic());
-                #pragma omp parallel
+                #pragma omp parallel num_threads(MaxThreads)
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     const CellClass* neighbors[342];
@@ -334,7 +334,7 @@ protected:
                 const int chunkSize = FMath::Max(1 , numberOfCells/(omp_get_max_threads()*omp_get_max_threads()));
 
                 FLOG(computationCounter.tic());
-                #pragma omp parallel
+                #pragma omp parallel num_threads(MaxThreads)
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     #pragma omp for nowait schedule(dynamic, chunkSize)
@@ -383,7 +383,7 @@ protected:
 
         const int heightMinusOne = OctreeHeight - 1;
         FLOG(FTic computationCounter);
-        #pragma omp parallel
+        #pragma omp parallel num_threads(MaxThreads)
         {
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
             // There is a maximum of 26 neighbors

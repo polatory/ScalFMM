@@ -179,7 +179,7 @@ protected:
      */
     void executeCore(const unsigned operationsToProceed) override {
 
-        #pragma omp parallel
+        #pragma omp parallel num_threads(MaxThreads)
         {
             #pragma omp master
             {

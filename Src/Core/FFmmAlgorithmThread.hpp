@@ -192,7 +192,7 @@ protected:
         const int chunkSize = this->getChunkSize(leafs);
 
         FLOG(FTic computationCounter);
-        #pragma omp parallel
+        #pragma omp parallel num_threads(MaxThreads)
         {
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
             #pragma omp for nowait schedule(dynamic, chunkSize)
@@ -245,7 +245,7 @@ protected:
             const int chunkSize = this->getChunkSize(numberOfCells);
 
             FLOG(computationCounter.tic());
-            #pragma omp parallel
+            #pragma omp parallel num_threads(MaxThreads)
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                 #pragma omp for nowait  schedule(dynamic, chunkSize)
@@ -312,7 +312,7 @@ protected:
             const int chunkSize = this->getChunkSize(numberOfCells);
 
             FLOG(computationCounter.tic());
-            #pragma omp parallel
+            #pragma omp parallel num_threads(MaxThreads)
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                 const CellClass* neighbors[342];
@@ -369,7 +369,7 @@ protected:
 
             FLOG(computationCounter.tic());
             const int chunkSize = this->getChunkSize(numberOfCells);
-            #pragma omp parallel
+            #pragma omp parallel num_threads(MaxThreads)
             {
                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                 #pragma omp for nowait schedule(dynamic, chunkSize)
@@ -421,7 +421,7 @@ protected:
             startPosAtShape[idxShape] = startPosAtShape[idxShape-1] + this->shapeLeaf[idxShape-1];
         }
 
-        #pragma omp parallel
+        #pragma omp parallel num_threads(MaxThreads)
         {
 
             const float step = float(this->leafsNumber) / float(omp_get_num_threads());
