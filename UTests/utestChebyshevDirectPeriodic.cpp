@@ -160,9 +160,15 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
                                                        loader.getBoxWidth() * FReal(idxZ));
 
                             for(int idxSource = 0 ; idxSource < NbParticles ; ++idxSource){
-                                TestParticle source = particles[idxSource];
-                                source.position += offset;
+                                TestParticle source;
+                                source.position = particles[idxSource].position;
+                                source.physicalValue = particles[idxSource].physicalValue;
+                                source.potential = particles[idxSource].potential;
+                                source.forces[0] = particles[idxSource].forces[0];
+                                source.forces[1] = particles[idxSource].forces[1];
+                                source.forces[2] = particles[idxSource].forces[2];
 
+                                source.position += offset;
                                 FP2P::NonMutualParticles(
                                             source.position.getX(), source.position.getY(),
                                             source.position.getZ(),source.physicalValue,
