@@ -199,7 +199,7 @@ int main(int argc, char* argv[]){
     }
 
 
-    if(execomp){
+    if(execOmp){
         std::cout << " Using Classic " << std::endl;
 
         typedef FP2PParticleContainer<FReal> ContainerClass;
