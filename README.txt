@@ -64,3 +64,26 @@ One can want to implement its own kernel or even its own parallelization whithou
 × Tests : examples to know how to use scalfmm/put particles in the tree/iterate on the tree...
 × Utils : some scripts to work with the data files.
 
+
+---------------------------------------------------
+---------------------------------------------------
+Concerning the 1.3 to 1.4 API update:
+=====================================
+For example the previous M2L interface was:
+void M2L(CellClass* const FRestrict inLocal, const CellClass* inInteractions[], const int /*inSize*/, const int inLevel) {
+
+But the new one is:
+void M2L(CellClass* const FRestrict inLocal, const CellClass* inInteractions[],
+ const int neighborPositions[], const int inSize, const int inLevel) override {
+
+In the previous version we were iterating by
+for(int idxNeigh = 0 ; idxNeigh < 343 ; ++idxNeigh){
+ // if interaction exits
+ if(inInteractions[idxNeigh]){
+     inInteractions[idxNeigh]
+
+
+In the new one we do it by
+for(int idxExistingNeigh = 0 ; idxExistingNeigh < inSize ; ++idxExistingNeigh){
+ const int idxNeigh = neighborPositions[idxExistingNeigh];
+ inInteractions[idxExistingNeigh]

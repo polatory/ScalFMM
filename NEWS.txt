@@ -9,7 +9,7 @@ version 1.1
 
 1.4
 -----
-- Add the uniform kernel
+- Add interpolation FMM based on uniform grid points
 - Add the group tree and the things related to starpu
 - Change the P2P (it is now done by tree functions in the abstract kernel) refer to the P2P page of the doc
 - Update the P2P/M2L prototype, the position of the elements is knowns from an array position
@@ -19,7 +19,6 @@ version 1.1
 - The choice of floating point values is done by template (by passing template to all classes) and no more at configure time
 - There is no more ScalFMM variables and defines but only SCALFMM (all letters in upper case)
 - We start to use unique ptr (and advise to use it) in the main files
-- Add interpolation FMM based on uniform grid points.
 - Add blocked version of the algorithm to increase the granularity (task-based approach)
 - Fix bug with Chebyschev kernel and multi RHS.
 - Improvements in unit tests (works with Linux and MacOs X for intel and gcc)
