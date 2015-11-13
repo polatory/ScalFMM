@@ -716,8 +716,9 @@ public:
     }
 
     //Simple call to FScalFMMEngine method with good template
-    void reset_tree(Callback_reset_cell /*not used*/){
-        FScalFMMEngine<FReal>::template generic_reset_tree<ContainerClass,InterCell,LeafClass>(octree);
+    void apply_on_cell(Callback_apply_on_cell /*not used*/){
+        //We used this one to clean the Cehb cell in the user defined cheb kernel situation.
+        FScalFMMEngine<FReal>::template generic_apply_on_cell<ContainerClass,InterCell,LeafClass>(octree);
     }
 
 

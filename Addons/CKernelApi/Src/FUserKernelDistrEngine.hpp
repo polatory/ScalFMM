@@ -637,7 +637,7 @@ public:
             });
     }
 
-    void apply_on_each_leaf(Callback_finalize_leaf function){
+    void apply_on_each_leaf(Callback_apply_on_leaf function){
         if(octreeDist){
             FUserKernelEngine<FReal,LeafClass>::template generic_apply_on_each_leaf<ContainerClass,CoreCellDist>(octreeDist,kernel->getUserKernelDatas(),function);
         }else{

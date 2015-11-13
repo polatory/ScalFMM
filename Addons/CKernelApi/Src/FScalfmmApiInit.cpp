@@ -386,7 +386,7 @@ void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes, const FSize
     //Empty tree coordinate
     int coord[3] = {0,0,0};
 
-    inKernelStruct->kernel[id_thread]->P2P(FTreeCoordinate(coord),tempContTarget,nullptr,tempContSources,sourcePosition,size);
+    inKernelStruct->kernel[id_thread]->P2P(FTreeCoordinate(coord),tempContTarget,tempContTarget,tempContSources,sourcePosition,size);
 
     //get back forces & potentials
     double * forcesToFill = reinterpret_cast<UserData *>(inKernel)->forcesComputed[id_thread];

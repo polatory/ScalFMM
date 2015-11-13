@@ -170,7 +170,7 @@ typedef void (*Callback_copy_cell)(void * userDatas, FSize size, void * memoryAl
  * @param userData cell user data
  * @param userData Kernel user data
  */
-typedef void (*Callback_finalize_leaf)(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
+typedef void (*Callback_apply_on_leaf)(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
                                        void * cellDatas,void * leafDatas, void * userDatas);
 
 /**
@@ -608,7 +608,7 @@ typedef void (*Callback_P2PSym)(void * targetLeaf, FSize nbParticles, const FSiz
  * @param spatial_position double[3] center of the cell
  * @param usercell ptr to user's cell
  */
-typedef void (*Callback_reset_cell)(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell, void * userData);
+typedef void (*Callback_apply_on_cell)(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell, void * userData);
 
 /**
  * @brief Structure containing callbacks to fill in order to define
@@ -667,7 +667,7 @@ void scalfmm_execute_fmm(scalfmm_handle Handle);
  * called after insert_parts.
  * @param
  */
-void scalfmm_apply_on_leaf(scalfmm_handle Handle, Callback_finalize_leaf function);
+void scalfmm_apply_on_leaf(scalfmm_handle Handle, Callback_apply_on_leaf function);
 
 
 /////////////////////////////////////////////////////////////////////
@@ -689,11 +689,10 @@ void scalfmm_apply_on_leaf(scalfmm_handle Handle, Callback_finalize_leaf functio
 void scalfmm_dealloc_handle(scalfmm_handle handle, Callback_free_cell cellDestroyer);
 
 /**
- * @brief this function reset all the data of the tree. (i e multipole
- * and local development, forces and potentials)
+ * @brief This function apply the function param on each cell of the octree
  * @param Handle scalfmm_handle provided by scalfmm_init.
  */
-void scalfmm_reset_tree(scalfmm_handle handle, Callback_reset_cell cellReseter);
+void scalfmm_apply_on_cell(scalfmm_handle handle, Callback_apply_on_cell function);
 
 /////////////////////////////////////////////////////////////////////
 ///////////////       Monitoring functions          /////////////////

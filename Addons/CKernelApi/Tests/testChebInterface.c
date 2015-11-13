@@ -99,13 +99,13 @@ void on_leaf(int level, FSize nbParts, const FSize * idxParts, long long morton_
  * @param number of particle (no default value)
  */
 int main(int argc, char ** av){
-    omp_set_num_threads(1);
+    //omp_set_num_threads(1);
     printf("Start\n");
     if(argc<2){
         printf("Use : %s nb_part (optionnal : TreeHeight) \nexiting\n",av[0]);
         exit(0);
     }
-    int nbPart= atoi(av[1]);
+    int nbPart= atoi(av[1]);;
     int treeHeight = 5 ;
     if(argc>2){
         int treeHeight = atoi(av[2]);
@@ -125,12 +125,9 @@ int main(int argc, char ** av){
         printf("Creating Particles:\n");
         FSize idxPart;
         for(idxPart = 0 ; idxPart < nbPart ; ++idxPart){
-            particleXYZ[idxPart*3]   = (random()/(double)(RAND_MAX))*boxWidth
-                - boxWidth/2 + boxCenter[0];
-            particleXYZ[idxPart*3+1] = (random()/(double)(RAND_MAX))*boxWidth
-                - boxWidth/2 + boxCenter[1];
-            particleXYZ[idxPart*3+2] = (random()/(double)(RAND_MAX))*boxWidth
-                - boxWidth/2 + boxCenter[2];
+            particleXYZ[idxPart*3]   = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[0];
+            particleXYZ[idxPart*3+1] = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[1];
+            particleXYZ[idxPart*3+2] = (random()/(double)(RAND_MAX))*boxWidth - boxWidth/2 + boxCenter[2];
             physicalValues[idxPart] = 1.0;
         }
     }
@@ -360,8 +357,8 @@ int main(int argc, char ** av){
         free(potentialsRef);
 
         //Reset
-        scalfmm_reset_tree(handle,cheb_resetCell);
-        scalfmm_reset_tree(handle_ref,NULL);
+        scalfmm_apply_on_cell(handle,cheb_resetCell);
+        scalfmm_apply_on_cell(handle_ref,NULL);
 
         printf("Internal resets done \n");
 

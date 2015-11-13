@@ -173,7 +173,7 @@ public:
     virtual void set_potentials_npart( int nbParts, int* idxOfParticles, FReal * potentialsToRead, PartType type){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
-    virtual void apply_on_each_leaf(Callback_finalize_leaf function){
+    virtual void apply_on_each_leaf(Callback_apply_on_leaf function){
         FAssertLF(0,"No tree instancied, exiting ...\n");
     }
 
@@ -771,11 +771,11 @@ public:
         }
     }
 
-    virtual void reset_tree(Callback_reset_cell cellReset){
+    virtual void apply_on_cell(Callback_apply_on_cell function){
     }
 
     template<class ContainerClass, class CellClass, class LeafClass>
-    void generic_reset_tree(FOctree<FReal,CellClass,ContainerClass,LeafClass> * tree){
+    void generic_apply_on_cell(FOctree<FReal,CellClass,ContainerClass,LeafClass> * tree){
         //Reset forces and potentials
         tree->forEachLeaf([&](LeafClass * leaf){
                 ContainerClass * targets = leaf->getTargets();
@@ -1057,8 +1057,8 @@ extern "C" void scalfmm_utils_interactionPosition(int interactionPosition, int* 
 }
 
 
-extern "C" void scalfmm_reset_tree(scalfmm_handle Handle, Callback_reset_cell cellReseter){
-    ((ScalFmmCoreHandle<double> * ) Handle)->engine->reset_tree(cellReseter);
+extern "C" void scalfmm_apply_on_cell(scalfmm_handle Handle, Callback_apply_on_cell function){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->apply_on_cell(function);
 }
 
 extern "C" void scalfmm_print_everything(scalfmm_handle Handle){
@@ -1069,7 +1069,7 @@ extern "C" void scalfmm_set_upper_limit(scalfmm_handle Handle, int upperLimit){
     ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_upper_limit(upperLimit);
 }
 
-extern "C" void scalfmm_apply_on_leaf(scalfmm_handle Handle, Callback_finalize_leaf function){
+extern "C" void scalfmm_apply_on_leaf(scalfmm_handle Handle, Callback_apply_on_leaf function){
     ((ScalFmmCoreHandle<double> * ) Handle)->engine->apply_on_each_leaf(function);
 }
 

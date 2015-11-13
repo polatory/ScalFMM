@@ -335,7 +335,7 @@ public:
         this->octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint<FReal>(BoxCenter));
     }
 
-    void reset_tree(Callback_reset_cell cellReset){
+    void apply_on_cell(Callback_apply_on_cell function){
         double boxwidth = octree->getBoxWidth();
         //apply user function reset on each user's cell
         octree->forEachCellWithLevel([&](CoreCell * currCell,const int currLevel){
@@ -347,7 +347,7 @@ public:
                     position[0] = boxCorner.getX() + currCoord.getX()*boxwidth/double(1<<currLevel);
                     position[1] = boxCorner.getY() + currCoord.getY()*boxwidth/double(1<<currLevel);
                     position[2] = boxCorner.getZ() + currCoord.getZ()*boxwidth/double(1<<currLevel);
-                    cellReset(currLevel,currMorton,arrayCoord,position,currCell->getContainer(),kernel->getUserKernelDatas());
+                    function(currLevel,currMorton,arrayCoord,position,currCell->getContainer(),kernel->getUserKernelDatas());
                 }
             });
     }
@@ -444,14 +444,14 @@ public:
         FScalFMMEngine<FReal>::template generic_set_positions_npart<ContainerClass,LeafClass,CoreCell>(octree,NbPositions,idxOfParticles,X,Y,Z,type);
     }
 
-    virtual void apply_on_each_leaf(Callback_finalize_leaf function){
+    virtual void apply_on_each_leaf(Callback_apply_on_leaf function){
         generic_apply_on_each_leaf<ContainerClass,CoreCell>(octree,kernel->getUserKernelDatas(),function);
     }
 
     template<class ContainerClass,class CellClass>
     void generic_apply_on_each_leaf(FOctree<FReal,CellClass,ContainerClass,LeafClass>* octreeIn,
                                     void * kernelUserData,
-                                    Callback_finalize_leaf function){
+                                    Callback_apply_on_leaf function){
         if(octreeIn){
             octreeIn->forEachCellLeaf([&](CoreCell * currCell, LeafClass * leaf){
                     int lvl = octreeIn->getHeight();
