@@ -14,7 +14,6 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 // Keep in private GIT
-// @SCALFMM_PRIVATE
 
 #ifndef FUNIFKERNEL_HPP
 #define FUNIFKERNEL_HPP

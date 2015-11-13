@@ -1,7 +1,6 @@
 #ifndef FTAYLORCELLPOD_HPP
 #define FTAYLORCELLPOD_HPP
 
-// @SCALFMM_PRIVATE
 
 #include "../../Utils/FGlobal.hpp"
 #include "../Core/FBasicCellPOD.hpp"

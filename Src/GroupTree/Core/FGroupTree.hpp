@@ -1,6 +1,5 @@
 
 // Keep in private GIT
-// @SCALFMM_PRIVATE
 #ifndef FGROUPTREE_HPP
 #define FGROUPTREE_HPP
 #include <vector>

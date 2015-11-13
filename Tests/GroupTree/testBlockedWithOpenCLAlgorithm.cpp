@@ -1,5 +1,4 @@
 // Keep in private GIT
-// @SCALFMM_PRIVATE
 
 // @FUSE_STARPU
 // @FUSE_OPENCL

@@ -2,7 +2,6 @@
 // @FUSE_BLAS
 // ================
 // Keep in private GIT
-// @SCALFMM_PRIVATE
 // @FUSE_MPI
 // @FUSE_STARPU
 

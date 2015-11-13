@@ -1,7 +1,6 @@
 #ifndef FBASICCELLPOD_HPP
 #define FBASICCELLPOD_HPP
 
-// @SCALFMM_PRIVATE
 
 #include "../../Utils/FGlobal.hpp"
 #include "../../Containers/FTreeCoordinate.hpp"

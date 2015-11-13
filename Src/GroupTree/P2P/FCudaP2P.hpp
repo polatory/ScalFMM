@@ -1,4 +1,3 @@
-/// @SCALFMM_PRIVATE
 #ifndef FCUDAP2P_HPP
 #define FCUDAP2P_HPP
 

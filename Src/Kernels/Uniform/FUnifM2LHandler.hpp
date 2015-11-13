@@ -14,7 +14,6 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 // Keep in private GIT
-// @SCALFMM_PRIVATE
 
 #ifndef FUNIFM2LHANDLER_HPP
 #define FUNIFM2LHANDLER_HPP

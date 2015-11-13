@@ -1,6 +1,5 @@
 
 // Keep in private GIT
-// @SCALFMM_PRIVATE
 #ifndef FGROUPSEQALGORITHM_HPP
 #define FGROUPSEQALGORITHM_HPP
 
