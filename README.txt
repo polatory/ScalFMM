@@ -22,6 +22,9 @@ ccmake ..
 make
 # And access executables in scalfmm/Build/Tests/{Release,Debug}/.....
 
+To compile with StarPU you can pass, as an example:
+cmake .. -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_CUDA=OFF -DSCALFMM_USE_OPENCL=OFF -DHWLOC_DIR=/home/berenger/Téléchargements/hwloc-1.10.0/install/ -DSTARPU_DIR=/home/berenger/Téléchargements/starpu-work/StarPU/installwithfxt
+
 ---------------------------------------------------
 ---------------------------------------------------
 
