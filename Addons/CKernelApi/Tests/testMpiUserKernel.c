@@ -6,7 +6,6 @@
 #include "Timers.h"
 #include <mpi.h>
 #include "../Src/CScalfmmApi.h"
-
 #include "../../Src/Kernels/Chebyshev/FChebInterface.h"
 
 
@@ -38,7 +37,7 @@ void cheb_free_cell(void * inCell){
  * @brief Wrapper to FMM operators (refer to CScalfmmApi.h to get the
  * detailed descriptions)
  */
-void cheb_p2m(void* cellData, FSize nbParticlesInLeaf, const FSize* particleIndexes,
+void cheb_p2m(void* cellData,void * leafData, FSize nbParticlesInLeaf, const FSize* particleIndexes,
               void* userData){
     ChebKernel_P2M(cellData,nbParticlesInLeaf,particleIndexes,userData);
 }
@@ -54,11 +53,12 @@ void cheb_l2l(int level, void* parentCell, int childPosition, void* childCell,
               void* userData){
     ChebKernel_L2L( level, parentCell, childPosition, childCell,  userData);
 }
-void cheb_l2p(void* leafCell, FSize nbParticles, const FSize* particleIndexes,
+void cheb_l2p(void* cellData, void* leafData, FSize nbParticles, const FSize* particleIndexes,
               void* userData){
-    ChebKernel_L2P( leafCell, nbParticles, particleIndexes, userData);
+    ChebKernel_L2P( cellData, nbParticles, particleIndexes, userData);
 }
-void cheb_p2pFull(FSize nbParticles, const FSize* particleIndexes,
+void cheb_p2pFull(void * targetLeaf, FSize nbParticles, const FSize* particleIndexes,
+                  void ** sourceLeaves,
                   const FSize ** sourceParticleIndexes, FSize* sourceNbPart,const int * sourcePosition,
                   const int size, void* userData) {
     ChebKernel_P2P(nbParticles, particleIndexes, sourceParticleIndexes, sourceNbPart,sourcePosition,size,
@@ -84,7 +84,7 @@ void * cheb_restore_cell(int level, void * arrayTobeRead){
 }
 
 void on_leaf(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
-             void * cellDatas, void * userDatas){
+             void * cellDatas,void * leafdata, void * userDatas){
 
     UserData * ptrToUserData = (UserData*) userDatas;
     //Compute totalEnergy

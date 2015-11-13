@@ -62,7 +62,7 @@ void displ_free_cell(void * inCell){
  * @brief Wrapper to FMM operators (refer to CScalfmmApi.h to get the
  * detailed descriptions)
  */
-void displ_p2m(void* cellData, FSize nbParticlesInLeaf, const FSize* particleIndexes, void* userData){
+void displ_p2m(void* cellData, void * leafData, FSize nbParticlesInLeaf, const FSize* particleIndexes, void* userData){
     Cell * current_cell = cellData;
     printf("P2M with %lld parts filling cell %d ::\n",nbParticlesInLeaf,current_cell->Id);
 
@@ -89,12 +89,12 @@ void displ_m2m(int level, void* parentCell, int childPosition, void* childCell, 
     user_data->nbM2M += 1;
 }
 
-void displ_m2l_full(int level, void* targetCell, void* sourceCell[343], void* userData){
+void displ_m2l_full(int level, void* targetCell, const int * neighborPosition, const int size, void** sourceCell, void* userData){
     Cell * target_cell = targetCell;
-    printf("M2L at lvl %d filling target cell of Id %d and morton : %d ::\n",target_cell->lvl,target_cell->Id,target_cell->morton);
+    printf("M2L at lvl %d filling target cell of Id %d and morton : %d with %d neighbors ::\n",target_cell->lvl,target_cell->Id,target_cell->morton,size);
     int idSource = 0;
     int countSource = 0;
-    for(idSource = 0 ; idSource<343 ; ++idSource){
+    for(idSource = 0 ; idSource<size ; ++idSource){
         if(sourceCell[idSource]){
             Cell * source_cell = sourceCell[idSource];
             printf("\t[m2l]Target : %d, sourceCell[%d] : morton %d, with %d,%d,%d coordinates \n",target_cell->morton,
@@ -121,7 +121,7 @@ void displ_l2l(int level, void* parentCell, int childPosition, void* childCell, 
     UserData * user_data = userData;
     user_data->nbL2L += 1;
 }
-void displ_l2p(void* leafCell, FSize nbParticles, const FSize* particleIndexes, void* userData){
+void displ_l2p(void* leafCell,void * leafData, FSize nbParticles, const FSize* particleIndexes, void* userData){
     Cell * current_cell = leafCell;
     printf("L2P with %lld parts reading cell %d ::\n",nbParticles,current_cell->Id);
 
@@ -132,8 +132,9 @@ void displ_l2p(void* leafCell, FSize nbParticles, const FSize* particleIndexes, 
     UserData * user_data = userData;
     user_data->nbL2P += 1;
 }
-void displ_p2pFull(FSize nbParticles, const FSize* particleIndexes,
-                   const FSize * sourceParticleIndexes[27], FSize sourceNbPart[27],void* userData) {
+void displ_p2pFull(void * targetLeaf, FSize nbParticles, const FSize* particleIndexes,
+                   void ** sourceLeaves,
+                   const FSize ** sourceParticleIndexes, FSize * sourceNbPart, const int* sourcePosition, const int size, void* userData) {
     printf("P2P, no cells involved, only leaves\n");
     UserData * user_data = userData;
     user_data->nbP2PFull+= 1;
@@ -266,7 +267,7 @@ int main(int argc, char ** av){
                userDatas.nbL2P,
                userDatas.nbP2PFull);
 
-        scalfmm_reset_tree(handle,displ_resetCell);
+        scalfmm_apply_on_cell(handle,displ_resetCell);
 
         ite++;
     }

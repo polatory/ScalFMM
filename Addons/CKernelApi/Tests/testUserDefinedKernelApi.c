@@ -96,7 +96,7 @@ struct MyData {
 
 
 // Our P2M
-void my_Callback_P2M(void* cellData, FSize nbParticlesInLeaf, const FSize* particleIndexes, void* userData){
+void my_Callback_P2M(void* cellData, void * leafData, FSize nbParticlesInLeaf, const FSize* particleIndexes, void* userData){
     struct MyData* my_data = (struct MyData*)userData;
     my_data->countP2M += 1;
 
@@ -183,7 +183,7 @@ void my_Callback_L2L(int level, void* cellData, int childPosition, void* childDa
     // JUST-PUT-HERE: Your L2L
 }
 
-void my_Callback_L2P(void* cellData, FSize nbParticlesInLeaf, const FSize* particleIndexes, void* userData){
+void my_Callback_L2P(void* cellData, void * leafData, FSize nbParticlesInLeaf, const FSize* particleIndexes, void* userData){
     struct MyData* my_data = (struct MyData*)userData;
     my_data->countL2P += 1;
 
@@ -203,7 +203,8 @@ void my_Callback_L2P(void* cellData, FSize nbParticlesInLeaf, const FSize* parti
     }
 }
 
-void my_Callback_P2P(FSize nbParticlesInLeaf, const FSize* particleIndexes, FSize nbParticlesInSrc, const FSize* particleIndexesSrc, void* userData){
+void my_Callback_P2P(void * targetLeaf, FSize nbParticlesInLeaf, const FSize* particleIndexes,void * sourceLeaf,
+                     FSize nbParticlesInSrc, const FSize* particleIndexesSrc, void* userData){
     struct MyData* my_data = (struct MyData*)userData;
     my_data->countP2P += 1;
 
@@ -229,7 +230,7 @@ void my_Callback_P2P(FSize nbParticlesInLeaf, const FSize* particleIndexes, FSiz
     // interacting with the target particles
 }
 
-void my_Callback_P2PInner(FSize nbParticlesInLeaf, const FSize* particleIndexes, void* userData){
+void my_Callback_P2PInner(void * targetLeaf, FSize nbParticlesInLeaf, const FSize* particleIndexes, void* userData){
     struct MyData* my_data = (struct MyData*)userData;
     my_data->countP2PInner += 1;
 
