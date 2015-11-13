@@ -34,7 +34,7 @@ GetCpuInfos()
 
 # SCALFMM version number.  An even minor number corresponds to releases.
 set(SCALFMM_MAJOR_VERSION 1)
-set(SCALFMM_MINOR_VERSION 3)
+set(SCALFMM_MINOR_VERSION 4)
 set(SCALFMM_PATCH_VERSION 0)
 set(SCALFMM_VERSION  "${SCALFMM_MAJOR_VERSION}.${SCALFMM_MINOR_VERSION}.${SCALFMM_PATCH_VERSION}" )
 
@@ -81,10 +81,10 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   option( SCALFMM_USE_MIC_NATIVE       "Set to ON to compile in native mode for MIC" OFF  )
   option( SCALFMM_ONLY_DEVEL           "Set to ON to compile Development tools (only scalfmm team)" ON )
   option( SCALFMM_USE_EZTRACE          "Set to ON to compile with eztrace framwork" OFF )
+  option( SCALFMM_USE_STARPU  "Set to ON to build SCALFMM with StarPU" OFF )
   if( SCALFMM_ONLY_DEVEL )
     option( OPENMP_SUPPORT_COMMUTE   "Set to ON to let tasks commute (KSTAR/StarPU compiler only)" OFF )
     option( OPENMP_SUPPORT_PRIORITY  "Set to ON to enable tasks priority (KSTAR/StarPU compiler only)" OFF )
-    option( SCALFMM_USE_STARPU  "Set to ON to build SCALFMM with StarPU" OFF )
     option( SCALFMM_BUILD_UTILS "Set to ON to build utils Tests"    OFF )
     option( SCALFMM_DISABLE_NATIVE_OMP4 "Set to ON to disable the gcc/intel omp4"    OFF )
     option( SCALFMM_TIME_OMPTASKS "Set to ON to time omp4 tasks and generate output file"    OFF )
