@@ -1,8 +1,6 @@
 #ifndef FFMMALGORITHMOMP4_HPP
 #define FFMMALGORITHMOMP4_HPP
 
-// @SCALFMM_PRIVATE
-
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FAssert.hpp"
 #include "../Utils/FLog.hpp"
