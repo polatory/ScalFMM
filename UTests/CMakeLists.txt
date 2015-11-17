@@ -90,9 +90,8 @@ foreach(exec ${source_tests_files})
 
 		target_link_libraries(
 			${execname}
-			${scalfmm_lib}
-			${BLAS_LIBRARIES}
-			${LAPACK_LIBRARIES}
+            ${scalfmm_lib}
+            ${SCALFMM_LIBRARIES}
 			${TESTS_GCOV_LINKER_FLAGS}
 		)
 
