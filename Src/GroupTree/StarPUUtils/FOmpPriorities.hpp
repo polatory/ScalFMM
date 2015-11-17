@@ -20,10 +20,14 @@ class FOmpPriorities{
 
     int treeHeight;
 
+    int maxprio;
 
 public:
     FOmpPriorities(const int inTreeHeight) :
-            treeHeight(inTreeHeight){
+        insertionPositionP2M(0), insertionPositionM2M(0), insertionPositionP2MSend(0),
+        insertionPositionM2MSend(0), insertionPositionM2L(0), insertionPositionM2LExtern(0),
+        insertionPositionM2LLastLevel(0), insertionPositionL2L(0), insertionPositionL2P(0), insertionPositionP2P(0),
+        insertionPositionP2PExtern(0), treeHeight(inTreeHeight) , maxprio(0){
         if(inTreeHeight > 2){
             int incPrio = 0;
 
@@ -51,6 +55,7 @@ public:
             insertionPositionP2PExtern = incPrio++;
 
             assert(incPrio == 8 + (treeHeight-3) + (treeHeight-3) + (treeHeight-3));
+            maxprio = incPrio;
         }
         else{
             int incPrio = 0;
@@ -72,7 +77,12 @@ public:
 
             insertionPositionL2P     = -1;
             assert(incPrio == 1);
+            maxprio = incPrio;
         }
+    }
+
+    int getMaxPrio() const{
+        return maxprio;
     }
 
     int getInsertionPosP2M() const {
