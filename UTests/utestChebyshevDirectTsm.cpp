@@ -220,7 +220,7 @@ class TestChebyshevDirectTsm : public FUTester<TestChebyshevDirectTsm> {
     // The tests!
     ///////////////////////////////////////////////////////////
 
-    static const int P = 5;
+    static const int P = 9;
 
     /** Chebyshev */
     void TestChebyshev(){

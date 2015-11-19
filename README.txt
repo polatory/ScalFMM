@@ -22,6 +22,12 @@ ccmake ..
 make
 # And access executables in scalfmm/Build/Tests/{Release,Debug}/.....
 
+To compile with StarPU you can pass, as an example:
+cmake .. -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_CUDA=OFF -DSCALFMM_USE_OPENCL=OFF  \
+               -DHWLOC_DIR=/home/berenger/Download/hwloc-1.10.0/install/      \
+               -DSTARPU_DIR=/home/berenger/Download/starpu-work/StarPU/installwithfxt
+
+
 ---------------------------------------------------
 ---------------------------------------------------
 
@@ -55,14 +61,14 @@ Contact the developers at : scalfmm-public-support@lists.gforge.inria.fr
 
 What inside :
 =============
-× Src : The Core of Scalfmm is under the Src directory. Users should not need to modify the source.
+- Src : The Core of Scalfmm is under the Src directory. Users should not need to modify the source.
 One can want to implement its own kernel or even its own parallelization whithout modifying the sources.
-× Data : example of particles distributions
-× Examples : examples of very common usage of Scalfmm
-× Doc : should contains the generated Doc
-× UTests : contains some unit tests (it can be a good example to understand some features)
-× Tests : examples to know how to use scalfmm/put particles in the tree/iterate on the tree...
-× Utils : some scripts to work with the data files.
+- Data : example of particles distributions
+- Examples : examples of very common usage of Scalfmm
+- Doc : should contains the generated Doc
+- UTests : contains some unit tests (it can be a good example to understand some features)
+- Tests : examples to know how to use scalfmm/put particles in the tree/iterate on the tree...
+- Utils : some scripts to work with the data files.
 
 
 ---------------------------------------------------

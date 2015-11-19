@@ -10,9 +10,10 @@ version 1.1
 1.4
 -----
 - Add interpolation FMM based on uniform grid points
-- Add the group tree and the things related to starpu
+- Add the group tree and the things related to starpu (runtime system)
 - Change the P2P (it is now done by tree functions in the abstract kernel) refer to the P2P page of the doc
-- Update the P2P/M2L prototype, the position of the elements is knowns from an array position
+- Update the P2P/M2L prototype, the position of the elements is known from an array position
+- Fix bug in SSE, AVX, ...  kernel 1/r 
 
 1.3
 -----
