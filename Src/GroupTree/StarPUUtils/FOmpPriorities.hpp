@@ -58,14 +58,14 @@ public:
             insertionPositionP2P       = incPrio++;
             FLOG( FLog::Controller << "\t P2P "  << insertionPositionP2P << "\n" );
 
+            insertionPositionP2PExtern = incPrio++;
+            FLOG( FLog::Controller << "\t P2P Outer "  << insertionPositionP2PExtern << "\n" );
+
             insertionPositionM2LLastLevel = incPrio++;
             FLOG( FLog::Controller << "\t M2L last "  << insertionPositionM2LLastLevel << "\n" );
 
             insertionPositionL2P     = incPrio++;
             FLOG( FLog::Controller << "\t L2P "  << insertionPositionL2P << "\n" );
-
-            insertionPositionP2PExtern = incPrio++;
-            FLOG( FLog::Controller << "\t P2P Outer "  << insertionPositionP2PExtern << "\n" );
 
             assert(incPrio == 8 + (treeHeight-3) + (treeHeight-3) + (treeHeight-3));
             maxprio = incPrio;
