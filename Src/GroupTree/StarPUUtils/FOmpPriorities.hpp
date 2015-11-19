@@ -31,28 +31,41 @@ public:
         if(inTreeHeight > 2){
             int incPrio = 0;
 
+            FLOG( FLog::Controller << "Buckets:\n" );
+
             insertionPositionP2MSend = incPrio++;
+            FLOG( FLog::Controller << "\t P2M Send "  << insertionPositionP2MSend << "\n" );
             insertionPositionP2M     = incPrio++;
+            FLOG( FLog::Controller << "\t P2M "  << insertionPositionP2M << "\n" );
 
             insertionPositionM2MSend = incPrio++;
+            FLOG( FLog::Controller << "\t M2M Send "  << insertionPositionM2MSend << "\n" );
             insertionPositionM2M     = incPrio++;
+            FLOG( FLog::Controller << "\t M2M "  << insertionPositionM2M << "\n" );
 
             insertionPositionM2L     = incPrio++;
+            FLOG( FLog::Controller << "\t M2L "  << insertionPositionM2L << "\n" );
             insertionPositionM2LExtern = incPrio++;
+            FLOG( FLog::Controller << "\t M2L Outer "  << insertionPositionM2LExtern << "\n" );
 
             insertionPositionL2L     = incPrio++;
+            FLOG( FLog::Controller << "\t L2L "  << insertionPositionL2L << "\n" );
 
             incPrio += (treeHeight-3) - 1;   // M2L is done treeHeight-2 times
             incPrio += (treeHeight-3) - 1;   // M2L is done treeHeight-2 times
             incPrio += (treeHeight-3) - 1;   // L2L is done treeHeight-3 times
 
             insertionPositionP2P       = incPrio++;
+            FLOG( FLog::Controller << "\t P2P "  << insertionPositionP2P << "\n" );
 
             insertionPositionM2LLastLevel = incPrio++;
+            FLOG( FLog::Controller << "\t M2L last "  << insertionPositionM2LLastLevel << "\n" );
 
             insertionPositionL2P     = incPrio++;
+            FLOG( FLog::Controller << "\t L2P "  << insertionPositionL2P << "\n" );
 
             insertionPositionP2PExtern = incPrio++;
+            FLOG( FLog::Controller << "\t P2P Outer "  << insertionPositionP2PExtern << "\n" );
 
             assert(incPrio == 8 + (treeHeight-3) + (treeHeight-3) + (treeHeight-3));
             maxprio = incPrio;
