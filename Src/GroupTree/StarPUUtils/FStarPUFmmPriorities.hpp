@@ -377,23 +377,13 @@ FStarPUFmmPriorities FStarPUFmmPriorities::controller;
 
 #elif defined(SCALFMM_STARPU_USE_PRIO)// STARPU_SUPPORT_SCHEDULER
 
-class FStarPUFmmPriorities{
+#include "FOmpPriorities.hpp"
+
+class FStarPUFmmPriorities {
     static FStarPUFmmPriorities controller;
+    FOmpPriorities ompPrio;
 
-    enum Priorities{
-        Prio_P2M = 9 - 5,
-        Prio_M2M = 8 - 5,
-        Prio_M2L_High = 7 - 5,
-        Prio_L2L = 6 - 5,
-        Prio_P2P_Big = 5 - 5,
-        Prio_M2L = 4 - 5,
-        Prio_L2P = 3 - 5,
-        Prio_P2P_Small = 2 - 5
-    };
-
-    int treeHeight;
-
-    FStarPUFmmPriorities() : treeHeight(0){
+    FStarPUFmmPriorities() : ompPrio(0){
     }
 
 public:
@@ -404,38 +394,38 @@ public:
 
     void init(struct starpu_conf* /*conf*/, const int inTreeHeight,
               FStarPUKernelCapacities* /*inCapacities*/){
-        treeHeight = inTreeHeight;
+        ompPrio = FOmpPriorities(inTreeHeight);
     }
 
     int getInsertionPosP2M() const {
-        return Prio_P2M;
+        return ompPrio.getInsertionPosP2M();
     }
-    int getInsertionPosM2M(const int /*inLevel*/) const {
-        return Prio_M2M;
+    int getInsertionPosM2M(const int inLevel) const {
+        return ompPrio.getInsertionPosM2M(inLevel);
     }
     int getInsertionPosP2M(bool /*willBeSend*/) const {
-        return Prio_P2M;
+        return ompPrio.getInsertionPosP2M();
     }
-    int getInsertionPosM2M(const int /*inLevel*/, bool /*willBeSend*/) const {
-        return Prio_M2M;
+    int getInsertionPosM2M(const int inLevel, bool /*willBeSend*/) const {
+        return ompPrio.getInsertionPosM2M(inLevel);
     }
     int getInsertionPosM2L(const int inLevel) const {
-        return inLevel == treeHeight-1 ? Prio_M2L: Prio_M2L_High;
+        return ompPrio.getInsertionPosM2L(inLevel);
     }
     int getInsertionPosM2LExtern(const int inLevel) const {
-        return inLevel == treeHeight-1 ? Prio_M2L : Prio_M2L_High;
+        return ompPrio.getInsertionPosM2LExtern(inLevel);
     }
-    int getInsertionPosL2L(const int /*inLevel*/) const {
-        return Prio_L2L;
+    int getInsertionPosL2L(const int inLevel) const {
+        return ompPrio.getInsertionPosL2L(inLevel);
     }
     int getInsertionPosL2P() const {
-        return Prio_L2P;
+        return ompPrio.getInsertionPosL2P();
     }
     int getInsertionPosP2P() const {
-        return Prio_P2P_Big;
+        return ompPrio.getInsertionPosP2P();
     }
     int getInsertionPosP2PExtern() const {
-        return Prio_P2P_Small;
+        return ompPrio.getInsertionPosP2PExtern();
     }
 };
 
