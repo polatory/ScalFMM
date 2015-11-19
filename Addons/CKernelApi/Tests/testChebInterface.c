@@ -34,15 +34,17 @@ void cheb_free_cell(void * inCell){
  * No need for leaf function
  */
 void * cheb_init_leaf(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
-                    void * cellDatas, void * userDatas){
+                      void * cellDatas, void * userDatas){
     //Do nothing
-    return NULL;
+    int * A = malloc(sizeof(double) * nbParts);
+    return A;
 }
 
 /**
  * No need for leaf function
  */
 void cheb_free_leaf(void * cellDatas, FSize nbParts, const FSize * idxParts, void * leafData, void * userDatas){
+    free(leafData);
     //Do nothing
 }
 
