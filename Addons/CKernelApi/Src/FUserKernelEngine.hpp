@@ -664,7 +664,11 @@ public:
                 printf("\tDownPass finished\n");
             }
             else{
-                (FScalFMMEngine<FReal>::abstrct)->execute();
+                if(octree->getHeight() == 2){
+                    (FScalFMMEngine<FReal>::abstrct)->execute(FFmmP2P);
+                }else{
+                    (FScalFMMEngine<FReal>::abstrct)->execute();
+                }
             }
         }
     }
