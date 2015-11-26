@@ -55,6 +55,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   include(MorseInit)
   #
   # Options
+  #
   option( SCALFMM_USE_MPI              "Set to ON to build ScaFMM with MPI"          OFF )
   option( SCALFMM_USE_BLAS             "Set to ON to build ScaFMM with BLAS"         ON )
   option( SCALFMM_USE_FFT              "Set to ON to build ScaFMM with FFTW"         ON )
@@ -69,6 +70,16 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   option( SCALFMM_ATTACHE_SOURCE       "Set to ON to compile with -g"                OFF )
   option( SCALFMM_USE_ADDONS           "Set to ON to compile add ons"                OFF )
   option( SCALFMM_USE_SIGNALS          "Set to ON to catch various signal an print backtrace"  OFF )
+  option( SCALFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
+  option( SCALFMM_USE_MIC_NATIVE       "Set to ON to compile in native mode for MIC" OFF  )
+  option( SCALFMM_ONLY_DEVEL           "Set to ON to compile Development tools (only scalfmm team)" ON )
+  option( SCALFMM_USE_EZTRACE          "Set to ON to compile with eztrace framwork" OFF )
+  option( SCALFMM_USE_STARPU           "Set to ON to build SCALFMM with StarPU"     OFF )
+  option( SCALFMM_BUILD_UTILS          "Set to ON to build utils Tests"             OFF )
+
+#
+#  VECTORISATION
+#
   if( APPLE ) # to fix problem with  GCC and avx
     CMAKE_DEPENDENT_OPTION( SCALFMM_USE_SSE              "Set to ON to compile with SSE support (and use intrinsec SSE P2P)" ON "CPUOPTION_SSE3;NOT CPUOPTION_AVX2" OFF  )
     CMAKE_DEPENDENT_OPTION( SCALFMM_USE_AVX              "Set to ON to compile with AVX support (and use intrinsec AVX P2P)" OFF "CPUOPTION_AVX; NOT CPUOPTION_AVX2" OFF  )
@@ -76,24 +87,24 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
     CMAKE_DEPENDENT_OPTION( SCALFMM_USE_SSE              "Set to ON to compile with SSE support (and use intrinsec SSE P2P)" ON "CPUOPTION_SSE3;NOT CPUOPTION_AVX;NOT CPUOPTION_AVX2" OFF  )
     CMAKE_DEPENDENT_OPTION( SCALFMM_USE_AVX              "Set to ON to compile with AVX support (and use intrinsec AVX P2P)" ON "CPUOPTION_AVX; NOT CPUOPTION_AVX2" OFF  )
   endif(APPLE)
-  CMAKE_DEPENDENT_OPTION( SCALFMM_USE_AVX2             "Set to ON to compile with AVX support (and use intrinsec AVXZ P2P)" ON "CPUOPTION_AVX2" OFF )
-  option( SCALFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
-  option( SCALFMM_USE_MIC_NATIVE       "Set to ON to compile in native mode for MIC" OFF  )
-  option( SCALFMM_ONLY_DEVEL           "Set to ON to compile Development tools (only scalfmm team)" ON )
-  option( SCALFMM_USE_EZTRACE          "Set to ON to compile with eztrace framwork" OFF )
-  option( SCALFMM_USE_STARPU  "Set to ON to build SCALFMM with StarPU" OFF )
+  CMAKE_DEPENDENT_OPTION( SCALFMM_USE_AVX2             "Set to ON to compile with AVX support (and use intrinsec AVX2 P2P)" ON "CPUOPTION_AVX2" OFF )
+
   if( SCALFMM_ONLY_DEVEL )
+# OPENMP 4/5 support 
     option( OPENMP_SUPPORT_COMMUTE   "Set to ON to let tasks commute (KSTAR/StarPU compiler only)" OFF )
     option( OPENMP_SUPPORT_PRIORITY  "Set to ON to enable tasks priority (KSTAR/StarPU compiler only)" OFF )
-    option( SCALFMM_BUILD_UTILS "Set to ON to build utils Tests"    OFF )
     option( SCALFMM_DISABLE_NATIVE_OMP4 "Set to ON to disable the gcc/intel omp4"    OFF )
     option( SCALFMM_TIME_OMPTASKS "Set to ON to time omp4 tasks and generate output file"    OFF )
-    option( SCALFMM_STARPU_USE_COMMUTE  "Set to ON to enable commute with StarPU" ON )
-    option( SCALFMM_STARPU_USE_REDUX  "Set to ON to enable redux with StarPU" OFF)
-    option( SCALFMM_STARPU_USE_PRIO  "Set to ON to enable priority with StarPU" ON )
-    option( SCALFMM_STARPU_FORCE_NO_SCHEDULER  "Set to ON to disable heteroprio even if supported" OFF )
+# STARPU options
+    CMAKE_DEPENDENT_OPTION(SCALFMM_STARPU_USE_COMMUTE  "Set to ON to enable commute with StarPU" ON  "SCALFMM_USE_STARPU" OFF)
+    CMAKE_DEPENDENT_OPTION(SCALFMM_STARPU_USE_REDUX  "Set to ON to enable redux with StarPU"     OFF "SCALFMM_USE_STARPU" OFF)
+    CMAKE_DEPENDENT_OPTION(SCALFMM_STARPU_USE_PRIO  "Set to ON to enable priority with StarPU"   ON  "SCALFMM_USE_STARPU" OFF)
+    CMAKE_DEPENDENT_OPTION(SCALFMM_STARPU_FORCE_NO_SCHEDULER  "Set to ON to disable heteroprio even if supported" OFF "SCALFMM_USE_STARPU" OFF)
   endif()
   message(STATUS "AVANT  ${CMAKE_CXX_COMPILER_ID}" )
+#
+#  MPI
+#
   if( SCALFMM_USE_MPI )
     try_compile(COMPILE_INTEL ${CMAKE_CURRENT_BINARY_DIR}
       ${SCALFMM_CMAKE_MODULE_PATH}/compileTestIntel.cpp

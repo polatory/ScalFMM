@@ -199,6 +199,9 @@ public:
                 arrayOfUserContainer[idx] = neighbors[idx]->getContainer();
             }
             kernel.p2p_full(targets->getContainer(),targets->getNbParticles(),targets->getIndexes().data(),arrayOfUserContainer,indicesPerNeighbors,nbPartPerNeighbors,sourcePosition,size,userData);
+            delete [] nbPartPerNeighbors;
+            delete [] indicesPerNeighbors;
+            delete [] arrayOfUserContainer;
         }
         if(kernel.p2p_sym){
             for(int idx = 0 ; ((idx < size) && (sourcePosition[idx] < 14)) ; ++idx){
@@ -507,7 +510,7 @@ public:
             position[2] = boxCorner.getZ() + currCoord.getZ()*boxwidth/double(1<<currLevel);
             leaf->getSrc()->setContainer(CoreCell::GetInitLeaf()(currLevel,leaf->getSrc()->getNbParticles(),
                                                                  leaf->getSrc()->getIndexes().data(), currMorton,
-                                                                 position, currCell->getContainer(), this->kernel));
+                                                                 position, currCell->getContainer(), this->kernel->getUserKernelDatas()));
             });
 
     }
@@ -515,7 +518,8 @@ public:
 
     void free_cell(Callback_free_cell user_cell_deallocator, Callback_free_leaf free_leaf){
         octree->forEachCellLeaf([&](CoreCell * currCell, LeafClass * leaf){
-                free_leaf(currCell->getContainer(),leaf->getSrc()->getNbParticles(), leaf->getSrc()->getIndexes().data(),leaf,this->kernel);
+                free_leaf(currCell->getContainer(),leaf->getSrc()->getNbParticles(), leaf->getSrc()->getIndexes().data(),
+                          leaf->getSrc()->getContainer(),this->kernel->getUserKernelDatas());
             });
         octree->forEachCell([&](CoreCell * currCell){
                 if(currCell->getContainer()){

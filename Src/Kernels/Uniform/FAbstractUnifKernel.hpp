@@ -41,6 +41,10 @@
  * @tparam ContainerClass Type of container to store particles
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Lagrange interpolation order
+ *
+ * Related publications:
+ * Fast hierarchical algorithms for generating Gaussian random fields
+ * (https://hal.inria.fr/hal-01228519)
  */
 template < class FReal, class CellClass,	class ContainerClass,	class MatrixKernelClass, int ORDER, int NVALS = 1>
 class FAbstractUnifKernel : public FAbstractKernels< CellClass, ContainerClass>

@@ -40,11 +40,11 @@ class TestExclusion : public FUTester<TestExclusion> {
                 for(int idxY = 0 ; idxY < Size ; ++idxY){
                     for(int idxZ = 0 ; idxZ < Size ; ++idxZ){
                         if(FP2PExclusion<Width>::GetShapeIdx(idxX,idxY,idxZ) == idxShape){
-                            for(int idxX_neig = FMath::Max(0,idxX-1) ; idxX_neig < FMath::Min(Size,idxX+1) ; ++idxX_neig){
-                                for(int idxY_neig = FMath::Max(0,idxY-1) ; idxY_neig < FMath::Min(Size,idxY+1) ; ++idxY_neig){
-                                    for(int idxZ_neig = FMath::Max(0,idxZ-1) ; idxZ_neig < FMath::Min(Size,idxZ+1) ; ++idxZ_neig){
+                            for(int idxX_neig = FMath::Max(0,idxX-1) ; idxX_neig < FMath::Min(Size,idxX+2) ; ++idxX_neig){
+                                for(int idxY_neig = FMath::Max(0,idxY-1) ; idxY_neig < FMath::Min(Size,idxY+2) ; ++idxY_neig){
+                                    for(int idxZ_neig = FMath::Max(0,idxZ-1) ; idxZ_neig < FMath::Min(Size,idxZ+2) ; ++idxZ_neig){
                                         uassert(grid[(idxX_neig*Size + idxY_neig)*Size + idxZ_neig] == 0);
-                                        grid[grid[(idxX_neig*Size + idxY_neig)*Size + idxZ_neig]] = 1;
+                                        grid[(idxX_neig*Size + idxY_neig)*Size + idxZ_neig] = 1;
                                     }
                                 }
                             }
@@ -69,7 +69,7 @@ class TestExclusion : public FUTester<TestExclusion> {
                                 for(int idxY_neig = FMath::Max(0,idxY-1) ; idxY_neig < idxY ; ++idxY_neig){
                                     for(int idxZ_neig = FMath::Max(0,idxZ-1) ; idxZ_neig < idxZ ; ++idxZ_neig){
                                         uassert(grid[(idxX_neig*Size + idxY_neig)*Size + idxZ_neig] == 0);
-                                        grid[grid[(idxX_neig*Size + idxY_neig)*Size + idxZ_neig]] = 1;
+                                        grid[(idxX_neig*Size + idxY_neig)*Size + idxZ_neig] = 1;
                                     }
                                 }
                             }
@@ -89,16 +89,16 @@ class TestExclusion : public FUTester<TestExclusion> {
                 for(int idxY = 0 ; idxY < Size ; ++idxY){
                     for(int idxZ = 0 ; idxZ < Size ; ++idxZ){
                         if(FP2PMiddleExclusion::GetShapeIdx(idxX,idxY,idxZ) == idxShape){
-                            for(int idxX_neig = FMath::Max(0,idxX-1) ; idxX_neig < FMath::Min(Size,idxX+1) ; ++idxX_neig){
-                                for(int idxY_neig = FMath::Max(0,idxY-1) ; idxY_neig < FMath::Min(Size,idxY+1) ; ++idxY_neig){
-                                    for(int idxZ_neig = FMath::Max(0,idxZ-1) ; idxZ_neig < FMath::Min(Size,idxZ+1) ; ++idxZ_neig){
+                            for(int idxX_neig = FMath::Max(0,idxX-1) ; idxX_neig < FMath::Min(Size,idxX+2) ; ++idxX_neig){
+                                for(int idxY_neig = FMath::Max(0,idxY-1) ; idxY_neig < FMath::Min(Size,idxY+2) ; ++idxY_neig){
+                                    for(int idxZ_neig = FMath::Max(0,idxZ-1) ; idxZ_neig < FMath::Min(Size,idxZ+2) ; ++idxZ_neig){
                                         const int diffx = idxX_neig-idxX;
                                         const int diffy = idxY_neig-idxY;
                                         const int diffz = idxZ_neig-idxZ;
                                         const int idx = (diffx+1)*9 + (diffy+1)*3 + (diffz+1);
-                                        if(idx < 14){
+                                        if(idx <= 14){
                                             uassert(grid[(idxX_neig*Size + idxY_neig)*Size + idxZ_neig] == 0);
-                                            grid[grid[(idxX_neig*Size + idxY_neig)*Size + idxZ_neig]] = 1;
+                                            grid[(idxX_neig*Size + idxY_neig)*Size + idxZ_neig] = 1;
                                         }
                                     }
                                 }

@@ -70,9 +70,6 @@ using CostKernelClass   = FDumbCostKernel<FReal, CellClass, ContainerClass,
 
 using KernelClass       = FTestKernels< CellClass, ContainerClass>;
 
-template < template <typename...> class T, class KernelClassT>
-using FmmClass = T <OctreeClass, CellClass, ContainerClass, KernelClassT, LeafClass >;
-
 
 const FReal epsilon = 1e-4;
 
@@ -97,7 +94,7 @@ int main(int argc, char** argv)
 
     /* Compute the cost of each tree cell *************************************/
     CostKernelClass costKernel(&tree, epsilon);
-    FmmClass<FFmmAlgorithmThread, CostKernelClass> costAlgo(&tree, &costKernel);
+    FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, CostKernelClass, LeafClass > costAlgo(&tree, &costKernel);
 
     costAlgo.execute();
 
@@ -119,8 +116,10 @@ int main(int argc, char** argv)
 
     std::cout << "Running kernel" << std::endl;
     KernelClass computeKernel;
-    FmmClass<FFmmAlgorithmThreadBalanced, KernelClass> fmmAlgo(&tree, &computeKernel, costzones.getZoneBounds(), costzones.getLeafZoneBounds());
-    //FmmClass<FFmmAlgorithm, KernelClass> fmmAlgo(&tree, &computeKernel);
+    FFmmAlgorithmThreadBalanced<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >
+            fmmAlgo(&tree, &computeKernel, costzones.getZoneBounds(), costzones.getLeafZoneBounds());
+    //FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >
+    //     fmmAlgo(&tree, &computeKernel);
     
     fmmAlgo.execute();
     /**************************************************************************/
