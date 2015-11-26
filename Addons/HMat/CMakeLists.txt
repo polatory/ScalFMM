@@ -40,10 +40,10 @@ if(SCALFMM_ADDON_HMAT)
         # Install header
         SET(my_include_dirs "Src")
 
-        file( GLOB hpp_in_dir Src/*.hpp Src/*.h)
+        file( GLOB hpp_in_dir Src/*.hpp Src/*.hpp)
         INSTALL( FILES ${hpp_in_dir} DESTINATION include/ScalFmm/HMat )
 
-        file( GLOB_RECURSE source_tests_files Tests/*.c )
+        file( GLOB_RECURSE source_tests_files Tests/*.cpp )
         INCLUDE_DIRECTORIES( ${CMAKE_BINARY_DIR}/Src )
 
         # Then build test files
