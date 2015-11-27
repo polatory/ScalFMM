@@ -8,6 +8,7 @@
 
 #include "FDenseBlockWrapper.hpp"
 #include "../Utils/FHUtils.hpp"
+#include "../Utils/FMatrixIO.hpp"
 
 template <class FReal>
 class FMatDense {
@@ -33,8 +34,21 @@ public:
         }
     }
 
+    explicit FMatDense(const char inFilename[])
+        : matDim(0), values(nullptr){
+        int readNbRows = 0;
+        int readNbCols = 0;
+        FAssertLF(FMatrixIO::read(inFilename, &values, &readNbRows, &readNbCols));
+        FAssertLF(readNbRows == readNbCols);
+        matDim = readNbRows;
+    }
+
     ~FMatDense(){
         delete[] values;
+    }
+
+    int getDim() const{
+        return matDim;
     }
 
     const FReal& getVal(const int idxRow , const int idxCol) const{

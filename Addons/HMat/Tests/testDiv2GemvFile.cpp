@@ -11,29 +11,20 @@
 #include <memory>
 
 int main(int argc, char** argv){
-    static const FParameterNames DimParam = {
-        {"-N", "-nb", "-dim"} ,
-         "Dim of the matrix."
-    };
+    FHelpDescribeAndExit(argc, argv, "Test the bisection.", FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight);
 
-    FHelpDescribeAndExit(argc, argv, "Test the bisection.", DimParam, FParameterDefinitions::OctreeHeight);
-
-    const int dim = FParameters::getValue(argc, argv, DimParam.options, 100);
+    const char* filename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFile.options, "../Addons/HMat/Data/unitCube1000_ONE_OVER_R.bin");
     const int height = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 4);
-
-    std::cout << "Config : dim = " << dim << "\n";
-    std::cout << "Config : height = " << height << "\n";
 
 
     typedef double FReal;
     typedef FMatDense<FReal> MatrixClass;
 
-    MatrixClass matrix(dim);
-    for(int idxRow = 0; idxRow < dim ; ++idxRow){
-        for(int idxCol = 0; idxCol < dim ; ++idxCol){
-            matrix.setVal(idxRow, idxCol, 1./(FMath::Abs(FReal(idxRow-idxCol))+1.));
-        }
-    }
+    MatrixClass matrix(filename);
+    const int dim = matrix.getDim();
+
+    std::cout << "Config : dim = " << dim << "\n";
+    std::cout << "Config : height = " << height << "\n";
 
     std::unique_ptr<FReal[]> vec(new FReal[dim]);
     for(int idxVal = 0 ; idxVal < dim ; ++idxVal){
@@ -99,4 +90,5 @@ int main(int argc, char** argv){
 
     return 0;
 }
+
 

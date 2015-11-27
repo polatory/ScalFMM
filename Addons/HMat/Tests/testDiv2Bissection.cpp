@@ -20,17 +20,11 @@ int main(int argc, char** argv){
         {"-N", "-nb", "-dim"} ,
          "Dim of the matrix."
     };
-    static const FParameterNames HeightParam = {
-        {"-h", "-height"} ,
-         "Number of dissection (+1)."
-    };
 
-    FHelpDescribeAndExit(argc, argv,
-            "Test the bisection.",SvgOutParam,
-            DimParam,HeightParam);
+    FHelpDescribeAndExit(argc, argv,"Test the bisection.",SvgOutParam,DimParam,FParameterDefinitions::OctreeHeight);
 
     const int dim = FParameters::getValue(argc, argv, DimParam.options, 100);
-    const int height = FParameters::getValue(argc, argv, HeightParam.options, 4);
+    const int height = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 4);
     const char* outputdir = FParameters::getStr(argc, argv, SvgOutParam.options, "/tmp/");
 
     std::cout << "Config : dim = " << dim << "\n";

@@ -105,6 +105,33 @@ public:
 
     }
 
+    template<class FReal>
+    static bool read(const std::string filename, FReal** matrix, int* nbRows, int* nbCols){
+        std::ifstream stream(filename.c_str(), std::ios::in | std::ios::binary | std::ios::ate);
+
+        if (!stream.good()) {
+            return false;
+        }
+
+        const std::ifstream::pos_type size = stream.tellg();
+        if (size<=0) {
+            std::cout << "Info: The requested binary file " << filename
+                      << " does not yet exist. Compute it now ... " << std::endl;
+            return false;
+        }
+
+        stream.seekg(0);
+
+        stream.read(reinterpret_cast<char*>(nbRows), sizeof(int));
+        stream.read(reinterpret_cast<char*>(nbCols), sizeof(int));
+
+        delete[] (*matrix);
+        (*matrix) = new FReal[(*nbRows)*(*nbCols)];
+        stream.read(reinterpret_cast<char*>((*matrix)), sizeof(FReal)*(*nbRows)*(*nbCols));
+
+        stream.close();
+        return true;
+    }
 };
 
 
