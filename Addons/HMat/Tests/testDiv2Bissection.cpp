@@ -4,7 +4,7 @@
 #include "../Src/Containers/FDiv2Bissection.hpp"
 #include "../Src/Utils/FSvgRect.hpp"
 #include "../Src/Viewers/FDenseBlockWrapper.hpp"
-#include "../Src/Blocks/FDenseMatrix.hpp"
+#include "../Src/Blocks/FDenseBlock.hpp"
 
 #include "Utils/FParameters.hpp"
 #include "Utils/FParameterNames.hpp"
@@ -32,8 +32,8 @@ int main(int argc, char** argv){
     std::cout << "Config : outputdir = " << outputdir << "\n";
 
     typedef double FReal;
-    typedef FDenseMatrix<FReal> LeafClass;
-    typedef FDenseMatrix<FReal> CellClass;
+    typedef FDenseBlock<FReal> LeafClass;
+    typedef FDenseBlock<FReal> CellClass;
     typedef FDiv2Bissection<FReal, LeafClass, CellClass> GridClass;
 
     {

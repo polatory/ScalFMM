@@ -3,7 +3,7 @@
 
 #include "../Src/Containers/FDiv2Bissection.hpp"
 #include "../Src/Viewers/FMatDense.hpp"
-#include "../Src/Blocks/FDenseMatrix.hpp"
+#include "../Src/Blocks/FDenseBlock.hpp"
 
 #include "Utils/FParameters.hpp"
 #include "Utils/FParameterNames.hpp"
@@ -51,8 +51,8 @@ int main(int argc, char** argv){
     }
 
     {
-        typedef FDenseMatrix<FReal> LeafClass;
-        typedef FDenseMatrix<FReal> CellClass;
+        typedef FDenseBlock<FReal> LeafClass;
+        typedef FDenseBlock<FReal> CellClass;
         typedef FDiv2Bissection<FReal, LeafClass, CellClass> GridClass;
 
         GridClass grid(dim, height);
@@ -69,8 +69,8 @@ int main(int argc, char** argv){
     }
 
     {
-        typedef FDenseMatrix<FReal> LeafClass;
-        typedef FDenseMatrix<FReal> CellClass;
+        typedef FDenseBlock<FReal> LeafClass;
+        typedef FDenseBlock<FReal> CellClass;
         typedef FDiv2Bissection<FReal, LeafClass, CellClass> GridClass;
 
         const int nbPartitions = FMath::pow2(height-1);

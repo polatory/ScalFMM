@@ -16,13 +16,13 @@
 // 
 // @SCALFMM_PRIVATE
 // 
-#ifndef FDENSEMATRIX_HPP
-#define FDENSEMATRIX_HPP
+#ifndef FDENSEBLOCK_HPP
+#define FDENSEBLOCK_HPP
 
 #include "Utils/FBlas.hpp"
 
 template <class FReal>
-class FDenseMatrix{
+class FDenseBlock{
 protected:
     // members
     FReal* block;
@@ -30,11 +30,11 @@ protected:
     int nbCols;
     int level;
 
-    FDenseMatrix(const FDenseMatrix&) = delete;
-    FDenseMatrix& operator=(const FDenseMatrix&) = delete;
+    FDenseBlock(const FDenseBlock&) = delete;
+    FDenseBlock& operator=(const FDenseBlock&) = delete;
 
 public:
-    FDenseMatrix()
+    FDenseBlock()
         : block(nullptr), nbRows(0), nbCols(0),  level(0) {
     }
 
@@ -56,7 +56,7 @@ public:
     };
 
     // dtor
-    ~FDenseMatrix(){
+    ~FDenseBlock(){
         // Free memory
         clear();
     };
@@ -78,6 +78,6 @@ public:
     }
 };
 
-#endif // FDENSEMATRIX_HPP
+#endif // FDENSEBLOCK_HPP
 
 // [--END--]
