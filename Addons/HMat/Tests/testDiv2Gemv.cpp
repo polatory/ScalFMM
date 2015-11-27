@@ -72,6 +72,35 @@ int main(int argc, char** argv){
         std::cout << "Test Dense, Error = " << testDense << "\n";
     }
 
+    {
+        typedef FDenseMatrix<FReal> LeafClass;
+        typedef FDenseMatrix<FReal> CellClass;
+        typedef FDiv2Bissection<FReal, LeafClass, CellClass> GridClass;
+
+        const int nbPartitions = FMath::pow2(height-1);
+        std::unique_ptr<int[]> partitions(new int[nbPartitions]);
+        {
+            int nbValuesLeft = dim;
+            for(int idxPartition = 0 ; idxPartition < nbPartitions-1 ; ++idxPartition){
+                partitions[idxPartition] = FMath::Max(1, int(drand48()*(nbValuesLeft-(nbPartitions-idxPartition))));
+                nbValuesLeft -= partitions[idxPartition];
+            }
+            partitions[nbPartitions-1] = nbValuesLeft;
+        }
+
+        GridClass grid(dim, height, partitions.get(), nbPartitions);
+        grid.fillBlocks(matrix);
+
+        std::unique_ptr<FReal[]> resDense(new FReal[dim]);
+        FSetToZeros(resDense.get(), dim);
+
+        grid.gemv(resDense.get(), vec.get());
+
+        FMath::FAccurater<FReal> testDense(resTest.get(), resDense.get(), dim);
+
+        std::cout << "Test Dense with partitions, Error = " << testDense << "\n";
+    }
+
     return 0;
 }
 

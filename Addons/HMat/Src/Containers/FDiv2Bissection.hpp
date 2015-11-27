@@ -10,7 +10,7 @@
 #include "../Utils/FHUtils.hpp"
 
 #include <functional>
-
+#include <memory>
 
 
 template <class FReal, class LeafClass, class CellClass >
@@ -88,6 +88,71 @@ public:
                 leaves[idxLeaf].infos.nbCols = (((colLeafNumber+1)*dim)/nbLeavesInDirection)
                                                 - leaves[idxLeaf].infos.col;
                 leaves[idxLeaf].infos.level = height-1;
+            }
+        }
+    }
+
+    explicit FDiv2Bissection(const int inDim, const int inHeight,
+                             const int partitions[], const int nbPartitions)
+        : dim(inDim), height(inHeight),
+          nbCells(0), cells(nullptr),
+          nbLeaves(0), leaves(nullptr),
+          totalNbBlocks(0){
+        FAssertLF(FMath::pow2(height) <= inDim);
+        FAssertLF(FMath::pow2(height-1)  == nbPartitions);
+
+        int currentNbPartitions = nbPartitions;
+        std::unique_ptr<int[]> offsetUnknowns(new int[currentNbPartitions+1]);
+        offsetUnknowns[0] = 0;
+        for(int idxPartition = 1 ; idxPartition <= currentNbPartitions ; ++idxPartition){
+            offsetUnknowns[idxPartition] = offsetUnknowns[idxPartition-1] + partitions[idxPartition-1];
+        }
+        FAssertLF(offsetUnknowns[nbPartitions] == dim);
+
+        nbLeaves = FMath::pow2(height);
+        leaves   = new LeafNode[nbLeaves];
+        totalNbBlocks += nbLeaves;
+        {
+            for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+                const int rowLeafNumber = ((idxLeaf/4)*2) + (idxLeaf&1?1:0);
+                const int colLeafNumber = ((idxLeaf/4)*2) + (idxLeaf&2?1:0);
+                leaves[idxLeaf].infos.row = offsetUnknowns[rowLeafNumber];
+                leaves[idxLeaf].infos.col = offsetUnknowns[colLeafNumber];
+                leaves[idxLeaf].infos.nbRows = offsetUnknowns[rowLeafNumber+1] - offsetUnknowns[rowLeafNumber];
+                leaves[idxLeaf].infos.nbCols = offsetUnknowns[colLeafNumber+1] - offsetUnknowns[colLeafNumber];
+                leaves[idxLeaf].infos.level = height-1;
+            }
+        }
+
+
+        cells   = new CellNode*[height-1];
+        FSetToZeros(cells, height-1);
+        nbCells = new int[height-1];
+        FSetToZeros(nbCells, height-1);
+
+        for(int idxLevel = height-2 ; idxLevel >= 1  ; --idxLevel){
+            const int nbCellsAtLevel = FMath::pow2(idxLevel);
+            cells[idxLevel]   = new CellNode[nbCellsAtLevel];
+            nbCells[idxLevel] = nbCellsAtLevel;
+            totalNbBlocks += nbCellsAtLevel;
+
+            const int nbCellsInDirection = nbCells[idxLevel];
+
+            FAssertLF(nbCellsInDirection  == currentNbPartitions/2);
+            currentNbPartitions = nbCellsInDirection;
+            for(int idxPartition = 1 ; idxPartition <= currentNbPartitions ; ++idxPartition){
+                offsetUnknowns[idxPartition] = offsetUnknowns[idxPartition*2];
+            }
+            FAssertLF(offsetUnknowns[currentNbPartitions] == dim);
+
+            for(int idxCell = 0 ; idxCell < nbCellsAtLevel ; ++idxCell){
+                const int rowCellNumber = (idxCell&1? idxCell-1 : idxCell+1);
+                const int colCellNumner = idxCell;
+                cells[idxLevel][idxCell].infos.row = offsetUnknowns[rowCellNumber];
+                cells[idxLevel][idxCell].infos.col = offsetUnknowns[colCellNumner];
+                cells[idxLevel][idxCell].infos.nbRows = offsetUnknowns[rowCellNumber+1] - offsetUnknowns[rowCellNumber];
+                cells[idxLevel][idxCell].infos.nbCols = offsetUnknowns[colCellNumner+1] - offsetUnknowns[colCellNumner];
+                cells[idxLevel][idxCell].infos.level = idxLevel;
             }
         }
     }

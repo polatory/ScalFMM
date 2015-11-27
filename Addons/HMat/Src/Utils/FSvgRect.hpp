@@ -46,6 +46,11 @@ public:
 
     }
 
+    FSvgRect(const char inDirname[], const char inFilename[], const int inDim,
+             const int inSvgSize = 2048, const int inMargin = 50)
+        : FSvgRect((std::string(inDirname)+std::string(inFilename)).c_str(), inDim, inSvgSize, inMargin) {
+    }
+
     ~FSvgRect(){
         fprintf(fsvg, "</svg>");
         fclose(fsvg);
