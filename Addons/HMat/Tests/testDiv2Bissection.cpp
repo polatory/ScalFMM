@@ -34,24 +34,20 @@ int main(int argc, char** argv){
     std::cout << "Config : height = " << height << "\n";
     std::cout << "Config : outputfile = " << outputfile << "\n";
 
-    FDiv2Bissection<double, int, int> bissection(dim, height);
+    typedef double FReal;
+    typedef int LeafClass;
+    typedef int CellClass;
+    typedef FDiv2Bissection<FReal, LeafClass, CellClass> GridClass;
+
+    GridClass bissection(dim, height);
 
     {
         FSvgRect output(outputfile, dim);
 
         bissection.forAllBlocksDescriptor([&](const FBlockDescriptor& info){
-            output.addRectWithLegend(info.x, info.y, info.width, info.height, info.level);
+            output.addRectWithLegend(info.col, info.row, info.nbCols, info.nbRows, info.level);
         });
     }
-
-//    const double array[] = {1, 2, 3, 4,
-//                             1, 2, 3, 4,
-//                             1, 2, 3, 4,
-//                             1, 2, 3, 4};
-//    FMatGrid<double> denseMat(4 , array);
-
-//    FMatGrid<double>::BlockDescriptor blockDescriptor = denseMat.getBlock(1,1,1,1);
-
 
     return 0;
 }

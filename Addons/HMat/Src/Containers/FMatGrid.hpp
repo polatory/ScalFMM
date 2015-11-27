@@ -48,7 +48,6 @@ protected:
 
     FMatGrid(const FMatGrid&) = delete;
     FMatGrid& operator=(const FMatGrid&) = delete;
-
 public:
     using BlockDescriptor = FDenseBlockWrapper<FReal>;
 

@@ -11,9 +11,7 @@
 
 #include <functional>
 
-struct FBlockDescriptor {
-    int x, y, height, width, level;
-};
+
 
 template <class FReal, class LeafClass, class CellClass >
 class FDiv2Bissection {
@@ -39,6 +37,9 @@ protected:
 
     int totalNbBlocks;
 
+    FDiv2Bissection(const FDiv2Bissection&) = delete;
+    FDiv2Bissection& operator=(const FDiv2Bissection&) = delete;
+
 public:
     explicit FDiv2Bissection(const int inDim, const int inHeight)
         : dim(inDim), height(inHeight),
@@ -61,12 +62,12 @@ public:
 
             const int blockDim = previousWidth/2;
             for(int idxCell = 0 ; idxCell < nbCellsAtLevel ; ++idxCell){
-                const int xOffset = blockDim * (idxCell&1? idxCell-1 : idxCell+1);
-                const int yOffset = idxCell * blockDim;
-                cells[idxLevel][idxCell].infos.x = xOffset;
-                cells[idxLevel][idxCell].infos.y = yOffset;
-                cells[idxLevel][idxCell].infos.width = blockDim;
-                cells[idxLevel][idxCell].infos.height= blockDim;
+                const int rowOffset = blockDim * (idxCell&1? idxCell-1 : idxCell+1);
+                const int colOffset = idxCell * blockDim;
+                cells[idxLevel][idxCell].infos.col = rowOffset;
+                cells[idxLevel][idxCell].infos.row = colOffset;
+                cells[idxLevel][idxCell].infos.nbRows = blockDim;
+                cells[idxLevel][idxCell].infos.nbCols = blockDim;
                 cells[idxLevel][idxCell].infos.level = idxLevel;
             }
 
@@ -80,12 +81,12 @@ public:
             const int blockDim = previousWidth/2;
             for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
                 const int corner = (idxLeaf/4)*previousWidth;
-                int xOffset = corner + blockDim * (idxLeaf&1?1:0);
-                int yOffset = corner + blockDim * (idxLeaf&2?1:0);
-                leaves[idxLeaf].infos.x = xOffset;
-                leaves[idxLeaf].infos.y = yOffset;
-                leaves[idxLeaf].infos.width = blockDim;
-                leaves[idxLeaf].infos.height= blockDim;
+                int rowOffset = corner + blockDim * (idxLeaf&1?1:0);
+                int colOffset = corner + blockDim * (idxLeaf&2?1:0);
+                leaves[idxLeaf].infos.row = rowOffset;
+                leaves[idxLeaf].infos.col = colOffset;
+                leaves[idxLeaf].infos.nbRows = blockDim;
+                leaves[idxLeaf].infos.nbCols = blockDim;
                 leaves[idxLeaf].infos.level = height-1;
             }
         }
@@ -128,6 +129,78 @@ public:
         for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
             callback(leaves[idxLeaf].infos,
                      leaves[idxLeaf].leaf);
+        }
+    }
+
+    template <class MatrixClass>
+    void fillBlocks(MatrixClass& matrix){
+        for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
+            for(int idxCell = 0 ; idxCell < nbCells[idxLevel] ; ++idxCell){
+                cells[idxLevel][idxCell].fill(matrix.getBlock(
+                                                  cells[idxLevel][idxCell].infos.row,
+                                                  cells[idxLevel][idxCell].infos.col,
+                                                  cells[idxLevel][idxCell].infos.nbRows,
+                                                  cells[idxLevel][idxCell].infos.nbCols
+                                                  ));
+            }
+        }
+        for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+            leaves[idxLeaf].fill(matrix.getBlock(
+                                      leaves[idxLeaf].infos.row,
+                                      leaves[idxLeaf].infos.col,
+                                      leaves[idxLeaf].infos.nbRows,
+                                      leaves[idxLeaf].infos.nbCols
+                                      ));
+        }
+    }
+
+    template <class MatrixClass>
+    void fillBlocks(const MatrixClass& matrix){
+        for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
+            for(int idxCell = 0 ; idxCell < nbCells[idxLevel] ; ++idxCell){
+                cells[idxLevel][idxCell].fill(matrix.getBlock(
+                                                  cells[idxLevel][idxCell].infos.row,
+                                                  cells[idxLevel][idxCell].infos.col,
+                                                  cells[idxLevel][idxCell].infos.nbRows,
+                                                  cells[idxLevel][idxCell].infos.nbCols
+                                                  ));
+            }
+        }
+        for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+            leaves[idxLeaf].fill(matrix.getBlock(
+                                      leaves[idxLeaf].infos.row,
+                                      leaves[idxLeaf].infos.col,
+                                      leaves[idxLeaf].infos.nbRows,
+                                      leaves[idxLeaf].infos.nbCols
+                                      ));
+        }
+    }
+
+    void gemv(FReal res[], const FReal vec[]) const {
+        for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
+            for(int idxCell = 0 ; idxCell < nbCells[idxLevel] ; ++idxCell){
+                cells[idxLevel][idxCell].gemv(&res[cells[idxLevel][idxCell].infos.col],
+                                              &vec[cells[idxLevel][idxCell].infos.row]);
+            }
+        }
+        for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+            leaves[idxLeaf].gemv(&res[leaves[idxLeaf].infos.col],
+                                          &vec[leaves[idxLeaf].infos.row]);
+        }
+    }
+
+    void gemm(FReal res[], const FReal mat[], const int nbRhs) const {
+        for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
+            for(int idxCell = 0 ; idxCell < nbCells[idxLevel] ; ++idxCell){
+                cells[idxLevel][idxCell].gemm(&res[cells[idxLevel][idxCell].infos.col],
+                                              &mat[cells[idxLevel][idxCell].infos.row],
+                                              nbRhs, dim);
+            }
+        }
+        for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+            leaves[idxLeaf].gemm(&res[leaves[idxLeaf].infos.col],
+                                 &mat[leaves[idxLeaf].infos.row],
+                                 nbRhs, dim);
         }
     }
 };
