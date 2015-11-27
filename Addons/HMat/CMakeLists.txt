@@ -49,6 +49,7 @@ if(SCALFMM_ADDON_HMAT)
         INCLUDE_DIRECTORIES( ${CMAKE_BINARY_DIR}/Src )
 
         # Then build test files
+        SET(hmat_list_execs "")
         foreach(exec ${source_tests_files})
                 get_filename_component(
                         execname ${exec}
@@ -79,6 +80,9 @@ if(SCALFMM_ADDON_HMAT)
                                 # ${LAPACK_LIBRARIES}
                             ${SCALFMM_LIBRARIES}
                                 )
+                         LIST(APPEND hmat_list_execs ${execname})
                 endif()
         endforeach(exec)
+        
+        add_custom_target(hmat DEPENDS ${hmat_list_execs})
 endif()
