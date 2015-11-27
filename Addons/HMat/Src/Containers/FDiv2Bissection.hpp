@@ -136,21 +136,23 @@ public:
     void fillBlocks(MatrixClass& matrix){
         for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
             for(int idxCell = 0 ; idxCell < nbCells[idxLevel] ; ++idxCell){
-                cells[idxLevel][idxCell].fill(matrix.getBlock(
+                cells[idxLevel][idxCell].cell.fill(matrix.getBlock(
                                                   cells[idxLevel][idxCell].infos.row,
                                                   cells[idxLevel][idxCell].infos.col,
                                                   cells[idxLevel][idxCell].infos.nbRows,
                                                   cells[idxLevel][idxCell].infos.nbCols
-                                                  ));
+                                                  ),
+                                                   cells[idxLevel][idxCell].infos.level);
             }
         }
         for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-            leaves[idxLeaf].fill(matrix.getBlock(
+            leaves[idxLeaf].leaf.fill(matrix.getBlock(
                                       leaves[idxLeaf].infos.row,
                                       leaves[idxLeaf].infos.col,
                                       leaves[idxLeaf].infos.nbRows,
                                       leaves[idxLeaf].infos.nbCols
-                                      ));
+                                      ),
+                                      leaves[idxLeaf].infos.level);
         }
     }
 
@@ -158,47 +160,49 @@ public:
     void fillBlocks(const MatrixClass& matrix){
         for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
             for(int idxCell = 0 ; idxCell < nbCells[idxLevel] ; ++idxCell){
-                cells[idxLevel][idxCell].fill(matrix.getBlock(
+                cells[idxLevel][idxCell].cell.fill(matrix.getBlock(
                                                   cells[idxLevel][idxCell].infos.row,
                                                   cells[idxLevel][idxCell].infos.col,
                                                   cells[idxLevel][idxCell].infos.nbRows,
                                                   cells[idxLevel][idxCell].infos.nbCols
-                                                  ));
+                                                  ),
+                                              cells[idxLevel][idxCell].infos.level);
             }
         }
         for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-            leaves[idxLeaf].fill(matrix.getBlock(
+            leaves[idxLeaf].leaf.fill(matrix.getBlock(
                                       leaves[idxLeaf].infos.row,
                                       leaves[idxLeaf].infos.col,
                                       leaves[idxLeaf].infos.nbRows,
                                       leaves[idxLeaf].infos.nbCols
-                                      ));
+                                      ),
+                                 leaves[idxLeaf].infos.level);
         }
     }
 
     void gemv(FReal res[], const FReal vec[]) const {
         for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
             for(int idxCell = 0 ; idxCell < nbCells[idxLevel] ; ++idxCell){
-                cells[idxLevel][idxCell].gemv(&res[cells[idxLevel][idxCell].infos.col],
-                                              &vec[cells[idxLevel][idxCell].infos.row]);
+                cells[idxLevel][idxCell].cell.gemv(&res[cells[idxLevel][idxCell].infos.row],
+                                              &vec[cells[idxLevel][idxCell].infos.col]);
             }
         }
         for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-            leaves[idxLeaf].gemv(&res[leaves[idxLeaf].infos.col],
-                                          &vec[leaves[idxLeaf].infos.row]);
+            leaves[idxLeaf].leaf.gemv(&res[leaves[idxLeaf].infos.row],
+                                          &vec[leaves[idxLeaf].infos.col]);
         }
     }
 
     void gemm(FReal res[], const FReal mat[], const int nbRhs) const {
         for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
             for(int idxCell = 0 ; idxCell < nbCells[idxLevel] ; ++idxCell){
-                cells[idxLevel][idxCell].gemm(&res[cells[idxLevel][idxCell].infos.col],
+                cells[idxLevel][idxCell].cell.gemm(&res[cells[idxLevel][idxCell].infos.col],
                                               &mat[cells[idxLevel][idxCell].infos.row],
                                               nbRhs, dim);
             }
         }
         for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-            leaves[idxLeaf].gemm(&res[leaves[idxLeaf].infos.col],
+            leaves[idxLeaf].leaf.gemm(&res[leaves[idxLeaf].infos.col],
                                  &mat[leaves[idxLeaf].infos.row],
                                  nbRhs, dim);
         }

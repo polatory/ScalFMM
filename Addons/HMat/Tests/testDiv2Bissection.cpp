@@ -2,8 +2,9 @@
 // @SCALFMM_PRIVATE
 
 #include "../Src/Containers/FDiv2Bissection.hpp"
-#include "../Src/Viewers/FMatGrid.hpp"
 #include "../Src/Utils/FSvgRect.hpp"
+#include "../Src/Viewers/FDenseBlockWrapper.hpp"
+#include "../Src/Blocks/FDenseMatrix.hpp"
 
 #include "Utils/FParameters.hpp"
 #include "Utils/FParameterNames.hpp"
@@ -35,12 +36,11 @@ int main(int argc, char** argv){
     std::cout << "Config : outputfile = " << outputfile << "\n";
 
     typedef double FReal;
-    typedef int LeafClass;
-    typedef int CellClass;
+    typedef FDenseMatrix<FReal> LeafClass;
+    typedef FDenseMatrix<FReal> CellClass;
     typedef FDiv2Bissection<FReal, LeafClass, CellClass> GridClass;
 
     GridClass bissection(dim, height);
-
     {
         FSvgRect output(outputfile, dim);
 

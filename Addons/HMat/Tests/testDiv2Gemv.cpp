@@ -2,11 +2,13 @@
 // @SCALFMM_PRIVATE
 
 #include "../Src/Containers/FDiv2Bissection.hpp"
-#include "../Src/Viewers/FMatGrid.hpp"
+#include "../Src/Viewers/FMatDense.hpp"
 #include "../Src/Blocks/FDenseMatrix.hpp"
 
 #include "Utils/FParameters.hpp"
 #include "Utils/FParameterNames.hpp"
+
+#include <memory>
 
 int main(int argc, char** argv){
     static const FParameterNames DimParam = {
@@ -18,9 +20,7 @@ int main(int argc, char** argv){
          "Number of dissection (+1)."
     };
 
-    FHelpDescribeAndExit(argc, argv,
-            "Test the bisection.",SvgOutParam,
-            DimParam,HeightParam);
+    FHelpDescribeAndExit(argc, argv, "Test the bisection.", DimParam,HeightParam);
 
     const int dim = FParameters::getValue(argc, argv, DimParam.options, 100);
     const int height = FParameters::getValue(argc, argv, HeightParam.options, 4);
@@ -28,15 +28,48 @@ int main(int argc, char** argv){
     std::cout << "Config : dim = " << dim << "\n";
     std::cout << "Config : height = " << height << "\n";
 
+
+    typedef double FReal;
+    typedef FMatDense<FReal> MatrixClass;
+
+    MatrixClass matrix(dim);
+    for(int idxRow = 0; idxRow < dim ; ++idxRow){
+        for(int idxCol = 0; idxCol < dim ; ++idxCol){
+            matrix.setVal(idxRow, idxCol, 1./(FMath::Abs(FReal(idxRow-idxCol))+1.));
+        }
+    }
+
+    std::unique_ptr<FReal[]> vec(new FReal[dim]);
+    for(int idxVal = 0 ; idxVal < dim ; ++idxVal){
+        vec[idxVal] = 1.0;
+    }
+
+    std::unique_ptr<FReal[]> resTest(new FReal[dim]);
+    FSetToZeros(resTest.get(), dim);
     {
-        typedef double FReal;
-        typedef FMatGrid<FReal> MatrixClass;
+        for(int idxRow = 0; idxRow < dim ; ++idxRow){
+            for(int idxCol = 0; idxCol < dim ; ++idxCol){
+                resTest[idxRow] += vec[idxCol] * matrix.getVal(idxRow, idxCol);
+            }
+        }
+    }
+
+    {
         typedef FDenseMatrix<FReal> LeafClass;
         typedef FDenseMatrix<FReal> CellClass;
         typedef FDiv2Bissection<FReal, LeafClass, CellClass> GridClass;
 
-        GridClass bissection(dim, height);
-        bissection.fillBlocks(matrix);
+        GridClass grid(dim, height);
+        grid.fillBlocks(matrix);
+
+        std::unique_ptr<FReal[]> resDense(new FReal[dim]);
+        FSetToZeros(resDense.get(), dim);
+
+        grid.gemv(resDense.get(), vec.get());
+
+        FMath::FAccurater<FReal> testDense(resTest.get(), resDense.get(), dim);
+
+        std::cout << "Test Dense, Error = " << testDense << "\n";
     }
 
     return 0;
