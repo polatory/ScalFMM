@@ -1,6 +1,8 @@
 #ifndef FSVGRECT_HPP
 #define FSVGRECT_HPP
 
+// @SCALFMM_PRIVATE
+
 #include "Utils/FGlobal.hpp"
 #include "Utils/FAssert.hpp"
 

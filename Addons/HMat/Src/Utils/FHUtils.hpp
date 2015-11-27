@@ -1,6 +1,8 @@
 #ifndef FHUTILS_HPP
 #define FHUTILS_HPP
 
+// @SCALFMM_PRIVATE
+
 #include "Utils/FGlobal.hpp"
 
 #include <cstring>
