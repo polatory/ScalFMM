@@ -53,40 +53,40 @@ public:
         nbCells = new int[height-1];
         FSetToZeros(nbCells, height-1);
 
-        int previousWidth = dim;
         for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
             const int nbCellsAtLevel = FMath::pow2(idxLevel);
             cells[idxLevel]   = new CellNode[nbCellsAtLevel];
             nbCells[idxLevel] = nbCellsAtLevel;
             totalNbBlocks += nbCellsAtLevel;
 
-            const int blockDim = previousWidth/2;
+            const int nbCellsInDirection = nbCells[idxLevel];
             for(int idxCell = 0 ; idxCell < nbCellsAtLevel ; ++idxCell){
-                const int rowOffset = blockDim * (idxCell&1? idxCell-1 : idxCell+1);
-                const int colOffset = idxCell * blockDim;
-                cells[idxLevel][idxCell].infos.col = rowOffset;
-                cells[idxLevel][idxCell].infos.row = colOffset;
-                cells[idxLevel][idxCell].infos.nbRows = blockDim;
-                cells[idxLevel][idxCell].infos.nbCols = blockDim;
+                const int rowCellNumber = (idxCell&1? idxCell-1 : idxCell+1);
+                const int colCellNumner = idxCell;
+                cells[idxLevel][idxCell].infos.row = ((rowCellNumber*dim)/nbCellsInDirection);
+                cells[idxLevel][idxCell].infos.col = ((colCellNumner*dim)/nbCellsInDirection);
+                cells[idxLevel][idxCell].infos.nbRows = (((rowCellNumber+1)*dim)/nbCellsInDirection)
+                                                        - cells[idxLevel][idxCell].infos.row;
+                cells[idxLevel][idxCell].infos.nbCols =(((colCellNumner+1)*dim)/nbCellsInDirection)
+                                                        - cells[idxLevel][idxCell].infos.col;
                 cells[idxLevel][idxCell].infos.level = idxLevel;
             }
-
-            previousWidth = blockDim;
         }
 
         nbLeaves = FMath::pow2(height);
         leaves   = new LeafNode[nbLeaves];
         totalNbBlocks += nbLeaves;
         {
-            const int blockDim = previousWidth/2;
+            const int nbLeavesInDirection = (nbLeaves/2);
             for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-                const int corner = (idxLeaf/4)*previousWidth;
-                int rowOffset = corner + blockDim * (idxLeaf&1?1:0);
-                int colOffset = corner + blockDim * (idxLeaf&2?1:0);
-                leaves[idxLeaf].infos.row = rowOffset;
-                leaves[idxLeaf].infos.col = colOffset;
-                leaves[idxLeaf].infos.nbRows = blockDim;
-                leaves[idxLeaf].infos.nbCols = blockDim;
+                const int rowLeafNumber = ((idxLeaf/4)*2) + (idxLeaf&1?1:0);
+                const int colLeafNumber = ((idxLeaf/4)*2) + (idxLeaf&2?1:0);
+                leaves[idxLeaf].infos.row = ((rowLeafNumber*dim)/nbLeavesInDirection);
+                leaves[idxLeaf].infos.col = ((colLeafNumber*dim)/nbLeavesInDirection);
+                leaves[idxLeaf].infos.nbRows = (((rowLeafNumber+1)*dim)/nbLeavesInDirection)
+                                                - leaves[idxLeaf].infos.row;
+                leaves[idxLeaf].infos.nbCols = (((colLeafNumber+1)*dim)/nbLeavesInDirection)
+                                                - leaves[idxLeaf].infos.col;
                 leaves[idxLeaf].infos.level = height-1;
             }
         }
