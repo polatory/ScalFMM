@@ -110,15 +110,31 @@ int main(int argc, char* argv[])
 
     // Allocate memory
     FReal* K = new FReal[matrixSize*matrixSize];
+    FBlas::setzero(int(matrixSize*matrixSize),K);
 
-    // Build kernel matrix
+    // Build (symmetric) kernel matrix
     FTic timeAssK;
     for(FSize idxRow = 0 ; idxRow < matrixSize  ; ++idxRow)
-        for(FSize idxCol = 0 ; idxCol < matrixSize  ; ++idxCol)
+        for(FSize idxCol = idxRow+1 ; idxCol < matrixSize ; ++idxCol) {
             K[idxRow*matrixSize+idxCol] = MatrixKernel.evaluate(grid[idxRow],
                                                                 grid[idxCol]);
+            K[idxCol*matrixSize+idxRow] = K[idxRow*matrixSize+idxCol];
+        }
+
     double tAssK = timeAssK.tacAndElapsed();
     std::cout << "... took @tAssK = "<< tAssK <<"\n";
+
+    // Display matrix
+    const FSize displaySize = 10;
+    if(verbose==2) {
+        std::cout<<"\nK=["<<std::endl;
+        for ( FSize i=0; i<displaySize; ++i) {
+            for ( FSize j=0; j<displaySize; ++j)
+                std::cout << K[i*matrixSize+j] << " ";
+            std::cout<< std::endl;
+        }
+        std::cout<<"]"<<std::endl;
+    }
 
     ////////////////////////////////////////////////////////////////////
     /// Write kernel matrix in binary file
@@ -137,6 +153,12 @@ int main(int argc, char* argv[])
 
     tWriteMat = timeWriteMat.tacAndElapsed();
     std::cout << "... took @tWriteMat = "<< tWriteMat <<"\n";
+
+
+
+
+    double tOverall = time.tacAndElapsed();
+    std::cout << "... took @tOverall = "<< tOverall <<"\n";
 
     /// Free memory
     delete[] K;
