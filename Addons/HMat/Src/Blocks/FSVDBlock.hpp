@@ -58,7 +58,36 @@ static void computeSVD(const FSize nbRows, const FSize nbCols, const FReal* A, F
     delete[] WORK;
 }
 
-template <class FReal>
+
+/*
+ * Compute SVD $A=USV'$ and return $V'$, $S$ and $U$.
+ * \param 
+ */
+template<class FReal>
+static void computeNumericalRank(int &rank, const FReal* S, const FReal epsilon){
+    // verbose
+    const bool verbose = false;
+
+    // init
+    const FSize maxRank = rank;
+    FReal sumSigma2 = FReal(0.0);
+    for(int idxRow = 0 ; idxRow < rank ; ++idxRow)
+        sumSigma2+=S[idxRow]*S[idxRow];
+
+    // set rank to 1
+    rank = 1;
+    // increase
+    FReal sumSigma2r = S[0]*S[0];
+    FReal eps2 = epsilon*epsilon;
+    while(sumSigma2r<(1-eps2)*sumSigma2 && rank<maxRank){
+        sumSigma2r+=S[rank]*S[rank];
+        rank++;
+    }
+
+}
+
+
+template <class FReal, int ORDER = 14>
 class FSVDBlock{
 protected:
     // members
@@ -70,12 +99,13 @@ protected:
     int nbCols;
     int level;
     int rank;
+    FReal accuracy;
     FSVDBlock(const FSVDBlock&) = delete;
     FSVDBlock& operator=(const FSVDBlock&) = delete;
 
 public:
     FSVDBlock()
-        : block(nullptr), U(nullptr), S(nullptr), VT(nullptr), nbRows(0), nbCols(0),  level(0), rank(0) {
+        : block(nullptr), U(nullptr), S(nullptr), VT(nullptr), nbRows(0), nbCols(0),  level(0), rank(0), accuracy(FMath::pow(10.0,static_cast<FReal>(-ORDER))) {
     }
 
     // ctor
@@ -104,8 +134,11 @@ public:
         // Perform decomposition of rectangular block (jobu=O, jobvt=S => only first min(M,N) cols/rows of U/VT are stored)
         computeSVD(nbRows, nbCols, block, S, U ,VT);
 
-        // TODO Determine numerical rank using prescribed accuracy
-        // ...
+        // Determine numerical rank using prescribed accuracy
+        computeNumericalRank(rank, S, accuracy);
+
+        //// display rank
+        //std::cout << "rank=" << rank << std::endl;
 
     };
 

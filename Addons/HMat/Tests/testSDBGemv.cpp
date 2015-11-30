@@ -23,6 +23,8 @@
 #include "Utils/FParameters.hpp"
 #include "Utils/FParameterNames.hpp"
 
+#include "Utils/FTic.hpp"
+
 #include <memory>
 
 int main(int argc, char** argv){
@@ -32,6 +34,11 @@ int main(int argc, char** argv){
     };
 
     FHelpDescribeAndExit(argc, argv, "Test the bisection.", DimParam, FParameterDefinitions::OctreeHeight);
+
+    ////////////////////////////////////////////////////////////////////
+    /// Timers 
+    FTic time; 
+    time.tic();
 
     const int dim = FParameters::getValue(argc, argv, DimParam.options, 100);
     const int height = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 4);
@@ -111,6 +118,9 @@ int main(int argc, char** argv){
 
         std::cout << "Test Dense with partitions, Error = " << testDense << "\n";
     }
+
+    double tOverall = time.tacAndElapsed();
+    std::cout << "... took @tOverall = "<< tOverall <<"\n";
 
     return 0;
 }

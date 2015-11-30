@@ -19,14 +19,22 @@
 #include "../Src/Containers/FStaticDiagonalBisection.hpp"
 #include "../Src/Viewers/FMatDense.hpp"
 #include "../Src/Blocks/FDenseBlock.hpp"
+#include "../Src/Blocks/FSVDBlock.hpp"
 
 #include "Utils/FParameters.hpp"
 #include "Utils/FParameterNames.hpp"
+
+#include "Utils/FTic.hpp"
 
 #include <memory>
 
 int main(int argc, char** argv){
     FHelpDescribeAndExit(argc, argv, "Test the bisection.", FParameterDefinitions::InputFile, FParameterDefinitions::OctreeHeight);
+
+    ////////////////////////////////////////////////////////////////////
+    /// Timers 
+    FTic time; 
+    time.tic();
 
     const char* filename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFile.options, "../Addons/HMat/Data/unitCube1000_ONE_OVER_R.bin");
     const int height = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 4);
@@ -57,8 +65,12 @@ int main(int argc, char** argv){
     }
 
     {
-        typedef FDenseBlock<FReal> LeafClass;
-        typedef FDenseBlock<FReal> CellClass;
+        std::cout << "Test Dense:\n";
+
+		//typedef FDenseBlock<FReal> LeafClass;
+        //typedef FDenseBlock<FReal> CellClass;
+        typedef FSVDBlock<FReal> LeafClass;
+        typedef FSVDBlock<FReal> CellClass;  
         typedef FStaticDiagonalBisection<FReal, LeafClass, CellClass> GridClass;
 
         GridClass grid(dim, height);
@@ -67,16 +79,29 @@ int main(int argc, char** argv){
         std::unique_ptr<FReal[]> resDense(new FReal[dim]);
         FSetToZeros(resDense.get(), dim);
 
+        std::cout << "  Perform GEMV ";
+
+        FTic timeGEMV; 
+        timeGEMV.tic();
+
         grid.gemv(resDense.get(), vec.get());
+
+        double tGEMV = timeGEMV.tacAndElapsed();
+        std::cout << "... took @tGEMV = "<< tGEMV <<"\n";
 
         FMath::FAccurater<FReal> testDense(resTest.get(), resDense.get(), dim);
 
-        std::cout << "Test Dense, Error = " << testDense << "\n";
+        std::cout << "  Error = " << testDense << "\n";
     }
 
     {
-        typedef FDenseBlock<FReal> LeafClass;
-        typedef FDenseBlock<FReal> CellClass;
+
+        std::cout << "Test Dense with partitions:\n";
+
+        //typedef FDenseBlock<FReal> LeafClass;
+        //typedef FDenseBlock<FReal> CellClass;
+        typedef FSVDBlock<FReal> LeafClass;
+        typedef FSVDBlock<FReal> CellClass;   
         typedef FStaticDiagonalBisection<FReal, LeafClass, CellClass> GridClass;
 
         const int nbPartitions = FMath::pow2(height-1);
@@ -96,12 +121,23 @@ int main(int argc, char** argv){
         std::unique_ptr<FReal[]> resDense(new FReal[dim]);
         FSetToZeros(resDense.get(), dim);
 
+        std::cout << "  Perform GEMV ";
+
+        FTic timeGEMV; 
+        timeGEMV.tic();
+
         grid.gemv(resDense.get(), vec.get());
+
+        double tGEMV = timeGEMV.tacAndElapsed();
+        std::cout << "... took @tGEMV = "<< tGEMV <<"\n";
 
         FMath::FAccurater<FReal> testDense(resTest.get(), resDense.get(), dim);
 
-        std::cout << "Test Dense with partitions, Error = " << testDense << "\n";
+        std::cout << "  Error = " << testDense << "\n";
     }
+
+    double tOverall = time.tacAndElapsed();
+    std::cout << "... took @tOverall = "<< tOverall <<"\n";
 
     return 0;
 }
