@@ -16,7 +16,7 @@
 
 // @SCALFMM_PRIVATE
 
-#include "../Src/Containers/FDiv2Bissection.hpp"
+#include "../Src/Containers/FStaticDiagonalBisection.hpp"
 #include "../Src/Utils/FSvgRect.hpp"
 #include "../Src/Viewers/FDenseBlockWrapper.hpp"
 #include "../Src/Blocks/FDenseBlock.hpp"
@@ -49,7 +49,7 @@ int main(int argc, char** argv){
     typedef double FReal;
     typedef FDenseBlock<FReal> LeafClass;
     typedef FDenseBlock<FReal> CellClass;
-    typedef FDiv2Bissection<FReal, LeafClass, CellClass> GridClass;
+    typedef FStaticDiagonalBisection<FReal, LeafClass, CellClass> GridClass;
 
     {
         GridClass bissection(dim, height);
