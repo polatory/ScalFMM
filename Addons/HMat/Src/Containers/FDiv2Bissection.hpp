@@ -13,8 +13,8 @@
 // "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#ifndef FDIV2BISSECTION_HPP
-#define FDIV2BISSECTION_HPP
+#ifndef FSTATICDIAGONALBISECTION_HPP
+#define FSTATICDIAGONALBISECTION_HPP
 
 // @SCALFMM_PRIVATE
 
@@ -29,7 +29,7 @@
 
 
 template <class FReal, class LeafClass, class CellClass >
-class FDiv2Bissection {
+class FStaticDiagonalBisection {
 protected:
     struct LeafNode {
         FBlockDescriptor infos;
@@ -52,11 +52,11 @@ protected:
 
     int totalNbBlocks;
 
-    FDiv2Bissection(const FDiv2Bissection&) = delete;
-    FDiv2Bissection& operator=(const FDiv2Bissection&) = delete;
+    FStaticDiagonalBisection(const FStaticDiagonalBisection&) = delete;
+    FStaticDiagonalBisection& operator=(const FStaticDiagonalBisection&) = delete;
 
 public:
-    explicit FDiv2Bissection(const int inDim, const int inHeight)
+    explicit FStaticDiagonalBisection(const int inDim, const int inHeight)
         : dim(inDim), height(inHeight),
           nbCells(0), cells(nullptr),
           nbLeaves(0), leaves(nullptr),
@@ -107,7 +107,7 @@ public:
         }
     }
 
-    explicit FDiv2Bissection(const int inDim, const int inHeight,
+    explicit FStaticDiagonalBisection(const int inDim, const int inHeight,
                              const int partitions[], const int nbPartitions)
         : dim(inDim), height(inHeight),
           nbCells(0), cells(nullptr),
@@ -172,7 +172,7 @@ public:
         }
     }
 
-    ~FDiv2Bissection(){
+    ~FStaticDiagonalBisection(){
         for(int idxLevel = 0 ; idxLevel < height-1 ; ++idxLevel){
             delete[] cells[idxLevel];
         }
@@ -290,5 +290,5 @@ public:
 };
 
 
-#endif // FDIV2BISSECTION_HPP
+#endif // FSTATICDIAGONALBISECTION_HPP
 

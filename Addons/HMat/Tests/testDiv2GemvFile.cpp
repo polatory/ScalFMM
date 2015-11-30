@@ -16,7 +16,7 @@
 
 // @SCALFMM_PRIVATE
 
-#include "../Src/Containers/FDiv2Bissection.hpp"
+#include "../Src/Containers/FStaticDiagonalBisection.hpp"
 #include "../Src/Viewers/FMatDense.hpp"
 #include "../Src/Blocks/FDenseBlock.hpp"
 
@@ -59,7 +59,7 @@ int main(int argc, char** argv){
     {
         typedef FDenseBlock<FReal> LeafClass;
         typedef FDenseBlock<FReal> CellClass;
-        typedef FDiv2Bissection<FReal, LeafClass, CellClass> GridClass;
+        typedef FStaticDiagonalBisection<FReal, LeafClass, CellClass> GridClass;
 
         GridClass grid(dim, height);
         grid.fillBlocks(matrix);
@@ -77,7 +77,7 @@ int main(int argc, char** argv){
     {
         typedef FDenseBlock<FReal> LeafClass;
         typedef FDenseBlock<FReal> CellClass;
-        typedef FDiv2Bissection<FReal, LeafClass, CellClass> GridClass;
+        typedef FStaticDiagonalBisection<FReal, LeafClass, CellClass> GridClass;
 
         const int nbPartitions = FMath::pow2(height-1);
         std::unique_ptr<int[]> partitions(new int[nbPartitions]);
