@@ -43,9 +43,12 @@
 ##########
 ### List of vendors (BLA_VENDOR) valid in this module
 ########## List of vendors (BLA_VENDOR) valid in this module
-##  Goto,ATLAS PhiPACK,CXML,DXML,SunPerf,SCSL,SGIMATH,IBMESSL,Intel10_32 (intel mkl v10 32 bit),Intel10_64lp (intel mkl v10 64 bit,lp thread model, lp64 model),
+##  Open (for OpenBlas), Eigen (for EigenBlas), Goto, ATLAS PhiPACK,
+##  CXML, DXML, SunPerf, SCSL, SGIMATH, IBMESSL,
+##  Intel10_32 (intel mkl v10 32 bit), Intel10_64lp (intel mkl v10 64 bit,lp thread model, lp64 model),
 ##  Intel10_64lp_seq (intel mkl v10 64 bit,sequential code, lp64 model),
-##  Intel( older versions of mkl 32 and 64 bit), ACML,ACML_MP,ACML_GPU,Apple, NAS, Generic
+##  Intel( older versions of mkl 32 and 64 bit),
+##  ACML, ACML_MP, ACML_GPU, Apple, NAS, Generic
 # C/CXX should be enabled to use Intel mkl
 ###
 # We handle different modes to find the dependency
@@ -719,6 +722,7 @@ if (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
 endif (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
 
 
+# OpenBlas
 if (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
 
     if(NOT BLAS_LIBRARIES)
@@ -734,6 +738,36 @@ if (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
     endif()
 
 endif (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
+
+
+# EigenBlas
+if (BLA_VENDOR STREQUAL "Eigen" OR BLA_VENDOR STREQUAL "All")
+
+    if(NOT BLAS_LIBRARIES)
+        # eigenblas (http://eigen.tuxfamily.org/index.php?title=Main_Page)
+        check_fortran_libraries(
+        BLAS_LIBRARIES
+        BLAS
+        sgemm
+        ""
+        "eigen_blas"
+        ""
+        )
+    endif()
+
+    if(NOT BLAS_LIBRARIES)
+        # eigenblas (http://eigen.tuxfamily.org/index.php?title=Main_Page)
+        check_fortran_libraries(
+        BLAS_LIBRARIES
+        BLAS
+        sgemm
+        ""
+        "eigen_blas_static"
+        ""
+        )
+    endif()
+
+endif (BLA_VENDOR STREQUAL "Eigen" OR BLA_VENDOR STREQUAL "All")
 
 
 if (BLA_VENDOR STREQUAL "ATLAS" OR BLA_VENDOR STREQUAL "All")
