@@ -69,8 +69,8 @@ int main(int argc, char** argv){
 
 		//typedef FDenseBlock<FReal> LeafClass;
         //typedef FDenseBlock<FReal> CellClass;
-        typedef FSVDBlock<FReal> LeafClass;
-        typedef FSVDBlock<FReal> CellClass;  
+        typedef FSVDBlock<FReal,7> LeafClass;
+        typedef FSVDBlock<FReal,7> CellClass;  
         typedef FStaticDiagonalBisection<FReal, LeafClass, CellClass> GridClass;
 
         GridClass grid(dim, height);
@@ -100,8 +100,8 @@ int main(int argc, char** argv){
 
         //typedef FDenseBlock<FReal> LeafClass;
         //typedef FDenseBlock<FReal> CellClass;
-        typedef FSVDBlock<FReal> LeafClass;
-        typedef FSVDBlock<FReal> CellClass;   
+        typedef FSVDBlock<FReal,7> LeafClass;
+        typedef FSVDBlock<FReal,7> CellClass;   
         typedef FStaticDiagonalBisection<FReal, LeafClass, CellClass> GridClass;
 
         const int nbPartitions = FMath::pow2(height-1);

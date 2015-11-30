@@ -73,18 +73,23 @@ static void computeNumericalRank(int &rank, const FReal* S, const FReal epsilon)
     FReal sumSigma2 = FReal(0.0);
     for(int idxRow = 0 ; idxRow < rank ; ++idxRow)
         sumSigma2+=S[idxRow]*S[idxRow];
+    FReal SqrtSumSigma2 = std::sqrt(sumSigma2);
 
     // set rank to 1
     rank = 1;
     // increase
     FReal sumSigma2r = S[0]*S[0];
-    FReal eps2 = epsilon*epsilon;
-    while(sumSigma2r<(1-eps2)*sumSigma2 && rank<maxRank){
+    while(std::sqrt(sumSigma2r)<(FReal(1.)-epsilon)*SqrtSumSigma2 && rank<maxRank){
         sumSigma2r+=S[rank]*S[rank];
         rank++;
     }
+    //std::cout << "std::sqrt(sumSigma2r)=" << std::sqrt(sumSigma2r) << std::endl;
+    //std::cout << "std::sqrt(sumSigma2)=" << std::sqrt(sumSigma2) << std::endl;
+    //std::cout << "R/S=" << (std::sqrt(sumSigma2)-std::sqrt(sumSigma2r))/std::sqrt(sumSigma2) << std::endl;
 
 }
+
+
 
 
 template <class FReal, int ORDER = 14>
@@ -126,19 +131,32 @@ public:
 
         // SVD specific (col major)
         rank = std::min(nbRows,nbCols);
-        U  = new FReal[nbRows*nbCols]; // Call to computeSVD() copies block into U
         S  = new FReal[rank];
-        VT = new FReal[rank*nbCols];
+        FReal* _U  = new FReal[nbRows*nbCols]; // Call to computeSVD() copies block into U
+        FReal* _VT = new FReal[rank*nbCols];
         FBlas::setzero(int(rank), S);        
-        FBlas::setzero(int(rank*nbCols),VT);
+        FBlas::setzero(int(rank*nbCols),_VT);
         // Perform decomposition of rectangular block (jobu=O, jobvt=S => only first min(M,N) cols/rows of U/VT are stored)
-        computeSVD(nbRows, nbCols, block, S, U ,VT);
+        computeSVD(nbRows, nbCols, block, S, _U ,_VT);
 
         // Determine numerical rank using prescribed accuracy
         computeNumericalRank(rank, S, accuracy);
 
         //// display rank
         //std::cout << "rank=" << rank << std::endl;
+
+        // Resize U and VT
+        U  = new FReal[nbRows*rank]; // Call to computeSVD() copies block into U
+        VT = new FReal[rank*nbCols];
+
+        for(int idxRow = 0 ; idxRow < nbRows ; ++idxRow)
+            for(int idxCol = 0 ; idxCol < rank ; ++idxCol)
+                U[idxCol*nbRows+idxRow] = _U[idxCol*nbRows+idxRow];
+        for(int idxRow = 0 ; idxRow < rank ; ++idxRow)
+            for(int idxCol = 0 ; idxCol < nbCols ; ++idxCol)
+                VT[idxCol*rank+idxRow] = _VT[idxCol*std::min(nbRows,nbCols)+idxRow]; 
+        delete [] _U;           
+        delete [] _VT;
 
     };
 
@@ -164,17 +182,23 @@ public:
     }
 
     void gemv(FReal res[], const FReal vec[], const FReal scale = FReal(1.)) const {
-        
+
         //// Apply (dense) block
-        //FBlas::gemva(nbRows, nbCols, scale, const_cast<FReal*>(block), const_cast<FReal*>(vec), res);
+        //FReal* res_dense = new FReal[nbRows];
+        //FBlas::copy(nbRows,res,res_dense);
+        //FBlas::gemva(nbRows, nbCols, scale, const_cast<FReal*>(block), const_cast<FReal*>(vec), res_dense);
         
         // Apply low-rank block
-        FReal* VTvec = new FReal[nbCols];
+        FReal* VTvec = new FReal[rank];
+        FBlas::setzero(rank,VTvec);
+
         // Apply VT
         FBlas::gemv(rank, nbCols, scale, const_cast<FReal*>(VT), const_cast<FReal*>(vec), VTvec);
+
         // Apply S
         for(int idxS = 0 ; idxS < rank ; ++idxS)
-            VTvec[idxS]*=S[idxS];
+            VTvec[idxS]*=S[idxS];    
+        
         // Apply U
         FBlas::gemva(nbRows, rank, scale, const_cast<FReal*>(U), const_cast<FReal*>(VTvec), res);
 
