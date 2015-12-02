@@ -298,7 +298,7 @@ public:
         fprintf(fdot,"digraph BST {\n");
 
         for(int idxCluster = dim-2 ; idxCluster >= 0 ; --idxCluster){
-            fprintf(fdot,"\t %d [label=\"%d Size=%d Dist=%e\"];\n",
+            fprintf(fdot,"\t %d [label=\"%d Size=%d Dist=%e\", tooltip=\"\"];\n",
                     (-idxCluster-1)+dim-2, idxCluster, sizeOfClusters[idxCluster], croot[idxCluster].distance);
             fprintf(fdot,"\t %d -> %d;\n", (-idxCluster-1)+dim-2, croot[idxCluster].left+dim-2);
             fprintf(fdot,"\t %d -> %d;\n", (-idxCluster-1)+dim-2, croot[idxCluster].right+dim-2);

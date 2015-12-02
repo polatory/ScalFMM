@@ -63,7 +63,7 @@ int main(int argc, char** argv){
 
     tcluster.saveToXml(outputdir, "ccl.xml");
 
-    tcluster.saveToDot(outputdir, "ccl.dot");
+    tcluster.saveToDot(outputdir, "gccl.dot");
 
     return 0;
 }
