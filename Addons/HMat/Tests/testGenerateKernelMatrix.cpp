@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
     }
 
 
-
+{
     ////////////////////////////////////////////////////////////////////
     /// Build kernel matrix K
     
@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
     /// Write kernel matrix in binary file
 
     // Output file name
-    const std::string matrixName((distributionName + "_" + MatrixKernelID).c_str()); // if nothing specified then use file associated with n=50
+    const std::string matrixName((distributionName + "_" + MatrixKernelID).c_str());
     const std::string fileName = ioPath + matrixName + ".bin";
 
     // Write 
@@ -153,15 +153,64 @@ int main(int argc, char* argv[])
 
     tWriteMat = timeWriteMat.tacAndElapsed();
     std::cout << "... took @tWriteMat = "<< tWriteMat <<"\n";
+}
+{
+    ////////////////////////////////////////////////////////////////////
+    /// Build distance matrix D
 
+    // Allocate memory
+    FReal* D = new FReal[matrixSize*matrixSize];
+    FBlas::setzero(int(matrixSize*matrixSize),D);
 
+    // Build (symmetric) kernel matrix
+    FTic timeAssK;
+
+    for(FSize idxRow = 0 ; idxRow < matrixSize  ; ++idxRow)
+        for(FSize idxCol = idxRow ; idxCol < matrixSize ; ++idxCol) {
+            FReal diffX(grid[idxRow].getX()-grid[idxCol].getX());
+            FReal diffY(grid[idxRow].getY()-grid[idxCol].getY());
+            FReal diffZ(grid[idxRow].getZ()-grid[idxCol].getZ());
+            D[idxRow*matrixSize+idxCol] = FMath::Sqrt(diffX*diffX+diffY*diffY+diffZ*diffZ);
+            if(idxCol!=idxRow)
+                D[idxCol*matrixSize+idxRow] = D[idxRow*matrixSize+idxCol];
+        }
+
+    double tAssK = timeAssK.tacAndElapsed();
+    std::cout << "... took @tAssK = "<< tAssK <<"\n";
+
+    // Display matrix
+    const FSize displaySize = 10;
+    if(verbose==2) {
+        std::cout<<"\nD=["<<std::endl;
+        for ( FSize i=0; i<displaySize; ++i) {
+            for ( FSize j=0; j<displaySize; ++j)
+                std::cout << D[i*matrixSize+j] << " ";
+            std::cout<< std::endl;
+        }
+        std::cout<<"]"<<std::endl;
+    }
+
+    ////////////////////////////////////////////////////////////////////
+    /// Write distance matrix in binary file
+
+    // Output file name
+    const std::string fileName = ioPath + distributionName + ".bin";
+
+    // Write 
+    std::cout<< "Write matrix in binary file: " << fileName << "\n";
+    FTic timeWriteMat;
+    double tWriteMat;
+    timeWriteMat.tic();
+
+    FMatrixIO::write<FReal>(matrixSize,matrixSize,D,fileName);
+
+    tWriteMat = timeWriteMat.tacAndElapsed();
+    std::cout << "... took @tWriteMat = "<< tWriteMat <<"\n";
 
 
     double tOverall = time.tacAndElapsed();
     std::cout << "... took @tOverall = "<< tOverall <<"\n";
-
-    /// Free memory
-    delete[] K;
+}
 
     return 0;
 }

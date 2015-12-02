@@ -26,18 +26,19 @@ int main(int argc, char** argv){
 
     FHelpDescribeAndExit(argc, argv,"Test the bisection.",SvgOutParam,DimParam,FParameterDefinitions::OctreeHeight);
 
-    const char* filename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFile.options, "../Addons/HMat/Data/unitCube1000_ONE_OVER_R.bin");
+    const char* filename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFile.options, "../Addons/HMat/Data/unitCube1000.bin");
     const int height = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 4);
     const char* outputdir = FParameters::getStr(argc, argv, SvgOutParam.options, "/tmp/");
 
     int readNbRows = 0;
     int readNbCols = 0;
-    double* values = nullptr;
-    FAssertLF(FMatrixIO::read(filename, &values, &readNbRows, &readNbCols));
+    // Read distances
+    double* distances = nullptr;
+    FAssertLF(FMatrixIO::read(filename, &distances, &readNbRows, &readNbCols));
     FAssertLF(readNbRows == readNbCols);
     const int dim = readNbRows;
 
-    FCCLTreeCluster<double> tcluster(dim, values, CCL::CCL_TM_MAXIMUM /*CCL::CCL_TM_AVG_LINKAGE*/);
+    FCCLTreeCluster<double> tcluster(dim, distances, CCL::CCL_TM_MAXIMUM /*CCL::CCL_TM_AVG_LINKAGE*/);
 
     std::unique_ptr<int[]> permutations(new int[dim]);
     tcluster.fillPermutations(permutations.get());
