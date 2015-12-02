@@ -25,16 +25,16 @@ if(SCALFMM_ADDON_HMAT)
 
         # Adding cpp files to project
         add_library( scalfmmhmat STATIC ${source_lib_files} )
-
+        
         # Add blas library (even if it is set to off)
         target_link_libraries( scalfmmhmat scalfmm)
 
         # Adding the entire project dir as an include dir
         INCLUDE_DIRECTORIES(
-         ${CMAKE_BINARY_DIR}/Src
-         ${CMAKE_SOURCE_DIR}/Src
-         ${SCALFMM_INCLUDES}
-    )
+             ${CMAKE_BINARY_DIR}/Src
+             ${CMAKE_SOURCE_DIR}/Src
+             ${SCALFMM_INCLUDES}
+        )
 
         # Install lib
         install( TARGETS scalfmmhmat ARCHIVE DESTINATION lib )
@@ -44,6 +44,13 @@ if(SCALFMM_ADDON_HMAT)
 
         file( GLOB hpp_in_dir Src/*.hpp Src/*.hpp)
         INSTALL( FILES ${hpp_in_dir} DESTINATION include/ScalFmm/HMat )
+
+        # Add C Clustering Library
+        file( GLOB_RECURSE ccl_lib_files CClusteringLibrary/*.c )
+        add_library( cclusteringlib STATIC ${ccl_lib_files} )
+        INCLUDE_DIRECTORIES(CClusteringLibrary/)
+        target_link_libraries( cclusteringlib scalfmm)
+        install( TARGETS cclusteringlib ARCHIVE DESTINATION lib )
 
         file( GLOB_RECURSE source_tests_files Tests/*.cpp )
         INCLUDE_DIRECTORIES( ${CMAKE_BINARY_DIR}/Src )
@@ -71,14 +78,13 @@ if(SCALFMM_ADDON_HMAT)
                 # Dependency are OK
                 if( compile_exec )
                         add_executable(	${execname} ${exec} )
-                        # link to scalfmm and scalfmmhmat
+                        # link to scalfmm and scalfmmhmat and cclusteringlib
                         target_link_libraries(
                                 ${execname}
                                 ${scalfmm_lib}
                                 scalfmmhmat
-                                # ${BLAS_LIBRARIES}
-                                # ${LAPACK_LIBRARIES}
-                            ${SCALFMM_LIBRARIES}
+                                cclusteringlib
+                                ${SCALFMM_LIBRARIES}
                                 )
                          LIST(APPEND hmat_list_execs ${execname})
                 endif()

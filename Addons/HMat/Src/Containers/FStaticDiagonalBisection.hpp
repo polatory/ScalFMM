@@ -287,6 +287,10 @@ public:
                                  nbRhs, dim);
         }
     }
+
+    static int GetNbPartitionsForHeight(const int inHeight){
+        return FMath::pow2(inHeight-1);
+    }
 };
 
 
