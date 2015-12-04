@@ -62,85 +62,118 @@ public:
                     nbValuesUnderThreshold += (inDistMat[idxColReal*dim+ idxRowReal] < treshold && idxRowReal != idxColReal? 1 : 0);
                 }
             }
-            FAssertLF(nbValuesUnderThreshold != 0);
+            if(nbValuesUnderThreshold != 0){
+                // Base value for all array indexings
+                const SCOTCH_Num baseval = 0;
+                // Number of vertices in graph
+                const SCOTCH_Num vertnbr = sizeInterval;
+                // Number of arcs in graph. Since edges are represented by both of their ends,
+                // the number of edge data in the graph is twice the number of graph edges.
+                const SCOTCH_Num edgenbr = nbValuesUnderThreshold;// it is already symmetric
+                // Array of start indices in edgetab of vertex adjacency sub-arrays
+                SCOTCH_Num* verttab = new SCOTCH_Num[vertnbr+1];
+                SCOTCH_Num* vendtab = &verttab[1];
+                // edgetab[verttab[i]] to edgetab[vendtab[i] − 1]
+                SCOTCH_Num* edgetab = new SCOTCH_Num[edgenbr];
+                // Optional array, of size vertnbr, holding the integer load associated with every vertex.
+                SCOTCH_Num* velotab = nullptr;
+                // Optional array, of a size equal at least to (max i (vendtab[i]) − baseval), holding the integer load associated with every arc.
+                SCOTCH_Num* edlotab = nullptr;
+                SCOTCH_Num* vlbltab = nullptr;
 
-
-            // Base value for all array indexings
-            const SCOTCH_Num baseval = 0;
-            // Number of vertices in graph
-            const SCOTCH_Num vertnbr = sizeInterval;
-            // Number of arcs in graph. Since edges are represented by both of their ends,
-            // the number of edge data in the graph is twice the number of graph edges.
-            const SCOTCH_Num edgenbr = nbValuesUnderThreshold;// it is already symmetric
-            // Array of start indices in edgetab of vertex adjacency sub-arrays
-            SCOTCH_Num* verttab = new SCOTCH_Num[vertnbr+1];
-            SCOTCH_Num* vendtab = &verttab[1];
-            // edgetab[verttab[i]] to edgetab[vendtab[i] − 1]
-            SCOTCH_Num* edgetab = new SCOTCH_Num[edgenbr];
-            // Optional array, of size vertnbr, holding the integer load associated with every vertex.
-            SCOTCH_Num* velotab = nullptr;
-            // Optional array, of a size equal at least to (max i (vendtab[i]) − baseval), holding the integer load associated with every arc.
-            SCOTCH_Num* edlotab = nullptr;
-            SCOTCH_Num* vlbltab = nullptr;
-
-            verttab[0] = 0;
-            for(int idxCol = 0 ; idxCol < sizeInterval ; ++idxCol){
-                const int idxColReal = permutations[idxCol+currentCluster.first];
-                verttab[idxCol+1] = verttab[idxCol];
-                for(int idxRow = 0 ; idxRow < sizeInterval ; ++idxRow){
-                    const int idxRowReal = permutations[idxRow+currentCluster.first];
-                    if(inDistMat[idxColReal*dim+ idxRowReal] < treshold
-                                && idxColReal != idxRowReal){
-                        edgetab[verttab[idxCol+1]] = idxRow;
-                        verttab[idxCol+1] += 1;
+                verttab[0] = 0;
+                for(int idxCol = 0 ; idxCol < sizeInterval ; ++idxCol){
+                    const int idxColReal = permutations[idxCol+currentCluster.first];
+                    verttab[idxCol+1] = verttab[idxCol];
+                    for(int idxRow = 0 ; idxRow < sizeInterval ; ++idxRow){
+                        const int idxRowReal = permutations[idxRow+currentCluster.first];
+                        if(inDistMat[idxColReal*dim+ idxRowReal] < treshold
+                                    && idxColReal != idxRowReal){
+                            edgetab[verttab[idxCol+1]] = idxRow;
+                            verttab[idxCol+1] += 1;
+                        }
                     }
                 }
+                FAssertLF(verttab[vertnbr] == edgenbr);
+
+                SCOTCH_Graph grafdat;
+                FAssertLF(SCOTCH_graphInit(&grafdat) == 0);
+
+                FAssertLF(SCOTCH_graphBuild(&grafdat, baseval, vertnbr, verttab, vendtab,
+                                  velotab, vlbltab, edgenbr, edgetab, edlotab) == 0);
+                FAssertLF(SCOTCH_graphCheck(&grafdat) == 0);
+
+                SCOTCH_Strat straptr;
+                FAssertLF(SCOTCH_stratInit(&straptr) == 0);
+
+
+                //const SCOTCH_Num pwgtmax = std::numeric_limits<SCOTCH_Num>::max(); //maximum cluster vertex weight
+                //const double densmin = 0; // the minimum edge density
+                //const double bbalval = 0.2;// bipartition imbalance ratio
+                //SCOTCH_stratGraphClusterBuild (&straptr, SCOTCH_STRATDEFAULT, pwgtmax, densmin, bbalval);
+
+                const int partnbr   = 2;
+                SCOTCH_Num* parttab = new SCOTCH_Num[vertnbr];
+                FAssertLF(SCOTCH_graphPart(&grafdat, partnbr, &straptr, parttab) == 0);
+
+                {
+                    int idxLeft  = 0;
+                    int idxRight = sizeInterval-1;
+                    while(idxLeft <= idxRight){
+                        if(parttab[idxLeft] == 0){
+                            idxLeft += 1;
+                        }
+                        else if(parttab[idxRight] == 1){
+                            idxRight -= 1;
+                        }
+                        else{
+                            const int unk     = parttab[idxLeft];
+                            parttab[idxLeft]  = parttab[idxRight];
+                            parttab[idxRight] = unk;
+
+                            const int unkPerm = permutations[idxLeft+currentCluster.first];
+                            permutations[idxLeft+currentCluster.first]  = permutations[idxRight+currentCluster.first];
+                            permutations[idxRight+currentCluster.first] = unkPerm;
+
+                            idxLeft  += 1;
+                            idxRight -= 1;
+                        }
+                    }
+                    // idxLeft is on the first 1
+                    if(idxLeft == 1){
+                        gclusters[idxCluster].first = permutations[currentCluster.first];
+                        countToUnknowns += 1;
+                        FAssertLF(countToUnknowns <= dim);
+                    }
+                    else if(idxLeft > 1){
+                        FAssertLF(idxChildCluster >= 0);
+                        gclusters[idxCluster].first = (-idxChildCluster)-1;
+                        idxChildCluster -= 1;
+                        intervals.push(std::pair<int,int>(currentCluster.first, currentCluster.first+idxLeft));
+                    }
+                    if(idxRight == sizeInterval-2){
+                        gclusters[idxCluster].second = permutations[sizeInterval-1+currentCluster.first];
+                        countToUnknowns += 1;
+                        FAssertLF(countToUnknowns <= dim);
+                    }
+                    else if(idxRight < sizeInterval-2){
+                        FAssertLF(idxChildCluster >= 0);
+                        gclusters[idxCluster].second = (-idxChildCluster)-1;
+                        idxChildCluster -= 1;
+                        intervals.push(std::pair<int,int>(currentCluster.first+idxLeft, currentCluster.first+sizeInterval));
+                    }
+                }
+
+                SCOTCH_stratExit(&straptr);
+                SCOTCH_graphExit(&grafdat);
+
+                delete[] parttab;
+                delete[] verttab;
+                delete[] edgetab;
             }
-            FAssertLF(verttab[vertnbr] == edgenbr);
-
-            SCOTCH_Graph grafdat;
-            FAssertLF(SCOTCH_graphInit(&grafdat) == 0);
-
-            FAssertLF(SCOTCH_graphBuild(&grafdat, baseval, vertnbr, verttab, vendtab,
-                              velotab, vlbltab, edgenbr, edgetab, edlotab) == 0);
-            FAssertLF(SCOTCH_graphCheck(&grafdat) == 0);
-
-            SCOTCH_Strat straptr;
-            FAssertLF(SCOTCH_stratInit(&straptr) == 0);
-
-
-            //const SCOTCH_Num pwgtmax = std::numeric_limits<SCOTCH_Num>::max(); //maximum cluster vertex weight
-            //const double densmin = 0; // the minimum edge density
-            //const double bbalval = 0.2;// bipartition imbalance ratio
-            //SCOTCH_stratGraphClusterBuild (&straptr, SCOTCH_STRATDEFAULT, pwgtmax, densmin, bbalval);
-
-            const int partnbr   = 2;
-            SCOTCH_Num* parttab = new SCOTCH_Num[vertnbr];
-            FAssertLF(SCOTCH_graphPart(&grafdat, partnbr, &straptr, parttab) == 0);
-
-            {
-                int idxLeft  = 0;
-                int idxRight = sizeInterval-1;
-                while(idxLeft <= idxRight){
-                    if(parttab[idxLeft] == 0){
-                        idxLeft += 1;
-                    }
-                    else if(parttab[idxRight] == 1){
-                        idxRight -= 1;
-                    }
-                    else{
-                        const int unk     = parttab[idxLeft];
-                        parttab[idxLeft]  = parttab[idxRight];
-                        parttab[idxRight] = unk;
-
-                        const int unkPerm = permutations[idxLeft+currentCluster.first];
-                        permutations[idxLeft+currentCluster.first]  = permutations[idxRight+currentCluster.first];
-                        permutations[idxRight+currentCluster.first] = unkPerm;
-
-                        idxLeft  += 1;
-                        idxRight -= 1;
-                    }
-                }
+            else{
+                int idxLeft  = sizeInterval/2;
+                int idxRight = idxLeft-1;
                 // idxLeft is on the first 1
                 if(idxLeft == 1){
                     gclusters[idxCluster].first = permutations[currentCluster.first];
@@ -164,15 +197,7 @@ public:
                     idxChildCluster -= 1;
                     intervals.push(std::pair<int,int>(currentCluster.first+idxLeft, currentCluster.first+sizeInterval));
                 }
-                fflush(stdout);
             }
-
-            SCOTCH_stratExit(&straptr);
-            SCOTCH_graphExit(&grafdat);
-
-            delete[] parttab;
-            delete[] verttab;
-            delete[] edgetab;
 
             idxCluster -= 1;
         }
