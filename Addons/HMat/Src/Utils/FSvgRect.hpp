@@ -71,7 +71,7 @@ public:
         fclose(fsvg);
     }
 
-    void addRect(const int inX, const int inY, const int inWidth, const int inHeight, const int inLevel = 0){
+    void addRect(const int inX, const int inY, const int inWidth, const int inHeight, const int inLevel = 0, const int rank = -1){
         if(int(colors.size()) <= inLevel){
             for(int idxColor = int(colors.size()) ; idxColor <= inLevel ; ++idxColor){
                 colors.push_back(std::tuple<int, int, int>(255*drand48(),255*drand48(),255*drand48()));
@@ -84,11 +84,18 @@ public:
                             int(inHeight*pixelperunknown),
                             std::get<0>(colors[inLevel]),std::get<1>(colors[inLevel]),std::get<2>(colors[inLevel]));
 
+        if(rank != -1){
+            fprintf(fsvg, "<text x=\"%d\" y=\"%d\" fill=\"black\" font-size=\"55\">%d</text>\n",
+                    int(margin + inX*pixelperunknown) + 55,
+                    int(margin + inY*pixelperunknown) + 55,
+                    rank);
+        }
+
         rectCounter += 1;
     }
 
     template <class... T>
-    void addRectWithLegend(const int inX, const int inY, const int inWidth, const int inHeight, int inLevel = -1){
+    void addRectWithLegend(const int inX, const int inY, const int inWidth, const int inHeight, int inLevel = -1, const int rank = -1){
         if(int(colors.size()) <= inLevel){
             for(int idxColor = int(colors.size()) ; idxColor <= inLevel ; ++idxColor){
                 colors.push_back(std::tuple<int, int, int>(255*drand48(),255*drand48(),255*drand48()));
@@ -112,6 +119,13 @@ public:
                 rectCounter,descriptiony + svgSize);
 
         fprintf(fsvg, "/>\n");
+
+        if(rank != -1){
+            fprintf(fsvg, "<text x=\"%d\" y=\"%d\" fill=\"black\" font-size=\"55\">%d</text>\n",
+                    int(margin + inX*pixelperunknown) + 55,
+                    int(margin + inY*pixelperunknown) + 55,
+                    rank);
+        }
 
         rectCounter += 1;
     }
