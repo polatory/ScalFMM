@@ -65,7 +65,7 @@ public:
     FTextReplacer(const char* inFilename){
         FAssertLF(inFilename);
         FILE* kernelFile = fopen(inFilename, "r");
-        FAssertLF(kernelFile);
+        FAssertLF(kernelFile, "Cannot open " , inFilename);
 
         fseek(kernelFile, 0, SEEK_END);
         const size_t kernelFileSize = ftell(kernelFile);

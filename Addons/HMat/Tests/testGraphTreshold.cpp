@@ -2,7 +2,7 @@
 // @SCALFMM_PRIVATE
 
 #include "../Src/Clustering/FCCLTreeCluster.hpp"
-#include "../Src/Clustering/FClusterTree.hpp"
+#include "../Src/Clustering/FGraphThreshold.hpp"
 #include "../Src/Utils/FMatrixIO.hpp"
 
 #include "../Src/Containers/FStaticDiagonalBisection.hpp"
@@ -14,6 +14,9 @@
 #include "Utils/FParameterNames.hpp"
 
 #include <memory>
+
+// FUSE_SCOTCH
+
 
 int main(int argc, char** argv){
     static const FParameterNames SvgOutParam = {
@@ -39,7 +42,7 @@ int main(int argc, char** argv){
     FAssertLF(readNbRows == readNbCols);
     const int dim = readNbRows;
 
-    FCCLTreeCluster<double> partitioner(dim, distances, CCL::CCL_TM_MAXIMUM /*CCL::CCL_TM_AVG_LINKAGE*/);
+    FGraphThreshold<double> partitioner(dim, distances, 1.0);
 
     FClusterTree<double> tclusters;
     partitioner.fillClusterTree(&tclusters);
@@ -60,17 +63,18 @@ int main(int argc, char** argv){
 
         GridClass bissection(dim, height, partitions.get(), nbPartitions);
 
-        FSvgRect output(outputdir, "ccl.svg", dim);
+        FSvgRect output(outputdir, "scotch.svg", dim);
 
         bissection.forAllBlocksDescriptor([&](const FBlockDescriptor& info){
             output.addRectWithLegend(info.col, info.row, info.nbCols, info.nbRows, info.level);
         });
     }
 
-    tclusters.saveToXml(outputdir, "ccl.xml");
+    tclusters.saveToXml(outputdir, "scotch.xml");
 
-    tclusters.saveToDot(outputdir, "gccl.dot");
+    tclusters.saveToDot(outputdir, "gscotch.dot");
 
     return 0;
 }
+
 

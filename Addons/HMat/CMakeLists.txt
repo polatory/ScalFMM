@@ -17,6 +17,17 @@ OPTION( SCALFMM_ADDON_HMAT "Set to ON to build ScalFMM HMat interface" OFF )
 
 # if ask to build addon
 if(SCALFMM_ADDON_HMAT)
+        list(APPEND FUSE_LIST "SCOTCH")
+        if(NOT ENV{SCOTCH_LIB}) 
+        
+        else()
+            OPTION( SCALFMM_USE_SCOTCH "Set to ON to use scotch" ON )
+            if (SCALFMM_USE_SCOTCH)
+               include_directories($ENV{SCOTCH_INC})
+               SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};-L$ENV{SCOTCH_LIB};-lscotch;-lscotcherr")        
+            endif()
+        endif
+
         # first build lib scalfmmhmat
         set(LIBRARY_OUTPUT_PATH ../lib/${CMAKE_BUILD_TYPE})
 

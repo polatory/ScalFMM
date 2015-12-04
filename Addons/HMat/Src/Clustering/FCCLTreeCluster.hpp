@@ -8,6 +8,8 @@
 #include "./Utils/FMath.hpp"
 #include "../Utils/FHUtils.hpp"
 
+#include "FClusterTree.hpp"
+
 #include <stack>
 #include <vector>
 #include <functional>
@@ -116,202 +118,74 @@ public:
         free(croot);
     }
 
-    void fillPermutations(int* inPermuts, int* invPermuts = nullptr) const {
-        std::stack<int> depthFirst;
-        depthFirst.push(croot[dim-2].right);
-        depthFirst.push(croot[dim-2].left);
+    void fillClusterTree(FClusterTree<FReal>* ctree){
+        int* permsOrigToNew = new int[dim];
+        int* permsNewToOrig = new int[dim];
 
-        int idxPerm = 0;
-        while(depthFirst.size()){
-            const int current = depthFirst.top();
-            depthFirst.pop();
-            if(0 <= current){
-                inPermuts[current] = idxPerm;
-                if(invPermuts) invPermuts[idxPerm] = current;
-                idxPerm += 1;
-            }
-            else{
-                depthFirst.push(croot[-1-current].right);
-                depthFirst.push(croot[-1-current].left);
-            }
-        }
-    }
+        {
+            std::stack<int> depthFirst;
+            depthFirst.push(croot[dim-2].right);
+            depthFirst.push(croot[dim-2].left);
 
-    void originalIdxToCluster(const int inNbClusters, int idxToClusters[]) const{
-        cuttree(dim, croot, inNbClusters, idxToClusters);
-    }
-
-    void getPartitions(const int inHeight, const int inNbPartitions, int inNbIdxInPartitions[]) const{
-        // Here we select the inNbPartitions last partitions
-        // But we have to take them in the right order (left to right)
-        // To ensure coherency with the permutations
-        // if inNbPartitions, we should have inNbIdxInPartitions filled with 1
-        FAssertLF(FMath::pow2(inHeight-1)  == inNbPartitions);
-
-        std::vector<int> sizeOfClusters(dim-1, 0);
-        for(int idxCluster = 0 ; idxCluster < dim-1 ; ++idxCluster){
-            if(croot[idxCluster].left < 0){
-                sizeOfClusters[idxCluster] += sizeOfClusters[-1-croot[idxCluster].left] ;
-            }
-            else{
-                sizeOfClusters[idxCluster] += 1;
-            }
-            if(croot[idxCluster].right < 0){
-                sizeOfClusters[idxCluster] += sizeOfClusters[-1-croot[idxCluster].right] ;
-            }
-            else{
-                sizeOfClusters[idxCluster] += 1;
-            }
-        }
-        FAssertLF(sizeOfClusters[dim-2] == dim);
-
-        const int noNodeFlag = std::numeric_limits<int>::max();
-        std::queue<int> breadthFirst;
-        breadthFirst.push(croot[dim-2].left);
-        breadthFirst.push(croot[dim-2].right);
-
-        for(int idxLevel = 1 ; idxLevel < inHeight-1 ; ++idxLevel){
-            std::queue<int> breadthFirstLower;
-
-            while(breadthFirst.size()){
-                const int current = breadthFirst.front();
-                breadthFirst.pop();
-
-                if(current == noNodeFlag){
-                    breadthFirstLower.push(noNodeFlag);
-                    breadthFirstLower.push(noNodeFlag);
-                }
-                else if(0 <= current){
-                    breadthFirstLower.push(current);
-                    breadthFirstLower.push(noNodeFlag);
+            int idxPerm = 0;
+            while(depthFirst.size()){
+                const int current = depthFirst.top();
+                depthFirst.pop();
+                if(0 <= current){
+                    permsOrigToNew[current] = idxPerm;
+                    permsNewToOrig[idxPerm] = current;
+                    idxPerm += 1;
                 }
                 else{
-                    breadthFirstLower.push(croot[-1-current].left);
-                    breadthFirstLower.push(croot[-1-current].right);
+                    depthFirst.push(croot[-1-current].right);
+                    depthFirst.push(croot[-1-current].left);
                 }
             }
-
-            breadthFirst = std::move(breadthFirstLower);
         }
-        FAssertLF(int(breadthFirst.size()) == inNbPartitions);
 
-        int counterPartition = 0;
-        while(breadthFirst.size()){
-            const int current = breadthFirst.front();
-            breadthFirst.pop();
+        typename FClusterTree<FReal>::Leaf* leaves = new typename FClusterTree<FReal>::Leaf[dim];
+         {
+             for(int idxUnk = 0 ; idxUnk < dim ; ++idxUnk){
+                leaves[idxUnk].id = idxUnk;
+                leaves[idxUnk].offset= idxUnk;
+                leaves[idxUnk].size  = 1;
+             }
+         }
 
-            if(current == noNodeFlag){
-                inNbIdxInPartitions[counterPartition] = 0;
-            }
-            else if(0 <= current){
-                inNbIdxInPartitions[counterPartition] = 1;
+        typename FClusterTree<FReal>::Node* clusters = new typename FClusterTree<FReal>::Node[dim-1];
+
+         for(int idxCluster = 0 ; idxCluster < dim-1 ; ++idxCluster){
+            typename FClusterTree<FReal>::Node& currentNd = clusters[idxCluster];
+            const Node& srcNd = croot[idxCluster];
+            currentNd.id    = (-idxCluster)-1;
+            currentNd.size  = 0;
+            currentNd.left  = srcNd.left;
+            if(0 <= srcNd.left){
+                currentNd.size += 1;
+                leaves[srcNd.left].parent = currentNd.id;
             }
             else{
-                inNbIdxInPartitions[counterPartition] = sizeOfClusters[-1-current];
+                currentNd.size += clusters[(-srcNd.left)-1].size;
+                clusters[(-srcNd.left)-1].parent = currentNd.id;
             }
-            counterPartition += 1;
-        }
+            currentNd.right  = srcNd.right;
+            if(0 <= srcNd.right){
+                currentNd.size  += 1;
+                leaves[srcNd.right].parent = currentNd.id;
+            }
+            else{
+                currentNd.size  += clusters[(-srcNd.right)-1].size;
+                clusters[(-srcNd.right)-1].parent = currentNd.id;
+            }
+            currentNd.score  = srcNd.distance;
+         }
+         clusters[dim-2].parent = 0;
+
+         ctree->setData(dim, dim-1, clusters, dim, leaves, permsOrigToNew, permsNewToOrig);
+         // We do not deallocate, ctree is in charge of this
     }
 
 
-    void saveToXml(const char inDirname[], const char inFilename[]) const{
-        char buffer[1024];
-        sprintf(buffer, "%s/%s", inDirname, inFilename);
-        saveToXml(buffer);
-    }
-
-    void saveToXml(const char inFilename[]) const{
-        std::vector<int> sizeOfClusters(dim-1, 0);
-        for(int idxCluster = 0 ; idxCluster < dim-1 ; ++idxCluster){
-            if(croot[idxCluster].left < 0){
-                sizeOfClusters[idxCluster] += sizeOfClusters[-1-croot[idxCluster].left] ;
-            }
-            else{
-                sizeOfClusters[idxCluster] += 1;
-            }
-            if(croot[idxCluster].right < 0){
-                sizeOfClusters[idxCluster] += sizeOfClusters[-1-croot[idxCluster].right] ;
-            }
-            else{
-                sizeOfClusters[idxCluster] += 1;
-            }
-        }
-        FAssertLF(sizeOfClusters[dim-2] == dim);
-
-
-        FILE* fxml = fopen(inFilename, "w");
-        FAssertLF(fxml);
-
-        fprintf(fxml,"<?xml version=\"1.0\"?>\n");
-        fprintf(fxml,"<data>\n");
-
-        for(int idxCluster = dim-2 ; idxCluster >= 0 ; --idxCluster){
-            fprintf(fxml,"\t<cluster id=\"%d\">\n", -idxCluster-1);
-            fprintf(fxml,"\t\t<size>%d</size>\n", sizeOfClusters[idxCluster]);
-            fprintf(fxml,"\t\t<distance>%e</distance>\n", croot[idxCluster].distance);
-            fprintf(fxml,"\t\t<child id=\"%d\" direction=\"left\"/>\n", croot[idxCluster].left);
-            fprintf(fxml,"\t\t<child id=\"%d\" direction=\"right\"/>\n", croot[idxCluster].right);
-            fprintf(fxml,"\t</cluster>;\n");
-        }
-
-        for(int idxUnk = 0 ; idxUnk < dim ; ++idxUnk){
-            fprintf(fxml,"\t<cluster id=\"%d\">\n", idxUnk);
-            fprintf(fxml,"\t\t<size>%d</size>\n", 1);
-            fprintf(fxml,"\t\t<indexes>%d</indexes>\n", idxUnk);
-            fprintf(fxml,"\t</cluster>;\n");
-        }
-
-        fprintf(fxml,"</data>\n");
-        fclose(fxml);
-    }
-
-    void saveToDot(const char inDirname[], const char inFilename[]) const{
-        char buffer[1024];
-        sprintf(buffer, "%s/%s", inDirname, inFilename);
-        saveToDot(buffer);
-    }
-
-    void saveToDot(const char inFilename[]) const{
-        std::vector<int> sizeOfClusters(dim-1, 0);
-        for(int idxCluster = 0 ; idxCluster < dim-1 ; ++idxCluster){
-            if(croot[idxCluster].left < 0){
-                sizeOfClusters[idxCluster] += sizeOfClusters[-1-croot[idxCluster].left] ;
-            }
-            else{
-                sizeOfClusters[idxCluster] += 1;
-            }
-            if(croot[idxCluster].right < 0){
-                sizeOfClusters[idxCluster] += sizeOfClusters[-1-croot[idxCluster].right] ;
-            }
-            else{
-                sizeOfClusters[idxCluster] += 1;
-            }
-        }
-        FAssertLF(sizeOfClusters[dim-2] == dim);
-
-
-        FILE* fdot = fopen(inFilename, "w");
-        FAssertLF(fdot);
-
-        fprintf(fdot,"# dot -Tsvg %s -o %s.svg\n",
-                inFilename, inFilename);
-        fprintf(fdot,"digraph BST {\n");
-
-        for(int idxCluster = dim-2 ; idxCluster >= 0 ; --idxCluster){
-            fprintf(fdot,"\t %d [label=\"%d Size=%d Dist=%e\", tooltip=\"\"];\n",
-                    (-idxCluster-1)+dim-2, idxCluster, sizeOfClusters[idxCluster], croot[idxCluster].distance);
-            fprintf(fdot,"\t %d -> %d;\n", (-idxCluster-1)+dim-2, croot[idxCluster].left+dim-2);
-            fprintf(fdot,"\t %d -> %d;\n", (-idxCluster-1)+dim-2, croot[idxCluster].right+dim-2);
-        }
-
-        for(int idxUnk = 0 ; idxUnk < dim ; ++idxUnk){
-            fprintf(fdot,"\t%d [label=\"%d\"];\n",
-                    idxUnk+dim-2, idxUnk);
-        }
-
-        fprintf(fdot,"}\n");
-        fclose(fdot);
-    }
 };
 
 #endif // FCCLTREECLUSTER_HPP
