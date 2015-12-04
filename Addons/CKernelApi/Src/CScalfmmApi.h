@@ -175,7 +175,7 @@ typedef void (*Callback_apply_on_leaf)(int level, FSize nbParts, const FSize * i
 
 /**
  * @brief Callback to initialise data inside the Leaves
- * @param level current level of leaves (ie height of the tree)
+ * @param level current level of leaves (ie height of the tree-1)
  * @param nbParts Number of particles inside that leaf"
  * @param idxParts array of size nbParts, containing the indices of each parts
  * @param morton_index of the current cell
