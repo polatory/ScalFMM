@@ -77,7 +77,8 @@ int main(int argc, char** argv){
     tclusters.saveToDot(outputdir, "gscotch.dot");
 
     std::unique_ptr<int[]> permutations(new int[dim]);
-    tclusters.fillPermutations(permutations.get());
+    std::unique_ptr<int[]> invpermutations(new int[dim]);
+    tclusters.fillPermutations(permutations.get(), invpermutations.get());
 
     for(int idxLevel = 2 ; idxLevel <= height ; ++idxLevel){
         const int nbPartitions = FMath::pow2(idxLevel-1);
@@ -92,7 +93,7 @@ int main(int argc, char** argv){
             int offsetParticles = 0;
             for(int idxPartition = 0 ; idxPartition < nbPartitions ; ++idxPartition){
                 for(int idxPart = 0 ; idxPart < partitions[idxPartition] ; ++idxPart){
-                    const int idxUnk = permutations[idxPart+offsetParticles];
+                    const int idxUnk = invpermutations[idxPart+offsetParticles];
                     fprintf(fcoord, "%e,%e,%e,%d\n",
                             spherePoints[idxUnk*4 + 0],
                             spherePoints[idxUnk*4 + 1],
