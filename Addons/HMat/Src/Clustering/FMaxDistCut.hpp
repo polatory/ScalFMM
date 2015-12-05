@@ -78,7 +78,7 @@ public:
                         idxLeft += 1;
                     }
                     else if(inDistMat[idxRightReal*dim+ firstIdxMax]
-                            > inDistMat[idxRightReal*dim + secondIdxMax]){
+                            >= inDistMat[idxRightReal*dim + secondIdxMax]){
                         idxRight -= 1;
                     }
                     else{
