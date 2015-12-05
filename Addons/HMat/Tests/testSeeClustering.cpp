@@ -4,6 +4,7 @@
 #include "../Src/Clustering/FCCLTreeCluster.hpp"
 #include "../Src/Clustering/FGraphThreshold.hpp"
 #include "../Src/Clustering/FCCLTreeCluster.hpp"
+#include "../Src/Clustering/FMaxDistCut.hpp"
 #include "../Src/Utils/FMatrixIO.hpp"
 
 #include "../Src/Containers/FStaticDiagonalBisection.hpp"
@@ -64,9 +65,9 @@ int main(int argc, char** argv){
         }
     }
 
-    FGraphThreshold<FReal> partitioner(dim, distances.get(), radius);
+    //FGraphThreshold<FReal> partitioner(dim, distances.get(), radius/4);
     //FCCLTreeCluster<FReal> partitioner(dim, distances.get(), CCL::CCL_TM_MAXIMUM);
-
+    FMaxDistCut<FReal> partitioner(dim, distances.get());
 
     FClusterTree<double> tclusters;
     partitioner.fillClusterTree(&tclusters);
