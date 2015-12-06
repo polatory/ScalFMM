@@ -63,10 +63,10 @@ public:
           totalNbBlocks(0){
         FAssertLF(FMath::pow2(height) <= inDim);
 
-        cells   = new CellNode*[height-1];
-        FSetToZeros(cells, height-1);
-        nbCells = new int[height-1];
-        FSetToZeros(nbCells, height-1);
+        cells   = new CellNode*[height];
+        FSetToZeros(cells, height);
+        nbCells = new int[height];
+        FSetToZeros(nbCells, height);
 
         for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
             const int nbCellsAtLevel = FMath::pow2(idxLevel);
@@ -87,22 +87,42 @@ public:
                 cells[idxLevel][idxCell].infos.level = idxLevel;
             }
         }
+        nbLeaves = FMath::pow2(height-1);
+        {
+            const int idxLevel = height-1;
+            const int nbCellsAtLevel = nbLeaves;
+            cells[idxLevel]   = new CellNode[nbCellsAtLevel];
+            nbCells[idxLevel] = nbCellsAtLevel;
+            totalNbBlocks += nbCellsAtLevel;
 
-        nbLeaves = FMath::pow2(height);
+            const int nbLeavesInDirection = nbLeaves;
+            for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+                const int rowLeafNumber = (idxLeaf^1);
+                const int colLeafNumber = idxLeaf;
+                cells[idxLevel][idxLeaf].infos.row = ((rowLeafNumber*dim)/nbLeavesInDirection);
+                cells[idxLevel][idxLeaf].infos.col = ((colLeafNumber*dim)/nbLeavesInDirection);
+                cells[idxLevel][idxLeaf].infos.nbRows = (((rowLeafNumber+1)*dim)/nbLeavesInDirection)
+                                                - cells[idxLevel][idxLeaf].infos.row;
+                cells[idxLevel][idxLeaf].infos.nbCols = (((colLeafNumber+1)*dim)/nbLeavesInDirection)
+                                                - cells[idxLevel][idxLeaf].infos.col;
+                cells[idxLevel][idxLeaf].infos.level = height-1;
+            }
+        }
+
         leaves   = new LeafNode[nbLeaves];
         totalNbBlocks += nbLeaves;
         {
-            const int nbLeavesInDirection = (nbLeaves/2);
+            const int nbLeavesInDirection = nbLeaves;
             for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-                const int rowLeafNumber = ((idxLeaf/4)*2) + (idxLeaf&1?1:0);
-                const int colLeafNumber = ((idxLeaf/4)*2) + (idxLeaf&2?1:0);
+                const int rowLeafNumber = idxLeaf;
+                const int colLeafNumber = idxLeaf;
                 leaves[idxLeaf].infos.row = ((rowLeafNumber*dim)/nbLeavesInDirection);
                 leaves[idxLeaf].infos.col = ((colLeafNumber*dim)/nbLeavesInDirection);
                 leaves[idxLeaf].infos.nbRows = (((rowLeafNumber+1)*dim)/nbLeavesInDirection)
                                                 - leaves[idxLeaf].infos.row;
                 leaves[idxLeaf].infos.nbCols = (((colLeafNumber+1)*dim)/nbLeavesInDirection)
                                                 - leaves[idxLeaf].infos.col;
-                leaves[idxLeaf].infos.level = height-1;
+                leaves[idxLeaf].infos.level = height;
             }
         }
     }
@@ -124,26 +144,44 @@ public:
         }
         FAssertLF(offsetUnknowns[nbPartitions] == dim);
 
-        nbLeaves = FMath::pow2(height);
+        nbLeaves = FMath::pow2(height-1);
         leaves   = new LeafNode[nbLeaves];
         totalNbBlocks += nbLeaves;
         {
             for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-                const int rowLeafNumber = ((idxLeaf/4)*2) + (idxLeaf&1?1:0);
-                const int colLeafNumber = ((idxLeaf/4)*2) + (idxLeaf&2?1:0);
+                const int rowLeafNumber = idxLeaf;
+                const int colLeafNumber = idxLeaf;
                 leaves[idxLeaf].infos.row = offsetUnknowns[rowLeafNumber];
                 leaves[idxLeaf].infos.col = offsetUnknowns[colLeafNumber];
                 leaves[idxLeaf].infos.nbRows = offsetUnknowns[rowLeafNumber+1] - offsetUnknowns[rowLeafNumber];
                 leaves[idxLeaf].infos.nbCols = offsetUnknowns[colLeafNumber+1] - offsetUnknowns[colLeafNumber];
-                leaves[idxLeaf].infos.level = height-1;
+                leaves[idxLeaf].infos.level = height;
             }
         }
 
 
-        cells   = new CellNode*[height-1];
-        FSetToZeros(cells, height-1);
-        nbCells = new int[height-1];
-        FSetToZeros(nbCells, height-1);
+        cells   = new CellNode*[height];
+        FSetToZeros(cells, height);
+        nbCells = new int[height];
+        FSetToZeros(nbCells, height);
+
+        {
+            const int idxLevel = height-1;
+            const int nbCellsAtLevel = nbLeaves;
+            cells[idxLevel]   = new CellNode[nbCellsAtLevel];
+            nbCells[idxLevel] = nbCellsAtLevel;
+            totalNbBlocks += nbCellsAtLevel;
+
+            for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+                const int rowLeafNumber = (idxLeaf^1);
+                const int colLeafNumber = idxLeaf;
+                cells[idxLevel][idxLeaf].infos.row = offsetUnknowns[rowLeafNumber];
+                cells[idxLevel][idxLeaf].infos.col = offsetUnknowns[colLeafNumber];
+                cells[idxLevel][idxLeaf].infos.nbRows = offsetUnknowns[rowLeafNumber+1] - offsetUnknowns[rowLeafNumber];
+                cells[idxLevel][idxLeaf].infos.nbCols = offsetUnknowns[colLeafNumber+1] - offsetUnknowns[colLeafNumber];
+                cells[idxLevel][idxLeaf].infos.level = height-1;
+            }
+        }
 
         for(int idxLevel = height-2 ; idxLevel >= 1  ; --idxLevel){
             const int nbCellsAtLevel = FMath::pow2(idxLevel);
@@ -173,7 +211,7 @@ public:
     }
 
     ~FStaticDiagonalBisection(){
-        for(int idxLevel = 0 ; idxLevel < height-1 ; ++idxLevel){
+        for(int idxLevel = 0 ; idxLevel < height ; ++idxLevel){
             delete[] cells[idxLevel];
         }
         delete[] cells;
@@ -186,7 +224,7 @@ public:
     }
 
     void forAllBlocksDescriptor(std::function<void(const FBlockDescriptor&)> callback){
-        for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
+        for(int idxLevel = 1 ; idxLevel < height ; ++idxLevel){
             for(int idxCell = 0 ; idxCell < nbCells[idxLevel] ; ++idxCell){
                 callback(cells[idxLevel][idxCell].infos);
             }
@@ -197,7 +235,7 @@ public:
     }
 
     void forAllCellBlocks(std::function<void(const FBlockDescriptor&, CellClass&)> callback){
-        for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
+        for(int idxLevel = 1 ; idxLevel < height ; ++idxLevel){
             for(int idxCell = 0 ; idxCell < nbCells[idxLevel] ; ++idxCell){
                 callback(cells[idxLevel][idxCell].infos,
                          cells[idxLevel][idxCell].cell);
@@ -214,7 +252,7 @@ public:
 
     template <class MatrixClass>
     void fillBlocks(MatrixClass& matrix){
-        for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
+        for(int idxLevel = 1 ; idxLevel < height ; ++idxLevel){
             for(int idxCell = 0 ; idxCell < nbCells[idxLevel] ; ++idxCell){
                 cells[idxLevel][idxCell].cell.fill(matrix.getBlock(
                                                   cells[idxLevel][idxCell].infos.row,
@@ -238,7 +276,7 @@ public:
 
     template <class MatrixClass>
     void fillBlocks(const MatrixClass& matrix){
-        for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
+        for(int idxLevel = 1 ; idxLevel < height ; ++idxLevel){
             for(int idxCell = 0 ; idxCell < nbCells[idxLevel] ; ++idxCell){
                 cells[idxLevel][idxCell].cell.fill(matrix.getBlock(
                                                   cells[idxLevel][idxCell].infos.row,
@@ -261,7 +299,7 @@ public:
     }
 
     void gemv(FReal res[], const FReal vec[]) const {
-        for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
+        for(int idxLevel = 1 ; idxLevel < height ; ++idxLevel){
             for(int idxCell = 0 ; idxCell < nbCells[idxLevel] ; ++idxCell){
                 cells[idxLevel][idxCell].cell.gemv(&res[cells[idxLevel][idxCell].infos.row],
                                               &vec[cells[idxLevel][idxCell].infos.col]);
@@ -274,7 +312,7 @@ public:
     }
 
     void gemm(FReal res[], const FReal mat[], const int nbRhs) const {
-        for(int idxLevel = 1 ; idxLevel < height-1 ; ++idxLevel){
+        for(int idxLevel = 1 ; idxLevel < height ; ++idxLevel){
             for(int idxCell = 0 ; idxCell < nbCells[idxLevel] ; ++idxCell){
                 cells[idxLevel][idxCell].cell.gemm(&res[cells[idxLevel][idxCell].infos.col],
                                               &mat[cells[idxLevel][idxCell].infos.row],
