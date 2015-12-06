@@ -29,6 +29,19 @@ protected:
     std::pair<int, int>* gclusters;
 
 public:
+    static FReal GetDefaultRadius(const int inDim, const FReal inDistMat[]){
+        FReal avg = 0;
+        FReal min = std::numeric_limits<FReal>::max();
+        const FReal dimSquare = FReal(inDim*inDim);
+        for(int idxCol = 0 ; idxCol < inDim ; ++idxCol){
+            for(int idxRow = 0 ; idxRow < inDim ; ++idxRow){
+                avg += (inDistMat[idxCol*inDim + idxRow]/dimSquare);
+                min = (min < inDistMat[idxCol*inDim + idxRow]? min:inDistMat[idxCol*inDim + idxRow]);
+            }
+        }
+        return (avg+min) / FReal(2);
+    }
+
     FGraphThreshold(const int inDim, const FReal inDistMat[], const FReal inTreshold)
         : dim(inDim), treshold(inTreshold),
           permutations(new int[dim]),
@@ -211,7 +224,7 @@ public:
         delete[] gclusters;
     }
 
-    void fillClusterTree(FClusterTree<FReal>* ctree){
+    void fillClusterTree(FClusterTree<FReal>* ctree) const {
         int* permsOrigToNew = new int[dim];
         int* permsNewToOrig = new int[dim];
 

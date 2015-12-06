@@ -127,7 +127,7 @@ public:
         delete[] gclusters;
     }
 
-    void fillClusterTree(FClusterTree<FReal>* ctree){
+    void fillClusterTree(FClusterTree<FReal>* ctree) const {
         int* permsOrigToNew = new int[dim];
         int* permsNewToOrig = new int[dim];
 
