@@ -32,7 +32,8 @@
 #include "FStarPUUtils.hpp"
 
 #ifndef CL_VERSION_2_0
-#error should use opencl 2.0
+#warning should use opencl 2.0
+#define CL_MEM_HOST_NO_ACCESS 0
 #endif
 
 

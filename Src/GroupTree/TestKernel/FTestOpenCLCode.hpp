@@ -13,7 +13,7 @@ class FTestOpenCLCode{
 
 public:
     //FTestOpenCLCode() : kernelfile("/home/berenger/Projets/ScalfmmGit/scalfmm/Src/GroupTree/OpenCl/FEmptyKernel.cl"){
-    FTestOpenCLCode() : kernelfile("/home/berenger/Projets/ScalfmmGit/scalfmm/Src/GroupTree/TestKernel/FTestKernel.cl"){
+    FTestOpenCLCode() : kernelfile("../Src/GroupTree/TestKernel/FTestKernel.cl"){
         if(sizeof(FReal) == sizeof(double)){
             kernelfile.replaceAll("___FReal___", "double");
         }

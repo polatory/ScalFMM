@@ -22,6 +22,7 @@
 #include "Utils/FMemUtils.hpp"
 #include "Utils/FSpherical.hpp"
 #include "Utils/FMath.hpp"
+#include "Utils/FAssert.hpp"
 
 #include "../P2P/FP2PR.hpp"
 

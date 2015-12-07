@@ -46,11 +46,11 @@
 int main(int argc, char* argv[]){
     setenv("STARPU_NCPU","0",1);
     setenv("STARPU_NOPENCL","1",1);
-    setenv("STARPU_OPENCL_ONLY_ON_CPUS","1",1);
+    //setenv("STARPU_OPENCL_ONLY_ON_CPUS","1",1);
+    setenv("STARPU_OPENCL_ON_CPUS","1",1);
 
     setenv("STARPU_DISABLE_ASYNCHRONOUS_OPENCL_COPY","1",1);
-    setenv("STARPU_OPENCL_PIPELINE","0",1);
-    setenv("STARPU_OPENCL_ON_CPUS","1",1);
+    setenv("STARPU_OPENCL_PIPELINE","0",0); // synchronous task
 
     const FParameterNames LocalOptionBlocSize {
         {"-bs"},

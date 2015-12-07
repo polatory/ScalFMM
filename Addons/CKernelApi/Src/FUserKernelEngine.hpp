@@ -502,7 +502,7 @@ public:
         //Then init leaves
         octree->forEachCellLeaf([&](CoreCell * currCell, LeafClass * leaf){
             FTreeCoordinate currCoord = currCell->getCoordinate();
-            int currLevel = octree->getHeight();
+            int currLevel = octree->getHeight()-1;
             MortonIndex    currMorton = currCoord.getMortonIndex(currLevel);
             double position[3];
             position[0] = boxCorner.getX() + currCoord.getX()*boxwidth/double(1<<currLevel);
@@ -664,7 +664,11 @@ public:
                 printf("\tDownPass finished\n");
             }
             else{
-                (FScalFMMEngine<FReal>::abstrct)->execute();
+                if(octree->getHeight() == 2){
+                    (FScalFMMEngine<FReal>::abstrct)->execute(FFmmP2P);
+                }else{
+                    (FScalFMMEngine<FReal>::abstrct)->execute();
+                }
             }
         }
     }

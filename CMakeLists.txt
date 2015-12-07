@@ -240,8 +240,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
         #set(SCALFMM_FLAGS_OPTI_RELEASE "-fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize"
         set(SCALFMM_FLAGS_OPTI_RELEASE "-funroll-loops -ftree-vectorize"
           CACHE STRING "Set your optimization flags for release mode.")
-	# set(SCALFMM_FLAGS_OPTI_RELEASE "-funroll-loops -ftree-vectorize" CACHE STRING
-	#   "Set your optimization flags for release mode.")
+  # set(SCALFMM_FLAGS_OPTI_RELEASE "-funroll-loops -ftree-vectorize" CACHE STRING
+  #   "Set your optimization flags for release mode.")
       else()
         set(SCALFMM_FLAGS_OPTI_RELEASE "-ffast-math -funroll-loops -ftree-vectorize" CACHE STRING
           "Set your optimization flags for release mode.")
@@ -665,18 +665,18 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
         link_libraries( ${EZTrace_LIBRARIES})
         IF( SCALFMM_USE_MPI )
           link_libraries(-leztrace-autostart-mpi)
-	ENDIF(SCALFMM_USE_MPI)     
-	include_directories(${EZTrace_INCLUDE_DIRS})
-	MESSAGE(STATUS "EZTRACE:  ${EZTrace_INCLUDE_DIRS}   ${EZTrace_LIBRARY_DIRS}  ${EZTrace_LIBRARIES}")
-	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_ALGO "Set to ON to trace the full algorithm (all operators)" ON  "SCALFMM_USE_EZTRACE" OFF )
-	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_P2M   "Set to ON to trace P2M operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
-	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2M   "Set to ON to trace M2M operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
-	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2L   "Set to ON to trace M2L operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
-	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_L2L   "Set to ON to trace L2L operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
-	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_P2P   "Set to ON to trace P2P operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+  ENDIF(SCALFMM_USE_MPI)     
+  include_directories(${EZTrace_INCLUDE_DIRS})
+  MESSAGE(STATUS "EZTRACE:  ${EZTrace_INCLUDE_DIRS}   ${EZTrace_LIBRARY_DIRS}  ${EZTrace_LIBRARIES}")
+  CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_ALGO "Set to ON to trace the full algorithm (all operators)" ON  "SCALFMM_USE_EZTRACE" OFF )
+  CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_P2M   "Set to ON to trace P2M operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+  CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2M   "Set to ON to trace M2M operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+  CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2L   "Set to ON to trace M2L operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+  CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_L2L   "Set to ON to trace L2L operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+  CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_P2P   "Set to ON to trace P2P operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
       else(EZTrace_FOUND)
-	MESSAGE(WARNING "Eztrace not found - EZTRACE Is set to OFF")
-	set(SCALFMM_USE_EZTRACE OFF)	
+  MESSAGE(WARNING "Eztrace not found - EZTRACE Is set to OFF")
+  set(SCALFMM_USE_EZTRACE OFF)  
       endif(EZTrace_FOUND)
     else(PKG_CONFIG_FOUND)
       MESSAGE(WARNING "PKG-CONFIG not found - EZTRACE Is set to OFF")
@@ -691,13 +691,13 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   #
   ##################################################################  
     if((WIN32 OR (${CMAKE_SYSTEM_NAME} MATCHES "Windows")) AND SCALFMM_USE_SIGNALS)
-	    # We are on Windows and we cannot catch signals
-	    message( FATAL_ERROR "Catching the signals requieres an UNIX system." )
+      # We are on Windows and we cannot catch signals
+      message( FATAL_ERROR "Catching the signals requieres an UNIX system." )
     else()
         IF( NOT APPLE)
-	      SET(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS} -rdynamic")
-	      ENDIF()
-	      
+        SET(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS} -rdynamic")
+        ENDIF()
+        
     endif()
   ##################################################################
   #                                                                #
@@ -833,7 +833,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   set(CPACK_SOURCE_GENERATOR "TGZ")
   set(CPACK_SOURCE_PACKAGE_FILE_NAME  "SCALFMM-${SCALFMM_MAJOR_VERSION}.${SCALFMM_MINOR_VERSION}-${CPACK_PACKAGE_VERSION_PATCH}")
   set(CPACK_SOURCE_IGNORE_FILES "\\\\.git;.DS_Store;.*~;/*.aux;/*.idx;/*.log;/*.out;/*.toc;/*.ilg;scalfmm.pro*;org.eclipse.core.resources.prefs;.cproject;.project")
-  list(APPEND CPACK_SOURCE_IGNORE_FILES  "${CMAKE_CURRENT_BINARY_DIR};${CMAKE_CURRENT_SOURCE_DIR}/Utils/;Notes;Deprecated;/Build*;/noDist/;/Bench;ToRemove;Olivier")
+  list(APPEND CPACK_SOURCE_IGNORE_FILES  "${CMAKE_CURRENT_BINARY_DIR};${CMAKE_CURRENT_SOURCE_DIR}/Utils/;Notes;Deprecated;/Build*;/noDist/;/Bench;ToRemove;Olivier;Addons/HMat")
   # Uniform;GroupTree;Adaptive;testUnif*;/*Lagrange*")
   #list(APPEND CPACK_SOURCE_IGNORE_FILES  "Stages;Uniform;Adaptive;testUnif*;*Lagrange*" )
   #

@@ -130,7 +130,7 @@ scalfmm_handle scalfmm_init( scalfmm_kernel_type KernelType,scalfmm_algorithm al
  * @param morton_index morton index of the cell to be allocated.
  * @param tree_position int[3] position inside the tree (number of boxes in
  * each direction)
- * @param spatial_position double[3] center of the cell
+ * @param spatial_position double[3] lower left corner of the cell
  * @param inDatas user generic pointer to kernel.
  */
 typedef void* (*Callback_init_cell)(int level, long long morton_index, int* tree_position, double* spatial_position, void * inDatas);
@@ -166,24 +166,24 @@ typedef void (*Callback_copy_cell)(void * userDatas, FSize size, void * memoryAl
  * @param nbParts Number of particles inside that leaf
  * @param idxParts array of size nbParts, containing the indices of each parts
  * @param morton_index of the current cell
- * @param center of the current leaf (3 double)
+ * @param lower left corner of the current leaf (3 double)
  * @param userData cell user data
  * @param userData Kernel user data
  */
-typedef void (*Callback_apply_on_leaf)(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
+typedef void (*Callback_apply_on_leaf)(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double llc[3],
                                        void * cellDatas,void * leafDatas, void * userDatas);
 
 /**
  * @brief Callback to initialise data inside the Leaves
- * @param level current level of leaves (ie height of the tree)
+ * @param level current level of leaves (ie height of the tree-1)
  * @param nbParts Number of particles inside that leaf"
  * @param idxParts array of size nbParts, containing the indices of each parts
  * @param morton_index of the current cell
- * @param center of the current leaf (3 double)
+ * @param lower left corner of the current leaf (3 double)
  * @param userData leaf user data
  * @param userData Kernel user data
  */
-typedef void* (*Callback_init_leaf)(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
+typedef void* (*Callback_init_leaf)(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double llc[3],
                                     void * cellDatas, void * userDatas);
 
 /**
@@ -605,7 +605,7 @@ typedef void (*Callback_P2PSym)(void * targetLeaf, FSize nbParticles, const FSiz
  * @param morton_index morton index of the cell to be allocated.
  * @param tree_position int[3] position inside the tree (number of boxes in
  * each direction)
- * @param spatial_position double[3] center of the cell
+ * @param spatial_position double[3] lower left corner of the cell
  * @param usercell ptr to user's cell
  */
 typedef void (*Callback_apply_on_cell)(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell, void * userData);
