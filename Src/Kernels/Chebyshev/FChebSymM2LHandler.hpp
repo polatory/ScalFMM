@@ -21,11 +21,13 @@
 
 #include "Utils/FBlas.hpp"
 
-#include "Utils/FAca.hpp"
 
 #include "FChebTensor.hpp"
 #include "../Interpolation/FInterpSymmetries.hpp"
 #include "FChebM2LHandler.hpp"
+
+#include "Utils/FAca.hpp"
+
 
 /**
  * @author Matthias Messner (matthias.matthias@inria.fr)
@@ -125,9 +127,9 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
                 unsigned int rank;
 
 #ifdef FULLY_PIVOTED_ACASVD
-                FAca::pACA(U,        nnodes, nnodes, Epsilon, UU, VV, rank);
+                FAca::fACA(U,        nnodes, nnodes, Epsilon, UU, VV, rank);
 #else
-                FAca::fACA(Computer, nnodes, nnodes, Epsilon, UU, VV, rank);
+                FAca::pACA(Computer, nnodes, nnodes, Epsilon, UU, VV, rank);
 #endif 
 
                 // QR decomposition
