@@ -222,7 +222,9 @@ public:
 
     }
 
-
+    int getRank() const{
+        return rank;
+    }
 };
 
 #endif // FSVDBLOCK_HPP

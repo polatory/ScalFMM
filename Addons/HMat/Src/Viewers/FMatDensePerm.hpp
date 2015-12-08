@@ -12,18 +12,18 @@
 #include "../Utils/FMatrixIO.hpp"
 
 template <class FReal>
-class FMatDense {
+class FMatDensePerm {
 protected:
     int matDim;
     FReal* values;
     int* permOrigToNew;
 
-    FMatDense(const FMatDense&) = delete;
-    FMatDense& operator=(const FMatDense&) = delete;
+    FMatDensePerm(const FMatDensePerm&) = delete;
+    FMatDensePerm& operator=(const FMatDensePerm&) = delete;
 public:
     using BlockDescriptor = FDenseBlockPermWrapper<FReal>;
 
-    explicit FMatDense(const int inDim, const FReal* inValues = nullptr, const int* inPermOrigToNew = nullptr)
+    explicit FMatDensePerm(const int inDim, const FReal* inValues = nullptr, const int* inPermOrigToNew = nullptr)
         : matDim(inDim), values(nullptr){
         values = new FReal[matDim*matDim];
         if(inValues){
@@ -46,7 +46,7 @@ public:
         }
     }
 
-    explicit FMatDense(const char inFilename[], const int* inPermOrigToNew = nullptr)
+    explicit FMatDensePerm(const char inFilename[], const int* inPermOrigToNew = nullptr)
         : matDim(0), values(nullptr){
         int readNbRows = 0;
         int readNbCols = 0;
@@ -65,7 +65,7 @@ public:
         }
     }
 
-    ~FMatDense(){
+    ~FMatDensePerm(){
         delete[] values;
         delete[] permOrigToNew;
     }
@@ -96,7 +96,7 @@ public:
         FAssertLF(0 < nbRows);
         FAssertLF(0 < nbCols);
         FAssertLF(rowIdx + nbRows <= matDim);
-        FAssertLF(colIdx + nbRows <= matDim);
+        FAssertLF(colIdx + nbCols <= matDim);
         return FDenseBlockPermWrapper<FReal>(&values[colIdx*matDim+rowIdx], nbRows, nbCols, matDim, permOrigToNew);
     }
 };
