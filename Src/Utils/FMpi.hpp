@@ -315,43 +315,67 @@ public:
     static MPI_Datatype GetType(const long long&){
         return MPI_LONG_LONG;
     }
+    static int GetTypeCount(const long long&){
+        return 1;
+    }
 
     /// Get the MPI datatype corresponding to a variable.
     static MPI_Datatype GetType(const long int&){
         return MPI_LONG;
+    }
+    static int GetTypeCount(const long int&){
+        return 1;
     }
 
     /// Get the MPI datatype corresponding to a variable.
     static MPI_Datatype GetType(const double&){
         return MPI_DOUBLE;
     }
+    static int GetTypeCount(const double&){
+        return 1;
+    }
 
     /// Get the MPI datatype corresponding to a variable.
     static MPI_Datatype GetType(const float&){
         return MPI_FLOAT;
+    }
+    static int GetTypeCount(const float&){
+        return 1;
     }
 
     /// Get the MPI datatype corresponding to a variable.
     static MPI_Datatype GetType(const int&){
         return MPI_INT;
     }
+    static int GetTypeCount(const int&){
+        return 1;
+    }
 
     /// Get the MPI datatype corresponding to a variable.
     static MPI_Datatype GetType(const char&){
         return MPI_CHAR;
+    }
+    static int GetTypeCount(const char&){
+        return 1;
     }
 
     /// Get the MPI datatype corresponding to a variable.
     static MPI_Datatype GetType(const unsigned char&){
         return MPI_UNSIGNED_CHAR;
     }
+    static int GetTypeCount(const unsigned char&){
+        return 1;
+    }
 
     /// Get the MPI datatype corresponding to a variable.
     template <class FReal>
     static MPI_Datatype GetType(const FComplex<FReal>& a){
-        MPI_Datatype FMpiComplexe;
-        MPI_Type_contiguous(2, GetType(a.getReal()) , &FMpiComplexe);
-        return FMpiComplexe;
+        return GetType(a.getReal());
+    }
+
+    template <class FReal>
+    static int GetTypeCount(const FComplex<FReal>& a){
+        return 2;
     }
 
     ////////////////////////////////////////////////////////////

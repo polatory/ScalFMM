@@ -100,7 +100,7 @@ public:
         expandIfNeeded(sizeof(ClassType));
         FAssertLF(currentIndex < std::numeric_limits<int>::max());
         int intCurrentIndex = int(currentIndex);
-        FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), int(arrayCapacity), &intCurrentIndex, mpiComm), __LINE__);
+        FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), FMpi::GetTypeCount(object), FMpi::GetType(object), array.get(), int(arrayCapacity), &intCurrentIndex, mpiComm), __LINE__);
         currentIndex = intCurrentIndex;
     }
 
@@ -112,7 +112,7 @@ public:
         expandIfNeeded(sizeof(ClassType));
         FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
         int intCurrentIndex = int(currentIndex);
-        FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), int(arrayCapacity), &intCurrentIndex, mpiComm), __LINE__);
+        FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), FMpi::GetTypeCount(object), FMpi::GetType(object), array.get(), int(arrayCapacity), &intCurrentIndex, mpiComm), __LINE__);
         currentIndex = intCurrentIndex;
     }
 
@@ -123,7 +123,7 @@ public:
         FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
         FAssertLF(position < std::numeric_limits<int>::max());
         int noConstPosition = int(position);
-        FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), 1, FMpi::GetType(object), array.get(), int(arrayCapacity), &noConstPosition, mpiComm), __LINE__);
+        FMpi::Assert(MPI_Pack(const_cast<ClassType*>(&object), FMpi::GetTypeCount(object), FMpi::GetType(object), array.get(), int(arrayCapacity), &noConstPosition, mpiComm), __LINE__);
     }
 
     /** Write an array
@@ -135,7 +135,7 @@ public:
         FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
         FAssertLF(inSize < std::numeric_limits<int>::max());
         int intCurrentIndex = int(currentIndex);
-        FMpi::Assert(MPI_Pack( const_cast<ClassType*>(objects), int(inSize), FMpi::GetType(*objects), array.get(), int(arrayCapacity), &intCurrentIndex, mpiComm), __LINE__);
+        FMpi::Assert(MPI_Pack( const_cast<ClassType*>(objects), int(inSize)*FMpi::GetTypeCount(*objects), FMpi::GetType(*objects), array.get(), int(arrayCapacity), &intCurrentIndex, mpiComm), __LINE__);
         currentIndex = intCurrentIndex;
     }
 

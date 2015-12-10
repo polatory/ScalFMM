@@ -101,7 +101,7 @@ public :
         FAssertLF(currentIndex < std::numeric_limits<int>::max());
         int previousIndex = int(currentIndex);
         ClassType value;
-        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,&value,1,FMpi::GetType(value),comm), __LINE__);
+        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,&value,FMpi::GetTypeCount(value),FMpi::GetType(value),comm), __LINE__);
         seek(FSize(sizeof(value) + currentIndex));
         FAssertLF(previousIndex == currentIndex);
         return value;
@@ -114,7 +114,7 @@ public :
         FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
         FAssertLF(ind < std::numeric_limits<int>::max());
         int previousIndex = int(ind);
-        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,&value,1,FMpi::GetType(value),comm), __LINE__);
+        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,&value,FMpi::GetTypeCount(value),FMpi::GetType(value),comm), __LINE__);
         seek(FSize(sizeof(value)+ind));
         FAssertLF(previousIndex == currentIndex);
         return value;
@@ -126,7 +126,7 @@ public :
         FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
         FAssertLF(currentIndex < std::numeric_limits<int>::max());
         int previousIndex = int(currentIndex);
-        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,inValue,1,FMpi::GetType(*inValue),comm), __LINE__);
+        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,inValue,FMpi::GetTypeCount(*inValue),FMpi::GetType(*inValue),comm), __LINE__);
         seek(FSize(sizeof(ClassType) + currentIndex));
         FAssertLF(previousIndex == currentIndex);
     }
@@ -138,7 +138,7 @@ public :
         FAssertLF(currentIndex < std::numeric_limits<int>::max());
         FAssertLF(inSize < std::numeric_limits<int>::max());
         int previousIndex = int(currentIndex);
-        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,inArray,int(inSize),FMpi::GetType(*inArray),comm), __LINE__);
+        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,inArray,int(inSize)*FMpi::GetTypeCount(*inArray),FMpi::GetType(*inArray),comm), __LINE__);
         seek(FSize(sizeof(ClassType) * inSize + currentIndex));
         FAssertLF(previousIndex == currentIndex);
     }
