@@ -21,9 +21,13 @@
 
 #include "Utils/FBlas.hpp"
 
+
 #include "FChebTensor.hpp"
 #include "../Interpolation/FInterpSymmetries.hpp"
 #include "FChebM2LHandler.hpp"
+
+#include "Utils/FAca.hpp"
+
 
 /**
  * @author Matthias Messner (matthias.matthias@inria.fr)
@@ -37,221 +41,6 @@
 //#define ONLY_SVD
 //#define FULLY_PIVOTED_ACASVD
 #define PARTIALLY_PIVOTED_ACASVD
-
-
-
-
-/*!  The fully pivoted adaptive cross approximation (fACA) compresses a
-    far-field interaction as \f$K\sim UV^\top\f$. The fACA requires all entries
-    to be computed beforehand, then the compression follows in
-    \f$\mathcal{O}(2\ell^3k)\f$ operations based on the required accuracy
-    \f$\varepsilon\f$. The matrix K will be destroyed as a result.
-
-    @param[in] K far-field to be approximated
-    @param[in] nx number of rows
-    @param[in] ny number of cols
-    @param[in] eps prescribed accuracy
-    @param[out] U matrix containing \a k column vectors
-    @param[out] V matrix containing \a k row vectors
-    @param[out] k final low-rank depends on prescribed accuracy \a eps
- */
-template <class FReal>
-void fACA(FReal *const K,
-          const unsigned int nx, const unsigned int ny,
-          const double eps, FReal* &U, FReal* &V, unsigned int &k)
-{
-    // control vectors (true if not used, false if used)
-    bool *const r = new bool[nx];
-    bool *const c = new bool[ny];
-    for (unsigned int i=0; i<nx; ++i) r[i] = true;
-    for (unsigned int j=0; j<ny; ++j) c[j] = true;
-
-    // compute Frobenius norm of original Matrix K
-    FReal norm2K = 0;
-    for (unsigned int j=0; j<ny; ++j) {
-        const FReal *const colK = K + j*nx;
-        norm2K += FBlas::scpr(nx, colK, colK);
-    }
-
-    // initialize rank k and UV'
-    k = 0;
-    const unsigned int maxk = (nx + ny) / 2;
-    U = new FReal[nx * maxk];
-    V = new FReal[ny * maxk];
-    FBlas::setzero(nx*maxk, U);
-    FBlas::setzero(ny*maxk, V);
-    FReal norm2R;
-
-    ////////////////////////////////////////////////
-    // start fully pivoted ACA
-    do {
-
-        // find max(K) and argmax(K)
-        FReal maxK = 0.;
-        unsigned int pi=0, pj=0;
-        for (unsigned int j=0; j<ny; ++j)
-            if (c[j]) {
-                const FReal *const colK = K + j*nx;
-                for (unsigned int i=0; i<nx; ++i)
-                    if (r[i] && maxK < FMath::Abs(colK[i])) {
-                        maxK = FMath::Abs(colK[i]);
-                        pi = i; 
-                        pj = j;
-                    }
-            }
-
-        // copy pivot cross into U and V
-        FReal *const colU = U + k*nx;
-        FReal *const colV = V + k*ny;
-        const FReal pivot = K[pj*nx + pi];
-        for (unsigned int i=0; i<nx; ++i) if (r[i]) colU[i] = K[pj*nx + i];
-        for (unsigned int j=0; j<ny; ++j) if (c[j]) colV[j] = K[j *nx + pi] / pivot;
-
-        // don't use these cols and rows anymore
-        c[pj] = false;
-        r[pi] = false;
-
-        // subtract k-th outer product from K
-        for (unsigned int j=0; j<ny; ++j)
-            if (c[j]) {
-                FReal *const colK = K + j*nx;
-                FBlas::axpy(nx, FReal(-1. * colV[j]), colU, colK);
-            }
-
-        // compute Frobenius norm of updated K
-        norm2R = 0.0;
-        for (unsigned int j=0; j<ny; ++j)
-            if (c[j]) {
-                const FReal *const colK = K + j*nx;
-                norm2R += FBlas::scpr(nx, colK, colK);
-            }
-
-        // increment rank k
-        ++k ;
-
-    } while (norm2R > eps*eps * norm2K);
-    ////////////////////////////////////////////////
-
-    delete [] r;
-    delete [] c;
-}
-
-
-
-
-
-
-
-
-
-
-
-/*!  The partially pivoted adaptive cross approximation (pACA) compresses a
-    far-field interaction as \f$K\sim UV^\top\f$. The pACA computes the matrix
-    entries on the fly, as they are needed. The compression follows in
-    \f$\mathcal{O}(2\ell^3k)\f$ operations based on the required accuracy
-    \f$\varepsilon\f$. The matrix K will be destroyed as a result.
-
-    @tparam ComputerType the functor type which allows to compute matrix entries
-
-    @param[in] Computer the entry-computer functor
-    @param[in] eps prescribed accuracy
-    @param[in] nx number of rows
-    @param[in] ny number of cols
-    @param[out] U matrix containing \a k column vectors
-    @param[out] V matrix containing \a k row vectors
-    @param[out] k final low-rank depends on prescribed accuracy \a eps
- */
-template <class FReal, typename ComputerType>
-void pACA(const ComputerType& Computer,
-        const unsigned int nx, const unsigned int ny,
-        const FReal eps, FReal* &U, FReal* &V, unsigned int &k)
-{
-    // control vectors (true if not used, false if used)
-    bool *const r = new bool[nx];
-    bool *const c = new bool[ny];
-    for (unsigned int i=0; i<nx; ++i) r[i] = true;
-    for (unsigned int j=0; j<ny; ++j) c[j] = true;
-
-    // initialize rank k and UV'
-    k = 0;
-    const FReal eps2 = eps * eps;
-    const unsigned int maxk = (nx + ny) / 2;
-    U = new FReal[nx * maxk];
-    V = new FReal[ny * maxk];
-
-    // initialize norm
-    FReal norm2S(0.);
-    FReal norm2uv(0.);
-
-    ////////////////////////////////////////////////
-    // start partially pivoted ACA
-    unsigned int J = 0, I = 0;
-
-    do {
-        FReal *const colU = U + nx*k;
-        FReal *const colV = V + ny*k;
-
-        ////////////////////////////////////////////
-        // compute row I and its residual
-        Computer(I, I+1, 0, ny, colV);
-        r[I] = false;
-        for (unsigned int l=0; l<k; ++l) {
-            FReal *const u = U + nx*l;
-            FReal *const v = V + ny*l;
-            FBlas::axpy(ny, FReal(-1. * u[I]), v, colV);
-        }
-
-        // find max of residual and argmax
-        FReal maxval = 0.;
-        for (unsigned int j=0; j<ny; ++j) {
-            const FReal abs_val = FMath::Abs(colV[j]);
-            if (c[j] && maxval < abs_val) {
-                maxval = abs_val;
-                J = j;
-            }
-        }
-        // find pivot and scale column of V
-        const FReal pivot = FReal(1.) / colV[J];
-        FBlas::scal(ny, pivot, colV);
-
-        ////////////////////////////////////////////
-        // compute col J and its residual
-        Computer(0, nx, J, J+1, colU);
-        c[J] = false;
-        for (unsigned int l=0; l<k; ++l) {
-            FReal *const u = U + nx*l;
-            FReal *const v = V + ny*l;
-            FBlas::axpy(nx, FReal(-1. * v[J]), u, colU);
-        }
-
-        // find max of residual and argmax
-        maxval = 0.0;
-        for (unsigned int i=0; i<nx; ++i) {
-            const FReal abs_val = FMath::Abs(colU[i]);
-            if (r[i] && maxval < abs_val) {
-                maxval = abs_val;
-                I = i;
-            }
-        }
-
-        ////////////////////////////////////////////
-        // increment Frobenius norm: |Sk|^2 += |uk|^2 |vk|^2 + 2 sumj ukuj vjvk
-        FReal normuuvv(0.);
-        for (unsigned int l=0; l<k; ++l)
-            normuuvv += FBlas::scpr(nx, colU, U + nx*l) * FBlas::scpr(ny, V + ny*l, colV);
-        norm2uv = FBlas::scpr(nx, colU, colU) * FBlas::scpr(ny, colV, colV);
-        norm2S += norm2uv + 2*normuuvv;
-
-        ////////////////////////////////////////////
-        // increment low-rank
-        ++k;
-
-    } while (norm2uv > eps2 * norm2S);
-
-    delete [] r;
-    delete [] c;
-}
 
 
 
@@ -338,9 +127,9 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
                 unsigned int rank;
 
 #ifdef FULLY_PIVOTED_ACASVD
-                fACA(U,        nnodes, nnodes, Epsilon, UU, VV, rank);
+                FAca::fACA(U,        nnodes, nnodes, Epsilon, UU, VV, rank);
 #else
-                pACA(Computer, nnodes, nnodes, Epsilon, UU, VV, rank);
+                FAca::pACA(Computer, nnodes, nnodes, Epsilon, UU, VV, rank);
 #endif 
 
                 // QR decomposition

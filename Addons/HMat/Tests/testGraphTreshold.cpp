@@ -42,7 +42,7 @@ int main(int argc, char** argv){
     FAssertLF(readNbRows == readNbCols);
     const int dim = readNbRows;
 
-    FGraphThreshold<double> partitioner(dim, distances, 1.0);
+    FGraphThreshold<double> partitioner(dim, distances, FGraphThreshold<double>::GetDefaultRadius(dim, distances));
 
     FClusterTree<double> tclusters;
     partitioner.fillClusterTree(&tclusters);
