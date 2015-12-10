@@ -46,16 +46,16 @@ void CheckRank(const FClusterTree<double>& ctree, MatrixClass& matrix,
     std::unique_ptr<int[]> permutationOrgToNew(new int[dim]);
 
     for( int idxLevel = 1 ; idxLevel < height ; ++idxLevel){
-        const int nbPartitions = FMath::pow2(height-1);
+        const int nbPartitions = FMath::pow2(idxLevel);
         std::unique_ptr<int[]> partitions(new int[nbPartitions]);
-        ctree.getPartitions(height, nbPartitions, partitions.get());
+        ctree.getPartitions(idxLevel+1, nbPartitions, partitions.get());
 
         ctree.fillPermutations(permutationOrgToNew.get());
         matrix.setPermutOrigToNew(permutationOrgToNew.get());
 
         std::cout << "\tLevel " << idxLevel << " build blocks\n";
         FTic timer;
-        GridClass grid(dim, height, partitions.get(), nbPartitions);
+        GridClass grid(dim, idxLevel+1, partitions.get(), nbPartitions);
         grid.fillBlocks(matrix);
         std::cout << "\tdone in " << timer.tacAndElapsed() << "s\n";
 
