@@ -20,6 +20,8 @@
 #include "../Src/Viewers/FMatDense.hpp"
 #include "../Src/Blocks/FDenseBlock.hpp"
 #include "../Src/Blocks/FSVDBlock.hpp"
+#include "../Src/Blocks/FACABlock.hpp"
+
 
 #include "Utils/FParameters.hpp"
 #include "Utils/FParameterNames.hpp"
@@ -66,11 +68,11 @@ int main(int argc, char** argv){
 
     {
         std::cout << "Test Dense:\n";
-
-		//typedef FDenseBlock<FReal> LeafClass;
+        typedef FDenseBlock<FReal> LeafClass;
         //typedef FDenseBlock<FReal> CellClass;
-        typedef FSVDBlock<FReal,7> LeafClass;
-        typedef FSVDBlock<FReal,7> CellClass;  
+        //typedef FSVDBlock<FReal,7> CellClass;  
+        typedef FACABlock<FReal,7> CellClass;  
+
         typedef FStaticDiagonalBisection<FReal, LeafClass, CellClass> GridClass;
 
         GridClass grid(dim, height);
@@ -98,10 +100,11 @@ int main(int argc, char** argv){
 
         std::cout << "Test Dense with partitions:\n";
 
-        //typedef FDenseBlock<FReal> LeafClass;
+        typedef FDenseBlock<FReal> LeafClass;
         //typedef FDenseBlock<FReal> CellClass;
-        typedef FSVDBlock<FReal,7> LeafClass;
-        typedef FSVDBlock<FReal,7> CellClass;   
+        //typedef FSVDBlock<FReal,7> CellClass; 
+        typedef FACABlock<FReal,7> CellClass; 
+
         typedef FStaticDiagonalBisection<FReal, LeafClass, CellClass> GridClass;
 
         const int nbPartitions = FMath::pow2(height-1);
