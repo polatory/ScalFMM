@@ -602,16 +602,12 @@ struct RunContainer{
             typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
             std::cout << "Using FGroupTaskStarPUAlgorithm" << std::endl;
     #elif defined(SCALFMM_USE_OMP4)
-            if(threadsList.getSize()) omp_set_num_threads(int(threadsList[0]));
-            std::cout << "\n>> Using " << omp_get_max_threads() << " omp threads.\n" << std::endl;
             typedef FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
             // Set the number of threads
             typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass,
                     GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
             std::cout << "Using FGroupTaskDepAlgorithm" << std::endl;
     #else
-            if(threadsList.getSize()) omp_set_num_threads(int(threadsList[0]));
-            std::cout << "\n>> Using " << omp_get_max_threads() << " omp threads.\n" << std::endl;
             typedef FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
             //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
             typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
@@ -653,18 +649,29 @@ struct RunContainer{
             groupedTree.printInfoBlocks();
             std::cout << "Tree created in " << timer.tacAndElapsed() << "s\n";
 
-            // Run the algorithm
-            GroupKernelClass groupkernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
-            GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
 
-            std::cout << "I am bind to " << (FBinding::GetThreadBinding()) << std::endl;
-            FBinding::BindThreadToAnyProcs();
-            std::cout << "And now I am bind to " << (FBinding::GetThreadBinding()) << std::endl;
 
-            timer.tic();
-            groupalgo.execute();
-            std::cout << "Done  " << "(@Algorithm = " << timer.tacAndElapsed() << "s)." << std::endl;
+            for(FSize idxThread = 0 ; idxThread < threadsList.getSize() ; ++idxThread){
+#ifdef SCALFMM_USE_STARPU
+                char buff[128];
+                snprintf(buff, 128, "%lld", threadsList[idxThread]);
+                setenv("STARPU_NCPUS", buff, 1);
+#else
+                omp_set_num_threads(int(threadsList[idxThread]));
+                std::cout << "\n>> Using " << omp_get_max_threads() << " omp threads.\n" << std::endl;
+#endif
+                // Run the algorithm
+                GroupKernelClass groupkernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
+                GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
 
+                std::cout << "I am bind to " << (FBinding::GetThreadBinding()) << std::endl;
+                FBinding::BindThreadToAnyProcs();
+                std::cout << "And now I am bind to " << (FBinding::GetThreadBinding()) << std::endl;
+
+                timer.tic();
+                groupalgo.execute();
+                std::cout << "Done  " << "(@Algorithm = " << timer.tacAndElapsed() << "s)." << std::endl;
+           }
     #ifdef MEMORY_USAGE
             // Get the maximum resident set size (RSS) in kilobytes
             struct rusage usage;
