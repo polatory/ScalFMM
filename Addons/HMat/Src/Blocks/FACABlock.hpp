@@ -91,7 +91,7 @@ public:
 
 #endif
         // display rank
-        std::cout << "rank after ACA=" << rank  << std::endl;
+        std::cout << "rank after ACA=" << rank << " (" << nbRows << "," << nbCols << ")" << std::endl;
 
 #if (defined RECOMPRESSED_ACA)
 
@@ -173,6 +173,9 @@ public:
 
     }
 
+    int getRank() const{
+        return rank;
+    }
 
 };
 
