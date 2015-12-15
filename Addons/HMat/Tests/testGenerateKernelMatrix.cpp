@@ -22,6 +22,7 @@
 #include "Utils/FParameterNames.hpp"
 
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp" // for kernel matrices
+#include "Kernels/Interpolation/FInterpMatrixKernel_Covariance.hpp" // for kernel matrices
 
 // not mandatory but useful to define some flags
 #include "Core/FFmmAlgorithm.hpp"
@@ -104,9 +105,12 @@ int main(int argc, char* argv[])
     /// Build kernel matrix K
     
     // Interaction kernel evaluator
-    typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
-    const MatrixKernelClass MatrixKernel;
-    const std::string MatrixKernelID = MatrixKernelClass::getID();//.c_str();
+    //typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+    typedef CK_Gauss<FReal> MatrixKernelClass;
+    const FReal lengthScale = FReal(0.01)*FParameters::getValue(argc,argv,"-lengthscale", FReal(100.)); 
+    std::ostringstream oss; oss << 100*lengthScale;
+    const MatrixKernelClass MatrixKernel(lengthScale);
+    const std::string MatrixKernelID = MatrixKernelClass::getID() + oss.str() ;//.c_str();
 
     // Allocate memory
     FReal* K = new FReal[matrixSize*matrixSize];
