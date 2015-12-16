@@ -72,6 +72,9 @@ public:
             insertionPositionM2M     = incPrio++;
             FLOG( FLog::Controller << "\t M2M "  << insertionPositionM2M << "\n" );
 
+            insertionPositionP2P       = incPrio++;
+            FLOG( FLog::Controller << "\t P2P "  << insertionPositionP2P << "\n" );
+
             insertionPositionM2L     = incPrio++;
             FLOG( FLog::Controller << "\t M2L "  << insertionPositionM2L << "\n" );
             insertionPositionM2LExtern = incPrio++;
@@ -83,9 +86,6 @@ public:
             incPrio += (treeHeight-3) - 1;   // M2L is done treeHeight-2 times
             incPrio += (treeHeight-3) - 1;   // M2L is done treeHeight-2 times
             incPrio += (treeHeight-3) - 1;   // L2L is done treeHeight-3 times
-
-            insertionPositionP2P       = incPrio++;
-            FLOG( FLog::Controller << "\t P2P "  << insertionPositionP2P << "\n" );
 
             insertionPositionM2LLastLevel = incPrio++;
             FLOG( FLog::Controller << "\t M2L last "  << insertionPositionM2LLastLevel << "\n" );
@@ -147,6 +147,11 @@ public:
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionM2M;
                 heteroprio->buckets[insertionPositionM2M].valide_archs |= STARPU_CPU;
             }
+            if( capacities->supportP2P(FSTARPU_CPU_IDX)){
+                FLOG( FLog::Controller << "\t CPU prio P2P "  << cpuCountPrio << " bucket " << insertionPositionP2P << "\n" );
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionP2P;
+                heteroprio->buckets[insertionPositionP2P].valide_archs |= STARPU_CPU;
+            }
             for(int idxLevel = 2 ; idxLevel < treeHeight-1 ; ++idxLevel){
                 if(capacities->supportM2L(FSTARPU_CPU_IDX)){
                     const int prioM2LAtLevel = getInsertionPosM2L(idxLevel);
@@ -167,11 +172,6 @@ public:
                 }
             }
 
-            if( capacities->supportP2P(FSTARPU_CPU_IDX)){
-                FLOG( FLog::Controller << "\t CPU prio P2P "  << cpuCountPrio << " bucket " << insertionPositionP2P << "\n" );
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionP2P;
-                heteroprio->buckets[insertionPositionP2P].valide_archs |= STARPU_CPU;
-            }
 #ifndef STARPU_USE_REDUX
             if( capacities->supportP2PExtern(FSTARPU_CPU_IDX)){
                 FLOG( FLog::Controller << "\t CPU prio P2P Extern "  << cpuCountPrio << " bucket " << insertionPositionP2PExtern << "\n" );

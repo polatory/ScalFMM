@@ -43,6 +43,9 @@ public:
             insertionPositionM2M     = incPrio++;
             FLOG( FLog::Controller << "\t M2M "  << insertionPositionM2M << "\n" );
 
+            insertionPositionP2P       = incPrio++;
+            FLOG( FLog::Controller << "\t P2P "  << insertionPositionP2P << "\n" );
+
             insertionPositionM2L     = incPrio++;
             FLOG( FLog::Controller << "\t M2L "  << insertionPositionM2L << "\n" );
             insertionPositionM2LExtern = incPrio++;
@@ -54,9 +57,6 @@ public:
             incPrio += (treeHeight-3) - 1;   // M2L is done treeHeight-2 times
             incPrio += (treeHeight-3) - 1;   // M2L is done treeHeight-2 times
             incPrio += (treeHeight-3) - 1;   // L2L is done treeHeight-3 times
-
-            insertionPositionP2P       = incPrio++;
-            FLOG( FLog::Controller << "\t P2P "  << insertionPositionP2P << "\n" );
 
             insertionPositionP2PExtern = incPrio++;
             FLOG( FLog::Controller << "\t P2P Outer "  << insertionPositionP2PExtern << "\n" );
