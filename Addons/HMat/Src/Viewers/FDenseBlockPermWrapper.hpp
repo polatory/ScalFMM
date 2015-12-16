@@ -3,19 +3,20 @@
 
 // @SCALFMM_PRIVATE
 
-template <class FReal>
+template <class FReal, class SrcMatrixClass >
 class FDenseBlockPermWrapper{
 protected:
-    const FReal* values;
+    const SrcMatrixClass& matrix;
+    const int row;
+    const int col;
     const int nbRows;
     const int nbCols;
-    const int leadingDim;
-    const int* permuteVector;
 
 public:
-    FDenseBlockPermWrapper(const FReal* inValues, const int inNbRows, const int inNbCols,
-                           const int inLeading, const int* inPermuteVector)
-        : values(inValues), nbRows(inNbRows), nbCols(inNbCols), leadingDim(inLeading), permuteVector(inPermuteVector){
+    FDenseBlockPermWrapper(const SrcMatrixClass& inMatrix, const int inRow, const int inCol,
+                           const int inNbRows, const int inNbCols)
+        : matrix(inMatrix), row(inRow), col(inCol),
+          nbRows(inNbRows), nbCols(inNbCols) {
     }
 
     int getNbRows() const {
@@ -29,7 +30,7 @@ public:
     FReal getValue(const int rowIdx, const int colIdx) const{
         FAssertLF(rowIdx < nbRows);
         FAssertLF(colIdx < nbCols);
-        return values[permuteVector[colIdx]*leadingDim + permuteVector[rowIdx]];
+        return matrix.getVal(row+rowIdx, col+colIdx);
     }
 
     constexpr bool existsForReal() const{

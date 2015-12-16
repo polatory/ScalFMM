@@ -51,9 +51,8 @@ int main(int argc, char** argv){
     std::cout << "Config : outputdir = " << outputdir << "\n";
 
     typedef double FReal;
-    typedef FDenseBlock<FReal> LeafClass;
     typedef FDenseBlock<FReal> CellClass;
-    typedef FPartitionsMapping<FReal, LeafClass, CellClass> GridClass;
+    typedef FPartitionsMapping<FReal, CellClass> GridClass;
 
     {
         std::unique_ptr<int[]> partitions(new int[nbPartitions]);

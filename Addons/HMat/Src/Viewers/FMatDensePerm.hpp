@@ -21,7 +21,7 @@ protected:
     FMatDensePerm(const FMatDensePerm&) = delete;
     FMatDensePerm& operator=(const FMatDensePerm&) = delete;
 public:
-    using BlockDescriptor = FDenseBlockPermWrapper<FReal>;
+    using BlockDescriptor = FDenseBlockPermWrapper<FReal, FMatDensePerm<FReal> >;
 
     explicit FMatDensePerm(const int inDim, const FReal* inValues = nullptr, const int* inPermOrigToNew = nullptr)
         : matDim(inDim), values(nullptr){
@@ -79,25 +79,25 @@ public:
     }
 
     const FReal& getVal(const int idxRow , const int idxCol) const{
-        return values[idxCol*matDim+idxRow];
+        return values[permOrigToNew[idxCol]*matDim+permOrigToNew[idxRow]];
     }
 
     FReal& getVal(const int idxRow , const int idxCol) {
-        return values[idxCol*matDim+idxRow];
+        return values[permOrigToNew[idxCol]*matDim+permOrigToNew[idxRow]];
     }
 
     void setVal(const int idxRow , const int idxCol, const FReal& val) {
-        values[idxCol*matDim+idxRow] = val;
+        values[permOrigToNew[idxCol]*matDim+permOrigToNew[idxRow]] = val;
     }
 
-    FDenseBlockPermWrapper<FReal> getBlock(const int rowIdx, const int colIdx, const int nbRows, const int nbCols) const {
+    FDenseBlockPermWrapper<FReal, FMatDensePerm<FReal> > getBlock(const int rowIdx, const int colIdx, const int nbRows, const int nbCols) const {
         // static_assert(std::is_move_constructible<BlockClass>::value, "The block class must be movable");
         // static_assert(std::is_move_assignable<BlockClass>::value, "The block class must be movable");
         FAssertLF(0 < nbRows);
         FAssertLF(0 < nbCols);
         FAssertLF(rowIdx + nbRows <= matDim);
         FAssertLF(colIdx + nbCols <= matDim);
-        return FDenseBlockPermWrapper<FReal>(&values[colIdx*matDim+rowIdx], nbRows, nbCols, matDim, permOrigToNew);
+        return FDenseBlockPermWrapper<FReal, FMatDensePerm<FReal> >(*this, rowIdx, colIdx, nbRows, nbCols);
     }
 };
 

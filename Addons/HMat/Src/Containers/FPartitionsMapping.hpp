@@ -29,104 +29,74 @@
 #include <memory>
 
 
-template <class FReal, class LeafClass, class CellClass >
+template <class FReal, class CellClass >
 class FPartitionsMapping {
 protected:
-    struct LeafNode {
-        FBlockDescriptor infos;
-        LeafClass leaf;
-    };
-
     struct CellNode {
         FBlockDescriptor infos;
         CellClass cell;
     };
 
     const int dim;
+    const int nbPartitions;
+    const int nbCells;
 
-    int nbCells;
     CellNode* cells;
-
-    int nbLeaves;
-    LeafNode* leaves;
-
-    int totalNbBlocks;
 
     FPartitionsMapping(const FPartitionsMapping&) = delete;
     FPartitionsMapping& operator=(const FPartitionsMapping&) = delete;
 
 public:
-    explicit FPartitionsMapping(const int inDim, const int partitions[], const int nbPartitions,
-                                const int ratioForLeaf = 0)
+    explicit FPartitionsMapping(const int inDim, const int partitions[], const int inNbPartitions)
         : dim(inDim),
-          nbCells(0), cells(nullptr),
-          nbLeaves(0), leaves(nullptr),
-          totalNbBlocks(0){
+          nbPartitions(inNbPartitions),
+          nbCells(inNbPartitions*inNbPartitions),
+          cells(nullptr){
         FAssertLF(nbPartitions <= inDim);
         FAssertLF(1 <= nbPartitions);
 
-        for(int idxPartRow = 0 ; idxPartRow < nbPartitions ; ++idxPartRow){
-            for(int idxPartCol = 0 ; idxPartCol < nbPartitions ; ++idxPartCol){
-                if(idxPartRow == idxPartCol
-                    || partitions[idxPartRow]*partitions[idxPartCol] < ratioForLeaf){
-                    nbLeaves += 1;
-                }
-                else{
-                    nbCells += 1;
-                }
-                totalNbBlocks += 1;
-            }
+        std::unique_ptr<int[]> partitionsOffset(new int[nbPartitions]);
+        partitionsOffset[0] = 0;
+        for(int idxPart = 1 ; idxPart < nbPartitions ; ++idxPart){
+            partitionsOffset[idxPart] = partitionsOffset[idxPart-1] + partitions[idxPart-1];
         }
 
-        leaves   = new LeafNode[nbLeaves];
         cells    = new CellNode[nbCells];
 
-        int idxLeaf = 0;
-        int idxCell = 0;
-        int offsetRows = 0;
-        for(int idxPartRow = 0 ; idxPartRow < nbPartitions ; ++idxPartRow){
-            int offsetCols = 0;
-            for(int idxPartCol = 0 ; idxPartCol < nbPartitions ; ++idxPartCol){
-                if(idxPartRow == idxPartCol
-                    || partitions[idxPartRow]*partitions[idxPartCol] < ratioForLeaf){
-                    leaves[idxLeaf].infos.row = offsetRows;
-                    leaves[idxLeaf].infos.col = offsetCols;
-                    leaves[idxLeaf].infos.nbRows = partitions[idxPartRow];
-                    leaves[idxLeaf].infos.nbCols = partitions[idxPartCol];
-                    leaves[idxLeaf].infos.level = 0;
-                    idxLeaf += 1;
-                }
-                else{
-                    cells[idxCell].infos.row = offsetRows;
-                    cells[idxCell].infos.col = offsetCols;
-                    cells[idxCell].infos.nbRows = partitions[idxPartRow];
-                    cells[idxCell].infos.nbCols = partitions[idxPartCol];
-                    cells[idxCell].infos.level = 1;
-                    idxCell += 1;
-                }
-                offsetCols += partitions[idxPartCol];
+        for(int idxPartCol = 0 ; idxPartCol < nbPartitions ; ++idxPartCol){
+            for(int idxPartRow = 0 ; idxPartRow < nbPartitions ; ++idxPartRow){
+                cells[idxPartCol*nbPartitions + idxPartRow].infos.row = partitionsOffset[idxPartRow];
+                cells[idxPartCol*nbPartitions + idxPartRow].infos.col = partitionsOffset[idxPartCol];
+                cells[idxPartCol*nbPartitions + idxPartRow].infos.nbRows = partitions[idxPartRow];
+                cells[idxPartCol*nbPartitions + idxPartRow].infos.nbCols = partitions[idxPartCol];
+                cells[idxPartCol*nbPartitions + idxPartRow].infos.level = 0;
             }
-            FAssertLF(offsetCols == dim);
-            offsetRows += partitions[idxPartRow];
         }
-        FAssertLF(offsetRows == dim);
     }
 
     ~FPartitionsMapping(){
         delete[] cells;
-        delete[] leaves;
     }
 
     int getNbBlocks() const {
-        return totalNbBlocks;
+        return nbCells;
+    }
+
+    CellClass& getCell(const int idxRowPart, const int idxColPart){
+        return cells[idxColPart*nbPartitions + idxRowPart].cell;
+    }
+
+    const CellClass& getCell(const int idxRowPart, const int idxColPart) const {
+        return cells[idxColPart*nbPartitions + idxRowPart].cell;
+    }
+
+    const FBlockDescriptor& getCellInfo(const int idxRowPart, const int idxColPart) const {
+        return cells[idxColPart*nbPartitions + idxRowPart].infos;
     }
 
     void forAllBlocksDescriptor(std::function<void(const FBlockDescriptor&)> callback){
         for(int idxCell = 0 ; idxCell < nbCells ; ++idxCell){
             callback(cells[idxCell].infos);
-        }
-        for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-            callback(leaves[idxLeaf].infos);
         }
     }
 
@@ -137,12 +107,6 @@ public:
         }
     }
 
-    void forAllLeafBlocks(std::function<void(const FBlockDescriptor&, LeafClass&)> callback){
-        for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-            callback(leaves[idxLeaf].infos,
-                     leaves[idxLeaf].leaf);
-        }
-    }
 
     template <class MatrixClass>
     void fillBlocks(MatrixClass& matrix){
@@ -154,15 +118,6 @@ public:
                                               cells[idxCell].infos.nbCols
                                               ),
                                                cells[idxCell].infos.level);
-        }
-        for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-            leaves[idxLeaf].leaf.fill(matrix.getBlock(
-                                      leaves[idxLeaf].infos.row,
-                                      leaves[idxLeaf].infos.col,
-                                      leaves[idxLeaf].infos.nbRows,
-                                      leaves[idxLeaf].infos.nbCols
-                                      ),
-                                      leaves[idxLeaf].infos.level);
         }
     }
 
@@ -177,25 +132,12 @@ public:
                                               ),
                                           cells[idxCell].infos.level);
         }
-        for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-            leaves[idxLeaf].leaf.fill(matrix.getBlock(
-                                      leaves[idxLeaf].infos.row,
-                                      leaves[idxLeaf].infos.col,
-                                      leaves[idxLeaf].infos.nbRows,
-                                      leaves[idxLeaf].infos.nbCols
-                                      ),
-                                 leaves[idxLeaf].infos.level);
-        }
     }
 
     void gemv(FReal res[], const FReal vec[]) const {
         for(int idxCell = 0 ; idxCell < nbCells ; ++idxCell){
             cells[idxCell].cell.gemv(&res[cells[idxCell].infos.row],
                                           &vec[cells[idxCell].infos.col]);
-        }
-        for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-            leaves[idxLeaf].leaf.gemv(&res[leaves[idxLeaf].infos.row],
-                                          &vec[leaves[idxLeaf].infos.col]);
         }
     }
 
@@ -204,11 +146,6 @@ public:
             cells[idxCell].cell.gemm(&res[cells[idxCell].infos.col],
                                           &mat[cells[idxCell].infos.row],
                                           nbRhs, dim);
-        }
-        for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-            leaves[idxLeaf].leaf.gemm(&res[leaves[idxLeaf].infos.col],
-                                 &mat[leaves[idxLeaf].infos.row],
-                                 nbRhs, dim);
         }
     }
 };

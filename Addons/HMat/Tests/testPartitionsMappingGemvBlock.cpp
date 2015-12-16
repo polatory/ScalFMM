@@ -17,7 +17,7 @@
 // @SCALFMM_PRIVATE
 
 #include "../Src/Containers/FPartitionsMapping.hpp"
-#include "../Src/Viewers/FMatDense.hpp"
+#include "../Src/Viewers/FMatDensePerm.hpp"
 #include "../Src/Blocks/FDenseBlock.hpp"
 
 #include "Utils/FParameters.hpp"
@@ -45,7 +45,7 @@ int main(int argc, char** argv){
 
 
     typedef double FReal;
-    typedef FMatDense<FReal> MatrixClass;
+    typedef FMatDensePerm<FReal> MatrixClass;
 
     MatrixClass matrix(dim);
     for(int idxRow = 0; idxRow < dim ; ++idxRow){
@@ -84,7 +84,31 @@ int main(int argc, char** argv){
         }
 
         GridClass grid(dim, partitions.get(), nbPartitions);
-        grid.fillBlocks(matrix);
+        { // Here we fill the block manually
+            // We consider a fack permutation
+            std::unique_ptr<int[]> permutations(new int[dim]);
+            for(int idx = 0 ; idx < dim ; ++idx){
+                permutations[idx] = idx;
+            }
+            // Set permutation to matrix
+            matrix.setPermutOrigToNew(permutations.get());
+
+            // We iterate on the blocks
+            for(int idxColBlock = 0 ; idxColBlock < nbPartitions ; ++idxColBlock){
+                for(int idxRowBlock = 0 ; idxRowBlock < nbPartitions ; ++idxRowBlock){
+                    // We get the corresponding class
+                    //>> CellClass& cl = grid.getCell(idxRowBlock, idxColBlock);
+                    const FBlockDescriptor& info = grid.getCellInfo(idxRowBlock, idxColBlock);
+
+                    // We iterate on its values
+                    for(int idxColVal = 0 ; idxColVal < info.nbCols ; ++idxColVal){
+                        for(int idxRowVal = 0 ; idxRowVal < info.nbRows ; ++idxRowVal){
+                            //>> const FReal srcVal = matrix.getVal(idxRowVal, idxColVal);
+                        }
+                    }
+                }
+            }
+        }
 
         std::unique_ptr<FReal[]> resDense(new FReal[dim]);
         FSetToZeros(resDense.get(), dim);
@@ -98,5 +122,6 @@ int main(int argc, char** argv){
 
     return 0;
 }
+
 
 
