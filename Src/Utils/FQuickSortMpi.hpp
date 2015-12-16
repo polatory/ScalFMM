@@ -103,7 +103,7 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
                 else{
                     nbElementsToRecvPerProc[idxProc - firstProcToRecv] = 0;
                 }
-                FLOG( FLog::Controller << currentRank << "] nbElementsToRecvPerProc[" << idxProc << "] = " << nbElementsToRecvPerProc[idxProc - firstProcToRecv] << "\n"; )
+                FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentRank << "] nbElementsToRecvPerProc[" << idxProc << "] = " << nbElementsToRecvPerProc[idxProc - firstProcToRecv] << "\n"; )
             }
         }
 
@@ -113,7 +113,7 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
         for(int idxProc = firstProcToSend; idxProc < lastProcToSend ; ++idxProc){
             const IndexType nbElementsAlreadyOwned = (inFromRightToLeft ? globalElementBalance[idxProc].lowerPart : globalElementBalance[idxProc].greaterPart);
             nbElementsToSendPerProc[idxProc-firstProcToSend] = nbElementsAlreadyOwned;
-            FLOG( FLog::Controller << currentRank << "] nbElementsToSendPerProc[" << idxProc << "] = " << nbElementsToSendPerProc[idxProc-firstProcToSend] << "\n"; )
+            FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentRank << "] nbElementsToSendPerProc[" << idxProc << "] = " << nbElementsToSendPerProc[idxProc-firstProcToSend] << "\n"; )
         }
 
         // Compute all the send recv but keep only the ones related to currentRank
@@ -177,7 +177,7 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
         requests.reserve(whatToRecvFromWho.size());
         for(int idxPack = 0 ; idxPack < int(whatToRecvFromWho.size()) ; ++idxPack){
             const PackData& pack = whatToRecvFromWho[idxPack];
-            FLOG( FLog::Controller << currentComm.processId() << "] Recv from " << pack.idProc << " from " << pack.fromElement << " to " << pack.toElement << "\n"; );
+            FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Recv from " << pack.idProc << " from " << pack.fromElement << " to " << pack.toElement << "\n"; );
 //             FAssertLF((pack.toElement - pack.fromElement) * sizeof(SortType) < std::numeric_limits<int>::max());
 //             FMpi::Assert( MPI_Irecv((SortType*)&recvBuffer[pack.fromElement], int((pack.toElement - pack.fromElement) * sizeof(SortType)), MPI_BYTE, pack.idProc,
 //                          FMpi::TagQuickSort, currentComm.getComm(), &requests[idxPack]) , __LINE__);
@@ -196,11 +196,11 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
             }
         }
         FAssertLF(whatToRecvFromWho.size() <= requests.size());
-        FLOG( FLog::Controller << "Wait for " << requests.size() << " request \n" );
+        FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << "Wait for " << requests.size() << " request \n" );
         FLOG( FLog::Controller.flush());
         // Wait to complete
         FMpi::Assert( MPI_Waitall(int(requests.size()), requests.data(), MPI_STATUSES_IGNORE),  __LINE__ );
-        FLOG( FLog::Controller << currentComm.processId() << "] Recv Done \n"; )
+        FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Recv Done \n"; )
                 FLOG( FLog::Controller.flush());
         // Copy to ouput variables
         (*inPartRecv) = recvBuffer;
@@ -220,7 +220,7 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
         requests.reserve(whatToSendToWho.size());
         for(int idxPack = 0 ; idxPack < int(whatToSendToWho.size()) ; ++idxPack){
             const PackData& pack = whatToSendToWho[idxPack];
-            FLOG( FLog::Controller << currentComm.processId() << "] Send to " << pack.idProc << " from " << pack.fromElement << " to " << pack.toElement << "\n"; );
+            FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Send to " << pack.idProc << " from " << pack.fromElement << " to " << pack.toElement << "\n"; );
 //            FAssertLF((pack.toElement - pack.fromElement)* sizeof(SortType) < std::numeric_limits<int>::max());
 //            FMpi::Assert( MPI_Isend(const_cast<SortType*>(&inPartToSend[pack.fromElement]), int((pack.toElement - pack.fromElement) * sizeof(SortType)), MPI_BYTE , pack.idProc,
 //                          FMpi::TagQuickSort, currentComm.getComm(), &requests[idxPack]) , __LINE__);
@@ -239,11 +239,11 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
             }
         }
         FAssertLF(whatToSendToWho.size() <= requests.size());
-        FLOG( FLog::Controller << "Wait for " << requests.size() << " request \n" );
+        FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << "Wait for " << requests.size() << " request \n" );
         FLOG( FLog::Controller.flush());
         // Wait to complete
         FMpi::Assert( MPI_Waitall(int(requests.size()), requests.data(), MPI_STATUSES_IGNORE),  __LINE__ );
-        FLOG( FLog::Controller << currentComm.processId() << "] Send Done \n"; )
+        FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Send Done \n"; )
                 FLOG( FLog::Controller.flush());
     }
 
@@ -272,12 +272,14 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
             localPivot = (CompareType(workingArray[currentSize/3])+CompareType(workingArray[(2*currentSize)/3]))/2;
             // The pivot must be different (to ensure that the partition will return two parts)
             if( localPivot == maxFoundValue && !allTheSame){
-                FLOG( FLog::Controller << currentComm.processId() << "] Pivot " << localPivot << " is equal max and allTheSame equal " << allTheSame << "\n"; )
+                FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Pivot " << localPivot << " is equal max and allTheSame equal " << allTheSame << "\n"; )
+                        FLOG( FLog::Controller.flush());
                 localPivot -= 1;
             }
         }
 
-        FLOG( FLog::Controller << currentComm.processId() << "] localPivot = " << localPivot << "\n" );
+        FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] localPivot = " << localPivot << "\n" );
+        FLOG( FLog::Controller.flush());
 
         //const int myRank = currentComm.processId();
         const int nbProcs = currentComm.processCount();
@@ -337,17 +339,20 @@ public:
             bool shouldStop;
             const CompareType globalPivot = SelectPivot(workingArray, currentSize, currentComm, &shouldStop);
             if(shouldStop){
-                FLOG( FLog::Controller << currentComm.processId() << "] shouldStop = " << shouldStop << "\n" );
+                FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] shouldStop = " << shouldStop << "\n" );
+                FLOG( FLog::Controller.flush());
                 break;
             }
 
-            FLOG( FLog::Controller << currentComm.processId() << "] globalPivot = " << globalPivot << "\n" );
+            FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] globalPivot = " << globalPivot << "\n" );
+            FLOG( FLog::Controller.flush());
 
             // Split the array in two parts lower equal to pivot and greater than pivot
             const IndexType nbLowerElements = QsPartition(workingArray, 0, currentSize-1, globalPivot);
             const IndexType nbGreaterElements = currentSize - nbLowerElements;
 
-            FLOG( FLog::Controller << currentComm.processId() << "] After Partition: lower = " << nbLowerElements << " greater = " << nbGreaterElements << "\n"; )
+            FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] After Partition: lower = " << nbLowerElements << " greater = " << nbGreaterElements << "\n"; )
+                    FLOG( FLog::Controller.flush());
 
             const int currentRank = currentComm.processId();
             const int currentNbProcs = currentComm.processCount();
@@ -373,8 +378,9 @@ public:
                 globalNumberOfElementsLower   += globalElementBalance[idxProc].lowerPart;
             }
 
-            FLOG( FLog::Controller << currentComm.processId() << "] globalNumberOfElementsGreater = " << globalNumberOfElementsGreater << "\n"; )
-            FLOG( FLog::Controller << currentComm.processId() << "] globalNumberOfElementsLower   = " << globalNumberOfElementsLower << "\n"; )
+            FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] globalNumberOfElementsGreater = " << globalNumberOfElementsGreater << "\n"; )
+            FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] globalNumberOfElementsLower   = " << globalNumberOfElementsLower << "\n"; )
+                    FLOG( FLog::Controller.flush());
 
             // The proc rank in the middle from the percentage
             int procInTheMiddle;
@@ -383,7 +389,8 @@ public:
             else procInTheMiddle = int(FMath::Min(IndexType(currentNbProcs-2), (currentNbProcs*globalNumberOfElementsLower)
                                               /(globalNumberOfElementsGreater + globalNumberOfElementsLower)));
 
-            FLOG( FLog::Controller << currentComm.processId() << "] procInTheMiddle = " << procInTheMiddle << "\n"; )
+            FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] procInTheMiddle = " << procInTheMiddle << "\n"; )
+                    FLOG( FLog::Controller.flush());
 
             // Send or receive depending on the state
             if(currentRank <= procInTheMiddle){
@@ -404,9 +411,11 @@ public:
                 workingArray = fullLowerPart;
                 currentSize = fullNbLowerElementsRecv;
                 // Reduce working group
-                FLOG( FLog::Controller << currentComm.processId() << "] Reduce group to " << 0 << " / " << procInTheMiddle << "\n"; )
+                FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Reduce group to " << 0 << " / " << procInTheMiddle << "\n"; )
+                        FLOG( FLog::Controller.flush());
                 currentComm.groupReduce( 0, procInTheMiddle);
-                FLOG( FLog::Controller << currentComm.processId() << "] Done\n" );
+                FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Done\n" );
+                FLOG( FLog::Controller.flush());
             }
             else {
                 // I am in the group of the greater elements
@@ -426,13 +435,16 @@ public:
                 workingArray = fullGreaterPart;
                 currentSize = fullNbGreaterElementsRecv;
                 // Reduce working group
-                FLOG( FLog::Controller << currentComm.processId() << "] Reduce group to " << procInTheMiddle + 1 << " / " << currentNbProcs - 1 << "\n"; )
+                FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Reduce group to " << procInTheMiddle + 1 << " / " << currentNbProcs - 1 << "\n"; )
+                        FLOG( FLog::Controller.flush());
                 currentComm.groupReduce( procInTheMiddle + 1, currentNbProcs - 1);
-                FLOG( FLog::Controller << currentComm.processId() << "] Done\n"; )
+                FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Done\n"; )
+                        FLOG( FLog::Controller.flush());
             }
         }
 
-        FLOG( FLog::Controller << currentComm.processId() << "] Sequential sort (currentSize = " << currentSize << ")\n"; )
+        FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Sequential sort (currentSize = " << currentSize << ")\n"; )
+                FLOG( FLog::Controller.flush());
         // Finish by a local sort
         FQuickSort< SortType, IndexType>::QsOmp(workingArray, currentSize, [](const SortType& v1, const SortType& v2){
             return CompareType(v1) <= CompareType(v2);

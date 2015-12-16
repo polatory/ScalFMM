@@ -140,7 +140,7 @@ public:
             originalParticlesUnsorted[idxPart].index = host.getMortonIndex(TreeHeight - 1);
         }
 
-        FLOG( FLog::Controller << "\tPrepare particles ("  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "Particles Distribution: "  << "\tPrepare particles ("  << counterTime.tacAndElapsed() << "s)\n"; FLog::Controller.flush(); );
 
         // Sort particles
         if(sortingType == QuickSort){
@@ -471,7 +471,7 @@ public:
                                            const FPoint<FReal>& boxCenter, const FReal boxWidth, const int treeHeight,
                                            ContainerClass* particleSaver, FAbstractBalanceAlgorithm* balancer, const SortingType sortingType = QuickSort){
 
-        FLOG( FLog::Controller << "Enter DistributeArrayToContainer\n" );
+        FLOG( FLog::Controller << "Particles Distribution: "  << "Enter DistributeArrayToContainer\n" ; FLog::Controller.flush(); );
         FLOG( FTic timer );
 
         IndexedParticle* sortedParticlesArray = nullptr;
@@ -479,7 +479,7 @@ public:
         // From ParticleClass get array of IndexedParticle sorted
         GetSortedParticlesFromArray(communicator, originalParticlesArray, originalNbParticles, sortingType, boxCenter, boxWidth, treeHeight,
                                     &sortedParticlesArray, &nbParticlesInArray);
-        FLOG( FLog::Controller << "\t GetSortedParticlesFromArray is over (" << timer.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "Particles Distribution: "  << "\t GetSortedParticlesFromArray is over (" << timer.tacAndElapsed() << "s)\n"; FLog::Controller.flush(); );
         FLOG( timer.tic() );
 
         ParticleClass* particlesArrayInLeafOrder = nullptr;
@@ -489,7 +489,7 @@ public:
         MergeSplitedLeaves(communicator, sortedParticlesArray, &nbParticlesInArray, &leavesOffsetInParticles, &particlesArrayInLeafOrder, &nbLeaves);
         delete[] sortedParticlesArray;
 
-        FLOG( FLog::Controller << "\t MergeSplitedLeaves is over (" << timer.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "Particles Distribution: "  << "\t MergeSplitedLeaves is over (" << timer.tacAndElapsed() << "s)\n"; FLog::Controller.flush(); );
         FLOG( timer.tic() );
 
         // Equalize and balance
@@ -498,9 +498,9 @@ public:
         delete[] particlesArrayInLeafOrder;
         delete[] leavesOffsetInParticles;
 
-        FLOG( FLog::Controller << "\t EqualizeAndFillContainer is over (" << timer.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "Particles Distribution: "  << "\t EqualizeAndFillContainer is over (" << timer.tacAndElapsed() << "s)\n"; FLog::Controller.flush(); );
 
-        FLOG( FLog::Controller << "\t DistributeArrayToContainer is over (" << timer.cumulated() << "s)\n" );
+        FLOG( FLog::Controller << "Particles Distribution: "  << "\t DistributeArrayToContainer is over (" << timer.cumulated() << "s)\n"; FLog::Controller.flush(); );
 
 #ifdef SCALFMM_USE_LOG
         /** To produce stats after the Equalize phase  */
@@ -529,7 +529,7 @@ public:
                 }
                 averageNbParticles /= float(nbProcs);
 
-                printf("End of Equalize Phase : \n \t Min number of parts : %lld \n \t Max number of parts : %lld \n \t Average number of parts : %e \n",
+                printf("Particles Distribution: End of Equalize Phase : \n \t Min number of parts : %lld \n \t Max number of parts : %lld \n \t Average number of parts : %e \n",
                        minNbParticles,maxNbParticles,averageNbParticles);
             }
         }
