@@ -20,6 +20,7 @@
 #include "../Src/Viewers/FMatDensePerm.hpp"
 #include "../Src/Blocks/FDenseBlock.hpp"
 #include "../Src/Blocks/FSVDBlock.hpp"
+#include "../Src/Blocks/FACABlock.hpp"
 
 #include "../Src/Clustering/FMaxDistCut.hpp"
 #include "../Src/Clustering/FCCLTreeCluster.hpp"
@@ -93,7 +94,7 @@ int main(int argc, char** argv){
     ////////////////////////////////////////////////////////////////////
 
     const char* outputdir = FParameters::getStr(argc, argv, SvgOutParam.options, "/tmp/");
-    const char* distanceFilename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFileOne.options, "../Addons/HMat/Data/unitCube1000_ONE_OVER_R.bin");
+    const char* distanceFilename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFileOne.options, "../Addons/HMat/Data/unitCube1000.bin");
     const char* matrixFilename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFileTwow.options, "../Addons/HMat/Data/unitCube1000_ONE_OVER_R.bin");
     const int height = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 4);
 

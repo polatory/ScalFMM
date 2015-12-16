@@ -48,7 +48,7 @@ static void computeSVD(const FSize nbRows, const FSize nbCols, const FReal* A, F
     // nothing means OS (the opposite of SO, A=USVT)
     //is_int(size); is_int(LWORK);
     const unsigned int INFOSVD
-    = FBlas::gesvd(int(nbRows), int(nbCols), U, S, VT, int(minMN),
+    = FBlas::gesvd(int(nbRows), int(nbCols), U, S, VT, int(minMN)/*ldVT*/,
                    int(LWORK), WORK);
     if(verbose) {
         if(INFOSVD!=0) {std::cout << " failed!" << std::endl;}
@@ -132,7 +132,7 @@ public:
         // SVD specific (col major)
         rank = std::min(nbRows,nbCols);
         S  = new FReal[rank];
-        FReal* _U  = new FReal[nbRows*nbCols]; // Call to computeSVD() copies block into U
+        FReal* _U  = new FReal[nbRows*nbCols]; // Call to computeSVD() copies block MxN into _U and stores first min(M,N) cols of U into _U
         FReal* _VT = new FReal[rank*nbCols];
         FBlas::setzero(int(rank), S);        
         FBlas::setzero(int(rank*nbCols),_VT);
@@ -142,8 +142,14 @@ public:
         // Determine numerical rank using prescribed accuracy
         computeNumericalRank(rank, S, accuracy);
 
+        //// Display singular values
+        //std::cout << "S = [";
+        //for(int idxRow = 0 ; idxRow < rank ; ++idxRow)
+        //    std::cout << S[idxRow] << " " ;
+        //std::cout << "]" << std::endl;
+
         //// display rank
-        //std::cout << "rank=" << rank << std::endl;
+        std::cout << "rank SVD =" << rank << " (" << nbRows << "," << nbCols << ")" << std::endl;
 
         // Resize U and VT
         U  = new FReal[nbRows*rank]; // Call to computeSVD() copies block into U

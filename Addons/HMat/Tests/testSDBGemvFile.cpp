@@ -70,8 +70,8 @@ int main(int argc, char** argv){
         std::cout << "Test Dense:\n";
         typedef FDenseBlock<FReal> LeafClass;
         //typedef FDenseBlock<FReal> CellClass;
-        //typedef FSVDBlock<FReal,7> CellClass;  
-        typedef FACABlock<FReal,7> CellClass;  
+        typedef FSVDBlock<FReal,7> CellClass;  
+        //typedef FACABlock<FReal,7> CellClass;  
 
         typedef FStaticDiagonalBisection<FReal, LeafClass, CellClass> GridClass;
 
@@ -102,8 +102,8 @@ int main(int argc, char** argv){
 
         typedef FDenseBlock<FReal> LeafClass;
         //typedef FDenseBlock<FReal> CellClass;
-        //typedef FSVDBlock<FReal,7> CellClass; 
-        typedef FACABlock<FReal,7> CellClass; 
+        typedef FSVDBlock<FReal,7> CellClass; 
+        //typedef FACABlock<FReal,7> CellClass; 
 
         typedef FStaticDiagonalBisection<FReal, LeafClass, CellClass> GridClass;
 
