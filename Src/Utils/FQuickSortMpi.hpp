@@ -178,13 +178,15 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
         for(int idxPack = 0 ; idxPack < int(whatToRecvFromWho.size()) ; ++idxPack){
             const PackData& pack = whatToRecvFromWho[idxPack];
             FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Recv from " << pack.idProc << " from " << pack.fromElement << " to " << pack.toElement << "\n"; );
-//             FAssertLF((pack.toElement - pack.fromElement) * sizeof(SortType) < std::numeric_limits<int>::max());
+               FAssertLF((pack.toElement - pack.fromElement) * sizeof(SortType) < std::numeric_limits<int>::max());
 //             FMpi::Assert( MPI_Irecv((SortType*)&recvBuffer[pack.fromElement], int((pack.toElement - pack.fromElement) * sizeof(SortType)), MPI_BYTE, pack.idProc,
 //                          FMpi::TagQuickSort, currentComm.getComm(), &requests[idxPack]) , __LINE__);
             // Work per max size
             const IndexType nbElementsInPack = (pack.toElement - pack.fromElement);
             const IndexType totalByteToRecv  = IndexType(nbElementsInPack*sizeof(SortType));
             unsigned char*const ptrDataToRecv = (unsigned char*)&recvBuffer[pack.fromElement];
+            FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Recv in " << (totalByteToRecv+FQS_MAX_MPI_BYTES-1)/FQS_MAX_MPI_BYTES << " messages \n"; );
+            FLOG( FLog::Controller.flush(); );
             for(IndexType idxSize = 0 ; idxSize < totalByteToRecv ; idxSize += FQS_MAX_MPI_BYTES){
                 MPI_Request currentRequest;
                 const FSize nbBytesInMessage = int(FMath::Min(IndexType(FQS_MAX_MPI_BYTES), totalByteToRecv-idxSize));
@@ -228,6 +230,8 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
             const IndexType nbElementsInPack = (pack.toElement - pack.fromElement);
             const IndexType totalByteToSend  = IndexType(nbElementsInPack*sizeof(SortType));
             unsigned char*const ptrDataToSend = (unsigned char*)const_cast<SortType*>(&inPartToSend[pack.fromElement]);
+            FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Send in " << (totalByteToSend+FQS_MAX_MPI_BYTES-1)/FQS_MAX_MPI_BYTES << " messages \n"; );
+            FLOG( FLog::Controller.flush(); );
             for(IndexType idxSize = 0 ; idxSize < totalByteToSend ; idxSize += FQS_MAX_MPI_BYTES){
                 MPI_Request currentRequest;
                 const IndexType nbBytesInMessage = int(FMath::Min(IndexType(FQS_MAX_MPI_BYTES), totalByteToSend-idxSize));
