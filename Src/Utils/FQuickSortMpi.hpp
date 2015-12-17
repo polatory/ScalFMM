@@ -257,27 +257,32 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
             NO_VALUES,
             AVERAGE_2
         };
-        // We need to know the max value to ensure that the pivot will be different
-        CompareType maxFoundValue = CompareType(workingArray[0]);
         // Check if all the same
         bool allTheSame = true;
-        for(int idx = 1 ; idx < currentSize && allTheSame; ++idx){
-            if(workingArray[0] != workingArray[idx]){
-                allTheSame = false;
-            }
-            // Keep the max
-            maxFoundValue = FMath::Max(maxFoundValue , CompareType(workingArray[idx]));
-        }
         // Check if empty
         const bool noValues = (currentSize == 0);
         // Get the local pivot if not empty
         CompareType localPivot = CompareType(0);
-        if(!noValues){
-            localPivot = (CompareType(workingArray[currentSize/3])+CompareType(workingArray[(2*currentSize)/3]))/2;
+
+        if(noValues == false){
+            // We need to know the max value to ensure that the pivot will be different
+            CompareType maxFoundValue = CompareType(workingArray[0]);
+            // We need to know the min value to ensure that the pivot will be different
+            CompareType minFoundValue = CompareType(workingArray[0]);
+
+            for(int idx = 1 ; idx < currentSize ; ++idx){
+                // Keep the max
+                maxFoundValue = FMath::Max(maxFoundValue , CompareType(workingArray[idx]));
+                // Keep the min
+                minFoundValue = FMath::Min(minFoundValue , CompareType(workingArray[idx]));
+            }
+            allTheSame = (maxFoundValue == minFoundValue);
+            // Value equal to pivot are kept on the left so
+            localPivot = ((maxFoundValue-minFoundValue)/2) + minFoundValue;
             // The pivot must be different (to ensure that the partition will return two parts)
             if( localPivot == maxFoundValue && !allTheSame){
                 FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Pivot " << localPivot << " is equal max and allTheSame equal " << allTheSame << "\n"; )
-                        FLOG( FLog::Controller.flush());
+                FLOG( FLog::Controller.flush());
                 localPivot -= 1;
             }
         }
