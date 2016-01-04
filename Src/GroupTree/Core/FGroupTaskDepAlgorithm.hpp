@@ -16,7 +16,6 @@
 #include "FOutOfBlockInteraction.hpp"
 
 #include <vector>
-#include <vector>
 
 #include <omp.h>
 
