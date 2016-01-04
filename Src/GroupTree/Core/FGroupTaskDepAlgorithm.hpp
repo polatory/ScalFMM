@@ -36,6 +36,12 @@
 #define priority_if_supported(x)
 #endif
 
+#undef taskname_if_supported
+#ifdef OPENMP_SUPPORT_TASK_NAME
+#define taskname_if_supported(n) taskname(n)
+#else
+#define taskname_if_supported(n)
+#endif
 
 
 template <class OctreeClass, class CellContainerClass, class CellClass,
@@ -371,7 +377,7 @@ protected:
 
             ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
 
-            #pragma omp task default(shared) firstprivate(leafCells, cellPoles, containers) depend(inout: cellPoles[0]) priority_if_supported(priorities.getInsertionPosP2M())
+            #pragma omp task default(shared) firstprivate(leafCells, cellPoles, containers) depend(inout: cellPoles[0]) priority_if_supported(priorities.getInsertionPosP2M()) taskname_if_supported("P2M")
             {
                 FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, leafCells->getStartingIndex() * 20 * 8, "P2M"));
                 KernelClass*const kernel = kernels[omp_get_thread_num()];
@@ -416,7 +422,7 @@ protected:
                     subCellGroup = (*iterChildCells);
                     subCellGroupPoles = (*iterChildCells)->getRawMultipoleBuffer();
 
-                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroup, subCellGroupPoles) depend(commute_if_supported: cellPoles[0]) depend(in: subCellGroupPoles[0])  priority_if_supported(priorities.getInsertionPosM2M(idxLevel))
+                    #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellPoles, subCellGroup, subCellGroupPoles) depend(commute_if_supported: cellPoles[0]) depend(in: subCellGroupPoles[0]) priority_if_supported(priorities.getInsertionPosM2M(idxLevel)) taskname_if_supported("M2M")
                     {
                         KernelClass*const kernel = kernels[omp_get_thread_num()];
                         const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
@@ -491,7 +497,7 @@ protected:
                     PoleCellClass* cellPoles = currentCells->getRawMultipoleBuffer();
                     LocalCellClass* cellLocals = currentCells->getRawLocalBuffer();
 
-#pragma omp task default(none) firstprivate(currentCells, cellPoles, cellLocals, idxLevel) depend(commute_if_supported: cellLocals[0]) depend(in: cellPoles[0])  priority_if_supported(priorities.getInsertionPosM2L(idxLevel))
+#pragma omp task default(none) firstprivate(currentCells, cellPoles, cellLocals, idxLevel) depend(commute_if_supported: cellLocals[0]) depend(in: cellPoles[0])  priority_if_supported(priorities.getInsertionPosM2L(idxLevel)) taskname_if_supported("M2L")
                     {
                         FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, ((currentCells->getStartingIndex() *20) + idxLevel ) * 8 + 2, "M2L"));
                         const MortonIndex blockStartIdx = currentCells->getStartingIndex();
@@ -554,7 +560,7 @@ protected:
                         LocalCellClass* cellOtherLocals = cellsOther->getRawLocalBuffer();
                         const std::vector<OutOfBlockInteraction>* outsideInteractions = &(*currentInteractions).interactions;
 
-                        #pragma omp task default(none) firstprivate(currentCells, cellLocals, outsideInteractions, cellsOther, cellOtherPoles, idxLevel) depend(commute_if_supported: cellLocals[0]) depend(in: cellOtherPoles[0])  priority_if_supported(priorities.getInsertionPosM2LExtern(idxLevel))
+                        #pragma omp task default(none) firstprivate(currentCells, cellLocals, outsideInteractions, cellsOther, cellOtherPoles, idxLevel) depend(commute_if_supported: cellLocals[0]) depend(in: cellOtherPoles[0])  priority_if_supported(priorities.getInsertionPosM2LExtern(idxLevel)) taskname_if_supported("M2L-out")
                         {
                             FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, (((currentCells->getStartingIndex()+1) * (cellsOther->getStartingIndex()+2)) * 20 + idxLevel) * 8 + 3, "M2L-ext"));
                             KernelClass*const kernel = kernels[omp_get_thread_num()];
@@ -570,7 +576,7 @@ protected:
                             }
                         }
 
-                        #pragma omp task default(none) firstprivate(currentCells, cellPoles, outsideInteractions, cellsOther, cellOtherLocals, idxLevel) depend(commute_if_supported: cellOtherLocals[0]) depend(in: cellPoles[0])  priority_if_supported(priorities.getInsertionPosM2LExtern(idxLevel))
+                        #pragma omp task default(none) firstprivate(currentCells, cellPoles, outsideInteractions, cellsOther, cellOtherLocals, idxLevel) depend(commute_if_supported: cellOtherLocals[0]) depend(in: cellPoles[0])  priority_if_supported(priorities.getInsertionPosM2LExtern(idxLevel)) taskname_if_supported("M2L-out")
                         {
                             FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, (((currentCells->getStartingIndex()+1) * (cellsOther->getStartingIndex()+1)) * 20 + idxLevel) * 8 + 3, "M2L-ext"));
                             KernelClass*const kernel = kernels[omp_get_thread_num()];
@@ -630,7 +636,7 @@ protected:
                     subCellLocalGroupsLocal = (*iterChildCells)->getRawLocalBuffer();
 
                     if(noCommuteAtLastLevel == false || idxLevel != FAbstractAlgorithm::lowerWorkingLevel - 2){
-                        #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroup, subCellLocalGroupsLocal) depend(commute_if_supported: subCellLocalGroupsLocal[0]) depend(in: cellLocals[0])  priority_if_supported(priorities.getInsertionPosL2L(idxLevel))
+                        #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroup, subCellLocalGroupsLocal) depend(commute_if_supported: subCellLocalGroupsLocal[0]) depend(in: cellLocals[0])  priority_if_supported(priorities.getInsertionPosL2L(idxLevel)) taskname_if_supported("L2L")
                         {
                             KernelClass*const kernel = kernels[omp_get_thread_num()];
 
@@ -673,7 +679,7 @@ protected:
                         }
                     }
                     else{
-                        #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroup, subCellLocalGroupsLocal) depend(inout: subCellLocalGroupsLocal[0]) depend(in: cellLocals[0])  priority_if_supported(priorities.getInsertionPosL2L(idxLevel))
+                        #pragma omp task default(none) firstprivate(idxLevel, currentCells, cellLocals, subCellGroup, subCellLocalGroupsLocal) depend(inout: subCellLocalGroupsLocal[0]) depend(in: cellLocals[0])  priority_if_supported(priorities.getInsertionPosL2L(idxLevel)) taskname_if_supported("L2L")
                         {
                             KernelClass*const kernel = kernels[omp_get_thread_num()];
 
@@ -759,7 +765,7 @@ protected:
                     unsigned char* containersOtherDown = containersOther->getRawAttributesBuffer();
                     const std::vector<OutOfBlockInteraction>* outsideInteractions = &(*currentInteractions).interactions;
 
-#pragma omp task default(none) firstprivate(containers, containersDown, containersOther, containersOtherDown, outsideInteractions) depend(commute_if_supported: containersOtherDown[0], containersDown[0])  priority_if_supported(priorities.getInsertionPosP2PExtern())
+#pragma omp task default(none) firstprivate(containers, containersDown, containersOther, containersOtherDown, outsideInteractions) depend(commute_if_supported: containersOtherDown[0], containersDown[0])  priority_if_supported(priorities.getInsertionPosP2PExtern()) taskname_if_supported("P2P-out")
                     {
                         FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, ((containersOther->getStartingIndex()+1) * (containers->getStartingIndex()+1))*20*8 + 6, "P2P-ext"));
                         KernelClass*const kernel = kernels[omp_get_thread_num()];
@@ -797,7 +803,7 @@ protected:
                 ParticleGroupClass* containers = (*iterParticles);
                 unsigned char* containersDown = containers->getRawAttributesBuffer();
 
-                #pragma omp task default(none) firstprivate(containers, containersDown) depend(commute_if_supported: containersDown[0])  priority_if_supported(priorities.getInsertionPosP2P())
+                #pragma omp task default(none) firstprivate(containers, containersDown) depend(commute_if_supported: containersDown[0])  priority_if_supported(priorities.getInsertionPosP2P()) taskname_if_supported("P2P")
                 {
                     FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, containers->getStartingIndex()*20*8 + 5, "P2P"));
                     const MortonIndex blockStartIdx = containers->getStartingIndex();
@@ -852,7 +858,7 @@ protected:
             ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
             unsigned char* containersDown = containers->getRawAttributesBuffer();
 
-            #pragma omp task default(shared) firstprivate(leafCells, cellLocals, containers, containersDown) depend(commute_if_supported: containersDown[0]) depend(in: cellLocals[0])  priority_if_supported(priorities.getInsertionPosL2P())
+            #pragma omp task default(shared) firstprivate(leafCells, cellLocals, containers, containersDown) depend(commute_if_supported: containersDown[0]) depend(in: cellLocals[0])  priority_if_supported(priorities.getInsertionPosL2P()) taskname_if_supported("L2P")
             {
                 FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(omp_get_thread_num(), &taskTimeRecorder, (leafCells->getStartingIndex()*20*8) + 7, "L2P"));
                 KernelClass*const kernel = kernels[omp_get_thread_num()];
