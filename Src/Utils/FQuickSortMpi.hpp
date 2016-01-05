@@ -96,15 +96,18 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
                 const IndexType nbElementsAlreadyOwned = (inFromRightToLeft ? globalElementBalance[idxProc].lowerPart : globalElementBalance[idxProc].greaterPart);
                 const IndexType averageNbElementForRemainingProc = (totalRemainingElements)/(lastProcToRecv-idxProc);
                 totalRemainingElements -= nbElementsAlreadyOwned;
+                FAssertLF(totalRemainingElements >= 0);
                 if(nbElementsAlreadyOwned < averageNbElementForRemainingProc){
                     nbElementsToRecvPerProc[idxProc - firstProcToRecv] = (averageNbElementForRemainingProc - nbElementsAlreadyOwned);
                     totalRemainingElements -= nbElementsToRecvPerProc[idxProc - firstProcToRecv];
                 }
                 else{
+                    FAssert((averageNbElementForRemainingProc - nbElementsAlreadyOwned) == 0);
                     nbElementsToRecvPerProc[idxProc - firstProcToRecv] = 0;
                 }
                 FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentRank << "] nbElementsToRecvPerProc[" << idxProc << "] = " << nbElementsToRecvPerProc[idxProc - firstProcToRecv] << "\n"; )
             }
+            FAssertLF(totalRemainingElements == 0);
         }
 
         // Store in an array the number of element to send
@@ -243,7 +246,7 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
             }
         }
         FAssertLF(whatToSendToWho.size() <= requests.size());
-        FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << "Wait for " << requests.size() << " request \n" );
+        FLOG( FLog::Controller << "SCALFMM-DEBUG [" << currentComm.processId() << "] Wait for " << requests.size() << " request \n" );
         FLOG( FLog::Controller.flush());
         // Wait to complete
         FMpi::Assert( MPI_Waitall(int(requests.size()), requests.data(), MPI_STATUSES_IGNORE),  __LINE__ );

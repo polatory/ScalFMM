@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
                                                                 tree.getBoxWidth(),tree.getHeight(),
                                                                 &finalParticles, &balancer);
     { // -----------------------------------------------------
-        std::cout << "Creating & Inserting " << loader.getNumberOfParticles() << " particles ..." << std::endl;
+        std::cout << "Creating & Inserting " << finalParticles.getSize()  << " particles ..." << std::endl;
         std::cout << "For a total of " << loader.getNumberOfParticles() * app.global().processCount() << " particles ..." << std::endl;
         std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
         time.tic();
