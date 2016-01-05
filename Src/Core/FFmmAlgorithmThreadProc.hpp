@@ -363,6 +363,7 @@ protected:
         FLOG(computationCounter.tac());
         FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << " s)\n" );
         FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller.flush());
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -602,6 +603,7 @@ protected:
         FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
         FLOG( FLog::Controller << "\t\t Single : " << singleCounter.cumulated() << " s\n" );
         FLOG( FLog::Controller << "\t\t Parallel : " << parallelCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller.flush());
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -1009,6 +1011,7 @@ protected:
         FLOG( FLog::Controller << "\t\t Receive : " << receiveCounter.cumulated() << " s\n" );
         FLOG( FLog::Controller << "\t\t Gather : " << gatherCounter.cumulated() << " s\n" );
         FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller.flush());
 
     }
 
@@ -1184,6 +1187,7 @@ protected:
         FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
         FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller.flush());
     }
 
 
@@ -1546,6 +1550,7 @@ protected:
         FLOG( FLog::Controller << "\t\t Prepare P2P : " << prepareCounter.elapsed() << " s\n" );
         FLOG( FLog::Controller << "\t\t Gather P2P : " << gatherCounter.elapsed() << " s\n" );
         FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller.flush());
 
     }
 };
