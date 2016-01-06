@@ -31,8 +31,8 @@ if(SCALFMM_ADDON_FMMAPI)
 
 	# Adding the entire project dir as an include dir
 	INCLUDE_DIRECTORIES(
-         ${CMAKE_BINARY_DIR}/Src 
-         ${CMAKE_SOURCE_DIR}/Src   
+         ${SCALFMM_BINARY_DIR}/Src 
+         ${SCALFMM_SOURCE_DIR}/Src   
          ${SCALFMM_INCLUDES}
     )
 
@@ -46,7 +46,7 @@ if(SCALFMM_ADDON_FMMAPI)
 	INSTALL( FILES ${hpp_in_dir} DESTINATION include/ScalFmm/FmmApi )
 
 	file( GLOB_RECURSE source_tests_files Tests/*.cpp )
-	INCLUDE_DIRECTORIES( ${CMAKE_BINARY_DIR}/Src )
+	INCLUDE_DIRECTORIES( ${SCALFMM_BINARY_DIR}/Src )
 
 	# Then build test files
 	foreach(exec ${source_tests_files}) 
