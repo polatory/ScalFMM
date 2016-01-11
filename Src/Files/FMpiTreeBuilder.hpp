@@ -324,8 +324,6 @@ public:
                                          const FSize leavesOffsetInParticles[], const ParticleClass particlesArrayInLeafOrder[],
                                          const FSize currentNbLeaves,
                                          const FSize currentNbParts, FAbstractBalanceAlgorithm * balancer){
-        const FSize MAX_BYTE_PER_MPI_MESS = 2000000000;
-        const FSize MAX_PARTICLES_PER_MPI_MESS = FMath::Max(FSize(1), FSize(MAX_BYTE_PER_MPI_MESS/sizeof(ParticleClass)));
         const int myRank = communicator.processId();
         const int nbProcs = communicator.processCount();
 
@@ -367,7 +365,6 @@ public:
             FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Get my interval (" << packsToSend.size() << ")\n"; FLog::Controller.flush(); );
             FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Send data\n"; FLog::Controller.flush(); );
 
-            std::unique_ptr<FSize[]> nbPartsPerPackToSend(new FSize[packsToSend.size()]);
             // Store the requests
             std::vector<MPI_Request> requestsNbParts;
             requestsNbParts.reserve(packsToSend.size());
@@ -377,17 +374,15 @@ public:
                 const FEqualize::Package& pack = packsToSend[idxPack];
                 if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
                     // If not to me and if there is something to send
-                    nbPartsPerPackToSend[idxPack] = leavesOffsetInParticles[pack.elementTo]-leavesOffsetInParticles[pack.elementFrom];
-                    FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] pre-send to " << pack.idProc << " nb " << nbPartsPerPackToSend[idxPack] << " \n"; FLog::Controller.flush(); );
+                    const long long int nbPartsPerPackToSend = leavesOffsetInParticles[pack.elementTo]-leavesOffsetInParticles[pack.elementFrom];
+                    FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] pre-send to " << pack.idProc << " nb " << nbPartsPerPackToSend << " \n"; FLog::Controller.flush(); );
                     // Send the size of the data
                     requestsNbParts.emplace_back();
-                    FMpi::MpiAssert(MPI_Isend(&nbPartsPerPackToSend[idxPack],1,MPI_LONG_LONG_INT,pack.idProc,
-                                              FMpi::TagExchangeIndexs+1, communicator.getComm(), &requestsNbParts.back()),__LINE__);
+                    FMpi::MpiAssert(MPI_Isend(&nbPartsPerPackToSend,1,MPI_LONG_LONG_INT,pack.idProc,
+                                              FMpi::TagExchangeIndexs, communicator.getComm(), &requestsNbParts.back()),__LINE__);
                 }
                 else {
                     FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] skip " << idxPack << " \n"; FLog::Controller.flush(); );
-                    // Nothing to send
-                    nbPartsPerPackToSend[idxPack] = 0;
                 }
             }
             FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Send done \n"; FLog::Controller.flush(); );
@@ -414,7 +409,7 @@ public:
                     // We need to know how much particles to receive
                     requestsNbParts.emplace_back();
                     FMpi::MpiAssert(MPI_Irecv(&nbPartsPerPackToRecv[idxPack], 1, MPI_LONG_LONG_INT, pack.idProc,
-                                              FMpi::TagExchangeIndexs+1, communicator.getComm(), &requestsNbParts.back()), __LINE__);
+                                              FMpi::TagExchangeIndexs, communicator.getComm(), &requestsNbParts.back()), __LINE__);
                 }
                 else{
                     if(pack.idProc == myRank){
@@ -437,19 +432,20 @@ public:
 
             FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Wait Done \n"; FLog::Controller.flush(); );
 
-            //std::vector<MPI_Request> requestsParts;
-            std::unique_ptr<int[]> sendcounts(new int[communicator.processCount()]);
-            memset(sendcounts.get(), 0, sizeof(int)*communicator.processCount());
-            std::unique_ptr<int[]> sdispls(new int[communicator.processCount()]);
-            memset(sdispls.get(), 0, sizeof(int)*communicator.processCount());
+            std::vector<MPI_Request> requestsParts;
 
             for(unsigned int idxPack = 0; idxPack< packsToSend.size() ; ++idxPack){
                 const FEqualize::Package& pack = packsToSend[idxPack];
                 if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
-                    sendcounts[pack.idProc] = int(sizeof(ParticleClass)*nbPartsPerPackToSend[idxPack]);
-                    if(pack.idProc!=0) sdispls[pack.idProc] = sdispls[pack.idProc-1] + sendcounts[pack.idProc-1];
                     FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] send to "
-                          << pack.idProc << " nb " << nbPartsPerPackToSend[idxPack] << " sdispls " << sdispls[pack.idProc] << " \n"; FLog::Controller.flush(); );
+                          << pack.idProc << " nb " << (pack.elementTo-pack.elementFrom) << " \n"; FLog::Controller.flush(); );
+
+                    FMpi::ISendSplit(&particlesArrayInLeafOrder[pack.elementFrom],
+                                    (pack.elementTo - pack.elementFrom),
+                                    pack.idProc,
+                                    FMpi::TagExchangeIndexs + 1,
+                                    communicator,
+                                    &requestsParts);
                 }
             }
 
@@ -462,23 +458,25 @@ public:
                 totalPartsToReceive += nbPartsPerPackToRecv[idxPack];
             }
 
-            std::vector<ParticleClass> particlesRecvBuffer;
-            std::unique_ptr<int[]> recvcounts(new int[communicator.processCount()]);
-            memset(recvcounts.get(), 0, sizeof(int)*communicator.processCount());
-            std::unique_ptr<int[]> rdispls(new int[communicator.processCount()]);
-            memset(rdispls.get(), 0, sizeof(int)*communicator.processCount());
+            std::unique_ptr<ParticleClass[]> particlesRecvBuffer(new ParticleClass[totalPartsToReceive]);
 
             // Post all the receive and copy mine
             if(totalPartsToReceive){
-                particlesRecvBuffer.resize(totalPartsToReceive);
                 FSize offsetToRecv = 0;
                 for(unsigned int idxPack = 0; idxPack < packsToRecv.size(); ++idxPack){
                     const FEqualize::Package& pack = packsToRecv[idxPack];
                     if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
-                        recvcounts[pack.idProc] = int(sizeof(ParticleClass)*nbPartsPerPackToRecv[idxPack]);
-                        rdispls[pack.idProc] = int(sizeof(ParticleClass)*offsetToRecv);
                         FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] recv from "
-                              << pack.idProc << " nb " << nbPartsPerPackToRecv[idxPack] << " (offset " << rdispls[pack.idProc] << ") \n"; FLog::Controller.flush(); );
+                              << pack.idProc << " nb " << nbPartsPerPackToRecv[idxPack] << "\n"; FLog::Controller.flush(); );
+
+                        FAssertLF(pack.elementTo <= size_t(totalPartsToReceive));
+                        FMpi::IRecvSplit(&particlesRecvBuffer[pack.elementFrom],
+                                        (pack.elementTo - pack.elementFrom),
+                                        pack.idProc,
+                                        FMpi::TagExchangeIndexs + 1,
+                                        communicator,
+                                        &requestsParts);
+
                     }
                     else if(pack.idProc == myRank){
                         FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] skip " << idxPack << " \n"; FLog::Controller.flush(); );
@@ -493,28 +491,13 @@ public:
 
 
             FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] pre Wait \n"; FLog::Controller.flush(); );
-            FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] MPI_Alltoallv \n"; FLog::Controller.flush(); );
 
-            for(int idxProc = 0 ; idxProc < communicator.processCount() ; ++idxProc){
-                if(sendcounts[idxProc]){
-                    FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] for "
-                          << idxProc << " send " << sendcounts[idxProc] << " \n"; FLog::Controller.flush(); );
-                }
-                if(recvcounts[idxProc]){
-                    FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] for "
-                          << idxProc << " recv " << recvcounts[idxProc] << " rdispls " << rdispls[idxProc] << " \n"; FLog::Controller.flush(); );
-                }
-            }
+            FMpi::Assert( MPI_Waitall(int(requestsParts.size()), requestsParts.data(), MPI_STATUSES_IGNORE),  __LINE__ );
 
-            FMpi::MpiAssert( MPI_Alltoallv((const void *)particlesArrayInLeafOrder, sendcounts.get(),
-                        sdispls.get(), MPI_BYTE,
-                        (void *)particlesRecvBuffer.data(), recvcounts.get(),
-                        rdispls.get(), MPI_BYTE, communicator.getComm()), __LINE__);
-
-            FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] MPI_Alltoallv Done \n"; FLog::Controller.flush(); );
+            FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Wait Done \n"; FLog::Controller.flush(); );
 
             // Insert in the particle saver
-            for(FSize idPartsToStore = 0 ; idPartsToStore < int(particlesRecvBuffer.size()) ; ++idPartsToStore){
+            for(FSize idPartsToStore = 0 ; idPartsToStore < totalPartsToReceive ; ++idPartsToStore){
                 particlesSaver->push(particlesRecvBuffer[idPartsToStore]);
             }
         }

@@ -26,9 +26,6 @@
 
 template <class SortType, class CompareType, class IndexType = size_t>
 class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
-    /** We are limited by the size of int in MPI coms */
-    static const int FQS_MAX_MPI_BYTES = 2000000000;
-
     // We need a structure see the algorithm detail to know more
     struct Partition{
         IndexType lowerPart;
@@ -181,24 +178,14 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
         for(int idxPack = 0 ; idxPack < int(whatToRecvFromWho.size()) ; ++idxPack){
             const PackData& pack = whatToRecvFromWho[idxPack];
             FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Recv from " << pack.idProc << " from " << pack.fromElement << " to " << pack.toElement << "\n"; );
-               FAssertLF((pack.toElement - pack.fromElement) * sizeof(SortType) < std::numeric_limits<int>::max());
-//             FMpi::Assert( MPI_Irecv((SortType*)&recvBuffer[pack.fromElement], int((pack.toElement - pack.fromElement) * sizeof(SortType)), MPI_BYTE, pack.idProc,
-//                          FMpi::TagQuickSort, currentComm.getComm(), &requests[idxPack]) , __LINE__);
-            // Work per max size
-            const IndexType nbElementsInPack = (pack.toElement - pack.fromElement);
-            const IndexType totalByteToRecv  = IndexType(nbElementsInPack*sizeof(SortType));
-            unsigned char*const ptrDataToRecv = (unsigned char*)&recvBuffer[pack.fromElement];
-            FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Recv in " << (totalByteToRecv+FQS_MAX_MPI_BYTES-1)/FQS_MAX_MPI_BYTES << " messages \n"; );
-            FLOG( FLog::Controller.flush(); );
-            for(IndexType idxSize = 0 ; idxSize < totalByteToRecv ; idxSize += FQS_MAX_MPI_BYTES){
-                MPI_Request currentRequest;
-                const FSize nbBytesInMessage = int(FMath::Min(IndexType(FQS_MAX_MPI_BYTES), totalByteToRecv-idxSize));
-                FAssertLF(nbBytesInMessage < std::numeric_limits<int>::max());
-                FMpi::Assert( MPI_Irecv(&ptrDataToRecv[idxSize], int(nbBytesInMessage), MPI_BYTE, pack.idProc,
-                              int(FMpi::TagQuickSort + idxSize/FQS_MAX_MPI_BYTES), currentComm.getComm(), &currentRequest) , __LINE__);
+            FAssertLF(pack.toElement <= totalToRecv);
+            FMpi::IRecvSplit(&recvBuffer[pack.fromElement],
+                            (pack.toElement - pack.fromElement),
+                            pack.idProc,
+                            FMpi::TagQuickSort,
+                            currentComm,
+                            &requests);
 
-                requests.push_back(currentRequest);
-            }
         }
         FAssertLF(whatToRecvFromWho.size() <= requests.size());
         FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << "Wait for " << requests.size() << " request \n" );
@@ -226,24 +213,13 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
         for(int idxPack = 0 ; idxPack < int(whatToSendToWho.size()) ; ++idxPack){
             const PackData& pack = whatToSendToWho[idxPack];
             FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Send to " << pack.idProc << " from " << pack.fromElement << " to " << pack.toElement << "\n"; );
-//            FAssertLF((pack.toElement - pack.fromElement)* sizeof(SortType) < std::numeric_limits<int>::max());
-//            FMpi::Assert( MPI_Isend(const_cast<SortType*>(&inPartToSend[pack.fromElement]), int((pack.toElement - pack.fromElement) * sizeof(SortType)), MPI_BYTE , pack.idProc,
-//                          FMpi::TagQuickSort, currentComm.getComm(), &requests[idxPack]) , __LINE__);
-            // Work per max size
-            const IndexType nbElementsInPack = (pack.toElement - pack.fromElement);
-            const IndexType totalByteToSend  = IndexType(nbElementsInPack*sizeof(SortType));
-            unsigned char*const ptrDataToSend = (unsigned char*)const_cast<SortType*>(&inPartToSend[pack.fromElement]);
-            FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] Send in " << (totalByteToSend+FQS_MAX_MPI_BYTES-1)/FQS_MAX_MPI_BYTES << " messages \n"; );
-            FLOG( FLog::Controller.flush(); );
-            for(IndexType idxSize = 0 ; idxSize < totalByteToSend ; idxSize += FQS_MAX_MPI_BYTES){
-                MPI_Request currentRequest;
-                const IndexType nbBytesInMessage = int(FMath::Min(IndexType(FQS_MAX_MPI_BYTES), totalByteToSend-idxSize));
-                FAssertLF(nbBytesInMessage < std::numeric_limits<int>::max());
-                FMpi::Assert( MPI_Isend((SortType*)&ptrDataToSend[idxSize], int(nbBytesInMessage), MPI_BYTE , pack.idProc,
-                              int(FMpi::TagQuickSort + idxSize/FQS_MAX_MPI_BYTES), currentComm.getComm(), &currentRequest) , __LINE__);
 
-                requests.push_back(currentRequest);
-            }
+            FMpi::ISendSplit(&inPartToSend[pack.fromElement],
+                            (pack.toElement - pack.fromElement),
+                            pack.idProc,
+                            FMpi::TagQuickSort,
+                            currentComm,
+                            &requests);
         }
         FAssertLF(whatToSendToWho.size() <= requests.size());
         FLOG( FLog::Controller << "SCALFMM-DEBUG [" << currentComm.processId() << "] Wait for " << requests.size() << " request \n" );
