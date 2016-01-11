@@ -250,6 +250,13 @@ public:
         void barrier() const {
             FMpi::Assert(MPI_Barrier(getComm()), __LINE__);
         }
+
+        bool hasPendingMessage() const {
+            MPI_Status status;
+            int flag = 0;
+            MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, getComm(), &flag, &status);
+            return (flag != 0);
+        }
     };
 
     ////////////////////////////////////////////////////////
