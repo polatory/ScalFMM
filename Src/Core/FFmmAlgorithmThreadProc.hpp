@@ -777,22 +777,28 @@ protected:
 
                             FAssertLF(sendBuffer[idxLevel * nbProcess + idxProc]->getSize() == toSendAtProcAtLevel);
 
-                            FAssertLF(sendBuffer[idxLevel * nbProcess + idxProc]->getSize() < std::numeric_limits<int>::max());
-                            requests.emplace_back();
-                            FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc]->data(),
-                                             int(sendBuffer[idxLevel * nbProcess + idxProc]->getSize()),MPI_PACKED, idxProc,
-                                    FMpi::TagLast + idxLevel*100, comm.getComm(), &requests.back()) , __LINE__ );
+//                            FAssertLF(sendBuffer[idxLevel * nbProcess + idxProc]->getSize() < std::numeric_limits<int>::max());
+//                            requests.emplace_back();
+//                            FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc]->data(),
+//                                             int(sendBuffer[idxLevel * nbProcess + idxProc]->getSize()),MPI_PACKED, idxProc,
+//                                    FMpi::TagLast + idxLevel*100, comm.getComm(), &requests.back()) , __LINE__ );
+                            FMpi::ISendSplit(sendBuffer[idxLevel * nbProcess + idxProc]->data(),
+                                    sendBuffer[idxLevel * nbProcess + idxProc]->getSize(), idxProc,
+                                    FMpi::TagLast + idxLevel*100, comm, &requests);
                         }
 
                         const long long int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
                         if(toReceiveFromProcAtLevel){
                             recvBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferReader(comm.getComm(),int(toReceiveFromProcAtLevel));
 
-                            FAssertLF(recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity() < std::numeric_limits<int>::max());
-                            requests.emplace_back();
-                            FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc]->data(),
-                                             int(recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity()), MPI_PACKED,idxProc,
-                                    FMpi::TagLast + idxLevel*100, comm.getComm(), &requests.back()) , __LINE__ );
+//                            FAssertLF(recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity() < std::numeric_limits<int>::max());
+//                            requests.emplace_back();
+//                            FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc]->data(),
+//                                             int(recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity()), MPI_PACKED,idxProc,
+//                                    FMpi::TagLast + idxLevel*100, comm.getComm(), &requests.back()) , __LINE__ );
+                            FMpi::IRecvSplit(recvBuffer[idxLevel * nbProcess + idxProc]->data(),
+                                    recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity(), idxProc,
+                                    FMpi::TagLast + idxLevel*100, comm, &requests);
                         }
                     }
                 }
