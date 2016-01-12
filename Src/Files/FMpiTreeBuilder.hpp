@@ -196,7 +196,7 @@ public:
             FMpi::MpiAssert(MPI_Allgather(&borderLeavesState, sizeof(LeafInfo)*2, MPI_BYTE,
                                           allProcFirstLeafStates.get(), sizeof(LeafInfo)*2, MPI_BYTE, communicator.getComm()),__LINE__);
 
-            FVector<MPI_Request> requests;
+            std::vector<MPI_Request> requests;
 
             // Find what to send/recv from who
             bool hasSentFirstLeaf = false;
@@ -211,10 +211,12 @@ public:
                 // We found someone
                 if(idProcToSendTo != myRank && allProcFirstLeafStates[(idProcToSendTo)*2 + 1].mindex == borderLeavesState[0].mindex){
                     // Post and send message for the first leaf
-                    requests.push((MPI_Request)0);
-                    FAssertLF(borderLeavesState[0].nbParts*sizeof(IndexedParticle) < std::numeric_limits<int>::max());
-                    FMpi::MpiAssert(MPI_Isend(&workingArray[0], int(borderLeavesState[0].nbParts*sizeof(IndexedParticle)), MPI_BYTE, idProcToSendTo,
-                            FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]),__LINE__);
+//                    requests.push((MPI_Request)0);
+//                    FAssertLF(borderLeavesState[0].nbParts*sizeof(IndexedParticle) < std::numeric_limits<int>::max());
+//                    FMpi::MpiAssert(MPI_Isend(&workingArray[0], int(borderLeavesState[0].nbParts*sizeof(IndexedParticle)), MPI_BYTE, idProcToSendTo,
+//                            FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]),__LINE__);
+                    FMpi::ISendSplit(&workingArray[0], borderLeavesState[0].nbParts, idProcToSendTo,
+                            FMpi::TagExchangeIndexs, communicator, &requests);
                     FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] send " << borderLeavesState[0].nbParts << " to " << idProcToSendTo << "\n"; FLog::Controller.flush(); );
                     hasSentFirstLeaf = true;
                 }
@@ -242,10 +244,12 @@ public:
                     for(int postRecvIdx = (myRank+1); postRecvIdx <= idProcToRecvFrom ; ++postRecvIdx){
                         // If there are some on this proc
                         if(allProcFirstLeafStates[(postRecvIdx)*2].mindex != noDataFlag){
-                            requests.push((MPI_Request)0);
-                            FAssertLF(allProcFirstLeafStates[(postRecvIdx)*2].nbParts*sizeof(IndexedParticle) < std::numeric_limits<int>::max());
-                            FMpi::MpiAssert(MPI_Irecv(&receivedParticles[postPositionRecv], int(allProcFirstLeafStates[(postRecvIdx)*2].nbParts*sizeof(IndexedParticle)), MPI_BYTE, postRecvIdx,
-                                            FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]),__LINE__);
+//                            requests.push((MPI_Request)0);
+//                            FAssertLF(allProcFirstLeafStates[(postRecvIdx)*2].nbParts*sizeof(IndexedParticle) < std::numeric_limits<int>::max());
+//                            FMpi::MpiAssert(MPI_Irecv(&receivedParticles[postPositionRecv], int(allProcFirstLeafStates[(postRecvIdx)*2].nbParts*sizeof(IndexedParticle)), MPI_BYTE, postRecvIdx,
+//                                            FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]),__LINE__);
+                            FMpi::IRecvSplit(&receivedParticles[postPositionRecv], allProcFirstLeafStates[(postRecvIdx)*2].nbParts, postRecvIdx,
+                                    FMpi::TagExchangeIndexs, communicator, &requests);
                             FLOG( FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] recv " << allProcFirstLeafStates[(postRecvIdx)*2].nbParts << " from " << postRecvIdx << "\n"; FLog::Controller.flush(); );
                             // Inc the write position
                             postPositionRecv += allProcFirstLeafStates[(postRecvIdx)*2].nbParts;
@@ -256,7 +260,7 @@ public:
             }
 
             // Finalize communication
-            FMpi::MpiAssert(MPI_Waitall(int(requests.getSize()), requests.data(), MPI_STATUSES_IGNORE),__LINE__);
+            FMpi::MpiAssert(MPI_Waitall(int(requests.size()), requests.data(), MPI_STATUSES_IGNORE),__LINE__);
 
             // IF we sent we need to remove the first leaf
             if(hasSentFirstLeaf){
