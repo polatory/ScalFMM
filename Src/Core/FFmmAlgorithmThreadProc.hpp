@@ -1217,11 +1217,6 @@ protected:
         ///////////////////////////////////////////////////
         FLOG(prepareCounter.tic());
 
-        // To send in asynchrone way
-        MPI_Request requests[2 * nbProcess];
-        MPI_Status status[2 * nbProcess];
-        int iterRequest = 0;
-        int nbMessagesToRecv = 0;
 
         FMpiBufferWriter**const sendBuffer = new FMpiBufferWriter*[nbProcess];
         memset(sendBuffer, 0, sizeof(FMpiBufferWriter*) * nbProcess);
@@ -1330,18 +1325,22 @@ protected:
                                                 globalReceiveMap, nbProcess, FMpi::GetType(*partsToSend), comm.getComm()),  __LINE__ );
                 FLOG(gatherCounter.tac());
 
+                // To send in asynchrone way
+                std::vector<MPI_Request> requests;
+                requests.reserve(2 * nbProcess);
                 //Prepare receive
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                     if(globalReceiveMap[idxProc * nbProcess + idProcess]){ //if idxProc has sth for me.
                         //allocate buffer of right size
                         recvBuffer[idxProc] = new FMpiBufferReader(comm.getComm(),globalReceiveMap[idxProc * nbProcess + idProcess]);
                         FAssertLF(recvBuffer[idxProc]->getCapacity() < std::numeric_limits<int>::max());
+                        requests.emplace_back();
                         FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), int(recvBuffer[idxProc]->getCapacity()), MPI_PACKED,
-                                                   idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
+                                                   idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests.back()) , __LINE__ );
                     }
                 }
 
-                nbMessagesToRecv = iterRequest;
+                const int nbMessagesToRecv = int(requests.size());
                 // Prepare send
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                     if(toSend[idxProc].getSize() != 0){
@@ -1355,8 +1354,9 @@ protected:
 
                         FAssertLF(sendBuffer[idxProc]->getSize() == globalReceiveMap[idProcess*nbProcess+idxProc]);
                         FAssertLF(sendBuffer[idxProc]->getSize() < std::numeric_limits<int>::max());
+                        requests.emplace_back();
                         FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), int(sendBuffer[idxProc]->getSize()) , MPI_PACKED ,
-                                                    idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
+                                                    idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests.back()) , __LINE__ );
 
                     }
                 }
@@ -1368,9 +1368,10 @@ protected:
                 // Waitsend receive
                 //////////////////////////////////////////////////////////
 
+                std::unique_ptr<MPI_Status[]> status(new MPI_Status[requests.size()]);
                 // Wait data
                 FLOG(waitCounter.tic());
-                MPI_Waitall(iterRequest, requests, status);
+                MPI_Waitall(int(requests.size()), requests.data(), status.get());
                 FLOG(waitCounter.tac());
 
                 for(int idxRcv = 0 ; idxRcv < nbMessagesToRecv ; ++idxRcv){
