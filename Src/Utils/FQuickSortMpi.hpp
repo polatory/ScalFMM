@@ -104,7 +104,6 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
                     totalRemainingElements -= nbElementsToRecvPerProc[idxProc - firstProcToRecv];
                 }
                 else{
-                    FAssert((averageNbElementForRemainingProc - nbElementsAlreadyOwned) == 0);
                     nbElementsToRecvPerProc[idxProc - firstProcToRecv] = 0;
                 }
                 FLOG(if(VerboseLog)  FLog::Controller << "SCALFMM-DEBUG ["  << currentRank << "] nbElementsToRecvPerProc[" << idxProc << "] = " << nbElementsToRecvPerProc[idxProc - firstProcToRecv] << "\n"; )
