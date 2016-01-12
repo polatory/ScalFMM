@@ -404,7 +404,7 @@ protected:
         MPI_Status statusSize[8];
 
         FSize bufferSize;
-        FMpiBufferWriter sendBuffer(comm.getComm(), 1);// Max = 1 + sizeof(cell)*7
+        FMpiBufferWriter sendBuffer(1);// Max = 1 + sizeof(cell)*7
         std::unique_ptr<FMpiBufferReader[]> recvBuffer(new FMpiBufferReader[7]);
         FSize recvBufferSize[7];
         CellClass recvBufferCells[7];
@@ -856,7 +856,7 @@ protected:
                     for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                         const long long int toSendAtProcAtLevel = indexToSend[idxLevel * nbProcess + idxProc];
                         if(toSendAtProcAtLevel != 0){
-                            sendBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferWriter(comm.getComm(),int(toSendAtProcAtLevel));
+                            sendBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferWriter(toSendAtProcAtLevel);
 
                             sendBuffer[idxLevel * nbProcess + idxProc]->write(int(toSend[idxLevel * nbProcess + idxProc].getSize()));
 
@@ -878,7 +878,7 @@ protected:
 
                         const long long int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
                         if(toReceiveFromProcAtLevel){
-                            recvBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferReader(comm.getComm(),int(toReceiveFromProcAtLevel));
+                            recvBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferReader(toReceiveFromProcAtLevel);
 
                             FAssertLF(recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity() < std::numeric_limits<int>::max());
                             FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc]->data(),
@@ -1126,7 +1126,7 @@ protected:
         MPI_Status*const statusSize = new MPI_Status[8];
 
         FMpiBufferWriter sendBuffer(comm.getComm());
-        FMpiBufferReader recvBuffer(comm.getComm());
+        FMpiBufferReader recvBuffer;
 
         int righestProcToSendTo   = nbProcess - 1;
 
@@ -1441,7 +1441,7 @@ protected:
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                     if(globalReceiveMap[idxProc * nbProcess + idProcess]){ //if idxProc has sth for me.
                         //allocate buffer of right size
-                        recvBuffer[idxProc] = new FMpiBufferReader(comm.getComm(),globalReceiveMap[idxProc * nbProcess + idProcess]);
+                        recvBuffer[idxProc] = new FMpiBufferReader(globalReceiveMap[idxProc * nbProcess + idProcess]);
                         FAssertLF(recvBuffer[idxProc]->getCapacity() < std::numeric_limits<int>::max());
                         FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), int(recvBuffer[idxProc]->getCapacity()), MPI_PACKED,
                                                    idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
@@ -1452,7 +1452,7 @@ protected:
                 // Prepare send
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                     if(toSend[idxProc].getSize() != 0){
-                        sendBuffer[idxProc] = new FMpiBufferWriter(comm.getComm(),globalReceiveMap[idProcess*nbProcess+idxProc]);
+                        sendBuffer[idxProc] = new FMpiBufferWriter(globalReceiveMap[idProcess*nbProcess+idxProc]);
                         // << is equivalent to write().
                         (*sendBuffer[idxProc]) << toSend[idxProc].getSize();
                         for(int idxLeaf = 0 ; idxLeaf < toSend[idxProc].getSize() ; ++idxLeaf){

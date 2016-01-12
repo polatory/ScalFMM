@@ -401,7 +401,7 @@ protected:
         MPI_Status statusSize[8];
 
         FSize bufferSize;
-        FMpiBufferWriter sendBuffer(comm.getComm(), 1);// Max = 1 + sizeof(cell)*7
+        FMpiBufferWriter sendBuffer(1);// Max = 1 + sizeof(cell)*7
         std::unique_ptr<FMpiBufferReader[]> recvBuffer(new FMpiBufferReader[7]);
         FSize recvBufferSize[7];
         CellClass recvBufferCells[7];
@@ -763,7 +763,7 @@ protected:
                     for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                         const long long int toSendAtProcAtLevel = indexToSend[idxLevel * nbProcess + idxProc];
                         if(toSendAtProcAtLevel != 0){
-                            sendBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferWriter(comm.getComm(),int(toSendAtProcAtLevel));
+                            sendBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferWriter(toSendAtProcAtLevel);
 
                             sendBuffer[idxLevel * nbProcess + idxProc]->write(int(toSend[idxLevel * nbProcess + idxProc].getSize()));
 
@@ -784,7 +784,7 @@ protected:
 
                         const long long int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
                         if(toReceiveFromProcAtLevel){
-                            recvBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferReader(comm.getComm(),int(toReceiveFromProcAtLevel));
+                            recvBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferReader(toReceiveFromProcAtLevel);
 
                             FMpi::IRecvSplit(recvBuffer[idxLevel * nbProcess + idxProc]->data(),
                                     recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity(), idxProc,
@@ -1036,8 +1036,8 @@ protected:
 
         const int heightMinusOne = FAbstractAlgorithm::lowerWorkingLevel - 1;
 
-        FMpiBufferWriter sendBuffer(comm.getComm());
-        FMpiBufferReader recvBuffer(comm.getComm());
+        FMpiBufferWriter sendBuffer;
+        FMpiBufferReader recvBuffer;
 
         int righestProcToSendTo   = nbProcess - 1;
 
@@ -1211,20 +1211,6 @@ protected:
         ///////////////////////////////////////////////////
         FLOG(prepareCounter.tic());
 
-
-        FMpiBufferWriter**const sendBuffer = new FMpiBufferWriter*[nbProcess];
-        memset(sendBuffer, 0, sizeof(FMpiBufferWriter*) * nbProcess);
-
-        FMpiBufferReader**const recvBuffer = new FMpiBufferReader*[nbProcess];
-        memset(recvBuffer, 0, sizeof(FMpiBufferReader*) * nbProcess);
-
-        /* This a nbProcess x nbProcess matrix of integer
-     * let U and V be id of processes :
-     * globalReceiveMap[U*nbProcess + V] == size of information needed by V and own by U
-     */
-        FSize*const globalReceiveMap = new FSize[nbProcess * nbProcess];
-        memset(globalReceiveMap, 0, sizeof(FSize) * nbProcess * nbProcess);
-
         FBoolArray leafsNeedOther(this->numberOfLeafs);
         int countNeedOther = 0;
 
@@ -1313,11 +1299,24 @@ protected:
 
 #pragma omp master // nowait
             if(p2pEnabled){
+                /* This a nbProcess x nbProcess matrix of integer
+             * let U and V be id of processes :
+             * globalReceiveMap[U*nbProcess + V] == size of information needed by V and own by U
+             */
+                FSize*const globalReceiveMap = new FSize[nbProcess * nbProcess];
+                memset(globalReceiveMap, 0, sizeof(FSize) * nbProcess * nbProcess);
+
                 //Share to all processus globalReceiveMap
                 FLOG(gatherCounter.tic());
                 FMpi::MpiAssert( MPI_Allgather( partsToSend, nbProcess, FMpi::GetType(*partsToSend),
                                                 globalReceiveMap, nbProcess, FMpi::GetType(*partsToSend), comm.getComm()),  __LINE__ );
                 FLOG(gatherCounter.tac());
+
+                FMpiBufferReader**const recvBuffer = new FMpiBufferReader*[nbProcess];
+                memset(recvBuffer, 0, sizeof(FMpiBufferReader*) * nbProcess);
+
+                FMpiBufferWriter**const sendBuffer = new FMpiBufferWriter*[nbProcess];
+                memset(sendBuffer, 0, sizeof(FMpiBufferWriter*) * nbProcess);
 
                 // To send in asynchrone way
                 std::vector<MPI_Request> requests;
@@ -1326,18 +1325,17 @@ protected:
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                     if(globalReceiveMap[idxProc * nbProcess + idProcess]){ //if idxProc has sth for me.
                         //allocate buffer of right size
-                        recvBuffer[idxProc] = new FMpiBufferReader(comm.getComm(),globalReceiveMap[idxProc * nbProcess + idProcess]);
+                        recvBuffer[idxProc] = new FMpiBufferReader(globalReceiveMap[idxProc * nbProcess + idProcess]);
 
                         FMpi::IRecvSplit(recvBuffer[idxProc]->data(), recvBuffer[idxProc]->getCapacity(),
                                          idxProc, FMpi::TagFmmP2P, comm, &requests);
                     }
                 }
 
-                const int nbMessagesToRecv = int(requests.size());
                 // Prepare send
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                     if(toSend[idxProc].getSize() != 0){
-                        sendBuffer[idxProc] = new FMpiBufferWriter(comm.getComm(),globalReceiveMap[idProcess*nbProcess+idxProc]);
+                        sendBuffer[idxProc] = new FMpiBufferWriter(globalReceiveMap[idProcess*nbProcess+idxProc]);
                         // << is equivalent to write().
                         (*sendBuffer[idxProc]) << toSend[idxProc].getSize();
                         for(int idxLeaf = 0 ; idxLeaf < toSend[idxProc].getSize() ; ++idxLeaf){
@@ -1366,18 +1364,28 @@ protected:
                 MPI_Waitall(int(requests.size()), requests.data(), status.get());
                 FLOG(waitCounter.tac());
 
-                for(int idxRcv = 0 ; idxRcv < nbMessagesToRecv ; ++idxRcv){
-                    const int idxProc = status[idxRcv].MPI_SOURCE;
-                    FSize nbLeaves;
-                    (*recvBuffer[idxProc]) >> nbLeaves;
-                    for(FSize idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-                        MortonIndex leafIndex;
-                        (*recvBuffer[idxProc]) >> leafIndex;
-                        otherP2Ptree.createLeaf(leafIndex)->getSrc()->restore((*recvBuffer[idxProc]));
+                for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
+                    if(globalReceiveMap[idxProc * nbProcess + idProcess]){ //if idxProc has sth for me.
+                        FAssertLF(recvBuffer[idxProc]);
+                        FMpiBufferReader& currentBuffer = (*recvBuffer[idxProc]);
+                        FSize nbLeaves;
+                        currentBuffer >> nbLeaves;
+                        for(FSize idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+                            MortonIndex leafIndex;
+                            currentBuffer >> leafIndex;
+                            otherP2Ptree.createLeaf(leafIndex)->getSrc()->restore(currentBuffer);
+                        }
+                        // Realease memory early
+                        delete recvBuffer[idxProc];
+                        recvBuffer[idxProc] = nullptr;
                     }
+                }                
+
+                for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
+                    delete sendBuffer[idxProc];
                     delete recvBuffer[idxProc];
-                    recvBuffer[idxProc] = nullptr;
                 }
+                delete[] globalReceiveMap;
             }
 
             ///////////////////////////////////////////////////
@@ -1527,11 +1535,6 @@ protected:
             }
         }
 
-        for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-            delete sendBuffer[idxProc];
-            delete recvBuffer[idxProc];
-        }
-        delete[] globalReceiveMap;
         delete[] leafsDataArray;
 
         FLOG(computation2Counter.tac());

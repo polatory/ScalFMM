@@ -21,32 +21,25 @@
 #include "FAbstractBuffer.hpp"
 #include "../Utils/FAssert.hpp"
 
-/** @author Cyrille Piacibello
- * This class provide the same features as FBufferWriter using MPI_Pack system
+/** @author Cyrille Piacibello, Berenger Bramas
+ * This class provide the same features as FBufferWriter
  *
  * Put some data
  * then insert back if needed
  * finally use data pointer as you like
  */
 class FMpiBufferReader : public FAbstractBufferReader {
-    MPI_Comm comm;            //< Communicator needed by MPI_Pack functions
     FSize arrayCapacity;        //< Allocated space
     std::unique_ptr<char[]> array;  //< Allocated Array
     FSize currentIndex;
 
 public :
     /*Constructor with a default arrayCapacity of 512 bytes */
-    explicit FMpiBufferReader(const MPI_Comm inComm = MPI_COMM_WORLD, const FSize inDefaultCapacity = 512):
-        comm(inComm),
+    explicit FMpiBufferReader(const FSize inDefaultCapacity = 512):
         arrayCapacity(inDefaultCapacity),
         array(new char[inDefaultCapacity]),
         currentIndex(0){
         FAssertLF(array, "Cannot allocate array");
-    }
-
-    /** Change the comm (or to set it later) */
-    void setComm(const MPI_Comm inComm){
-        comm = inComm;
     }
 
     /** To change the capacity (but reset the head to 0) */
@@ -97,50 +90,34 @@ public :
     /** Get a value with memory cast */
     template <class ClassType>
     ClassType getValue(){
-        FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
-        FAssertLF(currentIndex < std::numeric_limits<int>::max());
-        int previousIndex = int(currentIndex);
+        FAssertLF(currentIndex + FSize(sizeof(ClassType)) <= arrayCapacity );
         ClassType value;
-        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,&value,FMpi::GetTypeCount(value),FMpi::GetType(value),comm), __LINE__);
-        seek(FSize(sizeof(value) + currentIndex));
-        FAssertLF(previousIndex == currentIndex);
+        memcpy(&value, &array[currentIndex], sizeof(ClassType));
+        currentIndex += sizeof(ClassType);
         return value;
     }
 
     /** Get a value with memory cast at a specified index */
     template <class ClassType>
     ClassType getValue(const FSize ind){
-        ClassType value;
-        FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
-        FAssertLF(ind < std::numeric_limits<int>::max());
-        int previousIndex = int(ind);
-        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,&value,FMpi::GetTypeCount(value),FMpi::GetType(value),comm), __LINE__);
-        seek(FSize(sizeof(value)+ind));
-        FAssertLF(previousIndex == currentIndex);
-        return value;
+        currentIndex = ind;
+        return getValue<ClassType>();
     }
 
     /** Fill a value with memory cast */
     template <class ClassType>
     void fillValue(ClassType* const inValue){
-        FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
-        FAssertLF(currentIndex < std::numeric_limits<int>::max());
-        int previousIndex = int(currentIndex);
-        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,inValue,FMpi::GetTypeCount(*inValue),FMpi::GetType(*inValue),comm), __LINE__);
-        seek(FSize(sizeof(ClassType) + currentIndex));
-        FAssertLF(previousIndex == currentIndex);
+        FAssertLF(currentIndex + FSize(sizeof(ClassType)) <= arrayCapacity );
+        memcpy(inValue, &array[currentIndex], sizeof(ClassType));
+        currentIndex += sizeof(ClassType);
     }
 
     /** Fill one/many value(s) with memcpy */
     template <class ClassType>
     void fillArray(ClassType* const inArray, const FSize inSize){
-        FAssertLF(arrayCapacity < std::numeric_limits<int>::max());
-        FAssertLF(currentIndex < std::numeric_limits<int>::max());
-        FAssertLF(inSize < std::numeric_limits<int>::max());
-        int previousIndex = int(currentIndex);
-        FMpi::Assert(MPI_Unpack(array.get(),int(arrayCapacity),&previousIndex,inArray,int(inSize)*FMpi::GetTypeCount(*inArray),FMpi::GetType(*inArray),comm), __LINE__);
-        seek(FSize(sizeof(ClassType) * inSize + currentIndex));
-        FAssertLF(previousIndex == currentIndex);
+        FAssertLF(currentIndex + FSize(sizeof(ClassType))*inSize <= arrayCapacity );
+        memcpy(inArray, &array[currentIndex], sizeof(ClassType)*inSize);
+        currentIndex += sizeof(ClassType)*inSize;
     }
 
     /** Same as fillValue */
