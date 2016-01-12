@@ -108,9 +108,8 @@ public:
     /** Write back, position + sizeof(object) has to be < size */
     template <class ClassType>
     void writeAt(const FSize position, const ClassType& object){
-        FAssertLF(position <= currentIndex);
-        currentIndex = position;
-        write(object);
+        FAssertLF(position+FSize(sizeof(ClassType)) <= currentIndex);
+        memcpy(&array[position], &object, sizeof(ClassType));
     }
 
     /** Write an array

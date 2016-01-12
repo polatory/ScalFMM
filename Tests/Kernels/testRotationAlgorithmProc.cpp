@@ -115,8 +115,8 @@ int main(int argc, char* argv[])
                                                                 tree.getBoxWidth(),tree.getHeight(),
                                                                 &finalParticles, &balancer);
     { // -----------------------------------------------------
-        std::cout << "Creating & Inserting " << finalParticles.getSize()  << " particles ..." << std::endl;
-        std::cout << "For a total of " << loader.getNumberOfParticles() * app.global().processCount() << " particles ..." << std::endl;
+        std::cout << app.global().processId() << "] Creating & Inserting " << finalParticles.getSize()  << " particles ..." << std::endl;
+        std::cout << app.global().processId() << "] For a total of " << loader.getNumberOfParticles() * app.global().processCount() << " particles ..." << std::endl;
         std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
         time.tic();
 
@@ -126,8 +126,17 @@ int main(int argc, char* argv[])
         }
 
         time.tac();
-        std::cout << "Done  " << "(@Creating and Inserting Particles = "
+        std::cout << app.global().processId() << "] Done  " << "(@Creating and Inserting Particles = "
                   << time.elapsed() << "s)." << std::endl;
+
+        FSize minPart = std::numeric_limits<FSize>::max();
+        FSize maxPart = std::numeric_limits<FSize>::min();
+        tree.forEachLeaf([&](LeafClass* lf){
+            minPart = FMath::Min(lf->getSrc()->getNbParticles(), minPart);
+            maxPart = FMath::Max(lf->getSrc()->getNbParticles(), maxPart);
+        });
+
+        std::cout << app.global().processId() << "] Min nb part " << minPart << " Max nb part " << maxPart << std::endl;
     } // -----------------------------------------------------
 
     delete[] particles;
@@ -139,13 +148,14 @@ int main(int argc, char* argv[])
         KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
         FmmClass algorithm(app.global(),&tree, &kernels);
         time.tac();
-        std::cout << "Done  " << "(@Init = " << time.elapsed() << "s)." << std::endl;
+        std::cout << app.global().processId() << "] Done  " << "(@Init = " << time.elapsed() << "s)." << std::endl;
         time.tic();
         algorithm.execute();
         time.tac();
-        std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
+        std::cout << app.global().processId() << "] Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
     } // -----------------------------------------------------
 
+    app.global().barrier();
 
     return 0;
 }
