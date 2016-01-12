@@ -756,9 +756,8 @@ protected:
                 FLOG(sendCounter.tic());
                 // Then they can send and receive (because they know what they will receive)
                 // To send in asynchrone way
-                MPI_Request*const requests = new MPI_Request[2 * nbProcess * OctreeHeight];
-                MPI_Status*const status = new MPI_Status[2 * nbProcess * OctreeHeight];
-                int iterRequest = 0;
+                std::vector<MPI_Request> requests;
+                requests.reserve(2 * nbProcess * OctreeHeight);
 
                 for(int idxLevel = 2 ; idxLevel < OctreeHeight ; ++idxLevel ){
                     for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
@@ -779,9 +778,10 @@ protected:
                             FAssertLF(sendBuffer[idxLevel * nbProcess + idxProc]->getSize() == toSendAtProcAtLevel);
 
                             FAssertLF(sendBuffer[idxLevel * nbProcess + idxProc]->getSize() < std::numeric_limits<int>::max());
+                            requests.emplace_back();
                             FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc]->data(),
                                              int(sendBuffer[idxLevel * nbProcess + idxProc]->getSize()),MPI_PACKED, idxProc,
-                                    FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
+                                    FMpi::TagLast + idxLevel*100, comm.getComm(), &requests.back()) , __LINE__ );
                         }
 
                         const long long int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
@@ -789,9 +789,10 @@ protected:
                             recvBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferReader(comm.getComm(),int(toReceiveFromProcAtLevel));
 
                             FAssertLF(recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity() < std::numeric_limits<int>::max());
+                            requests.emplace_back();
                             FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc]->data(),
                                              int(recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity()), MPI_PACKED,idxProc,
-                                    FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
+                                    FMpi::TagLast + idxLevel*100, comm.getComm(), &requests.back()) , __LINE__ );
                         }
                     }
                 }
@@ -801,10 +802,7 @@ protected:
                 //////////////////////////////////////////////////////////////////
 
                 // Wait to receive every things (and send every things)
-                FMpi::MpiAssert(MPI_Waitall(iterRequest, requests, status), __LINE__);
-
-                delete[] requests;
-                delete[] status;
+                FMpi::MpiAssert(MPI_Waitall(int(requests.size()), requests.data(), MPI_STATUS_IGNORE), __LINE__);
 
                 FLOG(sendCounter.tac());
             }//End of Master region
