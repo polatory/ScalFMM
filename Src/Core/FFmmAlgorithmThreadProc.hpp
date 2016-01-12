@@ -1333,10 +1333,12 @@ protected:
                     if(globalReceiveMap[idxProc * nbProcess + idProcess]){ //if idxProc has sth for me.
                         //allocate buffer of right size
                         recvBuffer[idxProc] = new FMpiBufferReader(comm.getComm(),globalReceiveMap[idxProc * nbProcess + idProcess]);
-                        FAssertLF(recvBuffer[idxProc]->getCapacity() < std::numeric_limits<int>::max());
-                        requests.emplace_back();
-                        FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), int(recvBuffer[idxProc]->getCapacity()), MPI_PACKED,
-                                                   idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests.back()) , __LINE__ );
+                        // FAssertLF(recvBuffer[idxProc]->getCapacity() < std::numeric_limits<int>::max());
+                        // requests.emplace_back();
+                        // FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), int(recvBuffer[idxProc]->getCapacity()), MPI_PACKED,
+                        //                           idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests.back()) , __LINE__ );
+                        FMpi::IRecvSplit(recvBuffer[idxProc]->data(), recvBuffer[idxProc]->getCapacity(),
+                                         idxProc, FMpi::TagFmmP2P, comm, &requests);
                     }
                 }
 
@@ -1353,10 +1355,12 @@ protected:
                         }
 
                         FAssertLF(sendBuffer[idxProc]->getSize() == globalReceiveMap[idProcess*nbProcess+idxProc]);
-                        FAssertLF(sendBuffer[idxProc]->getSize() < std::numeric_limits<int>::max());
-                        requests.emplace_back();
-                        FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), int(sendBuffer[idxProc]->getSize()) , MPI_PACKED ,
-                                                    idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests.back()) , __LINE__ );
+                        // FAssertLF(sendBuffer[idxProc]->getSize() < std::numeric_limits<int>::max());
+                        // requests.emplace_back();
+                        // FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), int(sendBuffer[idxProc]->getSize()) , MPI_PACKED ,
+                        //                            idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests.back()) , __LINE__ );
+                        FMpi::ISendSplit(sendBuffer[idxProc]->data(), sendBuffer[idxProc]->getSize(),
+                                         idxProc, FMpi::TagFmmP2P, comm, &requests);
 
                     }
                 }
