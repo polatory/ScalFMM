@@ -725,7 +725,8 @@ __kernel  void FOpenCL__transferInoutPassPerformMpi(__global unsigned char* curr
             struct FWrappeCell cell = FOpenCLGroupOfCells_getDownCell(&currentCells, outsideInteractions[outInterIdx].insideIdxInBlock);
             FOpenCLAssertLF(cell.symb->mortonIndex == outsideInteractions[outInterIdx].insideIndex);
 
-            M2L( cell , &interCell, &outsideInteractions[outInterIdx].relativeOutPosition,
+            const int relativeOutPosition = outsideInteractions[outInterIdx].relativeOutPosition;
+            M2L( cell , &interCell, &relativeOutPosition,
                  1, idxLevel, userkernel);
         }
     }
@@ -795,7 +796,8 @@ __kernel void FOpenCL__transferInoutPassPerform(__global unsigned char* currentC
             struct FWrappeCell cell = FOpenCLGroupOfCells_getDownCell(&currentCells, outsideInteractions[outInterIdx].insideIdxInBlock);
             FOpenCLAssertLF(cell.symb->mortonIndex == outsideInteractions[outInterIdx].insideIndex);
 
-            M2L( cell , &interCell, &outsideInteractions[outInterIdx].relativeOutPosition,
+            const int relativeOutPosition = outsideInteractions[outInterIdx].relativeOutPosition;
+            M2L( cell , &interCell, &relativeOutPosition,
                  1, idxLevel, userkernel);
         }
     }
