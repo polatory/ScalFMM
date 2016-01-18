@@ -31,17 +31,12 @@ __global__ void FCuda__bottomPassPerform(unsigned char* leafCellsPtr, std::size_
                                          CudaKernelClass* kernel){
     CellContainerClass leafCells(leafCellsPtr, leafCellsSize, leafCellsUpPtr, nullptr);
     ParticleContainerGroupClass containers(containersPtr, containersSize, nullptr);
-    printf("containers.getNbParticlesInGroup() %ld \n", containers.getNbParticlesInGroup());
-    printf("containers.getSizeOfInterval() %ld \n", containers.getSizeOfInterval());
-    printf("containers.getStartingIndex() %lld \n", containers.getStartingIndex());
-    printf("containers.getEndingIndex() %lld \n", containers.getEndingIndex());
 
     for(int leafIdx = blockIdx.x ; leafIdx < leafCells.getNumberOfCellsInBlock() ; leafIdx += gridDim.x){
         typename CellContainerClass::CompleteCellClass cell = leafCells.getUpCell(leafIdx);
         ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(leafIdx);
         FCudaAssertLF(leafCells.getCellMortonIndex(leafIdx) == containers.getLeafMortonIndex(leafIdx));
         kernel->P2M(cell, &particles);
-        printf("particles.getNbParticles() %lld \n", particles.getNbParticles());
     }
 }
 

@@ -18,8 +18,6 @@ public:
         // the pole represents all particles under
         if(threadIdx.x == 0){
             *pole.up += particles->getNbParticles();
-            printf("*pole.up %d += particles->getNbParticles(); %d \n",
-                   *pole.up , particles->getNbParticles());
         }
     }
 
