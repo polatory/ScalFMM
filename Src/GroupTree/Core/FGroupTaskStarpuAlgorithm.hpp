@@ -250,6 +250,27 @@ public:
 #endif
     }
 
+    void syncData(){
+        for(int idxLevel = 0 ; idxLevel < tree->getHeight() ; ++idxLevel){
+            for(int idxHandle = 0 ; idxHandle < int(cellHandles[idxLevel].size()) ; ++idxHandle){
+                starpu_data_acquire(cellHandles[idxLevel][idxHandle].symb, STARPU_R);
+                starpu_data_release(cellHandles[idxLevel][idxHandle].symb);
+                starpu_data_acquire(cellHandles[idxLevel][idxHandle].up, STARPU_R);
+                starpu_data_release(cellHandles[idxLevel][idxHandle].up);
+                starpu_data_acquire(cellHandles[idxLevel][idxHandle].down, STARPU_R);
+                starpu_data_release(cellHandles[idxLevel][idxHandle].down);
+            }
+        }
+        {
+            for(int idxHandle = 0 ; idxHandle < int(particleHandles.size()) ; ++idxHandle){
+                starpu_data_acquire(particleHandles[idxHandle].symb, STARPU_R);
+                starpu_data_release(particleHandles[idxHandle].symb);
+                starpu_data_acquire(particleHandles[idxHandle].down, STARPU_R);
+                starpu_data_release(particleHandles[idxHandle].down);
+            }
+        }
+    }
+
     ~FGroupTaskStarPUAlgorithm(){
         starpu_resume();
 
@@ -338,6 +359,11 @@ protected:
 
         FLOG( FLog::Controller << "\t\t Submitting the tasks took " << timerSoumission.tacAndElapsed() << "s\n" );
         starpu_task_wait_for_all();
+
+        FLOG( FTic timerSync; );
+        syncData();
+        FLOG( FLog::Controller << "\t\t Moving data to the host took " << timerSync.tacAndElapsed() << "s\n" );
+
         starpu_pause();
 
 #ifdef STARPU_USE_CPU
