@@ -59,7 +59,8 @@ public:
     __device__ void M2M(CellClass  /*pole*/, const CellClass  /*child*/[8], const int /*level*/) {
     }
 
-    __device__ void M2L(CellClass  /*pole*/, const CellClass /*distantNeighbors*/[343],
+    __device__ void M2L(CellClass  /*pole*/, const CellClass* /*distantNeighbors*/,
+    const int* /*neighPositions*/,
     const int /*size*/, const int /*level*/) {
     }
 
@@ -71,9 +72,10 @@ public:
 
     __device__ void P2P(const int3& pos,
                         ContainerClass* const  targets, const ContainerClass* const  sources,
-                        ContainerClass* const directNeighborsParticles[27], const int counter){
+                        ContainerClass* const directNeighborsParticles,
+                        const int* neighborPositions, const int counter){
         // Compute with other
-        P2PRemote(pos, targets, sources, directNeighborsParticles, counter);
+        P2PRemote(pos, targets, sources, directNeighborsParticles, neighborPositions, counter);
         // Compute inside
         const int nbLoops = (targets->getNbParticles()+blockDim.x-1)/blockDim.x;
 
@@ -168,75 +170,148 @@ public:
 
     __device__ void P2PRemote(const int3& ,
                               ContainerClass* const  targets, const ContainerClass* const  /*sources*/,
-                              ContainerClass* const directNeighborsParticles[27], const int ){
-        for(int idxNeigh = 0 ; idxNeigh < 27 ; ++idxNeigh){
-            if(directNeighborsParticles[idxNeigh]){
-                const int nbLoops = (targets->getNbParticles()+blockDim.x-1)/blockDim.x;
+                              ContainerClass* const directNeighborsParticles,
+                              const int* /*neighborsPositions*/, const int counter){
+        for(int idxNeigh = 0 ; idxNeigh < counter ; ++idxNeigh){
+            const int nbLoops = (targets->getNbParticles()+blockDim.x-1)/blockDim.x;
 
-                for(int idxLoop = 0 ; idxLoop < nbLoops; ++idxLoop){
-                    const int idxPart = (idxLoop*blockDim.x+threadIdx.x);
-                    const bool threadCompute = (idxPart < targets->getNbParticles());
+            for(int idxLoop = 0 ; idxLoop < nbLoops; ++idxLoop){
+                const int idxPart = (idxLoop*blockDim.x+threadIdx.x);
+                const bool threadCompute = (idxPart < targets->getNbParticles());
 
-                    FReal targetX, targetY, targetZ, targetPhys;
-                    FReal forceX = 0, forceY = 0, forceZ = 0, potential = 0;
+                FReal targetX, targetY, targetZ, targetPhys;
+                FReal forceX = 0, forceY = 0, forceZ = 0, potential = 0;
+
+                if(threadCompute){
+                    targetX = targets->getPositions()[0][idxPart];
+                    targetY = targets->getPositions()[1][idxPart];
+                    targetZ = targets->getPositions()[2][idxPart];
+                    targetPhys = targets->getAttribute(0)[idxPart];
+                }
+
+                for(int idxCopy = 0 ; idxCopy < directNeighborsParticles[idxNeigh].getNbParticles() ; idxCopy += SHARE_SIZE){
+                    __shared__ FReal sourcesX[SHARE_SIZE];
+                    __shared__ FReal sourcesY[SHARE_SIZE];
+                    __shared__ FReal sourcesZ[SHARE_SIZE];
+                    __shared__ FReal sourcesPhys[SHARE_SIZE];
+
+                    const int nbCopies = Min(SHARE_SIZE, directNeighborsParticles[idxNeigh].getNbParticles()-idxCopy);
+                    if(threadIdx.x < nbCopies){
+                        sourcesX[threadIdx.x] = directNeighborsParticles[idxNeigh].getPositions()[0][idxPart];
+                        sourcesY[threadIdx.x] = directNeighborsParticles[idxNeigh].getPositions()[1][idxPart];
+                        sourcesZ[threadIdx.x] = directNeighborsParticles[idxNeigh].getPositions()[2][idxPart];
+                        sourcesPhys[threadIdx.x] = directNeighborsParticles[idxNeigh].getAttribute(0)[idxPart];
+                    }
+
+                    __syncthreads();
 
                     if(threadCompute){
-                        targetX = targets->getPositions()[0][idxPart];
-                        targetY = targets->getPositions()[1][idxPart];
-                        targetZ = targets->getPositions()[2][idxPart];
-                        targetPhys = targets->getAttribute(0)[idxPart];
-                    }
-
-                    for(int idxCopy = 0 ; idxCopy < directNeighborsParticles[idxNeigh]->getNbParticles() ; idxCopy += SHARE_SIZE){
-                        __shared__ FReal sourcesX[SHARE_SIZE];
-                        __shared__ FReal sourcesY[SHARE_SIZE];
-                        __shared__ FReal sourcesZ[SHARE_SIZE];
-                        __shared__ FReal sourcesPhys[SHARE_SIZE];
-
-                        const int nbCopies = Min(SHARE_SIZE, directNeighborsParticles[idxNeigh]->getNbParticles()-idxCopy);
-                        if(threadIdx.x < nbCopies){
-                            sourcesX[threadIdx.x] = directNeighborsParticles[idxNeigh]->getPositions()[0][idxPart];
-                            sourcesY[threadIdx.x] = directNeighborsParticles[idxNeigh]->getPositions()[1][idxPart];
-                            sourcesZ[threadIdx.x] = directNeighborsParticles[idxNeigh]->getPositions()[2][idxPart];
-                            sourcesPhys[threadIdx.x] = directNeighborsParticles[idxNeigh]->getAttribute(0)[idxPart];
+                        for(int otherIndex = 0; otherIndex < nbCopies - 3; otherIndex += 4) { // unrolling x4
+                            DirectMacro(targetX, targetY, targetZ, targetPhys,
+                                        forceX, forceY, forceZ, potential,
+                                        sourcesX[otherIndex], sourcesY[otherIndex], sourcesZ[otherIndex], sourcesPhys[otherIndex]);
+                            DirectMacro(targetX, targetY, targetZ, targetPhys,
+                                        forceX, forceY, forceZ, potential,
+                                        sourcesX[otherIndex+1], sourcesY[otherIndex+1], sourcesZ[otherIndex+1], sourcesPhys[otherIndex+1]);
+                            DirectMacro(targetX, targetY, targetZ, targetPhys,
+                                        forceX, forceY, forceZ, potential,
+                                        sourcesX[otherIndex+2], sourcesY[otherIndex+2], sourcesZ[otherIndex+2], sourcesPhys[otherIndex+2]);
+                            DirectMacro(targetX, targetY, targetZ, targetPhys,
+                                        forceX, forceY, forceZ, potential,
+                                        sourcesX[otherIndex+3], sourcesY[otherIndex+3], sourcesZ[otherIndex+3], sourcesPhys[otherIndex+3]);
                         }
 
-                        __syncthreads();
-
-                        if(threadCompute){
-                            for(int otherIndex = 0; otherIndex < nbCopies - 3; otherIndex += 4) { // unrolling x4
-                                DirectMacro(targetX, targetY, targetZ, targetPhys,
-                                            forceX, forceY, forceZ, potential,
-                                            sourcesX[otherIndex], sourcesY[otherIndex], sourcesZ[otherIndex], sourcesPhys[otherIndex]);
-                                DirectMacro(targetX, targetY, targetZ, targetPhys,
-                                            forceX, forceY, forceZ, potential,
-                                            sourcesX[otherIndex+1], sourcesY[otherIndex+1], sourcesZ[otherIndex+1], sourcesPhys[otherIndex+1]);
-                                DirectMacro(targetX, targetY, targetZ, targetPhys,
-                                            forceX, forceY, forceZ, potential,
-                                            sourcesX[otherIndex+2], sourcesY[otherIndex+2], sourcesZ[otherIndex+2], sourcesPhys[otherIndex+2]);
-                                DirectMacro(targetX, targetY, targetZ, targetPhys,
-                                            forceX, forceY, forceZ, potential,
-                                            sourcesX[otherIndex+3], sourcesY[otherIndex+3], sourcesZ[otherIndex+3], sourcesPhys[otherIndex+3]);
-                            }
-
-                            for(int otherIndex = (nbCopies/4) * 4; otherIndex < nbCopies; ++otherIndex) { // if nk%4 is not zero
-                                DirectMacro(targetX, targetY, targetZ, targetPhys,
-                                            forceX, forceY, forceZ, potential,
-                                            sourcesX[otherIndex], sourcesY[otherIndex], sourcesZ[otherIndex], sourcesPhys[otherIndex]);
-                            }
+                        for(int otherIndex = (nbCopies/4) * 4; otherIndex < nbCopies; ++otherIndex) { // if nk%4 is not zero
+                            DirectMacro(targetX, targetY, targetZ, targetPhys,
+                                        forceX, forceY, forceZ, potential,
+                                        sourcesX[otherIndex], sourcesY[otherIndex], sourcesZ[otherIndex], sourcesPhys[otherIndex]);
                         }
-
-                        __syncthreads();
                     }
 
-                    if( threadCompute ){
-                        targets->getAttribute(1)[idxPart] += forceX;
-                        targets->getAttribute(2)[idxPart] += forceY;
-                        targets->getAttribute(3)[idxPart] += forceZ;
-                        targets->getAttribute(4)[idxPart] += potential;
-                    }
-
+                    __syncthreads();
                 }
+
+                if( threadCompute ){
+                    targets->getAttribute(1)[idxPart] += forceX;
+                    targets->getAttribute(2)[idxPart] += forceY;
+                    targets->getAttribute(3)[idxPart] += forceZ;
+                    targets->getAttribute(4)[idxPart] += potential;
+                }
+
+            }
+        }
+    }
+
+    __device__ void P2POuter(const int3& ,
+                              ContainerClass* const  targets,
+                              ContainerClass* const directNeighborsParticles,
+                              const int* /*neighborsPositions*/, const int counter){
+        for(int idxNeigh = 0 ; idxNeigh < counter ; ++idxNeigh){
+            const int nbLoops = (targets->getNbParticles()+blockDim.x-1)/blockDim.x;
+
+            for(int idxLoop = 0 ; idxLoop < nbLoops; ++idxLoop){
+                const int idxPart = (idxLoop*blockDim.x+threadIdx.x);
+                const bool threadCompute = (idxPart < targets->getNbParticles());
+
+                FReal targetX, targetY, targetZ, targetPhys;
+                FReal forceX = 0, forceY = 0, forceZ = 0, potential = 0;
+
+                if(threadCompute){
+                    targetX = targets->getPositions()[0][idxPart];
+                    targetY = targets->getPositions()[1][idxPart];
+                    targetZ = targets->getPositions()[2][idxPart];
+                    targetPhys = targets->getAttribute(0)[idxPart];
+                }
+
+                for(int idxCopy = 0 ; idxCopy < directNeighborsParticles[idxNeigh].getNbParticles() ; idxCopy += SHARE_SIZE){
+                    __shared__ FReal sourcesX[SHARE_SIZE];
+                    __shared__ FReal sourcesY[SHARE_SIZE];
+                    __shared__ FReal sourcesZ[SHARE_SIZE];
+                    __shared__ FReal sourcesPhys[SHARE_SIZE];
+
+                    const int nbCopies = Min(SHARE_SIZE, directNeighborsParticles[idxNeigh].getNbParticles()-idxCopy);
+                    if(threadIdx.x < nbCopies){
+                        sourcesX[threadIdx.x] = directNeighborsParticles[idxNeigh].getPositions()[0][idxPart];
+                        sourcesY[threadIdx.x] = directNeighborsParticles[idxNeigh].getPositions()[1][idxPart];
+                        sourcesZ[threadIdx.x] = directNeighborsParticles[idxNeigh].getPositions()[2][idxPart];
+                        sourcesPhys[threadIdx.x] = directNeighborsParticles[idxNeigh].getAttribute(0)[idxPart];
+                    }
+
+                    __syncthreads();
+
+                    if(threadCompute){
+                        for(int otherIndex = 0; otherIndex < nbCopies - 3; otherIndex += 4) { // unrolling x4
+                            DirectMacro(targetX, targetY, targetZ, targetPhys,
+                                        forceX, forceY, forceZ, potential,
+                                        sourcesX[otherIndex], sourcesY[otherIndex], sourcesZ[otherIndex], sourcesPhys[otherIndex]);
+                            DirectMacro(targetX, targetY, targetZ, targetPhys,
+                                        forceX, forceY, forceZ, potential,
+                                        sourcesX[otherIndex+1], sourcesY[otherIndex+1], sourcesZ[otherIndex+1], sourcesPhys[otherIndex+1]);
+                            DirectMacro(targetX, targetY, targetZ, targetPhys,
+                                        forceX, forceY, forceZ, potential,
+                                        sourcesX[otherIndex+2], sourcesY[otherIndex+2], sourcesZ[otherIndex+2], sourcesPhys[otherIndex+2]);
+                            DirectMacro(targetX, targetY, targetZ, targetPhys,
+                                        forceX, forceY, forceZ, potential,
+                                        sourcesX[otherIndex+3], sourcesY[otherIndex+3], sourcesZ[otherIndex+3], sourcesPhys[otherIndex+3]);
+                        }
+
+                        for(int otherIndex = (nbCopies/4) * 4; otherIndex < nbCopies; ++otherIndex) { // if nk%4 is not zero
+                            DirectMacro(targetX, targetY, targetZ, targetPhys,
+                                        forceX, forceY, forceZ, potential,
+                                        sourcesX[otherIndex], sourcesY[otherIndex], sourcesZ[otherIndex], sourcesPhys[otherIndex]);
+                        }
+                    }
+
+                    __syncthreads();
+                }
+
+                if( threadCompute ){
+                    targets->getAttribute(1)[idxPart] += forceX;
+                    targets->getAttribute(2)[idxPart] += forceY;
+                    targets->getAttribute(3)[idxPart] += forceZ;
+                    targets->getAttribute(4)[idxPart] += potential;
+                }
+
             }
         }
     }

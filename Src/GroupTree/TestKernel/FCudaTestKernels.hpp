@@ -34,13 +34,12 @@ public:
     }
 
     /** Before Downward */
-    __device__ void M2L(CellClass  local, const CellClass distantNeighbors[343], const int /*size*/, const int /*level*/) {
+    __device__ void M2L(CellClass  local, const CellClass* distantNeighbors,
+                const int* /*neighPositions*/, const int size, const int /*level*/) {
         if(threadIdx.x == 0) {
             // The pole is impacted by what represent other poles
-            for(int idx = 0 ; idx < 343 ; ++idx){
-                if(distantNeighbors[idx].symb){
-                    *local.down += *distantNeighbors[idx].up;
-                }
+            for(int idx = 0 ; idx < size ; ++idx){
+                *local.down += *distantNeighbors[idx].up;
             }
         }
     }
@@ -71,18 +70,18 @@ public:
 
     /** After Downward */
     __device__ void P2P(const int3& ,
-                 ContainerClass* const  targets, const ContainerClass* const  sources,
-                 ContainerClass* const directNeighborsParticles[27], const int ){
+                        ContainerClass* const  targets, const ContainerClass* const  sources,
+                        ContainerClass* const directNeighborsParticles,
+                        const int* /*neighborPositions*/,
+                        const int counter){
         if(threadIdx.x == 0) {
             // Each particles targeted is impacted by the particles sources
             long long int inc = sources->getNbParticles();
             if(targets == sources){
                 inc -= 1;
             }
-            for(int idx = 0 ; idx < 27 ; ++idx){
-                if( directNeighborsParticles[idx] ){
-                    inc += directNeighborsParticles[idx]->getNbParticles();
-                }
+            for(int idx = 0 ; idx < counter ; ++idx){
+                inc += directNeighborsParticles[idx].getNbParticles();
             }
 
             long long int*const particlesAttributes = targets->template getAttribute<0>();
@@ -94,15 +93,35 @@ public:
 
     /** After Downward */
     __device__ void P2PRemote(const int3& ,
-                 ContainerClass* const  targets, const ContainerClass* const  sources,
-                 ContainerClass* const directNeighborsParticles[27], const int ){
+                              ContainerClass* const  targets,
+                              const ContainerClass* const  sources,
+                              ContainerClass* const directNeighborsParticles,
+                              const int* /*neighborPositions*/,
+                              const int counter){
         if(threadIdx.x == 0) {
             // Each particles targeted is impacted by the particles sources
             long long int inc = 0;
-            for(int idx = 0 ; idx < 27 ; ++idx){
-                if( directNeighborsParticles[idx] ){
-                    inc += directNeighborsParticles[idx]->getNbParticles();
-                }
+            for(int idx = 0 ; idx < counter ; ++idx){
+                inc += directNeighborsParticles[idx].getNbParticles();
+            }
+
+            long long int*const particlesAttributes = targets->template getAttribute<0>();
+            for(FSize idxPart = 0 ; idxPart < targets->getNbParticles() ; ++idxPart){
+                particlesAttributes[idxPart] += inc;
+            }
+        }
+    }
+
+    __device__ void P2POuter(const int3& ,
+                             ContainerClass* const  targets,
+                             ContainerClass* const directNeighborsParticles,
+                             const int* /*neighborPositions*/,
+                             const int counter){
+        if(threadIdx.x == 0) {
+            // Each particles targeted is impacted by the particles sources
+            long long int inc = 0;
+            for(int idx = 0 ; idx < counter ; ++idx){
+                inc += directNeighborsParticles[idx].getNbParticles();
             }
 
             long long int*const particlesAttributes = targets->template getAttribute<0>();

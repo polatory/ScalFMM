@@ -147,11 +147,7 @@ __global__  void FCuda__transferInoutPassPerformMpi(unsigned char* currentCellsP
             typename CellContainerClass::CompleteCellClass cell = currentCells.getDownCell(outsideInteractions[outInterIdx].insideIdxInBlock);
             FCudaAssertLF(cell.symb->mortonIndex == outsideInteractions[outInterIdx].insideIndex);
 
-            typename CellContainerClass::CompleteCellClass interactions[343];
-            memset(interactions, 0, 343*sizeof(interactions[0]));
-            interactions[outsideInteractions[outInterIdx].relativeOutPosition] = interCell;
-            const int counter = 1;
-            kernel->M2L( cell , interactions, counter, idxLevel);
+            kernel->M2L( cell , &interCell, &outsideInteractions[outInterIdx].relativeOutPosition, 1, idxLevel);
         }
     }
 }
@@ -208,8 +204,7 @@ __global__  void FCuda__transferInPassPerform(unsigned char* currentCellsPtr, st
         const int3 coord = (FCudaTreeCoordinate::ConvertCoordinate(cell.symb->coordinates));
         int counter = FCudaTreeCoordinate::GetInteractionNeighbors(coord, idxLevel,interactionsIndexes,interactionsPosition);
 
-        typename CellContainerClass::CompleteCellClass interactions[343];
-        memset(interactions, 0, 343*sizeof(interactions[0]));
+        typename CellContainerClass::CompleteCellClass interactions[189];
         int counterExistingCell = 0;
 
         for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -217,15 +212,14 @@ __global__  void FCuda__transferInPassPerform(unsigned char* currentCellsPtr, st
                 const int cellPos = currentCells.getCellIndex(interactionsIndexes[idxInter]);
                 if(cellPos != -1){
                     typename CellContainerClass::CompleteCellClass interCell = currentCells.getUpCell(cellPos);
-                    FCudaAssertLF(interCell.symb->mortonIndex == interactionsIndexes[idxInter]);
-                    FCudaAssertLF(interactions[interactionsPosition[idxInter]].symb == nullptr);
-                    interactions[interactionsPosition[idxInter]] = interCell;
+                    interactions[interactionsPosition[counterExistingCell]] = interCell;
+                    interactionsPosition[counterExistingCell] = interactionsPosition[idxInter];
                     counterExistingCell += 1;
                 }
             }
         }
 
-        kernel->M2L( cell , interactions, counterExistingCell, idxLevel);
+        kernel->M2L( cell , interactions, interactionsPosition, counterExistingCell, idxLevel);
     }
 }
 
@@ -262,24 +256,25 @@ __global__ void FCuda__transferInoutPassPerform(unsigned char* currentCellsPtr, 
     CellContainerClass currentCells(currentCellsPtr, currentCellsSize, nullptr, currentCellsDownPtr);
     CellContainerClass cellsOther(externalCellsPtr, externalCellsSize, externalCellsUpPtr, nullptr);
 
-    for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
-        const int cellPos = cellsOther.getCellIndex(outsideInteractions[outInterIdx].outIndex);
-        if(cellPos != -1){
-            typename CellContainerClass::CompleteCellClass interCell = cellsOther.getCompleteCell(outsideInteractions[outInterIdx].outIndex);
+    if(mode == 1){
+        for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
+            typename CellContainerClass::CompleteCellClass interCell = cellsOther.getUpCell(outsideInteractions[outInterIdx].outsideIdxInBlock);
             FCudaAssertLF(interCell.symb->mortonIndex == outsideInteractions[outInterIdx].outIndex);
-            typename CellContainerClass::CompleteCellClass cell = currentCells.getCompleteCell(outsideInteractions[outInterIdx].insideIdxInBlock);
-            FCudaAssertLF(cell.symb);
+            typename CellContainerClass::CompleteCellClass cell = currentCells.getDownCell(outsideInteractions[outInterIdx].insideIdxInBlock);
             FCudaAssertLF(cell.symb->mortonIndex == outsideInteractions[outInterIdx].insideIndex);
 
-            typename CellContainerClass::CompleteCellClass interactions[343];
-            memset(interactions, 0, 343*sizeof(interactions[0]));
-            interactions[outsideInteractions[outInterIdx].relativeOutPosition] = interCell;
-            const int counter = 1;
-            kernel->M2L( cell , interactions, counter, idxLevel);
+            kernel->M2L( cell , &interCell, &outsideInteractions[outInterIdx].relativeOutPosition, 1, idxLevel);
+        }
+    }
+    else{
+        for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
+            typename CellContainerClass::CompleteCellClass cell = cellsOther.getUpCell(outsideInteractions[outInterIdx].insideIdxInBlock);
+            FCudaAssertLF(cell.symb->mortonIndex == outsideInteractions[outInterIdx].insideIndex);
+            typename CellContainerClass::CompleteCellClass interCell = currentCells.getDownCell(outsideInteractions[outInterIdx].outsideIdxInBlock);
+            FCudaAssertLF(interCell.symb->mortonIndex == outsideInteractions[outInterIdx].outIndex);
 
-            interactions[outsideInteractions[outInterIdx].relativeOutPosition].symb = nullptr;
-            interactions[FMGetOppositeInterIndex(outsideInteractions[outInterIdx].relativeOutPosition)] = cell;
-            kernel->M2L( interCell , interactions, counter, idxLevel);
+            const int otherPosition = FMGetOppositeInterIndex(outsideInteractions[outInterIdx].relativeOutPosition);
+            kernel->M2L( interCell , &cell, &otherPosition, 1, idxLevel);
         }
     }
 }
@@ -399,11 +394,9 @@ __global__ void FCuda__directInoutPassPerformMpi(unsigned char* containersPtr, s
         if(leafPos != -1){
             ParticleGroupClass interParticles = containersOther.template getLeaf<ParticleGroupClass>(leafPos);
             ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(outsideInteractions[outInterIdx].insideIdxInBlock);
-            ParticleGroupClass* interactions[27];
-            memset(interactions, 0, 27*sizeof(ParticleGroupClass*));
-            interactions[outsideInteractions[outInterIdx].relativeOutPosition] = &interParticles;
-            const int counter = 1;
-            kernel->P2PRemote( FCudaTreeCoordinate::GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1), &particles, &particles , interactions, counter);
+
+            kernel->P2PRemote( FCudaTreeCoordinate::GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1),
+                               &particles, &particles , &interParticles, &outsideInteractions[outInterIdx].relativeOutPosition, 1);
         }
     }
 }
@@ -459,9 +452,7 @@ __global__ void FCuda__directInPassPerform(unsigned char* containersPtr, std::si
         const int3 coord = FCudaTreeCoordinate::GetPositionFromMorton(mindex, treeHeight-1);
         int counter = FCudaTreeCoordinate::GetNeighborsIndexes(coord, treeHeight,interactionsIndexes,interactionsPosition);
 
-        ParticleGroupClass interactionsObjects[27];
-        ParticleGroupClass* interactions[27];
-        memset(interactions, 0, 27*sizeof(ParticleGroupClass*));
+        ParticleGroupClass interactionsObjects[26];
         int counterExistingCell = 0;
 
         for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -469,14 +460,13 @@ __global__ void FCuda__directInPassPerform(unsigned char* containersPtr, std::si
                 const int leafPos = containers.getLeafIndex(interactionsIndexes[idxInter]);
                 if(leafPos != -1){
                     interactionsObjects[counterExistingCell] = containers.template getLeaf<ParticleGroupClass>(leafPos);
-                    FCudaAssertLF(interactions[interactionsPosition[idxInter]] == nullptr);
-                    interactions[interactionsPosition[idxInter]] = &interactionsObjects[counterExistingCell];
+                    interactionsPosition[counterExistingCell] = interactionsPosition[idxInter];
                     counterExistingCell += 1;
                 }
             }
         }
 
-        kernel->P2P( coord, &particles, &particles , interactions, counterExistingCell);
+        kernel->P2P( coord, &particles, &particles , interactionsObjects, interactionsPosition, counterExistingCell);
     }
 }
 
@@ -516,15 +506,13 @@ __global__ void FCuda__directInoutPassPerform(unsigned char* containersPtr, std:
             FCudaAssertLF(containersOther.getLeafMortonIndex(leafPos) == outsideInteractions[outInterIdx].outIndex);
             FCudaAssertLF(containers.getLeafMortonIndex(outsideInteractions[outInterIdx].insideIdxInBlock) == outsideInteractions[outInterIdx].insideIndex);
 
-            ParticleGroupClass* interactions[27];
-            memset(interactions, 0, 27*sizeof(ParticleGroupClass*));
-            interactions[outsideInteractions[outInterIdx].relativeOutPosition] = &interParticles;
-            const int counter = 1;
-            kernel->P2PRemote( FCudaTreeCoordinate::GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1), &particles, &particles , interactions, counter);
 
-            interactions[outsideInteractions[outInterIdx].relativeOutPosition] = nullptr;
-            interactions[FMGetOppositeNeighIndex(outsideInteractions[outInterIdx].relativeOutPosition)] = &particles;
-            kernel->P2PRemote( FCudaTreeCoordinate::GetPositionFromMorton(outsideInteractions[outInterIdx].outIndex, treeHeight-1), &interParticles, &interParticles , interactions, counter);
+            kernel->P2POuter( FCudaTreeCoordinate::GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1),
+                               &particles , &interParticles, &outsideInteractions[outInterIdx].relativeOutPosition, 1);
+
+            const int otherPosition = FMGetOppositeNeighIndex(outsideInteractions[outInterIdx].relativeOutPosition);
+            kernel->P2POuter( FCudaTreeCoordinate::GetPositionFromMorton(outsideInteractions[outInterIdx].outIndex, treeHeight-1),
+                               &interParticles , &particles, &otherPosition, 1);
         }
     }
 }
