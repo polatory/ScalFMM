@@ -212,7 +212,7 @@ __global__  void FCuda__transferInPassPerform(unsigned char* currentCellsPtr, st
                 const int cellPos = currentCells.getCellIndex(interactionsIndexes[idxInter]);
                 if(cellPos != -1){
                     typename CellContainerClass::CompleteCellClass interCell = currentCells.getUpCell(cellPos);
-                    interactions[interactionsPosition[counterExistingCell]] = interCell;
+                    interactions[counterExistingCell] = interCell;
                     interactionsPosition[counterExistingCell] = interactionsPosition[idxInter];
                     counterExistingCell += 1;
                 }
@@ -495,7 +495,7 @@ __global__ void FCuda__directInoutPassPerform(unsigned char* containersPtr, std:
     }
 
     ParticleContainerGroupClass containers(containersPtr, containersSize, containersDownPtr);
-    ParticleContainerGroupClass containersOther(externalContainersPtr, externalContainersSize, externalContainersPtr);
+    ParticleContainerGroupClass containersOther(externalContainersPtr, externalContainersSize, externalContainersDownPtr);
 
     for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
         const int leafPos = containersOther.getLeafIndex(outsideInteractions[outInterIdx].outIndex);
