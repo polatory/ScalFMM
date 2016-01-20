@@ -78,10 +78,8 @@ public:
         // Compute with other
         P2PRemote(pos, targets, sources, directNeighborsParticles, neighborPositions, counter);
         // Compute inside
-        const int nbLoops = (targets->getNbParticles()+blockDim.x-1)/blockDim.x;
 
-        for(int idxLoop = 0 ; idxLoop < nbLoops; ++idxLoop){
-            const int idxPart = (idxLoop*blockDim.x+threadIdx.x);
+        for(int idxPart = threadIdx.x ; idxPart < targets->getNbParticles()+blockDim.x-1 ; idxPart += blockDim.x){
             const bool threadCompute = (idxPart < targets->getNbParticles());
 
             FReal targetX, targetY, targetZ, targetPhys;
@@ -113,6 +111,7 @@ public:
                     if(idxCopy <= idxPart && idxPart < idxCopy + nbCopies){
                         leftCopies = idxPart - idxCopy;
                     }
+
                     // Left Part
                     for(int otherIndex = 0; otherIndex < leftCopies - 3; otherIndex += 4) { // unrolling x4
                         DirectComputation(targetX, targetY, targetZ, targetPhys,
@@ -150,7 +149,7 @@ public:
                                           sourcesX[otherIndex+3], sourcesY[otherIndex+3], sourcesZ[otherIndex+3], sourcesPhys[otherIndex+3]);
                     }
 
-                    for(int otherIndex = Max(leftCopies+1, (nbCopies/4) * 4); otherIndex < nbCopies; ++otherIndex) { // if nk%4 is not zero
+                    for(int otherIndex = leftCopies+1 + ((nbCopies-(leftCopies+1))/4)*4 ; otherIndex < nbCopies; ++otherIndex) { // if nk%4 is not zero
                         DirectComputation(targetX, targetY, targetZ, targetPhys,
                                           forceX, forceY, forceZ, potential,
                                           sourcesX[otherIndex], sourcesY[otherIndex], sourcesZ[otherIndex], sourcesPhys[otherIndex]);
@@ -167,6 +166,7 @@ public:
                 targets->getAttribute(4)[idxPart] += forceZ;
             }
 
+            __syncthreads();
         }
     }
 
@@ -175,10 +175,8 @@ public:
                               ContainerClass* const directNeighborsParticles,
                               const int* /*neighborsPositions*/, const int counter){
         for(int idxNeigh = 0 ; idxNeigh < counter ; ++idxNeigh){
-            const int nbLoops = (targets->getNbParticles()+blockDim.x-1)/blockDim.x;
 
-            for(int idxLoop = 0 ; idxLoop < nbLoops; ++idxLoop){
-                const int idxPart = (idxLoop*blockDim.x+threadIdx.x);
+            for(int idxPart = threadIdx.x ; idxPart < targets->getNbParticles()+blockDim.x-1 ; idxPart += blockDim.x){
                 const bool threadCompute = (idxPart < targets->getNbParticles());
 
                 FReal targetX, targetY, targetZ, targetPhys;
@@ -238,6 +236,8 @@ public:
                     targets->getAttribute(4)[idxPart] += forceZ;
                 }
 
+
+                __syncthreads();
             }
         }
     }
@@ -247,10 +247,8 @@ public:
                              ContainerClass* const directNeighborsParticles,
                              const int* /*neighborsPositions*/, const int counter){
         for(int idxNeigh = 0 ; idxNeigh < counter ; ++idxNeigh){
-            const int nbLoops = (targets->getNbParticles()+blockDim.x-1)/blockDim.x;
 
-            for(int idxLoop = 0 ; idxLoop < nbLoops; ++idxLoop){
-                const int idxPart = (idxLoop*blockDim.x+threadIdx.x);
+            for(int idxPart = threadIdx.x ; idxPart < targets->getNbParticles()+blockDim.x-1 ; idxPart += blockDim.x){
                 const bool threadCompute = (idxPart < targets->getNbParticles());
 
                 FReal targetX, targetY, targetZ, targetPhys;
@@ -310,6 +308,7 @@ public:
                     targets->getAttribute(4)[idxPart] += forceZ;
                 }
 
+                __syncthreads();
             }
         }
     }
