@@ -381,22 +381,22 @@ template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
 __global__ void FCuda__directInoutPassPerformMpi(unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
                                                  unsigned char* externalContainersPtr, std::size_t externalContainersSize,
                                                  const OutOfBlockInteraction* outsideInteractions,
-                                                 int nbOutsideInteractions, const int treeHeight, CudaKernelClass* kernel){
-    if(blockIdx.x != 0){
-        return;
-    }
+                                                 int nbOutsideInteractions, const int safeOuterInteractions[], const int counterOuterCell,
+                                                 const int treeHeight, CudaKernelClass* kernel){
 
     ParticleContainerGroupClass containers(containersPtr, containersSize, containersDownPtr);
     ParticleContainerGroupClass containersOther(externalContainersPtr, externalContainersSize, nullptr);
 
-    for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
-        const int leafPos = containersOther.getLeafIndex(outsideInteractions[outInterIdx].outIndex);
-        if(leafPos != -1){
-            ParticleGroupClass interParticles = containersOther.template getLeaf<ParticleGroupClass>(leafPos);
-            ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(outsideInteractions[outInterIdx].insideIdxInBlock);
+    for(int leafIdx = blockIdx.x ; leafIdx < counterOuterCell ; leafIdx += gridDim.x){
+        for(int outInterIdx = safeOuterInteractions[leafIdx] ; outInterIdx < safeOuterInteractions[leafIdx+1] ; ++outInterIdx){
+            const int leafPos = containersOther.getLeafIndex(outsideInteractions[outInterIdx].outIndex);
+            if(leafPos != -1){
+                ParticleGroupClass interParticles = containersOther.template getLeaf<ParticleGroupClass>(leafPos);
+                ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(outsideInteractions[outInterIdx].insideIdxInBlock);
 
-            kernel->P2PRemote( FCudaTreeCoordinate::GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1),
-                               &particles, &particles , &interParticles, &outsideInteractions[outInterIdx].relativeOutPosition, 1);
+                kernel->P2PRemote( FCudaTreeCoordinate::GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1),
+                                   &particles, &particles , &interParticles, &outsideInteractions[outInterIdx].relativeOutPosition, 1);
+            }
         }
     }
 }
@@ -406,11 +406,17 @@ template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
 __host__ void FCuda__directInoutPassCallbackMpi(unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
                                                 unsigned char* externalContainersPtr, std::size_t externalContainersSize,
                                                 const OutOfBlockInteraction* outsideInteractions,
-                                                int nbOutsideInteractions, const int treeHeight, CudaKernelClass* kernel, cudaStream_t currentStream,
+                                                int nbOutsideInteractions, const int safeOuterInteractions[], const int counterOuterCell,
+                                                const int treeHeight, CudaKernelClass* kernel, cudaStream_t currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize){
     OutOfBlockInteraction* cuOutsideInteractions;
     FCudaCheck( cudaMalloc(&cuOutsideInteractions,nbOutsideInteractions*sizeof(OutOfBlockInteraction)) );
     FCudaCheck( cudaMemcpy( cuOutsideInteractions, outsideInteractions, nbOutsideInteractions*sizeof(OutOfBlockInteraction),
+                cudaMemcpyHostToDevice ) );
+
+    int* cuSafeOuterInteractions;
+    FCudaCheck( cudaMalloc(&cuSafeOuterInteractions,(counterOuterCell+1)*sizeof(int)) );
+    FCudaCheck( cudaMemcpy( cuSafeOuterInteractions, safeOuterInteractions, (counterOuterCell+1)*sizeof(int),
                 cudaMemcpyHostToDevice ) );
 
     FCuda__directInoutPassPerformMpi
@@ -418,12 +424,14 @@ __host__ void FCuda__directInoutPassCallbackMpi(unsigned char* containersPtr, st
             CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
             <<<inGridSize, inBlocksSize, 0, currentStream>>>(containersPtr, containersSize, containersDownPtr,
                                   externalContainersPtr, externalContainersSize,
-                                  cuOutsideInteractions, nbOutsideInteractions, treeHeight, kernel);
+                                  cuOutsideInteractions, nbOutsideInteractions, cuSafeOuterInteractions, counterOuterCell,
+                                                             treeHeight, kernel);
 
     FCudaCheckAfterCall();
     FCudaCheck(cudaStreamSynchronize(currentStream));
 
     FCudaCheck(cudaFree(cuOutsideInteractions));
+    FCudaCheck(cudaFree(cuSafeOuterInteractions));
 }
 #endif
 /////////////////////////////////////////////////////////////////////////////////////
@@ -435,16 +443,13 @@ template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__directInPassPerform(unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
                                            const int treeHeight, CudaKernelClass* kernel){
-    if(blockIdx.x != 0){
-        return;
-    }
 
     ParticleContainerGroupClass containers(containersPtr, containersSize, containersDownPtr);
 
     const MortonIndex blockStartIdx = containers.getStartingIndex();
     const MortonIndex blockEndIdx = containers.getEndingIndex();
 
-    for(int leafIdx = 0 ; leafIdx < containers.getNumberOfLeavesInBlock() ; ++leafIdx){
+    for(int leafIdx = blockIdx.x ; leafIdx < containers.getNumberOfLeavesInBlock() ; leafIdx += gridDim.x){
         ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(leafIdx);
         const MortonIndex mindex = containers.getLeafMortonIndex(leafIdx);
         MortonIndex interactionsIndexes[26];
@@ -488,30 +493,39 @@ template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __global__ void FCuda__directInoutPassPerform(unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
                                               unsigned char* externalContainersPtr, std::size_t externalContainersSize, unsigned char* externalContainersDownPtr,
-                                              const OutOfBlockInteraction* outsideInteractions,
-                                              int nbOutsideInteractions, const int treeHeight, CudaKernelClass* kernel){
-    if(blockIdx.x != 0){
-        return;
-    }
+                                              const OutOfBlockInteraction* outsideInteractions, int nbOutsideInteractions,
+                                              const int     safeOuterInteractions[], const int counterOuterCell,
+                                              const OutOfBlockInteraction* insideInteractions,
+                                              const int     safeInnterInteractions[], const int counterInnerCell,
+                                              const int treeHeight, CudaKernelClass* kernel){
 
     ParticleContainerGroupClass containers(containersPtr, containersSize, containersDownPtr);
     ParticleContainerGroupClass containersOther(externalContainersPtr, externalContainersSize, externalContainersDownPtr);
 
-    for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
-        const int leafPos = containersOther.getLeafIndex(outsideInteractions[outInterIdx].outIndex);
-        if(leafPos != -1){
-            ParticleGroupClass interParticles = containersOther.template getLeaf<ParticleGroupClass>(leafPos);
+    for(int leafIdx = blockIdx.x ; leafIdx < counterOuterCell ; leafIdx += gridDim.x){
+        for(int outInterIdx = safeOuterInteractions[leafIdx] ; outInterIdx < safeOuterInteractions[leafIdx+1] ; ++outInterIdx){
+            ParticleGroupClass interParticles = containersOther.template getLeaf<ParticleGroupClass>(outsideInteractions[outInterIdx].outsideIdxInBlock);
             ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(outsideInteractions[outInterIdx].insideIdxInBlock);
 
-            FCudaAssertLF(containersOther.getLeafMortonIndex(leafPos) == outsideInteractions[outInterIdx].outIndex);
+            FCudaAssertLF(containersOther.getLeafMortonIndex(outsideInteractions[outInterIdx].outsideIdxInBlock) == outsideInteractions[outInterIdx].outIndex);
             FCudaAssertLF(containers.getLeafMortonIndex(outsideInteractions[outInterIdx].insideIdxInBlock) == outsideInteractions[outInterIdx].insideIndex);
-
 
             kernel->P2POuter( FCudaTreeCoordinate::GetPositionFromMorton(outsideInteractions[outInterIdx].insideIndex, treeHeight-1),
                                &particles , &interParticles, &outsideInteractions[outInterIdx].relativeOutPosition, 1);
+        }
+    }
 
-            const int otherPosition = FMGetOppositeNeighIndex(outsideInteractions[outInterIdx].relativeOutPosition);
-            kernel->P2POuter( FCudaTreeCoordinate::GetPositionFromMorton(outsideInteractions[outInterIdx].outIndex, treeHeight-1),
+    for(int leafIdx = blockIdx.x ; leafIdx < counterInnerCell ; leafIdx += gridDim.x){
+        for(int outInterIdx = safeInnterInteractions[leafIdx] ; outInterIdx < safeInnterInteractions[leafIdx+1] ; ++outInterIdx){
+
+            ParticleGroupClass interParticles = containersOther.template getLeaf<ParticleGroupClass>(insideInteractions[outInterIdx].outsideIdxInBlock);
+            ParticleGroupClass particles = containers.template getLeaf<ParticleGroupClass>(insideInteractions[outInterIdx].insideIdxInBlock);
+
+            FCudaAssertLF(containersOther.getLeafMortonIndex(insideInteractions[outInterIdx].outsideIdxInBlock) == insideInteractions[outInterIdx].outIndex);
+            FCudaAssertLF(containers.getLeafMortonIndex(insideInteractions[outInterIdx].insideIdxInBlock) == insideInteractions[outInterIdx].insideIndex);
+
+            const int otherPosition = FMGetOppositeNeighIndex(insideInteractions[outInterIdx].relativeOutPosition);
+            kernel->P2POuter( FCudaTreeCoordinate::GetPositionFromMorton(insideInteractions[outInterIdx].outIndex, treeHeight-1),
                                &interParticles , &particles, &otherPosition, 1);
         }
     }
@@ -521,12 +535,30 @@ template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 __host__ void FCuda__directInoutPassCallback(unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
                                              unsigned char* externalContainersPtr, std::size_t externalContainersSize, unsigned char* externalContainersDownPtr,
-                                             const OutOfBlockInteraction* outsideInteractions,
-                                             int nbOutsideInteractions, const int treeHeight, CudaKernelClass* kernel, cudaStream_t currentStream,
+                                             const OutOfBlockInteraction* outsideInteractions, int nbOutsideInteractions,
+                                             const int     safeOuterInteractions[], const int counterOuterCell,
+                                                 const OutOfBlockInteraction* insideInteractions,
+                                                 const int     safeInnterInteractions[], const int counterInnerCell,
+                                             const int treeHeight, CudaKernelClass* kernel, cudaStream_t currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize){
     OutOfBlockInteraction* cuOutsideInteractions;
     FCudaCheck( cudaMalloc(&cuOutsideInteractions,nbOutsideInteractions*sizeof(OutOfBlockInteraction)) );
     FCudaCheck( cudaMemcpy( cuOutsideInteractions, outsideInteractions, nbOutsideInteractions*sizeof(OutOfBlockInteraction),
+                cudaMemcpyHostToDevice ) );
+
+    OutOfBlockInteraction* cuInsideInteractions;
+    FCudaCheck( cudaMalloc(&cuInsideInteractions,nbOutsideInteractions*sizeof(OutOfBlockInteraction)) );
+    FCudaCheck( cudaMemcpy( cuInsideInteractions, insideInteractions, nbOutsideInteractions*sizeof(OutOfBlockInteraction),
+                cudaMemcpyHostToDevice ) );
+
+    int* cuSafeOuterInteractions;
+    FCudaCheck( cudaMalloc(&cuSafeOuterInteractions,(counterOuterCell+1)*sizeof(int)) );
+    FCudaCheck( cudaMemcpy( cuSafeOuterInteractions, safeOuterInteractions, (counterOuterCell+1)*sizeof(int),
+                cudaMemcpyHostToDevice ) );
+
+    int* cuSafeInnterInteractions;
+    FCudaCheck( cudaMalloc(&cuSafeInnterInteractions,(counterInnerCell+1)*sizeof(int)) );
+    FCudaCheck( cudaMemcpy( cuSafeInnterInteractions, safeInnterInteractions, (counterInnerCell+1)*sizeof(int),
                 cudaMemcpyHostToDevice ) );
 
     FCuda__directInoutPassPerform
@@ -534,12 +566,19 @@ __host__ void FCuda__directInoutPassCallback(unsigned char* containersPtr, std::
             CellContainerClass, ParticleContainerGroupClass, ParticleGroupClass, CudaKernelClass>
             <<<inGridSize, inBlocksSize, 0, currentStream>>>(containersPtr, containersSize,containersDownPtr,
                                   externalContainersPtr, externalContainersSize,externalContainersDownPtr,
-                                  cuOutsideInteractions, nbOutsideInteractions, treeHeight, kernel);
+                                  cuOutsideInteractions, nbOutsideInteractions,
+                                 cuSafeOuterInteractions,counterOuterCell,
+                                  cuInsideInteractions,
+                                  cuSafeInnterInteractions , counterInnerCell,
+                                  treeHeight, kernel);
 
     FCudaCheckAfterCall();
     FCudaCheck(cudaStreamSynchronize(currentStream));
 
     FCudaCheck(cudaFree(cuOutsideInteractions));
+    FCudaCheck(cudaFree(cuInsideInteractions));
+    FCudaCheck(cudaFree(cuSafeOuterInteractions));
+    FCudaCheck(cudaFree(cuSafeInnterInteractions));
 }
 
 
@@ -668,7 +707,8 @@ template void FCuda__directInoutPassCallbackMpi<FCudaEmptyCellSymb, int, int, FC
     (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
     unsigned char* externalContainersPtr, std::size_t externalContainersSize,
     const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, const int treeHeight, FCudaEmptyKernel<int>* kernel, cudaStream_t currentStream,
+    int nbOutsideInteractions, const int safeOuterInteractions[], const int counterOuterCell,
+const int treeHeight, FCudaEmptyKernel<int>* kernel, cudaStream_t currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize);
 #endif
 template void FCuda__directInPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
@@ -681,8 +721,11 @@ template void FCuda__directInoutPassCallback<FCudaEmptyCellSymb, int, int, FCuda
                                         FCudaGroupOfParticles<int,0,0,int>, FCudaGroupAttachedLeaf<int,0,0,int>, FCudaEmptyKernel<int> >
     (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
     unsigned char* externalContainersPtr, std::size_t externalContainersSize, unsigned char* externalContainersDownPtr,
-    const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, const int treeHeight, FCudaEmptyKernel<int>* kernel, cudaStream_t currentStream,
+const OutOfBlockInteraction* outsideInteractions, int nbOutsideInteractions,
+const int     safeOuterInteractions[], const int counterOuterCell,
+    const OutOfBlockInteraction* insideInteractions,
+    const int     safeInnterInteractions[], const int counterInnerCell,
+const int treeHeight, FCudaEmptyKernel<int>* kernel, cudaStream_t currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize);
 
 template void FCuda__mergePassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
@@ -754,7 +797,8 @@ template void FCuda__directInoutPassCallbackMpi<FTestCellPODCore, FTestCellPODDa
     (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
     unsigned char* externalContainersPtr, std::size_t externalContainersSize,
     const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, const int treeHeight, FTestCudaKernels<float>* kernel, cudaStream_t currentStream,
+    int nbOutsideInteractions, const int safeOuterInteractions[], const int counterOuterCell,
+const int treeHeight, FTestCudaKernels<float>* kernel, cudaStream_t currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize);
 #endif
 template void FCuda__directInPassCallback<FTestCellPODCore, FTestCellPODData, FTestCellPODData, FCudaGroupOfCells<FTestCellPODCore, FTestCellPODData, FTestCellPODData>,
@@ -767,8 +811,10 @@ template void FCuda__directInoutPassCallback<FTestCellPODCore, FTestCellPODData,
                                         FCudaGroupOfParticles<float,0, 1, long long int>, FCudaGroupAttachedLeaf<float,0, 1, long long int>, FTestCudaKernels<float> >
     (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
     unsigned char* externalContainersPtr, std::size_t externalContainersSize, unsigned char* externalContainersDownPtr,
-    const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, const int treeHeight, FTestCudaKernels<float>* kernel, cudaStream_t currentStream,
+const OutOfBlockInteraction* outsideInteractions, int nbOutsideInteractions,
+const int     safeOuterInteractions[], const int counterOuterCell,
+    const OutOfBlockInteraction* insideInteractions,
+    const int     safeInnterInteractions[], const int counterInnerCell, const int treeHeight, FTestCudaKernels<float>* kernel, cudaStream_t currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize);
 
 template void FCuda__mergePassCallback<FTestCellPODCore, FTestCellPODData, FTestCellPODData, FCudaGroupOfCells<FTestCellPODCore, FTestCellPODData, FTestCellPODData>,
@@ -838,7 +884,8 @@ template void FCuda__directInoutPassCallbackMpi<FTestCellPODCore, FTestCellPODDa
     (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
     unsigned char* externalContainersPtr, std::size_t externalContainersSize,
     const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, const int treeHeight, FTestCudaKernels<double>* kernel, cudaStream_t currentStream,
+    int nbOutsideInteractions, const int safeOuterInteractions[], const int counterOuterCell,
+const int treeHeight, FTestCudaKernels<double>* kernel, cudaStream_t currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize);
 #endif
 template void FCuda__directInPassCallback<FTestCellPODCore, FTestCellPODData, FTestCellPODData, FCudaGroupOfCells<FTestCellPODCore, FTestCellPODData, FTestCellPODData>,
@@ -851,8 +898,10 @@ template void FCuda__directInoutPassCallback<FTestCellPODCore, FTestCellPODData,
                                         FCudaGroupOfParticles<double,0, 1, long long int>, FCudaGroupAttachedLeaf<double,0, 1, long long int>, FTestCudaKernels<double> >
     (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
     unsigned char* externalContainersPtr, std::size_t externalContainersSize, unsigned char* externalContainersDownPtr,
-    const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, const int treeHeight, FTestCudaKernels<double>* kernel, cudaStream_t currentStream,
+const OutOfBlockInteraction* outsideInteractions, int nbOutsideInteractions,
+const int     safeOuterInteractions[], const int counterOuterCell,
+    const OutOfBlockInteraction* insideInteractions,
+    const int     safeInnterInteractions[], const int counterInnerCell, const int treeHeight, FTestCudaKernels<double>* kernel, cudaStream_t currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize);
 
 template void FCuda__mergePassCallback<FTestCellPODCore, FTestCellPODData, FTestCellPODData, FCudaGroupOfCells<FTestCellPODCore, FTestCellPODData, FTestCellPODData>,
@@ -925,7 +974,8 @@ template void FCuda__directInoutPassCallbackMpi<FCudaEmptyCellSymb, int, int, FC
     (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
     unsigned char* externalContainersPtr, std::size_t externalContainersSize,
     const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, const int treeHeight, FCudaP2P<float>* kernel, cudaStream_t currentStream,
+    int nbOutsideInteractions, const int safeOuterInteractions[], const int counterOuterCell,
+const int treeHeight, FCudaP2P<float>* kernel, cudaStream_t currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize);
 #endif
 template void FCuda__directInPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
@@ -938,8 +988,10 @@ template void FCuda__directInoutPassCallback<FCudaEmptyCellSymb, int, int, FCuda
                                         FCudaGroupOfParticles<float,1, 4, float>, FCudaGroupAttachedLeaf<float,1, 4, float>, FCudaP2P<float> >
     (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
     unsigned char* externalContainersPtr, std::size_t externalContainersSize, unsigned char* externalContainersDownPtr,
-    const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, const int treeHeight, FCudaP2P<float>* kernel, cudaStream_t currentStream,
+const OutOfBlockInteraction* outsideInteractions, int nbOutsideInteractions,
+const int     safeOuterInteractions[], const int counterOuterCell,
+    const OutOfBlockInteraction* insideInteractions,
+    const int     safeInnterInteractions[], const int counterInnerCell, const int treeHeight, FCudaP2P<float>* kernel, cudaStream_t currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize);
 
 template void FCuda__mergePassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
@@ -1009,7 +1061,8 @@ template void FCuda__directInoutPassCallbackMpi<FCudaEmptyCellSymb, int, int, FC
     (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
     unsigned char* externalContainersPtr, std::size_t externalContainersSize,
     const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, const int treeHeight, FCudaP2P<double>* kernel, cudaStream_t currentStream,
+    int nbOutsideInteractions, const int safeOuterInteractions[], const int counterOuterCell,
+const int treeHeight, FCudaP2P<double>* kernel, cudaStream_t currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize);
 #endif
 template void FCuda__directInPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
@@ -1022,8 +1075,10 @@ template void FCuda__directInoutPassCallback<FCudaEmptyCellSymb, int, int, FCuda
                                         FCudaGroupOfParticles<double,1, 4, double>, FCudaGroupAttachedLeaf<double,1, 4, double>, FCudaP2P<double> >
     (unsigned char* containersPtr, std::size_t containersSize, unsigned char* containersDownPtr,
     unsigned char* externalContainersPtr, std::size_t externalContainersSize, unsigned char* externalContainersDownPtr,
-    const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, const int treeHeight, FCudaP2P<double>* kernel, cudaStream_t currentStream,
+const OutOfBlockInteraction* outsideInteractions, int nbOutsideInteractions,
+const int     safeOuterInteractions[], const int counterOuterCell,
+    const OutOfBlockInteraction* insideInteractions,
+    const int     safeInnterInteractions[], const int counterInnerCell, const int treeHeight, FCudaP2P<double>* kernel, cudaStream_t currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize);
 
 template void FCuda__mergePassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,

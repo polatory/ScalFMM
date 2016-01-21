@@ -52,7 +52,7 @@ public:
     typedef FCudaGroupAttachedLeaf<FReal,1,4,FReal> ContainerClass;
     typedef FCudaCompositeCell<FCudaEmptyCellSymb,int,int> CellClass;
 
-    static const int SHARE_SIZE = 1;//128;
+    static const int THREAD_GROUP_SIZE = 1;//128;
 
     __device__ void P2M(CellClass /*pole*/, const ContainerClass* const /*particles*/) {
     }
@@ -90,13 +90,13 @@ public:
             targetZ = (threadCompute? targets->getPositions()[2][idxPart] : 0);
             targetPhys = (threadCompute? targets->getAttribute(0)[idxPart] : 0);
 
-            for(int idxCopy = 0 ; idxCopy < targets->getNbParticles() ; idxCopy += SHARE_SIZE){
-                __shared__ FReal sourcesX[SHARE_SIZE];
-                __shared__ FReal sourcesY[SHARE_SIZE];
-                __shared__ FReal sourcesZ[SHARE_SIZE];
-                __shared__ FReal sourcesPhys[SHARE_SIZE];
+            for(int idxCopy = 0 ; idxCopy < targets->getNbParticles() ; idxCopy += THREAD_GROUP_SIZE){
+                __shared__ FReal sourcesX[THREAD_GROUP_SIZE];
+                __shared__ FReal sourcesY[THREAD_GROUP_SIZE];
+                __shared__ FReal sourcesZ[THREAD_GROUP_SIZE];
+                __shared__ FReal sourcesPhys[THREAD_GROUP_SIZE];
 
-                const int nbCopies = Min(SHARE_SIZE, targets->getNbParticles()-idxCopy);
+                const int nbCopies = Min(THREAD_GROUP_SIZE, targets->getNbParticles()-idxCopy);
                 if(threadIdx.x < nbCopies){
                     sourcesX[threadIdx.x] = targets->getPositions()[0][threadIdx.x+idxCopy];
                     sourcesY[threadIdx.x] = targets->getPositions()[1][threadIdx.x+idxCopy];
@@ -187,13 +187,13 @@ public:
                 targetZ = (threadCompute? targets->getPositions()[2][idxPart] : 0);
                 targetPhys = (threadCompute? targets->getAttribute(0)[idxPart] : 0);
 
-                for(int idxCopy = 0 ; idxCopy < directNeighborsParticles[idxNeigh].getNbParticles() ; idxCopy += SHARE_SIZE){
-                    __shared__ FReal sourcesX[SHARE_SIZE];
-                    __shared__ FReal sourcesY[SHARE_SIZE];
-                    __shared__ FReal sourcesZ[SHARE_SIZE];
-                    __shared__ FReal sourcesPhys[SHARE_SIZE];
+                for(int idxCopy = 0 ; idxCopy < directNeighborsParticles[idxNeigh].getNbParticles() ; idxCopy += THREAD_GROUP_SIZE){
+                    __shared__ FReal sourcesX[THREAD_GROUP_SIZE];
+                    __shared__ FReal sourcesY[THREAD_GROUP_SIZE];
+                    __shared__ FReal sourcesZ[THREAD_GROUP_SIZE];
+                    __shared__ FReal sourcesPhys[THREAD_GROUP_SIZE];
 
-                    const int nbCopies = Min(SHARE_SIZE, directNeighborsParticles[idxNeigh].getNbParticles()-idxCopy);
+                    const int nbCopies = Min(THREAD_GROUP_SIZE, directNeighborsParticles[idxNeigh].getNbParticles()-idxCopy);
                     if(threadIdx.x < nbCopies){
                         sourcesX[threadIdx.x] = directNeighborsParticles[idxNeigh].getPositions()[0][threadIdx.x+idxCopy];
                         sourcesY[threadIdx.x] = directNeighborsParticles[idxNeigh].getPositions()[1][threadIdx.x+idxCopy];
@@ -259,13 +259,13 @@ public:
                 targetZ = (threadCompute? targets->getPositions()[2][idxPart] : 0);
                 targetPhys = (threadCompute? targets->getAttribute(0)[idxPart] : 0);
 
-                for(int idxCopy = 0 ; idxCopy < directNeighborsParticles[idxNeigh].getNbParticles() ; idxCopy += SHARE_SIZE){
-                    __shared__ FReal sourcesX[SHARE_SIZE];
-                    __shared__ FReal sourcesY[SHARE_SIZE];
-                    __shared__ FReal sourcesZ[SHARE_SIZE];
-                    __shared__ FReal sourcesPhys[SHARE_SIZE];
+                for(int idxCopy = 0 ; idxCopy < directNeighborsParticles[idxNeigh].getNbParticles() ; idxCopy += THREAD_GROUP_SIZE){
+                    __shared__ FReal sourcesX[THREAD_GROUP_SIZE];
+                    __shared__ FReal sourcesY[THREAD_GROUP_SIZE];
+                    __shared__ FReal sourcesZ[THREAD_GROUP_SIZE];
+                    __shared__ FReal sourcesPhys[THREAD_GROUP_SIZE];
 
-                    const int nbCopies = Min(SHARE_SIZE, directNeighborsParticles[idxNeigh].getNbParticles()-idxCopy);
+                    const int nbCopies = Min(THREAD_GROUP_SIZE, directNeighborsParticles[idxNeigh].getNbParticles()-idxCopy);
                     if(threadIdx.x < nbCopies){
                         sourcesX[threadIdx.x] = directNeighborsParticles[idxNeigh].getPositions()[0][threadIdx.x+idxCopy];
                         sourcesY[threadIdx.x] = directNeighborsParticles[idxNeigh].getPositions()[1][threadIdx.x+idxCopy];
@@ -321,12 +321,12 @@ public:
         // nothing to do
     }
 
-    __host__ static dim3 GetGridSize(const int intervalSize){
-        return 1; //intervalSize;
+    __host__ static dim3 GetGridSize(const int /*intervalSize*/){
+        return 24;
     }
 
     __host__ static dim3 GetBlocksSize(){
-        return SHARE_SIZE;
+        return THREAD_GROUP_SIZE;
     }
 };
 

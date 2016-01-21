@@ -39,6 +39,7 @@
 #include "../../Src/GroupTree/Cuda/FCudaGroupOfParticles.hpp"
 #include "../../Src/GroupTree/Cuda/FCudaGroupOfCells.hpp"
 
+#include "../../Src/GroupTree/StarPUUtils/FStarPUKernelCapacities.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
