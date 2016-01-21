@@ -116,7 +116,7 @@ int main(int argc, char** argv){
         std::unique_ptr<FReal[]> resDense(new FReal[dim]);
         FSetToZeros(resDense.get(), dim);
 
-        grid.gemv(resDense.get(), vec.get());
+        //grid.gemv(resDense.get(), vec.get());
 
         FMath::FAccurater<FReal> testDense(resTest.get(), resDense.get(), dim);
 

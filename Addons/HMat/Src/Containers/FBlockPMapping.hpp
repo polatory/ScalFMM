@@ -96,11 +96,11 @@ public:
 
         colBlocks = new ColNode[nbPartitions];
         for(int idxPartCol = 0 ; idxPartCol < nbPartitions ; ++idxPartCol){
-            colBlocks[idxPartRow].infos.row = 0;
-            colBlocks[idxPartRow].infos.col = partitionsOffset[idxPartCol];
-            colBlocks[idxPartRow].infos.nbRows = dim;
-            colBlocks[idxPartRow].infos.nbCols = partitions[idxPartRow];
-            colBlocks[idxPartRow].infos.level = 0;
+            colBlocks[idxPartCol].infos.row = 0;
+            colBlocks[idxPartCol].infos.col = partitionsOffset[idxPartCol];
+            colBlocks[idxPartCol].infos.nbRows = dim;
+            colBlocks[idxPartCol].infos.nbCols = partitions[idxPartCol];
+            colBlocks[idxPartCol].infos.level = 0;
         }
     }
 
@@ -140,8 +140,8 @@ public:
             for(int idxPartRow = 0 ; idxPartRow < nbPartitions ; ++idxPartRow){
                 callback(cells[idxPartCol*nbPartitions + idxPartRow].infos,
                      cells[idxPartCol*nbPartitions + idxPartRow].cell,
-                     rowBlocks[idxPartRow],
-                     colBlocks[idxPartCol]);
+                     rowBlocks[idxPartRow].cell,
+                     colBlocks[idxPartCol].cell);
             }
         }
     }
@@ -171,11 +171,35 @@ public:
         return colBlocks[idxColPart].cell;
     }
 
-    const ColBlockClass& getColCellInfo(const int idxColPart) const {
+    const FBlockDescriptor& getColCellInfo(const int idxColPart) const {
         return colBlocks[idxColPart].infos;
     }
 
     // Operations
+    void gemv(FReal res[], const FReal vec[]) const {
+        for(int idxPartCol = 0 ; idxPartCol < nbPartitions ; ++idxPartCol){
+            for(int idxPartRow = 0 ; idxPartRow < nbPartitions ; ++idxPartRow){
+//                &res[cells[idxPartCol*nbPartitions + idxPartRow].infos.row],
+//                &vec[cells[idxPartCol*nbPartitions + idxPartRow].infos.col])
+//                cells[idxPartCol*nbPartitions + idxPartRow].cell,
+//                rowBlocks[idxPartRow].cell,
+//                colBlocks[idxPartCol].cell;
+            }
+        }
+    }
+
+    void gemm(FReal res[], const FReal mat[], const int nbRhs) const {
+        for(int idxPartCol = 0 ; idxPartCol < nbPartitions ; ++idxPartCol){
+            for(int idxPartRow = 0 ; idxPartRow < nbPartitions ; ++idxPartRow){
+//                &res[cells[idxPartCol*nbPartitions + idxPartRow].infos.row],
+//                &vec[cells[idxPartCol*nbPartitions + idxPartRow].infos.col])
+//                cells[idxPartCol*nbPartitions + idxPartRow].cell,
+//                rowBlocks[idxPartRow].cell,
+//                colBlocks[idxPartCol].cell;
+//                nbRhs, dim
+            }
+        }
+    }
 };
 
 #endif // FBLOCKPMAPPING_HPP
