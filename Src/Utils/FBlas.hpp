@@ -72,7 +72,9 @@ extern "C"
 							 double*, const unsigned*, double*, const unsigned*, int*);
 	void dgeqrf_(const unsigned*, const unsigned*, double*, const unsigned*,
 							 double*, double*, const unsigned*, int*);
-	void dorgqr_(const unsigned*, const unsigned*, const unsigned*,
+    void dgeqp3_(const unsigned*, const unsigned*, double*, const unsigned*, /*TYPE OF JPIV*/ unsigned*,
+                             double*, double*, const unsigned*, int*);
+    void dorgqr_(const unsigned*, const unsigned*, const unsigned*,
 							 double*, const unsigned*, double*, double*, const unsigned*, int*);
 	void dormqr_(const char*, const char*, 
                const unsigned*, const unsigned*, const unsigned*,
@@ -111,6 +113,8 @@ extern "C"
 							 float*, const unsigned*, float*, const unsigned*, int*);
 	void sgeqrf_(const unsigned*, const unsigned*, float*, const unsigned*,
 							 float*, float*, const unsigned*, int*);
+    void sgeqp3_(const unsigned*, const unsigned*, float*, const unsigned*, /*TYPE OF JPIV*/ unsigned*,
+                             float*, float*, const unsigned*, int*);
 	void sorgqr_(const unsigned*, const unsigned*, const unsigned*,
 							 float*, const unsigned*, float*, float*, const unsigned*, int*);
 	void sormqr_(const char*, const char*, 
@@ -139,6 +143,9 @@ extern "C"
 
 	void zgeqrf_(const unsigned*, const unsigned*, double*, const unsigned*,
 							 double*, double*, const unsigned*, int*);
+    void zgeqp3_(const unsigned*, const unsigned*, double*, const unsigned*,/*TYPE OF JPIV*/ unsigned*,
+                             double*, double*, const unsigned*, int*);
+
     void zpotrf_(const char*, const unsigned*, double*, const unsigned*, int*);
 
 	// single complex //////////////////////////////////////////////////
@@ -156,6 +163,8 @@ extern "C"
 							float*, const unsigned*, const float*, float*, const unsigned*);
 	void cgeqrf_(const unsigned*, const unsigned*, float*, const unsigned*,
 							 float*, float*, const unsigned*, int*);
+    void cgeqp3_(const unsigned*, const unsigned*, float*, const unsigned*, /*TYPE OF JPIV*/ unsigned*,
+                             float*, float*, const unsigned*, int*);    
     void cpotrf_(const char*, const unsigned*, float*, const unsigned*, int*);
 
 
@@ -543,7 +552,19 @@ namespace FBlas {
 		sgeqrf_(&m, &n, A, &m, tau, wk, &nwk, &INF);
 		return INF;
 	}
-	
+    // QR factorisation with column pivoting
+    inline int geqp3(const unsigned m, const unsigned n, double* A, unsigned* jpiv, double* tau, unsigned nwk, double* wk)
+    {
+        int INF;
+        dgeqp3_(&m, &n, A, &m, jpiv, tau, wk, &nwk, &INF);
+        return INF;
+    }
+    inline int geqp3(const unsigned m, const unsigned n, float* A, unsigned* jpiv, float* tau, unsigned nwk, float* wk)
+    {
+        int INF;
+        sgeqp3_(&m, &n, A, &m, jpiv, tau, wk, &nwk, &INF);
+        return INF;
+    }	
 	inline int c_geqrf(const unsigned m, const unsigned n, float* A, float* tau, unsigned nwk, float* wk)
 	{
 		int INF;
@@ -557,7 +578,19 @@ namespace FBlas {
 		zgeqrf_(&m, &n, A, &m, tau, wk, &nwk, &INF);
 		return INF;
 	}
-
+    inline int c_geqp3(const unsigned m, const unsigned n, float* A, unsigned* jpiv, float* tau, unsigned nwk, float* wk)
+    {
+        int INF;
+        cgeqp3_(&m, &n, A, &m, jpiv, tau, wk, &nwk, &INF);
+        return INF;
+    }
+    
+    inline int c_geqp3(const unsigned m, const unsigned n, double* A, unsigned* jpiv, double* tau, unsigned nwk, double* wk)
+    {
+        int INF;
+        zgeqp3_(&m, &n, A, &m, jpiv, tau, wk, &nwk, &INF);
+        return INF;
+    }
 
 	// return full of Q-Matrix (QR factorization) in A
 	inline int orgqr_full(const unsigned m, const unsigned n, double* A, double* tau, unsigned nwk, double* wk)
