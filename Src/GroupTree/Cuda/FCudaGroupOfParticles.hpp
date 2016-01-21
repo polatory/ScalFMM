@@ -59,8 +59,6 @@ protected:
     BlockHeader*    blockHeader;
     //< Pointer to leaves information
     LeafHeader*     leafHeader;
-    //< The total number of particles in the group
-    const FSize nbParticlesInGroup;
 
     //< Pointers to particle position x, y, z
     FReal* particlePosition[3];
@@ -78,11 +76,12 @@ public:
     __device__ FCudaGroupOfParticles(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte,
                                      unsigned char* inAttributes)
         : allocatedMemoryInByte(inAllocatedMemoryInByte), memoryBuffer(inBuffer),
-          blockHeader(nullptr), leafHeader(nullptr), nbParticlesInGroup(0),
+          blockHeader(nullptr), leafHeader(nullptr),
           attributesBuffer(nullptr){
         // Move the pointers to the correct position
-        blockHeader         = reinterpret_cast<BlockHeader*>(memoryBuffer);
-        leafHeader          = reinterpret_cast<LeafHeader*>(memoryBuffer+sizeof(BlockHeader)+(blockHeader->numberOfLeavesInBlock*sizeof(int)));
+        blockHeader         = reinterpret_cast<BlockHeader*>(inBuffer);
+        inBuffer += sizeof(BlockHeader);
+        leafHeader          = reinterpret_cast<LeafHeader*>(inBuffer);
 
         // Init particle pointers
         // Assert blockHeader->positionsLeadingDim == (sizeof(FReal) * blockHeader->nbParticlesAllocatedInGroup);
@@ -122,7 +121,7 @@ public:
 
     /** Get the total number of particles in the group */
     __device__ FSize getNbParticlesInGroup() const {
-        return nbParticlesInGroup;
+        return blockHeader->nbParticlesInGroup;
     }
 
     /** The size of the interval endingIndex-startingIndex (set from the constructor) */

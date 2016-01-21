@@ -23,7 +23,7 @@
 
 #include <starpu.h>
 
-#ifdef STARPU_USE_MPI
+#if defined(STARPU_USE_MPI) && defined(SCALFMM_USE_MPI)
 #include <starpu_mpi.h>
 #endif
 
@@ -96,20 +96,8 @@ public:
         FStarPUPtrInterface* worker = nullptr;
         int nbSubCellGroups = 0;
         int idxLevel = 0;
-        int intervalSize;
+        int intervalSize = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel, &intervalSize);
-
-        FCudaParams<unsigned char*,9> subCellGroupsPtr;
-        memset(&subCellGroupsPtr, 0, sizeof(subCellGroupsPtr));
-        FCudaParams<std::size_t,9> subCellGroupsSize;
-        memset(&subCellGroupsPtr, 0, sizeof(subCellGroupsSize));
-        FCudaParams<unsigned char*,9> subCellGroupsUpPtr;
-        memset(&subCellGroupsUpPtr, 0, sizeof(subCellGroupsUpPtr));
-        for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            subCellGroupsPtr.values[idxSubGroup] = ((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[(idxSubGroup*2)+2]));
-            subCellGroupsSize.values[idxSubGroup] = STARPU_VARIABLE_GET_ELEMSIZE(buffers[(idxSubGroup*2)+2]);
-            subCellGroupsUpPtr.values[idxSubGroup] = (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[(idxSubGroup*2)+3]);
-        }
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
 
@@ -118,20 +106,22 @@ public:
                     (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                subCellGroupsPtr,subCellGroupsSize,subCellGroupsUpPtr,
-                nbSubCellGroups, idxLevel, kernel, starpu_cuda_get_local_stream(),
+                (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
+                (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]),
+                idxLevel, kernel, starpu_cuda_get_local_stream(),
                 FCuda__GetGridSize(kernel,intervalSize),FCuda__GetBlockSize(kernel));
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
     /// Transfer Pass Mpi
     /////////////////////////////////////////////////////////////////////////////////////
-#ifdef STARPU_USE_MPI
+#if defined(STARPU_USE_MPI) && defined(SCALFMM_USE_MPI)
     static void transferInoutPassCallbackMpi(void *buffers[], void *cl_arg){
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
-        const std::vector<OutOfBlockInteraction>* outsideInteractions;
-        int intervalSize;
+        const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
+        int intervalSize = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions, &intervalSize);
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
@@ -156,7 +146,7 @@ public:
     static void transferInPassCallback(void *buffers[], void *cl_arg){
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
-        int intervalSize;
+        int intervalSize = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &intervalSize);
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
@@ -174,9 +164,10 @@ public:
     static void transferInoutPassCallback(void *buffers[], void *cl_arg){
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
-        const std::vector<OutOfBlockInteraction>* outsideInteractions;
-        int intervalSize;
-        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions, &intervalSize);
+        const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
+        int intervalSize = 0;
+        int mode = 0;
+        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions, &intervalSize, &mode);
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
 
@@ -186,11 +177,9 @@ public:
                     STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                     (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                     (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                    STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
                     (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]),
-                    STARPU_VARIABLE_GET_ELEMSIZE(buffers[3]),
-                    (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[4]),
-                    (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[5]),
-                    idxLevel, outsideInteractions->data(), int(outsideInteractions->size()), kernel,
+                    idxLevel, mode, outsideInteractions->data(), int(outsideInteractions->size()), kernel,
                     starpu_cuda_get_local_stream(),
                 FCuda__GetGridSize(kernel,intervalSize),FCuda__GetBlockSize(kernel));
     }
@@ -202,20 +191,8 @@ public:
         FStarPUPtrInterface* worker = nullptr;
         int nbSubCellGroups = 0;
         int idxLevel = 0;
-        int intervalSize;
+        int intervalSize = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel, &intervalSize);
-
-        FCudaParams<unsigned char*,9> subCellGroupsPtr;
-        memset(&subCellGroupsPtr, 0, sizeof(subCellGroupsPtr));
-        FCudaParams<std::size_t,9> subCellGroupsSize;
-        memset(&subCellGroupsPtr, 0, sizeof(subCellGroupsSize));
-        FCudaParams<unsigned char*,9> subCellGroupsDownPtr;
-        memset(&subCellGroupsDownPtr, 0, sizeof(subCellGroupsDownPtr));
-        for(int idxSubGroup = 0; idxSubGroup < nbSubCellGroups ; ++idxSubGroup){
-            subCellGroupsPtr.values[idxSubGroup] = ((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[(idxSubGroup*2)+2]));
-            subCellGroupsSize.values[idxSubGroup] = (STARPU_VARIABLE_GET_ELEMSIZE(buffers[(idxSubGroup*2)+2]));
-            subCellGroupsDownPtr.values[idxSubGroup] = ((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[(idxSubGroup*2)+3]));
-        }
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
 
@@ -224,20 +201,22 @@ public:
                     (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                subCellGroupsPtr,subCellGroupsSize,subCellGroupsDownPtr,
-                nbSubCellGroups, idxLevel, kernel, starpu_cuda_get_local_stream(),
+                (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
+                (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]),
+                idxLevel, kernel, starpu_cuda_get_local_stream(),
                 FCuda__GetGridSize(kernel,intervalSize),FCuda__GetBlockSize(kernel));
     }
     /////////////////////////////////////////////////////////////////////////////////////
     /// Direct Pass MPI
     /////////////////////////////////////////////////////////////////////////////////////
 
-#ifdef STARPU_USE_MPI
+#if defined(STARPU_USE_MPI) && defined(SCALFMM_USE_MPI)
     static void directInoutPassCallbackMpi(void *buffers[], void *cl_arg){
 
         FStarPUPtrInterface* worker = nullptr;
         const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
-        int intervalSize;
+        int intervalSize = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions, &intervalSize);
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
@@ -260,7 +239,7 @@ public:
 
     static void directInPassCallback(void *buffers[], void *cl_arg){
         FStarPUPtrInterface* worker = nullptr;
-        int intervalSize;
+        int intervalSize = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize);
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
 
@@ -276,7 +255,7 @@ public:
     static void directInoutPassCallback(void *buffers[], void *cl_arg){
         FStarPUPtrInterface* worker = nullptr;
         const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
-        int intervalSize;
+        int intervalSize = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions, &intervalSize);
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];

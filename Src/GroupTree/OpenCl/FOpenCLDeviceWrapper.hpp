@@ -21,14 +21,6 @@
 template <class OriginalKernelClass, class KernelFilenameClass = FEmptyOpenCLCode>
 class FOpenCLDeviceWrapper {
 protected:
-    struct  alignas(FStarPUDefaultAlign::StructAlign)  Uptr9{
-        cl_mem ptrs[9];
-    };
-
-    struct alignas(FStarPUDefaultAlign::StructAlign)  size_t9{
-        size_t v[9];
-    };
-
     static void SetKernelArgs(cl_kernel& /*kernel*/, const int /*pos*/){
     }
     template <class ParamClass, class... Args>
@@ -168,17 +160,11 @@ public:
 
 
     void upwardPassPerform(cl_mem currentCellsPtr,  size_t currentCellsSize, cl_mem currentCellsUpPtr,
-                           cl_mem subCellGroupsPtr[9],  size_t subCellGroupsSize[9], cl_mem subCellGroupsUpPtr[9],
-                            int nbSubCellGroups, int idxLevel, const int intervalSize){
-        Uptr9 ptrs;
-        memcpy(ptrs.ptrs, subCellGroupsPtr, sizeof(cl_mem)*9);
-        size_t9 sizes;
-        memcpy(sizes.v, subCellGroupsSize, sizeof(size_t)*9);
-        Uptr9 ptrsUp;
-        memcpy(ptrsUp.ptrs, subCellGroupsUpPtr, sizeof(cl_mem)*9);
+                           cl_mem subCellGroupsPtr,  size_t subCellGroupsSize, cl_mem subCellGroupsUpPtr,
+                           int idxLevel, const int intervalSize){
 
         SetKernelArgs(kernel_upwardPassPerform, 0, &currentCellsPtr, &currentCellsSize, &currentCellsUpPtr,
-                      &ptrs,  &sizes, &ptrsUp, &nbSubCellGroups, &idxLevel, &user_data);
+                      &subCellGroupsPtr,  &subCellGroupsSize, &subCellGroupsUpPtr, &idxLevel, &user_data);
         const int err = clEnqueueNDRangeKernel(queue_upwardPassPerform, kernel_upwardPassPerform, kernelFilename.getNbDims(), NULL,
                                                kernelFilename.getNbGroups(intervalSize), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
@@ -205,29 +191,22 @@ public:
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
-    void transferInoutPassPerform(cl_mem currentCellsPtr, size_t currentCellsSize, cl_mem currentCellsUpPtr, cl_mem currentCellsDownPtr,
-                                  cl_mem externalCellsPtr, size_t externalCellsSize, cl_mem externalCellsUpPtr, cl_mem externalCellsDownPtr,
-                                  int idxLevel, cl_mem outsideInteractionsCl, size_t outsideInteractionsSize, const int intervalSize){
-        SetKernelArgs(kernel_transferInoutPassPerform, 0, &currentCellsPtr,&currentCellsSize, &currentCellsUpPtr, &currentCellsDownPtr,
-                      &externalCellsPtr, &externalCellsSize, &externalCellsUpPtr, &externalCellsDownPtr,
-                      &idxLevel, &outsideInteractionsCl,&outsideInteractionsSize, &user_data);
+    void transferInoutPassPerform(cl_mem currentCellsPtr, size_t currentCellsSize, cl_mem currentCellsUpPtr,
+                                  cl_mem externalCellsPtr, size_t externalCellsSize, cl_mem externalCellsDownPtr,
+                                  int idxLevel, const int mode, cl_mem outsideInteractionsCl, size_t outsideInteractionsSize, const int intervalSize){
+        SetKernelArgs(kernel_transferInoutPassPerform, 0, &currentCellsPtr,&currentCellsSize, &currentCellsUpPtr,
+                      &externalCellsPtr, &externalCellsSize, &externalCellsDownPtr,
+                      &idxLevel, &mode, &outsideInteractionsCl,&outsideInteractionsSize, &user_data);
         const int err = clEnqueueNDRangeKernel(queue_transferInoutPassPerform, kernel_transferInoutPassPerform, kernelFilename.getNbDims(), NULL,
                                                kernelFilename.getNbGroups(intervalSize), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);
     }
 
     void downardPassPerform(cl_mem currentCellsPtr, size_t currentCellsSize, cl_mem currentCellsDownPtr,
-                            cl_mem subCellGroupsPtr[9],  size_t subCellGroupsSize[9], cl_mem subCellGroupsDownPtr[9],
-                            int nbSubCellGroups, int idxLevel, const int intervalSize){
-        Uptr9 ptrs;
-        memcpy(ptrs.ptrs, subCellGroupsPtr, sizeof(cl_mem)*9);
-        size_t9 sizes;
-        memcpy(sizes.v, subCellGroupsSize, sizeof(size_t)*9);
-        Uptr9 ptrsDown;
-        memcpy(ptrsDown.ptrs, subCellGroupsDownPtr, sizeof(cl_mem)*9);
-
+                            cl_mem subCellGroupsPtr,  size_t subCellGroupsSize, cl_mem subCellGroupsDownPtr,
+                            int idxLevel, const int intervalSize){
         SetKernelArgs(kernel_downardPassPerform, 0, &currentCellsPtr, &currentCellsSize, &currentCellsDownPtr,
-                      &ptrs, &sizes, &ptrsDown, &nbSubCellGroups, &idxLevel, &user_data);
+                      &subCellGroupsPtr, &subCellGroupsSize, &subCellGroupsDownPtr, &idxLevel, &user_data);
         const int err = clEnqueueNDRangeKernel(queue_downardPassPerform, kernel_downardPassPerform, kernelFilename.getNbDims(), NULL,
                                                kernelFilename.getNbGroups(intervalSize), kernelFilename.getGroupSize(), 0, NULL, NULL);
         if (err != CL_SUCCESS) STARPU_OPENCL_REPORT_ERROR(err);

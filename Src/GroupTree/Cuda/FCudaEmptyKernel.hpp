@@ -22,7 +22,8 @@ public:
     __device__ void M2M(CellClass  /*pole*/, const CellClass  /*child*/[8], const int /*level*/) {
     }
 
-    __device__ void M2L(CellClass  /*pole*/, const CellClass /*distantNeighbors*/[343],
+    __device__ void M2L(CellClass  /*pole*/, const CellClass* /*distantNeighbors*/,
+                        const int* /*neighPositions*/,
         const int /*size*/, const int /*level*/) {
     }
 
@@ -34,12 +35,20 @@ public:
 
     __device__ void P2P(const int3& ,
                  ContainerClass* const  /*targets*/, const ContainerClass* const  /*sources*/,
-                 ContainerClass* const /*directNeighborsParticles*/[27], const int ){
+                 ContainerClass* const /*directNeighborsParticles*/,
+                        const int* /*neighborPositions*/, const int ){
+    }
+
+    __device__ void P2POuter(const int3& ,
+                 ContainerClass* const  /*targets*/,
+                 ContainerClass* const /*directNeighborsParticles*/,
+                              const int* /*neighborPositions*/,const int ){
     }
 
     __device__ void P2PRemote(const int3& ,
                  ContainerClass* const  /*targets*/, const ContainerClass* const  /*sources*/,
-                 ContainerClass* const /*directNeighborsParticles*/[27], const int ){
+                 ContainerClass* const /*directNeighborsParticles*/,
+                              const int* /*neighborPositions*/,const int ){
     }
 
     __host__ static FCudaEmptyKernel* InitKernelKernel(void*){

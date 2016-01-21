@@ -28,6 +28,7 @@
 
 #include "FNoCopyable.hpp"
 #include "FMath.hpp"
+#include "FAssert.hpp"
 
 //Need that for converting datas
 #include "FComplex.hpp"
@@ -250,6 +251,13 @@ public:
         void barrier() const {
             FMpi::Assert(MPI_Barrier(getComm()), __LINE__);
         }
+
+        bool hasPendingMessage() const {
+            MPI_Status status;
+            int flag = 0;
+            MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, getComm(), &flag, &status);
+            return (flag != 0);
+        }
     };
 
     ////////////////////////////////////////////////////////
@@ -425,6 +433,44 @@ public:
             fflush(stdout);
             MPI_Abort(MPI_COMM_WORLD, int(line) );
         }
+    }
+
+    static const size_t MaxBytesPerDivMess = 20000000;
+
+    template <class ObjectType, class VectorType>
+    static int ISendSplit(const ObjectType toSend[], const size_t nbItems,
+                          const int dest, const int tagBase, const FMpi::FComm& communicator,
+                          VectorType* requestVector){
+        const size_t totalByteToSend  = (nbItems*sizeof(ObjectType));
+        unsigned char*const ptrDataToSend = (unsigned char*)const_cast<ObjectType*>(toSend);
+        for(size_t idxSize = 0 ; idxSize < totalByteToSend ; idxSize += MaxBytesPerDivMess){
+            MPI_Request currentRequest;
+            const size_t nbBytesInMessage = FMath::Min(MaxBytesPerDivMess, totalByteToSend-idxSize);
+            FAssertLF(nbBytesInMessage < std::numeric_limits<int>::max());
+            FMpi::Assert( MPI_Isend(&ptrDataToSend[idxSize], int(nbBytesInMessage), MPI_BYTE , dest,
+                          tagBase + int(idxSize/MaxBytesPerDivMess), communicator.getComm(), &currentRequest) , __LINE__);
+
+            requestVector->push_back(currentRequest);
+        }
+        return int((totalByteToSend+MaxBytesPerDivMess-1)/MaxBytesPerDivMess);
+    }
+
+    template <class ObjectType, class VectorType>
+    static int IRecvSplit(ObjectType toRecv[], const size_t nbItems,
+                          const int source, const int tagBase, const FMpi::FComm& communicator,
+                          VectorType* requestVector){
+        const size_t totalByteToRecv  = (nbItems*sizeof(ObjectType));
+        unsigned char*const ptrDataToRecv = (unsigned char*)(toRecv);
+        for(size_t idxSize = 0 ; idxSize < totalByteToRecv ; idxSize += MaxBytesPerDivMess){
+            MPI_Request currentRequest;
+            const size_t nbBytesInMessage = FMath::Min(MaxBytesPerDivMess, totalByteToRecv-idxSize);
+            FAssertLF(nbBytesInMessage < std::numeric_limits<int>::max());
+            FMpi::Assert( MPI_Irecv(&ptrDataToRecv[idxSize], int(nbBytesInMessage), MPI_BYTE , source,
+                          tagBase + int(idxSize/MaxBytesPerDivMess), communicator.getComm(), &currentRequest) , __LINE__);
+
+            requestVector->push_back(currentRequest);
+        }
+        return int((totalByteToRecv+MaxBytesPerDivMess-1)/MaxBytesPerDivMess);
     }
 
 private:

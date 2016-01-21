@@ -20,6 +20,7 @@
 #include "../Utils/FQuickSortMpi.hpp"
 #include "../Utils/FBitonicSort.hpp"
 #include "../Utils/FTic.hpp"
+#include "../Utils/FEnv.hpp"
 
 #include "../Utils/FMemUtils.hpp"
 
@@ -41,6 +42,8 @@
 template<class FReal, class ParticleClass>
 class FMpiTreeBuilder{
 private:
+    static const bool VerboseLog;
+
     /** To keep the leaves information after the sort */
     struct LeafInfo {
         MortonIndex mindex;
@@ -188,13 +191,15 @@ public:
             if( (*workingSize) != 0 ){
                 borderLeavesState[0] = leavesInfo[0];
                 borderLeavesState[1] = leavesInfo[leavesInfo.getSize()-1];
+                FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] First " << borderLeavesState[0].mindex << "\n"; FLog::Controller.flush(); );
+                FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Last " << borderLeavesState[1].mindex << "\n"; FLog::Controller.flush(); );
             }
 
             std::unique_ptr<LeafInfo[]> allProcFirstLeafStates(new LeafInfo[nbProcs*2]);
             FMpi::MpiAssert(MPI_Allgather(&borderLeavesState, sizeof(LeafInfo)*2, MPI_BYTE,
                                           allProcFirstLeafStates.get(), sizeof(LeafInfo)*2, MPI_BYTE, communicator.getComm()),__LINE__);
 
-            FVector<MPI_Request> requests;
+            std::vector<MPI_Request> requests;
 
             // Find what to send/recv from who
             bool hasSentFirstLeaf = false;
@@ -209,10 +214,9 @@ public:
                 // We found someone
                 if(idProcToSendTo != myRank && allProcFirstLeafStates[(idProcToSendTo)*2 + 1].mindex == borderLeavesState[0].mindex){
                     // Post and send message for the first leaf
-                    requests.push((MPI_Request)0);
-                    FAssertLF(borderLeavesState[0].nbParts < std::numeric_limits<int>::max());
-                    FMpi::MpiAssert(MPI_Isend(&workingArray[0], int(borderLeavesState[0].nbParts), MPI_BYTE, idProcToSendTo,
-                            FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]),__LINE__);
+                    FMpi::ISendSplit(&workingArray[0], borderLeavesState[0].nbParts, idProcToSendTo,
+                            FMpi::TagExchangeIndexs, communicator, &requests);
+                    FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] send " << borderLeavesState[0].nbParts << " to " << idProcToSendTo << "\n"; FLog::Controller.flush(); );
                     hasSentFirstLeaf = true;
                 }
             }
@@ -239,10 +243,9 @@ public:
                     for(int postRecvIdx = (myRank+1); postRecvIdx <= idProcToRecvFrom ; ++postRecvIdx){
                         // If there are some on this proc
                         if(allProcFirstLeafStates[(postRecvIdx)*2].mindex != noDataFlag){
-                            requests.push((MPI_Request)0);
-                            FAssertLF(allProcFirstLeafStates[(postRecvIdx)*2].nbParts < std::numeric_limits<int>::max());
-                            FMpi::MpiAssert(MPI_Irecv(&receivedParticles[postPositionRecv], int(allProcFirstLeafStates[(postRecvIdx)*2].nbParts), MPI_BYTE, postRecvIdx,
-                                            FMpi::TagExchangeIndexs, communicator.getComm(), &requests[0]),__LINE__);
+                            FMpi::IRecvSplit(&receivedParticles[postPositionRecv], allProcFirstLeafStates[(postRecvIdx)*2].nbParts, postRecvIdx,
+                                    FMpi::TagExchangeIndexs, communicator, &requests);
+                            FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] recv " << allProcFirstLeafStates[(postRecvIdx)*2].nbParts << " from " << postRecvIdx << "\n"; FLog::Controller.flush(); );
                             // Inc the write position
                             postPositionRecv += allProcFirstLeafStates[(postRecvIdx)*2].nbParts;
                         }
@@ -252,7 +255,7 @@ public:
             }
 
             // Finalize communication
-            FMpi::MpiAssert(MPI_Waitall(int(requests.getSize()), requests.data(), MPI_STATUSES_IGNORE),__LINE__);
+            FMpi::MpiAssert(MPI_Waitall(int(requests.size()), requests.data(), MPI_STATUSES_IGNORE),__LINE__);
 
             // IF we sent we need to remove the first leaf
             if(hasSentFirstLeaf){
@@ -282,6 +285,7 @@ public:
                 delete[] workingArray;
                 workingArray   = particlesWithExtension;
                 (*workingSize) = finalParticlesNumber;
+                leavesInfo[leavesInfo.getSize()-1].nbParts += receivedParticles.size();
             }
         }
         {//Filling the Array with leaves and parts //// COULD BE MOVED IN AN OTHER FUCTION
@@ -319,8 +323,6 @@ public:
                                          const FSize leavesOffsetInParticles[], const ParticleClass particlesArrayInLeafOrder[],
                                          const FSize currentNbLeaves,
                                          const FSize currentNbParts, FAbstractBalanceAlgorithm * balancer){
-        const FSize MAX_BYTE_PER_MPI_MESS = 2000000000;
-        const FSize MAX_PARTICLES_PER_MPI_MESS = FMath::Max(FSize(1), FSize(MAX_BYTE_PER_MPI_MESS/sizeof(ParticleClass)));
         const int myRank = communicator.processId();
         const int nbProcs = communicator.processCount();
 
@@ -336,7 +338,10 @@ public:
             FMpi::MpiAssert(MPI_Allgather(const_cast<FSize*>(&currentNbLeaves), 1, MPI_LONG_LONG_INT, numberOfLeavesPerProc.get(),
                                           1, MPI_LONG_LONG_INT, communicator.getComm()), __LINE__);
 
-            //prefix sum
+
+            FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Exchange number of leaves\n"; FLog::Controller.flush(); );
+
+            // prefix sum
             std::unique_ptr<FSize[]> diffNumberOfLeavesPerProc(new FSize[nbProcs+1]);
             diffNumberOfLeavesPerProc[0] = 0;
             for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc ){
@@ -350,39 +355,53 @@ public:
             for(int idxProc = 0 ; idxProc < nbProcs ; ++idxProc){
                 allObjectives[idxProc].first  = balancer->getLeft(totalNumberOfLeavesInSimulation,nbProcs,idxProc);
                 allObjectives[idxProc].second = balancer->getRight(totalNumberOfLeavesInSimulation,nbProcs,idxProc);
+                if(idxProc != 0) FAssertLF(allObjectives[idxProc].first == allObjectives[idxProc-1].second);
             }
 
             // Ask for the pack to send
             std::pair<size_t, size_t> myCurrentInter = {diffNumberOfLeavesPerProc[myRank], diffNumberOfLeavesPerProc[myRank+1]};
             const std::vector<FEqualize::Package> packsToSend = FEqualize::GetPackToSend(myCurrentInter, allObjectives);
-            std::unique_ptr<FSize[]> nbPartsPerPackToSend(new FSize[packsToSend.size()]);
+
+            FAssertLF((currentNbLeaves == 0 && packsToSend.size() == 0) ||
+                      (packsToSend.size() && FSize(packsToSend[packsToSend.size()-1].elementTo) == currentNbLeaves));
+
+            FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Get my interval (" << packsToSend.size() << ")\n"; FLog::Controller.flush(); );
+            FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Send data\n"; FLog::Controller.flush(); );
+
             // Store the requests
-            std::vector<MPI_Request> requestsParts;
             std::vector<MPI_Request> requestsNbParts;
+            requestsNbParts.reserve(packsToSend.size());
+
             // Send every thing except for me or if size == 0
+            FSize totalSend = 0;
+            FSize sendToMe = 0;
             for(unsigned int idxPack = 0; idxPack< packsToSend.size() ; ++idxPack){
                 const FEqualize::Package& pack = packsToSend[idxPack];
+
+                if(idxPack != 0) FAssertLF(packsToSend[idxPack].elementFrom == packsToSend[idxPack-1].elementTo);
+                const long long int nbPartsPerPackToSend = leavesOffsetInParticles[pack.elementTo]-leavesOffsetInParticles[pack.elementFrom];
+                totalSend += nbPartsPerPackToSend;
+
                 if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
                     // If not to me and if there is something to send
-                    nbPartsPerPackToSend[idxPack] = leavesOffsetInParticles[pack.elementTo]-leavesOffsetInParticles[pack.elementFrom];
+                    FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] pre-send to " << pack.idProc << " nb " << nbPartsPerPackToSend
+                         << " from " << pack.elementFrom << " to " << pack.elementTo << " \n"; FLog::Controller.flush(); );
                     // Send the size of the data
                     requestsNbParts.emplace_back();
-                    FMpi::MpiAssert(MPI_Isend(&nbPartsPerPackToSend[idxPack],1,MPI_LONG_LONG_INT,pack.idProc,
-                                              FMpi::TagExchangeIndexs+1, communicator.getComm(), &requestsNbParts.back()),__LINE__);
-                    // Send the data
-                    for(FSize idxMess = 0 ; idxMess < nbPartsPerPackToSend[idxPack]; idxMess += MAX_PARTICLES_PER_MPI_MESS){
-                        const int nbElementsInMessage = int(FMath::Min(nbPartsPerPackToSend[idxPack]-idxMess, MAX_PARTICLES_PER_MPI_MESS));
-                        requestsParts.emplace_back();
-                        FMpi::MpiAssert(MPI_Isend(const_cast<ParticleClass*>(&particlesArrayInLeafOrder[leavesOffsetInParticles[pack.elementFrom]+idxMess]),
-                                int(sizeof(ParticleClass)*nbElementsInMessage),
-                                MPI_BYTE, pack.idProc, int(FMpi::TagExchangeIndexs + 2 + idxMess), communicator.getComm(), &requestsParts.back()), __LINE__);
-                    }
+                    FMpi::MpiAssert(MPI_Isend(&nbPartsPerPackToSend,1,MPI_LONG_LONG_INT,pack.idProc,
+                                              FMpi::TagExchangeIndexs, communicator.getComm(), &requestsNbParts.back()),__LINE__);
+
                 }
                 else {
-                    // Nothing to send
-                    nbPartsPerPackToSend[idxPack] = 0;
+                    sendToMe = nbPartsPerPackToSend;
+                    FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] skip " << idxPack
+                         << " from " << pack.elementFrom << " to " << pack.elementTo <<  " \n"; FLog::Controller.flush(); );
                 }
             }
+            FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Send done \n"; FLog::Controller.flush(); );
+            // Ensure everything has been proceed
+            FAssertLF(totalSend == currentNbParts);
+
             // Compute the current intervals
             std::vector< std::pair<size_t,size_t> > allCurrentIntervals;
             allCurrentIntervals.resize(nbProcs);
@@ -391,18 +410,24 @@ public:
                 allCurrentIntervals[idxProc].second = diffNumberOfLeavesPerProc[idxProc+1];
             }
             // Ask the packs to receive to fill my objective
+            FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Get my receive interval \n"; FLog::Controller.flush(); );
             std::pair<size_t, size_t> myObjective = allObjectives[myRank];
-            const std::vector<FEqualize::Package> packsToRecv = FEqualize::GetPackToRecv(myObjective, allCurrentIntervals);
+            const std::vector<FEqualize::Package> packsToRecv = FEqualize::GetPackToRecv(myObjective, allCurrentIntervals);            
 
+            FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] recv nb particles \n"; FLog::Controller.flush(); );
             // Count the number of parts to receive
             std::unique_ptr<FSize[]> nbPartsPerPackToRecv(new FSize[packsToRecv.size()]);
             for(unsigned int idxPack = 0; idxPack < packsToRecv.size(); ++idxPack){
                 const FEqualize::Package& pack = packsToRecv[idxPack];
+
+                if(idxPack != 0) FAssertLF(packsToRecv[idxPack].elementFrom == packsToRecv[idxPack-1].elementTo);
+
                 if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
+                    FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] pre-recv from " << pack.idProc << " \n"; FLog::Controller.flush(); );
                     // We need to know how much particles to receive
                     requestsNbParts.emplace_back();
                     FMpi::MpiAssert(MPI_Irecv(&nbPartsPerPackToRecv[idxPack], 1, MPI_LONG_LONG_INT, pack.idProc,
-                                              FMpi::TagExchangeIndexs+1, communicator.getComm(), &requestsNbParts.back()), __LINE__);
+                                              FMpi::TagExchangeIndexs, communicator.getComm(), &requestsNbParts.back()), __LINE__);
                 }
                 else{
                     if(pack.idProc == myRank){
@@ -410,6 +435,9 @@ public:
                         const FSize sourcePosition = FMath::Max(myObjective.first, myCurrentInter.first) - myCurrentInter.first;
                         const FSize nbLeavesToCopy = pack.elementTo-pack.elementFrom;
                         nbPartsPerPackToRecv[idxPack] = leavesOffsetInParticles[sourcePosition+nbLeavesToCopy] - leavesOffsetInParticles[sourcePosition];
+                        FAssertLF(nbPartsPerPackToRecv[idxPack] == sendToMe);
+                        FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] skip recv " <<
+                             idxPack << " nb " << nbPartsPerPackToRecv[idxPack] << " \n"; FLog::Controller.flush(); );
                     }
                     else{
                         // Nothing to receive from this so avoid communication
@@ -418,33 +446,74 @@ public:
                 }
             }
 
+            FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Wait \n"; FLog::Controller.flush(); );
+
             FMpi::MpiAssert(MPI_Waitall(int(requestsNbParts.size()), requestsNbParts.data(), MPI_STATUSES_IGNORE), __LINE__);
 
+            FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Wait Done \n"; FLog::Controller.flush(); );
+
+            std::vector<MPI_Request> requestsParts;
+
+            for(unsigned int idxPack = 0; idxPack< packsToSend.size() ; ++idxPack){
+                const FEqualize::Package& pack = packsToSend[idxPack];
+                if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
+                    const long long int nbPartsPerPackToSend = leavesOffsetInParticles[pack.elementTo]-leavesOffsetInParticles[pack.elementFrom];
+
+                    FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] send to "
+                          << pack.idProc << " nb " << nbPartsPerPackToSend << " \n"; FLog::Controller.flush(); );
+
+                    FMpi::ISendSplit(&particlesArrayInLeafOrder[leavesOffsetInParticles[pack.elementFrom]],
+                                    nbPartsPerPackToSend,
+                                    pack.idProc,
+                                    FMpi::TagExchangeIndexs + 1,
+                                    communicator,
+                                    &requestsParts);
+                }
+            }
+
+
+            FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] barrier after all send \n"; FLog::Controller.flush(); );
+
+            ////////////////////////////////////////////////////////////////
             // Count the number of leaf to receive
+            ////////////////////////////////////////////////////////////////
             FSize totalPartsToReceive = 0;
             for(unsigned int idxPack = 0; idxPack < packsToRecv.size(); ++idxPack){
                 totalPartsToReceive += nbPartsPerPackToRecv[idxPack];
             }
 
-            std::vector<ParticleClass> particlesRecvBuffer;
+            std::unique_ptr<ParticleClass[]> particlesRecvBuffer(new ParticleClass[totalPartsToReceive]);
+
+            ////////////////////////////////////////////////////////////////
             // Post all the receive and copy mine
+            // it is based on the nbPartsPerPackToRecv array
+            ////////////////////////////////////////////////////////////////
             if(totalPartsToReceive){
-                particlesRecvBuffer.resize(totalPartsToReceive);
                 FSize offsetToRecv = 0;
                 for(unsigned int idxPack = 0; idxPack < packsToRecv.size(); ++idxPack){
                     const FEqualize::Package& pack = packsToRecv[idxPack];
+                    // If it is not from me
                     if(pack.idProc != myRank && 0 < (pack.elementTo-pack.elementFrom)){
-                        for(FSize idxMess = 0 ; idxMess < nbPartsPerPackToRecv[idxPack]; idxMess += MAX_PARTICLES_PER_MPI_MESS){
-                            const int nbElementsInMessage = int(FMath::Min(nbPartsPerPackToRecv[idxPack]-idxMess, MAX_PARTICLES_PER_MPI_MESS));
-                            requestsParts.emplace_back();
-                            FMpi::MpiAssert( MPI_Irecv(&particlesRecvBuffer[offsetToRecv+idxMess],
-                                             int(sizeof(ParticleClass)*nbElementsInMessage), MPI_BYTE, pack.idProc,
-                                             int(FMpi::TagExchangeIndexs + 2 + idxMess), communicator.getComm(), &requestsParts.back()), __LINE__);
-                        }
+                        FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] recv from "
+                              << pack.idProc << " nb " << nbPartsPerPackToRecv[idxPack] << " from " << pack.elementFrom << "\n"; FLog::Controller.flush(); );
+
+                        // We store from offset, and use nbPartsPerPackToRecv has the number
+                        FMpi::IRecvSplit(&particlesRecvBuffer[offsetToRecv],
+                                        nbPartsPerPackToRecv[idxPack],
+                                        pack.idProc,
+                                        FMpi::TagExchangeIndexs + 1,
+                                        communicator,
+                                        &requestsParts);
+
                     }
+                    // it is from me, just copy
                     else if(pack.idProc == myRank){
+                        FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] copy "
+                             << idxPack << " nb " << nbPartsPerPackToRecv[idxPack] << " from " << pack.elementFrom << " \n"; FLog::Controller.flush(); );
                         // Copy my particles
                         const FSize sourcePosition = FMath::Max(myObjective.first, myCurrentInter.first) - myCurrentInter.first;
+                        // We store from offset, and use nbPartsPerPackToRecv has the number
+                        // The reading position is the offset of the first leaf we own
                         memcpy(&particlesRecvBuffer[offsetToRecv], &particlesArrayInLeafOrder[leavesOffsetInParticles[sourcePosition]],
                                 nbPartsPerPackToRecv[idxPack]*sizeof(ParticleClass));
                     }
@@ -452,11 +521,15 @@ public:
                 }
             }
 
-            // Finalize communication
-            FMpi::MpiAssert(MPI_Waitall(int(requestsParts.size()), requestsParts.data(), MPI_STATUSES_IGNORE), __LINE__);
+
+            FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] pre Wait \n"; FLog::Controller.flush(); );
+
+            FMpi::Assert( MPI_Waitall(int(requestsParts.size()), requestsParts.data(), MPI_STATUSES_IGNORE),  __LINE__ );
+
+            FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Wait Done \n"; FLog::Controller.flush(); );
 
             // Insert in the particle saver
-            for(FSize idPartsToStore = 0 ; idPartsToStore < int(particlesRecvBuffer.size()) ; ++idPartsToStore){
+            for(FSize idPartsToStore = 0 ; idPartsToStore < totalPartsToReceive ; ++idPartsToStore){
                 particlesSaver->push(particlesRecvBuffer[idPartsToStore]);
             }
         }
@@ -471,7 +544,7 @@ public:
                                            const FPoint<FReal>& boxCenter, const FReal boxWidth, const int treeHeight,
                                            ContainerClass* particleSaver, FAbstractBalanceAlgorithm* balancer, const SortingType sortingType = QuickSort){
 
-        FLOG( FLog::Controller << "Particles Distribution: "  << "Enter DistributeArrayToContainer\n" ; FLog::Controller.flush(); );
+        FLOG( FLog::Controller << "["  << communicator.processId() << "] Particles Distribution: "  << "Enter DistributeArrayToContainer\n" ; FLog::Controller.flush(); );
         FLOG( FTic timer );
 
         IndexedParticle* sortedParticlesArray = nullptr;
@@ -479,8 +552,12 @@ public:
         // From ParticleClass get array of IndexedParticle sorted
         GetSortedParticlesFromArray(communicator, originalParticlesArray, originalNbParticles, sortingType, boxCenter, boxWidth, treeHeight,
                                     &sortedParticlesArray, &nbParticlesInArray);
-        FLOG( FLog::Controller << "Particles Distribution: "  << "\t GetSortedParticlesFromArray is over (" << timer.tacAndElapsed() << "s)\n"; FLog::Controller.flush(); );
+        FLOG( FLog::Controller << "["  << communicator.processId() << "] Particles Distribution: "  << "\t GetSortedParticlesFromArray is over (" << timer.tacAndElapsed() << "s)\n"; FLog::Controller.flush(); );
         FLOG( timer.tic() );
+
+//        for(int idx = 0 ; idx < nbParticlesInArray ; ++idx){
+//            particleSaver->push(sortedParticlesArray[idx].particle);
+//        }
 
         ParticleClass* particlesArrayInLeafOrder = nullptr;
         FSize * leavesOffsetInParticles = nullptr;
@@ -489,7 +566,11 @@ public:
         MergeSplitedLeaves(communicator, sortedParticlesArray, &nbParticlesInArray, &leavesOffsetInParticles, &particlesArrayInLeafOrder, &nbLeaves);
         delete[] sortedParticlesArray;
 
-        FLOG( FLog::Controller << "Particles Distribution: "  << "\t MergeSplitedLeaves is over (" << timer.tacAndElapsed() << "s)\n"; FLog::Controller.flush(); );
+//        for(int idx = 0 ; idx < nbParticlesInArray ; ++idx){
+//            particleSaver->push(particlesArrayInLeafOrder[idx]);
+//        }
+
+        FLOG( FLog::Controller << "["  << communicator.processId() << "] Particles Distribution: "  << "\t MergeSplitedLeaves is over (" << timer.tacAndElapsed() << "s)\n"; FLog::Controller.flush(); );
         FLOG( timer.tic() );
 
         // Equalize and balance
@@ -498,9 +579,9 @@ public:
         delete[] particlesArrayInLeafOrder;
         delete[] leavesOffsetInParticles;
 
-        FLOG( FLog::Controller << "Particles Distribution: "  << "\t EqualizeAndFillContainer is over (" << timer.tacAndElapsed() << "s)\n"; FLog::Controller.flush(); );
+        FLOG( FLog::Controller << "["  << communicator.processId() << "] Particles Distribution: "  << "\t EqualizeAndFillContainer is over (" << timer.tacAndElapsed() << "s)\n"; FLog::Controller.flush(); );
 
-        FLOG( FLog::Controller << "Particles Distribution: "  << "\t DistributeArrayToContainer is over (" << timer.cumulated() << "s)\n"; FLog::Controller.flush(); );
+        FLOG( FLog::Controller << "["  << communicator.processId() << "] Particles Distribution: "  << "\t DistributeArrayToContainer is over (" << timer.cumulated() << "s)\n"; FLog::Controller.flush(); );
 
 #ifdef SCALFMM_USE_LOG
         /** To produce stats after the Equalize phase  */
@@ -538,5 +619,11 @@ public:
 
 
 };
+
+
+#ifdef SCALFMM_USE_LOG
+template<class FReal, class ParticleClass>
+const bool FMpiTreeBuilder<FReal,ParticleClass>::VerboseLog = FEnv::GetBool("SCALFMM_DEBUG_LOG", false);
+#endif
 
 #endif // FMPITREEBUILDER_H

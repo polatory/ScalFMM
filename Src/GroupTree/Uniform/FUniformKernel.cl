@@ -30,9 +30,8 @@ struct FSymboleCellClass {
     int coordinates[3];
 } __attribute__ ((aligned (DefaultStructAlign)));
 
-typedef long long FTestCellPODData;
-typedef FTestCellPODData FPoleCellClass;
-typedef FTestCellPODData FLocalCellClass;
+typedef FReal FPoleCellClass;
+typedef FReal FLocalCellClass;
 
 struct FWrappeCell{
     __global struct FSymboleCellClass* symb;
@@ -40,6 +39,9 @@ struct FWrappeCell{
     __global FLocalCellClass* down;
 };
 
+#define ORDER __ORDER__
+#define POLE_SIZE __POLE_SIZE__
+#define LOCAL_SIZE __LOCAL_SIZE__
 
 /***************************************************************************/
 /***************************************************************************/
@@ -331,7 +333,7 @@ struct FOpenCLGroupOfParticles BuildFOpenCLGroupOfParticles(__global unsigned ch
         group.particleAttributes[idxAttribute] = ((__global FParticleValueClass*)previousPointer);
         previousPointer += sizeof(FParticleValueClass)*group.blockHeader->nbParticlesAllocatedInGroup;
     }
-    
+
     if(inAttributeBuffer){
         group.attributesBuffer = (__global FParticleValueClass*)inAttributeBuffer;
         for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
@@ -345,7 +347,7 @@ struct FOpenCLGroupOfParticles BuildFOpenCLGroupOfParticles(__global unsigned ch
             group.particleAttributes[idxAttribute+NbSymbAttributes] = NULLPTR;
         }
     }
-    
+
     return group;
 }
 MortonIndex FOpenCLGroupOfParticles_getStartingIndex(const struct FOpenCLGroupOfParticles* group) {
@@ -418,7 +420,7 @@ struct FOpenCLGroupOfCells {
     __global MortonIndex*    cellIndexes;
     //< Pointer to the cells inside the block memory
     __global struct FSymboleCellClass*      blockCells;
-    
+
     //< The multipole data
     __global FPoleCellClass* cellMultipoles;
     //< The local data
@@ -587,13 +589,13 @@ void P2P(const int3 pos,
          struct FOpenCLGroupAttachedLeaf  targets, const struct FOpenCLGroupAttachedLeaf sources,
          struct FOpenCLGroupAttachedLeaf directNeighborsParticles[27], int directNeighborsPositions[27], const int counter, __global void* user_data){
     long long cumul = sources.nbParticles-1;
-    
+
     for(int idxNeigh = 0 ; idxNeigh < counter ; ++idxNeigh){
         if(FOpenCLGroupAttachedLeaf_isAttachedToSomething(&directNeighborsParticles[idxNeigh])){
             cumul += directNeighborsParticles[idxNeigh].nbParticles;
         }
     }
-    
+
     __global long long* partdown = targets.attributes[0];
     for(FSize idxPart = 0 ; idxPart < targets.nbParticles ; ++idxPart){
         partdown[idxPart] += cumul;
@@ -651,7 +653,7 @@ __kernel void FOpenCL__bottomPassPerform(__global unsigned char* leafCellsPtr, s
     struct FOpenCLGroupOfParticles containers = BuildFOpenCLGroupOfParticles(containersPtr, containersSize, NULLPTR);
 
     const int nbLeaves = FOpenCLGroupOfCells_getNumberOfCellsInBlock(&leafCells);
-    
+
     for(int idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
         struct FWrappeCell cell = FOpenCLGroupOfCells_getUpCell(&leafCells, idxLeaf);
         FOpenCLAssertLF(cell.symb->mortonIndex == FOpenCLGroupOfCells_getCellMortonIndex(&leafCells, idxLeaf));

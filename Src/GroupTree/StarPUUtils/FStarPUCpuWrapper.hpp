@@ -26,7 +26,7 @@
 #include <starpu.h>
 //}
 
-#ifdef STARPU_USE_MPI
+#if defined(STARPU_USE_MPI) && defined(SCALFMM_USE_MPI)
 //extern "C"{
 #include <starpu_mpi.h>
 //}
@@ -184,7 +184,7 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
     /// Transfer Pass Mpi
     /////////////////////////////////////////////////////////////////////////////////////
-#ifdef STARPU_USE_MPI
+#if defined(STARPU_USE_MPI) && defined(SCALFMM_USE_MPI)
     static void transferInoutPassCallbackMpi(void *buffers[], void *cl_arg){
         CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                                         STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
@@ -405,7 +405,7 @@ public:
     /// Direct Pass MPI
     /////////////////////////////////////////////////////////////////////////////////////
 
-#ifdef STARPU_USE_MPI
+#if defined(STARPU_USE_MPI) && defined(SCALFMM_USE_MPI)
     static void directInoutPassCallbackMpi(void *buffers[], void *cl_arg){
         ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                                       STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),

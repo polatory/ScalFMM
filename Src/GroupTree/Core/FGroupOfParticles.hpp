@@ -68,8 +68,6 @@ protected:
     BlockHeader*    blockHeader;
     //< Pointer to leaves information
     LeafHeader*     leafHeader;
-    //< The total number of particles in the group
-    const FSize nbParticlesInGroup;
 
     //< Pointers to particle position x, y, z
     FReal* particlePosition[3];
@@ -92,7 +90,7 @@ public:
     FGroupOfParticles(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte,
                       unsigned char* inAttributes)
         : allocatedMemoryInByte(inAllocatedMemoryInByte), memoryBuffer(inBuffer),
-          blockHeader(nullptr), leafHeader(nullptr), nbParticlesInGroup(0),
+          blockHeader(nullptr), leafHeader(nullptr),
           attributesBuffer(nullptr), deleteBuffer(false){
         // Move the pointers to the correct position
         blockHeader         = reinterpret_cast<BlockHeader*>(inBuffer);
@@ -127,12 +125,12 @@ public:
  * @param inNumberOfLeaves total number of leaves in the interval (should be <= inEndingIndex-inEndingIndex)
  */
     FGroupOfParticles(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfLeaves, const FSize inNbParticles)
-        : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), leafHeader(nullptr), nbParticlesInGroup(inNbParticles),
+        : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), leafHeader(nullptr),
           deleteBuffer(true){
         memset(particlePosition, 0, sizeof(particlePosition));
         memset(particleAttributes, 0, sizeof(particleAttributes));
 
-        const FSize nbParticlesAllocatedInGroup = RoundToUpperParticles(nbParticlesInGroup+(MemoryAlignementParticles-1)*inNumberOfLeaves);
+        const FSize nbParticlesAllocatedInGroup = RoundToUpperParticles(inNbParticles+(MemoryAlignementParticles-1)*inNumberOfLeaves);
 
         // Find the number of leaf to allocate in the blocks
         FAssertLF((inEndingIndex-inStartingIndex) >= MortonIndex(inNumberOfLeaves));
@@ -161,6 +159,7 @@ public:
         blockHeader->endingIndex   = inEndingIndex;
         blockHeader->numberOfLeavesInBlock  = inNumberOfLeaves;
         blockHeader->nbParticlesAllocatedInGroup = nbParticlesAllocatedInGroup;
+        blockHeader->nbParticlesInGroup = inNbParticles;
 
         // Init particle pointers
         blockHeader->positionsLeadingDim = (sizeof(FReal) * nbParticlesAllocatedInGroup);
@@ -247,7 +246,7 @@ public:
 
     /** Get the total number of particles in the group */
     FSize getNbParticlesInGroup() const {
-        return nbParticlesInGroup;
+        return blockHeader->nbParticlesInGroup;
     }
 
     /** The size of the interval endingIndex-startingIndex (set from the constructor) */

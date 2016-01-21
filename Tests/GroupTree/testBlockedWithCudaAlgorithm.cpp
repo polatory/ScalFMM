@@ -80,7 +80,7 @@ int main(int argc, char* argv[]){
     typedef FGroupTestParticleContainer<FReal>                                     GroupContainerClass;
     typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass,
             GroupContainerClass, 0, 1, long long int>  GroupOctreeClass;
-    typedef FStarPUAllCpuCudaCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
+    typedef FStarPUAllCudaCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
 
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
     typedef FStarPUCudaWrapper<GroupKernelClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass,

@@ -17,9 +17,8 @@ template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 void FCuda__upwardPassCallback(
     unsigned char* currentCellsPtr, std::size_t currentCellsSize, unsigned char* currentCellsUpPtr,
-    FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t, 9> subCellGroupsSize,
-    FCudaParams<unsigned char*,9> subCellGroupsUpPtr,
-    int nbSubCellGroups, int idxLevel, CudaKernelClass* kernel, cudaStream_t 	currentStream,
+        unsigned char* childCellsPtr, std::size_t childCellsSize, unsigned char* childCellsUpPtr,
+     int idxLevel, CudaKernelClass* kernel, cudaStream_t 	currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize);
 #ifdef SCALFMM_USE_MPI
 template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
@@ -43,10 +42,10 @@ template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 void FCuda__transferInoutPassCallback(
     unsigned char* currentCellsPtr, std::size_t currentCellsSize,
-    unsigned char* currentCellsUpPtr, unsigned char* currentCellsDownPtr,
+    unsigned char* currentCellsUpPtr,
     unsigned char* externalCellsPtr, std::size_t externalCellsSize,
-    unsigned char* externalCellsUpPtr, unsigned char* externalCellsDownPtr,
-    int idxLevel, const OutOfBlockInteraction* outsideInteractions,
+    unsigned char* externalCellsDownPtr,
+    int idxLevel, int mode, const OutOfBlockInteraction* outsideInteractions,
     int nbOutsideInteractions, CudaKernelClass* kernel, cudaStream_t 	currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize);
 
@@ -54,9 +53,8 @@ template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
           class CellContainerClass, class ParticleContainerGroupClass, class ParticleGroupClass, class CudaKernelClass>
 void FCuda__downardPassCallback(
     unsigned char* currentCellsPtr, std::size_t currentCellsSize, unsigned char* currentCellsDownPtr,
-    FCudaParams<unsigned char*,9> subCellGroupsPtr, FCudaParams<std::size_t,9> subCellGroupsSize,
-    FCudaParams<unsigned char*,9> subCellGroupsDownPtr,
-    int nbSubCellGroups, int idxLevel, CudaKernelClass* kernel, cudaStream_t 	currentStream,
+        unsigned char* childCellsPtr, std::size_t childCellsSize, unsigned char* childCellsDownPtr,
+        int idxLevel, CudaKernelClass* kernel, cudaStream_t 	currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize);
 #ifdef SCALFMM_USE_MPI
 template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
