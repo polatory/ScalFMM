@@ -87,6 +87,11 @@ public:
         FAssertLF(colIdx + nbRows <= matDim);
         return FDenseBlockWrapper<FReal>(&values[colIdx*matDim+rowIdx], nbRows, nbCols, matDim);
     }
+
+    FDenseBlockWrapper<FReal> getBlock(const FBlockDescriptor& info) const {
+        return getBlock(info.row, info.col, info.nbRows, info.nbCols);
+    }
+
 };
 
 #endif // FMATDENSE_HPP

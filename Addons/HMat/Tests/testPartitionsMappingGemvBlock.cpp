@@ -16,7 +16,7 @@
 
 // @SCALFMM_PRIVATE
 
-#include "../Src/Containers/FPartitionsMapping.hpp"
+#include "../Src/Containers/FBlockPMapping.hpp"
 #include "../Src/Viewers/FMatDensePerm.hpp"
 #include "../Src/Blocks/FDenseBlock.hpp"
 
@@ -54,6 +54,16 @@ int main(int argc, char** argv){
         }
     }
 
+    { // Here we fill the block manually
+        // We consider a fack permutation
+        std::unique_ptr<int[]> permutations(new int[dim]);
+        for(int idx = 0 ; idx < dim ; ++idx){
+            permutations[idx] = idx;
+        }
+        // Set permutation to matrix
+        matrix.setPermutOrigToNew(permutations.get());
+    }
+
     std::unique_ptr<FReal[]> vec(new FReal[dim]);
     for(int idxVal = 0 ; idxVal < dim ; ++idxVal){
         vec[idxVal] = 1.0;
@@ -71,7 +81,7 @@ int main(int argc, char** argv){
 
     {
         typedef FDenseBlock<FReal> CellClass;
-        typedef FPartitionsMapping<FReal, CellClass> GridClass;
+        typedef FBlockPMapping<FReal, CellClass, CellClass, CellClass> GridClass;
 
         std::unique_ptr<int[]> partitions(new int[nbPartitions]);
         {
@@ -84,29 +94,22 @@ int main(int argc, char** argv){
         }
 
         GridClass grid(dim, partitions.get(), nbPartitions);
-        { // Here we fill the block manually
-            // We consider a fack permutation
-            std::unique_ptr<int[]> permutations(new int[dim]);
-            for(int idx = 0 ; idx < dim ; ++idx){
-                permutations[idx] = idx;
-            }
-            // Set permutation to matrix
-            matrix.setPermutOrigToNew(permutations.get());
 
-            // We iterate on the blocks
-            for(int idxColBlock = 0 ; idxColBlock < nbPartitions ; ++idxColBlock){
-                for(int idxRowBlock = 0 ; idxRowBlock < nbPartitions ; ++idxRowBlock){
-                    // We get the corresponding class
-                    //>> CellClass& cl = grid.getCell(idxRowBlock, idxColBlock);
-                    const FBlockDescriptor& info = grid.getCellInfo(idxRowBlock, idxColBlock);
+        // We iterate on the blocks
+        for(int idxColBlock = 0 ; idxColBlock < nbPartitions ; ++idxColBlock){
+            const MatrixClass::BlockDescriptor colBlock = matrix.getBlock(grid.getColCellInfo(idxColBlock));
 
-                    // We iterate on its values
-                    for(int idxColVal = 0 ; idxColVal < info.nbCols ; ++idxColVal){
-                        for(int idxRowVal = 0 ; idxRowVal < info.nbRows ; ++idxRowVal){
-                            //>> const FReal srcVal = matrix.getVal(idxRowVal, idxColVal);
-                        }
-                    }
-                }
+            // Store the result in grid.getColCell(idxColBlock)
+        }
+        for(int idxRowBlock = 0 ; idxRowBlock < nbPartitions ; ++idxRowBlock){
+            const MatrixClass::BlockDescriptor rowBlock = matrix.getBlock(grid.getRowCellInfo(idxRowBlock));
+
+            // Store the result in grid.getRowCell(idxRowBlock)
+        }
+        // Build the core part
+        for(int idxColBlock = 0 ; idxColBlock < nbPartitions ; ++idxColBlock){
+            for(int idxRowBlock = 0 ; idxRowBlock < nbPartitions ; ++idxRowBlock){
+                // Store the result in grid.getCell(idxRowBlock, idxColBlock)
             }
         }
 
