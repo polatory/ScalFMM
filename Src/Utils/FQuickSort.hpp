@@ -121,11 +121,11 @@ protected:
                 #pragma omp task firstprivate(array, part, right, deep, infOrEqual)
                 QsOmpTask(array,part + 1,right, deep - 1, infOrEqual);
                 // #pragma omp task default(none) firstprivate(array, part, right, deep, infOrEqual) // not needed
-                QsOmpTask(array,left,part - 1, deep - 1, infOrEqual);
+                if(part) QsOmpTask(array,left,part - 1, deep - 1, infOrEqual);
             }
             else {
                 QsSequentialStep(array,part + 1,right, infOrEqual);
-                QsSequentialStep(array,left,part - 1, infOrEqual);
+                if(part) QsSequentialStep(array,left,part - 1, infOrEqual);
             }
         }
     }
@@ -183,7 +183,7 @@ public:
                         // Push the new task in the vector
                         omp_set_lock(&mutexShareVariable);
                         tasks.push_back(TaskInterval(part+1, ts.getRight(), ts.getDeep()-1));
-                        tasks.push_back(TaskInterval(ts.getLeft(), part-1, ts.getDeep()-1));
+                        if(part) tasks.push_back(TaskInterval(ts.getLeft(), part-1, ts.getDeep()-1));
                         // We create new task but we are not working so inform other
                         numberOfThreadProceeding -= 1;
                         omp_unset_lock(&mutexShareVariable);
