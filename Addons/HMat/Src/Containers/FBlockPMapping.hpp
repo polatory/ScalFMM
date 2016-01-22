@@ -29,31 +29,31 @@
 #include <memory>
 
 
-template <class FReal, class RowBlockClass, class ColBlockClass, class CoreCellClass >
+template <class FReal, class CellClass >
 class FBlockPMapping {
 protected:
-    struct CellNode {
+    struct CellCNode {
         FBlockDescriptor infos;
-        CoreCellClass cell;
+        CellClass cell;
     };
 
-    struct RowNode {
+    struct RowUNode {
         FBlockDescriptor infos;
-        RowBlockClass cell;
+        CellClass cell;
     };
 
-    struct ColNode {
+    struct ColVNode {
         FBlockDescriptor infos;
-        ColBlockClass cell;
+        CellClass cell;
     };
 
     const int dim;
     const int nbPartitions;
     const int nbCells;
 
-    CellNode* cells;
-    RowNode* rowBlocks;
-    ColNode* colBlocks;
+    CellCNode* cBlocks;
+    RowUNode* uRowBlocks;
+    ColVNode* vColBlocks;
 
     FBlockPMapping(const FBlockPMapping&) = delete;
     FBlockPMapping& operator=(const FBlockPMapping&) = delete;
@@ -63,7 +63,7 @@ public:
         : dim(inDim),
           nbPartitions(inNbPartitions),
           nbCells(inNbPartitions*inNbPartitions),
-          cells(nullptr){
+          cBlocks(nullptr){
         FAssertLF(nbPartitions <= inDim);
         FAssertLF(1 <= nbPartitions);
 
@@ -73,41 +73,41 @@ public:
             partitionsOffset[idxPart] = partitionsOffset[idxPart-1] + partitions[idxPart-1];
         }
 
-        cells    = new CellNode[nbCells];
+        cBlocks    = new CellCNode[nbCells];
 
         for(int idxPartCol = 0 ; idxPartCol < nbPartitions ; ++idxPartCol){
             for(int idxPartRow = 0 ; idxPartRow < nbPartitions ; ++idxPartRow){
-                cells[idxPartCol*nbPartitions + idxPartRow].infos.row = partitionsOffset[idxPartRow];
-                cells[idxPartCol*nbPartitions + idxPartRow].infos.col = partitionsOffset[idxPartCol];
-                cells[idxPartCol*nbPartitions + idxPartRow].infos.nbRows = partitions[idxPartRow];
-                cells[idxPartCol*nbPartitions + idxPartRow].infos.nbCols = partitions[idxPartCol];
-                cells[idxPartCol*nbPartitions + idxPartRow].infos.level = 0;
+                cBlocks[idxPartCol*nbPartitions + idxPartRow].infos.row = partitionsOffset[idxPartRow];
+                cBlocks[idxPartCol*nbPartitions + idxPartRow].infos.col = partitionsOffset[idxPartCol];
+                cBlocks[idxPartCol*nbPartitions + idxPartRow].infos.nbRows = partitions[idxPartRow];
+                cBlocks[idxPartCol*nbPartitions + idxPartRow].infos.nbCols = partitions[idxPartCol];
+                cBlocks[idxPartCol*nbPartitions + idxPartRow].infos.level = 0;
             }
         }
 
-        rowBlocks = new RowNode[nbPartitions];
+        uRowBlocks = new RowUNode[nbPartitions];
         for(int idxPartRow = 0 ; idxPartRow < nbPartitions ; ++idxPartRow){
-            rowBlocks[idxPartRow].infos.row = partitionsOffset[idxPartRow];
-            rowBlocks[idxPartRow].infos.col = 0;
-            rowBlocks[idxPartRow].infos.nbRows = partitions[idxPartRow];
-            rowBlocks[idxPartRow].infos.nbCols = dim;
-            rowBlocks[idxPartRow].infos.level = 0;
+            uRowBlocks[idxPartRow].infos.row = partitionsOffset[idxPartRow];
+            uRowBlocks[idxPartRow].infos.col = 0;
+            uRowBlocks[idxPartRow].infos.nbRows = partitions[idxPartRow];
+            uRowBlocks[idxPartRow].infos.nbCols = dim;
+            uRowBlocks[idxPartRow].infos.level = 0;
         }
 
-        colBlocks = new ColNode[nbPartitions];
+        vColBlocks = new ColVNode[nbPartitions];
         for(int idxPartCol = 0 ; idxPartCol < nbPartitions ; ++idxPartCol){
-            colBlocks[idxPartCol].infos.row = 0;
-            colBlocks[idxPartCol].infos.col = partitionsOffset[idxPartCol];
-            colBlocks[idxPartCol].infos.nbRows = dim;
-            colBlocks[idxPartCol].infos.nbCols = partitions[idxPartCol];
-            colBlocks[idxPartCol].infos.level = 0;
+            vColBlocks[idxPartCol].infos.row = 0;
+            vColBlocks[idxPartCol].infos.col = partitionsOffset[idxPartCol];
+            vColBlocks[idxPartCol].infos.nbRows = dim;
+            vColBlocks[idxPartCol].infos.nbCols = partitions[idxPartCol];
+            vColBlocks[idxPartCol].infos.level = 0;
         }
     }
 
     ~FBlockPMapping(){
-        delete[] cells;
-        delete[] rowBlocks;
-        delete[] colBlocks;
+        delete[] cBlocks;
+        delete[] uRowBlocks;
+        delete[] vColBlocks;
     }
 
     int getNbBlocks() const {
@@ -116,74 +116,74 @@ public:
 
     // Iterate blocks
 
-    CoreCellClass& getCell(const int idxRowPart, const int idxColPart){
-        return cells[idxColPart*nbPartitions + idxRowPart].cell;
+    CellClass& getCBlock(const int idxRowPart, const int idxColPart){
+        return cBlocks[idxColPart*nbPartitions + idxRowPart].cell;
     }
 
-    const CoreCellClass& getCell(const int idxRowPart, const int idxColPart) const {
-        return cells[idxColPart*nbPartitions + idxRowPart].cell;
+    const CellClass& getCBlock(const int idxRowPart, const int idxColPart) const {
+        return cBlocks[idxColPart*nbPartitions + idxRowPart].cell;
     }
 
-    const FBlockDescriptor& getCellInfo(const int idxRowPart, const int idxColPart) const {
-        return cells[idxColPart*nbPartitions + idxRowPart].infos;
+    const FBlockDescriptor& getCBlockInfo(const int idxRowPart, const int idxColPart) const {
+        return cBlocks[idxColPart*nbPartitions + idxRowPart].infos;
     }
 
-    void forAllBlocksDescriptor(std::function<void(const FBlockDescriptor&)> callback){
+    void forAllCBlocksDescriptor(std::function<void(const FBlockDescriptor&)> callback){
         for(int idxCell = 0 ; idxCell < nbCells ; ++idxCell){
-            callback(cells[idxCell].infos);
+            callback(cBlocks[idxCell].infos);
         }
     }
 
-    void forAllCellBlocks(std::function<void(const FBlockDescriptor&,
-                          RowBlockClass&, CoreCellClass&, ColBlockClass&)> callback){
+    void forAllBlocks(std::function<void(const FBlockDescriptor&,
+                          CellClass&, CellClass&, CellClass&)> callback){
         for(int idxPartCol = 0 ; idxPartCol < nbPartitions ; ++idxPartCol){
             for(int idxPartRow = 0 ; idxPartRow < nbPartitions ; ++idxPartRow){
-                callback(cells[idxPartCol*nbPartitions + idxPartRow].infos,
-                     cells[idxPartCol*nbPartitions + idxPartRow].cell,
-                     rowBlocks[idxPartRow].cell,
-                     colBlocks[idxPartCol].cell);
+                callback(cBlocks[idxPartCol*nbPartitions + idxPartRow].infos,
+                     cBlocks[idxPartCol*nbPartitions + idxPartRow].cell,
+                     uRowBlocks[idxPartRow].cell,
+                     vColBlocks[idxPartCol].cell);
             }
         }
     }
 
     // Iterate row blocks
 
-    RowBlockClass& getRowCell(const int idxRowPart){
-        return rowBlocks[idxRowPart].cell;
+    CellClass& getUBlock(const int idxRowPart){
+        return uRowBlocks[idxRowPart].cell;
     }
 
-    const RowBlockClass& getRowCell(const int idxRowPart) const {
-        return rowBlocks[idxRowPart].cell;
+    const CellClass& getUBlock(const int idxRowPart) const {
+        return uRowBlocks[idxRowPart].cell;
     }
 
-    const FBlockDescriptor& getRowCellInfo(const int idxRowPart) const {
-        return rowBlocks[idxRowPart].infos;
+    const FBlockDescriptor& getUBlockInfo(const int idxRowPart) const {
+        return uRowBlocks[idxRowPart].infos;
     }
 
 
     // Iterate col blocks
 
-    ColBlockClass& getColCell(const int idxColPart){
-        return colBlocks[idxColPart].cell;
+    CellClass& getVBlock(const int idxColPart){
+        return vColBlocks[idxColPart].cell;
     }
 
-    const ColBlockClass& getColCell(const int idxColPart) const {
-        return colBlocks[idxColPart].cell;
+    const CellClass& getVBlock(const int idxColPart) const {
+        return vColBlocks[idxColPart].cell;
     }
 
-    const FBlockDescriptor& getColCellInfo(const int idxColPart) const {
-        return colBlocks[idxColPart].infos;
+    const FBlockDescriptor& getVBlockInfo(const int idxColPart) const {
+        return vColBlocks[idxColPart].infos;
     }
 
     // Operations
     void gemv(FReal res[], const FReal vec[]) const {
         for(int idxPartCol = 0 ; idxPartCol < nbPartitions ; ++idxPartCol){
             for(int idxPartRow = 0 ; idxPartRow < nbPartitions ; ++idxPartRow){
-//                &res[cells[idxPartCol*nbPartitions + idxPartRow].infos.row],
-//                &vec[cells[idxPartCol*nbPartitions + idxPartRow].infos.col])
-//                cells[idxPartCol*nbPartitions + idxPartRow].cell,
-//                rowBlocks[idxPartRow].cell,
-//                colBlocks[idxPartCol].cell;
+//                &res[cBlocks[idxPartCol*nbPartitions + idxPartRow].infos.row],
+//                &vec[cBlocks[idxPartCol*nbPartitions + idxPartRow].infos.col])
+//                cBlocks[idxPartCol*nbPartitions + idxPartRow].cell,
+//                uRowBlocks[idxPartRow].cell,
+//                vColBlocks[idxPartCol].cell;
             }
         }
     }
@@ -191,11 +191,11 @@ public:
     void gemm(FReal res[], const FReal mat[], const int nbRhs) const {
         for(int idxPartCol = 0 ; idxPartCol < nbPartitions ; ++idxPartCol){
             for(int idxPartRow = 0 ; idxPartRow < nbPartitions ; ++idxPartRow){
-//                &res[cells[idxPartCol*nbPartitions + idxPartRow].infos.row],
-//                &vec[cells[idxPartCol*nbPartitions + idxPartRow].infos.col])
-//                cells[idxPartCol*nbPartitions + idxPartRow].cell,
-//                rowBlocks[idxPartRow].cell,
-//                colBlocks[idxPartCol].cell;
+//                &res[cBlocks[idxPartCol*nbPartitions + idxPartRow].infos.row],
+//                &vec[cBlocks[idxPartCol*nbPartitions + idxPartRow].infos.col])
+//                cBlocks[idxPartCol*nbPartitions + idxPartRow].cell,
+//                uRowBlocks[idxPartRow].cell,
+//                vColBlocks[idxPartCol].cell;
 //                nbRhs, dim
             }
         }

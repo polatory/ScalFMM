@@ -55,6 +55,17 @@ public:
         }
     };
 
+    void resize(const int inNbRow, const int inNbCol){
+        if(inNbRow != nbRows ||
+                 inNbCol != nbCols){
+            clear();
+            nbRows = inNbRow;
+            nbCols = inNbCol;
+            block  = new FReal[nbRows*nbCols];
+        }
+        memset(block, 0, sizeof(FReal)*nbRows*nbCols);
+    }
+
     // dtor
     ~FDenseBlock(){
         // Free memory
@@ -67,6 +78,26 @@ public:
         nbCols = 0;
         delete[] block;
         block = 0;
+    }
+
+    int getNbRows() const{
+        return nbRows;
+    }
+
+    int getNbCols() const{
+        return nbCols;
+    }
+
+    FReal getValue(const int idxRow, const int idxCol) const{
+        return block[idxCol*nbRows+idxRow];
+    }
+
+    FReal& getValue(const int idxRow, const int idxCol) {
+        return block[idxCol*nbRows+idxRow];
+    }
+
+    void setValue(const int idxRow, const int idxCol, const FReal& val) {
+        block[idxCol*nbRows+idxRow] = val;
     }
 
     void gemv(FReal res[], const FReal vec[], const FReal scale = FReal(1.)) const {

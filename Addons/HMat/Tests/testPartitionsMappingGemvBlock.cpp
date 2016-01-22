@@ -81,7 +81,7 @@ int main(int argc, char** argv){
 
     {
         typedef FDenseBlock<FReal> CellClass;
-        typedef FBlockPMapping<FReal, CellClass, CellClass, CellClass> GridClass;
+        typedef FBlockPMapping<FReal, CellClass> GridClass;
 
         std::unique_ptr<int[]> partitions(new int[nbPartitions]);
         {
@@ -96,20 +96,64 @@ int main(int argc, char** argv){
         GridClass grid(dim, partitions.get(), nbPartitions);
 
         // We iterate on the blocks
+        // V blocks cover all the rows, but only some columns (based on the clustering)
         for(int idxColBlock = 0 ; idxColBlock < nbPartitions ; ++idxColBlock){
-            const MatrixClass::BlockDescriptor colBlock = matrix.getBlock(grid.getColCellInfo(idxColBlock));
+            const MatrixClass::BlockDescriptor colBlock = matrix.getBlock(grid.getVBlockInfo(idxColBlock));
+            int rj = -1;
+            /// TODO HERE
+            /// Compute rj, and the resulting Vj blocks,
+            /// use the colBlock (some or all of its values)
 
-            // Store the result in grid.getColCell(idxColBlock)
+            /// TODO END
+            // Store the result in grid.getVBlock(idxColBlock)
+            CellClass& Vj = grid.getVBlock(idxColBlock);
+            Vj.resize(rj, colBlock.getNbCols());
+            for(int idxRow = 0 ; idxRow < Vj.getNbRows() ; ++idxRow){
+                for(int idxCol = 0 ; idxCol < Vj.getNbCols() ; ++idxCol){
+                    /// TODO HERE
+                    /// Fill Vj with the result
+                    Vj.setValue(idxRow, idxCol, -1);
+                    /// TODO END
+                }
+            }
         }
+        // U blocks cover all the columns, but only some rows (based on the clustering)
         for(int idxRowBlock = 0 ; idxRowBlock < nbPartitions ; ++idxRowBlock){
-            const MatrixClass::BlockDescriptor rowBlock = matrix.getBlock(grid.getRowCellInfo(idxRowBlock));
+            const MatrixClass::BlockDescriptor rowBlock = matrix.getBlock(grid.getUBlockInfo(idxRowBlock));
+            int ri = -1;
+            /// TODO HERE
+            /// Compute ri, and the resulting Ui blocks
+            /// use the rowBlock (some or all of its values)
 
-            // Store the result in grid.getRowCell(idxRowBlock)
+            /// TODO END
+            // Store the result in grid.getUBlock(idxRowBlock)
+            CellClass& Ui = grid.getUBlock(idxRowBlock);
+            Ui.resize(rowBlock.getNbRows(), ri);
+            for(int idxRow = 0 ; idxRow < Ui.getNbRows() ; ++idxRow){
+                for(int idxCol = 0 ; idxCol < Ui.getNbCols() ; ++idxCol){
+                    /// TODO HERE
+                    /// Fill Vj with the result
+                    Ui.setValue(idxRow, idxCol, -1);
+                    /// TODO END
+                }
+            }
         }
         // Build the core part
         for(int idxColBlock = 0 ; idxColBlock < nbPartitions ; ++idxColBlock){
             for(int idxRowBlock = 0 ; idxRowBlock < nbPartitions ; ++idxRowBlock){
-                // Store the result in grid.getCell(idxRowBlock, idxColBlock)
+                const CellClass& Ui = grid.getUBlock(idxRowBlock);
+                const CellClass& Vj = grid.getVBlock(idxColBlock);
+                // Store the result in grid.getCBlock(idxRowBlock, idxColBlock)
+                CellClass& Cij = grid.getCBlock(idxRowBlock, idxColBlock);
+                Cij.resize(Vj.getNbRows(), Ui.getNbCols());
+                for(int idxRow = 0 ; idxRow < Cij.getNbRows() ; ++idxRow){
+                    for(int idxCol = 0 ; idxCol < Cij.getNbCols() ; ++idxCol){
+                        /// TODO HERE
+                        /// Fill Vj with the result
+                        Cij.setValue(idxRow, idxCol, -1);
+                        /// TODO END
+                    }
+                }
             }
         }
 
