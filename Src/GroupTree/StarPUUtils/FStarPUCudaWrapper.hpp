@@ -269,6 +269,7 @@ public:
                 FAssertLF(outsideInteractions[safeOuterInteractions[counterInnerCell]].insideIdxInBlock
                         < outsideInteractions[idxInter].insideIdxInBlock);
                 counterInnerCell += 1;
+                FAssertLF(counterInnerCell <= nbInteractions);
                 safeOuterInteractions[counterInnerCell] = safeOuterInteractions[counterInnerCell-1];
             }
             else{
@@ -291,6 +292,7 @@ public:
                 FAssertLF(outsideInteractions[safeOuterInteractions[counterInnerCell]].outsideIdxInBlock
                         < outsideInteractions[idxInter].outsideIdxInBlock);
                 counterInnerCell += 1;
+                FAssertLF(counterInnerCell <= nbInteractions);
                 safeOuterInteractions[counterInnerCell] = safeOuterInteractions[counterInnerCell-1];
             }
             else{

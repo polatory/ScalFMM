@@ -89,13 +89,7 @@ protected:
     static IndexType QsPartition(SortType array[], IndexType left, IndexType right, const infOrEqualPtr infOrEqual){
         Swap(array[right],array[((right - left ) / 2) + left]);
 
-        IndexType idx = left;
-        while( idx < right && infOrEqual(array[idx],array[right])){
-            idx += 1;
-        }
-        left = idx;
-
-        for( ; idx < right ; ++idx){
+        for( IndexType idx = left; idx < right ; ++idx){
             if( infOrEqual(array[idx],array[right]) ){
                 Swap(array[idx],array[left]);
                 left += 1;
@@ -113,7 +107,7 @@ protected:
         if(left < right){
             const IndexType part = QsPartition(array, left, right, infOrEqual);
             QsSequentialStep(array,part + 1,right, infOrEqual);
-            QsSequentialStep(array,left,part - 1, infOrEqual);
+            if(part) QsSequentialStep(array,left,part - 1, infOrEqual);
         }
     }
 
