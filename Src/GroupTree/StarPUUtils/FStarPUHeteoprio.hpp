@@ -383,11 +383,11 @@ inline void starpu_heteroprio_set_arch_slow_factor(void* heterodata, const FStar
 static void initialize_heteroprio_center_policy(unsigned sched_ctx_id)
 {
     /* Copy of eager */
-#ifdef STARPU_HAVE_HWLOC
-    starpu_sched_ctx_create_worker_collection(sched_ctx_id, STARPU_WORKER_TREE);
-#else
-    starpu_sched_ctx_create_worker_collection(sched_ctx_id, STARPU_WORKER_LIST);
-#endif
+//#ifdef STARPU_HAVE_HWLOC
+//    starpu_sched_ctx_create_worker_collection(sched_ctx_id, STARPU_WORKER_TREE);
+//#else
+//    starpu_sched_ctx_create_worker_collection(sched_ctx_id, STARPU_WORKER_LIST);
+//#endif
     /* Alloc the scheduler data  */
     struct _starpu_heteroprio_center_policy_heteroprio* heteroprio = (struct _starpu_heteroprio_center_policy_heteroprio*)malloc(sizeof(struct _starpu_heteroprio_center_policy_heteroprio));
     memset(heteroprio, 0, sizeof(*heteroprio));
@@ -491,7 +491,7 @@ static void deinitialize_heteroprio_center_policy(unsigned sched_ctx_id)
     /* Copy of eager */
     starpu_bitmap_destroy(heteroprio->waiters);
 
-    starpu_sched_ctx_delete_worker_collection(sched_ctx_id);
+    //starpu_sched_ctx_delete_worker_collection(sched_ctx_id);
     STARPU_PTHREAD_MUTEX_DESTROY(&heteroprio->policy_mutex);
     free(heteroprio);
     /* End copy of eager */
@@ -753,6 +753,11 @@ struct starpu_sched_policy _starpu_sched_heteroprio_policy_build(){
     policy.pop_every_task     = NULL;
     policy.policy_name        = "heteroprio";
     policy.policy_description = "heteroprio policy from scalfmm";
+#ifdef STARPU_HAVE_HWLOC
+    policy.worker_type = STARPU_WORKER_TREE;
+#else
+    policy.worker_type = STARPU_WORKER_LIST;
+#endif
     return policy;
 }
 
