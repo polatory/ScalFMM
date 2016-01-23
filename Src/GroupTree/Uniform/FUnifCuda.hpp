@@ -3,18 +3,19 @@
 
 #include "../Cuda/FCudaGlobal.hpp"
 #include "../Cuda/FCudaGroupAttachedLeaf.hpp"
-#include "../Cuda/FCudaEmptyCellSymb.hpp"
 #include "../Cuda/FCudaCompositeCell.hpp"
 
-#include "FUnifCellPOD.hpp"
+
+#include "FUnifCudaCellPOD.hpp"
 
 #define Min(x,y) ((x)<(y)?(x):(y))
 #define Max(x,y) ((x)>(y)?(x):(y))
 
+
 /**
  * This class defines what should be a Cuda kernel.
  */
-template <class FReal>
+template <class FReal, int ORDER>
 class FUnifCuda {
 protected:
 public:
@@ -51,7 +52,7 @@ public:
     }
 
     typedef FCudaGroupAttachedLeaf<FReal,1,4,FReal> ContainerClass;
-    typedef FCudaCompositeCell<FCudaEmptyCellSymb,int,int> CellClass;
+    typedef FCudaCompositeCell<FBasicCellPOD,FCudaUnifCellPODPole<FReal,ORDER>,FCudaUnifCellPODLocal<FReal,ORDER> > CellClass;
 
     static const int NB_THREAD_GROUPS = 30; // 2 x 15
     static const int THREAD_GROUP_SIZE = 256;

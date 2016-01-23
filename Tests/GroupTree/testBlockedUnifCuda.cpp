@@ -20,6 +20,7 @@
 #include "../../Src/Kernels/Uniform/FUnifKernel.hpp"
 
 #include "../../Src/GroupTree/Uniform/FUnifCellPOD.hpp"
+#include "../../Src/GroupTree/Uniform/FUnifCudaCellPOD.hpp"
 
 #include "../../Src/Utils/FMath.hpp"
 #include "../../Src/Utils/FMemUtils.hpp"
@@ -46,7 +47,7 @@
 
 #include <memory>
 
-template <class FReal>
+template <class FReal, int ORDER>
 class FUnifCuda;
 
 //#define RANDOM_PARTICLES
@@ -66,7 +67,7 @@ int main(int argc, char* argv[]){
 
     // Initialize the types
     typedef double FReal;
-    static const int ORDER = 6;
+    static const int ORDER = 5;
     typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
 
     typedef FUnifCellPODCore         GroupCellSymbClass;
@@ -81,9 +82,9 @@ int main(int argc, char* argv[]){
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
 
     typedef FStarPUCudaWrapper<GroupKernelClass,
-            FCudaEmptyCellSymb, int, int,
-            FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
-            FCudaGroupOfParticles<FReal, 1, 4, FReal>, FCudaGroupAttachedLeaf<FReal, 1, 4, FReal>, FUnifCuda<FReal> > GroupCudaWrapper;
+            FBasicCellPOD, FCudaUnifCellPODPole<FReal,ORDER>,FCudaUnifCellPODLocal<FReal,ORDER>,
+            FCudaGroupOfCells<FBasicCellPOD, FCudaUnifCellPODPole<FReal,ORDER>,FCudaUnifCellPODLocal<FReal,ORDER> >,
+            FCudaGroupOfParticles<FReal, 1, 4, FReal>, FCudaGroupAttachedLeaf<FReal, 1, 4, FReal>, FUnifCuda<FReal,ORDER> > GroupCudaWrapper;
 
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass,
             GroupCpuWrapper, GroupCudaWrapper > GroupAlgorithm;
