@@ -1125,7 +1125,7 @@ protected:
         MPI_Request*const requestsSize = new MPI_Request[8];
         MPI_Status*const statusSize = new MPI_Status[8];
 
-        FMpiBufferWriter sendBuffer(comm.getComm());
+        FMpiBufferWriter sendBuffer;
         FMpiBufferReader recvBuffer;
 
         int righestProcToSendTo   = nbProcess - 1;

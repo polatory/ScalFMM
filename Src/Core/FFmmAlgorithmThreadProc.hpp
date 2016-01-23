@@ -44,6 +44,7 @@
 #include "FP2PExclusion.hpp"
 
 #include <memory>
+#include <vector>
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)

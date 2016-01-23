@@ -753,10 +753,12 @@ struct starpu_sched_policy _starpu_sched_heteroprio_policy_build(){
     policy.pop_every_task     = NULL;
     policy.policy_name        = "heteroprio";
     policy.policy_description = "heteroprio policy from scalfmm";
+#if (STARPU_MAJOR_VERSION >= 1) && (STARPU_MINOR_VERSION >= 3)
 #ifdef STARPU_HAVE_HWLOC
     policy.worker_type = STARPU_WORKER_TREE;
 #else
     policy.worker_type = STARPU_WORKER_LIST;
+#endif
 #endif
     return policy;
 }
