@@ -18,7 +18,7 @@
 #ifndef FUNIFTENSOR_HPP
 #define FUNIFTENSOR_HPP
 
-#include "Utils/FMath.hpp"
+#include "../../Utils/FMath.hpp"
 
 #include "FUnifRoots.hpp"
 #include "../Interpolation/FInterpTensor.hpp"

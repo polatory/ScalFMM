@@ -47,7 +47,7 @@
 #include <memory>
 
 template <class FReal>
-class FCudaP2P;
+class FUnifCuda;
 
 //#define RANDOM_PARTICLES
 
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]){
     typedef FStarPUCudaWrapper<GroupKernelClass,
             FCudaEmptyCellSymb, int, int,
             FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
-            FCudaGroupOfParticles<FReal, 4, 4, FReal>, FCudaGroupAttachedLeaf<FReal, 4, 4, FReal>, FCudaP2P<FReal> > GroupCudaWrapper;
+            FCudaGroupOfParticles<FReal, 1, 4, FReal>, FCudaGroupAttachedLeaf<FReal, 1, 4, FReal>, FUnifCuda<FReal> > GroupCudaWrapper;
 
     typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass,
             GroupCpuWrapper, GroupCudaWrapper > GroupAlgorithm;

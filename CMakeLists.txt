@@ -455,7 +455,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
         message( FATAL_ERROR "nvcc is needed with CUDA." )
       endif()
       if(NOT DEFINED CUSTOM_CUDA_FLAGS)
-        set( CUSTOM_CUDA_FLAGS "-std=c++11;-arch=sm_20" CACHE
+        set( CUSTOM_CUDA_FLAGS "-std=c++11;-arch=sm_20;-ptxas-options=-v;-use_fast_math" CACHE
           STRING "Set your CUDA flags, for example : -arch=sm_20;-ptxas-options=-v;-use_fast_math")
       endif()
       # This is needed to remove backslash after space in ADD_CUSTOM_COMMAND
