@@ -12,7 +12,7 @@ constexpr T Fpow(T a, std::size_t p) {
 template<typename T, typename U,
          typename std::enable_if<std::is_arithmetic<T>::value, T>::type* = nullptr,
          typename std::enable_if<std::is_arithmetic<U>::value, U>::type* = nullptr>
-constexpr T Ffeq(T a, U b, T epsilon = 1e-7) {
+constexpr bool Ffeq(T a, U b, T epsilon = 1e-7) {
     return a - b < epsilon && b - a < epsilon;
 }
 
