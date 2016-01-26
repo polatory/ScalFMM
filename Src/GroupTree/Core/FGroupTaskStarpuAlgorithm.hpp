@@ -325,6 +325,51 @@ public:
         buildHandles();
     }
 
+
+#ifdef STARPU_USE_CPU
+    void forEachCpuWorker(std::function<void(void)> func){
+        starpu_resume();
+        FStarPUUtils::ExecOnWorkers(STARPU_CPU, func);
+        starpu_pause();
+    }
+
+    void forEachCpuWorker(std::function<void(KernelClass*)> func){
+        starpu_resume();
+        FStarPUUtils::ExecOnWorkers(STARPU_CPU, [&](){
+            func(cpuWrapper.getKernel(starpu_worker_get_id()));
+        });
+        starpu_pause();
+    }
+#endif
+#ifdef SCALFMM_ENABLE_CUDA_KERNEL
+    void forEachCudaWorker(std::function<void(void)> func){
+        starpu_resume();
+        FStarPUUtils::ExecOnWorkers(STARPU_CUDA, func);
+        starpu_pause();
+    }
+    void forEachCudaWorker(std::function<void(void*)> func){
+        starpu_resume();
+        FStarPUUtils::ExecOnWorkers(STARPU_CUDA, [&](){
+            func(cudaWrapper.getKernel(starpu_worker_get_id()));
+        });
+        starpu_pause();
+    }
+#endif
+#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
+    void forEachOpenCLWorker(std::function<void(void)> func){
+        starpu_resume();
+        FStarPUUtils::ExecOnWorkers(STARPU_OPENCL, func);
+        starpu_pause();
+    }
+    void forEachOpenCLWorker(std::function<void(void*)> func){
+        starpu_resume();
+        FStarPUUtils::ExecOnWorkers(STARPU_OPENCL, [&](){
+            func(openclWrapper.getKernel(starpu_worker_get_id()));
+        });
+        starpu_pause();
+    }
+#endif
+
 protected:
     /**
       * Runs the complete algorithm.
@@ -1351,6 +1396,9 @@ protected:
         }
     }
 #endif
+
+
+
 };
 
 #endif // FGROUPTASKSTARPUALGORITHM_HPP

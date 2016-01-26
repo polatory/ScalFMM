@@ -42,6 +42,7 @@
 #include "../../Src/GroupTree/Cuda/FCudaGroupOfParticles.hpp"
 #include "../../Src/GroupTree/Cuda/FCudaGroupOfCells.hpp"
 
+#include "../../Src/GroupTree/Uniform/FUnifCudaSharedData.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
@@ -50,7 +51,7 @@
 template <class FReal, int ORDER>
 class FUnifCuda;
 
-//#define RANDOM_PARTICLES
+#define RANDOM_PARTICLES
 
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
@@ -78,7 +79,9 @@ int main(int argc, char* argv[]){
     typedef FP2PGroupParticleContainer<FReal>          GroupContainerClass;
     typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
 
-    typedef FStarPUCudaP2PCapacities<FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
+    //typedef FStarPUCudaM2LCapacities<FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
+    //typedef FStarPUCudaP2PCapacities<FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
+    typedef FStarPUCudaP2PM2LCapacities<FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
 
     typedef FStarPUCudaWrapper<GroupKernelClass,
@@ -127,6 +130,33 @@ int main(int argc, char* argv[]){
     const MatrixKernelClass MatrixKernel;
     GroupKernelClass groupkernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
+
+    {
+        typedef FUnifM2LHandler<FReal, ORDER,MatrixKernelClass::Type> M2LHandlerClass;
+        const M2LHandlerClass M2LHandler(&MatrixKernel,
+                                         NbLevels,
+                                         loader.getBoxWidth(),
+                                         1);
+        // Copy precomputed matrix to cuda
+        FUnifCudaSharedData<FReal, ORDER> hostData;
+        hostData.BoxWidth = loader.getBoxWidth();
+
+        std::cout << "Copy precomputed tab of size " << hostData.ninteractions << " " << hostData.opt_rc << std::endl;
+
+        for(int idxInter = 0 ; idxInter < hostData.ninteractions ; ++idxInter){
+            for(int idx = 0 ; idx < hostData.opt_rc ; ++idx){
+                hostData.FC[hostData.opt_rc*idxInter + idx].complex[0] = M2LHandler.getFc(idxInter, idx).getReal();
+                hostData.FC[hostData.opt_rc*idxInter + idx].complex[1] = M2LHandler.getFc(idxInter, idx).getImag();
+            }
+        }
+        std::cout << "Copy to GPU" << std::endl;
+
+        groupalgo.forEachCudaWorker([&](void* cudaKernel){
+            FUnifCudaFillObject(cudaKernel,hostData);
+        });
+
+        std::cout << "Done" << std::endl;
+    }
 
     timer.tic();
     groupalgo.execute();

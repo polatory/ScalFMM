@@ -29,6 +29,8 @@
 
 #include "../Cuda/FCudaDeviceWrapper.hpp"
 
+#include "../Uniform/FUnifCudaCellPOD.hpp" // TODO remove
+
 #include "FStarPUUtils.hpp"
 
 template <class KernelClass, class SymboleCellClass, class PoleCellClass, class LocalCellClass,
@@ -54,6 +56,14 @@ public:
         memset(kernels, 0, sizeof(CudaKernelClass*)*STARPU_MAXCUDADEVS);
     }
 
+    CudaKernelClass* getKernel(const int workerId){
+        return kernels[workerId];
+    }
+
+    const CudaKernelClass* getKernel(const int workerId) const {
+        return kernels[workerId];
+    }
+
     void initKernel(const int workerId, KernelClass* originalKernel){
         FAssertLF(kernels[workerId] == nullptr);
         kernels[workerId] = FCuda__BuildCudaKernel<CudaKernelClass>(originalKernel);
@@ -75,7 +85,7 @@ public:
         int intervalSize;
         starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize, &intervalSize);
 
-        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
+        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CUDA_IDX)->kernels[starpu_worker_get_id()];
 
         FCuda__bottomPassCallback< SymboleCellClass, PoleCellClass, LocalCellClass,
                 CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>(
@@ -99,7 +109,7 @@ public:
         int intervalSize = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel, &intervalSize);
 
-        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
+        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CUDA_IDX)->kernels[starpu_worker_get_id()];
 
         FCuda__upwardPassCallback< SymboleCellClass, PoleCellClass, LocalCellClass,
                 CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>(
@@ -124,7 +134,7 @@ public:
         int intervalSize = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions, &intervalSize);
 
-        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
+        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CUDA_IDX)->kernels[starpu_worker_get_id()];
 
         FCuda__transferInoutPassCallbackMpi< SymboleCellClass, PoleCellClass, LocalCellClass,
                 CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>(
@@ -149,7 +159,7 @@ public:
         int intervalSize = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &intervalSize);
 
-        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
+        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CUDA_IDX)->kernels[starpu_worker_get_id()];
 
         FCuda__transferInPassCallback< SymboleCellClass, PoleCellClass, LocalCellClass,
                 CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>(
@@ -168,8 +178,34 @@ public:
         int intervalSize = 0;
         int mode = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions, &intervalSize, &mode);
+        const int nbInteractions = int(outsideInteractions->size());
 
-        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
+        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CUDA_IDX)->kernels[starpu_worker_get_id()];
+
+        // outsideInteractions is sorted following the outIndex
+        // Compute the cell interval
+        const OutOfBlockInteraction* interactions;
+        std::unique_ptr<int[]> safeInteractions(new int[nbInteractions+1]);
+        int nbSafeInteractions = 0;
+        std::unique_ptr<OutOfBlockInteraction[]> insideInteractions;
+        if(mode == 0){
+            interactions = outsideInteractions->data();
+            nbSafeInteractions = GetClusterOfInteractionsOutside(safeInteractions.get(), outsideInteractions->data(), nbInteractions);
+        }
+        else{
+            insideInteractions.reset(new OutOfBlockInteraction[nbInteractions]);
+            memcpy(insideInteractions.get(), outsideInteractions->data(), nbInteractions*sizeof(OutOfBlockInteraction));
+
+            FQuickSort<OutOfBlockInteraction>::QsSequential(insideInteractions.get(), nbInteractions,
+                                     [](const OutOfBlockInteraction& inter1, const OutOfBlockInteraction& inter2){
+                // Could be insideIndex since the block are in morton order
+                return inter1.insideIdxInBlock <= inter2.insideIdxInBlock;
+            });
+            interactions = insideInteractions.get();
+
+            nbSafeInteractions = GetClusterOfInteractionsInside(safeInteractions.get(), insideInteractions.get(), nbInteractions);
+        }
+
 
         FCuda__transferInoutPassCallback< SymboleCellClass, PoleCellClass, LocalCellClass,
                 CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>(
@@ -179,7 +215,9 @@ public:
                     (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
                     STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
                     (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]),
-                    idxLevel, mode, outsideInteractions->data(), int(outsideInteractions->size()), kernel,
+                    idxLevel, mode, interactions, nbInteractions,
+                    safeInteractions.get(), nbSafeInteractions,
+                    kernel,
                     starpu_cuda_get_local_stream(),
                 FCuda__GetGridSize(kernel,intervalSize),FCuda__GetBlockSize(kernel));
     }
@@ -194,7 +232,7 @@ public:
         int intervalSize = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &nbSubCellGroups, &idxLevel, &intervalSize);
 
-        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
+        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CUDA_IDX)->kernels[starpu_worker_get_id()];
 
         FCuda__downardPassCallback< SymboleCellClass, PoleCellClass, LocalCellClass,
                 CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>(
@@ -220,7 +258,7 @@ public:
         starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions, &intervalSize);
         const int nbInteractions = int(outsideInteractions->size());
 
-        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
+        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CUDA_IDX)->kernels[starpu_worker_get_id()];
 
         std::unique_ptr<int[]> safeOuterInteractions(new int[nbInteractions+1]);
         const int counterOuterCell = GetClusterOfInteractionsOutside(safeOuterInteractions.get(), outsideInteractions->data(), nbInteractions);
@@ -234,7 +272,7 @@ public:
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
                 outsideInteractions->data(), nbInteractions,
                 safeOuterInteractions.get(), counterOuterCell,
-                worker->get<ThisClass>(FSTARPU_CPU_IDX)->treeHeight ,kernel, starpu_cuda_get_local_stream(),
+                worker->get<ThisClass>(FSTARPU_CUDA_IDX)->treeHeight ,kernel, starpu_cuda_get_local_stream(),
                 FCuda__GetGridSize(kernel,intervalSize),FCuda__GetBlockSize(kernel));
     }
 #endif
@@ -246,14 +284,14 @@ public:
         FStarPUPtrInterface* worker = nullptr;
         int intervalSize = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize);
-        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
+        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CUDA_IDX)->kernels[starpu_worker_get_id()];
 
         FCuda__directInPassCallback< SymboleCellClass, PoleCellClass, LocalCellClass,
                 CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>(
                     (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
-                worker->get<ThisClass>(FSTARPU_CPU_IDX)->treeHeight, kernel, starpu_cuda_get_local_stream(),
+                worker->get<ThisClass>(FSTARPU_CUDA_IDX)->treeHeight, kernel, starpu_cuda_get_local_stream(),
                 FCuda__GetGridSize(kernel,intervalSize),FCuda__GetBlockSize(kernel));
     }
 
@@ -310,7 +348,7 @@ public:
         starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions, &intervalSize);
         const int nbInteractions = int(outsideInteractions->size());
 
-        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
+        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CUDA_IDX)->kernels[starpu_worker_get_id()];
 
         // outsideInteractions is sorted following the outIndex
         // Compute the cell interval
@@ -341,7 +379,7 @@ public:
                 safeOuterInteractions.get(), counterOuterCell,
                 insideInteractions.get(),
                 safeInnterInteractions.get(), counterInnerCell,
-                worker->get<ThisClass>(FSTARPU_CPU_IDX)->treeHeight,
+                worker->get<ThisClass>(FSTARPU_CUDA_IDX)->treeHeight,
                 kernel, starpu_cuda_get_local_stream(),
                 FCuda__GetGridSize(kernel,intervalSize),FCuda__GetBlockSize(kernel));
     }
@@ -356,7 +394,7 @@ public:
         int intervalSize;
         starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize);
 
-        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CPU_IDX)->kernels[starpu_worker_get_id()];
+        CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CUDA_IDX)->kernels[starpu_worker_get_id()];
 
         FCuda__mergePassCallback< SymboleCellClass, PoleCellClass, LocalCellClass,
                 CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>(

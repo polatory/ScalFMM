@@ -5,7 +5,7 @@
 #include "../Cuda/FCudaGroupAttachedLeaf.hpp"
 #include "../Cuda/FCudaCompositeCell.hpp"
 
-
+#include "FUnifCudaSharedData.hpp"
 #include "FUnifCudaCellPOD.hpp"
 
 #define Min(x,y) ((x)<(y)?(x):(y))
@@ -19,6 +19,71 @@ template <class FReal, int ORDER>
 class FUnifCuda {
 protected:
 public:
+
+    typedef FCudaGroupAttachedLeaf<FReal,1,4,FReal> ContainerClass;
+    typedef FCudaCompositeCell<FBasicCellPOD,FCudaUnifCellPODPole<FReal,ORDER>,FCudaUnifCellPODLocal<FReal,ORDER> > CellClass;
+
+    static const int NB_THREAD_GROUPS = 30; // 2 x 15
+    static const int THREAD_GROUP_SIZE = 256;
+    static const int SHARED_MEMORY_SIZE = 512;// 49152
+
+    FUnifCudaSharedData<FReal,ORDER> data;
+
+    __device__ void P2M(CellClass /*pole*/, const ContainerClass* const /*particles*/) {
+    }
+
+    __device__ void M2M(CellClass  /*pole*/, const CellClass  /*child*/[8], const int /*level*/) {
+    }
+
+    __device__ FReal getScaleFactor(const FReal CellWidth) const
+    {
+        return FReal(2.) / CellWidth;
+    }
+
+    __device__ void addMul(FCudaUnifComplex<FReal>* __restrict__ res,
+                           const FCudaUnifComplex<FReal>& other, const FCudaUnifComplex<FReal>& another) const {
+        res->complex[0] += (other.complex[0] * another.complex[0]) - (other.complex[1] * another.complex[1]);
+        res->complex[1] += (other.complex[0] * another.complex[1]) + (other.complex[1] * another.complex[0]);
+    }
+
+
+    __device__ void applyFC(const unsigned int idx, const unsigned int, const FReal scale,
+                 const FCudaUnifComplex<FReal> *const __restrict__ FY,
+                 FCudaUnifComplex<FReal> *const __restrict__ FX) const
+    {
+        // Perform entrywise product manually
+        for (unsigned int j = threadIdx.x ; j < data.opt_rc; j += blockDim.x){
+            FCudaUnifComplex<FReal> FC_scale;
+            //FComplex<FReal>(scale*FC[idx*opt_rc + j].getReal(), scale*FC[idx*opt_rc + j].getImag()),
+            FC_scale.complex[0] = scale*data.FC[idx*data.opt_rc + j].complex[0];
+            FC_scale.complex[1] = scale*data.FC[idx*data.opt_rc + j].complex[1];
+            addMul(&FX[j], FC_scale, FY[j]);
+        }
+    }
+
+    __device__ void M2L(CellClass  pole, const CellClass* distantNeighbors,
+                        const int* neighborPositions,
+                        const int inSize, const int TreeLevel) {
+        const FReal CellWidth(data.BoxWidth / FReal(1 << TreeLevel));
+        const FReal scale(getScaleFactor(CellWidth));
+
+        FCudaUnifComplex<FReal>*const TransformedLocalExpansion = pole.down->transformed_local_exp;
+
+        for(int idxExistingNeigh = 0 ; idxExistingNeigh < inSize ; ++idxExistingNeigh){
+            const int idxNeigh = neighborPositions[idxExistingNeigh];
+            applyFC(idxNeigh, TreeLevel, scale,
+                               distantNeighbors[idxExistingNeigh].up->transformed_multipole_exp,
+                               TransformedLocalExpansion);
+        }
+    }
+
+    __device__ void L2L(const CellClass  /*local*/, CellClass  /*child*/[8], const int /*level*/) {
+    }
+
+    __device__ void L2P(const CellClass  /*local*/, ContainerClass*const /*particles*/){
+    }
+
+
 
     __device__ void DirectComputation(const FReal& targetX, const FReal& targetY, const FReal& targetZ,const  FReal& targetPhys,
                            FReal& forceX, FReal& forceY,FReal&  forceZ, FReal& potential,
@@ -41,38 +106,6 @@ public:
         forceY += dy;
         forceZ += dz;
         potential += inv_distance * sourcesPhys;
-    }
-
-    static double DSqrt(const double val){
-        return sqrt(val);
-    }
-
-    static float FSqrt(const float val){
-        return sqrtf(val);
-    }
-
-    typedef FCudaGroupAttachedLeaf<FReal,1,4,FReal> ContainerClass;
-    typedef FCudaCompositeCell<FBasicCellPOD,FCudaUnifCellPODPole<FReal,ORDER>,FCudaUnifCellPODLocal<FReal,ORDER> > CellClass;
-
-    static const int NB_THREAD_GROUPS = 30; // 2 x 15
-    static const int THREAD_GROUP_SIZE = 256;
-    static const int SHARED_MEMORY_SIZE = 512;// 49152
-
-    __device__ void P2M(CellClass /*pole*/, const ContainerClass* const /*particles*/) {
-    }
-
-    __device__ void M2M(CellClass  /*pole*/, const CellClass  /*child*/[8], const int /*level*/) {
-    }
-
-    __device__ void M2L(CellClass  /*pole*/, const CellClass* /*distantNeighbors*/,
-                        const int* /*neighPositions*/,
-                        const int /*size*/, const int /*level*/) {
-    }
-
-    __device__ void L2L(const CellClass  /*local*/, CellClass  /*child*/[8], const int /*level*/) {
-    }
-
-    __device__ void L2P(const CellClass  /*local*/, ContainerClass*const /*particles*/){
     }
 
     __device__ void P2P(const int3& pos,
@@ -323,11 +356,15 @@ public:
     }
 
     __host__ static FUnifCuda* InitKernelKernel(void*){
-        return nullptr;
+        FUnifCuda* cudaKernel = nullptr;
+        FCudaCheck( cudaMalloc(&cudaKernel,sizeof(FUnifCuda)) );
+        printf("InitKernelKernel cudaKernel %p\n", cudaKernel);
+        // Return pointer to application
+        return cudaKernel;
     }
 
-    __host__ static void ReleaseKernel(FUnifCuda* /*todealloc*/){
-        // nothing to do
+    __host__ static void ReleaseKernel(FUnifCuda* cudaKernel){
+        FCudaCheck(cudaFree(cudaKernel));
     }
 
     __host__ static dim3 GetGridSize(const int /*intervalSize*/){
@@ -338,6 +375,15 @@ public:
         return THREAD_GROUP_SIZE;
     }
 };
+
+
+template <class FReal, int ORDER>
+void FUnifCudaFillObject(void* cudaKernel, const FUnifCudaSharedData<FReal,ORDER>& hostData){
+    FUnifCudaSharedData<FReal,ORDER>* cudaData = &((FUnifCuda<FReal,ORDER>*)cudaKernel)->data;
+    FCudaCheck( cudaMemcpy( cudaData, &hostData, sizeof(FUnifCudaSharedData<FReal,ORDER>),
+                cudaMemcpyHostToDevice ) );
+}
+
 
 #endif // FUNIFCUDA_HPP
 

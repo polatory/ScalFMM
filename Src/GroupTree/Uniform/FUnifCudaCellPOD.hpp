@@ -10,7 +10,7 @@ template <int ORDER> struct CudaTensorTraits
 
 template <class FReal>
 struct FCudaUnifComplex {
-    FReal data[2];
+    FReal complex[2];
 };
 
 template <class FReal, int ORDER, int NRHS = 1, int NLHS = 1, int NVALS = 1>

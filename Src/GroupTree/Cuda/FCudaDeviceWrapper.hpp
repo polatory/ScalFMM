@@ -46,7 +46,8 @@ void FCuda__transferInoutPassCallback(
     unsigned char* externalCellsPtr, std::size_t externalCellsSize,
     unsigned char* externalCellsDownPtr,
     int idxLevel, int mode, const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, CudaKernelClass* kernel, cudaStream_t 	currentStream,
+    int nbOutsideInteractions,
+        const int* safeInteractions, int nbSafeInteractions, CudaKernelClass* kernel, cudaStream_t 	currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize);
 
 template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
