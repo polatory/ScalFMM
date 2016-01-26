@@ -66,6 +66,14 @@ public:
         memset(kernels, 0, sizeof(KernelClass*)*STARPU_MAXCPUS);
     }
 
+    KernelClass* getKernel(const int workerId){
+        return kernels[workerId];
+    }
+
+    const KernelClass* getKernel(const int workerId) const {
+        return kernels[workerId];
+    }
+
     void initKernel(const int workerId, KernelClass* originalKernel){
         FAssertLF(kernels[workerId] == nullptr);
         kernels[workerId] = new KernelClass(*originalKernel);

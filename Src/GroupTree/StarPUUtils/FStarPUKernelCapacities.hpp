@@ -118,6 +118,25 @@ public:
     }
 };
 
+template <class BaseClass>
+class FStarPUCudaM2LCapacities : public BaseClass, public FStarPUAbstractCapacities {
+    bool check(const FStarPUTypes inPu) const override{
+        return inPu == FSTARPU_CPU_IDX;
+    }
+public:
+    using BaseClass::BaseClass;
+
+    bool supportM2L(const FStarPUTypes inPu) const override {
+        return inPu == FSTARPU_CPU_IDX || inPu == FSTARPU_CUDA_IDX;
+    }
+    bool supportM2LExtern(const FStarPUTypes inPu) const override {
+        return inPu == FSTARPU_CPU_IDX || inPu == FSTARPU_CUDA_IDX;
+    }
+    bool supportM2LMpi(const FStarPUTypes inPu) const override {
+        return inPu == FSTARPU_CPU_IDX || inPu == FSTARPU_CUDA_IDX;
+    }
+};
+
 #endif
 
 #ifdef SCALFMM_ENABLE_OPENCL_KERNEL

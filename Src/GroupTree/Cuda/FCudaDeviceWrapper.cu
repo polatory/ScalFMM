@@ -5,18 +5,6 @@
 #include "FCudaStructParams.hpp"
 
 
-static void FCudaCheckCore(cudaError_t code, const char *file, int line) {
-   if (code != cudaSuccess) {
-      fprintf(stderr,"Cuda Error %d : %s %s %d\n", code, cudaGetErrorString(code), file, line);
-      exit(code);
-   }
-}
-#define FCudaCheck( test ) { FCudaCheckCore((test), __FILE__, __LINE__); }
-#define FCudaCheckAfterCall() { FCudaCheckCore((cudaGetLastError()), __FILE__, __LINE__); }
-#define FCudaAssertLF(ARGS) if(!(ARGS)){\
-                                printf("Error line %d\n", __LINE__);\
-                            }
-
 #define FMGetOppositeNeighIndex(index) (27-(index)-1)
 #define FMGetOppositeInterIndex(index) (343-(index)-1)
 
@@ -196,22 +184,32 @@ __global__  void FCuda__transferInPassPerform(unsigned char* currentCellsPtr, st
     const MortonIndex blockStartIdx = currentCells.getStartingIndex();
     const MortonIndex blockEndIdx = currentCells.getEndingIndex();
 
+    printf("blockStartIdx %lld\n", blockStartIdx);
+    printf("blockEndIdx %lld\n", blockEndIdx);
+
     for(int cellIdx = 0 ; cellIdx < currentCells.getNumberOfCellsInBlock() ; ++cellIdx){
         typename CellContainerClass::CompleteCellClass cell = currentCells.getDownCell(cellIdx);
-        FCudaAssertLF(cell.symb->mortonIndex == currentCells.getCellMortonIndex(cellIdx));
+        printf("cell.symb->mortonIndex %lld\n", cell.symb->mortonIndex);
+        printf("currentCells.getCellMortonIndex(cellIdx) %lld\n", currentCells.getCellMortonIndex(cellIdx));
+
         MortonIndex interactionsIndexes[189];
         int interactionsPosition[189];
         const int3 coord = (FCudaTreeCoordinate::ConvertCoordinate(cell.symb->coordinates));
         int counter = FCudaTreeCoordinate::GetInteractionNeighbors(coord, idxLevel,interactionsIndexes,interactionsPosition);
+
+        /// printf("counter %d\n", counter);
 
         typename CellContainerClass::CompleteCellClass interactions[189];
         int counterExistingCell = 0;
 
         for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
             if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                ///printf("interactionsIndexes[%d] %lld\n", idxInter, interactionsIndexes[idxInter]);
                 const int cellPos = currentCells.getCellIndex(interactionsIndexes[idxInter]);
+                ///printf("cellPos %d\n", cellPos);
                 if(cellPos != -1){
                     typename CellContainerClass::CompleteCellClass interCell = currentCells.getUpCell(cellPos);
+                    ///printf("currentCells.getCellMortonIndex(cellIdx) %lld\n", interCell.symb->mortonIndex);
                     interactions[counterExistingCell] = interCell;
                     interactionsPosition[counterExistingCell] = interactionsPosition[idxInter];
                     counterExistingCell += 1;
@@ -248,7 +246,8 @@ __global__ void FCuda__transferInoutPassPerform(unsigned char* currentCellsPtr, 
                                                 unsigned char* externalCellsPtr, std::size_t externalCellsSize,
                                                 unsigned char* externalCellsUpPtr,
                                                 int idxLevel, int mode, const OutOfBlockInteraction* outsideInteractions,
-                                                int nbOutsideInteractions, CudaKernelClass* kernel){
+                                                int nbOutsideInteractions,
+                                                const int* safeInteractions, int nbSafeInteractions, CudaKernelClass* kernel){
     if(blockIdx.x != 0){
         return;
     }
@@ -286,14 +285,20 @@ __host__ void FCuda__transferInoutPassCallback(unsigned char* currentCellsPtr, s
                                                unsigned char* currentCellsDownPtr,
                                                unsigned char* externalCellsPtr, std::size_t externalCellsSize,
                                                unsigned char* externalCellsUpPtr,
-                                               int idxLevel, int mode, const OutOfBlockInteraction* outsideInteractions,
-                                               int nbOutsideInteractions, CudaKernelClass* kernel, cudaStream_t currentStream,
+                                               int idxLevel, int mode,
+                                               const OutOfBlockInteraction* outsideInteractions, int nbOutsideInteractions,
+                                               const int* safeInteractions, int nbSafeInteractions,
+                                               CudaKernelClass* kernel, cudaStream_t currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize){
     OutOfBlockInteraction* cuOutsideInteractions;
     FCudaCheck( cudaMalloc(&cuOutsideInteractions,nbOutsideInteractions*sizeof(OutOfBlockInteraction)) );
     FCudaCheck( cudaMemcpy( cuOutsideInteractions, outsideInteractions, nbOutsideInteractions*sizeof(OutOfBlockInteraction),
                 cudaMemcpyHostToDevice ) );
 
+    int* cuSafeInteractions;
+    FCudaCheck( cudaMalloc(&cuSafeInteractions,(nbSafeInteractions+1)*sizeof(int)) );
+    FCudaCheck( cudaMemcpy( cuSafeInteractions, safeInteractions, (nbSafeInteractions+1)*sizeof(int),
+                cudaMemcpyHostToDevice ) );
 
     FCuda__transferInoutPassPerform
             <SymboleCellClass, PoleCellClass, LocalCellClass,
@@ -302,12 +307,15 @@ __host__ void FCuda__transferInoutPassCallback(unsigned char* currentCellsPtr, s
                                                                 currentCellsDownPtr,
                                                                 externalCellsPtr, externalCellsSize,
                                                                 externalCellsUpPtr,
-                                                                idxLevel, mode, cuOutsideInteractions,
-                                                                nbOutsideInteractions, kernel);
+                                                                idxLevel, mode,
+                                                                cuOutsideInteractions, nbOutsideInteractions,
+                                                                cuSafeInteractions, nbSafeInteractions,
+                                                                kernel);
     FCudaCheckAfterCall();
     FCudaCheck(cudaStreamSynchronize(currentStream));
 
     FCudaCheck(cudaFree(cuOutsideInteractions));
+    FCudaCheck(cudaFree(cuSafeInteractions));
 }
 
 
@@ -692,7 +700,8 @@ unsigned char* currentCellsDownPtr,
 unsigned char* externalCellsPtr, std::size_t externalCellsSize,
 unsigned char* externalCellsUpPtr,
 int idxLevel, int mode, const OutOfBlockInteraction* outsideInteractions,
-int nbOutsideInteractions, FCudaEmptyKernel<int>* kernel, cudaStream_t currentStream,
+int nbOutsideInteractions,
+const int* safeInteractions, int nbSafeInteractions, FCudaEmptyKernel<int>* kernel, cudaStream_t currentStream,
                                     const dim3 inGridSize, const dim3 inBlocksSize);
 
 template void FCuda__downardPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
@@ -782,7 +791,8 @@ unsigned char* currentCellsDownPtr,
 unsigned char* externalCellsPtr, std::size_t externalCellsSize,
 unsigned char* externalCellsUpPtr,
 int idxLevel, int mode, const OutOfBlockInteraction* outsideInteractions,
-int nbOutsideInteractions, FTestCudaKernels<float>* kernel, cudaStream_t currentStream,
+int nbOutsideInteractions,
+const int* safeInteractions, int nbSafeInteractions, FTestCudaKernels<float>* kernel, cudaStream_t currentStream,
                                     const dim3 inGridSize, const dim3 inBlocksSize);
 
 template void FCuda__downardPassCallback<FTestCellPODCore, FTestCellPODData, FTestCellPODData, FCudaGroupOfCells<FTestCellPODCore, FTestCellPODData, FTestCellPODData>,
@@ -869,7 +879,8 @@ unsigned char* currentCellsDownPtr,
 unsigned char* externalCellsPtr, std::size_t externalCellsSize,
 unsigned char* externalCellsUpPtr,
 int idxLevel, int mode, const OutOfBlockInteraction* outsideInteractions,
-int nbOutsideInteractions, FTestCudaKernels<double>* kernel, cudaStream_t currentStream,
+int nbOutsideInteractions,
+const int* safeInteractions, int nbSafeInteractions, FTestCudaKernels<double>* kernel, cudaStream_t currentStream,
                                     const dim3 inGridSize, const dim3 inBlocksSize);
 
 template void FCuda__downardPassCallback<FTestCellPODCore, FTestCellPODData, FTestCellPODData, FCudaGroupOfCells<FTestCellPODCore, FTestCellPODData, FTestCellPODData>,
@@ -959,7 +970,8 @@ unsigned char* currentCellsDownPtr,
 unsigned char* externalCellsPtr, std::size_t externalCellsSize,
 unsigned char* externalCellsUpPtr,
 int idxLevel, int mode, const OutOfBlockInteraction* outsideInteractions,
-int nbOutsideInteractions, FCudaP2P<float>* kernel, cudaStream_t currentStream,
+int nbOutsideInteractions,
+const int* safeInteractions, int nbSafeInteractions, FCudaP2P<float>* kernel, cudaStream_t currentStream,
                                     const dim3 inGridSize, const dim3 inBlocksSize);
 
 template void FCuda__downardPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
@@ -1046,7 +1058,8 @@ unsigned char* currentCellsDownPtr,
 unsigned char* externalCellsPtr, std::size_t externalCellsSize,
 unsigned char* externalCellsUpPtr,
 int idxLevel, int mode, const OutOfBlockInteraction* outsideInteractions,
-int nbOutsideInteractions, FCudaP2P<double>* kernel, cudaStream_t currentStream,
+int nbOutsideInteractions,
+const int* safeInteractions, int nbSafeInteractions, FCudaP2P<double>* kernel, cudaStream_t currentStream,
                                     const dim3 inGridSize, const dim3 inBlocksSize);
 
 template void FCuda__downardPassCallback<FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
@@ -1137,7 +1150,8 @@ unsigned char* currentCellsDownPtr,
 unsigned char* externalCellsPtr, std::size_t externalCellsSize,
 unsigned char* externalCellsUpPtr,
 int idxLevel, int mode, const OutOfBlockInteraction* outsideInteractions,
-int nbOutsideInteractions, FUnifCuda<float,5>* kernel, cudaStream_t currentStream,
+int nbOutsideInteractions,
+const int* safeInteractions, int nbSafeInteractions, FUnifCuda<float,5>* kernel, cudaStream_t currentStream,
                                     const dim3 inGridSize, const dim3 inBlocksSize);
 
 template void FCuda__downardPassCallback<FBasicCellPOD, FCudaUnifCellPODPole<float,5>,FCudaUnifCellPODLocal<float,5>, FCudaGroupOfCells<FBasicCellPOD, FCudaUnifCellPODPole<float,5>,FCudaUnifCellPODLocal<float,5>>,
@@ -1185,6 +1199,7 @@ template void FCuda__ReleaseCudaKernel<FUnifCuda<float,5>>(FUnifCuda<float,5>* c
 template dim3 FCuda__GetGridSize< FUnifCuda<float,5> >(FUnifCuda<float,5>* kernel, int intervalSize);
 template dim3 FCuda__GetBlockSize< FUnifCuda<float,5> >(FUnifCuda<float,5>* cukernel);
 
+template void FUnifCudaFillObject(void* cudaKernel, const FUnifCudaSharedData<double,5>& hostData);
 
 
 
@@ -1224,7 +1239,8 @@ unsigned char* currentCellsDownPtr,
 unsigned char* externalCellsPtr, std::size_t externalCellsSize,
 unsigned char* externalCellsUpPtr,
 int idxLevel, int mode, const OutOfBlockInteraction* outsideInteractions,
-int nbOutsideInteractions, FUnifCuda<double,5>* kernel, cudaStream_t currentStream,
+int nbOutsideInteractions,
+const int* safeInteractions, int nbSafeInteractions, FUnifCuda<double,5>* kernel, cudaStream_t currentStream,
                                     const dim3 inGridSize, const dim3 inBlocksSize);
 
 template void FCuda__downardPassCallback<FBasicCellPOD, FCudaUnifCellPODPole<double,5>,FCudaUnifCellPODLocal<double,5>, FCudaGroupOfCells<FBasicCellPOD, FCudaUnifCellPODPole<double,5>,FCudaUnifCellPODLocal<double,5>>,
@@ -1271,3 +1287,5 @@ template void FCuda__ReleaseCudaKernel<FUnifCuda<double,5>>(FUnifCuda<double,5>*
 
 template dim3 FCuda__GetGridSize< FUnifCuda<double,5> >(FUnifCuda<double,5>* kernel, int intervalSize);
 template dim3 FCuda__GetBlockSize< FUnifCuda<double,5> >(FUnifCuda<double,5>* cukernel);
+
+template void FUnifCudaFillObject(void* cudaKernel, const FUnifCudaSharedData<float,5>& hostData);

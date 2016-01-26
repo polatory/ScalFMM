@@ -50,6 +50,14 @@ public:
         memset(kernels, 0, sizeof(OpenCLKernelClass*)*STARPU_MAXOPENCLDEVS);
     }
 
+    OpenCLKernelClass* getKernel(const int workerId){
+        return kernels[workerId];
+    }
+
+    const OpenCLKernelClass* getKernel(const int workerId) const {
+        return kernels[workerId];
+    }
+
     void initKernel(const int workerId, KernelClass* originalKernel){
         FAssertLF(kernels[workerId] == nullptr);
         kernels[workerId] = new OpenCLKernelClass(treeHeight);
