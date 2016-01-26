@@ -29,6 +29,22 @@ public:
         return iterator(_root, iterator::IteratorPosition::end);
     }
 
+    const_iterator begin() const {
+        return const_iterator(_root);
+    }
+
+    const_iterator end() const {
+        return const_iterator(_root, iterator::IteratorPosition::end);
+    }
+
+    const_iterator cbegin() const {
+        return this->begin();
+    }
+
+    const_iterator cend() const {
+        return this->cend();
+    }
+
 };
 
 #endif

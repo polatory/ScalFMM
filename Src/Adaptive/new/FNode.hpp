@@ -290,14 +290,17 @@ public:
         return _is_leaf;
     }
 
-    /** Inserts a particle in the node
+    /** Inserts a particle in the tree rooted at node
      *
-     * Inserts a particle in the node if it is a leaf. If if isn't, the
-     * particle is forwarded to the relevant child.
+     * Pushes a particle in the node particle container if it is a leaf. If it
+     * isn't, the particle is forwarded to the relevant child.
+     *
+     * \note The `push_back` method of #particle_container_t is used to insert in a leaf
      */
     void insert(const particle_t& p) {
         if(! is_leaf()) {
-            getChildren()[box_t::space_filling_curve_t::index(p.position(), getBox().center())]->insert(p);
+            std::size_t child_index = box_t::space_filling_curve_t::index(p.position(), getBox().center());
+            getChild(child_index)->insert(p);
         } else {
             getParticleContainer()->push_back(p);
             if(getParticleContainer()->size() > getTree().leaf_max_particle_count()) {
@@ -305,6 +308,24 @@ public:
             }
         }
     }
+
+    /** Inserts a particle in the tree rooted at node
+     *
+     * Emplaces a particle in the node particle container if it is a leaf. If it
+     * isn't, the particle is forwarded to the relevant child.
+     *
+     * \note The `emplace_back` method of #particle_container_t is used to insert in a leaf
+     */
+    template<typename... Args>
+    void insert(const position_t& position, Args&&... args) {
+        if(! is_leaf()) {
+            std::size_t child_index = box_t::space_filling_curve_t::index(position, getBox().center());
+            getChild(child_index)->insert(position, std::forward<Args>(args)...);
+        } else {
+            getParticleContainer()->emplace_back(position, std::forward<Args>(args)...);
+        }
+    }
+
 
     /** Extracts a particle from a leaf
      *
