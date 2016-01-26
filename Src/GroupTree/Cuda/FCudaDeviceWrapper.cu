@@ -184,32 +184,22 @@ __global__  void FCuda__transferInPassPerform(unsigned char* currentCellsPtr, st
     const MortonIndex blockStartIdx = currentCells.getStartingIndex();
     const MortonIndex blockEndIdx = currentCells.getEndingIndex();
 
-    printf("blockStartIdx %lld\n", blockStartIdx);
-    printf("blockEndIdx %lld\n", blockEndIdx);
-
     for(int cellIdx = 0 ; cellIdx < currentCells.getNumberOfCellsInBlock() ; ++cellIdx){
         typename CellContainerClass::CompleteCellClass cell = currentCells.getDownCell(cellIdx);
-        printf("cell.symb->mortonIndex %lld\n", cell.symb->mortonIndex);
-        printf("currentCells.getCellMortonIndex(cellIdx) %lld\n", currentCells.getCellMortonIndex(cellIdx));
 
         MortonIndex interactionsIndexes[189];
         int interactionsPosition[189];
         const int3 coord = (FCudaTreeCoordinate::ConvertCoordinate(cell.symb->coordinates));
         int counter = FCudaTreeCoordinate::GetInteractionNeighbors(coord, idxLevel,interactionsIndexes,interactionsPosition);
 
-        /// printf("counter %d\n", counter);
-
         typename CellContainerClass::CompleteCellClass interactions[189];
         int counterExistingCell = 0;
 
         for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
             if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
-                ///printf("interactionsIndexes[%d] %lld\n", idxInter, interactionsIndexes[idxInter]);
                 const int cellPos = currentCells.getCellIndex(interactionsIndexes[idxInter]);
-                ///printf("cellPos %d\n", cellPos);
                 if(cellPos != -1){
                     typename CellContainerClass::CompleteCellClass interCell = currentCells.getUpCell(cellPos);
-                    ///printf("currentCells.getCellMortonIndex(cellIdx) %lld\n", interCell.symb->mortonIndex);
                     interactions[counterExistingCell] = interCell;
                     interactionsPosition[counterExistingCell] = interactionsPosition[idxInter];
                     counterExistingCell += 1;
