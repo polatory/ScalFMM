@@ -311,6 +311,9 @@ public:
     }
 
 
+    const FComplex<FReal>& getFc(const int i, const int j) const{
+        return FC[i*opt_rc + j];
+    }
 };
 
 
@@ -488,6 +491,9 @@ public:
         Dft.applyDFT(Py,FY);
     }
 
+    const FComplex<FReal>& getFc(const int i, const int j) const{
+        return FC[i*opt_rc + j];
+    }
 
 };
 
