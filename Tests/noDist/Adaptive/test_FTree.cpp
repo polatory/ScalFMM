@@ -71,14 +71,14 @@ namespace scalfmm {
                 assert(tree->leaves()     == t_leaves);
                 assert(tree->max_height() == t_max_height);
                 assert(tree->leaf_max_particle_count() == t_leaf_max_particle_count);
-                assert(tree->root()->getTree() == *tree);
+                assert(&(tree->root()->getTree()) == tree);
 
                 assert(t.box()        == box);
                 assert(t.root()       == root);
                 assert(t.leaves()     == leaves);
                 assert(t.max_height() == max_height);
                 assert(t.leaf_max_particle_count() == leaf_max_particle_count);
-                assert(t.root()->getTree() == t);
+                assert(&(t.root()->getTree()) == &t);
             }
 
             void test_constructor_move() {
