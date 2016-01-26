@@ -175,16 +175,13 @@ template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,
 __global__  void FCuda__transferInPassPerform(unsigned char* currentCellsPtr, std::size_t currentCellsSize,
                                               unsigned char* currentCellsUpPtr, unsigned char* currentCellsDownPtr,
                                               int idxLevel, CudaKernelClass* kernel){
-    if(blockIdx.x != 0){
-        return;
-    }
 
     CellContainerClass currentCells(currentCellsPtr, currentCellsSize, currentCellsUpPtr, currentCellsDownPtr);
 
     const MortonIndex blockStartIdx = currentCells.getStartingIndex();
     const MortonIndex blockEndIdx = currentCells.getEndingIndex();
 
-    for(int cellIdx = 0 ; cellIdx < currentCells.getNumberOfCellsInBlock() ; ++cellIdx){
+    for(int cellIdx = blockIdx.x ; cellIdx < currentCells.getNumberOfCellsInBlock() ; cellIdx += gridDim.x){
         typename CellContainerClass::CompleteCellClass cell = currentCells.getDownCell(cellIdx);
 
         MortonIndex interactionsIndexes[189];
@@ -238,32 +235,33 @@ __global__ void FCuda__transferInoutPassPerform(unsigned char* currentCellsPtr, 
                                                 int idxLevel, int mode, const OutOfBlockInteraction* outsideInteractions,
                                                 int nbOutsideInteractions,
                                                 const int* safeInteractions, int nbSafeInteractions, CudaKernelClass* kernel){
-    if(blockIdx.x != 0){
-        return;
-    }
 
     CellContainerClass currentCells(currentCellsPtr, currentCellsSize, nullptr, currentCellsDownPtr);
     CellContainerClass cellsOther(externalCellsPtr, externalCellsSize, externalCellsUpPtr, nullptr);
 
     if(mode == 1){
-        for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
-            typename CellContainerClass::CompleteCellClass interCell = cellsOther.getUpCell(outsideInteractions[outInterIdx].outsideIdxInBlock);
-            FCudaAssertLF(interCell.symb->mortonIndex == outsideInteractions[outInterIdx].outIndex);
-            typename CellContainerClass::CompleteCellClass cell = currentCells.getDownCell(outsideInteractions[outInterIdx].insideIdxInBlock);
-            FCudaAssertLF(cell.symb->mortonIndex == outsideInteractions[outInterIdx].insideIndex);
+        for(int cellIdx = blockIdx.x ; cellIdx < nbSafeInteractions ; cellIdx += gridDim.x){
+            for(int outInterIdx = safeInteractions[cellIdx] ; outInterIdx < safeInteractions[cellIdx+1] ; ++outInterIdx){
+                typename CellContainerClass::CompleteCellClass interCell = cellsOther.getUpCell(outsideInteractions[outInterIdx].outsideIdxInBlock);
+                FCudaAssertLF(interCell.symb->mortonIndex == outsideInteractions[outInterIdx].outIndex);
+                typename CellContainerClass::CompleteCellClass cell = currentCells.getDownCell(outsideInteractions[outInterIdx].insideIdxInBlock);
+                FCudaAssertLF(cell.symb->mortonIndex == outsideInteractions[outInterIdx].insideIndex);
 
-            kernel->M2L( cell , &interCell, &outsideInteractions[outInterIdx].relativeOutPosition, 1, idxLevel);
+                kernel->M2L( cell , &interCell, &outsideInteractions[outInterIdx].relativeOutPosition, 1, idxLevel);
+            }
         }
     }
     else{
-        for(int outInterIdx = 0 ; outInterIdx < nbOutsideInteractions ; ++outInterIdx){
-            typename CellContainerClass::CompleteCellClass cell = cellsOther.getUpCell(outsideInteractions[outInterIdx].insideIdxInBlock);
-            FCudaAssertLF(cell.symb->mortonIndex == outsideInteractions[outInterIdx].insideIndex);
-            typename CellContainerClass::CompleteCellClass interCell = currentCells.getDownCell(outsideInteractions[outInterIdx].outsideIdxInBlock);
-            FCudaAssertLF(interCell.symb->mortonIndex == outsideInteractions[outInterIdx].outIndex);
+        for(int cellIdx = blockIdx.x ; cellIdx < nbSafeInteractions ; cellIdx += gridDim.x){
+            for(int outInterIdx = safeInteractions[cellIdx] ; outInterIdx < safeInteractions[cellIdx+1] ; ++outInterIdx){
+                typename CellContainerClass::CompleteCellClass cell = cellsOther.getUpCell(outsideInteractions[outInterIdx].insideIdxInBlock);
+                FCudaAssertLF(cell.symb->mortonIndex == outsideInteractions[outInterIdx].insideIndex);
+                typename CellContainerClass::CompleteCellClass interCell = currentCells.getDownCell(outsideInteractions[outInterIdx].outsideIdxInBlock);
+                FCudaAssertLF(interCell.symb->mortonIndex == outsideInteractions[outInterIdx].outIndex);
 
-            const int otherPosition = FMGetOppositeInterIndex(outsideInteractions[outInterIdx].relativeOutPosition);
-            kernel->M2L( interCell , &cell, &otherPosition, 1, idxLevel);
+                const int otherPosition = FMGetOppositeInterIndex(outsideInteractions[outInterIdx].relativeOutPosition);
+                kernel->M2L( interCell , &cell, &otherPosition, 1, idxLevel);
+            }
         }
     }
 }

@@ -79,7 +79,9 @@ int main(int argc, char* argv[]){
     typedef FP2PGroupParticleContainer<FReal>          GroupContainerClass;
     typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
 
-    typedef FStarPUCudaM2LCapacities<FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
+    //typedef FStarPUCudaM2LCapacities<FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
+    //typedef FStarPUCudaP2PCapacities<FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
+    typedef FStarPUCudaP2PM2LCapacities<FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
 
     typedef FStarPUCudaWrapper<GroupKernelClass,
@@ -161,7 +163,7 @@ int main(int argc, char* argv[]){
     std::cout << "Kernel executed in in " << timer.tacAndElapsed() << "s\n";
 
     // Validate the result
-    if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == true){
+    if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
         FSize offsetParticles = 0;
         FReal*const allPhysicalValues = allParticles.getPhysicalValues();
         FReal*const allPosX = const_cast<FReal*>( allParticles.getPositions()[0]);

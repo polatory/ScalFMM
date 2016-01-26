@@ -23,8 +23,8 @@ public:
     typedef FCudaGroupAttachedLeaf<FReal,1,4,FReal> ContainerClass;
     typedef FCudaCompositeCell<FBasicCellPOD,FCudaUnifCellPODPole<FReal,ORDER>,FCudaUnifCellPODLocal<FReal,ORDER> > CellClass;
 
-    static const int NB_THREAD_GROUPS = 1;// TODO 30; // 2 x 15
-    static const int THREAD_GROUP_SIZE = 1;// TODO 256;
+    static const int NB_THREAD_GROUPS = 30; // 2 x 15
+    static const int THREAD_GROUP_SIZE = 256;
     static const int SHARED_MEMORY_SIZE = 512;// 49152
 
     FUnifCudaSharedData<FReal,ORDER> data;
@@ -52,7 +52,7 @@ public:
                  FCudaUnifComplex<FReal> *const __restrict__ FX) const
     {
         // Perform entrywise product manually
-        for (unsigned int j = 0 ; j < data.opt_rc; ++j){
+        for (unsigned int j = threadIdx.x ; j < data.opt_rc; j += blockDim.x){
             FCudaUnifComplex<FReal> FC_scale;
             //FComplex<FReal>(scale*FC[idx*opt_rc + j].getReal(), scale*FC[idx*opt_rc + j].getImag()),
             FC_scale.complex[0] = scale*data.FC[idx*data.opt_rc + j].complex[0];
@@ -379,7 +379,6 @@ public:
 
 template <class FReal, int ORDER>
 void FUnifCudaFillObject(void* cudaKernel, const FUnifCudaSharedData<FReal,ORDER>& hostData){
-    printf("FUnifCudaFillObject cudaKernel %p\n", cudaKernel);
     FUnifCudaSharedData<FReal,ORDER>* cudaData = &((FUnifCuda<FReal,ORDER>*)cudaKernel)->data;
     FCudaCheck( cudaMemcpy( cudaData, &hostData, sizeof(FUnifCudaSharedData<FReal,ORDER>),
                 cudaMemcpyHostToDevice ) );
