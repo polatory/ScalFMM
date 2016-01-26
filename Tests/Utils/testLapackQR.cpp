@@ -20,6 +20,7 @@
 
 #include <iostream>
 #include <stdlib.h>
+#include <stdexcept>
 
 #include "Utils/FGlobal.hpp"
 #include "Utils/FBlas.hpp"
