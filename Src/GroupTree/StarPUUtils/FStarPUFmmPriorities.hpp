@@ -132,6 +132,14 @@ public:
 #ifdef STARPU_USE_CPU
         // CPU follows the real prio
         {
+            bool insertInnerP2PLater = false;
+#ifdef STARPU_USE_CUDA
+           insertInnerP2PLater = capacities->supportP2P(FSTARPU_CUDA_IDX);
+#endif
+#ifdef STARPU_USE_OPENCL
+           insertInnerP2PLater = capacities->supportP2P(FSTARPU_OPENCL_IDX);
+#endif
+
             int cpuCountPrio = 0;
 
             if( !workOnlyOnLeaves && capacities->supportP2M(FSTARPU_CPU_IDX)){
@@ -152,7 +160,7 @@ public:
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionM2M;
                 heteroprio->buckets[insertionPositionM2M].valide_archs |= STARPU_CPU;
             }
-            if( capacities->supportP2P(FSTARPU_CPU_IDX)){
+            if( capacities->supportP2P(FSTARPU_CPU_IDX) && !insertInnerP2PLater){
                 FLOG( FLog::Controller << "\t CPU prio P2P "  << cpuCountPrio << " bucket " << insertionPositionP2P << "\n" );
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionP2P;
                 heteroprio->buckets[insertionPositionP2P].valide_archs |= STARPU_CPU;
@@ -180,7 +188,7 @@ public:
 
 #ifndef STARPU_USE_REDUX
             if( capacities->supportP2PExtern(FSTARPU_CPU_IDX)
-                    && insertionPositionP2P != insertionPositionP2PExtern){
+                    && insertionPositionP2P != insertionPositionP2PExtern  && !insertInnerP2PLater){
                 FLOG( FLog::Controller << "\t CPU prio P2P Extern "  << cpuCountPrio << " bucket " << insertionPositionP2PExtern << "\n" );
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionP2PExtern;
                 heteroprio->buckets[insertionPositionP2PExtern].valide_archs |= STARPU_CPU;
@@ -202,6 +210,19 @@ public:
                 FLOG( FLog::Controller << "\t CPU prio L2P "  << cpuCountPrio << " bucket " << insertionPositionL2P << "\n" );
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionL2P;
                 heteroprio->buckets[insertionPositionL2P].valide_archs |= STARPU_CPU;
+            }
+#ifndef STARPU_USE_REDUX
+            if( capacities->supportP2PExtern(FSTARPU_CPU_IDX)
+                    && insertionPositionP2P != insertionPositionP2PExtern  && insertInnerP2PLater){
+                FLOG( FLog::Controller << "\t CPU prio P2P Extern "  << cpuCountPrio << " bucket " << insertionPositionP2PExtern << "\n" );
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionP2PExtern;
+                heteroprio->buckets[insertionPositionP2PExtern].valide_archs |= STARPU_CPU;
+            }
+#endif
+            if( capacities->supportP2P(FSTARPU_CPU_IDX) && insertInnerP2PLater){
+                FLOG( FLog::Controller << "\t CPU prio P2P "  << cpuCountPrio << " bucket " << insertionPositionP2P << "\n" );
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionP2P;
+                heteroprio->buckets[insertionPositionP2P].valide_archs |= STARPU_CPU;
             }
 #ifdef STARPU_USE_REDUX
             if( capacities->supportP2PExtern(FSTARPU_CPU_IDX)){
@@ -286,6 +307,7 @@ public:
                 }
 #endif
             }
+
 
             if(capacities->supportP2PExtern(FSTARPU_CUDA_IDX)
                     && insertionPositionP2P != insertionPositionP2PExtern){
