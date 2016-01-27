@@ -66,7 +66,7 @@ public:
         if(!value){
             return defaultValue;
         }
-        return (strcmp(value,"TRUE") == 0) || (strcmp(value,"true") == 0 || (strcmp(value,"1") == 0);
+        return (strcmp(value,"TRUE") == 0) || (strcmp(value,"true") == 0) || (strcmp(value,"1") == 0);
     }
 
     /**
