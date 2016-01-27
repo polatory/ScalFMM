@@ -32,6 +32,7 @@ void TestPartitions(const PartitionerClass& partitioner,
     std::unique_ptr<int[]> partitions(new int[nbPartitions]);
     partitioner.getPartitions(nbPartitions, partitions.get());
 
+    if(coords!=nullptr)
     {
         char coordfilename[1024];
         sprintf(coordfilename, "%s/%s-coord-%d.csv", outputdir, config, idFile);
@@ -81,51 +82,84 @@ int main(int argc, char** argv){
          "Dim of the matrix."
     };
 
-    FHelpDescribeAndExit(argc, argv,"Test the bisection.",SvgOutParam,DimParam,FParameterDefinitions::OctreeHeight,
+    FHelpDescribeAndExit(argc, argv,"Test the bisection.",SvgOutParam,DimParam,
+                         FParameterDefinitions::InputFileOne,
+                         FParameterDefinitions::InputFileTwow,
                          FParameterDefinitions::NbParticles);
 
     const int nbParticles = (FParameters::getValue(argc, argv, FParameterDefinitions::NbParticles.options, 3000) & ~1);
     const char* outputdir = FParameters::getStr(argc, argv, SvgOutParam.options, "/tmp/");
 
-    typedef double FReal;
+    typedef float FReal;
 
-    /////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////
 
-    std::cout << "Create spheres\n";
+    const char* distanceFilename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFileOne.options, "../Addons/HMat/Data/unitCube1000.bin");
 
-    const FReal radius = 0.5;
-    const FReal distanceBetweenSpheres = 0.4;
-    const int nbPointsSphere = nbParticles/2;
+    ////////////////////////////////////////////////////////////////////
 
-    std::cout << "\tradius = " << radius << "\n";
-    std::cout << "\tdistanceBetweenSpheres = " << distanceBetweenSpheres << "\n";
-    std::cout << "\tnbPointsSphere = " << nbPointsSphere << "\n";
+    std::cout << "Load distances file " << distanceFilename << "\n";
 
-    std::unique_ptr<FReal[]> spherePoints(new FReal[nbParticles*4]);
-    unifRandonPointsOnSphere(nbPointsSphere, radius, spherePoints.get()) ;
-
-    for(int idxPoint = 0 ; idxPoint < nbPointsSphere ; ++idxPoint){
-        spherePoints[(idxPoint+nbPointsSphere)*4 + 0] = spherePoints[idxPoint*4 + 0] + radius*2 + distanceBetweenSpheres;
-        spherePoints[(idxPoint+nbPointsSphere)*4 + 1] = spherePoints[idxPoint*4 + 1] + radius*2 + distanceBetweenSpheres;
-        spherePoints[(idxPoint+nbPointsSphere)*4 + 2] = spherePoints[idxPoint*4 + 2] + radius*2 + distanceBetweenSpheres;
+    std::unique_ptr<FReal[]> particles(nullptr);
+    std::unique_ptr<FReal[]> distances;
+    int dim = 0;
+    {
+        int readNbRows = 0;
+        int readNbCols = 0;
+        FReal* distanceValuesPtr = nullptr;
+        FAssertLF(FMatrixIO::read(distanceFilename, &distanceValuesPtr, &readNbRows, &readNbCols));
+        FAssertLF(readNbRows == readNbCols);
+        dim = readNbRows;
+        distances.reset(distanceValuesPtr);
     }
 
-    /////////////////////////////////////////////////////////////////
 
-    std::cout << "Compute distance\n";
-
-    const int dim = nbParticles;
-    std::unique_ptr<FReal[]> distances(new FReal[nbParticles*nbParticles]);
-    for(int idxCol = 0 ; idxCol < nbParticles ; ++idxCol){
-        for(int idxRow = 0 ; idxRow < nbParticles ; ++idxRow){
-            const FReal diffx = spherePoints[idxCol*4 + 0] - spherePoints[idxRow*4 + 0];
-            const FReal diffy = spherePoints[idxCol*4 + 1] - spherePoints[idxRow*4 + 1];
-            const FReal diffz = spherePoints[idxCol*4 + 2] - spherePoints[idxRow*4 + 2];
-            distances[idxCol*nbParticles+idxRow] = FMath::Sqrt((diffx*diffx) + (diffy*diffy) + (diffz*diffz));
-        }
+    const FSize displaySize=10;
+    std::cout<<"\nD=["<<std::endl;
+    for ( FSize i=0; i<displaySize; ++i) {
+        for ( FSize j=0; j<displaySize; ++j)
+            std::cout << distances.get()[i*nbParticles+j] << " ";
+        std::cout<< std::endl;
     }
+    std::cout<<"]"<<std::endl;
 
-    /////////////////////////////////////////////////////////////////
+//    /////////////////////////////////////////////////////////////////
+//
+//    std::cout << "Create spheres\n";
+//
+//    const FReal radius = 0.5;
+//    const FReal distanceBetweenSpheres = 0.4;
+//    const int nbPointsSphere = nbParticles/2;
+//
+//    std::cout << "\tradius = " << radius << "\n";
+//    std::cout << "\tdistanceBetweenSpheres = " << distanceBetweenSpheres << "\n";
+//    std::cout << "\tnbPointsSphere = " << nbPointsSphere << "\n";
+//
+//    std::unique_ptr<FReal[]> particles(new FReal[nbParticles*4]);
+//    unifRandonPointsOnSphere(nbPointsSphere, radius, particles.get()) ;
+//
+//    for(int idxPoint = 0 ; idxPoint < nbPointsSphere ; ++idxPoint){
+//        particles[(idxPoint+nbPointsSphere)*4 + 0] = particles[idxPoint*4 + 0] + radius*2 + distanceBetweenSpheres;
+//        particles[(idxPoint+nbPointsSphere)*4 + 1] = particles[idxPoint*4 + 1] + radius*2 + distanceBetweenSpheres;
+//        particles[(idxPoint+nbPointsSphere)*4 + 2] = particles[idxPoint*4 + 2] + radius*2 + distanceBetweenSpheres;
+//    }
+//
+//    /////////////////////////////////////////////////////////////////
+//
+//    std::cout << "Compute distance\n";
+//
+//    const int dim = nbParticles;
+//    std::unique_ptr<FReal[]> distances(new FReal[nbParticles*nbParticles]);
+//    for(int idxCol = 0 ; idxCol < nbParticles ; ++idxCol){
+//        for(int idxRow = 0 ; idxRow < nbParticles ; ++idxRow){
+//            const FReal diffx = particles[idxCol*4 + 0] - particles[idxRow*4 + 0];
+//            const FReal diffy = particles[idxCol*4 + 1] - particles[idxRow*4 + 1];
+//            const FReal diffz = particles[idxCol*4 + 2] - particles[idxRow*4 + 2];
+//            distances[idxCol*nbParticles+idxRow] = FMath::Sqrt((diffx*diffx) + (diffy*diffy) + (diffz*diffz));
+//        }
+//    }
+//
+//    /////////////////////////////////////////////////////////////////
 
     FReal distMin = std::numeric_limits<FReal>::max();
     FReal distMax = std::numeric_limits<FReal>::min();
@@ -140,14 +174,14 @@ int main(int argc, char** argv){
     std::cout << "Dist max " << distMax << "\n";
 
     /////////////////////////////////////////////////////////////////
-    const FReal stepThresh = (distMax-distMin)/10;
-    for(FReal thresh = distMin ; thresh <= distMax ; thresh += stepThresh){
+    const FReal stepThresh = (distMax-distMin)/100;
+    for(FReal thresh = distMin ; thresh <= distMax/10 ; thresh += stepThresh){
         std::cout << "Test FConnexClustering for thresh " << thresh << "\n";
         FConnexClustering<FReal> partitioner(dim, distances.get(), thresh);
         std::cout << "\tGot " << partitioner.getNbPartitions() << " partitions\n";
         TestPartitions<FReal, FConnexClustering<FReal>>(partitioner,outputdir,
                                                         int((thresh-distMin)/stepThresh),
-                                                        dim, spherePoints.get(), "FConnexClustering");
+                                                        dim, particles.get(), "FConnexClustering");
     }
 
     return 0;
