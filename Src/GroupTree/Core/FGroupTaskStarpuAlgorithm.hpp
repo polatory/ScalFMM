@@ -9,6 +9,7 @@
 #include "../../Utils/FLog.hpp"
 #include "../../Utils/FTic.hpp"
 #include "../../Utils/FAssert.hpp"
+#include "../../Utils/FEnv.hpp"
 
 #include "FOutOfBlockInteraction.hpp"
 
@@ -109,6 +110,7 @@ protected:
 #endif
 
     const bool noCommuteAtLastLevel;
+    const bool noCommuteBetweenLevel;
 
 #ifdef STARPU_USE_CPU
     StarPUCpuWrapperClass cpuWrapper;
@@ -142,7 +144,8 @@ public:
     FGroupTaskStarPUAlgorithm(OctreeClass*const inTree, KernelClass* inKernels)
         : tree(inTree), originalCpuKernel(inKernels),
           cellHandles(nullptr),          
-          noCommuteAtLastLevel(getenv("SCALFMM_NO_COMMUTE_LAST_L2L") != NULL && getenv("SCALFMM_NO_COMMUTE_LAST_L2L")[0] != '1'?false:true),
+          noCommuteAtLastLevel(FEnv::GetBool("SCALFMM_NO_COMMUTE_LAST_L2L", true)),
+          noCommuteBetweenLevel(FEnv::GetBool("SCALFMM_NO_COMMUTE_M2L_L2L", false)),
       #ifdef STARPU_USE_CPU
           cpuWrapper(tree->getHeight()),
       #endif
@@ -217,6 +220,7 @@ public:
         FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max CUDA " << starpu_cuda_worker_get_count() << ")\n");
 #endif
         FLOG(FLog::Controller << "SCALFMM_NO_COMMUTE_LAST_L2L " << noCommuteAtLastLevel << "\n");
+        FLOG(FLog::Controller << "SCALFMM_NO_COMMUTE_M2L_L2L " << noCommuteBetweenLevel << "\n");
 
         buildTaskNames();
     }
@@ -1210,8 +1214,8 @@ protected:
                     task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].down;
 
                     // put the right codelet
-                    if(noCommuteAtLastLevel){
-                        task->cl = (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2 ? &l2l_cl_nocommute : &l2l_cl);
+                    if((noCommuteAtLastLevel && (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2)) || noCommuteBetweenLevel){
+                        task->cl = &l2l_cl_nocommute;
                     }
                     else{
                         task->cl = &l2l_cl;
@@ -1249,8 +1253,8 @@ protected:
                     task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].down;
 
                     // put the right codelet
-                    if(noCommuteAtLastLevel){
-                        task->cl = (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2 ? &l2l_cl_nocommute : &l2l_cl);
+                    if((noCommuteAtLastLevel && (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2)) || noCommuteBetweenLevel){
+                        task->cl = &l2l_cl_nocommute;
                     }
                     else{
                         task->cl = &l2l_cl;
