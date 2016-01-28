@@ -59,14 +59,14 @@ private:
     /** Recursive template for constructor */
     template<typename A = Real, typename... Args>
     void _fill_data(const A& arg, const Args... args) {
-        this->data()[Dim-sizeof...(args)-1] = arg;
+        this->data()[Dim-sizeof...(args)-1] = Real(arg);
         _fill_data(args...);
     }
 
     /** Recursive template end condition for constructor */
     template<typename A = Real>
     void _fill_data(const A& arg) {
-        this->data()[Dim-1] = arg;
+        this->data()[Dim-1] = Real(arg);
     }
 
 public:
