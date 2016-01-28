@@ -358,7 +358,6 @@ public:
     __host__ static FUnifCuda* InitKernelKernel(void*){
         FUnifCuda* cudaKernel = nullptr;
         FCudaCheck( cudaMalloc(&cudaKernel,sizeof(FUnifCuda)) );
-        printf("InitKernelKernel cudaKernel %p\n", cudaKernel);
         // Return pointer to application
         return cudaKernel;
     }
