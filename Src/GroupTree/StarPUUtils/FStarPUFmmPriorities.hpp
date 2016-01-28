@@ -303,7 +303,7 @@ public:
                 heteroprio->buckets[insertionPositionP2P].factor_base_arch_index = FSTARPU_CUDA_IDX;
 #ifdef STARPU_USE_CPU
                 if(capacities->supportP2P(FSTARPU_CPU_IDX)){
-                    heteroprio->buckets[insertionPositionP2P].slow_factors_per_index[FSTARPU_CPU_IDX] = 40.0f;
+                    heteroprio->buckets[insertionPositionP2P].slow_factors_per_index[FSTARPU_CPU_IDX] = 15.0f;
                 }
 #endif
             }
@@ -317,7 +317,7 @@ public:
                 heteroprio->buckets[insertionPositionP2PExtern].factor_base_arch_index = FSTARPU_CUDA_IDX;
 #ifdef STARPU_USE_CPU
                 if(capacities->supportP2PExtern(FSTARPU_CPU_IDX)){
-                    heteroprio->buckets[insertionPositionP2PExtern].slow_factors_per_index[FSTARPU_CPU_IDX] = 5.0f;
+                    heteroprio->buckets[insertionPositionP2PExtern].slow_factors_per_index[FSTARPU_CPU_IDX] = 4.0f;
                 }
 #endif
             }
@@ -328,12 +328,6 @@ public:
                     FLOG( FLog::Controller << "\t CUDA prio M2L "  << cudaCountPrio << " bucket " << prioM2LAtLevel << "\n" );
                     heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][cudaCountPrio++] = prioM2LAtLevel;
                     heteroprio->buckets[prioM2LAtLevel].valide_archs |= STARPU_CUDA;
-                    heteroprio->buckets[prioM2LAtLevel].factor_base_arch_index = FSTARPU_CUDA_IDX;
-#ifdef STARPU_USE_CPU
-                    if(capacities->supportM2L(FSTARPU_CUDA_IDX)){
-                        heteroprio->buckets[prioM2LAtLevel].slow_factors_per_index[FSTARPU_CPU_IDX] = 15.0f;
-                    }
-#endif
                 }
             }
 
@@ -343,12 +337,6 @@ public:
                     FLOG( FLog::Controller << "\t CUDA prio M2L ex "  << cudaCountPrio << " bucket " << prioM2LExternAtLevel << "\n" );
                     heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][cudaCountPrio++] = prioM2LExternAtLevel;
                     heteroprio->buckets[prioM2LExternAtLevel].valide_archs |= STARPU_CUDA;
-                    heteroprio->buckets[prioM2LExternAtLevel].factor_base_arch_index = FSTARPU_CUDA_IDX;
-#ifdef STARPU_USE_CPU
-                    if(capacities->supportM2L(FSTARPU_CUDA_IDX)){
-                        heteroprio->buckets[prioM2LExternAtLevel].slow_factors_per_index[FSTARPU_CPU_IDX] = 5.0f;
-                    }
-#endif
                 }
             }
 
