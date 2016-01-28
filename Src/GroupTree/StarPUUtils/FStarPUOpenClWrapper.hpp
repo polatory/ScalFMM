@@ -45,7 +45,7 @@ protected:
     const int treeHeight;
     OpenCLKernelClass* kernels[STARPU_MAXOPENCLDEVS];        //< The kernels
 
-    int getWorkerId() const {
+    static int GetWorkerId() {
         return FMath::Max(0, starpu_worker_get_id());
     }
 
@@ -91,7 +91,7 @@ public:
         FStarPUPtrInterface* worker = nullptr;
         int intervalSize;
         starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize);
-        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[getWorkerId()];
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[GetWorkerId()];
 
         kernel->bottomPassPerform(leafCellsPtr, leafCellsSize, leafCellsUpPtr, containersPtr, containersSize,
                                   intervalSize);
@@ -116,7 +116,7 @@ public:
         size_t otherCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]);
         cl_mem otherCellsUpPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[3]));
 
-        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[getWorkerId()];
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[GetWorkerId()];
         kernel->upwardPassPerform(currentCellsPtr, currentCellsSize, currentCellsUpPtr,
                                   otherCellsPtr, otherCellsSize, otherCellsUpPtr, idxLevel,
                                   intervalSize);
@@ -142,7 +142,7 @@ public:
         int intervalSize;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions, &intervalSize);
 
-        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[getWorkerId()];
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[GetWorkerId()];
         cl_int errcode_ret;
         cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
@@ -175,7 +175,7 @@ public:
         int intervalSize;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &intervalSize);
 
-        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[getWorkerId()];
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[GetWorkerId()];
         kernel->transferInPassPerform(currentCellsPtr, currentCellsSize, currentCellsUpPtr, currentCellsDownPtr, idxLevel,
                                       intervalSize);
     }
@@ -196,7 +196,7 @@ public:
         int mode = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions, &intervalSize, &mode);
 
-        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[getWorkerId()];
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[GetWorkerId()];
         cl_int errcode_ret;
         cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
@@ -231,7 +231,7 @@ public:
         size_t otherCellsSize = STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]);
         cl_mem otherCellsDownPtr = ((cl_mem)STARPU_VARIABLE_GET_DEV_HANDLE(buffers[3]));
 
-        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[getWorkerId()];
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[GetWorkerId()];
         kernel->downardPassPerform(currentCellsPtr, currentCellsSize, currentCellsDownPtr,
                                    otherCellsPtr, otherCellsSize, otherCellsDownPtr, idxLevel,
                                    intervalSize);
@@ -255,7 +255,7 @@ public:
         int intervalSize;
         starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions, &intervalSize);
 
-        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[getWorkerId()];
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[GetWorkerId()];
         cl_int errcode_ret;
         cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
@@ -282,7 +282,7 @@ public:
         FStarPUPtrInterface* worker = nullptr;
         int intervalSize;
         starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize);
-        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[getWorkerId()];
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[GetWorkerId()];
         kernel->directInPassPerform(containersPtr, containerSize, containersDownPtr,
                                     intervalSize);
     }
@@ -301,7 +301,7 @@ public:
         int intervalSize;
         starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions, &intervalSize);
 
-        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[getWorkerId()];
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[GetWorkerId()];
         cl_int errcode_ret;
         cl_mem outsideInteractionsCl = clCreateBuffer(kernel->getOpenCLContext(),
            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR | CL_MEM_HOST_NO_ACCESS,
@@ -333,7 +333,7 @@ public:
         FStarPUPtrInterface* worker = nullptr;
         int intervalSize;
         starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize);
-        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[getWorkerId()];
+        OpenCLKernelClass* kernel = worker->get<ThisClass>(FSTARPU_OPENCL_IDX)->kernels[GetWorkerId()];
         kernel->mergePassPerform(leafCellsPtr, leafCellsSize, leafCellsDownPtr,
                                  containersPtr, containersSize, containersDownPtr,
                                  intervalSize);
