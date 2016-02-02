@@ -30,21 +30,26 @@ int main(int argc, char** argv){
 
     FHelpDescribeAndExit(argc, argv,"Test the bisection.",SvgOutParam,DimParam,FParameterDefinitions::OctreeHeight);
 
-    const char* filename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFile.options, "../Addons/HMat/Data/unitCube1000.bin");
     const int height = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 4);
     const char* outputdir = FParameters::getStr(argc, argv, SvgOutParam.options, "/tmp/");
+
+    //const char* filename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFile.options, "../Addons/HMat/Data/unitCube1000.bin");
+    //typedef double FReal;
+
+    const char* filename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFileOne.options, "../Addons/HMat/Data/first_reads_1k-fmr-dissw.bin");
+    typedef float FReal;
 
     int readNbRows = 0;
     int readNbCols = 0;
     // Read distances
-    double* distances = nullptr;
+    FReal* distances = nullptr;
     FAssertLF(FMatrixIO::read(filename, &distances, &readNbRows, &readNbCols));
     FAssertLF(readNbRows == readNbCols);
     const int dim = readNbRows;
 
-    FGraphThreshold<double> partitioner(dim, distances, FGraphThreshold<double>::GetDefaultRadius(dim, distances));
+    FGraphThreshold<FReal> partitioner(dim, distances, FGraphThreshold<FReal>::GetDefaultRadius(dim, distances));
 
-    FClusterTree<double> tclusters;
+    FClusterTree<FReal> tclusters;
     partitioner.fillClusterTree(&tclusters);
     tclusters.checkData();
 
@@ -56,7 +61,7 @@ int main(int argc, char** argv){
     tclusters.getPartitions(height, nbPartitions, partitions.get());
 
     {
-        typedef double FReal;
+        //typedef double FReal;
         typedef FDenseBlock<FReal> LeafClass;
         typedef FDenseBlock<FReal> CellClass;
         typedef FStaticDiagonalBisection<FReal, LeafClass, CellClass> GridClass;

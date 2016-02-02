@@ -38,7 +38,8 @@ int main(int argc, char** argv){
     FTic time; 
     time.tic();
 
-    const char* filename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFile.options, "../Addons/HMat/Data/unitCube1000_ONE_OVER_R.bin");
+    //const char* filename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFile.options, "../Addons/HMat/Data/unitCube1000_ONE_OVER_R.bin");
+    const char* filename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFile.options, "../Addons/HMat/Data/unitSphere1000_GAUSS100.bin");
     const int height = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 4);
 
 
@@ -67,7 +68,7 @@ int main(int argc, char** argv){
     }
 
     {
-        std::cout << "Test Dense:\n";
+        std::cout << "Test Dense leaves + Low rank cells:\n";
         typedef FDenseBlock<FReal> LeafClass;
         //typedef FDenseBlock<FReal> CellClass;
         typedef FSVDBlock<FReal,7> CellClass;  
@@ -98,7 +99,7 @@ int main(int argc, char** argv){
 
     {
 
-        std::cout << "Test Dense with partitions:\n";
+        std::cout << "Test Dense leaves + Low rank cells, with partitions:\n";
 
         typedef FDenseBlock<FReal> LeafClass;
         //typedef FDenseBlock<FReal> CellClass;
