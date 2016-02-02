@@ -110,7 +110,7 @@ protected:
 
 public:
     FSVDBlock()
-        : block(nullptr), U(nullptr), S(nullptr), VT(nullptr), nbRows(0), nbCols(0),  level(0), rank(0), accuracy(FMath::pow(10.0,static_cast<FReal>(-ORDER))) {
+        : block(nullptr), U(nullptr), S(nullptr), VT(nullptr), nbRows(0), nbCols(0),  level(0), rank(0), accuracy(FMath::pow(FReal(10.0),static_cast<FReal>(-ORDER))) {
     }
 
     // ctor

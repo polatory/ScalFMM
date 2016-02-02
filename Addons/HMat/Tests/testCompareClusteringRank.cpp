@@ -36,11 +36,11 @@
 #include <memory>
 
 template <class FReal, class MatrixClass>
-void CheckRank(const FClusterTree<double>& ctree, MatrixClass& matrix,
+void CheckRank(const FClusterTree<FReal>& ctree, MatrixClass& matrix,
                const char outputdir[], const char configName[], const int height){
 
     typedef FDenseBlock<FReal> LeafClass;
-    typedef FSVDBlock<FReal,7> CellClass;
+    typedef FACABlock<FReal,7> CellClass;
     typedef FStaticDiagonalBisection<FReal, LeafClass, CellClass> GridClass;
 
     const int dim = matrix.getDim();
@@ -94,13 +94,20 @@ int main(int argc, char** argv){
     ////////////////////////////////////////////////////////////////////
 
     const char* outputdir = FParameters::getStr(argc, argv, SvgOutParam.options, "/tmp/");
-    const char* distanceFilename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFileOne.options, "../Addons/HMat/Data/unitCube1000.bin");
-    const char* matrixFilename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFileTwow.options, "../Addons/HMat/Data/unitCube1000_ONE_OVER_R.bin");
+    //const char* distanceFilename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFileOne.options, "../Addons/HMat/Data/unitCube1000.bin");
+    //const char* matrixFilename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFileTwow.options, "../Addons/HMat/Data/unitCube1000_ONE_OVER_R.bin");
+    const char* distanceFilename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFileOne.options, "../Addons/HMat/Data/unitSphere1000.bin");
+    const char* matrixFilename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFileTwow.options, "../Addons/HMat/Data/unitSphere1000_GAUSS100.bin");
+    typedef double FReal;
+
+    //const char* distanceFilename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFileOne.options, "../Addons/HMat/Data/first_reads_1k-fmr-dissw.bin");
+    //const char* matrixFilename = FParameters::getStr(argc, argv, FParameterDefinitions::InputFileTwow.options, "../Addons/HMat/Data/first_reads_1k-fmr-covar.bin");
+    //typedef float FReal;
+
     const int height = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 4);
 
     std::cout << "Check until height = " << height << "\n";
 
-    typedef double FReal;
     typedef FMatDensePerm<FReal> MatrixClass;
 
     ////////////////////////////////////////////////////////////////////
@@ -126,6 +133,17 @@ int main(int argc, char** argv){
     MatrixClass matrix(matrixFilename);
     const int matrixDim = matrix.getDim();
 
+    // Display covariance matrix
+    const FSize displaySize = 10;
+        std::cout<<"\nC=["<<std::endl;
+        for ( int i=0; i<displaySize; ++i) {
+            for ( int j=0; j<displaySize; ++j)
+                std::cout << matrix.getVal(i,j) << " ";
+            std::cout<< std::endl;
+        }
+        std::cout<<"]"<<std::endl;
+
+
     FAssertLF(distanceValuesDim == matrixDim);
     std::cout << "Matrices dim = " << matrixDim << "\n";
 
@@ -135,7 +153,7 @@ int main(int argc, char** argv){
         std::cout << "Test FMaxDistCut\n";
         FMaxDistCut<FReal> partitioner(matrixDim, distanceValues.get());
 
-        FClusterTree<double> tclusters;
+        FClusterTree<FReal> tclusters;
         partitioner.fillClusterTree(&tclusters);
         tclusters.checkData();
         CheckRank<FReal, MatrixClass>(tclusters, matrix, outputdir, "FMaxDistCut", height);
@@ -145,7 +163,7 @@ int main(int argc, char** argv){
         std::cout << "Test FGraphThreshold\n";
         FGraphThreshold<FReal> partitioner(matrixDim, distanceValues.get(), FGraphThreshold<FReal>::GetDefaultRadius(matrixDim, distanceValues.get()));
 
-        FClusterTree<double> tclusters;
+        FClusterTree<FReal> tclusters;
         partitioner.fillClusterTree(&tclusters);
         tclusters.checkData();
         CheckRank<FReal, MatrixClass>(tclusters, matrix, outputdir, "FGraphThreshold", height);
@@ -153,7 +171,7 @@ int main(int argc, char** argv){
     ////////////////////////////////////////////////////////////////////
     {
         std::cout << "Test FCCLTreeCluster\n";
-        FCCLTreeCluster<FReal> partitioner(matrixDim, distanceValues.get(), CCL::CCL_TM_MAXIMUM);
+        FCCLTreeCluster<double> partitioner(matrixDim, distanceValues.get(), CCL::CCL_TM_MAXIMUM);
 
         FClusterTree<double> tclusters;
         partitioner.fillClusterTree(&tclusters);
