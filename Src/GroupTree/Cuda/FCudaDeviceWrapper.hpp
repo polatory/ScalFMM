@@ -27,7 +27,7 @@ void FCuda__transferInoutPassCallbackMpi(
     unsigned char* currentCellsPtr, std::size_t currentCellsSize, unsigned char* currentCellsDownPtr,
     unsigned char* externalCellsPtr, std::size_t externalCellsSize, unsigned char* externalCellsUpPtr,
     int idxLevel, const OutOfBlockInteraction* outsideInteractions,
-    int nbOutsideInteractions, CudaKernelClass* kernel, cudaStream_t 	currentStream,
+    int nbOutsideInteractions, const int* safeInteractions, int nbSafeInteractions, CudaKernelClass* kernel, cudaStream_t 	currentStream,
                                         const dim3 inGridSize, const dim3 inBlocksSize);
 #endif
 template <class SymboleCellClass, class PoleCellClass, class LocalCellClass,

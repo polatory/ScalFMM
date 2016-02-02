@@ -130,8 +130,13 @@ public:
         const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
         int intervalSize = 0;
         starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions, &intervalSize);
+        const int nbInteractions = int(outsideInteractions->size());
 
         CudaKernelClass* kernel = worker->get<ThisClass>(FSTARPU_CUDA_IDX)->kernels[GetWorkerId()];
+
+        std::unique_ptr<int[]> safeInteractions(new int[nbInteractions+1]);
+        const int nbSafeInteractions = GetClusterOfInteractionsOutside(safeInteractions.get(), outsideInteractions->data(), nbInteractions);
+
 
         FCuda__transferInoutPassCallbackMpi< SymboleCellClass, PoleCellClass, LocalCellClass,
                 CudaCellGroupClass, CudaParticleGroupClass, CudaParticleContainerClass, CudaKernelClass>(
@@ -141,7 +146,9 @@ public:
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
                 STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
                 (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]),
-                idxLevel, outsideInteractions->data(), outsideInteractions->size(), kernel,
+                idxLevel, outsideInteractions->data(), nbInteractions,
+                safeInteractions.get(), nbSafeInteractions,
+                kernel,
                 starpu_cuda_get_local_stream(),
                 FCuda__GetGridSize(kernel,intervalSize),FCuda__GetBlockSize(kernel));
     }
