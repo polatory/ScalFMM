@@ -43,7 +43,7 @@
 #include <memory>
 
 
-//#define RANDOM_PARTICLES
+#define RANDOM_PARTICLES
 
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
