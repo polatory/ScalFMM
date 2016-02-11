@@ -28,7 +28,7 @@
 
 #if defined(STARPU_USE_MPI) && defined(SCALFMM_USE_MPI)
 //extern "C"{
-#include <starpu_mpi.h>
+//#include <starpu_mpi.h>
 //}
 #endif
 

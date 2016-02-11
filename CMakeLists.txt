@@ -514,7 +514,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
     message(STATUS "         STARPU_LIBRARIES          = ${STARPU_LIBRARIES}")
     if (STARPU_INCLUDE_DIRS)
       message(STATUS "         STARPU_INCLUDES           = ${STARPU_INCLUDE_DIRS}")
-      set(SCALFMM_INCLUDES  "${SCALFMM_INCLUDES}; ${STARPU_INCLUDE_DIRS}")
+      set(SCALFMM_INCLUDES  "${SCALFMM_INCLUDES}; ${STARPU_INCLUDE_DIRS}; /home/stanisic/Work/simgrid/build/include")
     endif()
 
     # TODO: replace this by a component of find starpu
