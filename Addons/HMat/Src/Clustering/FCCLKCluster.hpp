@@ -23,7 +23,8 @@ extern "C" {
 namespace CCL {
     enum ClusterCenterMethod {
         CCL_CCM_ARITHMETIC_MEAN,
-        CCL_CCM_MEDIAN
+        CCL_CCM_MEDIAN,
+        CCL_CCM_DUMMY
     };
 
     inline char ClusterCenterMethodToChar(const ClusterCenterMethod method){
@@ -45,7 +46,8 @@ namespace CCL {
         CCL_DIST_MEDIAN,
         CCL_DIST_SHORTEST,
         CCL_DIST_LONGEST,
-        CCL_DIST_AVG
+        CCL_DIST_AVG,
+        CCL_DIST_DUMMY
     };
 
     inline char DistanceToChar(const Distance method){
@@ -67,7 +69,7 @@ namespace CCL {
             break;
         default:
             break;
-        }
+            }
         return '?';
     }
 }
@@ -77,40 +79,82 @@ template <class FReal>
 class FCCLKCluster {
 protected:
     const int nbPartitions;
-    const int dim;
+    const int nbElements;
+    const int nbDim;
+    const int nbPass; //< Number of call to EM algorithm
     CCL::ClusterCenterMethod method;
+    CCL::Distance distance;
     int* partitions;
 
 public:
-    FCCLKCluster(const int inNbPartitions, const int inDim, const FReal inDistMat[], const CCL::ClusterCenterMethod inMethod)
-        : nbPartitions(inNbPartitions), dim(inDim), method(inMethod), partitions(nullptr) {
+    FCCLKCluster(const int inNbPartitions, const int inNbElements, const FReal inDistMat[], const int inNbPass = 0)
+        : nbPartitions(inNbPartitions), nbElements(inNbElements), nbDim(0), nbPass(inNbPass), method(CCL::CCL_CCM_DUMMY), distance(CCL::CCL_DIST_DUMMY), partitions(nullptr) {
 
-        double** distMatPtrs = new double*[dim];
+        double** distMatPtrs = new double*[nbElements];
 
         // Build mask, everyone is here
-        for(int idxRow = 0 ; idxRow < dim ; ++idxRow){
+        for(int idxRow = 0 ; idxRow < nbElements ; ++idxRow){
             distMatPtrs[idxRow] = new double[idxRow+1];
             for(int idxCol = 0 ; idxCol <= idxRow ; ++idxCol){
-                distMatPtrs[idxRow][idxCol] = double(inDistMat[idxCol*dim + idxRow]);
+                distMatPtrs[idxRow][idxCol] = double(inDistMat[idxCol*nbElements + idxRow]);
             }
         }
 
         // allocate partitions
-        partitions = new int[dim];
+        partitions = new int[nbElements];
 
-        // Number of call to EM algorithm
-        const int nbPass = 1;
         // Errors
-        double* error = new double[dim];
+        double* error = new double[nbElements];
         // Nb of times the optimal clustering was found
-        int* ifound = new int[dim];
+        int* ifound = new int[nbElements];
 
-        kmedoids (nbPartitions, dim, distMatPtrs, nbPass, partitions, error, ifound);
+        kmedoids (nbPartitions, nbElements, distMatPtrs, nbPass, partitions, error, ifound);
 
-        for(int idxRow = 0 ; idxRow < dim ; ++idxRow){
+        for(int idxRow = 0 ; idxRow < nbElements ; ++idxRow){
             delete[] distMatPtrs[idxRow];
         }
         delete[] distMatPtrs;
+
+    }
+
+    FCCLKCluster(const int inNbPartitions, const int inNbElements, const int inNbDim, const FReal inDataMat[], const CCL::ClusterCenterMethod inMethod, const CCL::Distance inDistance, const int inNbPass = 0)
+        : nbPartitions(inNbPartitions), nbElements(inNbElements), nbDim(inNbDim), nbPass(inNbPass), method(inMethod), distance(inDistance), partitions(nullptr) {
+
+        double** dataMatPtrs = new double*[nbElements];
+        int** mask = new int*[nbElements];
+
+        // Build mask, everyone is here
+        for(int idxRow = 0 ; idxRow < nbElements ; ++idxRow){
+            mask[idxRow]      = new int[idxRow+1];
+            dataMatPtrs[idxRow] = new double[nbDim];
+            for(int idxCol = 0 ; idxCol < nbDim ; ++idxCol){
+                mask[idxRow][idxCol] = 1;
+                dataMatPtrs[idxRow][idxCol] = double(inDataMat[idxCol*nbElements + idxRow]);
+            }
+        }
+
+        // allocate partitions
+        partitions = new int[nbElements];
+
+        // Errors
+        double* error = new double[nbElements];
+        // Nb of times the optimal clustering was found
+        int* ifound = new int[nbElements];
+
+        // Weights
+        double* weights = new double[nbElements];
+        for(int idxRow = 0 ; idxRow < nbElements ; ++idxRow)
+            weights[idxRow]=double(1.0);
+
+        kcluster(nbPartitions, nbElements, nbDim, dataMatPtrs, mask, weights, 0, nbPass, ClusterCenterMethodToChar(method), DistanceToChar(distance), partitions, error, ifound);
+
+        for(int idxRow = 0 ; idxRow < nbElements ; ++idxRow){
+            delete[] mask[idxRow];
+            delete[] dataMatPtrs[idxRow];
+        }
+        delete[] mask;
+        delete[] dataMatPtrs;
+
     }
 
     ~FCCLKCluster(){
@@ -123,18 +167,18 @@ public:
         FAssertLF(inNbPartitions == nbPartitions);
 
         // Copy partitions
-        int* sortedPartitions = new int[dim];
-        for(int idx = 0 ; idx < dim ; ++idx){
+        int* sortedPartitions = new int[nbElements];
+        for(int idx = 0 ; idx < nbElements ; ++idx){
             sortedPartitions[idx]=partitions[idx];
         }
         // sort partitions
-        std::sort(sortedPartitions,sortedPartitions+dim);
+        std::sort(sortedPartitions,sortedPartitions+nbElements);
 
         // Map partitions to 0..nbPartitions
         int counterPartition=0;
         int* mapPartitions = new int[inNbPartitions];
         int currentPartition=sortedPartitions[0];
-        for(int idx = 0 ; idx < dim ; ++idx){
+        for(int idx = 0 ; idx < nbElements ; ++idx){
             mapPartitions[counterPartition]=currentPartition;
             if(sortedPartitions[idx+1]!=currentPartition){
                 currentPartition=sortedPartitions[idx+1];
@@ -149,7 +193,7 @@ public:
 
             inNbIdxInPartitions[idxPartition]=0;
 
-            for(int idx = 0 ; idx < dim ; ++idx){
+            for(int idx = 0 ; idx < nbElements ; ++idx){
 
                 if(partitions[idx]==mapPartitions[idxPartition])
                     inNbIdxInPartitions[idxPartition]+=1;
@@ -157,7 +201,7 @@ public:
             }
             totalGiven +=inNbIdxInPartitions[idxPartition];
         }
-        FAssertLF(totalGiven == dim);
+        FAssertLF(totalGiven == nbElements);
 
         return 0; // no empty partition in kclusters/kmedoids algorithms
     }
