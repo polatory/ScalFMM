@@ -51,11 +51,16 @@ if(SCALFMM_ADDON_HMAT)
         # Install lib
         install( TARGETS scalfmmhmat ARCHIVE DESTINATION lib )
 
-        # Install header
-        SET(my_include_dirs "Src")
+        # Install headers
+        SET(my_include_dirs "Src/Blocks" "Src/Clustering" "Src/Containers" "Src/Utils" "Src/Viewers" "CClusteringLibrary")
 
-        file( GLOB hpp_in_dir Src/*.hpp Src/*.hpp)
-        INSTALL( FILES ${hpp_in_dir} DESTINATION include/ScalFmm/HMat )
+        FOREACH(my_dir ${my_include_dirs})  
+            file(GLOB               
+                hpp_in_dir
+                ${my_dir}/*.hpp ${my_dir}/*.h
+            )
+            INSTALL( FILES ${hpp_in_dir} DESTINATION include/ScalFmm/HMat/${my_dir} )
+        ENDFOREACH()
 
         # Add C Clustering Library
         file( GLOB_RECURSE ccl_lib_files CClusteringLibrary/*.c )
@@ -64,6 +69,7 @@ if(SCALFMM_ADDON_HMAT)
         target_link_libraries( cclusteringlib scalfmm)
         install( TARGETS cclusteringlib ARCHIVE DESTINATION lib )
 
+        # Tests
         file( GLOB_RECURSE source_tests_files Tests/*.cpp )
         INCLUDE_DIRECTORIES( ${SCALFMM_BINARY_DIR}/Src )
 

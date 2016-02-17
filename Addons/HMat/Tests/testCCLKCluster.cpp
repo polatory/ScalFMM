@@ -123,7 +123,7 @@ int main(int argc, char** argv){
                 GridClass bissection(nbElements, partitions.get(), nbPartitions);
 
                 char svgName[1024];
-                sprintf(svgName, "%s/%s-%s-P%d.svg", outputdir, distributionName.c_str(), "CCL_KMEDOIDS_DIST_MEAN", nbPartitions);
+                sprintf(svgName, "%s/%s-%s-P%d.svg", outputdir, distributionName.c_str(), "CCL_KMEDOIDS", nbPartitions);
                 FSvgRect output(svgName, nbElements);
                 std::cout << "\tSave svg to " << svgName << "\n";
 
