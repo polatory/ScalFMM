@@ -23,6 +23,7 @@ class FStarPUFmmPrioritiesV2{
     int insertionPositionM2MSend;
 
     int insertionPositionM2L;
+    int insertionPositionM2LExtern;
     int insertionPositionL2L;
     int insertionPositionL2P;
     int insertionPositionP2P;
@@ -80,6 +81,7 @@ public:
             insertionPositionL2L     = incPrio++;
             FLOG( FLog::Controller << "\t L2L "  << insertionPositionL2L << "\n" );
 
+            insertionPositionM2LExtern     = incPrio++;
             insertionPositionM2L     = incPrio++;
 
             insertionPositionL2P     = incPrio++;
@@ -95,6 +97,7 @@ public:
             insertionPositionM2MSend = -1;
             insertionPositionM2M     = -1;
 
+            insertionPositionM2LExtern     = -1;
             insertionPositionM2L     = -1;
 
             insertionPositionL2L     = -1;
@@ -154,6 +157,11 @@ public:
             }
 
             if(!workOnlyOnLeaves &&  capacities->supportM2L(FSTARPU_CPU_IDX)){
+                FLOG( FLog::Controller << "\t CPU prio M2L "  << cpuCountPrio << " bucket " << insertionPositionM2LExtern << "\n" );
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionM2LExtern;
+                heteroprio->buckets[insertionPositionM2LExtern].valide_archs |= STARPU_CPU;
+            }
+            if(!workOnlyOnLeaves &&  capacities->supportM2L(FSTARPU_CPU_IDX)){
                 FLOG( FLog::Controller << "\t CPU prio M2L "  << cpuCountPrio << " bucket " << insertionPositionM2L << "\n" );
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CPU_IDX][cpuCountPrio++] = insertionPositionM2L;
                 heteroprio->buckets[insertionPositionM2L].valide_archs |= STARPU_CPU;
@@ -195,17 +203,17 @@ public:
                 }
 #endif
             }
-            if(capacities->supportP2PExtern(FSTARPU_CUDA_IDX)){
-                FLOG( FLog::Controller << "\t CUDA prio P2P "  << cudaCountPrio << " bucket " << insertionPositionP2PExtern << "\n" );
-                heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][cudaCountPrio++] = insertionPositionP2PExtern;
-                heteroprio->buckets[insertionPositionP2PExtern].valide_archs |= STARPU_CUDA;
-            }
 
             if(!workOnlyOnLeaves && capacities->supportM2L(FSTARPU_CUDA_IDX)){
                 FLOG( FLog::Controller << "\t CUDA prio M2L "  << cudaCountPrio << " bucket " << insertionPositionM2L << "\n" );
                 heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][cudaCountPrio++] = insertionPositionM2L;
                 heteroprio->buckets[insertionPositionM2L].valide_archs |= STARPU_CUDA;
                 FAssertLF(capacities->supportM2LExtern(FSTARPU_CUDA_IDX));
+            }
+            if(capacities->supportP2PExtern(FSTARPU_CUDA_IDX)){
+                FLOG( FLog::Controller << "\t CUDA prio P2P "  << cudaCountPrio << " bucket " << insertionPositionP2PExtern << "\n" );
+                heteroprio->prio_mapping_per_arch_index[FSTARPU_CUDA_IDX][cudaCountPrio++] = insertionPositionP2PExtern;
+                heteroprio->buckets[insertionPositionP2PExtern].valide_archs |= STARPU_CUDA;
             }
 
             if( !workOnlyOnLeaves && capacities->supportP2M(FSTARPU_CUDA_IDX)){
@@ -262,7 +270,7 @@ public:
         return insertionPositionM2L;
     }
     int getInsertionPosM2LExtern(const int /*inLevel*/) const {
-        return insertionPositionM2L;
+        return insertionPositionM2LExtern;
     }
     int getInsertionPosL2L(const int inLevel) const {
         return insertionPositionL2L;
