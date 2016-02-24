@@ -35,12 +35,12 @@ protected:
     MortonIndex*    cellIndexes;
     //< Pointer to the cells inside the block memory
     SymboleCellClass*      blockCells;
-
+#ifndef SCALFMM_SIMGRID_NODATA
     //< The multipole data
     PoleCellClass* cellMultipoles;
     //< The local data
     LocalCellClass* cellLocals;
-
+#endif
     //< To kown if the object has to delete the memory
     bool deleteBuffer;
 
@@ -50,7 +50,10 @@ public:
     FGroupOfCells()
         : allocatedMemoryInByte(0), memoryBuffer(nullptr),
           blockHeader(nullptr), cellIndexes(nullptr), blockCells(nullptr),
-          cellMultipoles(nullptr), cellLocals(nullptr), deleteBuffer(false){
+#ifndef SCALFMM_SIMGRID_NODATA
+          cellMultipoles(nullptr), cellLocals(nullptr),
+#endif
+          deleteBuffer(false){
     }
 
     void reset(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte,
@@ -58,12 +61,16 @@ public:
         if(deleteBuffer){
             for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->numberOfCellsInBlock ; ++idxCellPtr){
                 (&blockCells[idxCellPtr])->~SymboleCellClass();
+#ifndef SCALFMM_SIMGRID_NODATA
                 (&cellMultipoles[idxCellPtr])->~PoleCellClass();
                 (&cellLocals[idxCellPtr])->~LocalCellClass();
+#endif
             }
             FAlignedMemory::DeallocBytes(memoryBuffer);
+#ifndef SCALFMM_SIMGRID_NODATA
             FAlignedMemory::DeallocBytes(cellMultipoles);
             FAlignedMemory::DeallocBytes(cellLocals);
+#endif
         }
         // Move the pointers to the correct position
         allocatedMemoryInByte = (inAllocatedMemoryInByte);
@@ -75,9 +82,10 @@ public:
         blockCells          = reinterpret_cast<SymboleCellClass*>(inBuffer);
         inBuffer += (sizeof(SymboleCellClass)*blockHeader->numberOfCellsInBlock);
         FAssertLF(size_t(inBuffer-memoryBuffer) == allocatedMemoryInByte);
-
+#ifndef SCALFMM_SIMGRID_NODATA
         cellMultipoles = (PoleCellClass*)inCellMultipoles;
         cellLocals     = (LocalCellClass*)inCellLocals;
+#endif
         deleteBuffer = (false);
     }
 
@@ -90,7 +98,10 @@ public:
                   unsigned char* inCellMultipoles, unsigned char* inCellLocals)
         : allocatedMemoryInByte(inAllocatedMemoryInByte), memoryBuffer(inBuffer),
           blockHeader(nullptr), cellIndexes(nullptr), blockCells(nullptr),
-          cellMultipoles(nullptr), cellLocals(nullptr), deleteBuffer(false){
+#ifndef SCALFMM_SIMGRID_NODATA
+          cellMultipoles(nullptr), cellLocals(nullptr),
+#endif
+          deleteBuffer(false){
         // Move the pointers to the correct position
         blockHeader         = reinterpret_cast<BlockHeader*>(inBuffer);
         inBuffer += sizeof(BlockHeader);
@@ -99,9 +110,10 @@ public:
         blockCells          = reinterpret_cast<SymboleCellClass*>(inBuffer);
         inBuffer += (sizeof(SymboleCellClass)*blockHeader->numberOfCellsInBlock);
         FAssertLF(size_t(inBuffer-memoryBuffer) == allocatedMemoryInByte);
-
+#ifndef SCALFMM_SIMGRID_NODATA
         cellMultipoles = (PoleCellClass*)inCellMultipoles;
         cellLocals     = (LocalCellClass*)inCellLocals;
+#endif
     }
 
     /**
@@ -112,7 +124,10 @@ public:
  */
     FGroupOfCells(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfCells)
         : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), cellIndexes(nullptr), blockCells(nullptr),
-          cellMultipoles(nullptr), cellLocals(nullptr), deleteBuffer(true){
+#ifndef SCALFMM_SIMGRID_NODATA
+          cellMultipoles(nullptr), cellLocals(nullptr),
+#endif
+          deleteBuffer(true){
         FAssertLF((inEndingIndex-inStartingIndex) >= MortonIndex(inNumberOfCells));
         // Total number of bytes in the block
         const size_t memoryToAlloc = sizeof(BlockHeader) + (inNumberOfCells*sizeof(MortonIndex))
@@ -139,12 +154,15 @@ public:
         blockHeader->startingIndex = inStartingIndex;
         blockHeader->endingIndex   = inEndingIndex;
         blockHeader->numberOfCellsInBlock  = inNumberOfCells;
-
+#ifndef SCALFMM_SIMGRID_NODATA
         cellMultipoles = (PoleCellClass*)FAlignedMemory::AllocateBytes<32>(inNumberOfCells*sizeof(PoleCellClass));
         cellLocals     = (LocalCellClass*)FAlignedMemory::AllocateBytes<32>(inNumberOfCells*sizeof(LocalCellClass));
+#endif
         for(int idxCell = 0 ; idxCell < inNumberOfCells ; ++idxCell){
+#ifndef SCALFMM_SIMGRID_NODATA
             new (&cellMultipoles[idxCell]) PoleCellClass();
             new (&cellLocals[idxCell]) LocalCellClass();
+#endif
             cellIndexes[idxCell] = -1;
         }
     }
@@ -154,12 +172,16 @@ public:
         if(deleteBuffer){
             for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->numberOfCellsInBlock ; ++idxCellPtr){
                 (&blockCells[idxCellPtr])->~SymboleCellClass();
+#ifndef SCALFMM_SIMGRID_NODATA
                 (&cellMultipoles[idxCellPtr])->~PoleCellClass();
                 (&cellLocals[idxCellPtr])->~LocalCellClass();
+#endif
             }
             FAlignedMemory::DeallocBytes(memoryBuffer);
+#ifndef SCALFMM_SIMGRID_NODATA
             FAlignedMemory::DeallocBytes(cellMultipoles);
             FAlignedMemory::DeallocBytes(cellLocals);
+#endif
         }
     }
 
@@ -175,12 +197,20 @@ public:
 
     /** Give access to the buffer to send the data */
     const PoleCellClass* getRawMultipoleBuffer() const{
+#ifndef SCALFMM_SIMGRID_NODATA
         return cellMultipoles;
+#else
+        return nullptr;
+#endif
     }
 
     /** Give access to the buffer to send the data */
     PoleCellClass* getRawMultipoleBuffer() {
+#ifndef SCALFMM_SIMGRID_NODATA
         return cellMultipoles;
+#else
+        return nullptr;
+#endif
     }
 
     /** The the size of the allocated buffer */
@@ -287,23 +317,45 @@ public:
 
     /** Return the address of the cell if it exists (or NULL) */
     CompositeCellClass getCompleteCell(const int cellPos){
+#ifndef SCALFMM_SIMGRID_NODATA
         FAssertLF(cellMultipoles && cellLocals);
+#endif
         FAssertLF(cellPos < blockHeader->numberOfCellsInBlock);
-        return CompositeCellClass(&blockCells[cellPos], &cellMultipoles[cellPos], &cellLocals[cellPos]);
+        return CompositeCellClass(&blockCells[cellPos],
+#ifndef SCALFMM_SIMGRID_NODATA
+                                  &cellMultipoles[cellPos],&cellLocals[cellPos]);
+#else
+                                  nullptr,nullptr);
+#endif
     }
 
     /** Return the address of the cell if it exists (or NULL) */
     CompositeCellClass getUpCell(const int cellPos){
+#ifndef SCALFMM_SIMGRID_NODATA
         FAssertLF(cellMultipoles);
+#endif
         FAssertLF(cellPos < blockHeader->numberOfCellsInBlock);
-        return CompositeCellClass(&blockCells[cellPos], &cellMultipoles[cellPos], nullptr);
+        return CompositeCellClass(&blockCells[cellPos],
+#ifndef SCALFMM_SIMGRID_NODATA
+                                  &cellMultipoles[cellPos],
+#else
+                                 nullptr,
+#endif
+                                  nullptr);
     }
 
     /** Return the address of the cell if it exists (or NULL) */
     CompositeCellClass getDownCell(const int cellPos){
+#ifndef SCALFMM_SIMGRID_NODATA
         FAssertLF(cellLocals);
+#endif
         FAssertLF(cellPos < blockHeader->numberOfCellsInBlock);
-        return CompositeCellClass(&blockCells[cellPos], nullptr, &cellLocals[cellPos]);
+        return CompositeCellClass(&blockCells[cellPos], nullptr,
+#ifndef SCALFMM_SIMGRID_NODATA
+                                  &cellLocals[cellPos]);
+#else
+                                  nullptr);
+#endif
     }
 
     /** Allocate a new cell by calling its constructor */
@@ -320,13 +372,25 @@ public:
     template<typename... FunctionParams>
     void forEachCell(std::function<void(CompositeCellClass, FunctionParams...)> function, FunctionParams... args){
         for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->numberOfCellsInBlock ; ++idxCellPtr){
-            function(CompositeCellClass(&blockCells[idxCellPtr], &cellMultipoles[idxCellPtr], &cellLocals[idxCellPtr]), args...);
+            function(CompositeCellClass(&blockCells[idxCellPtr],
+#ifndef SCALFMM_SIMGRID_NODATA
+                                        &cellMultipoles[idxCellPtr], &cellLocals[idxCellPtr]),
+#else
+                                        nullptr, nullptr,
+#endif
+                     args...);
         }
     }
 
     void forEachCell(std::function<void(CompositeCellClass)> function){
         for(int idxCellPtr = 0 ; idxCellPtr < blockHeader->numberOfCellsInBlock ; ++idxCellPtr){
-            function(CompositeCellClass(&blockCells[idxCellPtr], &cellMultipoles[idxCellPtr], &cellLocals[idxCellPtr]));
+            function(CompositeCellClass(&blockCells[idxCellPtr],
+#ifndef SCALFMM_SIMGRID_NODATA
+                                        &cellMultipoles[idxCellPtr], &cellLocals[idxCellPtr]
+#else
+                                        nullptr, nullptr
+#endif
+                                        ));
         }
     }
 };
