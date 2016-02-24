@@ -220,12 +220,20 @@ public:
 
     /** Give access to the buffer to send the data */
     LocalCellClass* getRawLocalBuffer(){
+#ifndef SCALFMM_SIMGRID_NODATA
         return cellLocals;
+#else
+        return nullptr;
+#endif      
     }
 
     /** Give access to the buffer to send the data */
     const LocalCellClass* getRawLocalBuffer() const{
+#ifndef SCALFMM_SIMGRID_NODATA
         return cellLocals;
+#else
+        return nullptr;
+#endif      
     }
 
     /** The the size of the allocated buffer */
@@ -376,7 +384,7 @@ public:
 #ifndef SCALFMM_SIMGRID_NODATA
                                         &cellMultipoles[idxCellPtr], &cellLocals[idxCellPtr]),
 #else
-                                        nullptr, nullptr,
+		     nullptr, nullptr),
 #endif
                      args...);
         }
