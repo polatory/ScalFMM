@@ -19,6 +19,7 @@
 #include <omp.h>
 
 #include <starpu.h>
+#include "mymodels.h"
 #include "../StarPUUtils/FStarPUUtils.hpp"
 #include "../StarPUUtils/FStarPUFmmPriorities.hpp"
 #include "../StarPUUtils/FStarPUFmmPrioritiesV2.hpp"
@@ -1063,6 +1064,8 @@ protected:
     #ifdef STARPU_USE_TASK_NAME
                     task->name = m2mTaskNames[idxLevel].get();
     #endif
+                    task->cl->model->type = STARPU_MYMODEL;
+                    task->cl->model->cost_function = M2M_cost_function;
                     FAssertLF(starpu_task_submit(task) == 0);
                 }
 
@@ -1404,8 +1407,6 @@ protected:
         }
     }
 #endif
-
-
 
 };
 
