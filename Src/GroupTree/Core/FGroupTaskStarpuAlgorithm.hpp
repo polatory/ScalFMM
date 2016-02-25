@@ -479,11 +479,9 @@ protected:
         m2m_cl.name = "m2m_cl";
         m2m_cl.dyn_modes[2] = STARPU_R;
         m2m_cl.dyn_modes[3] = STARPU_R;
-        m2m_cl.model = (starpu_perfmodel*)malloc(sizeof(starpu_perfmodel));
+        m2m_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
         m2m_cl.model->type = STARPU_MYMODEL;
         m2m_cl.model->cost_function = M2M_cost_function;
-        m2m_cl.model->footprint = NULL;
-        m2m_cl.model->state = NULL;
 
         memset(&l2l_cl, 0, sizeof(l2l_cl));
 #ifdef STARPU_USE_CPU
