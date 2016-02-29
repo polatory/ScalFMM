@@ -482,18 +482,25 @@ protected:
         m2m_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
         m2m_cl.model->type = STARPU_MYMODEL;
         m2m_cl.model->nparameters=2; //M, N
-        double parameters[m2m_cl.model->nparameters] ={
-                        1.42,
-                        21.44
-                        };
-        m2m_cl.model->parameters = parameters;
+        m2m_cl.model->parameters = (double *) malloc(m2m_cl.model->nparameters*sizeof(double));
+        m2m_cl.model->parameters[0] = 1.42;
+        m2m_cl.model->parameters[1] = 21.44;
+
         m2m_cl.model->ncombinations=3; //10, 01, 12
-        unsigned combinations[m2m_cl.model->ncombinations][m2m_cl.model->nparameters] ={
-                   {1,0},
-                   {0,1},
-                   {1,2}
-                   };
-        m2m_cl.model->combinations = combinations;
+        m2m_cl.model->combinations = (unsigned **) malloc(m2m_cl.model->ncombinations*sizeof(unsigned *));
+        if (m2m_cl.model->combinations)
+        {
+          for (int i = 0; i < m2m_cl.model->ncombinations; i++)
+          {
+        	 m2m_cl.model->combinations[i] = (unsigned *) malloc(m2m_cl.model->nparameters*sizeof(unsigned));
+          }
+        }
+        m2m_cl.model->combinations[0][0] = 1;
+        m2m_cl.model->combinations[0][1] = 0;
+        m2m_cl.model->combinations[1][0] = 0;
+        m2m_cl.model->combinations[1][1] = 1;
+        m2m_cl.model->combinations[2][0] = 1;
+        m2m_cl.model->combinations[2][1] = 2;
         //MYMODEL
 
         memset(&l2l_cl, 0, sizeof(l2l_cl));
