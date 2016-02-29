@@ -482,9 +482,7 @@ protected:
         m2m_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
         m2m_cl.model->type = STARPU_MYMODEL;
         m2m_cl.model->nparameters=2; //M, N
-        m2m_cl.model->parameters = (double *) malloc(m2m_cl.model->nparameters*sizeof(double));
-        m2m_cl.model->parameters[0] = 1.42;
-        m2m_cl.model->parameters[1] = 21.44;
+        //parameters are defined below, when the task is inserted
 
         m2m_cl.model->ncombinations=3; //10, 01, 12
         m2m_cl.model->combinations = (unsigned **) malloc(m2m_cl.model->ncombinations*sizeof(unsigned *));
@@ -1081,6 +1079,12 @@ protected:
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;                   
                     task->cl_arg_free = 1;
+                    //MYMODEL
+                    double application_parameters1 = 1.42;
+                    double application_parameters2 = (double) cellHandles[idxLevel][idxGroup].intervalSize;
+                    m2m_cl.model->parameters = (double *) malloc(m2m_cl.model->nparameters*sizeof(double));
+                    m2m_cl.model->parameters[0] = application_parameters1;
+                    m2m_cl.model->parameters[1] = application_parameters2;
 #ifdef SCALFMM_STARPU_USE_PRIO
                     task->priority = PrioClass::Controller().getInsertionPosM2M(idxLevel);
 #endif
