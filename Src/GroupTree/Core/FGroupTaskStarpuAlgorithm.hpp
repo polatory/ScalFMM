@@ -19,7 +19,6 @@
 #include <omp.h>
 
 #include <starpu.h>
-#include "mymodels.h"
 #include "../StarPUUtils/FStarPUUtils.hpp"
 #include "../StarPUUtils/FStarPUFmmPriorities.hpp"
 #include "../StarPUUtils/FStarPUFmmPrioritiesV2.hpp"
@@ -479,9 +478,23 @@ protected:
         m2m_cl.name = "m2m_cl";
         m2m_cl.dyn_modes[2] = STARPU_R;
         m2m_cl.dyn_modes[3] = STARPU_R;
+        //MYMODEL
         m2m_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
         m2m_cl.model->type = STARPU_MYMODEL;
-        m2m_cl.model->cost_function = M2M_cost_function;
+        m2m_cl.model->nparameters=2; //M, N
+        double parameters[m2m_cl.model->nparameters] ={
+                        1.42,
+                        21.44
+                        };
+        m2m_cl.model->parameters = parameters;
+        m2m_cl.model->ncombinations=3; //10, 01, 12
+        unsigned combinations[m2m_cl.model->ncombinations][m2m_cl.model->nparameters] ={
+                   {1,0},
+                   {0,1},
+                   {1,2}
+                   };
+        m2m_cl.model->combinations = combinations;
+        //MYMODEL
 
         memset(&l2l_cl, 0, sizeof(l2l_cl));
 #ifdef STARPU_USE_CPU
