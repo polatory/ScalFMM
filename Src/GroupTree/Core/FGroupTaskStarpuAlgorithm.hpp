@@ -481,6 +481,7 @@ protected:
         //MYMODEL
         m2m_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
         m2m_cl.model->type = STARPU_MYMODEL;
+        m2m_cl.model->symbol = "m2m_cl";
         m2m_cl.model->nparameters=2; //M, N
         //parameters are defined below, when the task is inserted
 
