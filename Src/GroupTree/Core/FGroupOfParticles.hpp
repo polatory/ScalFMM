@@ -74,7 +74,11 @@ protected:
 
     //< Pointers to the particles data inside the block memory
     AttributeClass* attributesBuffer;
+#ifndef SCALFMM_SIMGRID_NODATA
     AttributeClass* particleAttributes[NbSymbAttributes+NbAttributesPerParticle];
+#else
+    AttributeClass* particleAttributes[NbSymbAttributes];
+#endif
 
     /** To know if we have to delete the buffer */
     bool deleteBuffer;
@@ -110,12 +114,14 @@ public:
             particleAttributes[idxAttribute] = symAttributes;
             symAttributes += blockHeader->nbParticlesAllocatedInGroup;
         }
+#ifndef SCALFMM_SIMGRID_NODATA
         if(inAttributes){
             attributesBuffer = (AttributeClass*)inAttributes;
             for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
                 particleAttributes[idxAttribute+NbSymbAttributes] = &attributesBuffer[idxAttribute*blockHeader->nbParticlesAllocatedInGroup];
             }
         }
+#endif
     }
 
     /**
@@ -178,12 +184,15 @@ public:
             particleAttributes[idxAttribute] = symAttributes;
             symAttributes += blockHeader->nbParticlesAllocatedInGroup;
         }
-
+#ifndef SCALFMM_SIMGRID_NODATA
         attributesBuffer = (AttributeClass*)FAlignedMemory::AllocateBytes<MemoryAlignementBytes>(blockHeader->attributeLeadingDim*NbAttributesPerParticle);
         memset(attributesBuffer, 0, blockHeader->attributeLeadingDim*NbAttributesPerParticle);
         for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
             particleAttributes[idxAttribute+NbSymbAttributes] = &attributesBuffer[idxAttribute*nbParticlesAllocatedInGroup];
         }
+#else
+        attributesBuffer = nullptr;
+#endif
 
         // Set all index to not used
         for(int idxLeafPtr = 0 ; idxLeafPtr < inNumberOfLeaves ; ++idxLeafPtr){
@@ -311,7 +320,11 @@ public:
             ParticlesAttachedClass leaf(leafHeader[idxLeafPtr].nbParticles,
                                             particlePosition[0] + leafHeader[idxLeafPtr].offSet,
                                             blockHeader->positionsLeadingDim,
+#ifndef SCALFMM_SIMGRID_NODATA
                                             (attributesBuffer?particleAttributes[NbSymbAttributes] + leafHeader[idxLeafPtr].offSet:nullptr),
+#else
+                                            nullptr,
+#endif
                                             blockHeader->attributeLeadingDim);
             function(&leaf);
         }
@@ -325,7 +338,11 @@ public:
         return ParticlesAttachedClass(leafHeader[id].nbParticles,
                                           particlePosition[0] + leafHeader[id].offSet,
                                             blockHeader->positionsLeadingDim,
+#ifndef SCALFMM_SIMGRID_NODATA
                                             (attributesBuffer?particleAttributes[NbSymbAttributes] + leafHeader[id].offSet:nullptr),
+#else
+                                            nullptr,
+#endif
                                             blockHeader->attributeLeadingDim);
     }
 };

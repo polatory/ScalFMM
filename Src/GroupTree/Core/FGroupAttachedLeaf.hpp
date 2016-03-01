@@ -179,7 +179,9 @@ public:
 
         // Copy data
         for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes+NbAttributesPerParticle ; ++idxAttribute){
+#ifndef SCALFMM_SIMGRID_NODATA
             attributes[idxAttribute][destPartIdx] = particles->getAttribute(idxAttribute)[srcPartIdx];
+#endif
         }
     }
 

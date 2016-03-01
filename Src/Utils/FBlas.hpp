@@ -83,16 +83,6 @@ extern "C"
                double*, const unsigned*, int*);
     void dpotrf_(const char*, const unsigned*, double*, const unsigned*, int*);
 
-#ifdef SCALFMM_USE_MKL_AS_BLAS
-  // mkl: hadamard product is not implemented in mkl_blas
-  void vdmul_(const unsigned* n, const double*, const double*, double*);
-  void vsmul_(const unsigned* n, const float*, const float*, float*);
-  void vzmul_(const unsigned* n, const double*, const double*, double*);
-  void vcmul_(const unsigned* n, const float*, const float*, float*);
-#else
-  // TODO create interface for hadamard product in case an external Blas is used
-#endif
-
 	// single //////////////////////////////////////////////////////////
 	// blas 1
 	float sdot_(const unsigned*, const float*, const unsigned*,	const float*, const unsigned*);
@@ -169,41 +159,6 @@ extern "C"
 
 
 }
-
-
-// Hadamard (i.e. entrywise) product: 
-// NB: The following optimized routines are currently not used 
-// since they have not proved their efficiency in comparison 
-// with a naive application of the entrywise product.
-#ifdef SCALFMM_USE_MKL_AS_BLAS
-
-//#include "mkl_vml.h" 
-
-namespace FMkl{
-
-  // Hadamard product: dest[i]=a[i]*b[i]
-  inline void had(const unsigned n, const double* const a, const double* const b, double* const dest)
-  { vdmul_(&n, a, b, dest); }
-  inline void had(const unsigned n, const float* const a, const float* const b, float* const dest)
-  { vsmul_(&n, a, b, dest); }
-  inline void c_had(const unsigned n, const double* const a, const double* const b, double* const dest)
-  { vzmul_(&n, a, b, dest); }
-  inline void c_had(const unsigned n, const float* const a, const float* const b, float* const dest)
-  { vcmul_(&n, a, b, dest); }
-
-}
-
-#else
-
-namespace FBlas{
-
-  // TODO create interface for Hadamard product in case an external Blas is used
-
-}
-
-#endif
-// end Hadamard product
-
 
 
 namespace FBlas {
