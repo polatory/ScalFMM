@@ -478,13 +478,12 @@ protected:
         m2m_cl.name = "m2m_cl";
         m2m_cl.dyn_modes[2] = STARPU_R;
         m2m_cl.dyn_modes[3] = STARPU_R;
-        //MYMODEL
+        //STARPU_MULTIPLE_REGRESSION_BASED
         m2m_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
-        m2m_cl.model->type = STARPU_MYMODEL;
+        m2m_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
         m2m_cl.model->symbol = "m2m_cl";
         m2m_cl.model->nparameters=2; //M, N
         //parameters are defined below, when the task is inserted
-
         m2m_cl.model->ncombinations=3; //10, 01, 12
         m2m_cl.model->combinations = (unsigned **) malloc(m2m_cl.model->ncombinations*sizeof(unsigned *));
         if (m2m_cl.model->combinations)
@@ -500,7 +499,6 @@ protected:
         m2m_cl.model->combinations[1][1] = 1;
         m2m_cl.model->combinations[2][0] = 1;
         m2m_cl.model->combinations[2][1] = 2;
-        //MYMODEL
 
         memset(&l2l_cl, 0, sizeof(l2l_cl));
 #ifdef STARPU_USE_CPU
@@ -1080,7 +1078,7 @@ protected:
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;                   
                     task->cl_arg_free = 1;
-                    //MYMODEL
+                    //STARPU_MULTIPLE_REGRESSION_BASED
                     double application_parameters1 = 1.42;
                     double application_parameters2 = (double) cellHandles[idxLevel][idxGroup].intervalSize;
                     m2m_cl.model->parameters = (double *) malloc(m2m_cl.model->nparameters*sizeof(double));
