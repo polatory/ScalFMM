@@ -34,7 +34,7 @@ public:
     const char* print(const char format[], Params... args ){
         const size_t length = 512;
         char* name = new char[length+1];
-        snprintf(name, format, args...);
+        snprintf(name, length, format, args...);
         name[length] = '\0';
         names.push_back(name);
         return name;
@@ -43,7 +43,7 @@ public:
     const char* add(const char* strToCpy){
         const size_t length = strlen(strToCpy);
         char* cpy = new char[length+1];
-        memcpy(cpy, strToCpy, length);
+        memcpy(cpy, length, strToCpy, length);
         cpy[length] = '\0';
         names.push_back(cpy);
         return cpy;
