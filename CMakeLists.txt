@@ -96,6 +96,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
     option( OPENMP_SUPPORT_TASK_NAME "Set to ON to enable a taskname clause for tasks (KSTAR/StarPU compiler only)" OFF )
     option( SCALFMM_DISABLE_NATIVE_OMP4 "Set to ON to disable the gcc/intel omp4"    OFF )
     option( SCALFMM_TIME_OMPTASKS "Set to ON to time omp4 tasks and generate output file"    OFF )
+    option( SCALFMM_SIMGRID_NODATA "Set to ON to avoid the allocation of numerical parts in the group tree" OFF )
+    option( SCALFMM_SIMGRID_TASKNAMEPARAMS "Set to ON to have verbose information in the task name" OFF )
 # STARPU options
     CMAKE_DEPENDENT_OPTION(SCALFMM_STARPU_USE_COMMUTE  "Set to ON to enable commute with StarPU" ON  "SCALFMM_USE_STARPU" OFF)
     CMAKE_DEPENDENT_OPTION(SCALFMM_STARPU_USE_REDUX  "Set to ON to enable redux with StarPU"     OFF "SCALFMM_USE_STARPU" OFF)
@@ -395,7 +397,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       # Default is DOUBLE and without THREADS|OMP
       find_package(FFTW COMPONENTS SIMPLE) # not REQUIRED
       if (FFTW_LIBRARY_DIRS_DEP)
-        set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your MKL flags")
+        set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your FFTW path")
       endif()
       if (FFTW_LIBRARIES_DEP)
         foreach (fft_lib ${FFTW_LIBRARIES_DEP})
@@ -455,8 +457,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
         message( FATAL_ERROR "nvcc is needed with CUDA." )
       endif()
       if(NOT DEFINED CUSTOM_CUDA_FLAGS)
-        set( CUSTOM_CUDA_FLAGS "-std=c++11;-arch=sm_20" CACHE
-          STRING "Set your CUDA flags, for example : -arch=sm_20;-ptxas-options=-v;-use_fast_math")
+        set( CUSTOM_CUDA_FLAGS "-std=c++11;-arch=sm_20;--ptxas-options=-v;-use_fast_math" CACHE
+          STRING "Set your CUDA flags, for example : -arch=sm_20;--ptxas-options=-v;-use_fast_math")
       endif()
       # This is needed to remove backslash after space in ADD_CUSTOM_COMMAND
       separate_arguments(CUSTOM_CUDA_FLAGS)

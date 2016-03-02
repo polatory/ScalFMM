@@ -73,7 +73,6 @@ int main(int argc, char* argv[]){
 
     FMpi mpiComm(argc,argv);
 
-    const char* const filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
 
@@ -87,7 +86,6 @@ int main(int argc, char* argv[]){
     };
 
     // open particle file
-    std::cout << "Opening : " << filename << "\n" << std::endl;
     const int totalParticles = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000);
     const int localParticles = totalParticles/mpiComm.global().processCount();
 

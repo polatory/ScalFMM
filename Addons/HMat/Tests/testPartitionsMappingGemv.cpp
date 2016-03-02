@@ -22,6 +22,7 @@
 
 #include "Utils/FParameters.hpp"
 #include "Utils/FParameterNames.hpp"
+#include "Utils/FTic.hpp"
 
 #include <memory>
 
@@ -43,6 +44,7 @@ int main(int argc, char** argv){
     std::cout << "Config : dim = " << dim << "\n";
     std::cout << "Config : nbPartitions = " << nbPartitions << "\n";
 
+    FTic time;
 
     typedef double FReal;
     typedef FMatDense<FReal> MatrixClass;

@@ -158,4 +158,11 @@ const std::string SCALFMMCompileLibs("@SCALFMM_COMPILE_LIBS@");
 #cmakedefine SCALFMM_STARPU_USE_PRIO
 #cmakedefine SCALFMM_STARPU_FORCE_NO_SCHEDULER
 
+///////////////////////////////////////////////////////
+// To control simgrid config
+///////////////////////////////////////////////////////
+
+#cmakedefine SCALFMM_SIMGRID_NODATA
+#cmakedefine SCALFMM_SIMGRID_TASKNAMEPARAMS
+
 #endif // CONFIG_H

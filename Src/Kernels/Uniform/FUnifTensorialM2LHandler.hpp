@@ -332,17 +332,6 @@ public:
                          FY[j]);
         }
     
-//    // Perform entrywise product using BLAS and MKL routines
-//    // PB: not necessary faster than the naive version
-//    FComplex<FReal> tmpFX[rc];
-//    FBlas::c_setzero(rc,reinterpret_cast<FReal*>(tmpFX));
-//    FMkl::c_had(rc,reinterpret_cast<const FReal* const>(FC + idx*rc),
-//                reinterpret_cast<const FReal* const>(FY),
-//                reinterpret_cast<FReal* const>(tmpFX));
-//    // Scale
-//    FBlas::c_axpy(rc,&scale,reinterpret_cast<FReal* const>(tmpFX),
-//                  reinterpret_cast<FReal* const>(FX));
-
     }
 
 
@@ -528,17 +517,6 @@ public:
         for (unsigned int j=0; j<opt_rc; ++j){
             FX[j].addMul(FC[TreeLevel][d][idx*opt_rc + j], FY[j]);
         }
-
-//    // Perform entrywise product using BLAS and MKL routines
-//    // PB: not necessary faster than the naive version
-//    FComplex<FReal> tmpFX[rc];
-//    FBlas::c_setzero(rc,reinterpret_cast<FReal*>(tmpFX));
-//    FMkl::c_had(rc,reinterpret_cast<const FReal* const>(FC + idx*rc),
-//                reinterpret_cast<const FReal* const>(FY),
-//                reinterpret_cast<FReal* const>(tmpFX));
-//    // Scale
-//    FBlas::c_axpy(rc,&scale,reinterpret_cast<FReal* const>(tmpFX),
-//                  reinterpret_cast<FReal* const>(FX));
 
     }
 

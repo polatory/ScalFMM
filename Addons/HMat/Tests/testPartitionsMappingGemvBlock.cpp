@@ -16,7 +16,7 @@
 
 // @SCALFMM_PRIVATE
 
-#include "../Src/Containers/FPartitionsMapping.hpp"
+#include "../Src/Containers/FBlockPMapping.hpp"
 #include "../Src/Viewers/FMatDensePerm.hpp"
 #include "../Src/Blocks/FDenseBlock.hpp"
 
@@ -54,6 +54,16 @@ int main(int argc, char** argv){
         }
     }
 
+    { // Here we fill the block manually
+        // We consider a fack permutation
+        std::unique_ptr<int[]> permutations(new int[dim]);
+        for(int idx = 0 ; idx < dim ; ++idx){
+            permutations[idx] = idx;
+        }
+        // Set permutation to matrix
+        matrix.setPermutOrigToNew(permutations.get());
+    }
+
     std::unique_ptr<FReal[]> vec(new FReal[dim]);
     for(int idxVal = 0 ; idxVal < dim ; ++idxVal){
         vec[idxVal] = 1.0;
@@ -71,7 +81,7 @@ int main(int argc, char** argv){
 
     {
         typedef FDenseBlock<FReal> CellClass;
-        typedef FPartitionsMapping<FReal, CellClass> GridClass;
+        typedef FBlockPMapping<FReal, CellClass> GridClass;
 
         std::unique_ptr<int[]> partitions(new int[nbPartitions]);
         {
@@ -84,27 +94,64 @@ int main(int argc, char** argv){
         }
 
         GridClass grid(dim, partitions.get(), nbPartitions);
-        { // Here we fill the block manually
-            // We consider a fack permutation
-            std::unique_ptr<int[]> permutations(new int[dim]);
-            for(int idx = 0 ; idx < dim ; ++idx){
-                permutations[idx] = idx;
+
+        // We iterate on the blocks
+        // V blocks cover all the rows, but only some columns (based on the clustering)
+        for(int idxColBlock = 0 ; idxColBlock < nbPartitions ; ++idxColBlock){
+            const MatrixClass::BlockDescriptor colBlock = matrix.getBlock(grid.getVBlockInfo(idxColBlock));
+            int rj = -1;
+            /// TODO HERE
+            /// Compute rj, and the resulting Vj blocks,
+            /// use the colBlock (some or all of its values)
+
+            /// TODO END
+            // Store the result in grid.getVBlock(idxColBlock)
+            CellClass& Vj = grid.getVBlock(idxColBlock);
+            Vj.resize(rj, colBlock.getNbCols());
+            for(int idxRow = 0 ; idxRow < Vj.getNbRows() ; ++idxRow){
+                for(int idxCol = 0 ; idxCol < Vj.getNbCols() ; ++idxCol){
+                    /// TODO HERE
+                    /// Fill Vj with the result
+                    Vj.setValue(idxRow, idxCol, -1);
+                    /// TODO END
+                }
             }
-            // Set permutation to matrix
-            matrix.setPermutOrigToNew(permutations.get());
+        }
+        // U blocks cover all the columns, but only some rows (based on the clustering)
+        for(int idxRowBlock = 0 ; idxRowBlock < nbPartitions ; ++idxRowBlock){
+            const MatrixClass::BlockDescriptor rowBlock = matrix.getBlock(grid.getUBlockInfo(idxRowBlock));
+            int ri = -1;
+            /// TODO HERE
+            /// Compute ri, and the resulting Ui blocks
+            /// use the rowBlock (some or all of its values)
 
-            // We iterate on the blocks
-            for(int idxColBlock = 0 ; idxColBlock < nbPartitions ; ++idxColBlock){
-                for(int idxRowBlock = 0 ; idxRowBlock < nbPartitions ; ++idxRowBlock){
-                    // We get the corresponding class
-                    //>> CellClass& cl = grid.getCell(idxRowBlock, idxColBlock);
-                    const FBlockDescriptor& info = grid.getCellInfo(idxRowBlock, idxColBlock);
-
-                    // We iterate on its values
-                    for(int idxColVal = 0 ; idxColVal < info.nbCols ; ++idxColVal){
-                        for(int idxRowVal = 0 ; idxRowVal < info.nbRows ; ++idxRowVal){
-                            //>> const FReal srcVal = matrix.getVal(idxRowVal, idxColVal);
-                        }
+            /// TODO END
+            // Store the result in grid.getUBlock(idxRowBlock)
+            CellClass& Ui = grid.getUBlock(idxRowBlock);
+            Ui.resize(rowBlock.getNbRows(), ri);
+            for(int idxRow = 0 ; idxRow < Ui.getNbRows() ; ++idxRow){
+                for(int idxCol = 0 ; idxCol < Ui.getNbCols() ; ++idxCol){
+                    /// TODO HERE
+                    /// Fill Vj with the result
+                    Ui.setValue(idxRow, idxCol, -1);
+                    /// TODO END
+                }
+            }
+        }
+        // Build the core part
+        for(int idxColBlock = 0 ; idxColBlock < nbPartitions ; ++idxColBlock){
+            for(int idxRowBlock = 0 ; idxRowBlock < nbPartitions ; ++idxRowBlock){
+                const CellClass& Ui = grid.getUBlock(idxRowBlock);
+                const CellClass& Vj = grid.getVBlock(idxColBlock);
+                // Store the result in grid.getCBlock(idxRowBlock, idxColBlock)
+                CellClass& Cij = grid.getCBlock(idxRowBlock, idxColBlock);
+                Cij.resize(Vj.getNbRows(), Ui.getNbCols());
+                for(int idxRow = 0 ; idxRow < Cij.getNbRows() ; ++idxRow){
+                    for(int idxCol = 0 ; idxCol < Cij.getNbCols() ; ++idxCol){
+                        /// TODO HERE
+                        /// Fill Vj with the result
+                        Cij.setValue(idxRow, idxCol, -1);
+                        /// TODO END
                     }
                 }
             }
@@ -113,7 +160,7 @@ int main(int argc, char** argv){
         std::unique_ptr<FReal[]> resDense(new FReal[dim]);
         FSetToZeros(resDense.get(), dim);
 
-        grid.gemv(resDense.get(), vec.get());
+        //grid.gemv(resDense.get(), vec.get());
 
         FMath::FAccurater<FReal> testDense(resTest.get(), resDense.get(), dim);
 

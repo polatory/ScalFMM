@@ -437,12 +437,6 @@ int main(int argc, char ** argv){
     time.tic();
 
     // Application of M2L in FOURIER SPACE
-    // > Use FMkl::c_had for hadamard product
-    // if mkl is used as blas (TODO otherwise use FBlas::c_had())
-    //  FMkl::c_had(rc,reinterpret_cast<FReal*>(FT),
-    //            reinterpret_cast<FReal*>(FPMultExp),
-    //            reinterpret_cast<FReal*>(FPLocalExp));
-    // > or perform entrywise product manually
     FComplex<FReal> tmpFX;
     for (unsigned int idxLhs=0; idxLhs<nlhs; ++idxLhs){
         unsigned int idxRhs = idxLhs % npot;

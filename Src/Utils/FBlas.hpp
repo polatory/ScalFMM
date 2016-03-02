@@ -72,7 +72,9 @@ extern "C"
 							 double*, const unsigned*, double*, const unsigned*, int*);
 	void dgeqrf_(const unsigned*, const unsigned*, double*, const unsigned*,
 							 double*, double*, const unsigned*, int*);
-	void dorgqr_(const unsigned*, const unsigned*, const unsigned*,
+    void dgeqp3_(const unsigned*, const unsigned*, double*, const unsigned*, /*TYPE OF JPIV*/ unsigned*,
+                             double*, double*, const unsigned*, int*);
+    void dorgqr_(const unsigned*, const unsigned*, const unsigned*,
 							 double*, const unsigned*, double*, double*, const unsigned*, int*);
 	void dormqr_(const char*, const char*, 
                const unsigned*, const unsigned*, const unsigned*,
@@ -80,16 +82,6 @@ extern "C"
                double*, double*, const unsigned*, 
                double*, const unsigned*, int*);
     void dpotrf_(const char*, const unsigned*, double*, const unsigned*, int*);
-
-#ifdef SCALFMM_USE_MKL_AS_BLAS
-  // mkl: hadamard product is not implemented in mkl_blas
-  void vdmul_(const unsigned* n, const double*, const double*, double*);
-  void vsmul_(const unsigned* n, const float*, const float*, float*);
-  void vzmul_(const unsigned* n, const double*, const double*, double*);
-  void vcmul_(const unsigned* n, const float*, const float*, float*);
-#else
-  // TODO create interface for hadamard product in case an external Blas is used
-#endif
 
 	// single //////////////////////////////////////////////////////////
 	// blas 1
@@ -111,6 +103,8 @@ extern "C"
 							 float*, const unsigned*, float*, const unsigned*, int*);
 	void sgeqrf_(const unsigned*, const unsigned*, float*, const unsigned*,
 							 float*, float*, const unsigned*, int*);
+    void sgeqp3_(const unsigned*, const unsigned*, float*, const unsigned*, /*TYPE OF JPIV*/ unsigned*,
+                             float*, float*, const unsigned*, int*);
 	void sorgqr_(const unsigned*, const unsigned*, const unsigned*,
 							 float*, const unsigned*, float*, float*, const unsigned*, int*);
 	void sormqr_(const char*, const char*, 
@@ -139,6 +133,9 @@ extern "C"
 
 	void zgeqrf_(const unsigned*, const unsigned*, double*, const unsigned*,
 							 double*, double*, const unsigned*, int*);
+    void zgeqp3_(const unsigned*, const unsigned*, double*, const unsigned*,/*TYPE OF JPIV*/ unsigned*,
+                             double*, double*, const unsigned*, int*);
+
     void zpotrf_(const char*, const unsigned*, double*, const unsigned*, int*);
 
 	// single complex //////////////////////////////////////////////////
@@ -156,45 +153,12 @@ extern "C"
 							float*, const unsigned*, const float*, float*, const unsigned*);
 	void cgeqrf_(const unsigned*, const unsigned*, float*, const unsigned*,
 							 float*, float*, const unsigned*, int*);
+    void cgeqp3_(const unsigned*, const unsigned*, float*, const unsigned*, /*TYPE OF JPIV*/ unsigned*,
+                             float*, float*, const unsigned*, int*);    
     void cpotrf_(const char*, const unsigned*, float*, const unsigned*, int*);
 
 
 }
-
-
-// Hadamard (i.e. entrywise) product: 
-// NB: The following optimized routines are currently not used 
-// since they have not proved their efficiency in comparison 
-// with a naive application of the entrywise product.
-#ifdef SCALFMM_USE_MKL_AS_BLAS
-
-//#include "mkl_vml.h" 
-
-namespace FMkl{
-
-  // Hadamard product: dest[i]=a[i]*b[i]
-  inline void had(const unsigned n, const double* const a, const double* const b, double* const dest)
-  { vdmul_(&n, a, b, dest); }
-  inline void had(const unsigned n, const float* const a, const float* const b, float* const dest)
-  { vsmul_(&n, a, b, dest); }
-  inline void c_had(const unsigned n, const double* const a, const double* const b, double* const dest)
-  { vzmul_(&n, a, b, dest); }
-  inline void c_had(const unsigned n, const float* const a, const float* const b, float* const dest)
-  { vcmul_(&n, a, b, dest); }
-
-}
-
-#else
-
-namespace FBlas{
-
-  // TODO create interface for Hadamard product in case an external Blas is used
-
-}
-
-#endif
-// end Hadamard product
-
 
 
 namespace FBlas {
@@ -543,7 +507,19 @@ namespace FBlas {
 		sgeqrf_(&m, &n, A, &m, tau, wk, &nwk, &INF);
 		return INF;
 	}
-	
+    // QR factorisation with column pivoting
+    inline int geqp3(const unsigned m, const unsigned n, double* A, unsigned* jpiv, double* tau, unsigned nwk, double* wk)
+    {
+        int INF;
+        dgeqp3_(&m, &n, A, &m, jpiv, tau, wk, &nwk, &INF);
+        return INF;
+    }
+    inline int geqp3(const unsigned m, const unsigned n, float* A, unsigned* jpiv, float* tau, unsigned nwk, float* wk)
+    {
+        int INF;
+        sgeqp3_(&m, &n, A, &m, jpiv, tau, wk, &nwk, &INF);
+        return INF;
+    }	
 	inline int c_geqrf(const unsigned m, const unsigned n, float* A, float* tau, unsigned nwk, float* wk)
 	{
 		int INF;
@@ -557,7 +533,19 @@ namespace FBlas {
 		zgeqrf_(&m, &n, A, &m, tau, wk, &nwk, &INF);
 		return INF;
 	}
-
+    inline int c_geqp3(const unsigned m, const unsigned n, float* A, unsigned* jpiv, float* tau, unsigned nwk, float* wk)
+    {
+        int INF;
+        cgeqp3_(&m, &n, A, &m, jpiv, tau, wk, &nwk, &INF);
+        return INF;
+    }
+    
+    inline int c_geqp3(const unsigned m, const unsigned n, double* A, unsigned* jpiv, double* tau, unsigned nwk, double* wk)
+    {
+        int INF;
+        zgeqp3_(&m, &n, A, &m, jpiv, tau, wk, &nwk, &INF);
+        return INF;
+    }
 
 	// return full of Q-Matrix (QR factorization) in A
 	inline int orgqr_full(const unsigned m, const unsigned n, double* A, double* tau, unsigned nwk, double* wk)

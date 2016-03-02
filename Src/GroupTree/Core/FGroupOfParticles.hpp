@@ -68,15 +68,17 @@ protected:
     BlockHeader*    blockHeader;
     //< Pointer to leaves information
     LeafHeader*     leafHeader;
-    //< The total number of particles in the group
-    const FSize nbParticlesInGroup;
 
     //< Pointers to particle position x, y, z
     FReal* particlePosition[3];
 
     //< Pointers to the particles data inside the block memory
     AttributeClass* attributesBuffer;
+#ifndef SCALFMM_SIMGRID_NODATA
     AttributeClass* particleAttributes[NbSymbAttributes+NbAttributesPerParticle];
+#else
+    AttributeClass* particleAttributes[NbSymbAttributes];
+#endif
 
     /** To know if we have to delete the buffer */
     bool deleteBuffer;
@@ -92,7 +94,7 @@ public:
     FGroupOfParticles(unsigned char* inBuffer, const size_t inAllocatedMemoryInByte,
                       unsigned char* inAttributes)
         : allocatedMemoryInByte(inAllocatedMemoryInByte), memoryBuffer(inBuffer),
-          blockHeader(nullptr), leafHeader(nullptr), nbParticlesInGroup(0),
+          blockHeader(nullptr), leafHeader(nullptr),
           attributesBuffer(nullptr), deleteBuffer(false){
         // Move the pointers to the correct position
         blockHeader         = reinterpret_cast<BlockHeader*>(inBuffer);
@@ -112,12 +114,14 @@ public:
             particleAttributes[idxAttribute] = symAttributes;
             symAttributes += blockHeader->nbParticlesAllocatedInGroup;
         }
+#ifndef SCALFMM_SIMGRID_NODATA
         if(inAttributes){
             attributesBuffer = (AttributeClass*)inAttributes;
             for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
                 particleAttributes[idxAttribute+NbSymbAttributes] = &attributesBuffer[idxAttribute*blockHeader->nbParticlesAllocatedInGroup];
             }
         }
+#endif
     }
 
     /**
@@ -127,12 +131,12 @@ public:
  * @param inNumberOfLeaves total number of leaves in the interval (should be <= inEndingIndex-inEndingIndex)
  */
     FGroupOfParticles(const MortonIndex inStartingIndex, const MortonIndex inEndingIndex, const int inNumberOfLeaves, const FSize inNbParticles)
-        : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), leafHeader(nullptr), nbParticlesInGroup(inNbParticles),
+        : allocatedMemoryInByte(0), memoryBuffer(nullptr), blockHeader(nullptr), leafHeader(nullptr),
           deleteBuffer(true){
         memset(particlePosition, 0, sizeof(particlePosition));
         memset(particleAttributes, 0, sizeof(particleAttributes));
 
-        const FSize nbParticlesAllocatedInGroup = RoundToUpperParticles(nbParticlesInGroup+(MemoryAlignementParticles-1)*inNumberOfLeaves);
+        const FSize nbParticlesAllocatedInGroup = RoundToUpperParticles(inNbParticles+(MemoryAlignementParticles-1)*inNumberOfLeaves);
 
         // Find the number of leaf to allocate in the blocks
         FAssertLF((inEndingIndex-inStartingIndex) >= MortonIndex(inNumberOfLeaves));
@@ -161,6 +165,7 @@ public:
         blockHeader->endingIndex   = inEndingIndex;
         blockHeader->numberOfLeavesInBlock  = inNumberOfLeaves;
         blockHeader->nbParticlesAllocatedInGroup = nbParticlesAllocatedInGroup;
+        blockHeader->nbParticlesInGroup = inNbParticles;
 
         // Init particle pointers
         blockHeader->positionsLeadingDim = (sizeof(FReal) * nbParticlesAllocatedInGroup);
@@ -179,12 +184,15 @@ public:
             particleAttributes[idxAttribute] = symAttributes;
             symAttributes += blockHeader->nbParticlesAllocatedInGroup;
         }
-
+#ifndef SCALFMM_SIMGRID_NODATA
         attributesBuffer = (AttributeClass*)FAlignedMemory::AllocateBytes<MemoryAlignementBytes>(blockHeader->attributeLeadingDim*NbAttributesPerParticle);
         memset(attributesBuffer, 0, blockHeader->attributeLeadingDim*NbAttributesPerParticle);
         for(unsigned idxAttribute = 0 ; idxAttribute < NbAttributesPerParticle ; ++idxAttribute){
             particleAttributes[idxAttribute+NbSymbAttributes] = &attributesBuffer[idxAttribute*nbParticlesAllocatedInGroup];
         }
+#else
+        attributesBuffer = nullptr;
+#endif
 
         // Set all index to not used
         for(int idxLeafPtr = 0 ; idxLeafPtr < inNumberOfLeaves ; ++idxLeafPtr){
@@ -247,7 +255,7 @@ public:
 
     /** Get the total number of particles in the group */
     FSize getNbParticlesInGroup() const {
-        return nbParticlesInGroup;
+        return blockHeader->nbParticlesInGroup;
     }
 
     /** The size of the interval endingIndex-startingIndex (set from the constructor) */
@@ -312,7 +320,11 @@ public:
             ParticlesAttachedClass leaf(leafHeader[idxLeafPtr].nbParticles,
                                             particlePosition[0] + leafHeader[idxLeafPtr].offSet,
                                             blockHeader->positionsLeadingDim,
+#ifndef SCALFMM_SIMGRID_NODATA
                                             (attributesBuffer?particleAttributes[NbSymbAttributes] + leafHeader[idxLeafPtr].offSet:nullptr),
+#else
+                                            nullptr,
+#endif
                                             blockHeader->attributeLeadingDim);
             function(&leaf);
         }
@@ -326,7 +338,11 @@ public:
         return ParticlesAttachedClass(leafHeader[id].nbParticles,
                                           particlePosition[0] + leafHeader[id].offSet,
                                             blockHeader->positionsLeadingDim,
+#ifndef SCALFMM_SIMGRID_NODATA
                                             (attributesBuffer?particleAttributes[NbSymbAttributes] + leafHeader[id].offSet:nullptr),
+#else
+                                            nullptr,
+#endif
                                             blockHeader->attributeLeadingDim);
     }
 };

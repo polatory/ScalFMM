@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2015 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -171,7 +171,16 @@ include(FindPkgConfig)
 find_package(PkgConfig QUIET)
 if( PKG_CONFIG_EXECUTABLE AND NOT FFTW_GIVEN_BY_USER )
 
-  pkg_search_module(FFTW fftw3)
+  if(FFTW_LOOK_FOR_FFTW_SIMPLE)
+    pkg_search_module(FFTW fftw3f)
+  elseif(FFTW_LOOK_FOR_FFTW_LONG)
+    pkg_search_module(FFTW fftw3)
+  elseif(FFTW_LOOK_FOR_FFTW_QUAD)
+    pkg_search_module(FFTW fftw3q)
+  else()
+    pkg_search_module(FFTW fftw3)
+  endif()
+
   if (NOT FFTW_FIND_QUIETLY)
     if (FFTW_FOUND AND FFTW_LIBRARIES)
       message(STATUS "Looking for FFTW - found using PkgConfig")
@@ -250,15 +259,15 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FFTW_FOUND) OR
     if(FFTW_DIR)
       set(FFTW_fftw3.h_DIRS "FFTW_fftw3.h_DIRS-NOTFOUND")
       find_path(FFTW_fftw3.h_DIRS
-        NAMES fftw3.h
-        HINTS ${FFTW_DIR}
-        PATH_SUFFIXES "include" "include/fftw")
+	NAMES fftw3.h
+	HINTS ${FFTW_DIR}
+	PATH_SUFFIXES "include" "include/fftw")
     else()
       set(FFTW_fftw3.h_DIRS "FFTW_fftw3.h_DIRS-NOTFOUND")
       find_path(FFTW_fftw3.h_DIRS
-        NAMES fftw3.h
-        HINTS ${PATH_TO_LOOK_FOR}
-        PATH_SUFFIXES "fftw")
+	NAMES fftw3.h
+	HINTS ${PATH_TO_LOOK_FOR}
+	PATH_SUFFIXES "fftw")
     endif()
   endif()
   mark_as_advanced(FFTW_fftw3.h_DIRS)

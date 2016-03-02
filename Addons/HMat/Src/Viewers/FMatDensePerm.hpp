@@ -99,6 +99,10 @@ public:
         FAssertLF(colIdx + nbCols <= matDim);
         return FDenseBlockPermWrapper<FReal, FMatDensePerm<FReal> >(*this, rowIdx, colIdx, nbRows, nbCols);
     }
+
+    FDenseBlockPermWrapper<FReal, FMatDensePerm<FReal> > getBlock(const FBlockDescriptor& info) const {
+        return getBlock(info.row, info.col, info.nbRows, info.nbCols);
+    }
 };
 
 #endif // FMATDENSEPERM_HPP

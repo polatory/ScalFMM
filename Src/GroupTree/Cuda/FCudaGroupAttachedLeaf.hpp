@@ -37,7 +37,7 @@ public:
         positionsPointers[2] = reinterpret_cast<FReal*>(reinterpret_cast<unsigned char*>(inPositionBuffer) + inLeadingPosition*2);
 
         for(unsigned idxAttribute = 0 ; idxAttribute < NbSymbAttributes ; ++idxAttribute){
-            attributes[idxAttribute] = reinterpret_cast<AttributeClass*>(reinterpret_cast<unsigned char*>(inPositionBuffer) + inLeadingPosition*(idxAttribute+3));
+            attributes[idxAttribute] = reinterpret_cast<AttributeClass*>(reinterpret_cast<unsigned char*>(inPositionBuffer) + inLeadingPosition*3 + inLeadingAttributes*idxAttribute);
         }
 
         // Redirect pointers to data

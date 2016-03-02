@@ -98,12 +98,34 @@ class TestQuickSort : public FUTester<TestQuickSort> {
         delete [] array;
     }
 
+    void verySmallParts(){
+        {
+            long long values[2] = {0, 1};
+            FQuickSort<long long, long>::QsSequential(values, 2);
+            uassert(values[0] == 0);
+            uassert(values[1] == 1);
+        }
+        {
+            long long values[2] = {1, 0};
+            FQuickSort<long long, long>::QsSequential(values, 2);
+            uassert(values[0] == 0);
+            uassert(values[1] == 1);
+        }
+        {
+            long long values[2] = {0, 0};
+            FQuickSort<long long, long>::QsSequential(values, 2);
+            uassert(values[0] == 0);
+            uassert(values[1] == 0);
+        }
+    }
+
     // set test
     void SetTests(){
         AddTest(&TestQuickSort::manyThreads,"Many threads");
         AddTest(&TestQuickSort::bigSize,"Big sort");
         AddTest(&TestQuickSort::reversed,"Reversed");
         AddTest(&TestQuickSort::alreadySorted,"Already Sorted");
+        AddTest(&TestQuickSort::verySmallParts,"Small Parts");
     }
 };
 

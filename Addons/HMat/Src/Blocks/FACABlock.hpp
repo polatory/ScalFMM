@@ -28,7 +28,7 @@
 //#define PARTIALLY_PIVOTED_ACA
 
 /*!  Choose \a RECOMPRESSED_ACA */
-//#define RECOMPRESSED_ACA
+#define RECOMPRESSED_ACA
 
 
 template <class FReal, int ORDER = 14>
@@ -48,7 +48,7 @@ protected:
 
 public:
     FACABlock()
-        : block(nullptr), U(nullptr), VT(nullptr), nbRows(0), nbCols(0),  level(0), rank(0), accuracy(FMath::pow(10.0,static_cast<FReal>(-ORDER))) {
+        : block(nullptr), U(nullptr), VT(nullptr), nbRows(0), nbCols(0),  level(0), rank(0), accuracy(FMath::pow(FReal(10.0),static_cast<FReal>(-ORDER))) {
     }
 
     // ctor

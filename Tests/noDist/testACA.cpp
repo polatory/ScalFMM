@@ -39,6 +39,8 @@
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
+#include "../../Src/Utils/FAca.hpp"
+
 /**
 * In this file we show how to use octree
 */
@@ -194,7 +196,7 @@ int main(int argc, char* argv[])
                                 if (FPoint<FReal>(ccx-ccy).norm() > FReal(3.5)) {
                                     FChebTensor<FReal,ORDER>::setRoots(ccy, cw, rootsY);
                                     EntryComputer<FReal,MatrixKernelClass> Computer(&MatrixKernel,nnodes, rootsX, nnodes, rootsY);
-									pACA(Computer, nnodes, nnodes, epsilon, U, V, rank);
+                                    FAca::pACA(Computer, nnodes, nnodes, epsilon, U, V, rank);
 									//std::cout << "- Compress " << ccy << "\tof width " << cw << " to rank " << rank << std::endl;
 									
 									all_counter++;
@@ -218,7 +220,7 @@ int main(int argc, char* argv[])
                                     if (FPoint<FReal>(ccx-ccy).norm() > FReal(3.5)) {
                                         FChebTensor<FReal,ORDER>::setRoots(ccy, cw, rootsY);
                                         EntryComputer<FReal,MatrixKernelClass> Computer(&MatrixKernel,nnodes, rootsX, nnodes, rootsY);
-										pACA(Computer, nnodes, nnodes, epsilon, U, V, rank);
+                                        FAca::pACA(Computer, nnodes, nnodes, epsilon, U, V, rank);
 										//std::cout << "- Compress " << ccy << "\tof width " << cw << " to rank " << rank << std::endl;
 										
 										ccounter++;
@@ -234,7 +236,7 @@ int main(int argc, char* argv[])
 					else {
                         FChebTensor<FReal,ORDER>::setRoots(cpy, pw, rootsY);
                         EntryComputer<FReal,MatrixKernelClass> Computer(&MatrixKernel,nnodes, rootsX, nnodes, rootsY);
-						pACA(Computer, nnodes, nnodes, epsilon, U, V, rank);
+                        FAca::pACA(Computer, nnodes, nnodes, epsilon, U, V, rank);
 						//std::cout << "- Compress " << cpy << "\tof width " << pw << " to rank " << rank << std::endl;
 
 						pcounter++;

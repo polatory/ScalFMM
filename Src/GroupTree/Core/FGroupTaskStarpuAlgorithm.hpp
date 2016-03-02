@@ -9,6 +9,7 @@
 #include "../../Utils/FLog.hpp"
 #include "../../Utils/FTic.hpp"
 #include "../../Utils/FAssert.hpp"
+#include "../../Utils/FEnv.hpp"
 
 #include "FOutOfBlockInteraction.hpp"
 
@@ -20,6 +21,7 @@
 #include <starpu.h>
 #include "../StarPUUtils/FStarPUUtils.hpp"
 #include "../StarPUUtils/FStarPUFmmPriorities.hpp"
+#include "../StarPUUtils/FStarPUFmmPrioritiesV2.hpp"
 #include "../StarPUUtils/FStarPUReduxCpu.hpp"
 
 #ifdef STARPU_USE_CPU
@@ -38,6 +40,9 @@
 #include "../OpenCl/FOpenCLDeviceWrapper.hpp"
 #endif
 
+#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
+#include "../StarPUUtils/FStarPUTaskNameParams.hpp"
+#endif
 
 #include "Containers/FBoolArray.hpp"
 
@@ -109,6 +114,7 @@ protected:
 #endif
 
     const bool noCommuteAtLastLevel;
+    const bool noCommuteBetweenLevel;
 
 #ifdef STARPU_USE_CPU
     StarPUCpuWrapperClass cpuWrapper;
@@ -128,6 +134,7 @@ protected:
 #endif
 
 #ifdef STARPU_USE_TASK_NAME
+#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
     std::vector<std::unique_ptr<char[]>> m2mTaskNames;
     std::vector<std::unique_ptr<char[]>> m2lTaskNames;
     std::vector<std::unique_ptr<char[]>> m2lOuterTaskNames;
@@ -136,13 +143,20 @@ protected:
     std::unique_ptr<char[]> l2pTaskNames;
     std::unique_ptr<char[]> p2pTaskNames;
     std::unique_ptr<char[]> p2pOuterTaskNames;
+#else
+    FStarPUTaskNameParams taskNames;
+#endif
+#endif
+#ifdef SCALFMM_STARPU_USE_PRIO
+    typedef FStarPUFmmPrioritiesV2 PrioClass;// FStarPUFmmPriorities
 #endif
 
 public:
     FGroupTaskStarPUAlgorithm(OctreeClass*const inTree, KernelClass* inKernels)
         : tree(inTree), originalCpuKernel(inKernels),
           cellHandles(nullptr),          
-          noCommuteAtLastLevel(getenv("SCALFMM_NO_COMMUTE_LAST_L2L") != NULL && getenv("SCALFMM_NO_COMMUTE_LAST_L2L")[0] != '1'?false:true),
+          noCommuteAtLastLevel(FEnv::GetBool("SCALFMM_NO_COMMUTE_LAST_L2L", true)),
+          noCommuteBetweenLevel(FEnv::GetBool("SCALFMM_NO_COMMUTE_M2L_L2L", false)),
       #ifdef STARPU_USE_CPU
           cpuWrapper(tree->getHeight()),
       #endif
@@ -161,7 +175,7 @@ public:
         struct starpu_conf conf;
         FAssertLF(starpu_conf_init(&conf) == 0);
 #ifdef SCALFMM_STARPU_USE_PRIO
-        FStarPUFmmPriorities::Controller().init(&conf, tree->getHeight(), inKernels);
+        PrioClass::Controller().init(&conf, tree->getHeight(), inKernels);
 #endif
         FAssertLF(starpu_init(&conf) == 0);
 
@@ -217,12 +231,14 @@ public:
         FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max CUDA " << starpu_cuda_worker_get_count() << ")\n");
 #endif
         FLOG(FLog::Controller << "SCALFMM_NO_COMMUTE_LAST_L2L " << noCommuteAtLastLevel << "\n");
+        FLOG(FLog::Controller << "SCALFMM_NO_COMMUTE_M2L_L2L " << noCommuteBetweenLevel << "\n");
 
         buildTaskNames();
     }
 
     void buildTaskNames(){
 #ifdef STARPU_USE_TASK_NAME
+#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
         const int namesLength = 128;
         m2mTaskNames.resize(tree->getHeight());
         m2lTaskNames.resize(tree->getHeight());
@@ -248,6 +264,28 @@ public:
         p2pOuterTaskNames.reset(new char[namesLength]);
         snprintf(p2pOuterTaskNames.get(), namesLength, "P2P-out");
 #endif
+#endif
+    }
+
+    void syncData(){
+        for(int idxLevel = 0 ; idxLevel < tree->getHeight() ; ++idxLevel){
+            for(int idxHandle = 0 ; idxHandle < int(cellHandles[idxLevel].size()) ; ++idxHandle){
+                starpu_data_acquire(cellHandles[idxLevel][idxHandle].symb, STARPU_R);
+                starpu_data_release(cellHandles[idxLevel][idxHandle].symb);
+                starpu_data_acquire(cellHandles[idxLevel][idxHandle].up, STARPU_R);
+                starpu_data_release(cellHandles[idxLevel][idxHandle].up);
+                starpu_data_acquire(cellHandles[idxLevel][idxHandle].down, STARPU_R);
+                starpu_data_release(cellHandles[idxLevel][idxHandle].down);
+            }
+        }
+        {
+            for(int idxHandle = 0 ; idxHandle < int(particleHandles.size()) ; ++idxHandle){
+                starpu_data_acquire(particleHandles[idxHandle].symb, STARPU_R);
+                starpu_data_release(particleHandles[idxHandle].symb);
+                starpu_data_acquire(particleHandles[idxHandle].down, STARPU_R);
+                starpu_data_release(particleHandles[idxHandle].down);
+            }
+        }
     }
 
     ~FGroupTaskStarPUAlgorithm(){
@@ -304,6 +342,51 @@ public:
         buildHandles();
     }
 
+
+#ifdef STARPU_USE_CPU
+    void forEachCpuWorker(std::function<void(void)> func){
+        starpu_resume();
+        FStarPUUtils::ExecOnWorkers(STARPU_CPU, func);
+        starpu_pause();
+    }
+
+    void forEachCpuWorker(std::function<void(KernelClass*)> func){
+        starpu_resume();
+        FStarPUUtils::ExecOnWorkers(STARPU_CPU, [&](){
+            func(cpuWrapper.getKernel(starpu_worker_get_id()));
+        });
+        starpu_pause();
+    }
+#endif
+#ifdef SCALFMM_ENABLE_CUDA_KERNEL
+    void forEachCudaWorker(std::function<void(void)> func){
+        starpu_resume();
+        FStarPUUtils::ExecOnWorkers(STARPU_CUDA, func);
+        starpu_pause();
+    }
+    void forEachCudaWorker(std::function<void(void*)> func){
+        starpu_resume();
+        FStarPUUtils::ExecOnWorkers(STARPU_CUDA, [&](){
+            func(cudaWrapper.getKernel(starpu_worker_get_id()));
+        });
+        starpu_pause();
+    }
+#endif
+#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
+    void forEachOpenCLWorker(std::function<void(void)> func){
+        starpu_resume();
+        FStarPUUtils::ExecOnWorkers(STARPU_OPENCL, func);
+        starpu_pause();
+    }
+    void forEachOpenCLWorker(std::function<void(void*)> func){
+        starpu_resume();
+        FStarPUUtils::ExecOnWorkers(STARPU_OPENCL, [&](){
+            func(openclWrapper.getKernel(starpu_worker_get_id()));
+        });
+        starpu_pause();
+    }
+#endif
+
 protected:
     /**
       * Runs the complete algorithm.
@@ -338,6 +421,11 @@ protected:
 
         FLOG( FLog::Controller << "\t\t Submitting the tasks took " << timerSoumission.tacAndElapsed() << "s\n" );
         starpu_task_wait_for_all();
+
+        FLOG( FTic timerSync; );
+        syncData();
+        FLOG( FLog::Controller << "\t\t Moving data to the host took " << timerSync.tacAndElapsed() << "s\n" );
+
         starpu_pause();
 
 #ifdef STARPU_USE_CPU
@@ -921,13 +1009,20 @@ protected:
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
 #ifdef SCALFMM_STARPU_USE_PRIO
-                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2M(),
+                    STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2M(),
 #endif
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
                     STARPU_RW, cellHandles[tree->getHeight()-1][idxGroup].up,
                     STARPU_R, particleHandles[idxGroup].symb,
 #ifdef STARPU_USE_TASK_NAME
+#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     STARPU_NAME, p2mTaskNames.get(),
+#else
+                    STARPU_NAME, taskNames.print("P2M_nb%d_i%lld_p%lld",
+                                                 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),
+                                                 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval(),
+                                                 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNbParticlesInGroup()),
+#endif
 #endif
                     0);
         }
@@ -979,10 +1074,21 @@ protected:
                     task->cl_arg_size = arg_buffer_size;                   
                     task->cl_arg_free = 1;
 #ifdef SCALFMM_STARPU_USE_PRIO
-                    task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
+                    task->priority = PrioClass::Controller().getInsertionPosM2M(idxLevel);
 #endif
     #ifdef STARPU_USE_TASK_NAME
+#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     task->name = m2mTaskNames[idxLevel].get();
+#else
+                    task->name = taskNames.print("M2M_l%d_nb%d_i%lld_nbc%d_ic%lld_s%lld",
+                                                 idxLevel,
+                                              tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
+                                              tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
+                                                 tree->getCellGroup(idxLevel+1,idxSubGroup)->getNumberOfCellsInBlock(),
+                                                 tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval(),
+                                                 FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
+                                                 FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3));
+#endif
     #endif
                     FAssertLF(starpu_task_submit(task) == 0);
                 }
@@ -1015,10 +1121,21 @@ protected:
                     task->cl_arg_free = 1;
 
 #ifdef SCALFMM_STARPU_USE_PRIO
-                    task->priority = FStarPUFmmPriorities::Controller().getInsertionPosM2M(idxLevel);
+                    task->priority = PrioClass::Controller().getInsertionPosM2M(idxLevel);
 #endif
     #ifdef STARPU_USE_TASK_NAME
+#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     task->name = m2mTaskNames[idxLevel].get();
+#else
+                    task->name = taskNames.print("M2M_l%d_nb%d_i%lld_nbc%d_ic%lld_s%lld",
+                                                 idxLevel,
+                                              tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
+                                              tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
+                                                 tree->getCellGroup(idxLevel+1,idxSubGroup)->getNumberOfCellsInBlock(),
+                                                 tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval(),
+                                                 FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
+                                                 FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3));
+#endif
     #endif
                     FAssertLF(starpu_task_submit(task) == 0);
                 }
@@ -1044,13 +1161,20 @@ protected:
                                        STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                        STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),                                       
                    #ifdef SCALFMM_STARPU_USE_PRIO
-                                       STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2L(idxLevel),
+                                       STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2L(idxLevel),
                    #endif
                                        STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                        STARPU_R, cellHandles[idxLevel][idxGroup].up,
                                        (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
                        #ifdef STARPU_USE_TASK_NAME
-                                           STARPU_NAME, m2lTaskNames[idxLevel].get(),
+                   #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                                       STARPU_NAME, m2lTaskNames[idxLevel].get(),
+                   #else
+                                       STARPU_NAME, taskNames.print("M2L_l%d_nb%d_i%lld",
+                                                                    idxLevel,
+                                                                    tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
+                                                                    tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval()),
+                   #endif
                        #endif
                                        0);
                 }
@@ -1071,14 +1195,24 @@ protected:
                                            STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                            STARPU_VALUE, &mode, sizeof(int),
                    #ifdef SCALFMM_STARPU_USE_PRIO
-                                           STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
+                                           STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
                    #endif
                                            STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                            (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
                                            STARPU_R, cellHandles[idxLevel][interactionid].symb,
                                            STARPU_R, cellHandles[idxLevel][interactionid].up,
                        #ifdef STARPU_USE_TASK_NAME
+                   #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                                            STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
+                   #else
+                                           STARPU_NAME, taskNames.print("M2L_out_l%d_nb%d_i%lld_nb%d_i%lld_s%d",
+                                                                        idxLevel,
+                                                                        tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
+                                                                        tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
+                                                                        tree->getCellGroup(idxLevel,interactionid)->getNumberOfCellsInBlock(),
+                                                                        tree->getCellGroup(idxLevel,interactionid)->getSizeOfInterval(),
+                                                                        outsideInteractions->size()),
+                   #endif
                        #endif
                                            0);
 
@@ -1090,14 +1224,24 @@ protected:
                                            STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                            STARPU_VALUE, &mode, sizeof(int),
                    #ifdef SCALFMM_STARPU_USE_PRIO
-                                           STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosM2LExtern(idxLevel),
+                                           STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
                    #endif
                                            STARPU_R, cellHandles[idxLevel][interactionid].symb,
                                            (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
                                            STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                            STARPU_R, cellHandles[idxLevel][idxGroup].up,
                        #ifdef STARPU_USE_TASK_NAME
+                   #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                                            STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
+                   #else
+                                           STARPU_NAME, taskNames.print("M2L_out_l%d_nb%d_i%lld_nb%d_i%lld_s%d",
+                                                                        idxLevel,
+                                                                        tree->getCellGroup(idxLevel,interactionid)->getNumberOfCellsInBlock(),
+                                                                        tree->getCellGroup(idxLevel,interactionid)->getSizeOfInterval(),
+                                                                        tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
+                                                                        tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
+                                                                        outsideInteractions->size()),
+                   #endif
                        #endif
                                            0);
                     }
@@ -1139,8 +1283,8 @@ protected:
                     task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].down;
 
                     // put the right codelet
-                    if(noCommuteAtLastLevel){
-                        task->cl = (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2 ? &l2l_cl_nocommute : &l2l_cl);
+                    if((noCommuteAtLastLevel && (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2)) || noCommuteBetweenLevel){
+                        task->cl = &l2l_cl_nocommute;
                     }
                     else{
                         task->cl = &l2l_cl;
@@ -1157,10 +1301,21 @@ protected:
                     task->cl_arg_size = arg_buffer_size;
                     task->cl_arg_free = 1;
 #ifdef SCALFMM_STARPU_USE_PRIO
-                    task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
+                    task->priority = PrioClass::Controller().getInsertionPosL2L(idxLevel);
 #endif
     #ifdef STARPU_USE_TASK_NAME
+#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     task->name = l2lTaskNames[idxLevel].get();
+#else
+                    task->name = taskNames.print("L2L_l%d_nb%d_i%lld_nbc%d_ic%lld_s%lld",
+                                                 idxLevel,
+                                              tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
+                                              tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
+                                                 tree->getCellGroup(idxLevel+1,idxSubGroup)->getNumberOfCellsInBlock(),
+                                                 tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval(),
+                                                 FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
+                                                 FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3));
+#endif
     #endif
                     FAssertLF(starpu_task_submit(task) == 0);
                 }
@@ -1178,8 +1333,8 @@ protected:
                     task->dyn_handles[3] = cellHandles[idxLevel+1][idxSubGroup].down;
 
                     // put the right codelet
-                    if(noCommuteAtLastLevel){
-                        task->cl = (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2 ? &l2l_cl_nocommute : &l2l_cl);
+                    if((noCommuteAtLastLevel && (idxLevel == FAbstractAlgorithm::lowerWorkingLevel - 2)) || noCommuteBetweenLevel){
+                        task->cl = &l2l_cl_nocommute;
                     }
                     else{
                         task->cl = &l2l_cl;
@@ -1196,10 +1351,21 @@ protected:
                     task->cl_arg_size = arg_buffer_size;
                     task->cl_arg_free = 1;
 #ifdef SCALFMM_STARPU_USE_PRIO
-                    task->priority = FStarPUFmmPriorities::Controller().getInsertionPosL2L(idxLevel);
+                    task->priority = PrioClass::Controller().getInsertionPosL2L(idxLevel);
 #endif
     #ifdef STARPU_USE_TASK_NAME
+#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     task->name = l2lTaskNames[idxLevel].get();
+#else
+                    task->name = taskNames.print("L2L_l%d_nb%d_i%lld_nbc%d_ic%lld_s%lld",
+                                                 idxLevel,
+                                              tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
+                                              tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
+                                                 tree->getCellGroup(idxLevel+1,idxSubGroup)->getNumberOfCellsInBlock(),
+                                                 tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval(),
+                                                 FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
+                                                 FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3));
+#endif
     #endif
                     FAssertLF(starpu_task_submit(task) == 0);
                 }
@@ -1226,7 +1392,7 @@ protected:
                                    STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                    STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
                    #ifdef SCALFMM_STARPU_USE_PRIO
-                                   STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2PExtern(),
+                                   STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2PExtern(),
                    #endif
                                    STARPU_R, particleHandles[idxGroup].symb,
                    #ifdef STARPU_USE_REDUX
@@ -1241,7 +1407,18 @@ protected:
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[interactionid].down,
                    #endif
                    #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, p2pOuterTaskNames.get(),
+                   #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                                   STARPU_NAME, p2pOuterTaskNames.get(),
+                   #else
+                                   STARPU_NAME, taskNames.print("P2P_out_nb%d_i%lld_p%lld_nb%d_i%lld_p%lld_s%d",
+                                                                tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
+                                                                tree->getParticleGroup(idxGroup)->getSizeOfInterval(),
+                                                                tree->getParticleGroup(idxGroup)->getNbParticlesInGroup(),
+                                                                tree->getParticleGroup(interactionid)->getNumberOfLeavesInBlock(),
+                                                                tree->getParticleGroup(interactionid)->getSizeOfInterval(),
+                                                                tree->getParticleGroup(interactionid)->getNbParticlesInGroup(),
+                                                                outsideInteractions->size()),
+                   #endif
                    #endif
                                    0);
             }
@@ -1253,7 +1430,7 @@ protected:
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
                    #ifdef SCALFMM_STARPU_USE_PRIO
-                               STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosP2P(),
+                               STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2P(),
                    #endif
                                STARPU_R, particleHandles[idxGroup].symb,
                    #ifdef STARPU_USE_REDUX
@@ -1262,7 +1439,14 @@ protected:
                                (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
                    #endif
                    #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, p2pTaskNames.get(),
+                   #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                                    STARPU_NAME, p2pTaskNames.get(),
+                   #else
+                               STARPU_NAME, taskNames.print("P2P_nb%d_i%lld_p%lld",
+                                                            tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
+                                                            tree->getParticleGroup(idxGroup)->getSizeOfInterval(),
+                                                            tree->getParticleGroup(idxGroup)->getNbParticlesInGroup()),
+                   #endif
                    #endif
                                0);
         }
@@ -1286,7 +1470,7 @@ protected:
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
         #ifdef SCALFMM_STARPU_USE_PRIO
-                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosL2P(),
+                    STARPU_PRIORITY, PrioClass::Controller().getInsertionPosL2P(),
         #endif
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
                     STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].down,
@@ -1297,7 +1481,14 @@ protected:
                     (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
 #endif
         #ifdef STARPU_USE_TASK_NAME
-                            STARPU_NAME, l2pTaskNames.get(),
+        #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                    STARPU_NAME, l2pTaskNames.get(),
+        #else
+                    STARPU_NAME, taskNames.print("L2P_nb%d_i%lld_p%lld",
+                                                 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),
+                                                 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval(),
+                                                 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNbParticlesInGroup()),
+        #endif
         #endif
                     0);
         }
@@ -1315,7 +1506,7 @@ protected:
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
             starpu_insert_task(&p2p_redux_read,
                    #ifdef SCALFMM_STARPU_USE_PRIO
-                    STARPU_PRIORITY, FStarPUFmmPriorities::Controller().getInsertionPosL2P(),
+                    STARPU_PRIORITY, PrioClass::Controller().getInsertionPosL2P(),
                    #endif
                     STARPU_R, particleHandles[idxGroup].down,
 #ifdef STARPU_USE_TASK_NAME
@@ -1325,6 +1516,9 @@ protected:
         }
     }
 #endif
+
+
+
 };
 
 #endif // FGROUPTASKSTARPUALGORITHM_HPP
