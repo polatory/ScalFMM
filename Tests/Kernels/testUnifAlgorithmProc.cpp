@@ -21,7 +21,10 @@
 // ================
 // Keep in private GIT
 
-
+// ==== CMAKE =====
+// @FUSE_FFT
+// @FUSE_BLAS
+// ================
 #include <iostream>
 
 #include <cstdio>

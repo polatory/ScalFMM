@@ -732,6 +732,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   ##################################################################
   #            Remove compilation  of the drivers                  #
   ##################################################################
+   message(STATUS "SCALFMM_BUILD_EXAMPLES  =  ${SCALFMM_BUILD_EXAMPLES}" ) 
   if( SCALFMM_BUILD_EXAMPLES )
     # Build - Examples and drivers
     add_subdirectory(Examples)

@@ -7,9 +7,18 @@ This file contains the main features as well as overviews of specific
 bug fixes (and other actions) for each version of ScalFMM since
 version 1.1
 
+
+1.5
+-----
+- improvements of the MPI version of ScalFMM 
+- ScalFMM on StarPu (runtime system) is available 
+- Add P2P ?? on GPU
+- Add GPU version for ufmm (interpolation FMM based on uniform grid points)
+-
+
 1.4
 -----
-- Add interpolation FMM based on uniform grid points
+- Add interpolation FMM based on uniform grid points (ufmm)
 - Add the group tree and the things related to starpu (runtime system)
 - Change the P2P (it is now done by tree functions in the abstract kernel) refer to the P2P page of the doc
 - Update the P2P/M2L prototype, the position of the elements is known from an array position

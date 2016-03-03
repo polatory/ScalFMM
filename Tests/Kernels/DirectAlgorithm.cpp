@@ -14,7 +14,9 @@
 // "http://www.cecill.info". 
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-
+// ==== CMAKE =====
+// @BUG_INTEL
+// ================
 #include <iostream>
 #include <iomanip>
 
