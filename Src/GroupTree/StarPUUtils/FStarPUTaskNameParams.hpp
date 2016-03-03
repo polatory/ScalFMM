@@ -14,12 +14,18 @@
 class FStarPUTaskNameParams{
 protected:
     std::list<const char*> names;
+    FILE* fout;
+    int taskid;
 
 public:
-    FStarPUTaskNameParams(){
+    FStarPUTaskNameParams() : fout(nullptr), taskid(0){
+        const char* fname = getenv("SCALFMM_SIMGRIDOUT")?getenv("SCALFMM_SIMGRIDOUT"):"/tmp/scalfmm.out";
+        fout = fopen(fname, "w");
+        std::cout << "output task name in " << fname << "\n";
     }
 
     ~FStarPUTaskNameParams(){
+        fclose(fout);
         clear();
     }
 
@@ -31,22 +37,30 @@ public:
     }
 
     template <typename ... Params>
-    const char* print(const char format[], Params... args ){
+    const char* print(const char key[], const char format[], Params... args ){
         const size_t length = 512;
         char* name = new char[length+1];
-        snprintf(name, length, format, args...);
+        snprintf(name, length, "%s_%d", key, taskid++);
         name[length] = '\0';
         names.push_back(name);
+
+        fprintf(fout, "%s=", name);
+        fprintf(fout, format, args...);
+
         return name;
     }
 
-    const char* add(const char* strToCpy){
-        const size_t length = strlen(strToCpy);
-        char* cpy = new char[length+1];
-        memcpy(cpy, length, strToCpy, length);
-        cpy[length] = '\0';
-        names.push_back(cpy);
-        return cpy;
+    const char* add(const char key[], const char* strToCpy){
+        const size_t length = 512;
+        char* name = new char[length+1];
+        snprintf(name, length, "%s_%d", key, taskid++);
+        name[length] = '\0';
+        names.push_back(name);
+
+        fprintf(fout, "%s=", name);
+        fprintf(fout, strToCpy);
+
+        return name;
     }
 };
 

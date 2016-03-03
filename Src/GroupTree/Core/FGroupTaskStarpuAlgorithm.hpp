@@ -1018,7 +1018,7 @@ protected:
 #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     STARPU_NAME, p2mTaskNames.get(),
 #else
-                    STARPU_NAME, taskNames.print("P2M_nb%d_i%lld_p%lld",
+                    STARPU_NAME, taskNames.print("P2M", "nb%d_i%lld_p%lld",
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval(),
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNbParticlesInGroup()),
@@ -1080,7 +1080,7 @@ protected:
 #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     task->name = m2mTaskNames[idxLevel].get();
 #else
-                    task->name = taskNames.print("M2M_l%d_nb%d_i%lld_nbc%d_ic%lld_s%lld",
+                    task->name = taskNames.print("M2M", "l%d_nb%d_i%lld_nbc%d_ic%lld_s%lld",
                                                  idxLevel,
                                               tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                               tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
@@ -1127,7 +1127,7 @@ protected:
 #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     task->name = m2mTaskNames[idxLevel].get();
 #else
-                    task->name = taskNames.print("M2M_l%d_nb%d_i%lld_nbc%d_ic%lld_s%lld",
+                    task->name = taskNames.print("M2M", "l%d_nb%d_i%lld_nbc%d_ic%lld_s%lld",
                                                  idxLevel,
                                               tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                               tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
@@ -1170,7 +1170,7 @@ protected:
                    #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                                        STARPU_NAME, m2lTaskNames[idxLevel].get(),
                    #else
-                                       STARPU_NAME, taskNames.print("M2L_l%d_nb%d_i%lld",
+                                       STARPU_NAME, taskNames.print("M2L", "l%d_nb%d_i%lld",
                                                                     idxLevel,
                                                                     tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                                                     tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval()),
@@ -1205,7 +1205,7 @@ protected:
                    #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                                            STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
                    #else
-                                           STARPU_NAME, taskNames.print("M2L_out_l%d_nb%d_i%lld_nb%d_i%lld_s%d",
+                                           STARPU_NAME, taskNames.print("M2L_out", "l%d_nb%d_i%lld_nb%d_i%lld_s%d",
                                                                         idxLevel,
                                                                         tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                                                         tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
@@ -1234,7 +1234,7 @@ protected:
                    #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                                            STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
                    #else
-                                           STARPU_NAME, taskNames.print("M2L_out_l%d_nb%d_i%lld_nb%d_i%lld_s%d",
+                                           STARPU_NAME, taskNames.print("M2L_out", "l%d_nb%d_i%lld_nb%d_i%lld_s%d",
                                                                         idxLevel,
                                                                         tree->getCellGroup(idxLevel,interactionid)->getNumberOfCellsInBlock(),
                                                                         tree->getCellGroup(idxLevel,interactionid)->getSizeOfInterval(),
@@ -1307,7 +1307,7 @@ protected:
 #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     task->name = l2lTaskNames[idxLevel].get();
 #else
-                    task->name = taskNames.print("L2L_l%d_nb%d_i%lld_nbc%d_ic%lld_s%lld",
+                    task->name = taskNames.print("L2L", "l%d_nb%d_i%lld_nbc%d_ic%lld_s%lld",
                                                  idxLevel,
                                               tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                               tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
@@ -1357,7 +1357,7 @@ protected:
 #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     task->name = l2lTaskNames[idxLevel].get();
 #else
-                    task->name = taskNames.print("L2L_l%d_nb%d_i%lld_nbc%d_ic%lld_s%lld",
+                    task->name = taskNames.print("L2L", "l%d_nb%d_i%lld_nbc%d_ic%lld_s%lld",
                                                  idxLevel,
                                               tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                               tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
@@ -1410,7 +1410,7 @@ protected:
                    #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                                    STARPU_NAME, p2pOuterTaskNames.get(),
                    #else
-                                   STARPU_NAME, taskNames.print("P2P_out_nb%d_i%lld_p%lld_nb%d_i%lld_p%lld_s%d",
+                                   STARPU_NAME, taskNames.print("P2P_out", "nb%d_i%lld_p%lld_nb%d_i%lld_p%lld_s%d",
                                                                 tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
                                                                 tree->getParticleGroup(idxGroup)->getSizeOfInterval(),
                                                                 tree->getParticleGroup(idxGroup)->getNbParticlesInGroup(),
@@ -1442,7 +1442,7 @@ protected:
                    #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                                     STARPU_NAME, p2pTaskNames.get(),
                    #else
-                               STARPU_NAME, taskNames.print("P2P_nb%d_i%lld_p%lld",
+                               STARPU_NAME, taskNames.print("P2P", "nb%d_i%lld_p%lld",
                                                             tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
                                                             tree->getParticleGroup(idxGroup)->getSizeOfInterval(),
                                                             tree->getParticleGroup(idxGroup)->getNbParticlesInGroup()),
@@ -1484,7 +1484,7 @@ protected:
         #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     STARPU_NAME, l2pTaskNames.get(),
         #else
-                    STARPU_NAME, taskNames.print("L2P_nb%d_i%lld_p%lld",
+                    STARPU_NAME, taskNames.print("L2P", "nb%d_i%lld_p%lld",
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval(),
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNbParticlesInGroup()),
