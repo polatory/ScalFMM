@@ -43,7 +43,7 @@ public:
     const char* add(const char* strToCpy){
         const size_t length = strlen(strToCpy);
         char* cpy = new char[length+1];
-        memcpy(cpy, length, strToCpy, length);
+        memcpy(cpy, strToCpy, length);
         cpy[length] = '\0';
         names.push_back(cpy);
         return cpy;
