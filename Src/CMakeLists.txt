@@ -109,5 +109,5 @@ FOREACH(my_dir ${my_include_dirs})
 	INSTALL( FILES ${hpp_in_dir} DESTINATION include/${my_dir} )
 ENDFOREACH()
 
-INSTALL( FILES "${SCALFMM_BINARY_DIR}/Src/ScalFmmConfig.h" DESTINATION include/Utils/${my_dir} )
+INSTALL( FILES "${SCALFMM_BINARY_DIR}/Src/ScalFmmConfig.h" DESTINATION include/${my_dir} )
 
