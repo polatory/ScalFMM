@@ -44,7 +44,7 @@ public:
         name[length] = '\0';
         names.push_back(name);
 
-        fprintf(fout, "%s=", name);
+        fprintf(fout, "%s, %d, ", key, taskid);
         fprintf(fout, format, args...);
 
         return name;
