@@ -1040,7 +1040,7 @@ protected:
                     STARPU_NAME, p2mTaskNames.get(),
 #else
 					//"P2M-nb_i"
-                    STARPU_NAME, taskNames.print("P2M-%d_%lld",
+                    STARPU_NAME, taskNames.print("P2M", "%d, %lld\n",
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval()),
 #endif
@@ -1108,7 +1108,7 @@ protected:
                     task->name = m2mTaskNames[idxLevel].get();
 #else
                     //"M2M-l_nb_i_nbc_ic_s"
-                    task->name = taskNames.print("M2M-%d_%d_%lld_%d_%lld_%lld",
+                    task->name = taskNames.print("M2M", "%d, %d, %lld, %d, %lld, %lld\n",
                                                  idxLevel,
                                               tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                               tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
@@ -1156,7 +1156,7 @@ protected:
                     task->name = m2mTaskNames[idxLevel].get();
 #else
                     //M2M-l_nb_i_nbc_ic_s
-                    task->name = taskNames.print("M2M-%d_%d_%lld_%d_%lld_%lld",
+                    task->name = taskNames.print("M2M", "%d, %d, %lld, %d, %lld, %lld\n",
                                                  idxLevel,
                                               tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                               tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
@@ -1200,7 +1200,7 @@ protected:
                                        STARPU_NAME, m2lTaskNames[idxLevel].get(),
                    #else
 									   //"M2L-l_nb_i"
-                                       STARPU_NAME, taskNames.print("M2L-%d_%d_%lld",
+                                       STARPU_NAME, taskNames.print("M2L", "%d, %d, %lld\n",
                                                                     idxLevel,
                                                                     tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                                                     tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval()),
@@ -1236,7 +1236,7 @@ protected:
                                            STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
                    #else
 										   //"M2L_out-l_nb_i_nb_i_s
-                                           STARPU_NAME, taskNames.print("M2L_out-%d_%d_%lld_%d_%lld_%d",
+                                           STARPU_NAME, taskNames.print("M2L_out", "%d, %d, %lld, %d, %lld, %d\n",
                                                                         idxLevel,
                                                                         tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                                                         tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
@@ -1266,7 +1266,7 @@ protected:
                                            STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
                    #else
 										   //"M2L_out-l_nb_i_nb_i_s"
-                                           STARPU_NAME, taskNames.print("M2L_out-%d_%d_%lld_%d_%lld_%d",
+                                           STARPU_NAME, taskNames.print("M2L_out", "%d, %d, %lld, %d, %lld, %d\n",
                                                                         idxLevel,
                                                                         tree->getCellGroup(idxLevel,interactionid)->getNumberOfCellsInBlock(),
                                                                         tree->getCellGroup(idxLevel,interactionid)->getSizeOfInterval(),
@@ -1340,7 +1340,7 @@ protected:
                     task->name = l2lTaskNames[idxLevel].get();
 #else
                     //"L2L-l_nb_i_nbc_ic_s"
-                    task->name = taskNames.print("L2L-%d_%d_%lld_%d_%lld_%lld",
+                    task->name = taskNames.print("L2L", "%d, %d, %lld, %d, %lld, %lld\n",
                                                  idxLevel,
                                               tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                               tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
@@ -1391,7 +1391,7 @@ protected:
                     task->name = l2lTaskNames[idxLevel].get();
 #else
                     //"L2L-l_nb_i_nbc_ic_s"
-                    task->name = taskNames.print("L2L-%d_%d_%lld_%d_%lld_%lld",
+                    task->name = taskNames.print("L2L", "%d, %d, %lld, %d, %lld, %lld\n",
                                                  idxLevel,
                                               tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                               tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
@@ -1445,7 +1445,7 @@ protected:
                                    STARPU_NAME, p2pOuterTaskNames.get(),
                    #else
 								   //"P2P_out-nb_i_nb_i_s"
-                                   STARPU_NAME, taskNames.print("P2P_out-%d_%lld_%d_%lld_%d",
+                                   STARPU_NAME, taskNames.print("P2P_out", "%d, %lld, %d, %lld, %d\n",
                                                                 tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
                                                                 tree->getParticleGroup(idxGroup)->getSizeOfInterval(),
                                                                 tree->getParticleGroup(interactionid)->getNumberOfLeavesInBlock(),
@@ -1476,7 +1476,7 @@ protected:
                                     STARPU_NAME, p2pTaskNames.get(),
                    #else
 								//"P2P-nb_i"
-                               STARPU_NAME, taskNames.print("P2P-%d_%lld",
+                               STARPU_NAME, taskNames.print("P2P", "%d, %lld\n",
                                                             tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
                                                             tree->getParticleGroup(idxGroup)->getSizeOfInterval()),
                    #endif
@@ -1518,7 +1518,7 @@ protected:
                     STARPU_NAME, l2pTaskNames.get(),
         #else
 					//"L2P-nb_i"
-                    STARPU_NAME, taskNames.print("L2P-%d_%lld",
+                    STARPU_NAME, taskNames.print("L2P", "%d, %lld\n",
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval()),
         #endif
