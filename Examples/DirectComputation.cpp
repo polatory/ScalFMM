@@ -134,13 +134,13 @@ int main(int argc, char ** argv){
                 //
                 for(int idxOther = 0; idxOther < nbParticles ; ++idxOther){
                     if( idxOther != idxTarget ){
-                        FP2P::NonMutualParticles(
-                                    particles[idxOther].getPosition().getX(), particles[idxOther].getPosition().getY(),
-                                    particles[idxOther].getPosition().getZ(),particles[idxOther].getPhysicalValue(),
-                                    particles[idxTarget].getPosition().getX(), particles[idxTarget].getPosition().getY(),
-                                    particles[idxTarget].getPosition().getZ(),particles[idxTarget].getPhysicalValue(),
-                                    &particles[idxTarget].setForces()[0],&particles[idxTarget].setForces()[1],
-                                &particles[idxTarget].setForces()[2],particles[idxTarget].setPotential(),&MatrixKernel);
+                        FP2P::NonMutualParticles(particles[idxTarget].getPosition().getX(), particles[idxTarget].getPosition().getY(),
+                                                 particles[idxTarget].getPosition().getZ(),particles[idxTarget].getPhysicalValue(),
+                                                 &particles[idxTarget].setForces()[0],&particles[idxTarget].setForces()[1],
+                                                 &particles[idxTarget].setForces()[2],particles[idxTarget].setPotential(),
+                                                 particles[idxOther].getPosition().getX(), particles[idxOther].getPosition().getY(),
+                                                 particles[idxOther].getPosition().getZ(),particles[idxOther].getPhysicalValue(),
+                                                 &MatrixKernel);
                     }
                 }
             } // end for

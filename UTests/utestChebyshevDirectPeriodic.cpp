@@ -140,12 +140,12 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
                 for(FSize idxOther =  0 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
                     if(idxTarget != idxOther){
                         FP2P::NonMutualParticles(
-                                particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                                particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
                                 particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                 particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
                                 &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
                                 &particles[idxTarget].forces[2],&particles[idxTarget].potential,
+                                particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
                                 &MatrixKernel);
                     }
 
@@ -170,12 +170,13 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
                                 source.position += offset;
                                 FP2P::NonMutualParticles(
-                                            source.position.getX(), source.position.getY(),
-                                            source.position.getZ(),source.physicalValue,
                                             particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                             particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
                                             &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
-                                        &particles[idxTarget].forces[2],&particles[idxTarget].potential,&MatrixKernel);
+                                            &particles[idxTarget].forces[2],&particles[idxTarget].potential,
+                                            source.position.getX(), source.position.getY(),
+                                            source.position.getZ(),source.physicalValue,
+                                            &MatrixKernel);
                             }
                         }
                     }

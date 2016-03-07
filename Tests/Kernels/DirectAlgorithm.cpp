@@ -226,12 +226,14 @@ int main(int argc, char ** argv){
 				for(int idxOther = 0; idxOther < nbParticles ; ++idxOther){
 					if( idxOther != idxTarget ){
 						FP2P::NonMutualParticles(
-								particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-								particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
 								particlesDirect[idxTarget].position.getX(), particlesDirect[idxTarget].position.getY(),
-								particlesDirect[idxTarget].position.getZ(),particlesDirect[idxTarget].physicalValue,
-								&particlesDirect[idxTarget].forces[0],&particlesDirect[idxTarget].forces[1],
-								&particlesDirect[idxTarget].forces[2],&particlesDirect[idxTarget].potential, &MatrixKernel);
+                                particlesDirect[idxTarget].position.getZ(),particlesDirect[idxTarget].physicalValue,
+                                &particlesDirect[idxTarget].forces[0],&particlesDirect[idxTarget].forces[1],
+                                &particlesDirect[idxTarget].forces[2],&particlesDirect[idxTarget].potential, 
+                                particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+								particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
+                                &MatrixKernel
+                        );
 					}
 				}
 				//
@@ -251,9 +253,10 @@ int main(int argc, char ** argv){
                                     MDParticle<FReal> source = particles[idxSource];
 									source.position += offset;
 									FP2P::NonMutualParticles(
-											source.position.getX(), source.position.getY(),source.position.getZ(),source.physicalValue,
 											particlesDirect[idxTarget].position.getX(), particlesDirect[idxTarget].position.getY(),particlesDirect[idxTarget].position.getZ(),particlesDirect[idxTarget].physicalValue,
-											&particlesDirect[idxTarget].forces[0],&particlesDirect[idxTarget].forces[1],&particlesDirect[idxTarget].forces[2],&particlesDirect[idxTarget].potential, &MatrixKernel
+                                            &particlesDirect[idxTarget].forces[0],&particlesDirect[idxTarget].forces[1],&particlesDirect[idxTarget].forces[2],&particlesDirect[idxTarget].potential,
+                                            source.position.getX(), source.position.getY(),source.position.getZ(),source.physicalValue,
+                                            &MatrixKernel
 									);
 								}
 							}

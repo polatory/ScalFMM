@@ -58,8 +58,10 @@ namespace FP2P {
                     const FPoint<FReal> targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
                     FReal Kxy[1];
                     FReal dKxy[3];
-                    MatrixKernel->evaluateBlockAndDerivative(sourcePoint.getX(),sourcePoint.getY(),sourcePoint.getZ(),
-                                                             targetPoint.getX(),targetPoint.getY(),targetPoint.getZ(),Kxy,dKxy);
+                    MatrixKernel->evaluateBlockAndDerivative(targetPoint.getX(),targetPoint.getY(),targetPoint.getZ(),
+                                                             sourcePoint.getX(),sourcePoint.getY(),sourcePoint.getZ(),
+                                                             Kxy,dKxy);
+                    const FReal mutual_coeff = MatrixKernel->getMutualCoefficient(); // 1 if symmetric; -1 if antisymmetric
 
                     for(int idxVals = 0 ; idxVals < NVALS ; ++idxVals){
                       
@@ -76,7 +78,7 @@ namespace FP2P {
                         sourcesForcesX[idxSourceValue] -= dKxy[0] * coef;
                         sourcesForcesY[idxSourceValue] -= dKxy[1] * coef;
                         sourcesForcesZ[idxSourceValue] -= dKxy[2] * coef;
-                        sourcesPotentials[idxSourceValue] += ( Kxy[0] * targetsPhysicalValues[idxTargetValue] );
+                        sourcesPotentials[idxSourceValue] += ( mutual_coeff * Kxy[0] * targetsPhysicalValues[idxTargetValue] );
 
                     } // NVALS
 
@@ -109,8 +111,10 @@ namespace FP2P {
             const FPoint<FReal> targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
             FReal Kxy[1];
             FReal dKxy[3];
-            MatrixKernel->evaluateBlockAndDerivative(sourcePoint.getX(),sourcePoint.getY(),sourcePoint.getZ(),
-                                                     targetPoint.getX(),targetPoint.getY(),targetPoint.getZ(),Kxy,dKxy);
+            MatrixKernel->evaluateBlockAndDerivative(targetPoint.getX(),targetPoint.getY(),targetPoint.getZ(),
+                                                     sourcePoint.getX(),sourcePoint.getY(),sourcePoint.getZ(),
+                                                     Kxy,dKxy);
+            const FReal mutual_coeff = MatrixKernel->getMutualCoefficient(); // 1 if symmetric; -1 if antisymmetric
 
             for(int idxVals = 0 ; idxVals < NVALS ; ++idxVals){
                       
@@ -127,7 +131,7 @@ namespace FP2P {
                 targetsForcesX[idxSourceValue] -= dKxy[0] * coef;
                 targetsForcesY[idxSourceValue] -= dKxy[1] * coef;
                 targetsForcesZ[idxSourceValue] -= dKxy[2] * coef;
-                targetsPotentials[idxSourceValue] += ( Kxy[0] * targetsPhysicalValues[idxTargetValue] );
+                targetsPotentials[idxSourceValue] += ( mutual_coeff * Kxy[0] * targetsPhysicalValues[idxTargetValue] );
 
             }// NVALS
 
@@ -172,8 +176,9 @@ inline void FullRemoteMultiRhs(ContainerClass* const FRestrict inTargets, const 
                     const FPoint<FReal> targetPoint(targetsX[idxTarget],targetsY[idxTarget],targetsZ[idxTarget]);
                     FReal Kxy[1];
                     FReal dKxy[3];
-                    MatrixKernel->evaluateBlockAndDerivative(sourcePoint.getX(),sourcePoint.getY(),sourcePoint.getZ(),
-                                                             targetPoint.getX(),targetPoint.getY(),targetPoint.getZ(),Kxy,dKxy);
+                    MatrixKernel->evaluateBlockAndDerivative(targetPoint.getX(),targetPoint.getY(),targetPoint.getZ(),
+                                                             sourcePoint.getX(),sourcePoint.getY(),sourcePoint.getZ(),
+                                                             Kxy,dKxy);
 
                     for(int idxVals = 0 ; idxVals < NVALS ; ++idxVals){
 

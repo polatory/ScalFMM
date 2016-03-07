@@ -102,9 +102,9 @@ void doATest(const FSize NbParticles, const int minP, const int maxP, const int 
                                           particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
                                           &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
                                           &particles[idxTarget].forces[2],&particles[idxTarget].potential,
-                                    particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                                    particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
-                                    &particles[idxOther].forces[0],&particles[idxOther].forces[1],
+                                          particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                          particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
+                                          &particles[idxOther].forces[0],&particles[idxOther].forces[1],
                                           &particles[idxOther].forces[2],&particles[idxOther].potential);
                 }
             }
@@ -311,9 +311,9 @@ int main(int argc, char ** argv){
                                       centeredParticle.position.getZ(),centeredParticle.physicalValue,
                                       &centeredParticle.forces[0],&centeredParticle.forces[1],
                                       &centeredParticle.forces[2],&centeredParticle.potential,
-                                otherParticle.position.getX(), otherParticle.position.getY(),
-                                otherParticle.position.getZ(),otherParticle.physicalValue,
-                                &otherParticle.forces[0],&otherParticle.forces[1],
+                                      otherParticle.position.getX(), otherParticle.position.getY(),
+                                      otherParticle.position.getZ(),otherParticle.physicalValue,
+                                      &otherParticle.forces[0],&otherParticle.forces[1],
                                       &otherParticle.forces[2],&otherParticle.potential);
 
                 { // Check that each particle has been summed with all other

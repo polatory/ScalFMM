@@ -30,7 +30,7 @@
 #include "Files/FFmaGenericLoader.hpp"
 
 
-#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel_TensorialInteractions.hpp"
 #include "Kernels/Uniform/FUnifCell.hpp"
 #include "Kernels/Uniform/FUnifTensorialKernel.hpp"
 
@@ -46,7 +46,10 @@
 #include "Core/FFmmAlgorithm.hpp"
 #include "Core/FFmmAlgorithmThread.hpp"
 
-#include "../../Src/Utils/FParameterNames.hpp"
+#include "Utils/FParameterNames.hpp"
+
+// For std::array<> (i.e. for Tensorial kernels purpose)
+#include <array>
 
 /**
  * This program runs the FMM Algorithm with the Uniform kernel and compares the results with a direct computation.
@@ -77,8 +80,9 @@ int main(int argc, char* argv[])
      FTic time;
 
 
-    // typedefs
+    // typedefs and infos
     typedef FInterpMatrixKernel_R_IJ<FReal> MatrixKernelClass;
+    MatrixKernelClass::printInfo();
 
     // useful features of matrix kernel
     const unsigned int NPV  = MatrixKernelClass::NPV;
@@ -86,7 +90,11 @@ int main(int argc, char* argv[])
     const unsigned int NRHS = MatrixKernelClass::NRHS;
     const unsigned int NLHS = MatrixKernelClass::NLHS;
 
-    const FReal CoreWidth = 0.1;
+    const FReal CoreWidth = 0.;
+    std::cout << "Core width: a=" << CoreWidth << std::endl;
+    std::cout << std::endl;
+
+    // Build matrix kernel
     const MatrixKernelClass MatrixKernel(CoreWidth);
 
     // init particles position and physical value
@@ -172,12 +180,14 @@ int main(int argc, char* argv[])
         if(MatrixKernelClass::Type==HOMOGENEOUS && BoxWidthExtension>0.)
             throw std::runtime_error("Extension of box width is not yet supported for homogeneous kernels! Work-around: artificially set Type to NON_HOMOGENEOUS.");
 
-        typedef FP2PParticleContainerIndexed<FReal,NRHS,NLHS> ContainerClass;
+        const unsigned int NVALS = 1;
+
+        typedef FP2PParticleContainerIndexed<FReal,NRHS,NLHS,NVALS> ContainerClass;
 
         typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
-        typedef FUnifCell<FReal,ORDER,NRHS,NLHS> CellClass;
+        typedef FUnifCell<FReal,ORDER,NRHS,NLHS,NVALS> CellClass;
         typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
-        typedef FUnifTensorialKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        typedef FUnifTensorialKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER,NVALS> KernelClass;
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
         //  typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 
@@ -201,6 +211,22 @@ int main(int argc, char* argv[])
                                 particles[idxPart].physicalValue[0], particles[idxPart].physicalValue[1], particles[idxPart].physicalValue[2]);
                 else
                     std::runtime_error("NPV not yet supported in test! Add new case.");
+
+                // 
+                // [TODO] Fix insertion of multiple physical values using std::array !!
+                //
+                //// Convert FReal[NVALS] to std::array<FReal,NVALS>
+                //std::array<FReal, (NPV+4*NPOT)*NVALS> physicalState;
+                //for(int idxVals = 0 ; idxVals < NVALS ; ++idxVals){
+                //    for(int idxPV = 0 ; idxPV < NPV ; ++idxPV)
+                //        physicalState[idxPV*NVALS+idxVals]=particles[idxPart].physicalValue[idxPV];
+                //    physicalState[(NPV+0)*NVALS+idxVals]=0.0;
+                //    physicalState[(NPV+1)*NVALS+idxVals]=0.0;
+                //    physicalState[(NPV+2)*NVALS+idxVals]=0.0;
+                //    physicalState[(NPV+3)*NVALS+idxVals]=0.0;
+                //}
+                //tree.insert(particles[idxPart].position, idxPart,physicalState);
+
             }
 
             time.tac();
@@ -245,6 +271,8 @@ int main(int argc, char* argv[])
                             //PB: store potential in array[nbParticles]
                             checkPotential[indexPartOrig][idxPot]=potentials[idxPart];
                             checkfx[indexPartOrig][idxPot]=forcesX[idxPart];
+                            //if(idxPart<10)
+                            //    std::cout << "  FMM potentials[idxPartOrigin="<< indexPartOrig <<"]=" << potentials[idxPart] << "  DIRECT potentials[idxPartOrigin="<< indexPartOrig <<"]=" << particles[indexPartOrig].potential[idxPot] << std::endl;
 
                             potentialDiff[idxPot].add(particles[indexPartOrig].potential[idxPot],potentials[idxPart]);
                             fx[idxPot].add(particles[indexPartOrig].forces[0][idxPot],forcesX[idxPart]);
