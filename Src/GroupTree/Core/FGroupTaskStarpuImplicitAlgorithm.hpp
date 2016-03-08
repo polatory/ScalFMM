@@ -44,6 +44,7 @@
 
 #include "Containers/FBoolArray.hpp"
 #include <iostream>
+#include <vector>
 using namespace std;
 
 template <class OctreeClass, class CellContainerClass, class KernelClass, class ParticleGroupClass, class StarPUCpuWrapperClass
@@ -147,9 +148,10 @@ protected:
     typedef FStarPUFmmPrioritiesV2 PrioClass;// FStarPUFmmPriorities
 #endif
 	int mpi_rank, nproc;
+	std::vector<std::vector<std::vector<MortonIndex>>> nodeRepartition;
 
 public:
-    FGroupTaskStarPUImplicitAlgorithm(OctreeClass*const inTree, KernelClass* inKernels)
+    FGroupTaskStarPUImplicitAlgorithm(OctreeClass*const inTree, KernelClass* inKernels, std::vector<MortonIndex>& distributedMortonIndex)
         : tree(inTree), originalCpuKernel(inKernels),
           cellHandles(nullptr),          
           noCommuteAtLastLevel(FEnv::GetBool("SCALFMM_NO_COMMUTE_LAST_L2L", true)),
@@ -218,6 +220,7 @@ public:
 #endif
 
         initCodelet();
+		createMachinChose(distributedMortonIndex);
         rebuildInteractions();
 
         FLOG(FLog::Controller << "FGroupTaskStarPUAlgorithm (Max Worker " << starpu_worker_get_count() << ")\n");
@@ -268,7 +271,8 @@ public:
     void syncData(){
         for(int idxLevel = 0 ; idxLevel < tree->getHeight() ; ++idxLevel){
             for(int idxHandle = 0 ; idxHandle < int(cellHandles[idxLevel].size()) ; ++idxHandle){
-				if(isDataOwned(idxHandle, int(cellHandles[idxLevel].size()))) {
+				//if(isDataOwned(idxHandle, int(cellHandles[idxLevel].size()))) {
+				if(isDataOwnedBerenger(tree->getCellGroup(idxLevel, idxHandle)->getStartingIndex()+1, idxLevel)) {//Clean only our data handle
 					starpu_data_acquire(cellHandles[idxLevel][idxHandle].symb, STARPU_R);
 					starpu_data_release(cellHandles[idxLevel][idxHandle].symb);
 					starpu_data_acquire(cellHandles[idxLevel][idxHandle].up, STARPU_R);
@@ -280,7 +284,8 @@ public:
         }
         {
             for(int idxHandle = 0 ; idxHandle < int(particleHandles.size()) ; ++idxHandle){
-				if(isDataOwned(idxHandle, int(particleHandles.size()))) {
+				//if(isDataOwned(idxHandle, int(particleHandles.size()))) {
+				if(isDataOwnedBerenger(tree->getCellGroup(tree->getHeight()-1, idxHandle)->getStartingIndex()+1, tree->getHeight()-1)) {//Clean only our data handle
 					starpu_data_acquire(particleHandles[idxHandle].symb, STARPU_R);
 					starpu_data_release(particleHandles[idxHandle].symb);
 					starpu_data_acquire(particleHandles[idxHandle].down, STARPU_R);
@@ -393,8 +398,30 @@ public:
 	int getRank(void) const {
 		return mpi_rank;
 	}
-	bool isDataOwned(int idxGroup, int nbGroup) const {
-		return dataMapping(idxGroup, nbGroup) == mpi_rank;
+	int getNProc(void) const {
+		return nproc;
+	}
+	//bool isDataOwned(int idxGroup, int nbGroup) const {
+		//return dataMapping(idxGroup, nbGroup) == mpi_rank;
+	//}
+	bool isDataOwnedBerenger(MortonIndex const idx, int const idxLevel) const {
+		return dataMappingBerenger(idx, idxLevel) == mpi_rank;
+	}
+	void createMachinChose(std::vector<MortonIndex> distributedMortonIndex)
+	{
+		nodeRepartition.resize(tree->getHeight(), std::vector<std::vector<MortonIndex>>(nproc, std::vector<MortonIndex>(2)));
+		for(int node_id = 0; node_id < nproc; ++node_id){
+			nodeRepartition[tree->getHeight()-1][node_id][0] = distributedMortonIndex[node_id*2];
+			nodeRepartition[tree->getHeight()-1][node_id][1] = distributedMortonIndex[node_id*2+1];
+		}
+        for(int idxLevel = tree->getHeight() - 2; idxLevel >= 0  ; --idxLevel){
+			nodeRepartition[idxLevel][0][0] = nodeRepartition[idxLevel+1][0][0] >> 3;
+			nodeRepartition[idxLevel][0][1] = nodeRepartition[idxLevel+1][0][1] >> 3;
+			for(int node_id = 1; node_id < nproc; ++node_id){
+				nodeRepartition[idxLevel][node_id][0] = FMath::Max(nodeRepartition[idxLevel+1][node_id][0] >> 3, nodeRepartition[idxLevel+1][node_id-1][0]+1); //Berenger phd :)
+				nodeRepartition[idxLevel][node_id][1] = nodeRepartition[idxLevel+1][node_id][1] >> 3;
+			}
+		}
 	}
 protected:
     /**
@@ -744,7 +771,8 @@ protected:
     void cleanHandle(){
         for(int idxLevel = 0 ; idxLevel < tree->getHeight() ; ++idxLevel){
             for(int idxHandle = 0 ; idxHandle < int(cellHandles[idxLevel].size()) ; ++idxHandle){
-				if(isDataOwned(idxHandle, int(cellHandles[idxLevel].size())))//Clean only our data handle
+				//if(isDataOwned(idxHandle, int(cellHandles[idxLevel].size())))//Clean only our data handle
+				if(isDataOwnedBerenger(tree->getCellGroup(idxLevel, idxHandle)->getStartingIndex()+1, idxLevel))//Clean only our data handle
 				{
 					starpu_data_unregister(cellHandles[idxLevel][idxHandle].symb);
 					starpu_data_unregister(cellHandles[idxLevel][idxHandle].up);
@@ -755,7 +783,8 @@ protected:
         }
         {
             for(int idxHandle = 0 ; idxHandle < int(particleHandles.size()) ; ++idxHandle){
-				if(isDataOwned(idxHandle, int(particleHandles.size())))
+				//if(isDataOwned(idxHandle, int(particleHandles.size())))
+				if(isDataOwnedBerenger(tree->getCellGroup(tree->getHeight()-1, idxHandle)->getStartingIndex()+1, tree->getHeight()-1))//Clean only our data handle
 				{
 					starpu_data_unregister(particleHandles[idxHandle].symb);
 					starpu_data_unregister(particleHandles[idxHandle].down);
@@ -774,9 +803,11 @@ protected:
         for(int idxLevel = 2 ; idxLevel < tree->getHeight() ; ++idxLevel){
             cellHandles[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
-				int registeringNode = dataMapping(idxGroup, tree->getNbCellGroupAtLevel(idxLevel));
-				where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
                 const CellContainerClass* currentCells = tree->getCellGroup(idxLevel, idxGroup);
+				int registeringNode = dataMappingBerenger(currentCells->getStartingIndex()+1, idxLevel);
+				
+				//int registeringNode = dataMapping(idxGroup, tree->getNbCellGroupAtLevel(idxLevel));
+				where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
                 starpu_variable_data_register(&cellHandles[idxLevel][idxGroup].symb, where,
                                               (uintptr_t)currentCells->getRawBuffer(), currentCells->getBufferSizeInByte());
                 starpu_variable_data_register(&cellHandles[idxLevel][idxGroup].up, where,
@@ -797,7 +828,8 @@ protected:
         {
             particleHandles.resize(tree->getNbParticleGroup());
             for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
-				int registeringNode = dataMapping(idxGroup, tree->getNbParticleGroup());
+				//int registeringNode = dataMapping(idxGroup, tree->getNbParticleGroup());
+				int registeringNode = dataMappingBerenger(tree->getCellGroup(tree->getHeight()-1, idxGroup)->getStartingIndex()+1, tree->getHeight()-1);
 				where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
                 ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
                 starpu_variable_data_register(&particleHandles[idxGroup].symb, where,
@@ -820,31 +852,39 @@ protected:
         }
     }
 
-	int dataMapping(int idxGroup, int const nbGroup) const
+	int dataMappingBerenger(MortonIndex const idx, int const idxLevel) const
 	{
-		int bonusGroup = nbGroup%nproc; //Number of node in the bonus group
-		int groupPerNode = (int)floor((double)nbGroup / (double)nproc);
-		int mpi_node;
-		if(idxGroup < bonusGroup*(groupPerNode+1)) { //GroupCell in the bonus group
-			mpi_node = (idxGroup - (idxGroup%(groupPerNode+1)))/(groupPerNode+1);
-		}
-		else { //GroupCell outside the bonus group
-			idxGroup -= bonusGroup*(groupPerNode+1); //Remove the bonus group to compute easily
-			mpi_node = (idxGroup - (idxGroup%groupPerNode))/groupPerNode; //Find the corresponding node as if their was node in the bonus group
-			mpi_node += bonusGroup; //Shift to find the real node
-		}
-		if(mpi_node >= nproc)
-		{
-			cout << "Chenille (0)[" << mpi_rank << "] -> idxGroup:" << idxGroup << " nbGroup:" << nbGroup << endl;
-			cout << "Chenille (1)[" << mpi_rank << "] -> bonusGroup:" << bonusGroup << " groupPerNode:" << groupPerNode << endl;
-			if(idxGroup < bonusGroup*(groupPerNode+1))
-				cout << "Chenille (2)[" << mpi_rank << "] -> mid:" << (idxGroup%(groupPerNode+1)) << endl;
-			else
-				cout << "Chenille (2)[" << mpi_rank << "] -> mid:" << (idxGroup%groupPerNode) << endl;
-			cout << "Chenille (3)[" << mpi_rank << "] -> mpi_node:" << mpi_node << " isBonusGroup:" << (idxGroup < bonusGroup*(groupPerNode+1)) <<endl;
-		}
-		return mpi_node;
+		return 0;
+		for(int i = 0; i < nproc; ++i)
+			if(nodeRepartition[idxLevel][i][0] <= nodeRepartition[idxLevel][i][1] && idx > nodeRepartition[idxLevel][i][0] && idx <= nodeRepartition[idxLevel][i][1])
+				return i;
+		return -1;
 	}
+	//int dataMapping(int idxGroup, int const nbGroup) const
+	//{
+		//int bonusGroup = nbGroup%nproc; //Number of node in the bonus group
+		//int groupPerNode = (int)floor((double)nbGroup / (double)nproc);
+		//int mpi_node;
+		//if(idxGroup < bonusGroup*(groupPerNode+1)) { //GroupCell in the bonus group
+			//mpi_node = (idxGroup - (idxGroup%(groupPerNode+1)))/(groupPerNode+1);
+		//}
+		//else { //GroupCell outside the bonus group
+			//idxGroup -= bonusGroup*(groupPerNode+1); //Remove the bonus group to compute easily
+			//mpi_node = (idxGroup - (idxGroup%groupPerNode))/groupPerNode; //Find the corresponding node as if their was node in the bonus group
+			//mpi_node += bonusGroup; //Shift to find the real node
+		//}
+		//if(mpi_node >= nproc)
+		//{
+			//cout << "Chenille (0)[" << mpi_rank << "] -> idxGroup:" << idxGroup << " nbGroup:" << nbGroup << endl;
+			//cout << "Chenille (1)[" << mpi_rank << "] -> bonusGroup:" << bonusGroup << " groupPerNode:" << groupPerNode << endl;
+			//if(idxGroup < bonusGroup*(groupPerNode+1))
+				//cout << "Chenille (2)[" << mpi_rank << "] -> mid:" << (idxGroup%(groupPerNode+1)) << endl;
+			//else
+				//cout << "Chenille (2)[" << mpi_rank << "] -> mid:" << (idxGroup%groupPerNode) << endl;
+			//cout << "Chenille (3)[" << mpi_rank << "] -> mpi_node:" << mpi_node << " isBonusGroup:" << (idxGroup < bonusGroup*(groupPerNode+1)) <<endl;
+		//}
+		//return mpi_node;
+	//}
     /**
      * This function is creating the interactions vector between blocks.
      * It fills externalInteractionsAllLevel and externalInteractionsLeafLevel.

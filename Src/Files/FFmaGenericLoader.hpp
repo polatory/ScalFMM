@@ -356,6 +356,31 @@ public:
      * @param outParticlePositions the position of particle to fill (FPoint<FReal> class)
      * @param outPhysicalValue     the physical value of particle to fill (FReal)
      */
+    void fillParticle(FPoint<FReal>*const outParticlePositions){
+        if(binaryFile){
+            file->read((char*)(outParticlePositions), sizeof(FReal)*3);
+            if(otherDataToRead> 0){
+                file->read((char*)(this->tmpVal), sizeof(FReal)*otherDataToRead);
+            }
+        } else {
+            FReal x,y,z;
+            (*this->file)  >> x >> y >> z;
+            outParticlePositions->setPosition(x,y,z);
+
+            if(otherDataToRead> 0){
+                for (FSize 	i = 0 ; i <otherDataToRead; ++i){
+                    (*this->file) >> x ;
+                }
+            }
+        }
+    }
+
+    /**
+     * Fills a particle from the current position in the file.
+     *
+     * @param outParticlePositions the position of particle to fill (FPoint<FReal> class)
+     * @param outPhysicalValue     the physical value of particle to fill (FReal)
+     */
     void fillParticle(FPoint<FReal>*const outParticlePositions, FReal*const outPhysicalValue){
         if(binaryFile){
             file->read((char*)(outParticlePositions), sizeof(FReal)*3);
@@ -494,6 +519,8 @@ private:
         this->centerOfBox.setPosition(x,y,z);
         this->boxWidth *= 2;
         otherDataToRead = typeData[1] -  (unsigned int)(4);
+		if(typeData[1] < 4)
+			otherDataToRead = 0;
     };
     void readBinaryHeader(){
         std::cout << " File open in binary mode "<< std::endl;

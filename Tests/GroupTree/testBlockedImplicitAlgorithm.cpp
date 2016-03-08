@@ -1,11 +1,13 @@
 
 // Keep in private GIT
 #include <iostream>
+#include <fstream>
+#include <vector>
 using namespace std;
 
 #include "../../Src/Utils/FGlobal.hpp"
 
-#include "../../Src/GroupTree/Core/FGroupTree.hpp"
+#include "../../Src/GroupTree/Core/FGroupTreeBerenger.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Containers/FVector.hpp"
@@ -36,15 +38,21 @@ using namespace std;
 #include "../../Src/Files/FFmaGenericLoader.hpp"
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 
+std::vector<MortonIndex> getMortonIndex(const char* const mapping_filename);
+
 int main(int argc, char* argv[]){
     setenv("STARPU_NCPU","1",1);
     const FParameterNames LocalOptionBlocSize {
         {"-bs"},
         "The size of the block of the blocked tree"
     };
+	const FParameterNames Mapping {
+		{"-map"} ,
+		"mapping  \\o/."
+	};
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbParticles,
-                         FParameterDefinitions::OctreeSubHeight, LocalOptionBlocSize);
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile, LocalOptionBlocSize, Mapping);
 	int provided = 0;
 	//MPI_Init_thread(&argc,&argv, MPI_THREAD_SERIALIZED, &provided);
 
@@ -58,7 +66,7 @@ int main(int argc, char* argv[]){
 
 
     typedef FGroupTestParticleContainer<FReal>                                GroupContainerClass;
-    typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass,
+    typedef FGroupTreeBerenger< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass,
             GroupContainerClass, 0, 1, long long int>  GroupOctreeClass;
     typedef FStarPUAllCpuCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
@@ -75,13 +83,14 @@ int main(int argc, char* argv[]){
 
     // Get params
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
-    const int groupSize      = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 250);
-#ifdef STARPU_USE_MPI
-		cout << "MPI \\o/" <<endl;
-#else
+    const int groupSize      = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 8);
+    const char* const mapping_filename      = FParameters::getStr(argc,argv,Mapping.options, "mapping");
+	std::vector<MortonIndex> distributedMortonIndex = getMortonIndex(mapping_filename);
+
+#ifndef STARPU_USE_MPI
 		cout << "Pas de mpi -_-\" " << endl;
 #endif
-//#define LOAD_FILE
+#define LOAD_FILE
 #ifndef LOAD_FILE
     const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
     FRandomLoader<FReal> loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), 0);
@@ -98,21 +107,16 @@ int main(int argc, char* argv[]){
     FTestParticleContainer<FReal> allParticles;
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         FPoint<FReal> particlePosition;
-#ifndef LOAD_FILE
-        loader.fillParticle(&particlePosition);
-#else
-        FReal ph;
-        loader.fillParticle(&particlePosition, &ph);
-#endif
+        loader.fillParticle(&particlePosition);//Same with file or not
         allParticles.push(particlePosition);
         tree.insert(particlePosition);
     }
     // Put the data into the tree
     //GroupOctreeClass groupedTree(NbLevels, groupSize, &tree);
-    //GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles);
+	GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false, distributedMortonIndex);
     //GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false, true);
-    GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false, true, 0.2);
-    //groupedTree.printInfoBlocks();
+    //GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false, true, 0.2);
+	groupedTree.printInfoBlocks();
     // Check tree structure at leaf level
     groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass gcell, GroupContainerClass* gleaf){
         const ContainerClass* src = tree.getLeafSrc(gcell.getMortonIndex());
@@ -128,18 +132,24 @@ int main(int argc, char* argv[]){
 
     // Run the algorithm
     GroupKernelClass groupkernel;
-    GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
+    GroupAlgorithm groupalgo(&groupedTree,&groupkernel, distributedMortonIndex);
     groupalgo.execute();
     // Usual algorithm
     KernelClass kernels;            // FTestKernels FBasicKernels
     FmmClass algo(&tree,&kernels);  //FFmmAlgorithm FFmmAlgorithmThread
     algo.execute();
 	int rank = groupalgo.getRank();
+	for(int i = 0; i < groupedTree.getHeight(); ++i)
+	{
+		if(groupedTree.getNbCellGroupAtLevel(i) < groupalgo.getNProc())
+			std::cout << "Error at level " << i << std::endl;
+	}
     // Validate the result
 	for(int idxLevel = 2 ; idxLevel < groupedTree.getHeight() ; ++idxLevel){
 		for(int idxGroup = 0 ; idxGroup < groupedTree.getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
-			if(groupalgo.isDataOwned(idxGroup, groupedTree.getNbCellGroupAtLevel(idxLevel))){
-                GroupOctreeClass::CellGroupClass* currentCells = groupedTree.getCellGroup(idxLevel, idxGroup);
+			//if(groupalgo.isDataOwned(idxGroup, groupedTree.getNbCellGroupAtLevel(idxLevel))){
+			if(groupalgo.isDataOwnedBerenger(groupedTree.getCellGroup(idxLevel, idxGroup)->getStartingIndex(), idxLevel)){
+				GroupOctreeClass::CellGroupClass* currentCells = groupedTree.getCellGroup(idxLevel, idxGroup);
 				currentCells->forEachCell([&](GroupCellClass gcell){
 						const CellClass* cell = tree.getCell(gcell.getMortonIndex(), idxLevel);
 						if(cell == nullptr){
@@ -160,7 +170,8 @@ int main(int argc, char* argv[]){
 	{
 		int idxLevel = groupedTree.getHeight()-1;
 		for(int idxGroup = 0 ; idxGroup < groupedTree.getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
-			if(groupalgo.isDataOwned(idxGroup, groupedTree.getNbCellGroupAtLevel(idxLevel))){
+			//if(groupalgo.isDataOwned(idxGroup, groupedTree.getNbCellGroupAtLevel(idxLevel))){
+			if(groupalgo.isDataOwnedBerenger(groupedTree.getCellGroup(groupedTree.getHeight()-1, idxGroup)->getStartingIndex(), groupedTree.getHeight()-1)){
 				GroupOctreeClass::ParticleGroupClass* particleGroup = groupedTree.getParticleGroup(idxGroup); 
 				GroupOctreeClass::CellGroupClass* cellGroup = groupedTree.getCellGroup(idxLevel, idxGroup);
 				cellGroup->forEachCell([&](GroupCellClass cell){
@@ -182,4 +193,28 @@ int main(int argc, char* argv[]){
 		}
 	}
     return 0;
+}
+std::vector<MortonIndex> getMortonIndex(const char* const mapping_filename)
+{
+	std::vector<MortonIndex> ret;
+
+	std::ifstream fichier(mapping_filename, ios::in);  // on ouvre le fichier en lecture
+
+	if(fichier)  // si l'ouverture a réussi
+	{       
+		int nbProcess;
+		fichier >> nbProcess;
+		for(int i = 0; i < nbProcess; ++i)
+		{
+			MortonIndex start, end;
+			fichier >> start >> end;
+			ret.push_back(start);
+			ret.push_back(end);
+		}
+		// instructions
+		fichier.close();  // on ferme le fichier
+	}
+	else  // sinon
+		cerr << "Impossible d'ouvrir le fichier !" << endl;
+	return ret;
 }

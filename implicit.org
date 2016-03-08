@@ -9,10 +9,10 @@
 #+TAGS: noexport(n)
 
 
-* Implicit MPI in Scalfmm using StarPU
+ * Implicit MPI in Scalfmm using StarPU
 ** Installation
 *** Requirement
-#+BEGIN_SRC sh :exports code :eval never 
+#+BEGIN_SRC sh 
 sudo pacman -S openmpi fftw blas lapack
 #+END_SRC
 
@@ -250,7 +250,7 @@ Now let's look at the function that build handles.
 There is at least 2 new stuff. The variable "where" which tell if a handle is in the node memory or if it's somewhere else. And the variable "registeringNode" which tell on which node the block should be registered.
 
 *** Checking result
-Now I have a beautiful mapping function how on earth am I suppose to check if the result is correct ?
+Now that I have a beautiful mapping function, how on earth am I suppose to check if the result is correct ?
 To answer this question, I need to clarify a little bit on how StarPU MPI work (from what I understood of the documentation).
 When a node register a data, every time a task will write this data somewhere else, the fresh data should be write back to the node that registered the data.
 So each node should have an up to date value in its own cells.
@@ -311,3 +311,101 @@ For those who prefer the C code, there it is.
 		}
 	}
 #+END_SRC
+
+*** Bérenger's Mapping
+The next goal is to try matching the data mapping used by Bérenger in the explicit algorithm of MPI.
+Knowing that the same data mapping should imply the same task mapping.
+
+**** Same leaf mapping
+Because the explicit MPI algorithm first sort particles before knowing which node works on which data, I choose to dump the data related to an execution.
+Which mean, the particle data and the morton index done by each mpi node.
+Then, in the implicit version, the sofware will read those file to reproduce the same data mapping.
+
+**** Same cell mapping
+Because reproducing the same data mapping at leaf level, doesn't mean all the cells in other levels will be mapped on the exact same node, I had to reproduce the algorithme to split cells among nodes.
+This algorithm is described in the section 4.3.1 in Bérenger Thesis.
+But this algorithm isn't aware of the groups of the grouped tree and because the implicit mpi code split data only by groups of the grouped tree I had to made sligth changes.
+Keep in mind that mpi data transfert are managed by starpu mpi and use starpu_data_handle. And in the implicite algorithm, data handles correspond to a group of the grouped tree.
+
+So I choose that if the first cell of the group is mapped on the node i, the whole group is mapped on the node i.
+That's when an other problem come out. Because the mpi quicksort algorithm make sure that all the particles of a leaf are on the same node, but it does not make sure that all cells of a group are mapped on the same mpi node.
+And if it does, what about the next level of the tree ? Does the distributed quicksort make sure that group of node at this level are complete and on the same node ? Firstly, it isn't the case and secondly it woud have been too hard.
+
+So, is it possible to reproduce the exact same data mapping as Berenger does in the explicit version ?
+Well, not the exact same mapping. But it is still possible to make the same mapping at a specific level. And because the first levels (ones close to the root) imply far less work than the leaf level, it is less significant if we can't match the same mapping at these levels.
+
+For example, if there is the same number of particle per leaf and each morton index exists (so it's a perfect tree), it is possible to tell if a specific level has the same mapping as Berenger's mapping.
+Why ?
+If all morton index are used, each mpi node will work always on the same part of the tree which is easily predictible and with a perfect tree it is easier to make sure groups of the grouped tree are created the same way as in the explicit mpi code.
+To check if a mapping error could appear at a level, there is one simple rule : the number of group at the level i, must be divisible by the number of mpi node.
+There is no issue with 'not completly filled group' because, the tree is perfect.
+
+These are numbers I tried and which seems to work pretty well.
+8 mpi node. (2^3)
+A size of a group in the grouped tree of 8. (because it was an octree, it looked like it was a good idea)
+((2^(tree height-1))/number of mpi node) particle to generate for each node.
+A tree higher than 2 levels. Usually, it was 5.
+
+Now remain only one problem, we need to generate a particle for each Morton index.
+It seemed difficult in the first place, but after discussing it with Quentin, it looked pretty easy, so here is the code.
+
+#+BEGIN_SRC C
+    void fillParticleAtMortonIndex(FPoint<FReal>*const inParticlePositions, MortonIndex idx, unsigned int treeHeight){
+        MortonIndex mask = 0x1LL;
+		//Box with at the leaf level
+		FReal leafWidth = boxWidth / FReal(1<<(treeHeight-1));
+		//offset from the previous center. Which is half the box width
+		FReal currentOffset = leafWidth / 2.0;
+		//Start from the center of the box
+		FReal x, y, z;
+		x = centerOfBox.getX();
+		y = centerOfBox.getY();
+		z = centerOfBox.getZ();
+
+		for(unsigned int i = 0; i < treeHeight-1; ++i)
+		{
+			bool x_offset, y_offset, z_offset;
+			z_offset = (idx & mask);
+			idx >>= 1;
+			y_offset = (idx & mask);
+			idx >>= 1;
+			x_offset = (idx & mask);
+			idx >>= 1;
+			if(x_offset)
+				x += currentOffset;
+			else
+				x -= currentOffset;
+			if(y_offset)
+				y += currentOffset;
+			else
+				y -= currentOffset;
+			if(z_offset)
+				z += currentOffset;
+			else
+				z -= currentOffset;
+
+			//Increase the offset as we go down the tree. So the box is getting larger
+			currentOffset *= 2;
+		}
+        inParticlePositions->setPosition( x, y, z);
+    }
+#+END_SRC
+
+Let's have a quick look at the function. We want to insert a particle in specific morton index. 
+I use a two dimensional matrix because it's easier for the drawing.
+Let's say, the morton index is 7. Which give 0111 in binary.
+
+To find the center of the 7th box, we are going to find the center of its father.
+The first bit is 0, so, it substract one fourth of the box width to the x axis.
+The second bit is 1, it add one fourth of the box width to the y axis.
+So now we have the center of the sub box were the 7th box is. So, we keep going.
+Because the third and the fourth bits are 1, we'll respectivly add one eighth of the box width to the x and y axis.
+
+#+CAPTION: 
+#+NAME:   fig:MortonForNoobs
+[[./morton_box_center.png]]
+
+As you can see on the picture it is possible to do start either by the least or the most significant bit and in the function fillParticleAtMortonIndex, it start by the least significant.
+
+**** Task mapping
+//TODO check that blody DAG !

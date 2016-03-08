@@ -129,12 +129,15 @@ int main(int argc, char* argv[]){
     }
     FLOG(std::cout << "My last index is " << leftLimite << "\n");
     FLOG(std::cout << "My left limite is " << myLeftLimite << "\n");
+    std::cout << "My last index is (" << mpiComm.global().processId() << ") " << leftLimite << "\n";
+    std::cout << "My left limite is (" << mpiComm.global().processId() << ") " << myLeftLimite << "\n";
+    std::cout << "Size (" << mpiComm.global().processId() << ") " << allParticles.getNbParticles()  << "\n";
 
 
     // Put the data into the tree
     GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize,
                                  &allParticles, true, leftLimite);
-    groupedTree.printInfoBlocks();
+    //groupedTree.printInfoBlocks();
 
     // Run the algorithm
     GroupKernelClass groupkernel;

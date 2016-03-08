@@ -580,7 +580,6 @@ public:
 //        for(int idx = 0 ; idx < nbParticlesInArray ; ++idx){
 //            particleSaver->push(sortedParticlesArray[idx].particle);
 //        }
-
         ParticleClass* particlesArrayInLeafOrder = nullptr;
         FSize * leavesOffsetInParticles = nullptr;
         FSize nbLeaves = 0;

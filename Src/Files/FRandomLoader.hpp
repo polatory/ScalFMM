@@ -106,6 +106,53 @@ public:
                     (getRandom() * boxWidth) + centerOfBox.getY() - boxWidth/2,
                     (getRandom() * boxWidth) + centerOfBox.getZ() - boxWidth/2);
     }
+    void fillParticleAtMortonIndex(FPoint<FReal>*const inParticlePositions, MortonIndex idx, unsigned int treeHeight){
+        MortonIndex mask = 0x1LL;
+		//Largeur de la boite au niveau des feuilles
+		FReal leafWidth = boxWidth / FReal(1<<(treeHeight-1));
+		//Décalage par rapport au centre de la moitié de la largeur de la boîte
+		FReal currentOffset = leafWidth / 2.0;
+		//Initialise x, y, z au centre de la boîte globale
+		FReal x, y, z;
+		x = centerOfBox.getX();
+		y = centerOfBox.getY();
+		z = centerOfBox.getZ();
+
+		//On va décaler le centre du père vers le centre du fils autant de fois qu'il y a de fils
+		//Comme ce sont des décalage succesif et plutôt indépendant, on peut commencer par les décalages au niveau des feuilles, ce qui est plus simple
+		for(unsigned int i = 0; i < treeHeight-1; ++i)
+		{
+			bool x_offset, y_offset, z_offset;
+			//Check le 1er bit qui correspond au z
+			z_offset = (idx & mask);
+			idx >>= 1;
+			//Check le 2nd bit qui correspond au y
+			y_offset = (idx & mask);
+			idx >>= 1;
+			//Check le 3ème bit qui correspond au x
+			x_offset = (idx & mask);
+			idx >>= 1;
+			//Décalage du x
+			if(x_offset)
+				x += currentOffset;
+			else
+				x -= currentOffset;
+			//Décalage du y
+			if(y_offset)
+				y += currentOffset;
+			else
+				y -= currentOffset;
+			//Décalage du z
+			if(z_offset)
+				z += currentOffset;
+			else
+				z -= currentOffset;
+
+			//On augmente les décallages au fur et à mesure que l'on remonte les étages
+			currentOffset *= 2;
+		}
+        inParticlePositions->setPosition( x, y, z);
+    }
 
     /** Get a random number between 0 & 1 */
     FReal getRandom() const{
