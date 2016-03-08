@@ -38,7 +38,7 @@
 #include "Utils/FParameterNames.hpp"
 
 #include "Kernels/Uniform/FUnifInterpolator.hpp"
-#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel_TensorialInteractions.hpp"
 #include "Kernels/Uniform/FUnifTensor.hpp"
 
 // Check DFT
