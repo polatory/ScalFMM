@@ -42,7 +42,6 @@
 //!                  with following format in name.fma or name.bfma in -bin is set"
 //!      \param  -fvisuout Filename for the visu file (vtk, vtp, cvs or cosmo). vtp is the default
 //!      \param -extraLength   value    extra length to add to the boxWidth (default 0.0)
-
 //!  <b> Geometry arguments:</b>
 //!      \param  -unitCube uniform distribution on unit cube
 //!      \param  -cube uniform distribution on a cube
@@ -51,9 +50,9 @@
 //!      \param  -sphere  uniform distribution on  sphere of radius given by
 //!          \arg         -radius  R - default value for R is 2.0
 //!        \param   -ellipsoid non uniform distribution on  an ellipsoid of aspect ratio given by
-//!              \arg          -ar a:b:c   with a, b and c > 0
+//!              \arg          -size a:b:c   with a, b and c > 0
 //!         \param  -prolate ellipsoid with aspect ratio a:a:c  given by
-//!                \arg             -ar a:a:c   with  c > a > 0
+//!                \arg             -size a:a:c   with  c > a > 0
 //!          \param   -plummer (Highly non uniform) plummer distribution (astrophysics)
 //!                   \arg         -radius  R - default value 10.0"
 //!
@@ -65,50 +64,44 @@
 //!
 //! \b examples
 //!
-//!   generateDistributions -prolate -ar 2:2:4   -N 20000 -fout prolate
+//!   generateDistributions -prolate -size 2:2:4   -N 20000 -fout prolate
 //!
 //! or
 //!
 //!  generateDistributions -cuboid 2:2:4 -N 100000 -fout cuboid.bfma  -fvisuout cuboid.vtp -charge  -zeromean
 //!
 
-
-
 int main(int argc, char ** argv){
-    const FParameterNames LocalOptionEllipsoid = {
-        {"-ellipsoid"} ,
-        " non uniform distribution on  an ellipsoid of aspect ratio given by \n  -ar a:b:c   with a, b and c > 0\n"
-    };
+    const FParameterNames LocalOptionEllipsoid = {{"-ellipsoid"} ,
+        " non uniform distribution on  an ellipsoid of aspect ratio given by -size a:b:c   with a, b and c > 0"},
+    LocalOptionUnitCube ={ {"-unitCube"} ,
+            " uniform distribution on unit cube"},
+    LocalOptionCube ={ {"-cuboid"} ,
+            " uniform distribution on rectangular cuboid of size -lengths a:b:c  - default values are 1.0:1.0:2.0 "},
+	LocalOptionSize ={{"-size"} ,
+		            " Size of the geometry a:b:c  - default values are 1.0:1.0:2.0"},
+	LocalOptionUnitSphere ={ {"-unitSphere"} ,
+				            " uniform distribution on unit sphere"},
+	LocalOptionSphere ={ {"-sphere"} ,
+						 " uniform distribution on  sphere of radius given by -radius  R - default value for R is 2.0"},
+	LocalOptionProlate ={ {"-prolate"} ," ellipsoid with aspect ratio a:a:cs given by  -size a:a:c   with  c > a > 0"},
+	LocalOptionPlummer ={ {"-plummer"} ," (Highly non uniform) plummer distribution (astrophysics)  -radius  R - default value 10.0"},
+	LocalOptionRadius ={ {"-radius"} ,
+						" used to specified the radius of the sphere an dthe plummer distribution or  R - default value for R is 2.0"},
+	LocalOptionCharge ={{"-charge"} ," generate physical values between -1 and 1 otherwise generate between 0 and 1"},
+	LocalOptionZM ={{"-zeromean"} , " the average of the physical values is zero"},
+	LocalOptionEL ={{"-extraLength"} ,
+		            " -extraLength   value    extra length to add to the boxWidth"};
+;
+
     FHelpDescribeAndExit(argc, argv,
                          ">> Driver to generate N points (non)uniformly distributed on a given geometry.\n"
                          "Options  \n"
-                         "   -help       to see the parameters    \n"
-                         "   -N       The number of points in the distribution    \n"
-                         "   -extraLength   value    extra length to add to the boxWidth\n"
-                         "    Distributions   \n"
-                         "        Uniform on    \n"
-                         "             -unitCube  uniform distribution on unit cube\n"
-                         "             -cuboid  uniform distribution on rectangular cuboid of size  a:b:c\n"
-                         "                     -lengths   a:b:c - default values are 1.0:1.0:2.0\n"
-                         "             -unitSphere  uniform distribution on unit sphere\n"
-                         "             -sphere  uniform distribution on  sphere of radius given by\n"
-                         "                     -radius  R - default value for R is 2.0\n"
-                         "             -prolate ellipsoid with aspect ratio a:a:c\n"
-                         "                     -ar a:a:c   with  c > a > 0\n"
-                         "        Non Uniform on    \n"
-                         "             -ellipsoid non uniform distribution on  an ellipsoid of aspect ratio given by\n"
-                         "                     -ar a:b:c   with a, b and c > 0\n"
-                         "             -plummer (Highly non unuiform) plummer distrinution (astrophysics)\n"
-                         "                     -radius  R - default value 10.0\n"
-                         "    Physical values\n"
-                         "             -charge generate physical values between -1 and 1 otherwise generate between 0 and 1		\n"
-                         "             -zeromean  the average of the physical values is zero		\n",
-//                         "     Output \n"
- //                        "             -filename name: generic name for files (without extension) and save data\n"
-  //                       "                     with following format in name.fma or name.bfma in -bin is set\n"
-   //                      "             -visufmt  vtk, vtp, cosmo or cvs format.",
+                         "   -help       to see the parameters    ",
                           FParameterDefinitions::OutputFile,
-                         FParameterDefinitions::NbParticles,FParameterDefinitions::OutputVisuFile,LocalOptionEllipsoid);
+						  FParameterDefinitions::NbParticles,FParameterDefinitions::OutputVisuFile,LocalOptionUnitCube,LocalOptionCube,
+						  LocalOptionUnitSphere,LocalOptionSphere,LocalOptionRadius,LocalOptionEllipsoid,LocalOptionProlate,LocalOptionSize,
+						  LocalOptionPlummer,LocalOptionCharge,LocalOptionZM,LocalOptionEL);
 
 
     
@@ -162,9 +155,10 @@ int main(int argc, char ** argv){
 		unifRandonPointsOnUnitCube(NbPoints, particles) ;
 		Centre.setPosition(0.5,0.5,0.5);
 		BoxWith = 1.0 ;
+		std::cout << "Unit cube "<<std::endl;
 	}
 	else if(FParameters::existParameter(argc, argv, "-cuboid")){
-		std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-lengths",  "1:1:2");
+		std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-size",  "1:1:2");
 		FReal A,B,C ;
 		size_t pos = aspectRatio.find(":");		aspectRatio.replace(pos,1," ");
 		pos = aspectRatio.find(":");		         aspectRatio.replace(pos,1," ");
@@ -183,9 +177,10 @@ int main(int argc, char ** argv){
 		const FReal Radius  = FParameters::getValue(argc,argv,"-radius",  2.0);
 		unifRandonPointsOnSphere(NbPoints, Radius,particles) ;
 		BoxWith = 2.0*Radius ;
+		std::cout << "Sphere radius: "<<Radius<<std::endl;
 	}
 	else if(FParameters::existParameter(argc, argv, "-prolate")){
-		std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-ar",  "1:1:2");
+		std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-size",  "1:1:2");
 		FReal A,B,C ;
 		size_t pos = aspectRatio.find(":");		aspectRatio.replace(pos,1," ");
 		pos = aspectRatio.find(":");		aspectRatio.replace(pos,1," ");
@@ -193,38 +188,39 @@ int main(int argc, char ** argv){
 		if(A != B){
 			std::cerr << " A /= B in prolate ellipsoide A =B. Your aspect ratio: "<< aspectRatio<<std::endl;
 		}
-		std::cout << "A: "<<A<<" B: "<< B << " C: " << C<<std::endl;
+		std::cout << "Prolate A: "<<A<<" B: "<< B << " C: " << C<<std::endl;
 		unifRandonPointsOnProlate(NbPoints,A,C,particles);
 		BoxWith =  2.0*C;
 	}    //const FSize NbPoints  = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options,   FSize(20000));
     else if(FParameters::existParameter(argc, argv, "-hyperpara")){
-        std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-ar",  "1:1:2");
+        std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-size",  "1:1:2");
         FReal A,B,C ;
         size_t pos = aspectRatio.find(":");     aspectRatio.replace(pos,1," ");
         pos = aspectRatio.find(":");        aspectRatio.replace(pos,1," ");
         std::stringstream ss(aspectRatio); ss >>A >> B >> C ;
-        std::cout << "A: "<<A<<" B: "<< B << " C: " << C<<std::endl;
         unifRandonPointsOnHyperPara(NbPoints,A,B,C,particles);
         BoxWith =  2.0*FMath::Max( A,FMath::Max( B,C)) ;
+		std::cout << "Hyperpara "<< A << ":"<< B<<":"<<C<<std::endl;
         std::cout << "BoxWith: " << BoxWith<<std::endl;
 
     }
 	else if(FParameters::existParameter(argc, argv, "-ellipsoid")){
 //		else if(FParameters::existParameter(argc, argv, "-ellipsoid")){
-		std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-ar",  "1:1:2");
+		std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-size",  "1:1:2");
 //		std::string  dd(":"),aspectRatio  = FParameters::getStr(argc,argv,"-ar",  "1:1:2");
 		FReal A,B,C ;
 		size_t pos = aspectRatio.find(":");		aspectRatio.replace(pos,1," ");
 		pos = aspectRatio.find(":");		aspectRatio.replace(pos,1," ");
 		std::stringstream ss(aspectRatio); ss >>A >> B >> C ;
-			std::cout << "A: "<<A<<" B: "<< B << " C: " << C<<std::endl;
 		nonunifRandonPointsOnElipsoid(NbPoints,A,B,C,particles);
 		BoxWith =  2.0*FMath::Max( A,FMath::Max( B,C)) ;
+		std::cout << "Ellipsoid "<< A << ":"<< B<<":"<<C<<std::endl;
 	}
 	else if(FParameters::existParameter(argc, argv, "-plummer")){
 		const FReal Radius  = FParameters::getValue(argc,argv,"-radius",  10.0);
 		unifRandonPlummer(NbPoints, Radius, sum, particles) ;
 		BoxWith = 2.0*Radius ;
+		std::cout << "Plummer radius: "<<Radius<<std::endl;
 	}
 
 	else {
