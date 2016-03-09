@@ -53,6 +53,16 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
     set(MORSE_CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse )
   endif()
   include(MorseInit)
+  # Set the RPATH config
+  # --------------------
+  # use, i.e. don't skip the full RPATH for the build tree
+  set(CMAKE_SKIP_BUILD_RPATH  FALSE)
+  # when building, don't use the install RPATH already
+  # (but later on when installing)
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+  # the RPATH to be used when installing
+  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
   #
   # Options
   #
@@ -314,17 +324,13 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
     if( SCALFMM_USE_MKL_AS_BLAS )
       set(BLA_VENDOR "Intel10_64lp_seq")
       find_package(BLASEXT QUIET) # not REQUIRED
-
-      if(BLAS_LIBRARY_DIRS)
-        # the RPATH to be used when installing
-        list(APPEND CMAKE_INSTALL_RPATH "${BLAS_LIBRARY_DIRS}")
-      endif()
       unset(LAPACK_LIBRARIES)
       if (BLAS_LIBRARIES)
         set(BLASLAPACK_LIBRARIES ${BLAS_LIBRARIES})
       endif()
     elseif(SCALFMM_USE_EXTERNAL_BLAS)
       message(STATUS "BLAS SET BY EXTERNAL PROGRAM = ${BLAS_LIBRARIES}")
+      list(APPEND BLASLAPACK_LIBRARIES "${BLAS_LIBRARIES}")
     else()
       find_package(BLASEXT)  # not REQUIRED
       find_package(LAPACKEXT)  # not REQUIRED
@@ -339,7 +345,14 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
 
     if(BLAS_FOUND)
       set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${BLASLAPACK_LIBRARIES}")
-      #message(STATUS "SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
+      if(BLAS_LIBRARY_DIRS)
+        # the RPATH to be used when installing
+        list(APPEND CMAKE_INSTALL_RPATH "${BLAS_LIBRARY_DIRS}")
+      endif()
+      if(LAPACK_FOUND AND LAPACK_LIBRARY_DIRS)
+        # the RPATH to be used when installing
+        list(APPEND CMAKE_INSTALL_RPATH "${LAPACK_LIBRARY_DIRS}")
+      endif()
     else()
       message(WARNING "BLAS has not been found, SCALFMM will continue to compile but some applications will be disabled.")
       message(WARNING "If you have BLAS set BLAS_LIBDIR, BLAS_INCDIR or BLAS_DIR (CMake variables using -D or environment variables).")        
@@ -408,6 +421,10 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       if (FFT_LIBRARIES)
         set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${FFT_LIBRARIES}")
       endif()
+      if(FFTW_LIBRARY_DIRS)
+        # the RPATH to be used when installing
+        list(APPEND CMAKE_INSTALL_RPATH "${FFTW_LIBRARY_DIRS}")
+      endif()
 
     endif(SCALFMM_USE_MKL_AS_FFTW)
 
@@ -472,7 +489,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       if (CUDA_LIBRARIES)
         set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${CUDA_LIBRARIES}")
       endif()
-      
+
       set(CUDA_NEEDED_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/Src)
     endif()
 
@@ -489,6 +506,19 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
 
     find_package(STARPU ${SCALFMM_STARPU_VERSION} REQUIRED
       COMPONENTS ${STARPU_COMPONENT_LIST})
+
+    if(HWLOC_FOUND AND HWLOC_LIBRARY_DIRS)
+      # the RPATH to be used when installing
+      list(APPEND CMAKE_INSTALL_RPATH "${HWLOC_LIBRARY_DIRS}")
+    endif()
+    if(FXT_FOUND AND FXT_LIBRARY_DIRS)
+      # the RPATH to be used when installing
+      list(APPEND CMAKE_INSTALL_RPATH "${FXT_LIBRARY_DIRS}")
+    endif()
+    if(STARPU_FOUND AND STARPU_LIBRARY_DIRS)
+      # the RPATH to be used when installing
+      list(APPEND CMAKE_INSTALL_RPATH "${STARPU_LIBRARY_DIRS}")
+    endif()
 
     # Append list of libraries and include dirs
     include_directories(${STARPU_INCLUDE_DIRS_DEP})
@@ -666,6 +696,10 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       if(EZTrace_FOUND)
         link_directories(${EZTrace_LIBRARY_DIRS})
         link_libraries( ${EZTrace_LIBRARIES})
+        if (EZTrace_LIBRARY_DIRS)
+          # the RPATH to be used when installing
+          list(APPEND CMAKE_INSTALL_RPATH "${EZTrace_LIBRARY_DIRS}")
+        endif()
         IF( SCALFMM_USE_MPI )
           link_libraries(-leztrace-autostart-mpi)
   ENDIF(SCALFMM_USE_MPI)     
