@@ -161,6 +161,7 @@ protected:
 #ifdef SCALFMM_STARPU_USE_PRIO
     typedef FStarPUFmmPrioritiesV2 PrioClass;// FStarPUFmmPriorities
 #endif
+	std::list<char*> taskName;
 
 public:
     FGroupTaskStarPUMpiAlgorithm(const FMpi::FComm& inComm, OctreeClass*const inTree, KernelClass* inKernels)
@@ -338,6 +339,8 @@ public:
 #ifdef STARPU_SUPPORT_ARBITER
         starpu_arbiter_destroy(arbiterGlobal);
 #endif
+		for(char* ptr : taskName)
+			free(ptr);
         starpu_mpi_shutdown();
         starpu_shutdown();
     }
@@ -456,6 +459,67 @@ protected:
         FTIME_TASKS(cpuWrapper.taskTimeRecorder.saveToDisk("/tmp/taskstime-FGroupTaskStarPUAlgorithm.txt"));
 #endif
     }
+	char* getTaskNameP2M(char const* const task_type, int idxGroup, int rank) {
+		char* name = nullptr;
+		asprintf(&name, "%s_%lld_%lld_%d", task_type, tree->getParticleGroup(idxGroup)->getStartingIndex(), tree->getParticleGroup(idxGroup)->getEndingIndex(), rank);
+		taskName.push_front(name);
+		return name;
+	}
+	char* getTaskNameM2M(char const* const task_type, int idxLevel, int idxGroup, int idxLevel2, int idxGroup2, int rank) {
+		char* name = nullptr;
+		MortonIndex start, end, start2, end2;
+		start = tree->getCellGroup(idxLevel, idxGroup)->getStartingIndex();
+		end = tree->getCellGroup(idxLevel, idxGroup)->getEndingIndex();
+		start2 = tree->getCellGroup(idxLevel2, idxGroup2)->getStartingIndex();
+		end2 = tree->getCellGroup(idxLevel2, idxGroup2)->getEndingIndex();
+		asprintf(&name, "%s_%d_%lld_%lld_%lld_%lld_%d", task_type, idxLevel, start, end, start2, end2, rank);
+		taskName.push_front(name);
+		return name;
+	}
+	char* getTaskNameM2MUsingInfo(char const* const task_type, int idxLevel, int idxGroup, int idxLevel2, int idxGroup2, int rank) {
+		char* name = nullptr;
+		MortonIndex start, end, start2, end2;
+		start = tree->getCellGroup(idxLevel, idxGroup)->getStartingIndex();
+		end = tree->getCellGroup(idxLevel, idxGroup)->getEndingIndex();
+		start2 = processesBlockInfos[idxLevel2][idxGroup2].firstIndex;
+		end2 = processesBlockInfos[idxLevel2][idxGroup2].lastIndex;
+		asprintf(&name, "%s_%d_%lld_%lld_%lld_%lld_%d", task_type, idxLevel, start, end, start2, end2, rank);
+		taskName.push_front(name);
+		return name;
+	}
+	char* getTaskNameM2MUsingInfoRevert(char const* const task_type, int idxLevel, int idxGroup, int idxLevel2, int idxGroup2, int rank) {
+		char* name = nullptr;
+		MortonIndex start, end, start2, end2;
+		start = processesBlockInfos[idxLevel][idxGroup].firstIndex;
+		end = processesBlockInfos[idxLevel][idxGroup].lastIndex;
+		start2 = tree->getCellGroup(idxLevel2, idxGroup2)->getStartingIndex();
+		end2 = tree->getCellGroup(idxLevel2, idxGroup2)->getEndingIndex();
+		asprintf(&name, "%s_%d_%lld_%lld_%lld_%lld_%d", task_type, idxLevel, start, end, start2, end2, rank);
+		taskName.push_front(name);
+		return name;
+	}
+	char* getTaskNameP2P(char const* const task_type, int idxGroup, int idxGroup2, int rank) {
+		char* name = nullptr;
+		MortonIndex start, end, start2, end2;
+		start = tree->getParticleGroup(idxGroup)->getStartingIndex();
+		end = tree->getParticleGroup(idxGroup)->getEndingIndex();
+		start2 = tree->getParticleGroup(idxGroup2)->getStartingIndex();
+		end2 = tree->getParticleGroup(idxGroup2)->getEndingIndex();
+		asprintf(&name, "%s_%lld_%lld_%lld_%lld_%d", task_type, start, end, start2, end2, rank);
+		taskName.push_front(name);
+		return name;
+	}
+	char* getTaskNameP2PUsingInfo(char const* const task_type, int idxGroup, int idxGroup2, int rank) {
+		char* name = nullptr;
+		MortonIndex start, end, start2, end2;
+		start = tree->getParticleGroup(idxGroup)->getStartingIndex();
+		end = tree->getParticleGroup(idxGroup)->getEndingIndex();
+		start2 = processesBlockInfos[tree->getHeight()-1][idxGroup2].firstIndex;
+		end2 = processesBlockInfos[tree->getHeight()-1][idxGroup2].lastIndex;
+		asprintf(&name, "%s_%lld_%lld_%lld_%lld_%d", task_type, start, end, start2, end2, rank);
+		taskName.push_front(name);
+		return name;
+	}
 
 
     void initCodelet(){
@@ -1621,7 +1685,7 @@ protected:
                     STARPU_RW, cellHandles[tree->getHeight()-1][idxGroup].up,
                     STARPU_R, particleHandles[idxGroup].symb,
         #ifdef STARPU_USE_TASK_NAME
-                    STARPU_NAME, p2mTaskNames.get(),
+                    STARPU_NAME, getTaskNameP2M("p2m", idxGroup, comm.processId()),
         #endif
                     0);
         }
@@ -1676,7 +1740,7 @@ protected:
                     task->priority = PrioClass::Controller().getInsertionPosM2M(idxLevel);
 #endif
 #ifdef STARPU_USE_TASK_NAME
-                    task->name = m2mTaskNames[idxLevel].get();
+                    task->name = getTaskNameM2M("m2m", idxLevel, idxGroup, idxLevel+1, idxSubGroup, comm.processId());
 #endif
                     FAssertLF(starpu_task_submit(task) == 0);
                 }
@@ -1711,7 +1775,7 @@ protected:
                     task->priority = PrioClass::Controller().getInsertionPosM2M(idxLevel);
 #endif
 #ifdef STARPU_USE_TASK_NAME
-                    task->name = m2mTaskNames[idxLevel].get();
+                    task->name = getTaskNameM2M("m2m", idxLevel, idxGroup, idxLevel+1, idxSubGroup, comm.processId());
 #endif
                     FAssertLF(starpu_task_submit(task) == 0);
                 }
@@ -1798,7 +1862,7 @@ protected:
                         task->priority = PrioClass::Controller().getInsertionPosM2M(idxLevel);
 #endif
     #ifdef STARPU_USE_TASK_NAME
-                        task->name = task->cl->name;
+                        task->name = getTaskNameM2MUsingInfo("m2m", idxLevel, tree->getNbCellGroupAtLevel(idxLevel)-1, idxLevel+1, firstOtherBlock + nbSubCellGroups, comm.processId());
     #endif
                         FAssertLF(starpu_task_submit(task) == 0);
                     }
@@ -1870,7 +1934,7 @@ protected:
                                        STARPU_R, remoteCellGroups[idxLevel][interactionid].handleSymb,
                                        STARPU_R, remoteCellGroups[idxLevel][interactionid].handleUp,
                    #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, m2l_cl_inout_mpi.name,
+                                       STARPU_NAME, getTaskNameM2MUsingInfo("m2l", idxLevel, idxGroup, idxLevel, interactionid, comm.processId()),
                    #endif
                                        0);
                 }
@@ -1901,7 +1965,7 @@ protected:
                                        STARPU_R, cellHandles[idxLevel][idxGroup].up,
                                        (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
                    #ifdef STARPU_USE_TASK_NAME
-                                       STARPU_NAME, m2lTaskNames[idxLevel].get(),
+                                       STARPU_NAME, getTaskNameM2M("m2l", idxLevel, idxGroup, idxLevel, idxGroup, comm.processId()),
                    #endif
                                        0);
                 }
@@ -1930,7 +1994,7 @@ protected:
                                            STARPU_R, cellHandles[idxLevel][interactionid].symb,
                                            STARPU_R, cellHandles[idxLevel][interactionid].up,
                    #ifdef STARPU_USE_TASK_NAME
-                                           STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
+                                           STARPU_NAME, getTaskNameM2M("m2l", idxLevel, idxGroup, idxLevel, interactionid, starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].down)),
                    #endif
                                            0);
 
@@ -1949,7 +2013,7 @@ protected:
                                            STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                            STARPU_R, cellHandles[idxLevel][idxGroup].up,
                    #ifdef STARPU_USE_TASK_NAME
-                                           STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
+                                           STARPU_NAME, getTaskNameM2M("m2l2", idxLevel, idxGroup, idxLevel, interactionid, starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].down)),
                    #endif
                                            0);
                     }
@@ -2100,7 +2164,7 @@ protected:
                             task->priority = PrioClass::Controller().getInsertionPosL2L(idxLevel);
 #endif
     #ifdef STARPU_USE_TASK_NAME
-                            task->name = task->cl->name;
+                            task->name = getTaskNameM2MUsingInfoRevert("l2l", idxLevel, firstOtherBlock, idxLevel+1, idxSubGroup, comm.processId());
     #endif
                             FAssertLF(starpu_task_submit(task) == 0);
                         }
@@ -2129,12 +2193,12 @@ protected:
                                                      0);
                             task->cl_arg = arg_buffer;
                             task->cl_arg_size = arg_buffer_size;
-                    task->cl_arg_free = 1;
+							task->cl_arg_free = 1;
 #ifdef SCALFMM_STARPU_USE_PRIO
                             task->priority = PrioClass::Controller().getInsertionPosL2L(idxLevel);
 #endif
     #ifdef STARPU_USE_TASK_NAME
-                            task->name = task->cl->name;
+                            task->name = getTaskNameM2MUsingInfoRevert("l2l", idxLevel, firstOtherBlock, idxLevel+1, idxSubGroup, comm.processId());
     #endif
                             FAssertLF(starpu_task_submit(task) == 0);
 
@@ -2192,7 +2256,7 @@ protected:
                     task->priority = PrioClass::Controller().getInsertionPosL2L(idxLevel);
 #endif
 #ifdef STARPU_USE_TASK_NAME
-                    task->name = l2lTaskNames[idxLevel].get();
+                    task->name = getTaskNameM2M("l2l", idxLevel, idxGroup, idxLevel+1, idxSubGroup, comm.processId());
 #endif
                     FAssertLF(starpu_task_submit(task) == 0);
                 }
@@ -2231,7 +2295,7 @@ protected:
                     task->priority = PrioClass::Controller().getInsertionPosL2L(idxLevel);
 #endif
 #ifdef STARPU_USE_TASK_NAME
-                    task->name = l2lTaskNames[idxLevel].get();
+                    task->name = getTaskNameM2M("l2l", idxLevel, idxGroup, idxLevel+1, idxSubGroup, comm.processId());
 #endif
                     FAssertLF(starpu_task_submit(task) == 0);
                 }
@@ -2261,7 +2325,7 @@ protected:
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
                                    STARPU_R, remoteParticleGroupss[interactionid].handleSymb,
                    #ifdef STARPU_USE_TASK_NAME
-                                   STARPU_NAME, p2p_cl_inout_mpi.name,
+                                   STARPU_NAME, getTaskNameP2PUsingInfo("p2p", idxGroup, interactionid, comm.processId()),
                    #endif
                                    0);
             }
@@ -2303,7 +2367,7 @@ protected:
                                    (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[interactionid].down,
                    #endif
                    #ifdef STARPU_USE_TASK_NAME
-                                   STARPU_NAME, p2pOuterTaskNames.get(),
+                                   STARPU_NAME, getTaskNameP2P("p2p", idxGroup, interactionid, comm.processId()),
                    #endif
                                    0);
             }
@@ -2324,7 +2388,7 @@ protected:
                                (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
                    #endif
                    #ifdef STARPU_USE_TASK_NAME
-                               STARPU_NAME, p2pTaskNames.get(),
+                               STARPU_NAME, getTaskNameP2P("p2p", idxGroup, idxGroup, comm.processId()),
                    #endif
                                0);
         }
@@ -2359,7 +2423,7 @@ protected:
                     (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
         #endif
         #ifdef STARPU_USE_TASK_NAME
-                    STARPU_NAME, l2pTaskNames.get(),
+                    STARPU_NAME, getTaskNameP2M("l2p", idxGroup, comm.processId()),
         #endif
                     0);
         }

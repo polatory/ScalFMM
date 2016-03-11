@@ -142,7 +142,7 @@ int main(int argc, char* argv[]){
     // Run the algorithm
     GroupKernelClass groupkernel;
     GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
-    groupalgo.execute();
+    groupalgo.execute(FFmmP2P | FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P);
 
     std::cout << "Wait Others... " << std::endl;
     mpiComm.global().barrier();

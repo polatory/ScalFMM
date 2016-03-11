@@ -59,6 +59,7 @@ typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass,
 		GroupContainerClass, 0, 1, long long int>  GroupOctreeClass;
 typedef FStarPUAllCpuCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
 typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
+typedef FGroupTaskStarPUMpiAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper> GroupAlgorithm;
 
 void dumpTreeInfo(GroupOctreeClass& groupedTree, int rank);
 
@@ -158,7 +159,7 @@ int main(int argc, char* argv[]){
                               mpiComm.global().processId()+1, 0,
                               mpiComm.global().getComm()), __LINE__);
     }
-    if(mpiComm.global().processId() == 0){
+	if(mpiComm.global().processId() == 0){
 		std::vector<TestParticle*> particlesGathered;
 		std::vector<int> sizeGathered;
 		std::vector<MortonIndex> mortonIndex;
@@ -198,6 +199,8 @@ int main(int argc, char* argv[]){
 		fichier << mortonIndex.size()/2 << std::endl;
 		for(unsigned int i = 0; i < mortonIndex.size(); i+=2)
 			fichier << mortonIndex[i] << " " << mortonIndex[i+1] << std::endl;
+		for(TestParticle* ptr : particlesGathered)
+			delete ptr;
 	}
 	else{
 		int sizeofParticle = sizeof(TestParticle)*myParticles.getSize();
@@ -206,40 +209,96 @@ int main(int argc, char* argv[]){
         MPI_Send(const_cast<MortonIndex*>(&leftLimite), sizeof(leftLimite), MPI_BYTE, 0, 0, mpiComm.global().getComm());
         MPI_Send(const_cast<MortonIndex*>(&myLeftLimite), sizeof(myLeftLimite), MPI_BYTE, 0, 0, mpiComm.global().getComm());
 	}
-
+	std::cout << "Loutre " << sizeof(starpu_tag_t) << std::endl;
 	// Put the data into the tree
 	GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize,
 			&allParticles, true, leftLimite);
 
-	for(int i = 0; i < mpiComm.global().processCount(); ++i)
-	{
-		if(i == mpiComm.global().processId())
-		{
-			FLOG(std::cout << "My last index is " << leftLimite << "\n");
-			FLOG(std::cout << "My left limite is " << myLeftLimite << "\n");
-			std::cout << "My last index is (" << mpiComm.global().processId() << ") " << leftLimite << "\n";
-			std::cout << "My left limite is (" << mpiComm.global().processId() << ") " << myLeftLimite << "\n";
-			std::cout << "Size (" << mpiComm.global().processId() << ") " << allParticles.getNbParticles()  << "\n";
-		}
-		MPI_Barrier(MPI_COMM_WORLD);
-	}
-	if(mpiComm.global().processId() == 0)
-	{
-		std::cout << "NbLevel " << NbLevels << std::endl;
-		remove("mapping_morton");
-	}
-	for(int i = 0; i < mpiComm.global().processCount(); ++i)
-	{
-		if(i == mpiComm.global().processId())
-			dumpTreeInfo(groupedTree, i);
-		MPI_Barrier(MPI_COMM_WORLD);
-	}
+	//Print morton index for each node
 	//for(int i = 0; i < mpiComm.global().processCount(); ++i)
 	//{
-		//if(mpiComm.global().processId() == 0)
-			//groupedTree.printInfoBlocks();
+		//if(i == mpiComm.global().processId())
+		//{
+			//FLOG(std::cout << "My last index is " << leftLimite << "\n");
+			//FLOG(std::cout << "My left limite is " << myLeftLimite << "\n");
+			//std::cout << "My last index is (" << mpiComm.global().processId() << ") " << leftLimite << "\n";
+			//std::cout << "My left limite is (" << mpiComm.global().processId() << ") " << myLeftLimite << "\n";
+			//std::cout << "Size (" << mpiComm.global().processId() << ") " << allParticles.getNbParticles()  << "\n";
+		//}
 		//MPI_Barrier(MPI_COMM_WORLD);
 	//}
+	//if(mpiComm.global().processId() == 0)
+	//{
+		//std::cout << "NbLevel " << NbLevels << std::endl;
+		//remove("mapping_morton");
+	//}
+	//for(int i = 0; i < mpiComm.global().processCount(); ++i)
+	//{
+		//if(i == mpiComm.global().processId())
+			//dumpTreeInfo(groupedTree, i);
+		//MPI_Barrier(MPI_COMM_WORLD);
+	//}
+    // Run the algorithm
+    GroupKernelClass groupkernel;
+    GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
+    groupalgo.execute();
+
+    std::cout << "Wait Others... " << std::endl;
+    mpiComm.global().barrier();
+
+    groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass cell, GroupContainerClass* leaf){
+        const FSize nbPartsInLeaf = leaf->getNbParticles();
+        const long long int* dataDown = leaf->getDataDown();
+        for(FSize idxPart = 0 ; idxPart < nbPartsInLeaf ; ++idxPart){
+            if(dataDown[idxPart] != totalNbParticles-1){
+                std::cout << "[Full] Error a particle has " << dataDown[idxPart] << " (it should be " << (totalNbParticles-1) << ") at index " << cell.getMortonIndex() << "\n";
+            }
+        }
+    });
+
+
+	//Check if the algorithm was good
+    typedef FTestCell                   CellClass;
+    typedef FTestParticleContainer<FReal>      ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass >                     LeafClass;
+    typedef FOctree<FReal, CellClass, ContainerClass , LeafClass >  OctreeClass;
+    typedef FTestKernels< CellClass, ContainerClass >         KernelClass;
+    typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
+
+    {
+        // Usual octree
+        OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());
+        for(int idxProc = 0 ; idxProc < mpiComm.global().processCount() ; ++idxProc){
+            FRandomLoader<FReal> loaderAll(NbParticles, 1.0, FPoint<FReal>(0,0,0), idxProc);
+            for(FSize idxPart = 0 ; idxPart < loaderAll.getNumberOfParticles() ; ++idxPart){
+                FPoint<FReal> pos;
+				MortonIndex id = idxProc*loader.getNumberOfParticles() + idxPart;
+                loaderAll.fillParticleAtMortonIndex(&pos, id, NbLevels);
+                tree.insert(pos);
+            }
+        }
+        // Usual algorithm
+        KernelClass kernels;            // FTestKernels FBasicKernels
+        FmmClass algo(&tree,&kernels);  //FFmmAlgorithm FFmmAlgorithmThread
+        algo.execute();
+
+        // Compare the results
+        groupedTree.forEachCellWithLevel([&](GroupCellClass gcell, const int level){
+            const CellClass* cell = tree.getCell(gcell.getMortonIndex(), level);
+            if(cell == nullptr){
+                std::cout << "[Empty] Error cell should not exist " << gcell.getMortonIndex() << "\n";
+            }
+            else {
+                if(gcell.getDataUp() != cell->getDataUp()){
+                    std::cout << "[Up] Up is different at index " << gcell.getMortonIndex() << " level " << level << " is " << gcell.getDataUp() << " should be " << cell->getDataUp() << "\n";
+                }
+                if(gcell.getDataDown() != cell->getDataDown()){
+                    std::cout << "[Down] Down is different at index " << gcell.getMortonIndex() << " level " << level << " is " << gcell.getDataDown() << " should be " << cell->getDataDown() << "\n";
+                }
+            }
+        });
+    }
+
     return 0;
 }
 void dumpTreeInfo(GroupOctreeClass& groupedTree, int rank)

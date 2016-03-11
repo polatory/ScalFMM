@@ -53,7 +53,7 @@ int main(int argc, char* argv[]){
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbParticles,
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile, LocalOptionBlocSize, Mapping);
-	int provided = 0;
+	//int provided = 0;
 	//MPI_Init_thread(&argc,&argv, MPI_THREAD_SERIALIZED, &provided);
 
     typedef double FReal;
@@ -114,9 +114,7 @@ int main(int argc, char* argv[]){
     // Put the data into the tree
     //GroupOctreeClass groupedTree(NbLevels, groupSize, &tree);
 	GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false, distributedMortonIndex);
-    //GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false, true);
-    //GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false, true, 0.2);
-	groupedTree.printInfoBlocks();
+	
     // Check tree structure at leaf level
     groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass gcell, GroupContainerClass* gleaf){
         const ContainerClass* src = tree.getLeafSrc(gcell.getMortonIndex());
@@ -144,6 +142,7 @@ int main(int argc, char* argv[]){
 		if(groupedTree.getNbCellGroupAtLevel(i) < groupalgo.getNProc())
 			std::cout << "Error at level " << i << std::endl;
 	}
+	return 0;
     // Validate the result
 	for(int idxLevel = 2 ; idxLevel < groupedTree.getHeight() ; ++idxLevel){
 		for(int idxGroup = 0 ; idxGroup < groupedTree.getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
