@@ -40,7 +40,7 @@ public:
     const char* print(const char key[], const char format[], Params... args ){
         const size_t length = 512;
         char* name = new char[length+1];
-        snprintf(name, length, "%s_%d", key, taskid++);
+        snprintf(name, length, "%s-%d", key, taskid++);
         name[length] = '\0';
         names.push_back(name);
 
@@ -53,7 +53,7 @@ public:
     const char* add(const char key[], const char* strToCpy){
         const size_t length = 512;
         char* name = new char[length+1];
-        snprintf(name, length, "%s_%d", key, taskid++);
+        snprintf(name, length, "%s-%d", key, taskid++);
         name[length] = '\0';
         names.push_back(name);
 
