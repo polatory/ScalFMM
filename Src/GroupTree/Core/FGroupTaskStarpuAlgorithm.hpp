@@ -653,7 +653,7 @@ protected:
         l2l_cl_nocommute.dyn_modes = (starpu_data_access_mode*)malloc(l2l_cl_nocommute.nbuffers*sizeof(starpu_data_access_mode));
         l2l_cl_nocommute.dyn_modes[0] = STARPU_R;
         l2l_cl_nocommute.dyn_modes[1] = STARPU_R;
-        l2l_cl_nocommute.name = "l2l_cl";
+        l2l_cl_nocommute.name = "l2l_cl_nocommute";
         l2l_cl_nocommute.dyn_modes[2] = STARPU_R;
         l2l_cl_nocommute.dyn_modes[3] = STARPU_RW;
         /* ############################################ */
@@ -661,53 +661,53 @@ protected:
         	 // Adding multiple regression codelet model for codelet l2l_cl
         	 // Computed from execution:  4 Native execution on miriel
         	 // Adjusted R-squared:  0.124904804564829
-        	 l2l_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
-        	 l2l_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
-        	 l2l_cl.model->symbol = l2l_cl.name;
+        	 l2l_cl_nocommute.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
+        	 l2l_cl_nocommute.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
+        	 l2l_cl_nocommute.model->symbol = l2l_cl_nocommute.name;
 
-        	 l2l_cl.model->nparameters = 3;
-        	 l2l_cl.model->ncombinations = 7;
-        	 l2l_cl.model->combinations = (unsigned **) malloc(l2l_cl.model->ncombinations*sizeof(unsigned *));
+        	 l2l_cl_nocommute.model->nparameters = 3;
+        	 l2l_cl_nocommute.model->ncombinations = 7;
+        	 l2l_cl_nocommute.model->combinations = (unsigned **) malloc(l2l_cl_nocommute.model->ncombinations*sizeof(unsigned *));
 
-        	 if (l2l_cl.model->combinations)
+        	 if (l2l_cl_nocommute.model->combinations)
         	 {
-        	   for (unsigned i = 0; i < l2l_cl.model->ncombinations; i++)
+        	   for (unsigned i = 0; i < l2l_cl_nocommute.model->ncombinations; i++)
         	   {
-        	     l2l_cl.model->combinations[i] = (unsigned *) malloc(l2l_cl.model->nparameters*sizeof(unsigned));
+        	     l2l_cl_nocommute.model->combinations[i] = (unsigned *) malloc(l2l_cl_nocommute.model->nparameters*sizeof(unsigned));
         	   }
         	 }
 
-        	 l2l_cl.model->parameters_names = (const char **) calloc(1, l2l_cl.model->ncombinations*sizeof(char *));
-        	 l2l_cl.model->parameters_names[0] = "D";
-        	 l2l_cl.model->combinations[0][0] = 1;
-        	 l2l_cl.model->combinations[0][1] = 0;
-        	 l2l_cl.model->combinations[0][2] = 0;
-        	 l2l_cl.model->parameters_names[1] = "E";
-        	 l2l_cl.model->combinations[1][0] = 0;
-        	 l2l_cl.model->combinations[1][1] = 1;
-        	 l2l_cl.model->combinations[1][2] = 0;
-        	 l2l_cl.model->parameters_names[2] = "F";
-        	 l2l_cl.model->combinations[2][0] = 0;
-        	 l2l_cl.model->combinations[2][1] = 0;
-        	 l2l_cl.model->combinations[2][2] = 1;
-        	 l2l_cl.model->parameters_names[3] = "D*E";
-        	 l2l_cl.model->combinations[3][0] = 1;
-        	 l2l_cl.model->combinations[3][1] = 1;
-        	 l2l_cl.model->combinations[3][2] = 0;
-        	 l2l_cl.model->parameters_names[4] = "D*F";
-        	 l2l_cl.model->combinations[4][0] = 1;
-        	 l2l_cl.model->combinations[4][1] = 0;
-        	 l2l_cl.model->combinations[4][2] = 1;
-        	 l2l_cl.model->parameters_names[5] = "E*F";
-        	 l2l_cl.model->combinations[5][0] = 0;
-        	 l2l_cl.model->combinations[5][1] = 1;
-        	 l2l_cl.model->combinations[5][2] = 1;
-        	 l2l_cl.model->parameters_names[6] = "D*E*F";
-        	 l2l_cl.model->combinations[6][0] = 1;
-        	 l2l_cl.model->combinations[6][1] = 1;
-        	 l2l_cl.model->combinations[6][2] = 1;
+        	 l2l_cl_nocommute.model->parameters_names = (const char **) calloc(1, l2l_cl_nocommute.model->ncombinations*sizeof(char *));
+        	 l2l_cl_nocommute.model->parameters_names[0] = "D";
+        	 l2l_cl_nocommute.model->combinations[0][0] = 1;
+        	 l2l_cl_nocommute.model->combinations[0][1] = 0;
+        	 l2l_cl_nocommute.model->combinations[0][2] = 0;
+        	 l2l_cl_nocommute.model->parameters_names[1] = "E";
+        	 l2l_cl_nocommute.model->combinations[1][0] = 0;
+        	 l2l_cl_nocommute.model->combinations[1][1] = 1;
+        	 l2l_cl_nocommute.model->combinations[1][2] = 0;
+        	 l2l_cl_nocommute.model->parameters_names[2] = "F";
+        	 l2l_cl_nocommute.model->combinations[2][0] = 0;
+        	 l2l_cl_nocommute.model->combinations[2][1] = 0;
+        	 l2l_cl_nocommute.model->combinations[2][2] = 1;
+        	 l2l_cl_nocommute.model->parameters_names[3] = "D*E";
+        	 l2l_cl_nocommute.model->combinations[3][0] = 1;
+        	 l2l_cl_nocommute.model->combinations[3][1] = 1;
+        	 l2l_cl_nocommute.model->combinations[3][2] = 0;
+        	 l2l_cl_nocommute.model->parameters_names[4] = "D*F";
+        	 l2l_cl_nocommute.model->combinations[4][0] = 1;
+        	 l2l_cl_nocommute.model->combinations[4][1] = 0;
+        	 l2l_cl_nocommute.model->combinations[4][2] = 1;
+        	 l2l_cl_nocommute.model->parameters_names[5] = "E*F";
+        	 l2l_cl_nocommute.model->combinations[5][0] = 0;
+        	 l2l_cl_nocommute.model->combinations[5][1] = 1;
+        	 l2l_cl_nocommute.model->combinations[5][2] = 1;
+        	 l2l_cl_nocommute.model->parameters_names[6] = "D*E*F";
+        	 l2l_cl_nocommute.model->combinations[6][0] = 1;
+        	 l2l_cl_nocommute.model->combinations[6][1] = 1;
+        	 l2l_cl_nocommute.model->combinations[6][2] = 1;
 
-        	 l2l_cl.model->parameters = l2l_cl_perf_func;
+        	 l2l_cl_nocommute.model->parameters = l2l_cl_nocommute_perf_func;
         /* ############################################ */
 
         memset(&l2p_cl, 0, sizeof(l2p_cl));

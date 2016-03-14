@@ -87,6 +87,18 @@ static inline void l2l_cl_perf_func(struct starpu_task *task, double *parameters
 				  &parameters[2]);
 }
 
+static inline void l2l_cl_nocommute_perf_func(struct starpu_task *task, double *parameters){
+  FStarPUPtrInterface* wrapperptr;
+  int idxLevel, i;
+  starpu_codelet_unpack_args(task->cl_arg,
+      	  	  	  	  &wrapperptr,
+				  &idxLevel,
+				  &i,
+			     	  &parameters[0],
+		        	  &parameters[1],
+				  &parameters[2]);
+}
+
 static inline void l2p_cl_perf_func(struct starpu_task *task, double *parameters){
   FStarPUPtrInterface* wrapperptr;
   int i;
