@@ -19,6 +19,7 @@
 #include <omp.h>
 
 #include <starpu.h>
+#include "starpu_codelet_parameters.h"
 #include "../StarPUUtils/FStarPUUtils.hpp"
 #include "../StarPUUtils/FStarPUFmmPriorities.hpp"
 #include "../StarPUUtils/FStarPUFmmPrioritiesV2.hpp"
@@ -487,27 +488,36 @@ protected:
         m2m_cl.name = "m2m_cl";
         m2m_cl.dyn_modes[2] = STARPU_R;
         m2m_cl.dyn_modes[3] = STARPU_R;
-        //STARPU_MULTIPLE_REGRESSION_BASED
-        m2m_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
-        m2m_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
-        m2m_cl.model->symbol = "m2m_cl";
-        m2m_cl.model->nparameters=2; //M, N
-        //parameters are defined below, when the task is inserted
-        m2m_cl.model->ncombinations=3; //10, 01, 12
-        m2m_cl.model->combinations = (unsigned **) malloc(m2m_cl.model->ncombinations*sizeof(unsigned *));
-        if (m2m_cl.model->combinations)
-        {
-          for (int i = 0; i < m2m_cl.model->ncombinations; i++)
-          {
-        	 m2m_cl.model->combinations[i] = (unsigned *) malloc(m2m_cl.model->nparameters*sizeof(unsigned));
-          }
-        }
-        m2m_cl.model->combinations[0][0] = 1;
-        m2m_cl.model->combinations[0][1] = 0;
-        m2m_cl.model->combinations[1][0] = 0;
-        m2m_cl.model->combinations[1][1] = 1;
-        m2m_cl.model->combinations[2][0] = 1;
-        m2m_cl.model->combinations[2][1] = 2;
+        /* ############################################ */
+        /*      Automatically generated code */
+        	 // Adding multiple regression codelet model for codelet m2m_cl
+        	 m2m_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
+        	 m2m_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
+        	 m2m_cl.model->symbol = m2m_cl.name;
+        	 m2m_cl.model->nparameters = 2;
+        	 m2m_cl.model->ncombinations = 3;
+        	 m2m_cl.model->combinations = (unsigned **) malloc(m2m_cl.model->ncombinations*sizeof(unsigned *));
+        	 if (m2m_cl.model->combinations)
+        	 {
+        	   for (unsigned i = 0; i < m2m_cl.model->ncombinations; i++)
+        	   {
+        	     m2m_cl.model->combinations[i] = (unsigned *) malloc(m2m_cl.model->nparameters*sizeof(unsigned));
+        	   }
+        	 }
+        	 m2m_cl.model->combinations[0][0] = 1;
+        	 m2m_cl.model->combinations[1][0] = 0;
+        	 m2m_cl.model->combinations[2][0] = 1;
+        	 m2m_cl.model->combinations[0][1] = 0;
+        	 m2m_cl.model->combinations[1][1] = 1;
+        	 m2m_cl.model->combinations[2][1] = 1;
+
+        	 m2m_cl.model->parameters_names = (const char **) calloc(1,m2m_cl.model->ncombinations*sizeof(char *));
+        	 m2m_cl.model->parameters_names[0] = "E";
+        	 m2m_cl.model->parameters_names[1] = "F";
+        	 m2m_cl.model->parameters_names[2] = "E*F";
+
+        	 m2m_cl.model->parameters = m2m_cl_perf_func;
+        /* ############################################ */
 
         memset(&l2l_cl, 0, sizeof(l2l_cl));
 #ifdef STARPU_USE_CPU
@@ -620,6 +630,26 @@ protected:
         p2p_cl_in.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
 #endif
         p2p_cl_in.name = "p2p_cl_in";
+        /* ############################################ */
+        /*      Automatically generated code */
+        	 // Adding multiple regression codelet model for codelet p2p_cl_in
+        	 p2p_cl_in.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
+        	 p2p_cl_in.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
+        	 p2p_cl_in.model->symbol = p2p_cl_in.name;
+        	 p2p_cl_in.model->nparameters = 1;
+        	 p2p_cl_in.model->ncombinations = 1;
+        	 p2p_cl_in.model->combinations = (unsigned **) malloc(p2p_cl_in.model->ncombinations*sizeof(unsigned *));
+        	 if (p2p_cl_in.model->combinations)
+        	 {
+        	   for (unsigned i = 0; i < p2p_cl_in.model->ncombinations; i++)
+        	   {
+        	     p2p_cl_in.model->combinations[i] = (unsigned *) malloc(p2p_cl_in.model->nparameters*sizeof(unsigned));
+        	   }
+        	 }
+        	 p2p_cl_in.model->combinations[0][0] = 1;
+
+        	 p2p_cl_in.model->parameters = p2p_cl_in_perf_func;
+        /* ############################################ */
         memset(&p2p_cl_inout, 0, sizeof(p2p_cl_inout));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportP2PExtern(FSTARPU_CPU_IDX)){
@@ -653,7 +683,39 @@ protected:
         p2p_cl_inout.modes[3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
 #endif
         p2p_cl_inout.name = "p2p_cl_inout";
+        /* ############################################ */
+        /*      Automatically generated code */
+        	 // Adding multiple regression codelet model for codelet p2p_cl_inout
+        	 p2p_cl_inout.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
+        	 p2p_cl_inout.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
+        	 p2p_cl_inout.model->symbol = p2p_cl_inout.name;
+        	 p2p_cl_inout.model->nparameters = 2;
+        	 p2p_cl_inout.model->ncombinations = 7;
+        	 p2p_cl_inout.model->combinations = (unsigned **) malloc(p2p_cl_inout.model->ncombinations*sizeof(unsigned *));
+        	 if (p2p_cl_inout.model->combinations)
+        	 {
+        	   for (unsigned i = 0; i < p2p_cl_inout.model->ncombinations; i++)
+        	   {
+        	     p2p_cl_inout.model->combinations[i] = (unsigned *) malloc(p2p_cl_inout.model->nparameters*sizeof(unsigned));
+        	   }
+        	 }
+        	 p2p_cl_inout.model->combinations[0][0] = 1;
+        	 p2p_cl_inout.model->combinations[1][0] = 0;
+        	 p2p_cl_inout.model->combinations[2][0] = 0;
+        	 p2p_cl_inout.model->combinations[3][0] = 0;
+        	 p2p_cl_inout.model->combinations[4][0] = 1;
+        	 p2p_cl_inout.model->combinations[5][0] = 1;
+        	 p2p_cl_inout.model->combinations[6][0] = 1;
+        	 p2p_cl_inout.model->combinations[0][1] = 0;
+        	 p2p_cl_inout.model->combinations[1][1] = 1;
+        	 p2p_cl_inout.model->combinations[2][1] = 2;
+        	 p2p_cl_inout.model->combinations[3][1] = 3;
+        	 p2p_cl_inout.model->combinations[4][1] = 1;
+        	 p2p_cl_inout.model->combinations[5][1] = 2;
+        	 p2p_cl_inout.model->combinations[6][1] = 3;
 
+        	 p2p_cl_inout.model->parameters = p2p_cl_inout_perf_func;
+        /* ############################################ */
         memset(&m2l_cl_in, 0, sizeof(m2l_cl_in));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportM2L(FSTARPU_CPU_IDX)){
@@ -1087,20 +1149,20 @@ protected:
                     // put args values
                     char *arg_buffer;
                     size_t arg_buffer_size;
+                    double p0 = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval();
+                    double p1 = (double) FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
+	                        FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3);
+
                     starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
                                              STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                              STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                              STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+											 STARPU_VALUE, &p0, sizeof(double),
+											 STARPU_VALUE, &p1, sizeof(double),
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;                   
                     task->cl_arg_free = 1;
-                    //STARPU_MULTIPLE_REGRESSION_BASED
-                    double application_parameters1 = 1.42;
-                    double application_parameters2 = (double) cellHandles[idxLevel][idxGroup].intervalSize;
-                    m2m_cl.model->parameters = (double *) malloc(m2m_cl.model->nparameters*sizeof(double));
-                    m2m_cl.model->parameters[0] = application_parameters1;
-                    m2m_cl.model->parameters[1] = application_parameters2;
 #ifdef SCALFMM_STARPU_USE_PRIO
                     task->priority = PrioClass::Controller().getInsertionPosM2M(idxLevel);
 #endif
@@ -1140,10 +1202,16 @@ protected:
                     // put args values
                     char *arg_buffer;
                     size_t arg_buffer_size;
+                    double p0 = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval();
+                    double p1 = (double) FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
+                            FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3);
+
                     starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
                                              STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                              STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                              STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+											 STARPU_VALUE, &p0, sizeof(double),
+											 STARPU_VALUE, &p1, sizeof(double),
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
@@ -1422,10 +1490,14 @@ protected:
             for(int idxInteraction = 0; idxInteraction < int(externalInteractionsLeafLevel[idxGroup].size()) ; ++idxInteraction){
                 const int interactionid = externalInteractionsLeafLevel[idxGroup][idxInteraction].otherBlockId;
                 const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions;
+                double p0 = (double) tree->getParticleGroup(interactionid)->getNbParticlesInGroup();
+                double p1 = (double) outsideInteractions->size();
                 starpu_insert_task(&p2p_cl_inout,
                                    STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                    STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                    STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
+								   STARPU_VALUE, &p0, sizeof(double),
+								   STARPU_VALUE, &p1, sizeof(double),
                    #ifdef SCALFMM_STARPU_USE_PRIO
                                    STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2PExtern(),
                    #endif
@@ -1462,9 +1534,11 @@ protected:
         FLOG( timerOutBlock.tac() );
         FLOG( timerInBlock.tic() );
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
+        	double p0 = (double) tree->getParticleGroup(idxGroup)->getNbParticlesInGroup();
             starpu_insert_task(&p2p_cl_in,
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
+							   STARPU_VALUE, &p0, sizeof(double),
                    #ifdef SCALFMM_STARPU_USE_PRIO
                                STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2P(),
                    #endif
