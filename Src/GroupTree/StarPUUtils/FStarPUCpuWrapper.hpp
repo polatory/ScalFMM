@@ -102,7 +102,7 @@ public:
 
         FStarPUPtrInterface* worker = nullptr;
         int intervalSize;
-        starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize);
+        starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize, NULL);
         worker->get<ThisClass>(FSTARPU_CPU_IDX)->bottomPassPerform(&leafCells, &containers);
     }
 
@@ -132,7 +132,7 @@ public:
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
         int intervalSize;
-        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &intervalSize);
+        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &intervalSize, NULL);
 
         CellContainerClass subCellGroup(
                         (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
@@ -243,7 +243,7 @@ public:
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
         int intervalSize;
-        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &intervalSize);
+        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &intervalSize, NULL);
 
         worker->get<ThisClass>(FSTARPU_CPU_IDX)->transferInPassPerform(&currentCells, idxLevel);
     }
@@ -301,7 +301,7 @@ public:
         const std::vector<OutOfBlockInteraction>* outsideInteractions;
         int intervalSize;
         int mode = 0;
-        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions, &intervalSize, &mode);
+        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &outsideInteractions, &intervalSize, &mode, NULL);
 
         worker->get<ThisClass>(FSTARPU_CPU_IDX)->transferInoutPassPerform(&currentCells, &externalCells, idxLevel, outsideInteractions, mode);
     }
@@ -353,7 +353,7 @@ public:
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
         int intervalSize;
-        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &intervalSize);
+        starpu_codelet_unpack_args(cl_arg, &worker, &idxLevel, &intervalSize, NULL);
 
         CellContainerClass subCellGroup(
                         (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
@@ -457,7 +457,7 @@ public:
 
         FStarPUPtrInterface* worker = nullptr;
         int intervalSize;
-        starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize);
+        starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize, NULL);
         worker->get<ThisClass>(FSTARPU_CPU_IDX)->directInPassPerform(&containers);
     }
 
@@ -506,7 +506,7 @@ public:
         FStarPUPtrInterface* worker = nullptr;
         const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
         int intervalSize;
-        starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions, &intervalSize);
+        starpu_codelet_unpack_args(cl_arg, &worker, &outsideInteractions, &intervalSize, NULL);
 
         worker->get<ThisClass>(FSTARPU_CPU_IDX)->directInoutPassPerform(&containers, &externalContainers, outsideInteractions);
     }
@@ -547,7 +547,7 @@ public:
 
         FStarPUPtrInterface* worker = nullptr;
         int intervalSize;
-        starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize);
+        starpu_codelet_unpack_args(cl_arg, &worker, &intervalSize, NULL);
         worker->get<ThisClass>(FSTARPU_CPU_IDX)->mergePassPerform(&leafCells, &containers);
     }
 
