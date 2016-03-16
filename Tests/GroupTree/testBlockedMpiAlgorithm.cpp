@@ -72,7 +72,7 @@ int main(int argc, char* argv[]){
     // Get params
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
     const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
-    const int groupSize      = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 250);
+    const int groupSize      = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 8);
     const FSize totalNbParticles = (NbParticles*mpiComm.global().processCount());
 
     // Load the particles
@@ -90,7 +90,8 @@ int main(int argc, char* argv[]){
     std::unique_ptr<TestParticle[]> particles(new TestParticle[loader.getNumberOfParticles()]);
     memset(particles.get(), 0, sizeof(TestParticle) * loader.getNumberOfParticles());
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        loader.fillParticle(&particles[idxPart].position);
+		loader.fillParticleAtMortonIndex(&(particles[idxPart].position), mpiComm.global().processId()*NbParticles + idxPart,NbLevels);
+        //loader.fillParticle(&(particles[idxPart].position));
     }
     // Sort in parallel
     FVector<TestParticle> myParticles;
@@ -129,10 +130,16 @@ int main(int argc, char* argv[]){
     }
     FLOG(std::cout << "My last index is " << leftLimite << "\n");
     FLOG(std::cout << "My left limite is " << myLeftLimite << "\n");
-    std::cout << "My last index is (" << mpiComm.global().processId() << ") " << leftLimite << "\n";
-    std::cout << "My left limite is (" << mpiComm.global().processId() << ") " << myLeftLimite << "\n";
-    std::cout << "Size (" << mpiComm.global().processId() << ") " << allParticles.getNbParticles()  << "\n";
-
+	for(int i = 0; i < mpiComm.global().processCount(); ++i)
+	{
+		if(i == mpiComm.global().processId())
+		{
+			std::cout << "My last index is (" << mpiComm.global().processId() << ") " << leftLimite << "\n";
+			std::cout << "My left limite is (" << mpiComm.global().processId() << ") " << myLeftLimite << "\n";
+			std::cout << "Size (" << mpiComm.global().processId() << ") " << allParticles.getNbParticles()  << "\n";
+		}
+		mpiComm.global().barrier();
+	}
 
     // Put the data into the tree
     GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize,
@@ -142,7 +149,7 @@ int main(int argc, char* argv[]){
     // Run the algorithm
     GroupKernelClass groupkernel;
     GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
-    groupalgo.execute(FFmmP2P | FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P);
+    groupalgo.execute();
 
     std::cout << "Wait Others... " << std::endl;
     mpiComm.global().barrier();
@@ -173,7 +180,8 @@ int main(int argc, char* argv[]){
             FRandomLoader<FReal> loaderAll(NbParticles, 1.0, FPoint<FReal>(0,0,0), idxProc);
             for(FSize idxPart = 0 ; idxPart < loaderAll.getNumberOfParticles() ; ++idxPart){
                 FPoint<FReal> pos;
-                loaderAll.fillParticle(&pos);
+                //loaderAll.fillParticle(&pos);
+				loaderAll.fillParticleAtMortonIndex(&pos, idxProc*NbParticles + idxPart,NbLevels);
                 tree.insert(pos);
             }
         }

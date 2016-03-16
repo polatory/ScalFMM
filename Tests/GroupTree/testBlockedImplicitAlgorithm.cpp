@@ -139,7 +139,7 @@ int main(int argc, char* argv[]){
 	int rank = groupalgo.getRank();
 	for(int i = 0; i < groupedTree.getHeight(); ++i)
 	{
-		if(groupedTree.getNbCellGroupAtLevel(i) < groupalgo.getNProc())
+		if(groupedTree.getNbCellGroupAtLevel(i) < groupalgo.getNProc() && rank == 0)
 			std::cout << "Error at level " << i << std::endl;
 	}
 	return 0;
