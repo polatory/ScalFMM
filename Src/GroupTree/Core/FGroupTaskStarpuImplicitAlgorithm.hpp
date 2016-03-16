@@ -40,8 +40,11 @@
 #include "../StarPUUtils/FStarPUOpenClWrapper.hpp"
 #include "../OpenCl/FOpenCLDeviceWrapper.hpp"
 #endif
+
 #define SCALFMM_SIMGRID_TASKNAMEPARAMS
+#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
 #include "../StarPUUtils/FStarPUTaskNameParams.hpp"
+#endif
 
 #include "Containers/FBoolArray.hpp"
 #include <iostream>
@@ -145,9 +148,8 @@ protected:
     std::unique_ptr<char[]> l2pTaskNames;
     std::unique_ptr<char[]> p2pTaskNames;
     std::unique_ptr<char[]> p2pOuterTaskNames;
-    FStarPUTaskNameParams* taskNames;
 #else
-    FStarPUTaskNameParams* taskNames;
+    FStarPUTaskNameParams* taskNames = nullptr;
 #endif
 #endif
 #ifdef SCALFMM_STARPU_USE_PRIO
@@ -185,7 +187,11 @@ public:
         FAssertLF(starpu_mpi_init ( 0, 0, 1 ) == 0);
 		MPI_Comm_rank(MPI_COMM_WORLD,&mpi_rank);
 		MPI_Comm_size(MPI_COMM_WORLD,&nproc);
-		taskNames = new FStarPUTaskNameParams(mpi_rank);
+#ifdef STARPU_USE_TASK_NAME
+#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS 
+		taskNames = new FStarPUTaskNameParams(mpi_rank, nproc);
+#endif
+#endif
 		cout << mpi_rank << "/" << nproc << endl;
 
         starpu_malloc_set_align(32);
@@ -1087,7 +1093,9 @@ protected:
                     STARPU_RW, cellHandles[tree->getHeight()-1][idxGroup].up,
                     STARPU_R, particleHandles[idxGroup].symb,
 				#ifdef STARPU_USE_TASK_NAME
-				#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
+				#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                    STARPU_NAME, p2mTaskNames.get(),
+				#else
 					//"P2M-nb_i_p"
                     STARPU_NAME, taskNames->print("P2M", "%d, %lld, %lld, %lld, %lld, %d\n",
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),
@@ -1138,7 +1146,9 @@ protected:
 										STARPU_R, cellHandles[idxLevel+1][idxSubGroup].symb, //symbolique, readonly
 										STARPU_R, cellHandles[idxLevel+1][idxSubGroup].up, //level d'avant readonly
 									#ifdef STARPU_USE_TASK_NAME
-									#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
+									#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+										STARPU_NAME, m2mTaskNames[idxLevel].get(),
+									#else
 										//"M2M-l_nb_i_nbc_ic_s"
 										STARPU_NAME, taskNames->print("M2M", "%d, %d, %lld, %d, %lld, %lld, %lld, %lld, %lld, %lld, %d\n",
                                                  idxLevel,
@@ -1177,7 +1187,9 @@ protected:
 										STARPU_R, cellHandles[idxLevel+1][idxSubGroup].symb, //symbolique, readonly
 										STARPU_R, cellHandles[idxLevel+1][idxSubGroup].up, //level d'avant readonly
 									#ifdef STARPU_USE_TASK_NAME
-									#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
+									#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                    					STARPU_NAME, m2mTaskNames[idxLevel].get(),
+									#else
 										//M2M-l_nb_i_nbc_ic_s
 										STARPU_NAME, taskNames->print("M2M", "%d, %d, %lld, %d, %lld, %lld, %lld, %lld, %lld, %lld, %d\n",
                                                  idxLevel,
@@ -1225,7 +1237,9 @@ protected:
                                        STARPU_R, cellHandles[idxLevel][idxGroup].up,
                                        (STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
                        				#ifdef STARPU_USE_TASK_NAME
-									#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                   					#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                                       STARPU_NAME, m2lTaskNames[idxLevel].get(),
+                   					#else
 									   //"M2L-l_nb_i"
                                        STARPU_NAME, taskNames->print("M2L", "%d, %d, %lld, %lld, %lld, %lld, %lld, %d\n",
                                                                     idxLevel,
@@ -1265,7 +1279,9 @@ protected:
                                            STARPU_R, cellHandles[idxLevel][interactionid].symb,
                                            STARPU_R, cellHandles[idxLevel][interactionid].up,
                        					#ifdef STARPU_USE_TASK_NAME
-										#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                   						#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                                           STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
+                   						#else
 										   //"M2L_out-l_nb_i_nb_i_s
                                            STARPU_NAME, taskNames->print("M2L_out", "%d, %d, %lld, %d, %lld, %d, %lld, %lld, %lld, %lld, %d\n",
                                                                         idxLevel,
@@ -1299,7 +1315,9 @@ protected:
                                            STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                            STARPU_R, cellHandles[idxLevel][idxGroup].up,
                        					#ifdef STARPU_USE_TASK_NAME
-										#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                   						#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                                           STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
+                   						#else
 										   //"M2L_out-l_nb_i_nb_i_s"
                                            STARPU_NAME, taskNames->print("M2L_out", "%d, %d, %lld, %d, %lld, %d, %lld, %lld, %lld, %lld, %d\n",
                                                                         idxLevel,
@@ -1361,9 +1379,11 @@ protected:
 										STARPU_R, cellHandles[idxLevel+1][idxSubGroup].symb, //symbolique, readonly
 										STARPU_RW, cellHandles[idxLevel+1][idxSubGroup].down, //level d'avant readonly
 									#ifdef STARPU_USE_TASK_NAME
-									#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
+									#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+										STARPU_NAME, l2lTaskNames[idxLevel].get(),
+									#else
                     				//"L2L-l_nb_i_nbc_ic_s"
-                    				STARPU_NAME, taskNames->print("L2L", "%d, %d, %lld, %d, %lld, %lld, %lld, %lld, %lld, %lld, %d\n",
+										STARPU_NAME, taskNames->print("L2L", "%d, %d, %lld, %d, %lld, %lld, %lld, %lld, %lld, %lld, %d\n",
                                                  idxLevel,
                                                  tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                                  tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
@@ -1394,9 +1414,11 @@ protected:
 										STARPU_R, cellHandles[idxLevel+1][idxSubGroup].symb, //symbolique, readonly
 										(STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel+1][idxSubGroup].down, //level d'avant readonly
 									#ifdef STARPU_USE_TASK_NAME
-									#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
+									#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+										STARPU_NAME, l2lTaskNames[idxLevel].get(),
+									#else
                     				//"L2L-l_nb_i_nbc_ic_s"
-                    				STARPU_NAME, taskNames->print("L2L", "%d, %d, %lld, %d, %lld, %lld, %lld, %lld, %lld, %lld, %d\n",
+										STARPU_NAME, taskNames->print("L2L", "%d, %d, %lld, %d, %lld, %lld, %lld, %lld, %lld, %lld, %d\n",
                                                  idxLevel,
                                                  tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                                  tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
@@ -1435,9 +1457,11 @@ protected:
 										STARPU_R, cellHandles[idxLevel+1][idxSubGroup].symb, //symbolique, readonly
 										STARPU_RW, cellHandles[idxLevel+1][idxSubGroup].down, //level d'avant readonly
 									#ifdef STARPU_USE_TASK_NAME
-									#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
+									#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+										STARPU_NAME, l2lTaskNames[idxLevel].get(),
+									#else
                    					//"L2L-l_nb_i_nbc_ic_s"
-                    				STARPU_NAME, taskNames->print("L2L", "%d, %d, %lld, %d, %lld, %lld, %lld, %lld, %lld, %lld, %d\n",
+                    					STARPU_NAME, taskNames->print("L2L", "%d, %d, %lld, %d, %lld, %lld, %lld, %lld, %lld, %lld, %d\n",
                                                  idxLevel,
                                                  tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                                  tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
@@ -1468,7 +1492,9 @@ protected:
 										STARPU_R, cellHandles[idxLevel+1][idxSubGroup].symb, //symbolique, readonly
 										(STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel+1][idxSubGroup].down, //level d'avant readonly
 									#ifdef STARPU_USE_TASK_NAME
-									#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
+									#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+									STARPU_NAME, l2lTaskNames[idxLevel].get(),
+									#else
                     				//"L2L-l_nb_i_nbc_ic_s"
                     				STARPU_NAME, taskNames->print("L2L", "%d, %d, %lld, %d, %lld, %lld, %lld, %lld, %lld, %lld, %d\n",
                                                  idxLevel,
@@ -1528,7 +1554,9 @@ protected:
 								   STARPU_EXECUTE_ON_DATA, particleHandles[interactionid].down,
                    				#endif
                    				#ifdef STARPU_USE_TASK_NAME
-								#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                   				#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                                   STARPU_NAME, p2pOuterTaskNames.get(),
+                   				#else
 								   //"P2P_out-nb_i_p_nb_i_p_s"
                                    STARPU_NAME, taskNames->print("P2P_out", "%d, %lld, %lld, %d, %lld, %lld, %d, %lld, %lld, %lld, %lld, %d\n",
                                                                 tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
@@ -1565,7 +1593,9 @@ protected:
                                (STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
                    			#endif
                    			#ifdef STARPU_USE_TASK_NAME
-							#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                   			#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                                    STARPU_NAME, p2pTaskNames.get(),
+                   			#else
 								//"P2P-nb_i_p"
                                STARPU_NAME, taskNames->print("P2P", "%d, %lld, %lld, %lld, %lld, %lld, %lld, %d\n",
                                                             tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
@@ -1612,7 +1642,9 @@ protected:
                     (STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
 				#endif
         		#ifdef STARPU_USE_TASK_NAME
-				#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
+        		#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                    STARPU_NAME, l2pTaskNames.get(),
+        		#else
 					//"L2P-nb_i_p"
                     STARPU_NAME, taskNames->print("L2P", "%d, %lld, %lld, %lld, %lld, %d\n",
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),

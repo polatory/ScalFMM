@@ -7,6 +7,7 @@
 #include <thread>
 #include <deque>
 #include <unordered_set>
+#include <unordered_map>
 using namespace std;
 
 #include "../../Src/Utils/FGlobal.hpp"
@@ -22,10 +23,18 @@ struct Task
 	vector<long long int> id;
 	int mpiNode;
 	int level;
+	double perf;
 	bool operator==(const Task & other) const
 	{
 		if(type != other.type || id.size() != other.id.size())
 			return false;
+		if(type == P2P_OUT) //Symétrisation
+			if(id[0] == other.id[2] && id[1] == other.id[3] && id[2] == other.id[0] && id[3] == other.id[1])
+				return true;
+		if(type == M2L_OUT) //Symétrisation
+			if(id[1] == other.id[3] && id[2] == other.id[4] && id[3] == other.id[1] && id[4] == other.id[2])
+				return true;
+
 		for(size_t i = 0; i < id.size(); ++i)
 			if(id[i] != other.id[i])
 				return false;
@@ -56,6 +65,7 @@ namespace std {
 struct DagData
 {
 	unordered_set<Task> allTask;
+	unordered_map<long long int, double> performence;
 };
 
 bool parseLine(DagData & dagData, deque<string> & lineElements)
@@ -67,6 +77,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 	{
 		task.type = P2P_OUT;
 		task.uniqueId = stoll(lineElements[1]);
+		task.perf = dagData.performence.count(task.uniqueId) == 1 ? dagData.performence[task.uniqueId] : 0.0;
 		task.id.resize(4);
 		task.id[0] = stoll(lineElements[9]);
 		task.id[1] = stoll(lineElements[10]);
@@ -79,6 +90,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 	{
 		task.type = P2P;
 		task.uniqueId = stoll(lineElements[1]);
+		task.perf = dagData.performence.count(task.uniqueId) == 1 ? dagData.performence[task.uniqueId] : 0.0;
 		task.id.resize(4);
 		task.id[0] = stoll(lineElements[5]);
 		task.id[1] = stoll(lineElements[6]);
@@ -93,6 +105,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 	{
 		task.type = M2L;
 		task.uniqueId = stoll(lineElements[1]);
+		task.perf = dagData.performence.count(task.uniqueId) == 1 ? dagData.performence[task.uniqueId] : 0.0;
 		task.id.resize(5);
 		task.id[0] = stoll(lineElements[2]);
 		task.id[1] = stoll(lineElements[5]);
@@ -106,6 +119,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 	{
 		task.type = M2L_OUT;
 		task.uniqueId = stoll(lineElements[1]);
+		task.perf = dagData.performence.count(task.uniqueId) == 1 ? dagData.performence[task.uniqueId] : 0.0;
 		task.id.resize(5);
 		task.id[0] = stoll(lineElements[2]);
 		task.id[1] = stoll(lineElements[8]);
@@ -119,6 +133,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 	{
 		task.type = M2M;
 		task.uniqueId = stoll(lineElements[1]);
+		task.perf = dagData.performence.count(task.uniqueId) == 1 ? dagData.performence[task.uniqueId] : 0.0;
 		task.id.resize(5);
 		task.id[0] = stoll(lineElements[2]);
 		task.id[1] = stoll(lineElements[8]);
@@ -132,6 +147,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 	{
 		task.type = L2L;
 		task.uniqueId = stoll(lineElements[1]);
+		task.perf = dagData.performence.count(task.uniqueId) == 1 ? dagData.performence[task.uniqueId] : 0.0;
 		task.id.resize(5);
 		task.id[0] = stoll(lineElements[2]);
 		task.id[1] = stoll(lineElements[8]);
@@ -145,6 +161,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 	{
 		task.type = L2P;
 		task.uniqueId = stoll(lineElements[1]);
+		task.perf = dagData.performence.count(task.uniqueId) == 1 ? dagData.performence[task.uniqueId] : 0.0;
 		task.id.resize(2);
 		task.id[0] = stoll(lineElements[5]);
 		task.id[1] = stoll(lineElements[6]);
@@ -155,6 +172,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 	{
 		task.type = L2P;
 		task.uniqueId = stoll(lineElements[1]);
+		task.perf = dagData.performence.count(task.uniqueId) == 1 ? dagData.performence[task.uniqueId] : 0.0;
 		task.id.resize(2);
 		task.id[0] = stoll(lineElements[5]);
 		task.id[1] = stoll(lineElements[6]);
@@ -192,19 +210,63 @@ bool fillDagData(const char* const filename, DagData & dagData)
 	string line;
 	string delim(", ");
 	deque<string> splitLine;
-	int count = 0;
 	while(!fichier.eof())
 	{
-		++count;
 		getline(fichier, line);
 		splitLine.clear();
 		split(line, delim, splitLine);
 		parseLine(dagData, splitLine);
 	}
-	cout << (count-1) << " lines in " << filename << endl;
-	// instructions
 	fichier.close();  // on ferme le fichier
 	return true;
+}
+bool getTaskPerf(string line, double &perf)
+{
+	perf = stod(line);
+	return true;
+}
+bool getTaskId(string line, long long int & taskId)
+{
+	size_t pos = line.rfind('_');
+	if(pos == string::npos)
+		return false;
+	taskId = stoll(line.substr(pos));
+	return true;
+}
+void fillPerformanceData(const char* const filename, DagData & dagData)
+{
+	std::ifstream fichier(filename, ios::in);  // on ouvre le fichier en lecture
+
+	if(!fichier)  // si l'ouverture a réussi
+		cerr << "Couldn't open " << filename << endl;
+
+	string line;
+	string delim(", ");
+	deque<string> splitLine;
+	bool getPerf = false;
+	long long int taskId;
+	double perf;
+	while(!fichier.eof())
+	{
+		getline(fichier, line);
+		if(line.size() > 0 && line[0] == 'N')
+		{
+			if(getTaskId(line.substr(3), taskId))
+				getPerf = true;
+		}
+		else if(getPerf && line.size() > 0 && line[0] == 'S')
+		{
+			if(getTaskPerf(line.substr(3), perf))
+			{
+				getPerf = false;;
+				dagData.performence[taskId] = perf;
+			}
+		}
+		splitLine.clear();
+		split(line, delim, splitLine);
+		parseLine(dagData, splitLine);
+	}
+	fichier.close();  // on ferme le fichier
 }
 void compareDag(DagData& dag1, DagData& dag2, int treeHeight)
 {
@@ -238,33 +300,46 @@ void compareDag(DagData& dag1, DagData& dag2, int treeHeight)
 		if(notFound[i] == true)
 			cout << "Diff lvl " << i << " -> " << notFoundCount[i] << endl;
 }
-int main(int argc, char* argv[]){
+int main(int argc, char* argv[])
+{
+    const FParameterNames ExplicitTrace {
+        {"-E"},
+        "Simgrid trace from explicit mpi"
+    };
+	const FParameterNames ImplicitTrace {
+		{"-I"} ,
+		"Simgrid trace from implicit mpi"
+	};
     const FParameterNames Explicit {
         {"-e"},
-        "Trace from explicit mpi"
+        "Simgrid trace from explicit mpi"
     };
 	const FParameterNames Implicit {
 		{"-i"} ,
-		"Trace from implicit mpi"
+		"Simgrid trace from implicit mpi"
 	};
     const FParameterNames TreeHeight {
         {"-h"},
         "Height of the tree"
     };
-    FHelpDescribeAndExit(argc, argv, "Compare DAG mapping", Explicit, Implicit, TreeHeight);
+    FHelpDescribeAndExit(argc, argv, "Compare DAG mapping", Explicit, Implicit, ExplicitTrace, ImplicitTrace, TreeHeight);
 
     // Get params
-    const char* const explicitFilename = FParameters::getStr(argc,argv,Explicit.options, "explicit.rec");
-    const char* const implicitFilename = FParameters::getStr(argc,argv,Implicit.options, "implicit.rec");
+    const char* const explicitFilename = FParameters::getStr(argc,argv,Explicit.options, "scalfmm_explicit.out");
+    const char* const implicitFilename = FParameters::getStr(argc,argv,Implicit.options, "scalfmm_implicit.out");
+    const char* const explicitTraceFilename = FParameters::getStr(argc,argv,Explicit.options, "explicit.rec");
+    const char* const implicitTraceFilename = FParameters::getStr(argc,argv,Implicit.options, "implicit.rec");
     const int treeHeight = FParameters::getValue(argc,argv,TreeHeight.options, 5);
 
 	DagData implicitData, explicitData;
 	bool implicitGood, explicitGood;
 	std::thread explicitThread([&](){
+		fillPerformanceData(explicitTraceFilename, explicitData);
 		explicitGood = fillDagData(explicitFilename, explicitData);
 		});
 	explicitThread.join();
 	std::thread implicitThread([&](){
+		fillPerformanceData(implicitTraceFilename, implicitData);
 		implicitGood = fillDagData(implicitFilename, implicitData);
 		});
 	implicitThread.join();

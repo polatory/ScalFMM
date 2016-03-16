@@ -1,10 +1,14 @@
 #!/bin/sh
 export SCALFMM_SIMGRIDOUT='scalfmm.out'
-make testBlockedImplicitAlgorithm generateMapping testBlockedMpiAlgorithm compareDAGmapping  -j16
+export GROUP_SIZE=8
+export TREE_HEIGHT=3
+export NB_NODE=8
+export NB_PARTICLE_PER_NODE=$((`awk "BEGIN{print 8 ** ($TREE_HEIGHT-1)}"` / $NB_NODE))
+make testBlockedImplicitAlgorithm generateMapping testBlockedMpiAlgorithm compareDAGmapping  -j $((`nproc`*2))
 if [ $? -ne 0 ]; then
 	exit
 fi
-mpiexec -n 8 ./Tests/Release/testBlockedMpiAlgorithm -nb 8 -bs 8 -h 3
+mpiexec -n $NB_NODE ./Tests/Release/testBlockedMpiAlgorithm -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT
 if [ $? -ne 0 ]; then
 	exit
 fi
@@ -18,10 +22,10 @@ for i in $a; do
 done
 
 cp -f $SCALFMM_SIMGRIDOUT scalfmm_explicit.out
-mpiexec -n 8 ./Tests/Release/generateMapping -nb 8 -bs 8 -h 3
-mpiexec -n 8 ./Tests/Release/testBlockedImplicitAlgorithm -map mapping -f canard.fma -bs 8 -h 3
+mpiexec -n $NB_NODE ./Tests/Release/generateMapping -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT
+mpiexec -n $NB_NODE ./Tests/Release/testBlockedImplicitAlgorithm -map mapping -f canard.fma -bs $GROUP_SIZE -h $TREE_HEIGHT
 if [ $? -ne 0 ]; then
 	exit
 fi
 cp -f scalfmm.out_0 scalfmm_implicit.out
-./Tests/Release/compareDAGmapping -e scalfmm_explicit.out -i scalfmm_implicit.out -h 3 > output
+./Tests/Release/compareDAGmapping -e scalfmm_explicit.out -i scalfmm_implicit.out -h $TREE_HEIGHT > output
