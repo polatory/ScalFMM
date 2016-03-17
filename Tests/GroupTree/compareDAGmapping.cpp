@@ -337,12 +337,12 @@ int main(int argc, char* argv[])
 		fillPerformanceData(explicitTraceFilename, explicitData);
 		explicitGood = fillDagData(explicitFilename, explicitData);
 		});
-	explicitThread.join();
 	std::thread implicitThread([&](){
 		fillPerformanceData(implicitTraceFilename, implicitData);
 		implicitGood = fillDagData(implicitFilename, implicitData);
 		});
 	implicitThread.join();
+	explicitThread.join();
 	if(implicitGood && explicitGood)
 	{
 		cout << explicitData.allTask.size() << " tasks in explicit." << endl;

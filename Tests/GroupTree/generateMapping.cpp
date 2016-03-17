@@ -209,7 +209,6 @@ int main(int argc, char* argv[]){
         MPI_Send(const_cast<MortonIndex*>(&leftLimite), sizeof(leftLimite), MPI_BYTE, 0, 0, mpiComm.global().getComm());
         MPI_Send(const_cast<MortonIndex*>(&myLeftLimite), sizeof(myLeftLimite), MPI_BYTE, 0, 0, mpiComm.global().getComm());
 	}
-	std::cout << "Loutre " << sizeof(starpu_tag_t) << std::endl;
 	// Put the data into the tree
 	GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize,
 			&allParticles, true, leftLimite);

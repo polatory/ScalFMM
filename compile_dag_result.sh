@@ -1,9 +1,14 @@
 #!/bin/sh
 export SCALFMM_SIMGRIDOUT='scalfmm.out'
 export GROUP_SIZE=8
-export TREE_HEIGHT=3
+export TREE_HEIGHT=6
 export NB_NODE=8
 export NB_PARTICLE_PER_NODE=$((`awk "BEGIN{print 8 ** ($TREE_HEIGHT-1)}"` / $NB_NODE))
+echo "GROUP_SIZE=$GROUP_SIZE"
+echo "TREE_HEIGHT=$TREE_HEIGHT"
+echo "NB_NODE=$NB_NODE"
+echo "NB_PARTICLE_PER_NODE=$NB_PARTICLE_PER_NODE"
+
 make testBlockedImplicitAlgorithm generateMapping testBlockedMpiAlgorithm compareDAGmapping  -j $((`nproc`*2))
 if [ $? -ne 0 ]; then
 	exit
