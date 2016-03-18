@@ -50,7 +50,7 @@
 
 #include "Containers/FBoolArray.hpp"
 
-template <class OctreeClass, class CellContainerClass, class KernelClass, class ParticleGroupClass, class StarPUCpuWrapperClass
+template <class OctreeClass, class CellContainerClass, class KernelClass, class ParticleGroupClass, class StarPUCpuWrapperClass, class GroupContainerClass
           #ifdef SCALFMM_ENABLE_CUDA_KERNEL
           , class StarPUCudaWrapperClass = FStarPUCudaWrapper<KernelClass, FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
                                                               FCudaGroupOfParticles<int, 0, 0, int>, FCudaGroupAttachedLeaf<int, 0, 0, int>, FCudaEmptyKernel<int> >
@@ -1161,7 +1161,7 @@ protected:
 
                     for(int leafIdx = 0 ; leafIdx < containers->getNumberOfLeavesInBlock() ; ++leafIdx){
                         const MortonIndex mindex = containers->getLeafMortonIndex(leafIdx);
-                        // FP2PGroupParticleContainer<FReal> particles = containers->template getLeaf<FP2PGroupParticleContainer<FReal>>(leafIdx);
+                        // GroupContainerClass particles = containers->template getLeaf<GroupContainerClass>(leafIdx);
 
                         MortonIndex interactionsIndexes[26];
                         int interactionsPosition[26];
@@ -1921,8 +1921,8 @@ protected:
                     std::unordered_set<int> exist0;
                     std::unordered_set<int> exist1;
                     for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-                        FP2PGroupParticleContainer<FReal> interParticles = containersOther->template getLeaf<FP2PGroupParticleContainer<FReal>>((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
-                        FP2PGroupParticleContainer<FReal> particles = containers->template getLeaf<FP2PGroupParticleContainer<FReal>>((*outsideInteractions)[outInterIdx].insideIdxInBlock);
+                        GroupContainerClass interParticles = containersOther->template getLeaf<GroupContainerClass>((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
+                        GroupContainerClass particles = containers->template getLeaf<GroupContainerClass>((*outsideInteractions)[outInterIdx].insideIdxInBlock);
 
                         nbInteractions += interParticles.getNbParticles() * particles.getNbParticles();
 
@@ -1989,7 +1989,7 @@ protected:
                 const MortonIndex blockEndIdx = containers->getEndingIndex();
 
                 for(int leafIdx = 0 ; leafIdx < containers->getNumberOfLeavesInBlock() ; ++leafIdx){
-                    FP2PGroupParticleContainer<FReal> particles = containers->template getLeaf<FP2PGroupParticleContainer<FReal>>(leafIdx);
+                    GroupContainerClass particles = containers->template getLeaf<GroupContainerClass>(leafIdx);
                     const MortonIndex mindex = containers->getLeafMortonIndex(leafIdx);
 
                     MortonIndex interactionsIndexes[26];
@@ -2003,7 +2003,7 @@ protected:
                         if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
                             const int leafPos = containers->getLeafIndex(interactionsIndexes[idxInter]);
                             if(leafPos != -1){
-                                FP2PGroupParticleContainer<FReal> particlesOther = containers->template getLeaf<FP2PGroupParticleContainer<FReal>>(leafIdx);
+                                GroupContainerClass particlesOther = containers->template getLeaf<GroupContainerClass>(leafIdx);
                                 nbInteractions += particles->getNbParticles() * particlesOther->getNbParticles();
                             }
                         }
