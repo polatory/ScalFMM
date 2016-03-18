@@ -1432,22 +1432,10 @@ protected:
                         const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
                         int idxParentCell = currentCells->getCellIndex(firstParent);
                         int idxChildCell  = subCellGroup->getFistChildIdx(firstParent);
-                        CellClass childData[8];
 
                         while(true){
-                            CellClass cell = currentCells->getUpCell(idxParentCell);
-                            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(idxParentCell));
-                            const CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
-
-                            FAssertLF(cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
-
+                            auto cell = currentCells->getUpCell(idxParentCell);
                             do{
-                                const int idxChild = ((subCellGroup->getCellMortonIndex(idxChildCell)) & 7);
-                                FAssertLF(child[idxChild] == nullptr);
-                                childData[idxChild] = subCellGroup->getUpCell(idxChildCell);
-                                FAssertLF(subCellGroup->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
-                                child[idxChild] = &childData[idxChild];
-
                                 idxChildCell += 1;
                             }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
 
@@ -1524,22 +1512,11 @@ protected:
                         const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
                         int idxParentCell = currentCells->getCellIndex(firstParent);
                         int idxChildCell  = subCellGroup->getFistChildIdx(firstParent);
-                        CellClass childData[8];
 
                         while(true){
-                            CellClass cell = currentCells->getUpCell(idxParentCell);
-                            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(idxParentCell));
-                            const CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
-
-                            FAssertLF(cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+                            auto cell = currentCells->getUpCell(idxParentCell);
 
                             do{
-                                const int idxChild = ((subCellGroup->getCellMortonIndex(idxChildCell)) & 7);
-                                FAssertLF(child[idxChild] == nullptr);
-                                childData[idxChild] = subCellGroup->getUpCell(idxChildCell);
-                                FAssertLF(subCellGroup->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
-                                child[idxChild] = &childData[idxChild];
-
                                 idxChildCell += 1;
                             }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
 
@@ -1591,7 +1568,7 @@ protected:
                         const MortonIndex blockEndIdx   = currentCells->getEndingIndex();
 
                         for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){
-                            CellClass cell = currentCells->getDownCell(cellIdx);
+                            auto cell = currentCells->getDownCell(cellIdx);
                             MortonIndex interactionsIndexes[189];
                             int interactionsPosition[189];
                             const FTreeCoordinate coord(cell.getCoordinate());
@@ -1803,22 +1780,10 @@ protected:
                         const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
                         int idxParentCell = currentCells->getCellIndex(firstParent);
                         int idxChildCell  = subCellGroup->getFistChildIdx(firstParent);
-                        CellClass childData[8];
 
                         while(true){
-                            CellClass cell = currentCells->getUpCell(idxParentCell);
-                            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(idxParentCell));
-                            const CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
-
-                            FAssertLF(cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
-
+                            auto cell = currentCells->getUpCell(idxParentCell);
                             do{
-                                const int idxChild = ((subCellGroup->getCellMortonIndex(idxChildCell)) & 7);
-                                FAssertLF(child[idxChild] == nullptr);
-                                childData[idxChild] = subCellGroup->getUpCell(idxChildCell);
-                                FAssertLF(subCellGroup->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
-                                child[idxChild] = &childData[idxChild];
-
                                 idxChildCell += 1;
                             }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
 
@@ -1891,6 +1856,7 @@ protected:
                     task->name = l2lTaskNames[idxLevel].get();
 #else
                     size_t nbChildParent = 0;
+                    size_t nbChildParent = 0;
                     {
                         CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
                         CellContainerClass*const subCellGroup = tree->getCellGroup(idxLevel+1, idxSubGroup);
@@ -1899,22 +1865,10 @@ protected:
                         const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
                         int idxParentCell = currentCells->getCellIndex(firstParent);
                         int idxChildCell  = subCellGroup->getFistChildIdx(firstParent);
-                        CellClass childData[8];
 
                         while(true){
-                            CellClass cell = currentCells->getUpCell(idxParentCell);
-                            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(idxParentCell));
-                            const CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
-
-                            FAssertLF(cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
-
+                            auto cell = currentCells->getUpCell(idxParentCell);
                             do{
-                                const int idxChild = ((subCellGroup->getCellMortonIndex(idxChildCell)) & 7);
-                                FAssertLF(child[idxChild] == nullptr);
-                                childData[idxChild] = subCellGroup->getUpCell(idxChildCell);
-                                FAssertLF(subCellGroup->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
-                                child[idxChild] = &childData[idxChild];
-
                                 idxChildCell += 1;
                             }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
 
