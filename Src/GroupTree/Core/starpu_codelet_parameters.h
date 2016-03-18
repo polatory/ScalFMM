@@ -27,7 +27,12 @@ static inline void p2p_cl_inout_perf_func(struct starpu_task *task, double *para
 				  &outsideInteractions,
 				  &i,
 				  &parameters[0],
-				  &parameters[1]);
+                                  &parameters[1],
+			      	  &parameters[2],
+			     	  &parameters[3],
+			     	  &parameters[4],
+			     	  &parameters[5],
+			          &parameters[6]);
 }
 
 static inline void p2m_cl_perf_func(struct starpu_task *task, double *parameters){
@@ -37,7 +42,7 @@ static inline void p2m_cl_perf_func(struct starpu_task *task, double *parameters
       	  	  	  	  &wrapperptr,
 				  &idxLevel,
 				  &i,
-			     	  &parameters[0]);
+                                  &parameters[0]);
 }
   
 static inline void m2m_cl_perf_func(struct starpu_task *task, double *parameters){
