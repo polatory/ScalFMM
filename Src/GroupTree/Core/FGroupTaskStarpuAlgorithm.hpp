@@ -13,6 +13,8 @@
 
 #include "FOutOfBlockInteraction.hpp"
 
+#include <unordered_set>
+
 #include <vector>
 #include <memory>
 
@@ -1352,10 +1354,11 @@ protected:
                     STARPU_NAME, p2mTaskNames.get(),
 #else
 					//"P2M-nb_i_p"
-                    STARPU_NAME, taskNames.print("P2M", "%d, %lld, %lld\n",
+                    STARPU_NAME, taskNames.print("P2M", "%d, %lld, %lld, %lld\n",
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval(),
-												 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock()),
+                                                 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),
+                                                 tree->getParticleGroup(idxGroup)->getNbParticlesInGroup()),
 #endif
 #endif
                     0);
@@ -1420,15 +1423,53 @@ protected:
 #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     task->name = m2mTaskNames[idxLevel].get();
 #else
+                    size_t nbChildParent = 0;
+                    {
+                        CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
+                        CellContainerClass*const subCellGroup = tree->getCellGroup(idxLevel+1, idxSubGroup);
+
+                        const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
+                        const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
+                        int idxParentCell = currentCells->getCellIndex(firstParent);
+                        int idxChildCell  = subCellGroup->getFistChildIdx(firstParent);
+                        CellClass childData[8];
+
+                        while(true){
+                            CellClass cell = currentCells->getUpCell(idxParentCell);
+                            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(idxParentCell));
+                            const CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+
+                            FAssertLF(cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+
+                            do{
+                                const int idxChild = ((subCellGroup->getCellMortonIndex(idxChildCell)) & 7);
+                                FAssertLF(child[idxChild] == nullptr);
+                                childData[idxChild] = subCellGroup->getUpCell(idxChildCell);
+                                FAssertLF(subCellGroup->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
+                                child[idxChild] = &childData[idxChild];
+
+                                idxChildCell += 1;
+                            }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+
+                            nbChildParent += 1;
+
+                            if(currentCells->getCellMortonIndex(idxParentCell) == lastParent){
+                                break;
+                            }
+
+                            idxParentCell += 1;
+                        }
+                    }
                     //"M2M-l_nb_i_nbc_ic_s"
-                    task->name = taskNames.print("M2M", "%d, %d, %lld, %d, %lld, %lld\n",
+                    task->name = taskNames.print("M2M", "%d, %d, %lld, %d, %lld, %lld, %lld\n",
                                                  idxLevel,
                                               tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                               tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
                                                  tree->getCellGroup(idxLevel+1,idxSubGroup)->getNumberOfCellsInBlock(),
                                                  tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval(),
                                                  FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
-                                                 FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3));
+                                                 FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3),
+                                                 nbChildParent);
 #endif
     #endif
                     FAssertLF(starpu_task_submit(task) == 0);
@@ -1474,15 +1515,54 @@ protected:
 #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     task->name = m2mTaskNames[idxLevel].get();
 #else
+                    size_t nbChildParent = 0;
+                    {
+                        CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
+                        CellContainerClass*const subCellGroup = tree->getCellGroup(idxLevel+1, idxSubGroup);
+
+                        const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
+                        const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
+                        int idxParentCell = currentCells->getCellIndex(firstParent);
+                        int idxChildCell  = subCellGroup->getFistChildIdx(firstParent);
+                        CellClass childData[8];
+
+                        while(true){
+                            CellClass cell = currentCells->getUpCell(idxParentCell);
+                            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(idxParentCell));
+                            const CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+
+                            FAssertLF(cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+
+                            do{
+                                const int idxChild = ((subCellGroup->getCellMortonIndex(idxChildCell)) & 7);
+                                FAssertLF(child[idxChild] == nullptr);
+                                childData[idxChild] = subCellGroup->getUpCell(idxChildCell);
+                                FAssertLF(subCellGroup->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
+                                child[idxChild] = &childData[idxChild];
+
+                                idxChildCell += 1;
+                            }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+
+                            nbChildParent += 1;
+
+                            if(currentCells->getCellMortonIndex(idxParentCell) == lastParent){
+                                break;
+                            }
+
+                            idxParentCell += 1;
+                        }
+                    }
+
                     //M2M-l_nb_i_nbc_ic_s
-                    task->name = taskNames.print("M2M", "%d, %d, %lld, %d, %lld, %lld\n",
+                    task->name = taskNames.print("M2M", "%d, %d, %lld, %d, %lld, %lld, %lld\n",
                                                  idxLevel,
                                               tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                               tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
                                                  tree->getCellGroup(idxLevel+1,idxSubGroup)->getNumberOfCellsInBlock(),
                                                  tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval(),
                                                  FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
-                                                 FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3));
+                                                 FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3),
+                                                 nbChildParent);
 #endif
     #endif
                     FAssertLF(starpu_task_submit(task) == 0);
@@ -1504,6 +1584,29 @@ protected:
             if(inner){
                 FLOG( timerInBlock.tic() );
                 for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
+                    size_t nbM2LInteractions = 0;
+                    {
+                        CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
+                        const MortonIndex blockStartIdx = currentCells->getStartingIndex();
+                        const MortonIndex blockEndIdx   = currentCells->getEndingIndex();
+
+                        for(int cellIdx = 0 ; cellIdx < currentCells->getNumberOfCellsInBlock() ; ++cellIdx){
+                            CellClass cell = currentCells->getDownCell(cellIdx);
+                            MortonIndex interactionsIndexes[189];
+                            int interactionsPosition[189];
+                            const FTreeCoordinate coord(cell.getCoordinate());
+                            int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
+
+                            for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+                                if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                                    const int cellPos = currentCells->getCellIndex(interactionsIndexes[idxInter]);
+                                    if(cellPos != -1){
+                                        nbM2LInteractions += 1;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 	double p0 = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
                 	double p1 = (double) tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval();
                     starpu_insert_task(&m2l_cl_in,
@@ -1523,10 +1626,11 @@ protected:
                                        STARPU_NAME, m2lTaskNames[idxLevel].get(),
                    #else
 									   //"M2L-l_nb_i"
-                                       STARPU_NAME, taskNames.print("M2L", "%d, %d, %lld\n",
+                                       STARPU_NAME, taskNames.print("M2L", "%d, %d, %lld, %lld\n",
                                                                     idxLevel,
                                                                     tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
-                                                                    tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval()),
+                                                                    tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
+                                                                    nbM2LInteractions),
                    #endif
                        #endif
                                        0);
@@ -1539,6 +1643,23 @@ protected:
                     for(int idxInteraction = 0; idxInteraction < int(externalInteractionsAllLevel[idxLevel][idxGroup].size()) ; ++idxInteraction){
                         const int interactionid = externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].otherBlockId;
                         const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].interactions;
+                        int nbDiff0 = 0;
+                        int nbDiff1 = 0;
+                        {
+                            std::unordered_set<int> exist0;
+                            std::unordered_set<int> exist1;
+                            for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
+                                if(exist0.find((*outsideInteractions)[outInterIdx].insideIdxInBlock) == exist0.end()){
+                                    exist0.insert((*outsideInteractions)[outInterIdx].insideIdxInBlock);
+                                    nbDiff0 += 1;
+                                }
+
+                                if(exist1.find((*outsideInteractions)[outInterIdx].outsideIdxInBlock) == exist1.end()){
+                                    exist1.insert((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
+                                    nbDiff1 += 1;
+                                }
+                            }
+                        }
                         int mode = 1;
                         double p0 = (double) outsideInteractions->size();
                         starpu_insert_task(&m2l_cl_inout,
@@ -1560,13 +1681,14 @@ protected:
                                            STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
                    #else
 										   //"M2L_out-l_nb_i_nb_i_s
-                                           STARPU_NAME, taskNames.print("M2L_out", "%d, %d, %lld, %d, %lld, %d\n",
+                                           STARPU_NAME, taskNames.print("M2L_out", "%d, %d, %lld, %d, %lld, %d, %d, %d\n",
                                                                         idxLevel,
                                                                         tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                                                         tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
                                                                         tree->getCellGroup(idxLevel,interactionid)->getNumberOfCellsInBlock(),
                                                                         tree->getCellGroup(idxLevel,interactionid)->getSizeOfInterval(),
-                                                                        outsideInteractions->size()),
+                                                                        outsideInteractions->size(),
+                                                                        nbDiff0, nbDiff1),
                    #endif
                        #endif
                                            0);
@@ -1591,13 +1713,14 @@ protected:
                                            STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
                    #else
 										   //"M2L_out-l_nb_i_nb_i_s"
-                                           STARPU_NAME, taskNames.print("M2L_out", "%d, %d, %lld, %d, %lld, %d\n",
+                                           STARPU_NAME, taskNames.print("M2L_out", "%d, %d, %lld, %d, %lld, %d, %d, %d\n",
                                                                         idxLevel,
                                                                         tree->getCellGroup(idxLevel,interactionid)->getNumberOfCellsInBlock(),
                                                                         tree->getCellGroup(idxLevel,interactionid)->getSizeOfInterval(),
                                                                         tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                                                         tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
-                                                                        outsideInteractions->size()),
+                                                                        outsideInteractions->size()
+                                                                        nbDiff0, nbDiff1),
                    #endif
                        #endif
                                            0);
@@ -1671,15 +1794,53 @@ protected:
 #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     task->name = l2lTaskNames[idxLevel].get();
 #else
+                    size_t nbChildParent = 0;
+                    {
+                        CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
+                        CellContainerClass*const subCellGroup = tree->getCellGroup(idxLevel+1, idxSubGroup);
+
+                        const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
+                        const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
+                        int idxParentCell = currentCells->getCellIndex(firstParent);
+                        int idxChildCell  = subCellGroup->getFistChildIdx(firstParent);
+                        CellClass childData[8];
+
+                        while(true){
+                            CellClass cell = currentCells->getUpCell(idxParentCell);
+                            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(idxParentCell));
+                            const CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+
+                            FAssertLF(cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+
+                            do{
+                                const int idxChild = ((subCellGroup->getCellMortonIndex(idxChildCell)) & 7);
+                                FAssertLF(child[idxChild] == nullptr);
+                                childData[idxChild] = subCellGroup->getUpCell(idxChildCell);
+                                FAssertLF(subCellGroup->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
+                                child[idxChild] = &childData[idxChild];
+
+                                idxChildCell += 1;
+                            }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+
+                            nbChildParent += 1;
+
+                            if(currentCells->getCellMortonIndex(idxParentCell) == lastParent){
+                                break;
+                            }
+
+                            idxParentCell += 1;
+                        }
+                    }
                     //"L2L-l_nb_i_nbc_ic_s"
-                    task->name = taskNames.print("L2L", "%d, %d, %lld, %d, %lld, %lld\n",
+                    task->name = taskNames.print("L2L", "%d, %d, %lld, %d, %lld, %lld, %lld\n",
                                                  idxLevel,
                                               tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                               tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
                                                  tree->getCellGroup(idxLevel+1,idxSubGroup)->getNumberOfCellsInBlock(),
                                                  tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval(),
                                                  FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
-                                                 FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3));
+                                                 FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3),
+                                                 nbChildParent);
 #endif
     #endif
                     FAssertLF(starpu_task_submit(task) == 0);
@@ -1729,15 +1890,53 @@ protected:
 #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     task->name = l2lTaskNames[idxLevel].get();
 #else
+                    size_t nbChildParent = 0;
+                    {
+                        CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
+                        CellContainerClass*const subCellGroup = tree->getCellGroup(idxLevel+1, idxSubGroup);
+
+                        const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
+                        const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
+                        int idxParentCell = currentCells->getCellIndex(firstParent);
+                        int idxChildCell  = subCellGroup->getFistChildIdx(firstParent);
+                        CellClass childData[8];
+
+                        while(true){
+                            CellClass cell = currentCells->getUpCell(idxParentCell);
+                            FAssertLF(cell.getMortonIndex() == currentCells->getCellMortonIndex(idxParentCell));
+                            const CellClass* child[8] = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+
+                            FAssertLF(cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+
+                            do{
+                                const int idxChild = ((subCellGroup->getCellMortonIndex(idxChildCell)) & 7);
+                                FAssertLF(child[idxChild] == nullptr);
+                                childData[idxChild] = subCellGroup->getUpCell(idxChildCell);
+                                FAssertLF(subCellGroup->getCellMortonIndex(idxChildCell) == childData[idxChild].getMortonIndex());
+                                child[idxChild] = &childData[idxChild];
+
+                                idxChildCell += 1;
+                            }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+
+                            nbChildParent += 1;
+
+                            if(currentCells->getCellMortonIndex(idxParentCell) == lastParent){
+                                break;
+                            }
+
+                            idxParentCell += 1;
+                        }
+                    }
                     //"L2L-l_nb_i_nbc_ic_s"
-                    task->name = taskNames.print("L2L", "%d, %d, %lld, %d, %lld, %lld\n",
+                    task->name = taskNames.print("L2L", "%d, %d, %lld, %d, %lld, %lld, %lld\n",
                                                  idxLevel,
                                               tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
                                               tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
                                                  tree->getCellGroup(idxLevel+1,idxSubGroup)->getNumberOfCellsInBlock(),
                                                  tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval(),
                                                  FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
-                                                 FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3));
+                                                 FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3),
+                                                 nbChildParent);
 #endif
     #endif
                     FAssertLF(starpu_task_submit(task) == 0);
@@ -1760,6 +1959,29 @@ protected:
             for(int idxInteraction = 0; idxInteraction < int(externalInteractionsLeafLevel[idxGroup].size()) ; ++idxInteraction){
                 const int interactionid = externalInteractionsLeafLevel[idxGroup][idxInteraction].otherBlockId;
                 const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions;
+                int nbDiff0 = 0;
+                int nbDiff1 = 0;
+                size_t nbInteractions = 0;
+                {
+                    std::unordered_set<int> exist0;
+                    std::unordered_set<int> exist1;
+                    for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
+                        ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
+                        ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIdxInBlock);
+
+                        nbInteractions += interParticles.getNbParticles() * particles.getNbParticles();
+
+                        if(exist0.find((*outsideInteractions)[outInterIdx].insideIdxInBlock) == exist0.end()){
+                            exist0.insert((*outsideInteractions)[outInterIdx].insideIdxInBlock);
+                            nbDiff0 += 1;
+                        }
+
+                        if(exist1.find((*outsideInteractions)[outInterIdx].outsideIdxInBlock) == exist1.end()){
+                            exist1.insert((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
+                            nbDiff1 += 1;
+                        }
+                    }
+                }
                 double p0 = (double) tree->getParticleGroup(interactionid)->getNbParticlesInGroup();
                 double p1 = (double) outsideInteractions->size();
                 starpu_insert_task(&p2p_cl_inout,
@@ -1788,14 +2010,15 @@ protected:
                                    STARPU_NAME, p2pOuterTaskNames.get(),
                    #else
 								   //"P2P_out-nb_i_p_nb_i_p_s"
-                                   STARPU_NAME, taskNames.print("P2P_out", "%d, %lld, %lld, %d, %lld, %lld, %d\n",
+                                   STARPU_NAME, taskNames.print("P2P_out", "%d, %lld, %lld, %d, %lld, %lld, %d, %d, %d, %lld\n",
                                                                 tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
                                                                 tree->getParticleGroup(idxGroup)->getSizeOfInterval(),
 																tree->getParticleGroup(idxGroup)->getNbParticlesInGroup(),
                                                                 tree->getParticleGroup(interactionid)->getNumberOfLeavesInBlock(),
                                                                 tree->getParticleGroup(interactionid)->getSizeOfInterval(),
 																tree->getParticleGroup(interactionid)->getNbParticlesInGroup(),
-                                                                outsideInteractions->size()),
+                                                                outsideInteractions->size(),
+                                                                nbDiff0, nbDiff1, nbInteractions),
                    #endif
                    #endif
                                    0);
@@ -1804,6 +2027,35 @@ protected:
         FLOG( timerOutBlock.tac() );
         FLOG( timerInBlock.tic() );
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
+            size_t nbInteractions = 0;
+            {
+                ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
+                const MortonIndex blockStartIdx = containers->getStartingIndex();
+                const MortonIndex blockEndIdx = containers->getEndingIndex();
+
+                for(int leafIdx = 0 ; leafIdx < containers->getNumberOfLeavesInBlock() ; ++leafIdx){
+                    ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>(leafIdx);
+                    const MortonIndex mindex = containers->getLeafMortonIndex(leafIdx);
+
+                    MortonIndex interactionsIndexes[26];
+                    int interactionsPosition[26];
+                    FTreeCoordinate coord(mindex, tree->getHeight()-1);
+                    int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
+
+                    nbInteractions += particles->getNbParticles() * particles->getNbParticles();
+
+                    for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
+                        if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
+                            const int leafPos = containers->getLeafIndex(interactionsIndexes[idxInter]);
+                            if(leafPos != -1){
+                                ParticleContainerClass particlesOther = containers->template getLeaf<ParticleContainerClass>(leafIdx);
+                                nbInteractions += particles->getNbParticles() * particlesOther->getNbParticles();
+                            }
+                        }
+                    }
+                }
+            }
+
         	double p0 = (double) tree->getParticleGroup(idxGroup)->getNbParticlesInGroup();
             starpu_insert_task(&p2p_cl_in,
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
@@ -1823,10 +2075,11 @@ protected:
                                     STARPU_NAME, p2pTaskNames.get(),
                    #else
 								//"P2P-nb_i_p"
-                               STARPU_NAME, taskNames.print("P2P", "%d, %lld, %lld\n",
+                               STARPU_NAME, taskNames.print("P2P", "%d, %lld, %lld, %lld\n",
                                                             tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
                                                             tree->getParticleGroup(idxGroup)->getSizeOfInterval(),
-															tree->getParticleGroup(idxGroup)->getNbParticlesInGroup()),
+                                                            tree->getParticleGroup(idxGroup)->getNbParticlesInGroup(),
+                                                            nbInteractions),
                    #endif
                    #endif
                                0);
@@ -1868,10 +2121,11 @@ protected:
                     STARPU_NAME, l2pTaskNames.get(),
         #else
 					//"L2P-nb_i_p"
-                    STARPU_NAME, taskNames.print("L2P", "%d, %lld, %lld\n",
+                    STARPU_NAME, taskNames.print("L2P", "%d, %lld, %lld, %lld\n",
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),
                                                  tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval(),
-												 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock()),
+                                                 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),
+                                                 tree->getParticleGroup(idxGroup)->getNbParticlesInGroup()),
         #endif
         #endif
                     0);
