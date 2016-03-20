@@ -61,7 +61,7 @@ template <class OctreeClass, class CellContainerClass, class KernelClass, class 
           >
 class FGroupTaskStarPUAlgorithm : public FAbstractAlgorithm {
 protected:
-    typedef FGroupTaskStarPUAlgorithm<OctreeClass, CellContainerClass, KernelClass, ParticleGroupClass, StarPUCpuWrapperClass
+    typedef FGroupTaskStarPUAlgorithm<OctreeClass, CellContainerClass, KernelClass, ParticleGroupClass, StarPUCpuWrapperClass, GroupContainerClass
 #ifdef SCALFMM_ENABLE_CUDA_KERNEL
     , StarPUCudaWrapperClass
 #endif
@@ -1921,8 +1921,8 @@ protected:
                     std::unordered_set<int> exist0;
                     std::unordered_set<int> exist1;
                     for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
-                        GroupContainerClass interParticles = containersOther->template getLeaf<GroupContainerClass>((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
-                        GroupContainerClass particles = containers->template getLeaf<GroupContainerClass>((*outsideInteractions)[outInterIdx].insideIdxInBlock);
+                        GroupContainerClass interParticles = tree->getParticleGroup(interactionid)->template getLeaf<GroupContainerClass>((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
+                        GroupContainerClass particles = tree->getParticleGroup(idxGroup)->template getLeaf<GroupContainerClass>((*outsideInteractions)[outInterIdx].insideIdxInBlock);
 
                         nbInteractions += interParticles.getNbParticles() * particles.getNbParticles();
 
@@ -1997,14 +1997,14 @@ protected:
                     FTreeCoordinate coord(mindex, tree->getHeight()-1);
                     int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
 
-                    nbInteractions += particles->getNbParticles() * particles->getNbParticles();
+                    nbInteractions += particles.getNbParticles() * particles.getNbParticles();
 
                     for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
                         if( blockStartIdx <= interactionsIndexes[idxInter] && interactionsIndexes[idxInter] < blockEndIdx ){
                             const int leafPos = containers->getLeafIndex(interactionsIndexes[idxInter]);
                             if(leafPos != -1){
                                 GroupContainerClass particlesOther = containers->template getLeaf<GroupContainerClass>(leafIdx);
-                                nbInteractions += particles->getNbParticles() * particlesOther->getNbParticles();
+                                nbInteractions += particles.getNbParticles() * particlesOther.getNbParticles();
                             }
                         }
                     }
