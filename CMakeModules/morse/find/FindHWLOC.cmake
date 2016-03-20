@@ -47,6 +47,7 @@
 
 include(CheckStructHasMember)
 include(CheckCSourceCompiles)
+include(CheckLibraryExists)
 
 if (NOT HWLOC_FOUND)
     set(HWLOC_DIR "" CACHE PATH "Installation directory of HWLOC library")
