@@ -489,6 +489,15 @@ typedef void (*Callback_P2M)(void* cellData, void * leafData, FSize nbParticles,
 typedef void (*Callback_M2M)(int level, void* parentCell, int childPosition, void* childCell, void* userData);
 
 /**
+ * @brief Function to be filled by user's M2M
+ * @param level current level in the tree
+ * @prama parentCell cell to be filled
+ * @param userData datas specific to the user's kernel
+ * @param childCell array of cells to be read
+ */
+typedef void (*Callback_M2M_Full)(int level, void* parentCell, void* childCell[8], void* userData);
+
+/**
  * @brief Function to be filled by user's M2L
  * @param level current level in the tree
  * @param targetCell pointer to cell to be filled
@@ -528,6 +537,15 @@ typedef void (*Callback_M2LFull)(int level, void* targetCell, const int * neighb
  * @param userData datas specific to the user's kernel
  */
 typedef void (*Callback_L2L)(int level, void* parentCell, int childPosition, void* childCell, void* userData);
+
+/**
+ * @brief Function to be filled by user's L2L
+ * @param level current level in the tree
+ * @prama parentCell cell to be filled
+ * @param userData datas specific to the user's kernel
+ * @param childCell array of cells to be read
+ */
+typedef void (*Callback_L2L_Full)(int level, void* parentCell, void* childCell[8], void* userData);
 
 /**
  * @brief Function to be filled by user's L2P
@@ -618,10 +636,12 @@ typedef void (*Callback_apply_on_cell)(int level, long long morton_index, int* t
 typedef struct User_Scalfmm_Kernel_Descriptor {
     Callback_P2M p2m;
     Callback_M2M m2m;
+    Callback_M2M_Full m2m_full;
     Callback_M2L m2l;
     Callback_M2L_Ext m2l_ext;
     Callback_M2LFull m2l_full;
     Callback_L2L l2l;
+    Callback_L2L_Full l2l_full;
     Callback_L2P l2p;
     Callback_P2P p2p;
     Callback_P2PFull p2p_full;
