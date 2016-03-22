@@ -43,6 +43,7 @@
 
 
 
+void timeAverage(int mpi_rank, int nproc, double elapsedTime);
 
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize {
@@ -128,15 +129,13 @@ int main(int argc, char* argv[]){
                               mpiComm.global().processId()+1, 0,
                               mpiComm.global().getComm()), __LINE__);
     }
-    FLOG(std::cout << "My last index is " << leftLimite << "\n");
-    FLOG(std::cout << "My left limite is " << myLeftLimite << "\n");
 	for(int i = 0; i < mpiComm.global().processCount(); ++i)
 	{
 		if(i == mpiComm.global().processId())
 		{
-			std::cout << "My last index is (" << mpiComm.global().processId() << ") " << leftLimite << "\n";
-			std::cout << "My left limite is (" << mpiComm.global().processId() << ") " << myLeftLimite << "\n";
-			std::cout << "Size (" << mpiComm.global().processId() << ") " << allParticles.getNbParticles()  << "\n";
+			FLOG(std::cout << "My last index is (" << mpiComm.global().processId() << ") " << leftLimite << "\n");
+			FLOG(std::cout << "My left limite is (" << mpiComm.global().processId() << ") " << myLeftLimite << "\n");
+			FLOG(std::cout << "Size (" << mpiComm.global().processId() << ") " << allParticles.getNbParticles()  << "\n");
 		}
 		mpiComm.global().barrier();
 	}
@@ -144,15 +143,16 @@ int main(int argc, char* argv[]){
     // Put the data into the tree
     GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize,
                                  &allParticles, true, leftLimite);
-    //groupedTree.printInfoBlocks();
 
     // Run the algorithm
     GroupKernelClass groupkernel;
     GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
+	FTic timerExecute;
     groupalgo.execute();
-
-    std::cout << "Wait Others... " << std::endl;
+	double elapsedTime = timerExecute.tacAndElapsed();
+	std::cout << "Executing time (explicit node " << mpiComm.global().processId() << ") " << elapsedTime << "s\n";
     mpiComm.global().barrier();
+	timeAverage(mpiComm.global().processId(), mpiComm.global().processCount(), elapsedTime);
 
     groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass cell, GroupContainerClass* leaf){
         const FSize nbPartsInLeaf = leaf->getNbParticles();
@@ -209,4 +209,22 @@ int main(int argc, char* argv[]){
 
     return 0;
 }
-
+void timeAverage(int mpi_rank, int nproc, double elapsedTime)
+{
+	if(mpi_rank == 0)
+	{
+		double sumElapsedTime = elapsedTime;
+		for(int i = 1; i < nproc; ++i)
+		{
+			double tmp;
+			MPI_Recv(&tmp, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, 0);
+			sumElapsedTime += tmp;
+		}
+		sumElapsedTime = sumElapsedTime / (double)nproc;
+		std::cout << "Average time per node : " << sumElapsedTime << "s" << std::endl;
+	}
+	else
+	{
+		MPI_Send(&elapsedTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+	}
+}

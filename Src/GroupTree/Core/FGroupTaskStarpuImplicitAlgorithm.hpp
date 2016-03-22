@@ -192,8 +192,6 @@ public:
 		taskNames = new FStarPUTaskNameParams(mpi_rank, nproc);
 #endif
 #endif
-		cout << mpi_rank << "/" << nproc << endl;
-
         starpu_malloc_set_align(32);
 
         starpu_pthread_mutex_t initMutex;

@@ -8,6 +8,7 @@
 #include <deque>
 #include <unordered_set>
 #include <unordered_map>
+#include <omp.h>
 using namespace std;
 
 #include "../../Src/Utils/FGlobal.hpp"
@@ -49,6 +50,7 @@ struct Task
 		cout << taskNames[type];
 		for(size_t i = 0; i < id.size(); ++i)
 			cout << ", " << id[i];
+		cout << "(mpi " << mpiNode << ")";
 		cout << endl;
 	}
 };
@@ -66,6 +68,7 @@ struct DagData
 {
 	unordered_set<Task> allTask;
 	unordered_map<long long int, double> performence;
+	int treeHeight;
 };
 
 bool parseLine(DagData & dagData, deque<string> & lineElements)
@@ -84,6 +87,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 		task.id[2] = stoll(lineElements[11]);
 		task.id[3] = stoll(lineElements[12]);
 		task.mpiNode = stoi(lineElements[13]);
+		task.level = dagData.treeHeight - 1;
 		dagData.allTask.insert(task);
 	}
 	else if(lineElements.size() >= 10 && lineElements[0] == "P2P")
@@ -99,6 +103,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 		if(task.id[0] == 0 && task.id[1] == 0 && task.id[2] == 0 && task.id[3] == 0)
 			cout << "Suricate" << endl;
 		task.mpiNode = stoi(lineElements[9]);
+		task.level = dagData.treeHeight - 1;
 		dagData.allTask.insert(task);
 	}
 	else if(lineElements.size() >= 10 && lineElements[0] == "M2L" )
@@ -113,6 +118,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 		task.id[3] = stoll(lineElements[7]);
 		task.id[4] = stoll(lineElements[8]);
 		task.mpiNode = stoi(lineElements[9]);
+		task.level = task.id[0];
 		dagData.allTask.insert(task);
 	}
 	else if(lineElements.size() >= 13 && lineElements[0] == "M2L_out")
@@ -127,6 +133,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 		task.id[3] = stoll(lineElements[10]);
 		task.id[4] = stoll(lineElements[11]);
 		task.mpiNode = stoi(lineElements[12]);
+		task.level = task.id[0];
 		dagData.allTask.insert(task);
 	}
 	else if(lineElements.size() >= 13 && lineElements[0] == "M2M")
@@ -141,6 +148,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 		task.id[3] = stoll(lineElements[10]);
 		task.id[4] = stoll(lineElements[11]);
 		task.mpiNode = stoi(lineElements[12]);
+		task.level = task.id[0];
 		dagData.allTask.insert(task);
 	}
 	else if(lineElements.size() >= 13 && lineElements[0] == "L2L")
@@ -155,6 +163,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 		task.id[3] = stoll(lineElements[10]);
 		task.id[4] = stoll(lineElements[11]);
 		task.mpiNode = stoi(lineElements[12]);
+		task.level = task.id[0];
 		dagData.allTask.insert(task);
 	}
 	else if(lineElements.size() >= 8 && lineElements[0] == "L2P")
@@ -166,6 +175,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 		task.id[0] = stoll(lineElements[5]);
 		task.id[1] = stoll(lineElements[6]);
 		task.mpiNode = stoi(lineElements[7]);
+		task.level = dagData.treeHeight - 1;
 		dagData.allTask.insert(task);
 	}
 	else if(lineElements.size() >= 8 && lineElements[0] == "P2M")
@@ -177,6 +187,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 		task.id[0] = stoll(lineElements[5]);
 		task.id[1] = stoll(lineElements[6]);
 		task.mpiNode = stoi(lineElements[7]);
+		task.level = 0;
 		dagData.allTask.insert(task);
 	}
 	else
@@ -268,37 +279,91 @@ void fillPerformanceData(const char* const filename, DagData & dagData)
 	}
 	fichier.close();  // on ferme le fichier
 }
-void compareDag(DagData& dag1, DagData& dag2, int treeHeight)
+void compareDag(DagData const& dag1, DagData const& dag2, int const treeHeight)
 {
-	long long int notFoundCount[treeHeight] = {0};
-	bool notFound[treeHeight] = {false};
-	for(Task task : dag1.allTask)
+	#pragma omp parallel
 	{
-		bool found = false;
-		if(task.type == P2P || task.type == P2P_OUT || task.type == P2M || task.type == L2P)
-			notFound[treeHeight-1] = true;
-		else if(task.id[0] < treeHeight)
-			++notFound[task.id[0]] = true;
-		for(Task task2 : dag2.allTask)
+		#pragma omp single nowait
 		{
-			if(task == task2)
+			long long int notFoundCount[omp_get_num_threads()][treeHeight];
+			long long int differenceMapping[omp_get_num_threads()][treeHeight];
+			long long int taskCount[omp_get_num_threads()][treeHeight];
+			for(int i = 0; i < omp_get_num_threads(); ++i)
 			{
-				found = true;
-				break;
+				for(int j = 0; j < treeHeight; ++j)
+				{
+					notFoundCount[i][j] = 0;
+					taskCount[i][j] = 0;
+					differenceMapping[i][j] = 0;
+				}
+			}
+			for(Task task : dag1.allTask)
+			{
+				#pragma omp task default(shared) firstprivate(task)
+				{
+					bool found = false;
+					Task sameTask[2];
+					int sameTaskId = 0;
+					if(task.level < treeHeight)
+						++taskCount[omp_get_thread_num()][task.level];
+					for(auto it = dag2.allTask.begin(); it != dag2.allTask.end(); ++it)
+					{
+						if(task == *it)
+						{
+							sameTask[sameTaskId++] = *it;
+							found = true;
+							if(sameTaskId == 2)
+								break;
+						}
+					}
+					if(found == false)
+					{
+						//task.print();
+						if(task.level < treeHeight)
+							++notFoundCount[omp_get_thread_num()][task.level];
+					}
+					else
+					{
+						bool sameNode = false;
+						for(int i = 0; i < sameTaskId; ++i)
+							if(sameTask[i].mpiNode == task.mpiNode)
+								sameNode = true;
+								
+						if(!sameNode)
+						{
+							#pragma omp critical
+							{
+								task.print();
+								sameTask[0].print();//Il y a au moins une tâche identique trouvée
+								if(sameTaskId == 2)
+									sameTask[1].print();//Il y a au moins une tâche identique trouvée
+								cout << sameTaskId << endl;
+								cout << endl;
+							}
+							if(task.level < treeHeight)
+								++differenceMapping[omp_get_thread_num()][task.level];
+						}
+					}
+				}
+			}
+			#pragma omp taskwait
+			for(int i = 0; i < treeHeight; ++i)
+			{
+				long long int sum = 0;
+				long long int sumDiffMapping = 0;
+				long long int sumTaskCount = 0;
+				for(int j = 0; j < omp_get_num_threads(); ++j)
+					if(taskCount[j][i] > 0)
+					{
+						sum += notFoundCount[j][i];
+						sumDiffMapping += differenceMapping[j][i];
+						sumTaskCount += taskCount[j][i];
+					}
+				if(sum > 0 || sumDiffMapping > 0)
+					std::cout << "Diff lvl " << i << " -> " << sum << " (Mapping error : " << sumDiffMapping << "/" << sumTaskCount << ")" << std::endl;
 			}
 		}
-		if(found == false)
-		{
-			task.print();
-			if(task.type == P2P || task.type == P2P_OUT || task.type == P2M || task.type == L2P)
-				++notFoundCount[treeHeight-1];
-			else
-				++notFoundCount[task.id[0]];
-		}
 	}
-	for(int i = 0; i < treeHeight; ++i)
-		if(notFound[i] == true)
-			cout << "Diff lvl " << i << " -> " << notFoundCount[i] << endl;
 }
 int main(int argc, char* argv[])
 {
@@ -334,10 +399,12 @@ int main(int argc, char* argv[])
 	DagData implicitData, explicitData;
 	bool implicitGood, explicitGood;
 	std::thread explicitThread([&](){
+		explicitData.treeHeight = treeHeight;
 		fillPerformanceData(explicitTraceFilename, explicitData);
 		explicitGood = fillDagData(explicitFilename, explicitData);
 		});
 	std::thread implicitThread([&](){
+		implicitData.treeHeight = treeHeight;
 		fillPerformanceData(implicitTraceFilename, implicitData);
 		implicitGood = fillDagData(implicitFilename, implicitData);
 		});
@@ -347,7 +414,7 @@ int main(int argc, char* argv[])
 	{
 		cout << explicitData.allTask.size() << " tasks in explicit." << endl;
 		cout << implicitData.allTask.size() << " tasks in implicit." << endl;
-		compareDag(explicitData, implicitData, treeHeight);
+		compareDag(implicitData, explicitData, treeHeight);
 	}
     return 0;
 }

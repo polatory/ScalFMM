@@ -39,6 +39,7 @@ using namespace std;
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 
 std::vector<MortonIndex> getMortonIndex(const char* const mapping_filename);
+void timeAverage(int mpi_rank, int nproc, double elapsedTime);
 
 int main(int argc, char* argv[]){
     setenv("STARPU_NCPU","1",1);
@@ -131,18 +132,22 @@ int main(int argc, char* argv[]){
     // Run the algorithm
     GroupKernelClass groupkernel;
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel, distributedMortonIndex);
+	FTic timerExecute;
     groupalgo.execute();
+	double elapsedTime = timerExecute.tacAndElapsed();
+	cout << "Executing time (implicit node " << groupalgo.getRank() << ") " << elapsedTime << "s\n";
+	timeAverage(groupalgo.getRank(), groupalgo.getNProc(), elapsedTime);
+
     // Usual algorithm
     KernelClass kernels;            // FTestKernels FBasicKernels
     FmmClass algo(&tree,&kernels);  //FFmmAlgorithm FFmmAlgorithmThread
     algo.execute();
 	int rank = groupalgo.getRank();
-	for(int i = 0; i < groupedTree.getHeight(); ++i)
+	for(int i = 2; i < groupedTree.getHeight(); ++i)//No task at level 0 and 1
 	{
 		if(groupedTree.getNbCellGroupAtLevel(i) < groupalgo.getNProc() && rank == 0)
 			std::cout << "Error at level " << i << std::endl;
 	}
-	return 0;
     // Validate the result
 	for(int idxLevel = 2 ; idxLevel < groupedTree.getHeight() ; ++idxLevel){
 		for(int idxGroup = 0 ; idxGroup < groupedTree.getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
@@ -216,4 +221,23 @@ std::vector<MortonIndex> getMortonIndex(const char* const mapping_filename)
 	else  // sinon
 		cerr << "Impossible d'ouvrir le fichier !" << endl;
 	return ret;
+}
+void timeAverage(int mpi_rank, int nproc, double elapsedTime)
+{
+	if(mpi_rank == 0)
+	{
+		double sumElapsedTime = elapsedTime;
+		for(int i = 1; i < nproc; ++i)
+		{
+			double tmp;
+			MPI_Recv(&tmp, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, 0);
+			sumElapsedTime += tmp;
+		}
+		sumElapsedTime = sumElapsedTime / (double)nproc;
+		std::cout << "Average time per node : " << sumElapsedTime << "s" << std::endl;
+	}
+	else
+	{
+		MPI_Send(&elapsedTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+	}
 }
