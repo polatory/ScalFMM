@@ -7,7 +7,7 @@ using namespace std;
 
 #include "../../Src/Utils/FGlobal.hpp"
 
-#include "../../Src/GroupTree/Core/FGroupTreeBerenger.hpp"
+#include "../../Src/GroupTree/Core/FGroupTree.hpp"
 
 #include "../../Src/Components/FSimpleLeaf.hpp"
 #include "../../Src/Containers/FVector.hpp"
@@ -67,7 +67,7 @@ int main(int argc, char* argv[]){
 
 
     typedef FGroupTestParticleContainer<FReal>                                GroupContainerClass;
-    typedef FGroupTreeBerenger< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass,
+    typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass,
             GroupContainerClass, 0, 1, long long int>  GroupOctreeClass;
     typedef FStarPUAllCpuCapacities<FTestKernels< GroupCellClass, GroupContainerClass >>  GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
@@ -112,9 +112,10 @@ int main(int argc, char* argv[]){
         allParticles.push(particlePosition);
         tree.insert(particlePosition);
     }
+	
     // Put the data into the tree
     //GroupOctreeClass groupedTree(NbLevels, groupSize, &tree);
-	GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false, distributedMortonIndex);
+	GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false);
 	
     // Check tree structure at leaf level
     groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass gcell, GroupContainerClass* gleaf){

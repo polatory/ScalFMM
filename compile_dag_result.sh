@@ -1,8 +1,8 @@
 #!/bin/sh
 export SCALFMM_SIMGRIDOUT='scalfmm.out'
 export STARPU_STATS=1
-export GROUP_SIZE=32
-export TREE_HEIGHT=6
+export GROUP_SIZE=8
+export TREE_HEIGHT=3
 export NB_NODE=8
 export NB_PARTICLE_PER_NODE=$((`awk "BEGIN{print 8 ** ($TREE_HEIGHT-1)}"` / $NB_NODE))
 echo "GROUP_SIZE=$GROUP_SIZE"
@@ -63,6 +63,6 @@ a=`ls $STARPU_FXT_PREFIX/../installprof*`
 #rm -f $STARPU_FXT_PREFIX/../installprof*
 
 #Compare DAGs
-./Tests/Release/compareDAGmapping -e scalfmm_explicit.out -i scalfmm_implicit.out -h $TREE_HEIGHT > output
+./Tests/Release/compareDAGmapping -e scalfmm_explicit.out -i scalfmm_implicit.out -h $TREE_HEIGHT
 
 

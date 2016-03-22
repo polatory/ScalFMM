@@ -108,9 +108,11 @@ protected:
 
     starpu_codelet m2l_cl_in;
     starpu_codelet m2l_cl_inout;
+    starpu_codelet m2l_cl_inout_mpi;
 
     starpu_codelet p2p_cl_in;
     starpu_codelet p2p_cl_inout;
+    starpu_codelet p2p_cl_inout_mpi;
 
 #ifdef STARPU_USE_REDUX
     starpu_codelet p2p_redux_init;
@@ -231,6 +233,7 @@ public:
 #endif
 
         initCodelet();
+		initCodeletMpi();
 		createMachinChose(distributedMortonIndex);
         rebuildInteractions();
 
@@ -772,6 +775,59 @@ protected:
         p2p_redux_read.modes[0] = STARPU_R;
         p2p_redux_read.name = "p2p_redux_read";
 #endif
+    }
+
+    void initCodeletMpi(){
+        memset(&p2p_cl_inout_mpi, 0, sizeof(p2p_cl_inout_mpi));
+#ifdef STARPU_USE_CPU
+        if(originalCpuKernel->supportP2PMpi(FSTARPU_CPU_IDX)){
+            p2p_cl_inout_mpi.where |= STARPU_CPU;
+            p2p_cl_inout_mpi.cpu_funcs[0] = StarPUCpuWrapperClass::directInoutPassCallbackMpi;
+        }
+#endif
+#ifdef SCALFMM_ENABLE_CUDA_KERNEL
+        if(originalCpuKernel->supportP2PMpi(FSTARPU_CUDA_IDX)){
+            p2p_cl_inout_mpi.where |= STARPU_CUDA;
+            p2p_cl_inout_mpi.cuda_funcs[0] = StarPUCudaWrapperClass::directInoutPassCallbackMpi;
+        }
+#endif
+#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
+        if(originalCpuKernel->supportP2PMpi(FSTARPU_OPENCL_IDX)){
+            p2p_cl_inout_mpi.where |= STARPU_OPENCL;
+            p2p_cl_inout_mpi.opencl_funcs[0] = StarPUOpenClWrapperClass::directInoutPassCallbackMpi;
+        }
+#endif
+        p2p_cl_inout_mpi.nbuffers = 3;
+        p2p_cl_inout_mpi.modes[0] = STARPU_R;
+        p2p_cl_inout_mpi.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
+        p2p_cl_inout_mpi.modes[2] = STARPU_R;
+        p2p_cl_inout_mpi.name = "p2p_cl_inout_mpi";
+
+        memset(&m2l_cl_inout_mpi, 0, sizeof(m2l_cl_inout_mpi));
+#ifdef STARPU_USE_CPU
+        if(originalCpuKernel->supportM2LMpi(FSTARPU_CPU_IDX)){
+            m2l_cl_inout_mpi.where |= STARPU_CPU;
+            m2l_cl_inout_mpi.cpu_funcs[0] = StarPUCpuWrapperClass::transferInoutPassCallbackMpi;
+        }
+#endif
+#ifdef SCALFMM_ENABLE_CUDA_KERNEL
+        if(originalCpuKernel->supportM2LMpi(FSTARPU_CUDA_IDX)){
+            m2l_cl_inout_mpi.where |= STARPU_CUDA;
+            m2l_cl_inout_mpi.cuda_funcs[0] = StarPUCudaWrapperClass::transferInoutPassCallbackMpi;
+        }
+#endif
+#ifdef SCALFMM_ENABLE_OPENCL_KERNEL
+        if(originalCpuKernel->supportM2LMpi(FSTARPU_OPENCL_IDX)){
+            m2l_cl_inout_mpi.where |= STARPU_OPENCL;
+            m2l_cl_inout_mpi.opencl_funcs[0] = StarPUOpenClWrapperClass::transferInoutPassCallbackMpi;
+        }
+#endif
+        m2l_cl_inout_mpi.nbuffers = 4;
+        m2l_cl_inout_mpi.modes[0] = STARPU_R;
+        m2l_cl_inout_mpi.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
+        m2l_cl_inout_mpi.modes[2] = STARPU_R;
+        m2l_cl_inout_mpi.modes[3] = STARPU_R;
+        m2l_cl_inout_mpi.name = "m2l_cl_inout_mpi";
     }
 
     /** dealloc in a starpu way all the defined handles */
@@ -1324,11 +1380,11 @@ protected:
                                                                         tree->getCellGroup(idxLevel,interactionid)->getNumberOfCellsInBlock(),
                                                                         tree->getCellGroup(idxLevel,interactionid)->getSizeOfInterval(),
                                                                         outsideInteractions->size(),
-																		tree->getCellGroup(idxLevel, idxGroup)->getStartingIndex(),
-																		tree->getCellGroup(idxLevel, idxGroup)->getEndingIndex(),
 																		tree->getCellGroup(idxLevel, interactionid)->getStartingIndex(),
 																		tree->getCellGroup(idxLevel, interactionid)->getEndingIndex(),
-																		starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].down)),
+																		tree->getCellGroup(idxLevel, idxGroup)->getStartingIndex(),
+																		tree->getCellGroup(idxLevel, idxGroup)->getEndingIndex(),
+																		starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].down)),
                    						#endif
                        					#endif
                                            0);
@@ -1530,48 +1586,118 @@ protected:
             for(int idxInteraction = 0; idxInteraction < int(externalInteractionsLeafLevel[idxGroup].size()) ; ++idxInteraction){
                 const int interactionid = externalInteractionsLeafLevel[idxGroup][idxInteraction].otherBlockId;
                 const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions;
-                starpu_mpi_insert_task(MPI_COMM_WORLD,
-                                   &p2p_cl_inout,
-                                   STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                                   STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                                   STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
-                   				#ifdef SCALFMM_STARPU_USE_PRIO
-                                   STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2PExtern(),
-                   				#endif
-                                   STARPU_R, particleHandles[idxGroup].symb,
-                   				#ifdef STARPU_USE_REDUX
-								   STARPU_REDUX, particleHandles[idxGroup].down,
-                   				#else
-                                   (STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
-                   				#endif
-                                   STARPU_R, particleHandles[interactionid].symb,
-                   				#ifdef STARPU_USE_REDUX
-								   STARPU_REDUX, particleHandles[interactionid].down,
-                   				#else
-                                   (STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), particleHandles[interactionid].down,
-								   STARPU_EXECUTE_ON_DATA, particleHandles[interactionid].down,
-                   				#endif
-                   				#ifdef STARPU_USE_TASK_NAME
-                   				#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
-                                   STARPU_NAME, p2pOuterTaskNames.get(),
-                   				#else
-								   //"P2P_out-nb_i_p_nb_i_p_s"
-                                   STARPU_NAME, taskNames->print("P2P_out", "%d, %lld, %lld, %d, %lld, %lld, %d, %lld, %lld, %lld, %lld, %d\n",
-                                                                tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
-                                                                tree->getParticleGroup(idxGroup)->getSizeOfInterval(),
-																tree->getParticleGroup(idxGroup)->getNbParticlesInGroup(),
-                                                                tree->getParticleGroup(interactionid)->getNumberOfLeavesInBlock(),
-                                                                tree->getParticleGroup(interactionid)->getSizeOfInterval(),
-																tree->getParticleGroup(interactionid)->getNbParticlesInGroup(),
-                                                                outsideInteractions->size(),
-																tree->getParticleGroup(idxGroup)->getStartingIndex(),
-																tree->getParticleGroup(idxGroup)->getEndingIndex(),
-																tree->getParticleGroup(interactionid)->getStartingIndex(),
-																tree->getParticleGroup(interactionid)->getEndingIndex(),
-																starpu_mpi_data_get_rank(particleHandles[interactionid].down)),
-                   				#endif
-                   				#endif
-                                   0);
+				if(starpu_mpi_data_get_rank(particleHandles[idxGroup].down) == starpu_mpi_data_get_rank(particleHandles[interactionid].down))
+				{
+					starpu_mpi_insert_task(MPI_COMM_WORLD,
+									   &p2p_cl_inout,
+									   STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+									   STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+									   STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
+									#ifdef SCALFMM_STARPU_USE_PRIO
+									   STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2PExtern(),
+									#endif
+									   STARPU_R, particleHandles[idxGroup].symb,
+									#ifdef STARPU_USE_REDUX
+									   STARPU_REDUX, particleHandles[idxGroup].down,
+									#else
+									   (STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
+									#endif
+									   STARPU_R, particleHandles[interactionid].symb,
+									#ifdef STARPU_USE_REDUX
+									   STARPU_REDUX, particleHandles[interactionid].down,
+									#else
+									   (STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), particleHandles[interactionid].down,
+									   STARPU_EXECUTE_ON_DATA, particleHandles[interactionid].down,
+									#endif
+									#ifdef STARPU_USE_TASK_NAME
+									#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+									   STARPU_NAME, p2pOuterTaskNames.get(),
+									#else
+									   //"P2P_out-nb_i_p_nb_i_p_s"
+									   STARPU_NAME, taskNames->print("P2P_out", "%d, %lld, %lld, %d, %lld, %lld, %d, %lld, %lld, %lld, %lld, %d\n",
+																	tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
+																	tree->getParticleGroup(idxGroup)->getSizeOfInterval(),
+																	tree->getParticleGroup(idxGroup)->getNbParticlesInGroup(),
+																	tree->getParticleGroup(interactionid)->getNumberOfLeavesInBlock(),
+																	tree->getParticleGroup(interactionid)->getSizeOfInterval(),
+																	tree->getParticleGroup(interactionid)->getNbParticlesInGroup(),
+																	outsideInteractions->size(),
+																	tree->getParticleGroup(idxGroup)->getStartingIndex(),
+																	tree->getParticleGroup(idxGroup)->getEndingIndex(),
+																	tree->getParticleGroup(interactionid)->getStartingIndex(),
+																	tree->getParticleGroup(interactionid)->getEndingIndex(),
+																	starpu_mpi_data_get_rank(particleHandles[interactionid].down)),
+									#endif
+									#endif
+									   0);
+				}
+				else
+				{
+					starpu_mpi_insert_task(MPI_COMM_WORLD,
+									   &p2p_cl_inout_mpi,
+									   STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+									   STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+									   STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
+					   #ifdef SCALFMM_STARPU_USE_PRIO
+									   STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2PExtern(),
+					   #endif
+									   STARPU_R, particleHandles[idxGroup].symb,
+									   (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
+									   STARPU_R, particleHandles[interactionid].symb,
+					   #ifdef STARPU_USE_TASK_NAME
+					   #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+									   STARPU_NAME, p2pOuterTaskNames.get(),
+					   #else
+									   //"P2P_out-nb_i_p_nb_i_p_s"
+									   STARPU_NAME, taskNames->print("P2P_out", "%d, %lld, %lld, %d, %lld, %lld, %d, %lld, %lld, %lld, %lld, %d\n",
+													tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
+													tree->getParticleGroup(idxGroup)->getSizeOfInterval(),
+													tree->getParticleGroup(idxGroup)->getNbParticlesInGroup(),
+													tree->getParticleGroup(interactionid)->getNumberOfLeavesInBlock(),
+													tree->getParticleGroup(interactionid)->getSizeOfInterval(),
+													tree->getParticleGroup(interactionid)->getNbParticlesInGroup(),
+													outsideInteractions->size(),
+													tree->getParticleGroup(idxGroup)->getStartingIndex(),
+													tree->getParticleGroup(idxGroup)->getEndingIndex(),
+													tree->getParticleGroup(interactionid)->getStartingIndex(),
+													tree->getParticleGroup(interactionid)->getEndingIndex(),
+													starpu_mpi_data_get_rank(particleHandles[idxGroup].down)),
+					   #endif
+					   #endif
+									   0);
+					starpu_mpi_insert_task(MPI_COMM_WORLD,
+									   &p2p_cl_inout_mpi,
+									   STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+									   STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+									   STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
+					   #ifdef SCALFMM_STARPU_USE_PRIO
+									   STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2PExtern(),
+					   #endif
+									   STARPU_R, particleHandles[interactionid].symb,
+									   (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), particleHandles[interactionid].down,
+									   STARPU_R, particleHandles[idxGroup].symb,
+					   #ifdef STARPU_USE_TASK_NAME
+					   #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+									   STARPU_NAME, p2pOuterTaskNames.get(),
+					   #else
+									   //"P2P_out-nb_i_p_nb_i_p_s"
+									   STARPU_NAME, taskNames->print("P2P_out", "%d, %lld, %lld, %d, %lld, %lld, %d, %lld, %lld, %lld, %lld, %d\n",
+													tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
+													tree->getParticleGroup(idxGroup)->getSizeOfInterval(),
+													tree->getParticleGroup(idxGroup)->getNbParticlesInGroup(),
+													tree->getParticleGroup(interactionid)->getNumberOfLeavesInBlock(),
+													tree->getParticleGroup(interactionid)->getSizeOfInterval(),
+													tree->getParticleGroup(interactionid)->getNbParticlesInGroup(),
+													outsideInteractions->size(),
+													tree->getParticleGroup(interactionid)->getStartingIndex(),
+													tree->getParticleGroup(interactionid)->getEndingIndex(),
+													tree->getParticleGroup(idxGroup)->getStartingIndex(),
+													tree->getParticleGroup(idxGroup)->getEndingIndex(),
+													starpu_mpi_data_get_rank(particleHandles[interactionid].down)),
+					   #endif
+					   #endif
+									   0);
+				}
             }
         }
         FLOG( timerOutBlock.tac() );
@@ -1628,32 +1754,32 @@ protected:
                                &l2p_cl,
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
-        		#ifdef SCALFMM_STARPU_USE_PRIO
-                    STARPU_PRIORITY, PrioClass::Controller().getInsertionPosL2P(),
-        		#endif
-                    STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
-                    STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].down,
-                    STARPU_R, particleHandles[idxGroup].symb,
-				#ifdef STARPU_USE_REDUX
-                    STARPU_REDUX, particleHandles[idxGroup].down,
-				#else
-                    (STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
-				#endif
-        		#ifdef STARPU_USE_TASK_NAME
-        		#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
-                    STARPU_NAME, l2pTaskNames.get(),
-        		#else
-					//"L2P-nb_i_p"
-                    STARPU_NAME, taskNames->print("L2P", "%d, %lld, %lld, %lld, %lld, %d\n",
-                                                 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),
-                                                 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval(),
-												 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),
-                                                 tree->getParticleGroup(idxGroup)->getStartingIndex(),
-												 tree->getParticleGroup(idxGroup)->getEndingIndex(),
-												 starpu_mpi_data_get_rank(particleHandles[idxGroup].down)),
-        		#endif
-        		#endif
-                    0);
+							#ifdef SCALFMM_STARPU_USE_PRIO
+								STARPU_PRIORITY, PrioClass::Controller().getInsertionPosL2P(),
+							#endif
+								STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].symb,
+								STARPU_R, cellHandles[tree->getHeight()-1][idxGroup].down,
+								STARPU_R, particleHandles[idxGroup].symb,
+							#ifdef STARPU_USE_REDUX
+								STARPU_REDUX, particleHandles[idxGroup].down,
+							#else
+								(STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), particleHandles[idxGroup].down,
+							#endif
+							#ifdef STARPU_USE_TASK_NAME
+							#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+								STARPU_NAME, l2pTaskNames.get(),
+							#else
+								//"L2P-nb_i_p"
+								STARPU_NAME, taskNames->print("L2P", "%d, %lld, %lld, %lld, %lld, %d\n",
+															 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),
+															 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval(),
+															 tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock(),
+															 tree->getParticleGroup(idxGroup)->getStartingIndex(),
+															 tree->getParticleGroup(idxGroup)->getEndingIndex(),
+															 starpu_mpi_data_get_rank(particleHandles[idxGroup].down)),
+							#endif
+							#endif
+								0);
         }
 
         FLOG( FLog::Controller << "\t\t L2P in " << timer.tacAndElapsed() << "s\n" );
