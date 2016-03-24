@@ -268,7 +268,7 @@ void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, v
 	for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
 		const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPosition<FReal>(loader.getCenterOfBox(), loader.getBoxWidth(),
 				treeHeight,
-				allParticlesToSort[idxPart]);
+				allParticles[idxPart]);
 		const MortonIndex particleIndex = host.getMortonIndex(treeHeight-1);
 		particlesToSort[idxPart].mindex = particleIndex;
 		particlesToSort[idxPart].position = allParticles[idxPart];
@@ -316,7 +316,6 @@ void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, v
 	}
 	std::vector<MortonIndex> distributedMortonIndex;
 
-	
 	//Calcul du working interval au niveau des feuilles
 	previousLeaf = -1;
 	countLeaf = 0;
@@ -332,11 +331,17 @@ void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, v
 			{
 				distributedMortonIndex.push_back(previousLeaf);
 				distributedMortonIndex.push_back(previousLeaf);
+				countLeaf = 0;
 			}
 		}
 	}
 	distributedMortonIndex.push_back(particlesToSort[nbParticles - 1].mindex);
 
+	cout << "Size " << leafPerNode << " " << bonusGroup << endl;
+	for(int i = 0; i < nproc; ++i)
+	{
+			cout << "(" << i << ") " << distributedMortonIndex[i*2] << " " << distributedMortonIndex[i*2+1] << endl;
+	}
 	//Calcul des working interval à chaque niveau
 	std::vector<std::vector<std::vector<MortonIndex>>> nodeRepartition;
 	createNodeRepartition(distributedMortonIndex, nodeRepartition, nproc, treeHeight);
