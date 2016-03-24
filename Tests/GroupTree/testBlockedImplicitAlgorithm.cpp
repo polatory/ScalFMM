@@ -27,6 +27,8 @@ using namespace std;
 #include "../../Src/GroupTree/Core/FP2PGroupParticleContainer.hpp"
 #include "../../Src/GroupTree/Core/FGroupTaskAlgorithm.hpp"
 
+#include "../../Src/BalanceTree/FLeafBalance.hpp"
+
 #include "../../Src/Utils/FParameterNames.hpp"
 
 #include "../../Src/Components/FTestParticleContainer.hpp"
@@ -284,30 +286,25 @@ void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, v
 	}
 	
 	//Compte le nombre de feuilles
-	sizeForEachGroup.resize(treeHeight);
+	sizeForEachGroup.resize(treeHeight+1);//Le +1 est pour les particules
 	MortonIndex previousLeaf = -1;
-	int countLeaf = 0;
+	int numberOfLeaf = 0;
 	for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart)
 	{
 		if(particlesToSort[idxPart].mindex != previousLeaf)
 		{
 			previousLeaf = particlesToSort[idxPart].mindex;
-			++countLeaf;
+			++numberOfLeaf;
 		}
 	}
 
-	//Réparti les feuilles par process mpi
-	int bonusGroup = countLeaf%nproc; //Number of node in the bonus group
-	int leafPerNode = (int)floor((double)countLeaf / (double)nproc);
-
 	//Calcul de la taille des groupes au niveau des feuilles
+    FLeafBalance balancer;
 	for(int processId = 0; processId < nproc; ++processId)
 	{
 		int size_last;
 		int countGroup;
-		int leafOnProcess = leafPerNode;
-		if(processId < bonusGroup)
-			leafOnProcess = leafPerNode+1;
+		int leafOnProcess = balancer.getRight(numberOfLeaf, nproc, processId) - balancer.getLeft(numberOfLeaf, nproc, processId);
 		size_last = leafOnProcess%groupSize;
 		countGroup = (leafOnProcess - size_last)/groupSize;
 		for(int i = 0; i < countGroup; ++i)
@@ -315,11 +312,12 @@ void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, v
 		sizeForEachGroup[treeHeight-1].push_back(size_last);
 	}
 	std::vector<MortonIndex> distributedMortonIndex;
-
+	
 	//Calcul du working interval au niveau des feuilles
 	previousLeaf = -1;
-	countLeaf = 0;
+	int countLeaf = 0;
 	int processId = 0;
+	int leafOnProcess = balancer.getRight(numberOfLeaf, nproc, 0) - balancer.getLeft(numberOfLeaf, nproc, 0);
 	distributedMortonIndex.push_back(previousLeaf);
 	for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart)
 	{
@@ -327,21 +325,40 @@ void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, v
 		{
 			previousLeaf = particlesToSort[idxPart].mindex;
 			++countLeaf;
-			if((countLeaf == leafPerNode+1 && processId < bonusGroup) || (countLeaf == leafPerNode && processId >= bonusGroup))
+			if(countLeaf == leafOnProcess)
 			{
 				distributedMortonIndex.push_back(previousLeaf);
 				distributedMortonIndex.push_back(previousLeaf);
 				countLeaf = 0;
+				++processId;
+				leafOnProcess = balancer.getRight(numberOfLeaf, nproc, processId) - balancer.getLeft(numberOfLeaf, nproc, processId);
 			}
 		}
 	}
 	distributedMortonIndex.push_back(particlesToSort[nbParticles - 1].mindex);
 
-	cout << "Size " << leafPerNode << " " << bonusGroup << endl;
-	for(int i = 0; i < nproc; ++i)
+	//Ajout des groupes de particules
+	int countParticle = 0;
+	processId = 0;
+	for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart)
 	{
-			cout << "(" << i << ") " << distributedMortonIndex[i*2] << " " << distributedMortonIndex[i*2+1] << endl;
+		if(particlesToSort[idxPart].mindex <= distributedMortonIndex[processId*2+1])
+		{
+			++countParticle;
+			if(countParticle == groupSize)
+			{
+				sizeForEachGroup[treeHeight].push_back(countParticle);
+				countParticle = 0;
+			}
+		}
+		else
+		{
+			sizeForEachGroup[treeHeight].push_back(countParticle);
+			countParticle = 0;
+			++processId;
+		}
 	}
+
 	//Calcul des working interval à chaque niveau
 	std::vector<std::vector<std::vector<MortonIndex>>> nodeRepartition;
 	createNodeRepartition(distributedMortonIndex, nodeRepartition, nproc, treeHeight);
@@ -355,7 +372,7 @@ void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, v
 
 		for(int idxPart = 0; idxPart < nbParticles; ++idxPart)
 		{
-			MortonIndex mortonCell = particlesToSort[idxPart].mindex >> 3*(treeHeight - idxLevel);
+			MortonIndex mortonCell = (particlesToSort[idxPart].mindex) >> (3*(treeHeight - idxLevel));
 			if(nodeRepartition[idxLevel][processId][1] <= mortonCell) //Si l'indice est dans le working interval
 			{
 				if(mortonCell != previousMortonCell) //Si c'est un nouvelle indice
