@@ -1682,12 +1682,12 @@ protected:
 					   #else
 									   //"P2P_out-nb_i_p_nb_i_p_s"
 									   STARPU_NAME, taskNames->print("P2P_out", "%d, %lld, %lld, %d, %lld, %lld, %d, %lld, %lld, %lld, %lld, %d\n",
-													tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
-													tree->getParticleGroup(idxGroup)->getSizeOfInterval(),
-													tree->getParticleGroup(idxGroup)->getNbParticlesInGroup(),
 													tree->getParticleGroup(interactionid)->getNumberOfLeavesInBlock(),
 													tree->getParticleGroup(interactionid)->getSizeOfInterval(),
 													tree->getParticleGroup(interactionid)->getNbParticlesInGroup(),
+													tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock(),
+													tree->getParticleGroup(idxGroup)->getSizeOfInterval(),
+													tree->getParticleGroup(idxGroup)->getNbParticlesInGroup(),
 													outsideInteractions->size(),
 													tree->getParticleGroup(interactionid)->getStartingIndex(),
 													tree->getParticleGroup(interactionid)->getEndingIndex(),
