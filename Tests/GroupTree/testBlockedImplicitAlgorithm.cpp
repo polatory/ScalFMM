@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <mpi.h>
 using namespace std;
 
 #include "../../Src/Utils/FGlobal.hpp"
@@ -64,15 +65,14 @@ using namespace std;
 
     // FFmmAlgorithmTask FFmmAlgorithmThread
     typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
-#define LOAD_FILE
+//#define LOAD_FILE
 #ifndef LOAD_FILE
 	typedef FRandomLoader<FReal> LoaderClass;
 #else
 	typedef FFmaGenericLoader<FReal> LoaderClass;
 #endif
-std::vector<MortonIndex> getMortonIndex(const char* const mapping_filename);
 void timeAverage(int mpi_rank, int nproc, double elapsedTime);
-void sortParticle(FPoint<FReal> * allParticlesToSort, int treeHeight, int groupSize, vector<vector<int>> & sizeForEachGroup, LoaderClass& loader, int nproc);
+void sortParticle(FPoint<FReal> * allParticlesToSort, int treeHeight, int groupSize, vector<vector<int>> & sizeForEachGroup, vector<MortonIndex> & distributedMortonIndex, LoaderClass& loader, int nproc);
 void createNodeRepartition(std::vector<MortonIndex> distributedMortonIndex, std::vector<std::vector<std::vector<MortonIndex>>>& nodeRepartition, int nproc, int treeHeight);
 
 int main(int argc, char* argv[]){
@@ -95,20 +95,22 @@ int main(int argc, char* argv[]){
     // Get params
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
     const int groupSize      = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 8);
-    const char* const mapping_filename      = FParameters::getStr(argc,argv,Mapping.options, "mapping");
-	std::vector<MortonIndex> distributedMortonIndex = getMortonIndex(mapping_filename);
 
 #ifndef STARPU_USE_MPI
 		cout << "Pas de mpi -_-\" " << endl;
 #endif
 #ifndef LOAD_FILE
-    const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
+    const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(100));
     LoaderClass loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), 0);
 #else
     // Load the particles
     const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     LoaderClass loader(filename);
 #endif
+	int mpi_rank, nproc = 8, provided;
+	MPI_Init_thread(nullptr,nullptr, MPI_THREAD_SERIALIZED, &provided);
+	MPI_Comm_rank(MPI_COMM_WORLD,&mpi_rank);
+	MPI_Comm_size(MPI_COMM_WORLD,&nproc);
     FAssertLF(loader.isOpen());
 
     // Usual octree
@@ -120,8 +122,9 @@ int main(int argc, char* argv[]){
         loader.fillParticle(&allParticlesToSort[idxPart]);//Same with file or not
     }
 
+	std::vector<MortonIndex> distributedMortonIndex;
 	vector<vector<int>> sizeForEachGroup;
-	sortParticle(allParticlesToSort, NbLevels, groupSize, sizeForEachGroup, loader, 8);
+	sortParticle(allParticlesToSort, NbLevels, groupSize, sizeForEachGroup, distributedMortonIndex, loader, nproc);
 
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         allParticles.push(allParticlesToSort[idxPart]);
@@ -130,9 +133,9 @@ int main(int argc, char* argv[]){
 	
     // Put the data into the tree
     //GroupOctreeClass groupedTree(NbLevels, groupSize, &tree);
-	GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false);
-	
-    // Check tree structure at leaf level
+	//GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false);
+	GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, sizeForEachGroup, false);
+	 //Check tree structure at leaf level
     groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass gcell, GroupContainerClass* gleaf){
         const ContainerClass* src = tree.getLeafSrc(gcell.getMortonIndex());
         if(src == nullptr){
@@ -149,11 +152,21 @@ int main(int argc, char* argv[]){
     GroupKernelClass groupkernel;
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel, distributedMortonIndex);
 	FTic timerExecute;
-    groupalgo.execute();
+	groupalgo.execute();
 	double elapsedTime = timerExecute.tacAndElapsed();
-	cout << "Executing time (implicit node " << groupalgo.getRank() << ") " << elapsedTime << "s\n";
-	timeAverage(groupalgo.getRank(), groupalgo.getNProc(), elapsedTime);
-
+	mpi_rank = groupalgo.getRank();
+	cout << "Executing time (implicit node " << mpi_rank << ") " << elapsedTime << "s\n";
+	timeAverage(mpi_rank, nproc, elapsedTime);
+	//if( groupalgo.getRank() != 0)
+		//return 0;
+	//groupedTree.printInfoBlocks();
+	//for(int i = 0; i < NbLevels; ++i)
+	//{
+		//cout << "Level " << i << "(" << sizeForEachGroup[i].size() << ")" << endl;
+		//for(int j = 0; j < sizeForEachGroup[i].size(); ++j)
+			//cout << "\t" << sizeForEachGroup[i][j] << endl;
+	//}
+	
     // Usual algorithm
     KernelClass kernels;            // FTestKernels FBasicKernels
     FmmClass algo(&tree,&kernels);  //FFmmAlgorithm FFmmAlgorithmThread
@@ -214,30 +227,6 @@ int main(int argc, char* argv[]){
 	}
     return 0;
 }
-std::vector<MortonIndex> getMortonIndex(const char* const mapping_filename)
-{
-	std::vector<MortonIndex> ret;
-
-	std::ifstream fichier(mapping_filename, ios::in);  // on ouvre le fichier en lecture
-
-	if(fichier)  // si l'ouverture a réussi
-	{       
-		int nbProcess;
-		fichier >> nbProcess;
-		for(int i = 0; i < nbProcess; ++i)
-		{
-			MortonIndex start, end;
-			fichier >> start >> end;
-			ret.push_back(start);
-			ret.push_back(end);
-		}
-		// instructions
-		fichier.close();  // on ferme le fichier
-	}
-	else  // sinon
-		cerr << "Impossible d'ouvrir le fichier !" << endl;
-	return ret;
-}
 void timeAverage(int mpi_rank, int nproc, double elapsedTime)
 {
 	if(mpi_rank == 0)
@@ -256,8 +245,9 @@ void timeAverage(int mpi_rank, int nproc, double elapsedTime)
 	{
 		MPI_Send(&elapsedTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 	}
+	MPI_Barrier(MPI_COMM_WORLD);
 }
-void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, vector<vector<int>> & sizeForEachGroup, LoaderClass& loader, int nproc)
+void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, vector<vector<int>> & sizeForEachGroup, vector<MortonIndex> & distributedMortonIndex, LoaderClass& loader, int nproc)
 {
 	//Structure pour trier
 	struct ParticleSortingStruct{
@@ -265,7 +255,7 @@ void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, v
 		MortonIndex mindex;
 	};
 	// Création d'un tableau de la structure pour trier puis remplissage du tableau
-	const int nbParticles = loader.getNumberOfParticles();
+	const FSize nbParticles = loader.getNumberOfParticles();
 	ParticleSortingStruct* particlesToSort = new ParticleSortingStruct[nbParticles];
 	for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart){
 		const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPosition<FReal>(loader.getCenterOfBox(), loader.getBoxWidth(),
@@ -302,22 +292,22 @@ void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, v
     FLeafBalance balancer;
 	for(int processId = 0; processId < nproc; ++processId)
 	{
-		int size_last;
-		int countGroup;
-		int leafOnProcess = balancer.getRight(numberOfLeaf, nproc, processId) - balancer.getLeft(numberOfLeaf, nproc, processId);
+		FSize size_last;
+		FSize countGroup;
+		FSize leafOnProcess = balancer.getRight(numberOfLeaf, nproc, processId) - balancer.getLeft(numberOfLeaf, nproc, processId);
 		size_last = leafOnProcess%groupSize;
 		countGroup = (leafOnProcess - size_last)/groupSize;
 		for(int i = 0; i < countGroup; ++i)
 			sizeForEachGroup[treeHeight-1].push_back(groupSize);
-		sizeForEachGroup[treeHeight-1].push_back(size_last);
+		if(size_last > 0)
+			sizeForEachGroup[treeHeight-1].push_back(size_last);
 	}
-	std::vector<MortonIndex> distributedMortonIndex;
 	
 	//Calcul du working interval au niveau des feuilles
 	previousLeaf = -1;
 	int countLeaf = 0;
 	int processId = 0;
-	int leafOnProcess = balancer.getRight(numberOfLeaf, nproc, 0) - balancer.getLeft(numberOfLeaf, nproc, 0);
+	FSize leafOnProcess = balancer.getRight(numberOfLeaf, nproc, 0) - balancer.getLeft(numberOfLeaf, nproc, 0);
 	distributedMortonIndex.push_back(previousLeaf);
 	for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart)
 	{
@@ -337,43 +327,26 @@ void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, v
 	}
 	distributedMortonIndex.push_back(particlesToSort[nbParticles - 1].mindex);
 
-	//Ajout des groupes de particules
-	int countParticle = 0;
-	processId = 0;
-	for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart)
-	{
-		if(particlesToSort[idxPart].mindex <= distributedMortonIndex[processId*2+1])
-		{
-			++countParticle;
-			if(countParticle == groupSize)
-			{
-				sizeForEachGroup[treeHeight].push_back(countParticle);
-				countParticle = 0;
-			}
-		}
-		else
-		{
-			sizeForEachGroup[treeHeight].push_back(countParticle);
-			countParticle = 0;
-			++processId;
-		}
-	}
-
 	//Calcul des working interval à chaque niveau
 	std::vector<std::vector<std::vector<MortonIndex>>> nodeRepartition;
 	createNodeRepartition(distributedMortonIndex, nodeRepartition, nproc, treeHeight);
 
+	//for(int i = 0; i < nproc; ++i)
+	//{
+			//cout << nodeRepartition[1][i][0] << " - " << nodeRepartition[1][i][1] << endl;
+	//}
 	//Pour chaque niveau calcul de la taille des groupe
-	for(int idxLevel = treeHeight - 2; idxLevel > 0; --idxLevel)
+	for(int idxLevel = treeHeight - 2; idxLevel >= 0; --idxLevel)
 	{
 		processId = 0;
 		int countParticleInTheGroup = 0;
 		MortonIndex previousMortonCell = -1;
 
+		//cout << "Compute Level " << idxLevel << endl;
 		for(int idxPart = 0; idxPart < nbParticles; ++idxPart)
 		{
-			MortonIndex mortonCell = (particlesToSort[idxPart].mindex) >> (3*(treeHeight - idxLevel));
-			if(nodeRepartition[idxLevel][processId][1] <= mortonCell) //Si l'indice est dans le working interval
+			MortonIndex mortonCell = (particlesToSort[idxPart].mindex) >> (3*(treeHeight - 1 - idxLevel));
+			if(mortonCell <= nodeRepartition[idxLevel][processId][1]) //Si l'indice est dans le working interval
 			{
 				if(mortonCell != previousMortonCell) //Si c'est un nouvelle indice
 				{
@@ -388,11 +361,15 @@ void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, v
 			}
 			else //Si l'on change d'interval de process on ajoute ce que l'on a compté
 			{
-				sizeForEachGroup[idxLevel].push_back(countParticleInTheGroup);
+				if(countParticleInTheGroup > 0)
+					sizeForEachGroup[idxLevel].push_back(countParticleInTheGroup);
 				countParticleInTheGroup = 1;
+				previousMortonCell = mortonCell;
 				++processId;
 			}
 		}
+		if(countParticleInTheGroup > 0)
+			sizeForEachGroup[idxLevel].push_back(countParticleInTheGroup);
 	}
 }
 void createNodeRepartition(std::vector<MortonIndex> distributedMortonIndex, std::vector<std::vector<std::vector<MortonIndex>>>& nodeRepartition, int nproc, int treeHeight) {
