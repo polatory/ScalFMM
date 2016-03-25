@@ -104,7 +104,7 @@ int main(int argc, char* argv[]){
     memset(particles.get(), 0, sizeof(TestParticle) * loader.getNumberOfParticles());
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
 		loader.fillParticleAtMortonIndex(&(particles[idxPart].position), mpiComm.global().processId()*NbParticles + idxPart,NbLevels);
-        //loader.fillParticle(&(particles[idxPart].position));
+		//loader.fillParticle(&(particles[idxPart].position));
     }
     // Sort in parallel
     FVector<TestParticle> myParticles;
@@ -147,28 +147,20 @@ int main(int argc, char* argv[]){
 		std::cout << "Exchange particle to create the file" << std::endl;
 		std::vector<TestParticle*> particlesGathered;
 		std::vector<int> sizeGathered;
-		std::vector<MortonIndex> mortonIndex;
 		
 		//Ajout des mes particules
 		int sizeofParticle = sizeof(TestParticle)*myParticles.getSize();
 		sizeGathered.push_back(sizeofParticle);
 		particlesGathered.push_back(new TestParticle[sizeofParticle]);
 		memcpy(particlesGathered.back(), myParticles.data(), sizeofParticle);
-		mortonIndex.push_back(leftLimite);
-		mortonIndex.push_back(myLeftLimite);
 		//Recupération des particules des autres
 		for(int i = 1; i < mpiComm.global().processCount(); ++i)
 		{
 			int sizeReceive;
-			MortonIndex mortonStart, mortonEnd;
 			MPI_Recv(&sizeReceive, sizeof(sizeReceive), MPI_BYTE, i, 0, mpiComm.global().getComm(), MPI_STATUS_IGNORE);
 			sizeGathered.push_back(sizeReceive);
 			particlesGathered.push_back(new TestParticle[sizeReceive]);
 			MPI_Recv(particlesGathered.back(), sizeReceive, MPI_BYTE, i, 0, mpiComm.global().getComm(), MPI_STATUS_IGNORE);
-			MPI_Recv(&mortonStart, sizeof(mortonStart), MPI_BYTE, i, 0, mpiComm.global().getComm(), MPI_STATUS_IGNORE);
-			MPI_Recv(&mortonEnd, sizeof(mortonEnd), MPI_BYTE, i, 0, mpiComm.global().getComm(), MPI_STATUS_IGNORE);
-			mortonIndex.push_back(mortonStart);
-			mortonIndex.push_back(mortonEnd);
 		}
 		int sum = 0;
 		for(int a : sizeGathered)
@@ -180,10 +172,6 @@ int main(int argc, char* argv[]){
 		writer.writeHeader(loader.getCenterOfBox(), loader.getBoxWidth(),totalNbParticles, particles[0]);
 		for(unsigned int i = 0; i < particlesGathered.size(); ++i)
 			writer.writeArrayOfParticles(particlesGathered[i], sizeGathered[i]/sizeof(TestParticle));
-		std::ofstream fichier("mapping", std::ios::out | std::ios::trunc);  //déclaration du flux et ouverture du fichier
-		fichier << mortonIndex.size()/2 << std::endl;
-		for(unsigned int i = 0; i < mortonIndex.size(); i+=2)
-			fichier << mortonIndex[i] << " " << mortonIndex[i+1] << std::endl;
 		for(TestParticle* ptr : particlesGathered)
 			delete ptr;
 		std::cout << "Done exchanging !" << std::endl;
@@ -221,6 +209,7 @@ int main(int argc, char* argv[]){
     });
 
 
+    mpiComm.global().barrier();
 
     typedef FTestCell                   CellClass;
     typedef FTestParticleContainer<FReal>      ContainerClass;
@@ -236,7 +225,7 @@ int main(int argc, char* argv[]){
             FRandomLoader<FReal> loaderAll(NbParticles, 1.0, FPoint<FReal>(0,0,0), idxProc);
             for(FSize idxPart = 0 ; idxPart < loaderAll.getNumberOfParticles() ; ++idxPart){
                 FPoint<FReal> pos;
-                //loaderAll.fillParticle(&pos);
+				//loaderAll.fillParticle(&pos);
 				loaderAll.fillParticleAtMortonIndex(&pos, idxProc*NbParticles + idxPart,NbLevels);
                 tree.insert(pos);
             }

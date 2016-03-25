@@ -65,7 +65,7 @@ using namespace std;
 
     // FFmmAlgorithmTask FFmmAlgorithmThread
     typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
-//#define LOAD_FILE
+#define LOAD_FILE
 #ifndef LOAD_FILE
 	typedef FRandomLoader<FReal> LoaderClass;
 #else
@@ -100,8 +100,8 @@ int main(int argc, char* argv[]){
 		cout << "Pas de mpi -_-\" " << endl;
 #endif
 #ifndef LOAD_FILE
-    const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(100));
-    LoaderClass loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), 0);
+    const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(10000));
+	LoaderClass loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), 0);
 #else
     // Load the particles
     const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
@@ -157,15 +157,6 @@ int main(int argc, char* argv[]){
 	mpi_rank = groupalgo.getRank();
 	cout << "Executing time (implicit node " << mpi_rank << ") " << elapsedTime << "s\n";
 	timeAverage(mpi_rank, nproc, elapsedTime);
-	//if( groupalgo.getRank() != 0)
-		//return 0;
-	//groupedTree.printInfoBlocks();
-	//for(int i = 0; i < NbLevels; ++i)
-	//{
-		//cout << "Level " << i << "(" << sizeForEachGroup[i].size() << ")" << endl;
-		//for(int j = 0; j < sizeForEachGroup[i].size(); ++j)
-			//cout << "\t" << sizeForEachGroup[i][j] << endl;
-	//}
 	
     // Usual algorithm
     KernelClass kernels;            // FTestKernels FBasicKernels
@@ -276,7 +267,7 @@ void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, v
 	}
 	
 	//Compte le nombre de feuilles
-	sizeForEachGroup.resize(treeHeight+1);//Le +1 est pour les particules
+	sizeForEachGroup.resize(treeHeight);
 	MortonIndex previousLeaf = -1;
 	int numberOfLeaf = 0;
 	for(FSize idxPart = 0 ; idxPart < nbParticles ; ++idxPart)
@@ -331,10 +322,6 @@ void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, v
 	std::vector<std::vector<std::vector<MortonIndex>>> nodeRepartition;
 	createNodeRepartition(distributedMortonIndex, nodeRepartition, nproc, treeHeight);
 
-	//for(int i = 0; i < nproc; ++i)
-	//{
-			//cout << nodeRepartition[1][i][0] << " - " << nodeRepartition[1][i][1] << endl;
-	//}
 	//Pour chaque niveau calcul de la taille des groupe
 	for(int idxLevel = treeHeight - 2; idxLevel >= 0; --idxLevel)
 	{

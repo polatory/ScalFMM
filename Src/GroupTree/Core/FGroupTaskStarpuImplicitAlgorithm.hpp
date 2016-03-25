@@ -287,8 +287,7 @@ public:
     void syncData(){
         for(int idxLevel = 0 ; idxLevel < tree->getHeight() ; ++idxLevel){
             for(int idxHandle = 0 ; idxHandle < int(cellHandles[idxLevel].size()) ; ++idxHandle){
-				//if(isDataOwned(idxHandle, int(cellHandles[idxLevel].size()))) {
-				if(isDataOwnedBerenger(tree->getCellGroup(idxLevel, idxHandle)->getStartingIndex()+1, idxLevel)) {//Clean only our data handle
+				if(isDataOwnedBerenger(tree->getCellGroup(idxLevel, idxHandle)->getStartingIndex(), idxLevel)) {//Clean only our data handle
 					starpu_data_acquire(cellHandles[idxLevel][idxHandle].symb, STARPU_R);
 					starpu_data_release(cellHandles[idxLevel][idxHandle].symb);
 					starpu_data_acquire(cellHandles[idxLevel][idxHandle].up, STARPU_R);
@@ -300,8 +299,7 @@ public:
         }
         {
             for(int idxHandle = 0 ; idxHandle < int(particleHandles.size()) ; ++idxHandle){
-				//if(isDataOwned(idxHandle, int(particleHandles.size()))) {
-				if(isDataOwnedBerenger(tree->getCellGroup(tree->getHeight()-1, idxHandle)->getStartingIndex()+1, tree->getHeight()-1)) {//Clean only our data handle
+				if(isDataOwnedBerenger(tree->getCellGroup(tree->getHeight()-1, idxHandle)->getStartingIndex(), tree->getHeight()-1)) {//Clean only our data handle
 					starpu_data_acquire(particleHandles[idxHandle].symb, STARPU_R);
 					starpu_data_release(particleHandles[idxHandle].symb);
 					starpu_data_acquire(particleHandles[idxHandle].down, STARPU_R);
@@ -435,13 +433,6 @@ public:
 				nodeRepartition[idxLevel][node_id][1] = nodeRepartition[idxLevel+1][node_id][1] >> 3;
 			}
 		}
-        //for(int idxLevel = 0; idxLevel < tree->getHeight(); ++idxLevel){
-			//cout << "Level " << idxLevel << endl;
-			//for(int node_id = 0; node_id < nproc; ++node_id){
-				//cout << "\t" << nodeRepartition[idxLevel][node_id][0] << " " << nodeRepartition[idxLevel][node_id][0] << endl;
-			//}
-			
-		//}
 	}
 protected:
     /**
@@ -842,8 +833,7 @@ protected:
     void cleanHandle(){
         for(int idxLevel = 0 ; idxLevel < tree->getHeight() ; ++idxLevel){
             for(int idxHandle = 0 ; idxHandle < int(cellHandles[idxLevel].size()) ; ++idxHandle){
-				//if(isDataOwned(idxHandle, int(cellHandles[idxLevel].size())))//Clean only our data handle
-				if(isDataOwnedBerenger(tree->getCellGroup(idxLevel, idxHandle)->getStartingIndex()+1, idxLevel))//Clean only our data handle
+				if(isDataOwnedBerenger(tree->getCellGroup(idxLevel, idxHandle)->getStartingIndex(), idxLevel))//Clean only our data handle
 				{
 					starpu_data_unregister(cellHandles[idxLevel][idxHandle].symb);
 					starpu_data_unregister(cellHandles[idxLevel][idxHandle].up);
@@ -854,8 +844,7 @@ protected:
         }
         {
             for(int idxHandle = 0 ; idxHandle < int(particleHandles.size()) ; ++idxHandle){
-				//if(isDataOwned(idxHandle, int(particleHandles.size())))
-				if(isDataOwnedBerenger(tree->getCellGroup(tree->getHeight()-1, idxHandle)->getStartingIndex()+1, tree->getHeight()-1))//Clean only our data handle
+				if(isDataOwnedBerenger(tree->getCellGroup(tree->getHeight()-1, idxHandle)->getStartingIndex(), tree->getHeight()-1))//Clean only our data handle
 				{
 					starpu_data_unregister(particleHandles[idxHandle].symb);
 					starpu_data_unregister(particleHandles[idxHandle].down);
@@ -875,10 +864,8 @@ protected:
             cellHandles[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
                 const CellContainerClass* currentCells = tree->getCellGroup(idxLevel, idxGroup);
-				int registeringNode = dataMappingBerenger(currentCells->getStartingIndex()+1, idxLevel);
+				int registeringNode = dataMappingBerenger(currentCells->getStartingIndex(), idxLevel);
 				
-				//int registeringNode = dataMapping(idxGroup, tree->getNbCellGroupAtLevel(idxLevel));
-				//cout << registeringNode << endl;
 				where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
                 starpu_variable_data_register(&cellHandles[idxLevel][idxGroup].symb, where,
                                               (uintptr_t)currentCells->getRawBuffer(), currentCells->getBufferSizeInByte());
@@ -900,8 +887,7 @@ protected:
         {
             particleHandles.resize(tree->getNbParticleGroup());
             for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
-				//int registeringNode = dataMapping(idxGroup, tree->getNbParticleGroup());
-				int registeringNode = dataMappingBerenger(tree->getCellGroup(tree->getHeight()-1, idxGroup)->getStartingIndex()+1, tree->getHeight()-1);
+				int registeringNode = dataMappingBerenger(tree->getCellGroup(tree->getHeight()-1, idxGroup)->getStartingIndex(), tree->getHeight()-1);
 				where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
                 ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
                 starpu_variable_data_register(&particleHandles[idxGroup].symb, where,
@@ -924,12 +910,11 @@ protected:
         }
     }
 	int dataMappingBerenger(MortonIndex const idx, int const idxLevel) const {
-		//return idxLevel%4;
 		for(int i = 0; i < nproc; ++i)
 			if(nodeRepartition[idxLevel][i][0] <= nodeRepartition[idxLevel][i][1] && idx >= nodeRepartition[idxLevel][i][0] && idx <= nodeRepartition[idxLevel][i][1])
 				return i;
 		if(mpi_rank == 0)
-			cout << "Error !! [" << idx << "," << idxLevel << "]" << endl;
+			cout << "[scalfmm][map error] idx " << idx << " on level " << idxLevel << " isn't mapped on any proccess." << endl;
 		return -1;
 	}
     /**
