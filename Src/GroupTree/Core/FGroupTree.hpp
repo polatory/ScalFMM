@@ -626,7 +626,7 @@ public:
     template<class ParticleContainer>
     FGroupTree(const int inTreeHeight, const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter,
                const int inNbElementsPerBlock, ParticleContainer* inParticlesContainer,
-			   std::vector<std::vector<int>> groupSizeAtEachLevel,
+			   std::vector<std::vector<int>> & blockSizeAtEachLevel,
                const bool particlesAreSorted = false):
             treeHeight(inTreeHeight),nbElementsPerBlock(inNbElementsPerBlock),cellBlocksPerLevel(nullptr),
             boxCenter(inBoxCenter), boxCorner(inBoxCenter,-(inBoxWidth/2)), boxWidth(inBoxWidth),
@@ -670,6 +670,7 @@ public:
 
             // Convert to block
             const int idxLevel = (treeHeight - 1);
+			int idxBlock = 0;
             FSize* nbParticlesPerLeaf = new FSize[nbElementsPerBlock];
             FSize firstParticle = 0;
             // We need to proceed each group in sub level
@@ -677,7 +678,7 @@ public:
                 int sizeOfBlock = 0;
                 FSize lastParticle = firstParticle;
                 // Count until end of sub group is reached or we have enough cells
-                while(sizeOfBlock < nbElementsPerBlock && lastParticle < nbParticles){
+                while(sizeOfBlock < blockSizeAtEachLevel[treeHeight-1][idxBlock] && lastParticle < nbParticles){
                     if(sizeOfBlock == 0 || currentBlockIndexes[sizeOfBlock-1] != particlesToSort[lastParticle].mindex){
                         currentBlockIndexes[sizeOfBlock] = particlesToSort[lastParticle].mindex;
                         nbParticlesPerLeaf[sizeOfBlock]  = 1;
@@ -731,6 +732,7 @@ public:
 
                 sizeOfBlock = 0;
                 firstParticle = lastParticle;
+				++idxBlock;
             }
             delete[] nbParticlesPerLeaf;
             delete[] particlesToSort;
@@ -743,10 +745,6 @@ public:
             CellGroupConstIterator iterChildCells = cellBlocksPerLevel[idxLevel+1].begin();
             const CellGroupConstIterator iterChildEndCells = cellBlocksPerLevel[idxLevel+1].end();
 
-            // Skip blocks that do not respect limit
-            while(iterChildCells != iterChildEndCells)
-                ++iterChildCells;
-			
             // If lower level is empty or all blocks skiped stop here
             if(iterChildCells == iterChildEndCells){
                 break;
@@ -754,11 +752,11 @@ public:
 
             MortonIndex currentCellIndex = (*iterChildCells)->getStartingIndex();
             int sizeOfBlock = 0;
-
+			int idxBlock = 0;
             // We need to proceed each group in sub level
             while(iterChildCells != iterChildEndCells){
                 // Count until end of sub group is reached or we have enough cells
-                while(sizeOfBlock < nbElementsPerBlock && iterChildCells != iterChildEndCells ){
+                while(sizeOfBlock < blockSizeAtEachLevel[idxLevel][idxBlock] && iterChildCells != iterChildEndCells ){
                     if((sizeOfBlock == 0 || currentBlockIndexes[sizeOfBlock-1] != (currentCellIndex>>3))
                             && (*iterChildCells)->exists(currentCellIndex)){
                         currentBlockIndexes[sizeOfBlock] = (currentCellIndex>>3);
@@ -779,7 +777,7 @@ public:
                 }
 
                 // If group is full
-                if(sizeOfBlock == nbElementsPerBlock || (sizeOfBlock && iterChildCells == iterChildEndCells)){
+                if(sizeOfBlock == blockSizeAtEachLevel[idxLevel][idxBlock] || (sizeOfBlock && iterChildCells == iterChildEndCells)){ //NOTE la seconde partie va sûrement sauter, car la taille est pré-calculée
                     // Create a group
                     CellGroupClass*const newBlock = new CellGroupClass(currentBlockIndexes[0],
                                                                      currentBlockIndexes[sizeOfBlock-1]+1,
@@ -799,6 +797,7 @@ public:
                     cellBlocksPerLevel[idxLevel].push_back(newBlock);
 
                     sizeOfBlock = 0;
+					++idxBlock;
                 }
             }
         }
