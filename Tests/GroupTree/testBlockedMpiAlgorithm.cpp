@@ -17,6 +17,7 @@
 #include "../../Src/Utils/FParameters.hpp"
 
 #include "../../Src/Files/FRandomLoader.hpp"
+#include "../../Src/Files/FFmaGenericLoader.hpp"
 
 #include "../../Src/GroupTree/Core/FGroupTaskStarpuMpiAlgorithm.hpp"
 
@@ -41,7 +42,9 @@
 #include "../../Src/GroupTree/StarPUUtils/FStarPUKernelCapacities.hpp"
 #include "../../Src/GroupTree/StarPUUtils/FStarPUCpuWrapper.hpp"
 
-
+#include <vector>
+#include <iostream>
+#include <fstream>
 
 void timeAverage(int mpi_rank, int nproc, double elapsedTime);
 
@@ -86,6 +89,15 @@ int main(int argc, char* argv[]){
         const FPoint<FReal>& getPosition(){
             return position;
         }
+		const unsigned int getWriteDataSize(void) const {
+			return sizeof(FReal);
+		}
+		const unsigned int getWriteDataNumber(void) const {
+			return 3;
+		}
+		const FReal* getPtrFirstData(void) const {
+			return position.data();
+		}
     };
 
     std::unique_ptr<TestParticle[]> particles(new TestParticle[loader.getNumberOfParticles()]);
@@ -129,17 +141,61 @@ int main(int argc, char* argv[]){
                               mpiComm.global().processId()+1, 0,
                               mpiComm.global().getComm()), __LINE__);
     }
-	for(int i = 0; i < mpiComm.global().processCount(); ++i)
-	{
-		if(i == mpiComm.global().processId())
-		{
-			FLOG(std::cout << "My last index is (" << mpiComm.global().processId() << ") " << leftLimite << "\n");
-			FLOG(std::cout << "My left limite is (" << mpiComm.global().processId() << ") " << myLeftLimite << "\n");
-			FLOG(std::cout << "Size (" << mpiComm.global().processId() << ") " << allParticles.getNbParticles()  << "\n");
-		}
-		mpiComm.global().barrier();
-	}
 
+	//Save particles in a file
+	if(mpiComm.global().processId() == 0){
+		std::cout << "Exchange particle to create the file" << std::endl;
+		std::vector<TestParticle*> particlesGathered;
+		std::vector<int> sizeGathered;
+		std::vector<MortonIndex> mortonIndex;
+		
+		//Ajout des mes particules
+		int sizeofParticle = sizeof(TestParticle)*myParticles.getSize();
+		sizeGathered.push_back(sizeofParticle);
+		particlesGathered.push_back(new TestParticle[sizeofParticle]);
+		memcpy(particlesGathered.back(), myParticles.data(), sizeofParticle);
+		mortonIndex.push_back(leftLimite);
+		mortonIndex.push_back(myLeftLimite);
+		//Recupération des particules des autres
+		for(int i = 1; i < mpiComm.global().processCount(); ++i)
+		{
+			int sizeReceive;
+			MortonIndex mortonStart, mortonEnd;
+			MPI_Recv(&sizeReceive, sizeof(sizeReceive), MPI_BYTE, i, 0, mpiComm.global().getComm(), MPI_STATUS_IGNORE);
+			sizeGathered.push_back(sizeReceive);
+			particlesGathered.push_back(new TestParticle[sizeReceive]);
+			MPI_Recv(particlesGathered.back(), sizeReceive, MPI_BYTE, i, 0, mpiComm.global().getComm(), MPI_STATUS_IGNORE);
+			MPI_Recv(&mortonStart, sizeof(mortonStart), MPI_BYTE, i, 0, mpiComm.global().getComm(), MPI_STATUS_IGNORE);
+			MPI_Recv(&mortonEnd, sizeof(mortonEnd), MPI_BYTE, i, 0, mpiComm.global().getComm(), MPI_STATUS_IGNORE);
+			mortonIndex.push_back(mortonStart);
+			mortonIndex.push_back(mortonEnd);
+		}
+		int sum = 0;
+		for(int a : sizeGathered)
+			sum += a/sizeof(TestParticle);
+		if(sum != totalNbParticles)
+			std::cout << "Erreur sum : " << sum << " instead of " << totalNbParticles << std::endl;
+		//Store in that bloody file
+		FFmaGenericWriter<FReal> writer("canard.fma");
+		writer.writeHeader(loader.getCenterOfBox(), loader.getBoxWidth(),totalNbParticles, particles[0]);
+		for(unsigned int i = 0; i < particlesGathered.size(); ++i)
+			writer.writeArrayOfParticles(particlesGathered[i], sizeGathered[i]/sizeof(TestParticle));
+		std::ofstream fichier("mapping", std::ios::out | std::ios::trunc);  //déclaration du flux et ouverture du fichier
+		fichier << mortonIndex.size()/2 << std::endl;
+		for(unsigned int i = 0; i < mortonIndex.size(); i+=2)
+			fichier << mortonIndex[i] << " " << mortonIndex[i+1] << std::endl;
+		for(TestParticle* ptr : particlesGathered)
+			delete ptr;
+		std::cout << "Done exchanging !" << std::endl;
+	}
+	else{
+		int sizeofParticle = sizeof(TestParticle)*myParticles.getSize();
+		MPI_Send(&sizeofParticle, sizeof(sizeofParticle), MPI_BYTE, 0, 0, mpiComm.global().getComm());//Send size
+		MPI_Send(myParticles.data(), sizeofParticle, MPI_BYTE, 0, 0, mpiComm.global().getComm());
+		MPI_Send(const_cast<MortonIndex*>(&leftLimite), sizeof(leftLimite), MPI_BYTE, 0, 0, mpiComm.global().getComm());
+		MPI_Send(const_cast<MortonIndex*>(&myLeftLimite), sizeof(myLeftLimite), MPI_BYTE, 0, 0, mpiComm.global().getComm());
+	}
+	
     // Put the data into the tree
     GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize,
                                  &allParticles, true, leftLimite);
