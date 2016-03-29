@@ -158,19 +158,19 @@ if (LAPACK_FOUND)
         if(TMG_LIBDIR)
             set(TMG_tmg_LIBRARY "TMG_tmg_LIBRARY-NOTFOUND")
             find_library(TMG_tmg_LIBRARY
-                NAMES tmglib
+                NAMES tmglib tmg
                 HINTS ${TMG_LIBDIR} )
         else()
             if(TMG_DIR)
                 set(TMG_tmg_LIBRARY "TMG_tmg_LIBRARY-NOTFOUND")
                 find_library(TMG_tmg_LIBRARY
-                    NAMES tmglib
+                    NAMES tmglib tmg
                     HINTS ${TMG_DIR}
                     PATH_SUFFIXES lib lib32 lib64 )
             else()
                 set(TMG_tmg_LIBRARY "TMG_tmg_LIBRARY-NOTFOUND")
                 find_library(TMG_tmg_LIBRARY
-                    NAMES tmglib
+                    NAMES tmglib tmg
                     HINTS ${_lib_env} )
             endif()
         endif()

@@ -47,7 +47,6 @@
 
 include(CheckStructHasMember)
 include(CheckCSourceCompiles)
-include(CheckLibraryExists)
 
 if (NOT HWLOC_FOUND)
     set(HWLOC_DIR "" CACHE PATH "Installation directory of HWLOC library")
@@ -323,6 +322,7 @@ if (HWLOC_FOUND)
     check_struct_has_member( "struct hwloc_cache_attr_s" size hwloc.h HAVE_HWLOC_CACHE_ATTR )
     check_c_source_compiles( "#include <hwloc.h>
             int main(void) { hwloc_obj_t o; o->type = HWLOC_OBJ_PU; return 0;}" HAVE_HWLOC_OBJ_PU)
+    include(CheckLibraryExists)
     check_library_exists(${HWLOC_LIBRARIES} hwloc_bitmap_free "" HAVE_HWLOC_BITMAP)
 
     set(CMAKE_REQUIRED_INCLUDES ${HWLOC_SAVE_CMAKE_REQUIRED_INCLUDES})
