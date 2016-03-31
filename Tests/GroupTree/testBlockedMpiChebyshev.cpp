@@ -49,13 +49,15 @@
 
 #include <memory>
 
+void timeAverage(int mpi_rank, int nproc, double elapsedTime);
 
 int main(int argc, char* argv[]){
+    setenv("STARPU_NCPU","1",1);
     const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight,FParameterDefinitions::InputFile,
-                         FParameterDefinitions::OctreeSubHeight,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::NbParticles,
                          LocalOptionBlocSize, LocalOptionNoValidate);
 
     typedef double FReal;
@@ -82,9 +84,10 @@ int main(int argc, char* argv[]){
 
     FMpi mpiComm(argc,argv);
 
-    const char* const filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
+    const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
+    const FSize totalNbParticles = (NbParticles*mpiComm.global().processCount());
 
     // init particles position and physical value
     struct TestParticle{
@@ -93,30 +96,37 @@ int main(int argc, char* argv[]){
         const FPoint<FReal>& getPosition(){
             return position;
         }
+		const unsigned int getWriteDataSize(void) const {
+			return sizeof(FReal);
+		}
+		const unsigned int getWriteDataNumber(void) const {
+			return 3;
+		}
+		const FReal* getPtrFirstData(void) const {
+			return position.data();
+		}
     };
 
     // open particle file
-    std::cout << "Opening : " << filename << "\n" << std::endl;
-    FMpiFmaGenericLoader<FReal> loader(filename,mpiComm.global());
+    FRandomLoader<FReal> loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), mpiComm.global().processId());
     FAssertLF(loader.isOpen());
 
-    TestParticle* allParticles = new TestParticle[loader.getMyNumberOfParticles()];
-    memset(allParticles,0,(unsigned int) (sizeof(TestParticle)* loader.getMyNumberOfParticles()));
-    for(FSize idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
-        loader.fillParticle(&allParticles[idxPart].position,&allParticles[idxPart].physicalValue);
+    TestParticle* allParticles = new TestParticle[loader.getNumberOfParticles()];
+    memset(allParticles,0,(unsigned int) (sizeof(TestParticle)* loader.getNumberOfParticles()));
+    for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        loader.fillParticle(&allParticles[idxPart].position);
+		allParticles[idxPart].physicalValue = 0.1;
     }
 
     FVector<TestParticle> myParticles;
     FLeafBalance balancer;
     FMpiTreeBuilder< FReal,TestParticle >::DistributeArrayToContainer(mpiComm.global(),allParticles,
-                                                                loader.getMyNumberOfParticles(),
+                                                                loader.getNumberOfParticles(),
                                                                 loader.getCenterOfBox(),
                                                                 loader.getBoxWidth(),TreeHeight,
                                                                 &myParticles, &balancer);
 
-    std::cout << "Creating & Inserting " << loader.getMyNumberOfParticles() << " particles ..." << std::endl;
-    std::cout << "For a total of " << loader.getNumberOfParticles() << " particles ..." << std::endl;
-    std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
+    //std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
 
     // Each proc need to know the righest morton index
     const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPosition<FReal>(
@@ -139,6 +149,47 @@ int main(int argc, char* argv[]){
     FLOG(std::cout << "My last index is " << leftLimite << "\n");
     FLOG(std::cout << "My left limite is " << myLeftLimite << "\n");
 
+	//Save particles in a file
+	if(mpiComm.global().processId() == 0){
+		std::cerr << "Exchange particle to create the file" << std::endl;
+		std::vector<TestParticle*> particlesGathered;
+		std::vector<int> sizeGathered;
+		
+		//Ajout des mes particules
+		int sizeofParticle = sizeof(TestParticle)*myParticles.getSize();
+		sizeGathered.push_back(sizeofParticle);
+		particlesGathered.push_back(new TestParticle[sizeofParticle]);
+		memcpy(particlesGathered.back(), myParticles.data(), sizeofParticle);
+		//Recupération des particules des autres
+		for(int i = 1; i < mpiComm.global().processCount(); ++i)
+		{
+			int sizeReceive;
+			MPI_Recv(&sizeReceive, sizeof(sizeReceive), MPI_BYTE, i, 0, mpiComm.global().getComm(), MPI_STATUS_IGNORE);
+			sizeGathered.push_back(sizeReceive);
+			particlesGathered.push_back(new TestParticle[sizeReceive]);
+			MPI_Recv(particlesGathered.back(), sizeReceive, MPI_BYTE, i, 0, mpiComm.global().getComm(), MPI_STATUS_IGNORE);
+		}
+		int sum = 0;
+		for(int a : sizeGathered)
+			sum += a/sizeof(TestParticle);
+		if(sum != totalNbParticles)
+			std::cerr << "Erreur sum : " << sum << " instead of " << totalNbParticles << std::endl;
+		//Store in that bloody file
+		FFmaGenericWriter<FReal> writer("canard.fma");
+		writer.writeHeader(loader.getCenterOfBox(), loader.getBoxWidth(),totalNbParticles, allParticles[0]);
+		for(unsigned int i = 0; i < particlesGathered.size(); ++i)
+			writer.writeArrayOfParticles(particlesGathered[i], sizeGathered[i]/sizeof(TestParticle));
+		for(TestParticle* ptr : particlesGathered)
+			delete ptr;
+		std::cerr << "Done exchanging !" << std::endl;
+	}
+	else{
+		int sizeofParticle = sizeof(TestParticle)*myParticles.getSize();
+		MPI_Send(&sizeofParticle, sizeof(sizeofParticle), MPI_BYTE, 0, 0, mpiComm.global().getComm());//Send size
+		MPI_Send(myParticles.data(), sizeofParticle, MPI_BYTE, 0, 0, mpiComm.global().getComm());
+		MPI_Send(const_cast<MortonIndex*>(&leftLimite), sizeof(leftLimite), MPI_BYTE, 0, 0, mpiComm.global().getComm());
+		MPI_Send(const_cast<MortonIndex*>(&myLeftLimite), sizeof(myLeftLimite), MPI_BYTE, 0, 0, mpiComm.global().getComm());
+	}
 
     // Put the data into the tree
     FP2PParticleContainer<FReal> myParticlesInContainer;
@@ -148,17 +199,16 @@ int main(int argc, char* argv[]){
     }
     GroupOctreeClass groupedTree(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize,
                                  &myParticlesInContainer, true, leftLimite);
-    groupedTree.printInfoBlocks();
+    //groupedTree.printInfoBlocks();
 
     timer.tac();
-    std::cout << "Done  " << "(@Creating and Inserting Particles = "
-              << timer.elapsed() << "s)." << std::endl;
+	//std::cerr << "Done  " << "(@Creating and Inserting Particles = " << timer.elapsed() << "s)." << std::endl;
 
     { // -----------------------------------------------------
-        std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ") ... " << std::endl;
+        //std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ") ... " << std::endl;
         timer.tic();
 
-        MatrixKernelClass MatrixKernel;
+        const MatrixKernelClass MatrixKernel;
         // Create Matrix Kernel
         GroupKernelClass groupkernel(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
         // Run the algorithm
@@ -166,7 +216,8 @@ int main(int argc, char* argv[]){
         groupalgo.execute();
 
         timer.tac();
-        std::cout << "Done  " << "(@Algorithm = " << timer.elapsed() << "s)." << std::endl;
+		timeAverage(mpiComm.global().processId(), mpiComm.global().processCount(), timer.elapsed());
+        //std::cout << "Done  " << "(@Algorithm = " << timer.elapsed() << "s)." << std::endl;
     } // -----------------------------------------------------
 
 
@@ -192,7 +243,7 @@ int main(int argc, char* argv[]){
         KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
         FmmClass algorithm(mpiComm.global(),&treeCheck, &kernels);
         algorithm.execute();
-        std::cout << "Algo is over" << std::endl;
+        //std::cout << "Algo is over" << std::endl;
 
         groupedTree.forEachCellWithLevel([&](GroupCellClass gcell, const int level){
             const CellClass* cell = treeCheck.getCell(gcell.getMortonIndex(), level);
@@ -274,10 +325,32 @@ int main(int argc, char* argv[]){
             }
         });
 
-        std::cout << "Comparing is over" << std::endl;
+        //std::cout << "Comparing is over" << std::endl;
     }
 
     return 0;
 }
 
 
+void timeAverage(int mpi_rank, int nproc, double elapsedTime)
+{
+	if(mpi_rank == 0)
+	{
+		double sumElapsedTime = elapsedTime;
+		std::cout << "Executing time node 0 (explicit Cheby) : " << sumElapsedTime << "s" << std::endl;
+		for(int i = 1; i < nproc; ++i)
+		{
+			double tmp;
+			MPI_Recv(&tmp, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, 0);
+			sumElapsedTime += tmp;
+			std::cout << "Executing time node " << i << " (explicit Cheby) : " << tmp << "s" << std::endl;
+		}
+		sumElapsedTime = sumElapsedTime / (double)nproc;
+		std::cout << "Average time per node (explicit Cheby) : " << sumElapsedTime << "s" << std::endl;
+	}
+	else
+	{
+		MPI_Send(&elapsedTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+}

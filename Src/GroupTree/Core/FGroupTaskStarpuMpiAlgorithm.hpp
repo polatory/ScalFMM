@@ -317,14 +317,8 @@ public:
     ~FGroupTaskStarPUMpiAlgorithm(){
         starpu_resume();
 
-		std::cout << "Loutre " << comm.processId() << std::endl;
-		comm.barrier();
         cleanHandle();
-		std::cout << "Canard " << comm.processId() << std::endl;
-		comm.barrier();
         cleanHandleMpi();
-		std::cout << "Suricate " << comm.processId() << std::endl;
-		comm.barrier();
         delete[] cellHandles;
 
         starpu_pthread_mutex_t releaseMutex;
@@ -1350,16 +1344,12 @@ protected:
         for(int idxLevel = 0 ; idxLevel < int(remoteCellGroups.size()) ; ++idxLevel){
             for(int idxHandle = 0 ; idxHandle < int(remoteCellGroups[idxLevel].size()) ; ++idxHandle){
                 if(remoteCellGroups[idxLevel][idxHandle].ptrSymb){
-					if(comm.processId() == 4)
-						std::cout << "Narval " << idxLevel << " " << idxHandle << std::endl;
                     starpu_data_unregister(remoteCellGroups[idxLevel][idxHandle].handleSymb);
                     starpu_data_unregister(remoteCellGroups[idxLevel][idxHandle].handleUp);
                     FAlignedMemory::DeallocBytes(remoteCellGroups[idxLevel][idxHandle].ptrSymb);
                     FAlignedMemory::DeallocBytes(remoteCellGroups[idxLevel][idxHandle].ptrUp);
 
                     if(remoteCellGroups[idxLevel][idxHandle].ptrDown){
-						if(comm.processId() == 4)
-							std::cout << "Narval " << idxLevel << " " << idxHandle << std::endl;
                         starpu_data_unregister(remoteCellGroups[idxLevel][idxHandle].handleDown);
                         FAlignedMemory::DeallocBytes(remoteCellGroups[idxLevel][idxHandle].ptrDown);
                     }
@@ -1370,16 +1360,12 @@ protected:
         {
             for(int idxHandle = 0 ; idxHandle < int(remoteParticleGroupss.size()) ; ++idxHandle){
                 if(remoteParticleGroupss[idxHandle].ptrSymb){
-					if(comm.processId() == 4)
-						std::cout << "Narval part  " << idxHandle << std::endl;
                     starpu_data_unregister(remoteParticleGroupss[idxHandle].handleSymb);
                     FAlignedMemory::DeallocBytes(remoteParticleGroupss[idxHandle].ptrSymb);
                 }
             }
             remoteParticleGroupss.clear();
         }
-		if(comm.processId() == 4)
-			std::cout << "Done" << std::endl;
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -2469,14 +2455,7 @@ protected:
                                    STARPU_NAME, p2pOuterTaskNames.get(),
                    #else
 								   //"P2P_out-nb_i_p_nb_i_p_s"
-                                   STARPU_NAME, taskNames.print("P2P_out", "%d, %lld, %lld, %d, %lld, %lld, %d, %lld, %lld, %lld, %lld, %d\n",
-												0,
-												0,
-												0,
-												0,
-												0,
-												0,
-												0,
+                                   STARPU_NAME, taskNames.print("P2P_out", "0, 0, 0, 0, 0, 0, 0, %lld, %lld, %lld, %lld, %d\n",
 												tree->getParticleGroup(idxGroup)->getStartingIndex(),
 												tree->getParticleGroup(idxGroup)->getEndingIndex(),
 												processesBlockInfos[tree->getHeight()-1][interactionid].firstIndex,

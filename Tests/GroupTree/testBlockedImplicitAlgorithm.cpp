@@ -88,9 +88,6 @@ int main(int argc, char* argv[]){
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbParticles,
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile, LocalOptionBlocSize, Mapping);
-	//int provided = 0;
-	//MPI_Init_thread(&argc,&argv, MPI_THREAD_SERIALIZED, &provided);
-
 
     // Get params
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
@@ -117,7 +114,7 @@ int main(int argc, char* argv[]){
     OctreeClass tree(NbLevels, FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 2),
                      loader.getBoxWidth(), loader.getCenterOfBox());
     FTestParticleContainer<FReal> allParticles;
-	FPoint<FReal> allParticlesToSort[loader.getNumberOfParticles()];
+	FPoint<FReal> * allParticlesToSort = new FPoint<FReal>[loader.getNumberOfParticles()];
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         loader.fillParticle(&allParticlesToSort[idxPart]);//Same with file or not
     }
@@ -125,16 +122,17 @@ int main(int argc, char* argv[]){
 	std::vector<MortonIndex> distributedMortonIndex;
 	vector<vector<int>> sizeForEachGroup;
 	sortParticle(allParticlesToSort, NbLevels, groupSize, sizeForEachGroup, distributedMortonIndex, loader, nproc);
-
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         allParticles.push(allParticlesToSort[idxPart]);
         tree.insert(allParticlesToSort[idxPart]);
 	}
-	
+	delete allParticlesToSort;
+	allParticlesToSort = nullptr;
     // Put the data into the tree
-    //GroupOctreeClass groupedTree(NbLevels, groupSize, &tree);
+	
 	//GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false);
 	GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, sizeForEachGroup, false);
+
 	 //Check tree structure at leaf level
     groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass gcell, GroupContainerClass* gleaf){
         const ContainerClass* src = tree.getLeafSrc(gcell.getMortonIndex());
@@ -149,13 +147,11 @@ int main(int argc, char* argv[]){
     });
 
     // Run the algorithm
+	FTic timerExecute;
     GroupKernelClass groupkernel;
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel, distributedMortonIndex);
-	FTic timerExecute;
 	groupalgo.execute();
 	double elapsedTime = timerExecute.tacAndElapsed();
-	mpi_rank = groupalgo.getRank();
-	cout << "Executing time (implicit node " << mpi_rank << ") " << elapsedTime << "s\n";
 	timeAverage(mpi_rank, nproc, elapsedTime);
 	
     // Usual algorithm
@@ -164,14 +160,12 @@ int main(int argc, char* argv[]){
     algo.execute();
 	int rank = groupalgo.getRank();
 	for(int i = 2; i < groupedTree.getHeight(); ++i)//No task at level 0 and 1
-	{
 		if(groupedTree.getNbCellGroupAtLevel(i) < groupalgo.getNProc() && rank == 0)
 			std::cout << "Error at level " << i << std::endl;
-	}
+	
     // Validate the result
 	for(int idxLevel = 2 ; idxLevel < groupedTree.getHeight() ; ++idxLevel){
 		for(int idxGroup = 0 ; idxGroup < groupedTree.getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
-			//if(groupalgo.isDataOwned(idxGroup, groupedTree.getNbCellGroupAtLevel(idxLevel))){
 			if(groupalgo.isDataOwnedBerenger(groupedTree.getCellGroup(idxLevel, idxGroup)->getStartingIndex(), idxLevel)){
 				GroupOctreeClass::CellGroupClass* currentCells = groupedTree.getCellGroup(idxLevel, idxGroup);
 				currentCells->forEachCell([&](GroupCellClass gcell){
@@ -194,7 +188,6 @@ int main(int argc, char* argv[]){
 	{
 		int idxLevel = groupedTree.getHeight()-1;
 		for(int idxGroup = 0 ; idxGroup < groupedTree.getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
-			//if(groupalgo.isDataOwned(idxGroup, groupedTree.getNbCellGroupAtLevel(idxLevel))){
 			if(groupalgo.isDataOwnedBerenger(groupedTree.getCellGroup(groupedTree.getHeight()-1, idxGroup)->getStartingIndex(), groupedTree.getHeight()-1)){
 				GroupOctreeClass::ParticleGroupClass* particleGroup = groupedTree.getParticleGroup(idxGroup); 
 				GroupOctreeClass::CellGroupClass* cellGroup = groupedTree.getCellGroup(idxLevel, idxGroup);
@@ -223,14 +216,16 @@ void timeAverage(int mpi_rank, int nproc, double elapsedTime)
 	if(mpi_rank == 0)
 	{
 		double sumElapsedTime = elapsedTime;
+		std::cout << "Executing time node 0 (implicit) : " << sumElapsedTime << "s" << std::endl;
 		for(int i = 1; i < nproc; ++i)
 		{
 			double tmp;
 			MPI_Recv(&tmp, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, 0);
 			sumElapsedTime += tmp;
+			std::cout << "Executing time node " << i << " (implicit) : " << tmp << "s" << std::endl;
 		}
 		sumElapsedTime = sumElapsedTime / (double)nproc;
-		std::cout << "Average time per node : " << sumElapsedTime << "s" << std::endl;
+		std::cout << "Average time per node (implicit) : " << sumElapsedTime << "s" << std::endl;
 	}
 	else
 	{

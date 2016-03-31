@@ -49,6 +49,7 @@
 void timeAverage(int mpi_rank, int nproc, double elapsedTime);
 
 int main(int argc, char* argv[]){
+    setenv("STARPU_NCPU","1",1);
     const FParameterNames LocalOptionBlocSize {
         {"-bs"},
         "The size of the block of the blocked tree"
@@ -78,7 +79,6 @@ int main(int argc, char* argv[]){
     const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
     const int groupSize      = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 8);
     const FSize totalNbParticles = (NbParticles*mpiComm.global().processCount());
-
     // Load the particles
     FRandomLoader<FReal> loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), mpiComm.global().processId());
     FAssertLF(loader.isOpen());
@@ -99,12 +99,11 @@ int main(int argc, char* argv[]){
 			return position.data();
 		}
     };
-
     std::unique_ptr<TestParticle[]> particles(new TestParticle[loader.getNumberOfParticles()]);
     memset(particles.get(), 0, sizeof(TestParticle) * loader.getNumberOfParticles());
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-		loader.fillParticleAtMortonIndex(&(particles[idxPart].position), mpiComm.global().processId()*NbParticles + idxPart,NbLevels);
-		//loader.fillParticle(&(particles[idxPart].position));
+		//loader.fillParticleAtMortonIndex(&(particles[idxPart].position), mpiComm.global().processId()*NbParticles + idxPart,NbLevels);
+		loader.fillParticle(&(particles[idxPart].position));
     }
     // Sort in parallel
     FVector<TestParticle> myParticles;
@@ -144,7 +143,7 @@ int main(int argc, char* argv[]){
 
 	//Save particles in a file
 	if(mpiComm.global().processId() == 0){
-		std::cout << "Exchange particle to create the file" << std::endl;
+		std::cerr << "Exchange particle to create the file" << std::endl;
 		std::vector<TestParticle*> particlesGathered;
 		std::vector<int> sizeGathered;
 		
@@ -166,7 +165,7 @@ int main(int argc, char* argv[]){
 		for(int a : sizeGathered)
 			sum += a/sizeof(TestParticle);
 		if(sum != totalNbParticles)
-			std::cout << "Erreur sum : " << sum << " instead of " << totalNbParticles << std::endl;
+			std::cerr << "Erreur sum : " << sum << " instead of " << totalNbParticles << std::endl;
 		//Store in that bloody file
 		FFmaGenericWriter<FReal> writer("canard.fma");
 		writer.writeHeader(loader.getCenterOfBox(), loader.getBoxWidth(),totalNbParticles, particles[0]);
@@ -174,7 +173,7 @@ int main(int argc, char* argv[]){
 			writer.writeArrayOfParticles(particlesGathered[i], sizeGathered[i]/sizeof(TestParticle));
 		for(TestParticle* ptr : particlesGathered)
 			delete ptr;
-		std::cout << "Done exchanging !" << std::endl;
+		std::cerr << "Done exchanging !" << std::endl;
 	}
 	else{
 		int sizeofParticle = sizeof(TestParticle)*myParticles.getSize();
@@ -189,12 +188,11 @@ int main(int argc, char* argv[]){
                                  &allParticles, true, leftLimite);
 
     // Run the algorithm
+	FTic timerExecute;
     GroupKernelClass groupkernel;
     GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
-	FTic timerExecute;
     groupalgo.execute();
 	double elapsedTime = timerExecute.tacAndElapsed();
-	std::cout << "Executing time (explicit node " << mpiComm.global().processId() << ") " << elapsedTime << "s\n";
     mpiComm.global().barrier();
 	timeAverage(mpiComm.global().processId(), mpiComm.global().processCount(), elapsedTime);
 
@@ -225,11 +223,11 @@ int main(int argc, char* argv[]){
             FRandomLoader<FReal> loaderAll(NbParticles, 1.0, FPoint<FReal>(0,0,0), idxProc);
             for(FSize idxPart = 0 ; idxPart < loaderAll.getNumberOfParticles() ; ++idxPart){
                 FPoint<FReal> pos;
-				//loaderAll.fillParticle(&pos);
-				loaderAll.fillParticleAtMortonIndex(&pos, idxProc*NbParticles + idxPart,NbLevels);
+				loaderAll.fillParticle(&pos);
+				//loaderAll.fillParticleAtMortonIndex(&pos, idxProc*NbParticles + idxPart,NbLevels);
                 tree.insert(pos);
             }
-        }
+		}
         // Usual algorithm
         KernelClass kernels;            // FTestKernels FBasicKernels
         FmmClass algo(&tree,&kernels);  //FFmmAlgorithm FFmmAlgorithmThread
@@ -259,14 +257,16 @@ void timeAverage(int mpi_rank, int nproc, double elapsedTime)
 	if(mpi_rank == 0)
 	{
 		double sumElapsedTime = elapsedTime;
+		std::cout << "Executing time node 0 (explicit) : " << sumElapsedTime << "s" << std::endl;
 		for(int i = 1; i < nproc; ++i)
 		{
 			double tmp;
 			MPI_Recv(&tmp, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, 0);
 			sumElapsedTime += tmp;
+			std::cout << "Executing time node " << i << " (explicit) : " << tmp << "s" << std::endl;
 		}
 		sumElapsedTime = sumElapsedTime / (double)nproc;
-		std::cout << "Average time per node : " << sumElapsedTime << "s" << std::endl;
+		std::cout << "Average time per node (explicit) : " << sumElapsedTime << "s" << std::endl;
 	}
 	else
 	{
