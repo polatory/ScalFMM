@@ -29,12 +29,9 @@ struct Task
 	{
 		if(type != other.type || id.size() != other.id.size())
 			return false;
-		//if(type == P2P_OUT) //Symétrisation
-			//if(id[0] == other.id[2] && id[1] == other.id[3] && id[2] == other.id[0] && id[3] == other.id[1])
-				//return true;
-		//if(type == M2L_OUT) //Symétrisation
-			//if(id[1] == other.id[3] && id[2] == other.id[4] && id[3] == other.id[1] && id[4] == other.id[2])
-				//return true;
+		if(type == P2P_OUT) //Symétrisation
+			if(id[0] == other.id[2] && id[1] == other.id[3] && id[2] == other.id[0] && id[3] == other.id[1])
+				return true;
 
 		for(size_t i = 0; i < id.size(); ++i)
 			if(id[i] != other.id[i])
@@ -100,8 +97,6 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 		task.id[1] = stoll(lineElements[6]);
 		task.id[2] = stoll(lineElements[7]);
 		task.id[3] = stoll(lineElements[8]);
-		if(task.id[0] == 0 && task.id[1] == 0 && task.id[2] == 0 && task.id[3] == 0)
-			cout << "Suricate" << endl;
 		task.mpiNode = stoi(lineElements[9]);
 		task.level = dagData.treeHeight - 1;
 		dagData.allTask.insert(task);
@@ -318,7 +313,8 @@ void compareDag(DagData const& dag1, DagData const& dag2, int const treeHeight)
 					}
 					if(found == false)
 					{
-						//task.print();
+						#pragma omp critical
+						task.print();
 						if(task.level < treeHeight)
 							++notFoundCount[omp_get_thread_num()][task.level];
 					}
@@ -333,12 +329,12 @@ void compareDag(DagData const& dag1, DagData const& dag2, int const treeHeight)
 						{
 							#pragma omp critical
 							{
-								task.print();
-								sameTask[0].print();//Il y a au moins une tâche identique trouvée
-								if(sameTaskId == 2)
-									sameTask[1].print();//Il y a au moins une tâche identique trouvée
-								cout << sameTaskId << endl;
-								cout << endl;
+								//task.print();
+								//sameTask[0].print();//Il y a au moins une tâche identique trouvée
+								//if(sameTaskId == 2)
+									//sameTask[1].print();//Il y a au moins une tâche identique trouvée
+								//cout << sameTaskId << endl;
+								//cout << endl;
 							}
 							if(task.level < treeHeight)
 								++differenceMapping[omp_get_thread_num()][task.level];
@@ -400,12 +396,10 @@ int main(int argc, char* argv[])
 	bool implicitGood, explicitGood;
 	std::thread explicitThread([&](){
 		explicitData.treeHeight = treeHeight;
-		fillPerformanceData(explicitTraceFilename, explicitData);
 		explicitGood = fillDagData(explicitFilename, explicitData);
 		});
 	std::thread implicitThread([&](){
 		implicitData.treeHeight = treeHeight;
-		fillPerformanceData(implicitTraceFilename, implicitData);
 		implicitGood = fillDagData(implicitFilename, implicitData);
 		});
 	implicitThread.join();
@@ -414,6 +408,7 @@ int main(int argc, char* argv[])
 	{
 		cout << explicitData.allTask.size() << " tasks in explicit." << endl;
 		cout << implicitData.allTask.size() << " tasks in implicit." << endl;
+		//compareDag(implicitData, explicitData, treeHeight);
 		compareDag(explicitData, implicitData, treeHeight);
 	}
     return 0;
