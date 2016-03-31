@@ -17,9 +17,13 @@
 # #+END_SRC
 
 * Abstract
+We live in a world were computer capacity get larger and larger, unfortunatly, our old algorithm ain't calibrate for such computer so it is important to find new paradigme to use the full power of those newest machine and then go faster than ever.
 * Introduction
-* Background
 ** Fast Multipole Method
+What is it ?
+Why is it so interesting ? (O(n) maybe ...)
+What are the limitation ? (field where we can't estimate accuratly the far-field, I dunno ...)
+
 ** Task based FMM
 *** Sequential Task Flow
 *** Runtime
@@ -420,6 +424,8 @@ Les résultats dénotent deux choses :
 - L'algorithme implicite répartis mal les calculs.
 - Une situation curieuse : Avec le noyaux de test, l'implicite est 10x plus rapide, avec le noyau de Chebyshev, il est 5x plus lent.
 
+Après une petite étude, cette curieuse situation n'est pas dû à une mauvaise répartition des particules car ladite répartition est la même.
+
 *** Erreurs rencontrées
 Un /bug/ a fait son apparition dans la version MPI explicit où des segfaults apparaissent si l'arbre n'a pas au moins une particule dans chaque indice de Morton.
 Cette erreur n'impacte pas encore la bonne progression du stage, car dans la pratique, il y a suffisament de particules pour remplir l'arbre.
@@ -441,6 +447,11 @@ Cette structure (simpliste) se lirait de la manière suivante :
 - Le groupe 123 échange 400 octets avec le groupe 23.
 
 Les groupes correspondent aux /handles/ de Starpu qui correspondent aux groupes de l'arbre bloqué.
+Problème : L'algorithme Treematch semble placer des /workers/ sur des « nœud de calcul » proche.
+Typiquement, si deux process mpi communiquent beaucoup il faut les mettre plus proche. Or dans notre cas, si deux process mpi communiquent beaucoup c'est essentiellement car il partage les même données. Données qu'il faudrait remapper sur un autre nœud.
+Mais c'est données n'impliquent pas de forcément des transitions de données mpi ... si elles sont sur le même nœud mpi.
+
+
 
 ** Et après ?
 - Comparaison des performances
