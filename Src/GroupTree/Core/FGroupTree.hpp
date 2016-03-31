@@ -701,7 +701,10 @@ public:
                 FGroupOfParticles<FReal, NbSymbAttributes, NbAttributesPerParticle, AttributeClass>*const newParticleBlock = new FGroupOfParticles<FReal, NbSymbAttributes, NbAttributesPerParticle, AttributeClass>(currentBlockIndexes[0],
                         currentBlockIndexes[sizeOfBlock-1]+1,
                         sizeOfBlock, lastParticle-firstParticle);
-
+#include <iostream>
+				using namespace std;
+				if(currentBlockIndexes[sizeOfBlock-1]+1 == 511)
+					cout << "Suricate" << endl;
                 // Init cells
                 size_t nbParticlesOffsetBeforeLeaf = 0;
                 FSize offsetParticles = firstParticle;
