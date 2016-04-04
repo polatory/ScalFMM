@@ -41,7 +41,7 @@
 #include "../OpenCl/FOpenCLDeviceWrapper.hpp"
 #endif
 
-#define SCALFMM_SIMGRID_TASKNAMEPARAMS
+//#define SCALFMM_SIMGRID_TASKNAMEPARAMS
 #ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
 #include "../StarPUUtils/FStarPUTaskNameParams.hpp"
 #endif
@@ -51,6 +51,7 @@
 #include <vector>
 using namespace std;
 
+//#define STARPU_USE_REDUX
 template <class OctreeClass, class CellContainerClass, class KernelClass, class ParticleGroupClass, class StarPUCpuWrapperClass
           #ifdef SCALFMM_ENABLE_CUDA_KERNEL
           , class StarPUCudaWrapperClass = FStarPUCudaWrapper<KernelClass, FCudaEmptyCellSymb, int, int, FCudaGroupOfCells<FCudaEmptyCellSymb, int, int>,
@@ -350,7 +351,7 @@ public:
 
 		starpu_mpi_shutdown();
         starpu_shutdown();
-		MPI_Finalize(); //TODO put it somewhere else, it's really dirty here.
+		//MPI_Finalize(); //TODO put it somewhere else, it's really dirty here.
     }
 
     void rebuildInteractions(){
@@ -1658,6 +1659,18 @@ protected:
 					   //#endif
 					   //#endif
 									   //0);
+					//std::vector<OutOfBlockInteraction> outsideInteractions_2 = externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions;
+					//for(int i = 0; i < outsideInteractions_2.size(); ++i)
+					//{
+						//MortonIndex tmp = outsideInteractions_2[i].outIndex;
+						//outsideInteractions_2[i].outIndex = outsideInteractions_2[i].insideIndex;
+						//outsideInteractions_2[i].insideIndex = tmp;
+						//int tmp2 = outsideInteractions_2[i].insideIdxInBlock;
+						//outsideInteractions_2[i].insideIdxInBlock = outsideInteractions_2[i].outsideIdxInBlock;
+						//outsideInteractions_2[i].outsideIdxInBlock = tmp2;
+						//outsideInteractions_2[i].relativeOutPosition = getOppositeInterIndex(outsideInteractions_2[i].relativeOutPosition);
+					//}
+					//auto c = &outsideInteractions_2;
 					//starpu_mpi_insert_task(MPI_COMM_WORLD,
 									   //&p2p_cl_inout_mpi,
 									   //STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
