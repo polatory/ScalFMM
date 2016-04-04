@@ -1837,7 +1837,6 @@ protected:
 
                         task->dyn_handles[2] = remoteCellGroups[idxLevel+1][firstOtherBlock + nbSubCellGroups].handleSymb;
                         task->dyn_handles[3] = remoteCellGroups[idxLevel+1][firstOtherBlock + nbSubCellGroups].handleUp;
-                        nbSubCellGroups += 1;
 
                         // put the right codelet
                         task->cl = &m2m_cl;
@@ -1872,6 +1871,7 @@ protected:
 												 comm.processId());
     #endif
     #endif
+                        nbSubCellGroups += 1;
                         FAssertLF(starpu_task_submit(task) == 0);
                     }
                 }
