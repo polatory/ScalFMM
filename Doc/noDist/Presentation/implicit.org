@@ -24,6 +24,8 @@ What is it ?
 Why is it so interesting ? (O(n) maybe ...)
 What are the limitation ? (field where we can't estimate accuratly the far-field, I dunno ...)
 
+* State of the art
+Nothing for now ...
 ** Task based FMM
 *** Sequential Task Flow
 *** Runtime
@@ -334,8 +336,6 @@ Executing time node 39 (implicit Cheby) : 227.275s
 Average time per node (implicit Cheby) : 122.947s
 #+END_EXAMPLE
 
-* State of the art
-Nothing for now ...
 
 * Journal
 ** Implémentation mpi implicite très naïve
