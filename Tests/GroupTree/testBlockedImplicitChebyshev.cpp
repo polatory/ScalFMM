@@ -31,6 +31,8 @@ using namespace std;
 #include "../../Src/GroupTree/Chebyshev/FChebCellPOD.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebCell.hpp" //For validation
+#include "../../Src/Core/FFmmAlgorithm.hpp" //For validation
 
 #include "../../Src/BalanceTree/FLeafBalance.hpp"
 
@@ -68,14 +70,14 @@ void sortParticle(FPoint<FReal> * allParticlesToSort, int treeHeight, int groupS
 void createNodeRepartition(std::vector<MortonIndex> distributedMortonIndex, std::vector<std::vector<std::vector<MortonIndex>>>& nodeRepartition, int nproc, int treeHeight);
 
 int main(int argc, char* argv[]){
-    setenv("STARPU_NCPU","1",1);
     const FParameterNames LocalOptionBlocSize {
         {"-bs"},
         "The size of the block of the blocked tree"
     };
-    FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
+    const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
+    FHelpDescribeAndExit(argc, argv, "Loutre",
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbParticles,
-                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile, LocalOptionBlocSize);
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile, LocalOptionBlocSize, LocalOptionNoValidate);
 
     // Get params
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
@@ -92,10 +94,10 @@ int main(int argc, char* argv[]){
     const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     LoaderClass loader(filename);
 #endif
-	int mpi_rank, nproc = 8, provided;
-	MPI_Init_thread(nullptr,nullptr, MPI_THREAD_SERIALIZED, &provided);
-	MPI_Comm_rank(MPI_COMM_WORLD,&mpi_rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nproc);
+	int mpi_rank, nproc, provided;
+    FMpi mpiComm(argc,argv);
+	mpi_rank = mpiComm.global().processId();
+	nproc = mpiComm.global().processCount();
     FAssertLF(loader.isOpen());
 
 	FPoint<FReal> * allParticlesToSort = new FPoint<FReal>[loader.getNumberOfParticles()];
@@ -112,23 +114,129 @@ int main(int argc, char* argv[]){
 		FReal physicalValue = 0.1;
         allParticles.push(allParticlesToSort[idxPart], physicalValue);
 	}
-	delete allParticlesToSort;
-	allParticlesToSort = nullptr;
     // Put the data into the tree
 	
 	//GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false);
-	GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, sizeForEachGroup, false);
+	GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, sizeForEachGroup, true);
 
     // Run the algorithm
-	FTic timerExecute;
+	int operationsToProceed = FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P | FFmmP2P;
     const MatrixKernelClass MatrixKernel;
     GroupKernelClass groupkernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel, distributedMortonIndex);
-	groupalgo.execute();
+	FTic timerExecute;
+	groupalgo.execute(operationsToProceed);
 	double elapsedTime = timerExecute.tacAndElapsed();
 	timeAverage(mpi_rank, nproc, elapsedTime);
 	
     // Validate the result
+    if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
+        typedef FP2PParticleContainer<FReal> ContainerClass;
+        typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
+        typedef FChebCell<FReal,ORDER> CellClass;
+        typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
+        typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+
+        const FReal epsi = 1E-10;
+
+        OctreeClass treeCheck(NbLevels, 2,loader.getBoxWidth(),loader.getCenterOfBox());
+
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            // put in tree
+            treeCheck.insert(allParticlesToSort[idxPart], 0.1);
+        }
+
+        MatrixKernelClass MatrixKernel;
+        KernelClass kernels(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
+        FmmClass algorithm(&treeCheck, &kernels);
+        algorithm.execute(operationsToProceed);
+
+        groupedTree.forEachCellWithLevel([&](GroupCellClass gcell, const int level){
+			if(groupalgo.isDataOwnedBerenger(gcell.getMortonIndex(), level))
+			{
+				const CellClass* cell = treeCheck.getCell(gcell.getMortonIndex(), level);
+				if(cell == nullptr){
+					std::cout << "[Empty] Error cell should exist " << gcell.getMortonIndex() << "\n";
+				}
+				else {
+					FMath::FAccurater<FReal> diffUp;
+					diffUp.add(cell->getMultipole(0), gcell.getMultipole(0), gcell.getVectorSize());
+					if(diffUp.getRelativeInfNorm() > epsi || diffUp.getRelativeL2Norm() > epsi){
+						std::cout << "[Up] Up is different at index " << gcell.getMortonIndex() << " level " << level << " is " << diffUp << "\n";
+					}
+					FMath::FAccurater<FReal> diffDown;
+					diffDown.add(cell->getLocal(0), gcell.getLocal(0), gcell.getVectorSize());
+					if(diffDown.getRelativeInfNorm() > epsi || diffDown.getRelativeL2Norm() > epsi){
+						std::cout << "[Down] Down is different at index " << gcell.getMortonIndex() << " level " << level << " is " << diffDown << "\n";
+					}
+				}
+			}
+        });
+		groupedTree.forEachCellLeaf<FP2PGroupParticleContainer<FReal> >([&](GroupCellClass gcell, FP2PGroupParticleContainer<FReal> * leafTarget){
+			if(groupalgo.isDataOwnedBerenger(gcell.getMortonIndex(), NbLevels-1))
+			{
+				const ContainerClass* targets = treeCheck.getLeafSrc(gcell.getMortonIndex());
+				if(targets == nullptr){
+					std::cout << "[Empty] Error leaf should exist " << gcell.getMortonIndex() << "\n";
+				}
+				else{
+					const FReal*const gposX = leafTarget->getPositions()[0];
+					const FReal*const gposY = leafTarget->getPositions()[1];
+					const FReal*const gposZ = leafTarget->getPositions()[2];
+					const FSize gnbPartsInLeafTarget = leafTarget->getNbParticles();
+					const FReal*const gforceX = leafTarget->getForcesX();
+					const FReal*const gforceY = leafTarget->getForcesY();
+					const FReal*const gforceZ = leafTarget->getForcesZ();
+					const FReal*const gpotential = leafTarget->getPotentials();
+
+					const FReal*const posX = targets->getPositions()[0];
+					const FReal*const posY = targets->getPositions()[1];
+					const FReal*const posZ = targets->getPositions()[2];
+					const FSize nbPartsInLeafTarget = targets->getNbParticles();
+					const FReal*const forceX = targets->getForcesX();
+					const FReal*const forceY = targets->getForcesY();
+					const FReal*const forceZ = targets->getForcesZ();
+					const FReal*const potential = targets->getPotentials();
+
+					if(gnbPartsInLeafTarget != nbPartsInLeafTarget){
+						std::cout << "[Empty] Not the same number of particles at " << gcell.getMortonIndex()
+								  << " gnbPartsInLeafTarget " << gnbPartsInLeafTarget << " nbPartsInLeafTarget " << nbPartsInLeafTarget << "\n";
+					}else{
+						FMath::FAccurater<FReal> potentialDiff;
+						FMath::FAccurater<FReal> fx, fy, fz;
+						for(FSize idxPart = 0 ; idxPart < nbPartsInLeafTarget ; ++idxPart){
+							if(gposX[idxPart] != posX[idxPart] || gposY[idxPart] != posY[idxPart] || gposZ[idxPart] != posZ[idxPart]){
+								std::cout << "[Empty] Not the same particlea at " << gcell.getMortonIndex() << " idx " << idxPart << " "
+										  << gposX[idxPart] << " " << posX[idxPart] << " " << gposY[idxPart] << " " << posY[idxPart]
+										  << " " << gposZ[idxPart] << " " << posZ[idxPart] << "\n";
+							}
+							else{
+								potentialDiff.add(potential[idxPart], gpotential[idxPart]);
+								fx.add(forceX[idxPart], gforceX[idxPart]);
+								fy.add(forceY[idxPart], gforceY[idxPart]);
+								fz.add(forceZ[idxPart], gforceZ[idxPart]);
+							}
+						}
+						if(potentialDiff.getRelativeInfNorm() > epsi || potentialDiff.getRelativeL2Norm() > epsi){
+							std::cout << "[Up] potentialDiff is different at index " << gcell.getMortonIndex() << " is " << potentialDiff << "\n";
+						}
+						if(fx.getRelativeInfNorm() > epsi || fx.getRelativeL2Norm() > epsi){
+							std::cout << "[Up] fx is different at index " << gcell.getMortonIndex() << " is " << fx << "\n";
+						}
+						if(fy.getRelativeInfNorm() > epsi || fy.getRelativeL2Norm() > epsi){
+							std::cout << "[Up] fy is different at index " << gcell.getMortonIndex() << " is " << fy << "\n";
+						}
+						if(fz.getRelativeInfNorm() > epsi || fz.getRelativeL2Norm() > epsi){
+							std::cout << "[Up] fz is different at index " << gcell.getMortonIndex() << " is " << fz << "\n";
+						}
+					}
+				}
+			}
+		});
+
+        //std::cout << "Comparing is over" << std::endl;
+    }
     return 0;
 }
 void timeAverage(int mpi_rank, int nproc, double elapsedTime)

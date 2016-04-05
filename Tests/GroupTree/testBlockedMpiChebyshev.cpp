@@ -52,7 +52,6 @@
 void timeAverage(int mpi_rank, int nproc, double elapsedTime);
 
 int main(int argc, char* argv[]){
-    setenv("STARPU_NCPU","1",1);
     const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
@@ -200,19 +199,18 @@ int main(int argc, char* argv[]){
     GroupOctreeClass groupedTree(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize,
                                  &myParticlesInContainer, true, leftLimite);
     //groupedTree.printInfoBlocks();
-
     timer.tac();
 	//std::cerr << "Done  " << "(@Creating and Inserting Particles = " << timer.elapsed() << "s)." << std::endl;
 
     { // -----------------------------------------------------
         //std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ") ... " << std::endl;
-        timer.tic();
 
         const MatrixKernelClass MatrixKernel;
         // Create Matrix Kernel
         GroupKernelClass groupkernel(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
         // Run the algorithm
         GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
+        timer.tic();
         groupalgo.execute();
 
         timer.tac();

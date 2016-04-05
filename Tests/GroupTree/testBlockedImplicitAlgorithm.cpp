@@ -76,7 +76,6 @@ void sortParticle(FPoint<FReal> * allParticlesToSort, int treeHeight, int groupS
 void createNodeRepartition(std::vector<MortonIndex> distributedMortonIndex, std::vector<std::vector<std::vector<MortonIndex>>>& nodeRepartition, int nproc, int treeHeight);
 
 int main(int argc, char* argv[]){
-    setenv("STARPU_NCPU","1",1);
     const FParameterNames LocalOptionBlocSize {
         {"-bs"},
         "The size of the block of the blocked tree"
@@ -105,9 +104,9 @@ int main(int argc, char* argv[]){
     LoaderClass loader(filename);
 #endif
 	int mpi_rank, nproc = 8, provided;
-	MPI_Init_thread(nullptr,nullptr, MPI_THREAD_SERIALIZED, &provided);
-	MPI_Comm_rank(MPI_COMM_WORLD,&mpi_rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&nproc);
+    FMpi mpiComm(argc,argv);
+	mpi_rank = mpiComm.global().processId();
+	nproc = mpiComm.global().processCount();
     FAssertLF(loader.isOpen());
 
     // Usual octree
@@ -145,11 +144,11 @@ int main(int argc, char* argv[]){
             }
         }
     });
-
+	
     // Run the algorithm
-	FTic timerExecute;
     GroupKernelClass groupkernel;
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel, distributedMortonIndex);
+	FTic timerExecute;
 	groupalgo.execute();
 	double elapsedTime = timerExecute.tacAndElapsed();
 	timeAverage(mpi_rank, nproc, elapsedTime);

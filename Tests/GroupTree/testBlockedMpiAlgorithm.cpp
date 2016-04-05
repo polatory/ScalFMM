@@ -49,7 +49,6 @@
 void timeAverage(int mpi_rank, int nproc, double elapsedTime);
 
 int main(int argc, char* argv[]){
-    setenv("STARPU_NCPU","1",1);
     const FParameterNames LocalOptionBlocSize {
         {"-bs"},
         "The size of the block of the blocked tree"
@@ -188,9 +187,9 @@ int main(int argc, char* argv[]){
                                  &allParticles, true, leftLimite);
 
     // Run the algorithm
-	FTic timerExecute;
     GroupKernelClass groupkernel;
     GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
+	FTic timerExecute;
     groupalgo.execute();
 	double elapsedTime = timerExecute.tacAndElapsed();
     mpiComm.global().barrier();
