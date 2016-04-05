@@ -47,6 +47,10 @@ public:
         setPositionFromMorton(mindex, indexLevel);
     }
 
+    explicit FTreeCoordinate(const MortonIndex mindex) {
+        setPositionFromMorton(mindex);
+    }
+
     /** Constructor from args
      * @param inX the x
      * @param inY the y
@@ -118,16 +122,20 @@ public:
 
     /** This function set the position of the current object using a morton index
           * @param inIndex the morton index to compute position
-          * @param the level of the morton index
+          * @param unused the level of the morton index
           */
-    void setPositionFromMorton(MortonIndex inIndex, const int inLevel){
+    void setPositionFromMorton(MortonIndex inIndex, const int /*inLevel*/){
+        setPositionFromMorton(inIndex);
+    }
+
+    void setPositionFromMorton(MortonIndex inIndex) {
         MortonIndex mask = 0x1LL;
 
         point_t::data()[0] = 0;
         point_t::data()[1] = 0;
         point_t::data()[2] = 0;
 
-        for(int indexLevel = 0; indexLevel < inLevel ; ++indexLevel){
+        while(inIndex != 0) {
             point_t::data()[2] |= int(inIndex & mask);
             inIndex >>= 1;
             point_t::data()[1] |= int(inIndex & mask);
@@ -136,7 +144,6 @@ public:
 
             mask <<= 1;
         }
-
     }
 
 
