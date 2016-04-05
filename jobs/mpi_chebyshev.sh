@@ -33,6 +33,6 @@ echo "Particle per node: " $NB_PARTICLE_PER_NODE
 echo "Total particles: " $(($NB_PARTICLE_PER_NODE*$NB_NODE))
 echo "In the directory: `pwd`"
 rm -f canard.fma > /dev/null 2>&1
-mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedMpiChebyshev -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT | grep Average
+mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedMpiChebyshev -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation | grep Average
 #TODO probably move trace.rec somewhere else ...
-mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedImplicitChebyshev -f canard.fma -bs $GROUP_SIZE -h $TREE_HEIGHT | grep Average
+mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedImplicitChebyshev -f canard.fma -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation | grep Average
