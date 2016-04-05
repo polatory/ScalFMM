@@ -39,303 +39,79 @@ Nothing for now ...
 *** TreeMatch Balancing
 ** Result
 #+BEGIN_SRC
-#!/bin/sh
-export SCALFMM_SIMGRIDOUT='scalfmm.out'
-export GROUP_SIZE=500
-export TREE_HEIGHT=5
-export NB_NODE=16
-export NB_PARTICLE_PER_NODE=15000
-
-echo "GROUP_SIZE=$GROUP_SIZE"
-echo "TREE_HEIGHT=$TREE_HEIGHT"
-echo "NB_NODE=$NB_NODE"
-echo "NB_PARTICLE_PER_NODE=$NB_PARTICLE_PER_NODE"
-
-#Compile only what we need
-make testBlockedImplicitChebyshev testBlockedMpiChebyshev testBlockedImplicitAlgorithm testBlockedMpiAlgorithm compareDAGmapping  -j $((`nproc`*2))
-if [ $? -ne 0 ]; then
-	exit
-fi
-
-#Execute explicit mpi version
-sleep 10
-mpiexec -n $NB_NODE ./Tests/Release/testBlockedMpiAlgorithm -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT 2>/dev/null
-if [ $? -ne 0 ]; then
-	echo
-	echo " /!\\Error on explicit"
-	echo
-	exit
-fi
-
-#Aggregate task information from explicit execution
-a=`ls $SCALFMM_SIMGRIDOUT\_*`
-rm -f $SCALFMM_SIMGRIDOUT
-for i in $a; do
-	cat $i >> $SCALFMM_SIMGRIDOUT
-done
-
-#Get task information
-cp -f $SCALFMM_SIMGRIDOUT scalfmm_explicit.out
-
-#Execute implicit version
-sleep 10
-mpiexec -n $NB_NODE ./Tests/Release/testBlockedImplicitAlgorithm -f canard.fma -bs $GROUP_SIZE -h $TREE_HEIGHT 2>/dev/null
-if [ $? -ne 0 ]; then
-	echo
-	echo " /!\\Error on implicit"
-	echo
-	exit
-fi
-
-#Get task information
-cp -f scalfmm.out_0 scalfmm_implicit.out
-
-#Compare DAGs
-./Tests/Release/compareDAGmapping -e scalfmm_explicit.out -i scalfmm_implicit.out -h $TREE_HEIGHT > output
-
-sleep 10
-mpiexec -n $NB_NODE ./Tests/Release/testBlockedMpiChebyshev -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT 2>/dev/null
-if [ $? -ne 0 ]; then
-	echo
-	echo " /!\\Error on explicit Chebyshev"
-	echo
-	exit
-fi
-sleep 10
-mpiexec -n $NB_NODE ./Tests/Release/testBlockedImplicitChebyshev -f canard.fma -bs $GROUP_SIZE -h $TREE_HEIGHT 2>/dev/null
-if [ $? -ne 0 ]; then
-	echo
-	echo " /!\\Error on implicit Chebyshev"
-	echo
-	exit
-fi
 #+END_SRC
 
 <<sec:result>>
 The script of the job:
 #+BEGIN_SRC
-#!/usr/bin/env bash
-## name of job
-#SBATCH -J Implicit_MPI_time
-#SBATCH -p special
-## Resources: (nodes, procs, tasks, walltime, ... etc)
-#SBATCH -N 40
-# #  standard output message
-#SBATCH -o batch%j.out
-# # output error message
-#SBATCH -e batch%j.err
-module purge
-module load slurm
-module add compiler/gcc/5.3.0 tools/module_cat/1.0.0 intel/mkl/64/11.2/2016.0.0
-. /home/mkhannou/spack/share/spack/setup-env.sh
-spack load fftw
-spack load hwloc
-spack load openmpi
-spack load starpu@svn-trunk
-## modules to load for the job
-export GROUP_SIZE=500
-export TREE_HEIGHT=5
-export NB_NODE=$SLURM_JOB_NUM_NODES
-export NB_PARTICLE_PER_NODE=100000
-echo "=====my job informations ===="
-echo "Node List: " $SLURM_NODELIST
-echo "my jobID: " $SLURM_JOB_ID
-echo "Nb node: " $NB_NODE
-echo "Particle per node: " $NB_PARTICLE_PER_NODE
-echo "In the directory: `pwd`"
-rm -f canard.fma > /dev/null 2> /dev/null
-mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedMpiAlgorithm -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT > loutre
-cat loutre | grep Executing
-cat loutre | grep Average
-sleep 10
-mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedImplicitAlgorithm -f canard.fma -bs $GROUP_SIZE -h $TREE_HEIGHT > loutre
-cat loutre | grep Executing
-cat loutre | grep Average
-rm -f canard.fma > /dev/null 2> /dev/null
-sleep 10
-mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedMpiChebyshev -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT > loutre
-cat loutre | grep Executing
-cat loutre | grep Average
-sleep 10
-mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedImplicitChebyshev -f canard.fma -bs $GROUP_SIZE -h $TREE_HEIGHT > loutre
-cat loutre | grep Executing
-cat loutre | grep Average
 #+END_SRC
 
 The result given by the script after few minutes executing:
 #+BEGIN_EXAMPLE
-=====my job informations ====
-Node List:  miriel[038-077]
-my jobID:  108825
-Nb node:  40
-Particle per node:  100000
-In the directory: /home/mkhannou/scalfmm
-Executing time node 0 (explicit) : 0.886289s
-Executing time node 1 (explicit) : 12.689s
-Executing time node 2 (explicit) : 12.6714s
-Executing time node 3 (explicit) : 12.6539s
-Executing time node 4 (explicit) : 12.6373s
-Executing time node 5 (explicit) : 12.599s
-Executing time node 6 (explicit) : 12.5816s
-Executing time node 7 (explicit) : 12.5721s
-Executing time node 8 (explicit) : 12.5626s
-Executing time node 9 (explicit) : 12.5458s
-Executing time node 10 (explicit) : 12.5198s
-Executing time node 11 (explicit) : 12.519s
-Executing time node 12 (explicit) : 12.5141s
-Executing time node 13 (explicit) : 12.5045s
-Executing time node 14 (explicit) : 12.4958s
-Executing time node 15 (explicit) : 12.4322s
-Executing time node 16 (explicit) : 12.4149s
-Executing time node 17 (explicit) : 12.416s
-Executing time node 18 (explicit) : 12.3991s
-Executing time node 19 (explicit) : 12.3865s
-Executing time node 20 (explicit) : 12.3445s
-Executing time node 21 (explicit) : 12.3269s
-Executing time node 22 (explicit) : 12.3089s
-Executing time node 23 (explicit) : 12.3107s
-Executing time node 24 (explicit) : 12.2928s
-Executing time node 25 (explicit) : 12.2555s
-Executing time node 26 (explicit) : 12.2461s
-Executing time node 27 (explicit) : 12.2409s
-Executing time node 28 (explicit) : 12.2237s
-Executing time node 29 (explicit) : 12.2064s
-Executing time node 30 (explicit) : 12.1672s
-Executing time node 31 (explicit) : 12.1504s
-Executing time node 32 (explicit) : 12.1326s
-Executing time node 33 (explicit) : 12.1156s
-Executing time node 34 (explicit) : 12.1058s
-Executing time node 35 (explicit) : 12.0725s
-Executing time node 36 (explicit) : 12.0558s
-Executing time node 37 (explicit) : 12.0507s
-Executing time node 38 (explicit) : 12.0376s
-Executing time node 39 (explicit) : 12.0198s
-Average time per node (explicit) : 12.0666s
-Executing time node 0 (implicit) : 1.3918s
-Executing time node 1 (implicit) : 1.1933s
-Executing time node 2 (implicit) : 0.808328s
-Executing time node 3 (implicit) : 0.773344s
-Executing time node 4 (implicit) : 1.25819s
-Executing time node 5 (implicit) : 1.18945s
-Executing time node 6 (implicit) : 1.27529s
-Executing time node 7 (implicit) : 1.22866s
-Executing time node 8 (implicit) : 1.26839s
-Executing time node 9 (implicit) : 1.25121s
-Executing time node 10 (implicit) : 0.337148s
-Executing time node 11 (implicit) : 1.4247s
-Executing time node 12 (implicit) : 1.41725s
-Executing time node 13 (implicit) : 1.48044s
-Executing time node 14 (implicit) : 1.5094s
-Executing time node 15 (implicit) : 1.50355s
-Executing time node 16 (implicit) : 1.55565s
-Executing time node 17 (implicit) : 1.40483s
-Executing time node 18 (implicit) : 1.57896s
-Executing time node 19 (implicit) : 1.63332s
-Executing time node 20 (implicit) : 1.13418s
-Executing time node 21 (implicit) : 1.66588s
-Executing time node 22 (implicit) : 1.75309s
-Executing time node 23 (implicit) : 1.75407s
-Executing time node 24 (implicit) : 1.77763s
-Executing time node 25 (implicit) : 1.80734s
-Executing time node 26 (implicit) : 1.84635s
-Executing time node 27 (implicit) : 1.91082s
-Executing time node 28 (implicit) : 1.92222s
-Executing time node 29 (implicit) : 1.96819s
-Executing time node 30 (implicit) : 1.995s
-Executing time node 31 (implicit) : 2.03309s
-Executing time node 32 (implicit) : 2.04957s
-Executing time node 33 (implicit) : 2.08208s
-Executing time node 34 (implicit) : 2.10419s
-Executing time node 35 (implicit) : 2.17535s
-Executing time node 36 (implicit) : 2.19764s
-Executing time node 37 (implicit) : 1.48737s
-Executing time node 38 (implicit) : 2.20165s
-Executing time node 39 (implicit) : 2.23154s
-Average time per node (implicit) : 1.58951s
-Executing time node 0 (explicit Cheby) : 14.9724s
-Executing time node 1 (explicit Cheby) : 28.1361s
-Executing time node 2 (explicit Cheby) : 28.8268s
-Executing time node 3 (explicit Cheby) : 29.5679s
-Executing time node 4 (explicit Cheby) : 30.3545s
-Executing time node 5 (explicit Cheby) : 26.4163s
-Executing time node 6 (explicit Cheby) : 28.3624s
-Executing time node 7 (explicit Cheby) : 28.8427s
-Executing time node 8 (explicit Cheby) : 29.4445s
-Executing time node 9 (explicit Cheby) : 29.8502s
-Executing time node 10 (explicit Cheby) : 27.1067s
-Executing time node 11 (explicit Cheby) : 27.2506s
-Executing time node 12 (explicit Cheby) : 28.3568s
-Executing time node 13 (explicit Cheby) : 29.5386s
-Executing time node 14 (explicit Cheby) : 28.5243s
-Executing time node 15 (explicit Cheby) : 27.455s
-Executing time node 16 (explicit Cheby) : 27.439s
-Executing time node 17 (explicit Cheby) : 28.1895s
-Executing time node 18 (explicit Cheby) : 28.8084s
-Executing time node 19 (explicit Cheby) : 27.5662s
-Executing time node 20 (explicit Cheby) : 26.8049s
-Executing time node 21 (explicit Cheby) : 28.8124s
-Executing time node 22 (explicit Cheby) : 28.2384s
-Executing time node 23 (explicit Cheby) : 27.5266s
-Executing time node 24 (explicit Cheby) : 27.5838s
-Executing time node 25 (explicit Cheby) : 27.3604s
-Executing time node 26 (explicit Cheby) : 28.8181s
-Executing time node 27 (explicit Cheby) : 28.0987s
-Executing time node 28 (explicit Cheby) : 27.5754s
-Executing time node 29 (explicit Cheby) : 27.8695s
-Executing time node 30 (explicit Cheby) : 28.1235s
-Executing time node 31 (explicit Cheby) : 27.9892s
-Executing time node 32 (explicit Cheby) : 27.8463s
-Executing time node 33 (explicit Cheby) : 27.744s
-Executing time node 34 (explicit Cheby) : 26.5374s
-Executing time node 35 (explicit Cheby) : 28.3493s
-Executing time node 36 (explicit Cheby) : 28.1228s
-Executing time node 37 (explicit Cheby) : 28.1991s
-Executing time node 38 (explicit Cheby) : 28.021s
-Executing time node 39 (explicit Cheby) : 27.5317s
-Average time per node (explicit Cheby) : 27.804s
-Executing time node 0 (implicit Cheby) : 7.97802s
-Executing time node 1 (implicit Cheby) : 15.1593s
-Executing time node 2 (implicit Cheby) : 22.7339s
-Executing time node 3 (implicit Cheby) : 30.1029s
-Executing time node 4 (implicit Cheby) : 38.0297s
-Executing time node 5 (implicit Cheby) : 44.84s
-Executing time node 6 (implicit Cheby) : 51.8852s
-Executing time node 7 (implicit Cheby) : 58.7032s
-Executing time node 8 (implicit Cheby) : 65.5961s
-Executing time node 9 (implicit Cheby) : 72.6259s
-Executing time node 10 (implicit Cheby) : 73.0871s
-Executing time node 11 (implicit Cheby) : 76.8398s
-Executing time node 12 (implicit Cheby) : 83.7107s
-Executing time node 13 (implicit Cheby) : 91.0522s
-Executing time node 14 (implicit Cheby) : 97.4556s
-Executing time node 15 (implicit Cheby) : 103.77s
-Executing time node 16 (implicit Cheby) : 110.615s
-Executing time node 17 (implicit Cheby) : 116.897s
-Executing time node 18 (implicit Cheby) : 123.433s
-Executing time node 19 (implicit Cheby) : 129.222s
-Executing time node 20 (implicit Cheby) : 121.964s
-Executing time node 21 (implicit Cheby) : 129.865s
-Executing time node 22 (implicit Cheby) : 131.474s
-Executing time node 23 (implicit Cheby) : 137.668s
-Executing time node 24 (implicit Cheby) : 144.047s
-Executing time node 25 (implicit Cheby) : 150.888s
-Executing time node 26 (implicit Cheby) : 157.931s
-Executing time node 27 (implicit Cheby) : 164.466s
-Executing time node 28 (implicit Cheby) : 170.164s
-Executing time node 29 (implicit Cheby) : 175.757s
-Executing time node 30 (implicit Cheby) : 176.22s
-Executing time node 31 (implicit Cheby) : 180.678s
-Executing time node 32 (implicit Cheby) : 187.144s
-Executing time node 33 (implicit Cheby) : 193.305s
-Executing time node 34 (implicit Cheby) : 198.414s
-Executing time node 35 (implicit Cheby) : 205.278s
-Executing time node 36 (implicit Cheby) : 211.486s
-Executing time node 37 (implicit Cheby) : 217.305s
-Executing time node 38 (implicit Cheby) : 222.823s
-Executing time node 39 (implicit Cheby) : 227.275s
-Average time per node (implicit Cheby) : 122.947s
 #+END_EXAMPLE
 
+* Notes
+** Useful script
+*** Setup on plafrim
+To setup everything that is needed on plafrim I first install spack.
+#+begin src sh
+git clone https://github.com/fpruvost/spack.git
+##+end_src
+Then you have to add spack binary in your path.
+#+begin src sh
+PATH=$PATH:spack/bin/spack
+##+end_src
+If your python interpreter isn't python 2, you might have to replace the first line of spack/bin/spack by
+#+begin_src sh
+#!/usr/bin/env python2
+#+end_src
+So the script is automaticly run with python 2.
+Then, you have to add your ssh key to your ssh agent. The following script kill all ssh agent, then respawn it and add the ssh key.
+#+begin_src sh
+SSH_KEY=".ssh/rsa_inria"
+killall -9 ssh-agent > /dev/null
+eval `ssh-agent` > /dev/null
+ssh-add $SSH_KEY
+#+end_src
+
+Because on plafrim, users can't connect to the rest of the world, you have to copy data there.
+So copy spack directory, use spack to create a mirror that will be sent to plafrim so spack will be able to install package.
+
+#+begin_src sh
+MIRROR_DIRECTORY="tarball_scalfmm"
+#Copy spack to plafrim
+scp -r spack mkhannou@plafrim:/home/mkhannou
+#Recreate the mirror
+rm -rf $MIRROR_DIRECTORY
+mkdir $MIRROR_DIRECTORY
+spack mirror create -D -d $MIRROR_DIRECTORY starpu@svn-trunk+mpi \^openmpi
+#Create an archive and send it to plafrim
+tar czf /tmp/canard.tar.gz $MIRROR_DIRECTORY 
+scp /tmp/canard.tar.gz mkhannou@plafrim-ext:/home/mkhannou
+rm -f /tmp/canard.tar.gz
+#Install on plafrim
+ssh mkhannou@plafrim 'tar xf canard.tar.gz; rm -f canard.tar.gz'
+ssh mkhannou@plafrim "/home/mkhannou/spack/bin/spack mirror add local_filesystem file:///home/mkhannou/$MIRROR_DIRECTORY"
+ssh mkhannou@plafrim '/home/mkhannou/spack/bin/spack install starpu@svn-trunk+mpi+fxt \^openmpi'
+#+end_src
+
+TODO add script I add on plafrim side with library links.
+
+*** Execute on plafrim
+To run my tests on plafrim, I used the two following scripts.
+One to send the scalfmm repository to plafrim.
+#+begin_src sh
+SCALFMM_DIRECTORY="scalfmm"
+tar czf /tmp/canard.tar.gz $SCALFMM_DIRECTORY
+scp /tmp/canard.tar.gz mkhannou@plafrim:/home/mkhannou
+rm -f /tmp/canard.tar.gz
+ssh mkhannou@plafrim "rm -rf $SCALFMM_DIRECTORY; tar xf canard.tar.gz; rm -f canard.tar.gz"
+#+end_src
+Note : you might have to add your ssh_key again if you killed your previous ssh agent.
+
+Then, the one that is runned on plafrim. It configure, compile and submit all the jobs on plafrim.
+#+begin_src sh
+#+end_src
 
 * Journal
 ** Implémentation mpi implicite très naïve
@@ -352,7 +128,7 @@ Dans l'idée de créer une version 0 un brin potable qui puisse faire du calcul 
 Elle consistait à partager chaque niveau entre tous les processus de la manière la plus équitable possible.
 
 #+CAPTION: Division de chaque niveau entre chaque processus. Groupe de l'arbre de taille 4.
-[[./naive_split.png]]
+[[./figure/naive_split.png]]
 
 ** Reproduction du mapping mpi explicite
 Pour pouvoir effectuer des comparaisons il était nécessaire de reproduire le même /mapping/ de tâches la version MPI explicite.
@@ -365,7 +141,7 @@ Le soucis du tri distribué est qu'il essaye d'équilibrer les particules sur le
 
 #+CAPTION: Problème issuent de la constitution des groupes.
 #+NAME:   fig:SED-HR4049
-[[./group_issue1.png]]
+[[./figure/group_issue1.png]]
 
 Or le /mapping/ des données est fait avec la granularité des groupes de l'arbre groupé.
 
@@ -379,7 +155,7 @@ Ce nombre varie en fonction de la taille des groupes de l'arbre groupé.
 
 #+CAPTION: Méthode pour générer une particule à un indice de Morton donné.
 #+NAME:   fig:SED-HR4049
-[[./morton_box_center.png]]
+[[./figure/morton_box_center.png]]
 
 *** Solution apportée par la suite
 Après discussion avec Bérenger il s'avèra qu'il n'était pas si difficile de reproduire le tri parrallèle. Ce à quoi je me suis attelé durant les jours qui on suivi.
@@ -424,7 +200,10 @@ Les résultats dénotent deux choses :
 - L'algorithme implicite répartis mal les calculs.
 - Une situation curieuse : Avec le noyaux de test, l'implicite est 10x plus rapide, avec le noyau de Chebyshev, il est 5x plus lent.
 
-Après une petite étude, cette curieuse situation n'est pas dû à une mauvaise répartition des particules car ladite répartition est la même.
+Après une petite étude, cette curieuse situation n'était pas dû à une mauvaise répartition des particules car ladite répartition est la même.
+
+Il s'avéra que pour le calcul du P2P, tous les nœuds s'attendaient en cascade, mais ce temps d'attente peut être réduit en definissant la constante suivante : STARPU_USE_REDUX.
+Cela active la reduction au niveau des P2P et nous offre les même performances que l'algorithme explicite.
 
 *** Erreurs rencontrées
 Un /bug/ a fait son apparition dans la version MPI explicit où des segfaults apparaissent si l'arbre n'a pas au moins une particule dans chaque indice de Morton.
@@ -451,6 +230,19 @@ Problème : L'algorithme Treematch semble placer des /workers/ sur des « nœud 
 Typiquement, si deux process mpi communiquent beaucoup il faut les mettre plus proche. Or dans notre cas, si deux process mpi communiquent beaucoup c'est essentiellement car il partage les même données. Données qu'il faudrait remapper sur un autre nœud.
 Mais c'est données n'impliquent pas de forcément des transitions de données mpi ... si elles sont sur le même nœud mpi.
 
+** What have been done so far ?
+- Un arbre groupé identique à celui de la version explicite
+- Des tâches très similaires celles de la version explicite
+	- Quelque erreurs cependant (TODO check si elles y sont encore, car je pense les avoir corrigées)
+	- P2P à symétriser (intérragir avec les listes et tout le tralala)
+- Création de scripts
+	- Tout exporter sur plafrim
+	- Compiler et lancer les jobs
+		- La version starpu sur un nœud à 50M de particules
+		- Les versions starpu mpi explicite et implicite sur 10 nœuds à 50M de particules
+	- Exporter l'html du orgmode vers la forge	
+- Reflexion à propos du graphe de flux de données pour Treematch
+- Ajout de tests avec le noyau Chebyshev et la versin mpi implicite
 
 
 ** Et après ?
