@@ -29,10 +29,6 @@ struct Task
 	{
 		if(type != other.type || id.size() != other.id.size())
 			return false;
-		if(type == P2P_OUT) //Symétrisation
-			if(id[0] == other.id[2] && id[1] == other.id[3] && id[2] == other.id[0] && id[3] == other.id[1])
-				return true;
-
 		for(size_t i = 0; i < id.size(); ++i)
 			if(id[i] != other.id[i])
 				return false;
