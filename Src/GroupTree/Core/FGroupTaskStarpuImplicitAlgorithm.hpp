@@ -1667,7 +1667,7 @@ protected:
 					   #endif
 									   0);
 					std::vector<OutOfBlockInteraction>* outsideInteractionsOpposite = new std::vector<OutOfBlockInteraction>(externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions);
-					for(int i = 0; i < outsideInteractionsOpposite->size(); ++i)
+					for(unsigned int i = 0; i < outsideInteractionsOpposite->size(); ++i)
 					{
 						MortonIndex tmp = outsideInteractionsOpposite->at(i).outIndex;
 						outsideInteractionsOpposite->at(i).outIndex = outsideInteractionsOpposite->at(i).insideIndex;

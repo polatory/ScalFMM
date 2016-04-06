@@ -103,7 +103,7 @@ int main(int argc, char* argv[]){
     const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     LoaderClass loader(filename);
 #endif
-	int mpi_rank, nproc = 8, provided;
+	int mpi_rank, nproc;
     FMpi mpiComm(argc,argv);
 	mpi_rank = mpiComm.global().processId();
 	nproc = mpiComm.global().processCount();
@@ -285,7 +285,7 @@ void sortParticle(FPoint<FReal> * allParticles, int treeHeight, int groupSize, v
 		for(int i = 0; i < countGroup; ++i)
 			sizeForEachGroup[treeHeight-1].push_back(groupSize);
 		if(size_last > 0)
-			sizeForEachGroup[treeHeight-1].push_back(size_last);
+			sizeForEachGroup[treeHeight-1].push_back((int)size_last);
 	}
 	
 	//Calcul du working interval au niveau des feuilles

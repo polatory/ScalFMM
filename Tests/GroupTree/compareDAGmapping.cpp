@@ -109,7 +109,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 		task.id[3] = stoll(lineElements[7]);
 		task.id[4] = stoll(lineElements[8]);
 		task.mpiNode = stoi(lineElements[9]);
-		task.level = task.id[0];
+		task.level = (int)task.id[0];
 		dagData.allTask.insert(task);
 	}
 	else if(lineElements.size() >= 13 && lineElements[0] == "M2L_out")
@@ -124,7 +124,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 		task.id[3] = stoll(lineElements[10]);
 		task.id[4] = stoll(lineElements[11]);
 		task.mpiNode = stoi(lineElements[12]);
-		task.level = task.id[0];
+		task.level = (int)task.id[0];
 		dagData.allTask.insert(task);
 	}
 	else if(lineElements.size() >= 13 && lineElements[0] == "M2M")
@@ -139,7 +139,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 		task.id[3] = stoll(lineElements[10]);
 		task.id[4] = stoll(lineElements[11]);
 		task.mpiNode = stoi(lineElements[12]);
-		task.level = task.id[0];
+		task.level = (int)task.id[0];
 		dagData.allTask.insert(task);
 	}
 	else if(lineElements.size() >= 13 && lineElements[0] == "L2L")
@@ -154,7 +154,7 @@ bool parseLine(DagData & dagData, deque<string> & lineElements)
 		task.id[3] = stoll(lineElements[10]);
 		task.id[4] = stoll(lineElements[11]);
 		task.mpiNode = stoi(lineElements[12]);
-		task.level = task.id[0];
+		task.level = (int)task.id[0];
 		dagData.allTask.insert(task);
 	}
 	else if(lineElements.size() >= 8 && lineElements[0] == "L2P")
@@ -295,8 +295,11 @@ void compareDag(DagData const& dag1, DagData const& dag2, int const treeHeight)
 					bool found = false;
 					Task sameTask[2];
 					int sameTaskId = 0;
+					//Count task per level
 					if(task.level < treeHeight)
 						++taskCount[omp_get_thread_num()][task.level];
+					//Look into the second dag to find task in it
+					//We look for two task because it may be symetrized
 					for(auto it = dag2.allTask.begin(); it != dag2.allTask.end(); ++it)
 					{
 						if(task == *it)
@@ -307,6 +310,7 @@ void compareDag(DagData const& dag1, DagData const& dag2, int const treeHeight)
 								break;
 						}
 					}
+					//If the task it not found, print it and count it
 					if(found == false)
 					{
 						#pragma omp critical
@@ -314,31 +318,21 @@ void compareDag(DagData const& dag1, DagData const& dag2, int const treeHeight)
 						if(task.level < treeHeight)
 							++notFoundCount[omp_get_thread_num()][task.level];
 					}
-					else
+					else //else check the mapping
 					{
 						bool sameNode = false;
 						for(int i = 0; i < sameTaskId; ++i)
 							if(sameTask[i].mpiNode == task.mpiNode)
 								sameNode = true;
-								
+						//The tasks are not mapped on the same node	
 						if(!sameNode)
-						{
-							#pragma omp critical
-							{
-								//task.print();
-								//sameTask[0].print();//Il y a au moins une tâche identique trouvée
-								//if(sameTaskId == 2)
-									//sameTask[1].print();//Il y a au moins une tâche identique trouvée
-								//cout << sameTaskId << endl;
-								//cout << endl;
-							}
 							if(task.level < treeHeight)
 								++differenceMapping[omp_get_thread_num()][task.level];
-						}
 					}
 				}
 			}
 			#pragma omp taskwait
+			//Sum results by level and print it
 			for(int i = 0; i < treeHeight; ++i)
 			{
 				long long int sum = 0;
@@ -351,6 +345,7 @@ void compareDag(DagData const& dag1, DagData const& dag2, int const treeHeight)
 						sumDiffMapping += differenceMapping[j][i];
 						sumTaskCount += taskCount[j][i];
 					}
+				//Print only if there is error repported on the level
 				if(sum > 0 || sumDiffMapping > 0)
 					std::cout << "Diff lvl " << i << " -> " << sum << " (Mapping error : " << sumDiffMapping << "/" << sumTaskCount << ")" << std::endl;
 			}
@@ -384,12 +379,11 @@ int main(int argc, char* argv[])
     // Get params
     const char* const explicitFilename = FParameters::getStr(argc,argv,Explicit.options, "scalfmm_explicit.out");
     const char* const implicitFilename = FParameters::getStr(argc,argv,Implicit.options, "scalfmm_implicit.out");
-    const char* const explicitTraceFilename = FParameters::getStr(argc,argv,Explicit.options, "explicit.rec");
-    const char* const implicitTraceFilename = FParameters::getStr(argc,argv,Implicit.options, "implicit.rec");
     const int treeHeight = FParameters::getValue(argc,argv,TreeHeight.options, 5);
 
 	DagData implicitData, explicitData;
 	bool implicitGood, explicitGood;
+	//Read data from files and put it into the DAG data structure
 	std::thread explicitThread([&](){
 		explicitData.treeHeight = treeHeight;
 		explicitGood = fillDagData(explicitFilename, explicitData);
@@ -400,6 +394,7 @@ int main(int argc, char* argv[])
 		});
 	implicitThread.join();
 	explicitThread.join();
+	//If every thing went good, start comparing
 	if(implicitGood && explicitGood)
 	{
 		cout << explicitData.allTask.size() << " tasks in explicit." << endl;
