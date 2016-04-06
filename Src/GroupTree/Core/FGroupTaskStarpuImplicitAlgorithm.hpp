@@ -94,6 +94,7 @@ protected:
 
     std::vector< std::vector< std::vector<BlockInteractions<CellContainerClass>>>> externalInteractionsAllLevel;
     std::vector< std::vector<BlockInteractions<ParticleGroupClass>>> externalInteractionsLeafLevel;
+	std::list<const std::vector<OutOfBlockInteraction>*> externalInteractionsLeafLevelOpposite;
 
     OctreeClass*const tree;       //< The Tree
     KernelClass*const originalCpuKernel;
@@ -349,9 +350,11 @@ public:
         starpu_arbiter_destroy(arbiterGlobal);
 #endif
 
+		for(auto externalInteraction : externalInteractionsLeafLevelOpposite)
+			delete externalInteraction;
+
 		starpu_mpi_shutdown();
         starpu_shutdown();
-		//MPI_Finalize(); //TODO put it somewhere else, it's really dirty here.
     }
 
     void rebuildInteractions(){
@@ -1663,23 +1666,22 @@ protected:
 					   #endif
 					   #endif
 									   0);
-					std::vector<OutOfBlockInteraction> outsideInteractions_2 = externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions;
-					for(int i = 0; i < outsideInteractions_2.size(); ++i)
+					std::vector<OutOfBlockInteraction>* outsideInteractionsOpposite = new std::vector<OutOfBlockInteraction>(externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions);
+					for(int i = 0; i < outsideInteractionsOpposite->size(); ++i)
 					{
-						MortonIndex tmp = outsideInteractions_2[i].outIndex;
-						outsideInteractions_2[i].outIndex = outsideInteractions_2[i].insideIndex;
-						outsideInteractions_2[i].insideIndex = tmp;
-						int tmp2 = outsideInteractions_2[i].insideIdxInBlock;
-						outsideInteractions_2[i].insideIdxInBlock = outsideInteractions_2[i].outsideIdxInBlock;
-						outsideInteractions_2[i].outsideIdxInBlock = tmp2;
-						outsideInteractions_2[i].relativeOutPosition = getOppositeInterIndex(outsideInteractions_2[i].relativeOutPosition);
+						MortonIndex tmp = outsideInteractionsOpposite->at(i).outIndex;
+						outsideInteractionsOpposite->at(i).outIndex = outsideInteractionsOpposite->at(i).insideIndex;
+						outsideInteractionsOpposite->at(i).insideIndex = tmp;
+						int tmp2 = outsideInteractionsOpposite->at(i).insideIdxInBlock;
+						outsideInteractionsOpposite->at(i).insideIdxInBlock = outsideInteractionsOpposite->at(i).outsideIdxInBlock;
+						outsideInteractionsOpposite->at(i).outsideIdxInBlock = tmp2;
+						outsideInteractionsOpposite->at(i).relativeOutPosition = getOppositeInterIndex(outsideInteractionsOpposite->at(i).relativeOutPosition);
 					}
-					//TODO delete when done in the destructor
-					std::vector<OutOfBlockInteraction>* c = new std::vector<OutOfBlockInteraction>(outsideInteractions_2);
+					externalInteractionsLeafLevelOpposite.push_front(outsideInteractionsOpposite);
 					starpu_mpi_insert_task(MPI_COMM_WORLD,
 									   &p2p_cl_inout_mpi,
 									   STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-									   STARPU_VALUE, &c, sizeof(c),
+									   STARPU_VALUE, &outsideInteractionsOpposite, sizeof(outsideInteractionsOpposite),
 									   STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
 					   #ifdef SCALFMM_STARPU_USE_PRIO
 									   STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2PExtern(),
