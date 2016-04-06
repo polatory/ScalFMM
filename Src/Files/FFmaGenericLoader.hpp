@@ -230,7 +230,7 @@ private:
                 std::cerr << "File "<< filename<<" not opened! Error: " << strerror(errno) <<std::endl;
                 std::exit( EXIT_FAILURE);
             }
-            std::cout << "Opened file "<< filename << std::endl;
+            FLOG(FLog::Controller << "Opened file "<< filename << std::endl);
     }
 
 public:
@@ -271,8 +271,8 @@ public:
         } else if( filename.find(".fma")!=std::string::npos ) {
             binaryFile = false;
         } else  {
-            std::cout << "FFmaGenericLoader: "
-                      << "Only .fma or .bfma input file are allowed. Got "
+            std::cerr << "FFmaGenericLoader: "
+                      << "Only .fma or .bfma input file are allowed. Got " 
                       << filename << "."
                       << std::endl;
             std::exit ( EXIT_FAILURE) ;
@@ -506,15 +506,15 @@ private:
             this->readAscciHeader();
         }
 
-        std::cout << "   nbParticles: " <<this->nbParticles << std::endl
+        FLOG(FLog::Controller << "   nbParticles: " <<this->nbParticles << std::endl
                   << "   Box width:   " <<this->boxWidth << std::endl
-                  << "   Center:        " << this->centerOfBox << std::endl;
+                  << "   Center:        " << this->centerOfBox << std::endl);
     }
     void readAscciHeader() {
-        std::cout << " File open in ASCII mode "<< std::endl ;
+        FLOG(FLog::Controller << " File open in ASCII mode "<< std::endl);
         FReal x,y,z;
         (*this->file) >> typeData[0]>> typeData[1];
-        std::cout << "   Datatype "<< typeData[0] << " "<< typeData[1] << std::endl;
+        FLOG(FLog::Controller << "   Datatype "<< typeData[0] << " "<< typeData[1] << std::endl);
         (*this->file) >> this->nbParticles >> this->boxWidth >> x >> y >> z;
         this->centerOfBox.setPosition(x,y,z);
         this->boxWidth *= 2;
@@ -523,10 +523,10 @@ private:
 			otherDataToRead = 0;
     };
     void readBinaryHeader(){
-        std::cout << " File open in binary mode "<< std::endl;
+        FLOG(FLog::Controller << " File open in binary mode "<< std::endl);
         file->seekg (std::ios::beg);
         file->read((char*)&typeData,2*sizeof(unsigned int));
-        std::cout << "   Datatype "<< typeData[0] << " "<< typeData[1] << std::endl;
+        FLOG(FLog::Controller << "   Datatype "<< typeData[0] << " "<< typeData[1] << std::endl);
         if(typeData[0] != sizeof(FReal)){
             std::cerr << "Size of elements in part file " << typeData[0] << " is different from size of FReal " << sizeof(FReal)<<std::endl;
             std::exit( EXIT_FAILURE);
@@ -612,7 +612,7 @@ public:
             this->file->precision(10);
         }
         else  {
-            std::cout << "Input file not allowed only .fma or .bfma extensions" <<std::endl;
+            std::cerr << "Input file not allowed only .fma or .bfma extensions" <<std::endl;
             std::exit ( EXIT_FAILURE) ;
         }
         // test if open
@@ -673,7 +673,7 @@ public:
     void writeHeader(const FPoint<FReal> &centerOfBox,const FReal &boxWidth, const FSize &nbParticles, const typePart  data) {
         unsigned int typeFReal[2]  = {sizeof(FReal) , sizeof(typePart) / sizeof(FReal) };
         const unsigned int ndata  = data.getWriteDataNumber();
-        std::cout <<"    WriteHeader: typeFReal: " << typeFReal[0]  << "  nb Elts: " << typeFReal[1]  <<"   NData to write "<< ndata<< "\n";
+        FLOG(FLog::Controller <<"    WriteHeader: typeFReal: " << typeFReal[0]  << "  nb Elts: " << typeFReal[1]  <<"   NData to write "<< ndata<< "\n");
         if (ndata != typeFReal[1]){
             typeFReal[1] = ndata;
         }
@@ -884,18 +884,16 @@ private:
         file->seekg (std::ios::beg);
         file->write((const char*)typeFReal,2*sizeof(unsigned int));
         if(typeFReal[0]  != sizeof(FReal)){
-            std::cout << "Size of elements in part file " << typeFReal[0] << " is different from size of FReal " << sizeof(FReal)<<std::endl;
+            std::cerr << "Size of elements in part file " << typeFReal[0] << " is different from size of FReal " << sizeof(FReal)<<std::endl;
             std::exit( EXIT_FAILURE);
         }
         else{
             file->write( (const char*)&(nbParticles), sizeof(FSize) );
-            //			std::cout << "nbParticles "<< nbParticles<<std::endl;
             file->write( (const char*)&(boxWidth) ,sizeof(boxWidth) );
             file->write( (const char*)(centerOfBox.getDataValue()),sizeof(FReal)*3);
         }
     }
 };
 
-
-
 #endif //FFmaGenericLoader_HPP
+
