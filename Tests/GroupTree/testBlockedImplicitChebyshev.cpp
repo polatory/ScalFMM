@@ -59,7 +59,7 @@ using namespace std;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
     typedef FGroupTaskStarPUImplicitAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
 
-#define LOAD_FILE
+//#define LOAD_FILE
 #ifndef LOAD_FILE
 	typedef FRandomLoader<FReal> LoaderClass;
 #else
@@ -86,24 +86,38 @@ int main(int argc, char* argv[]){
 #ifndef STARPU_USE_MPI
 		cout << "Pas de mpi -_-\" " << endl;
 #endif
-#ifndef LOAD_FILE
-    const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(10000));
-	LoaderClass loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), 0);
-#else
-    // Load the particles
-    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
-    LoaderClass loader(filename);
-#endif
 	int mpi_rank, nproc;
     FMpi mpiComm(argc,argv);
 	mpi_rank = mpiComm.global().processId();
 	nproc = mpiComm.global().processCount();
-    FAssertLF(loader.isOpen());
 
-	FPoint<FReal> * allParticlesToSort = new FPoint<FReal>[loader.getNumberOfParticles()];
+#ifndef LOAD_FILE
+    const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(10000));
+#else
+    // Load the particles
+    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
+    LoaderClass loader(filename);
+    FAssertLF(loader.isOpen());
+	const FSize NbParticles   = loader.getNumberOfParticles();
+#endif
+
+	FPoint<FReal> * allParticlesToSort = new FPoint<FReal>[NbParticles*mpiComm.global().processCount()];
+
+	//Fill particles
+#ifndef LOAD_FILE
+	for(int i = 0; i < mpiComm.global().processCount(); ++i){
+		LoaderClass loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), i);
+		FAssertLF(loader.isOpen());
+		for(FSize idxPart = 0 ; idxPart < NbParticles ; ++idxPart){
+			loader.fillParticle(&allParticlesToSort[(NbParticles*i) + idxPart]);//Same with file or not
+		}
+	}
+	LoaderClass loader(NbParticles*mpiComm.global().processCount(), 1.0, FPoint<FReal>(0,0,0));
+#else
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         loader.fillParticle(&allParticlesToSort[idxPart]);//Same with file or not
     }
+#endif
 
 	std::vector<MortonIndex> distributedMortonIndex;
 	vector<vector<int>> sizeForEachGroup;

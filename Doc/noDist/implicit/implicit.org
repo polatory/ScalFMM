@@ -18,50 +18,257 @@
 
 * Abstract
 We live in a world were computer capacity get larger and larger, unfortunatly, our old algorithm ain't calibrate for such computer so it is important to find new paradigme to use the full power of those newest machine and then go faster than ever.
+
+The Fast Multipole Methode (FMM) is one of the most prominent algorithms to perform pair-wise particle interactions, with application in many physical problems such as astrophysical simulation, molecular dynmics, the boundary element method, radiosity in computer-graphics or dislocation dynamics. Its linear complexity makes it an excellent candidate for large-scale simulation.
 * Introduction
-** Fast Multipole Method
-What is it ?
-Why is it so interesting ? (O(n) maybe ...)
-What are the limitation ? (field where we can't estimate accuratly the far-field, I dunno ...)
+** N-Body problem
+<<sec:nbody_problem>>
+In physics, the /n-body/ problem is the problem of predicting the individual motions of a group of celestial objects interacting with each other gravitationally.
+Solving this problem has been motivated by the desire to understand the motions of the Sun, Moon, planets and the visible stars.
+It then has been extended to other field like electrostatics or molecular dynamics.
+
+NOTE: Come from wikipedia, not sure this is studious.
+
+** Fast Multipole Method (FMM)
+*** Description
+The Fast Multipole Method (FMM) is a hierarchical method for the n − body problem introduced in [[sec:nbody_problem]] that has been classified to be one of the top ten algorithms of the 20th century by the SIAM (source).
+In the original study, the FMM was presented to solve a 2D particle interaction problem, but it was later extended to 3D.
+The FMM succeeds to dissociate the near and far field and still uses the accurate direct computation for the near field.
+The original FMM proposal was based on a mathematical method to approximate the far field and using an algorithm based on a quadtree/octree for molecular dynamics or astrophysics.
+The algorithm is the core part because it is responsible for the calls to the mathematical functions in a correct order to approximate the interactions between clusters that represent far particles.
+When an application is said to be accelerated by the FMM it means the application uses the FMM algorithm but certainly with another mathematical kernel that matches the problems.
+The FMM is used to solve a variety of problems: astrophysical simulations, molecular dynamics, the boundary element method, radiosity in computer-graphics and dislocation dynamics among others.
+
+NOTE: Directly come from Bérenger thesis.
+
+*** Algorithm
+The FMM algorithm rely on an octree (quadtree in 2 dimensions) obtained by splitting the space of the simulation recursivly in 8 parts (4 parts in 2D). The building is shown on figure [[fig:octree]].
+
+#+CAPTION: On the left side is the box with all the particles. In the middle is the same box as before, split three time in four parts. Whiche give 64 smaller boxes in the end. On the right is the quadtree (octree in 3D) with an height of 4 built from the different splitting. On top of it is the root of the tree that hold the whole box and so all particles.
+#+name: fig:octree
+[[./figure/octree.png]]
+
+
+#+CAPTION: FMM algorithm.
+[[./figure/FMM.png]]
 
 * State of the art
 Nothing for now ...
 ** Task based FMM
-*** Sequential Task Flow
 *** Runtime
+In the field of HPC, a runtime system is in charge of the parallel execution of an application.
+A runtime system must provide facilities to split and to pipeline the work but also to use the hardware efficiently. In our case, we restrict this definition and remove the the thread libraries.
+We list here some of the well-known runtime systems: [[https://www.bsc.es/computer-sciences/programming-models/smp-superscalar/programming-model][SMPSs]], [[http://starpu.gforge.inria.fr/][StarPU]], [[http://icl.cs.utk.edu/parsec/][PaRSEC]], [[https://software.intel.com/sites/landingpage/icc/api/index.html][CnC]], [[http://icl.cs.utk.edu/quark][Quark]], SuperMatrix and [[http://openmp.org/wp/][OpenMP]].
+These different runtime systems rely on several paradigms like the two well-known fork-join or task-based models.
+We can describe the tasks that composed an application and their dependencies with a direct acyclic graph (DAG); the tasks are represented by nodes/vertices and their dependencies by edges.
+For example, the DAG given by A → B states that there are two tasks A and B , and that A must be finished to release B.
+Such a dependency happens if A modifies a value that will later be used by B or if A read a value that B will modify.
+The tasks-based paradigm has been studied by the dense linear algebra community and used in new production solvers such as [[http://icl.cs.utk.edu/plasma/news/news.html?id=212][Plasma]], [[http://icl.cs.utk.edu/magma/software/][Magma]] or Flame.
+The robustness and high efficiency of these dense solvers have motivate the study of more irregular algorithms such as sparse linear solvers and now the fast multipole method.
+
+NOTE: Directly come from Bérenger thesis.
+
+NOTE: somehow, tell that scalfmm is using The StarPU runtime.
+
+*** Sequential Task Flow
+A sequential task flow is a sequential algorithm that describe the tasks to be done and their dependencies. On the other hand the tasks can be executed asynchronously and parralelly.
+In that way, the main algorithm remain almost as simple as the sequential one and can unlock a lot of parralellisme.
+
+It also create a DAG from which interesting property can be used to prove interesting stuff. (Not really sure)
+
 *** Group tree
+What is a group tree and what is it doing here ?
+The task scheduling with a smart runtime such as StarPU cost a lot.
+The FMM generate a huge amount of small tasks, which considerably increase the time spent into the scheduler.
+The group tree pack particule or multipole together into a group and execute a task (P2P, P2M, M2M, ...) on a group of particles (or multipole) rather than only one particle (or multipole).
+This granularity of the task and make the cost of the scheduler decrease.
+
+TODO: image of the group tree
+
 *** Distributed FMM
 * Implicit MPI FMM
 ** Sequential Task Flow with implicit communication
+Two differents things :
+- Register data handle in starpu_mpi
+- Define a data mapping function so each handle will be placed ton an mpi node.
 ** Data Mapping
+One of the main advantage of using implicit mpi communication in starpu is that tha data mapping can be separated from the algorithm. It is then possible to change the data mapping without changing the algorithm.
+
 *** Level Split Mapping
+The level split mapping aim to balence work between mpi process by spliting evenly each level between all mpi processes.
+
 *** Leaf Load Balancing
+The leaf load balancing aim to balance the work between mpi process by evenly split leaf between mpi process.
+Then the upper levels are split following the 13th algorithm present int Bérenger Thesis.
+
 *** TreeMatch Balancing
+TreeMatch is a tool developped at Inria Bordeaux which is accessible [[http://treematch.gforge.inria.fr/][here]].
+TreeMatch aim to reorganize processus mapping to obtain the best performance.
+It use as input the hardware topologie and information about MPI exchange.
+
+This tool could be used to force certain data mapping in the implicit mpi version and achieve hihger performance.
+
 ** Result
+*** Hardware
+One node equal 2 Dodeca-core Haswell Intel® Xeon® E5-2680, 2,5GHz, 128Go de RAM (DDR4 2133MHz), 500 Go de stockage (Sata).
+*** Aims
+Compare explicit and implicit version.
+But to measure the impact of implicit communication we need an implicit version as close to the explicit version as possible.
+Mainly, this means, same particules onto the same grouped tree with same task executed on the same node.
+*** Scripts and jobs
+<<sec:result>>
+The scripts of the jobs:
 #+BEGIN_SRC
+#!/usr/bin/env bash
+## name of job
+#SBATCH -J chebyshev_50M_10_node
+#SBATCH -p longq
+## Resources: (nodes, procs, tasks, walltime, ... etc)
+#SBATCH -N 10
+#SBATCH -c 24
+# #  standard output message
+#SBATCH -o chebyshev_50M_10_node%j.out
+# # output error message
+#SBATCH -e chebyshev_50M_10_node%j.err
+#SBATCH --mail-type=ALL --mail-user=martin.khannouz@inria.fr
+module purge
+module load slurm
+module add compiler/gcc/5.3.0 tools/module_cat/1.0.0 intel/mkl/64/11.2/2016.0.0
+. /home/mkhannou/spack/share/spack/setup-env.sh
+spack load fftw
+spack load hwloc
+spack load openmpi
+spack load starpu@svn-trunk+fxt
+## modules to load for the job
+export GROUP_SIZE=500
+export TREE_HEIGHT=8
+export NB_NODE=$SLURM_JOB_NUM_NODES
+export STARPU_NCPU=24
+export NB_PARTICLE_PER_NODE=5000000
+export STARPU_FXT_PREFIX=`pwd`/
+echo "=====my job informations ===="
+echo "Node List: " $SLURM_NODELIST
+echo "my jobID: " $SLURM_JOB_ID
+echo "Nb node: " $NB_NODE
+echo "Particle per node: " $NB_PARTICLE_PER_NODE
+echo "Total particles: " $(($NB_PARTICLE_PER_NODE*$NB_NODE))
+echo "In the directory: `pwd`"
+rm -f canard.fma > /dev/null 2>&1
+mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedMpiChebyshev -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation | grep Average
+#TODO probably move trace.rec somewhere else ...
+mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedImplicitChebyshev -f canard.fma -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation | grep Average
 #+END_SRC
 
-<<sec:result>>
-The script of the job:
+and
+
 #+BEGIN_SRC
+#!/usr/bin/env bash
+## name of job
+#SBATCH -J chebyshev_50M_1_node
+#SBATCH -p longq
+## Resources: (nodes, procs, tasks, walltime, ... etc)
+#SBATCH -N 1
+#SBATCH -c 24
+# #  standard output message
+#SBATCH -o chebyshev_50M_1_node%j.out
+# # output error message
+#SBATCH -e chebyshev_50M_1_node%j.err
+#SBATCH --mail-type=ALL --mail-user=martin.khannouz@inria.fr
+module purge
+module load slurm
+module add compiler/gcc/5.3.0 tools/module_cat/1.0.0 intel/mkl/64/11.2/2016.0.0
+. /home/mkhannou/spack/share/spack/setup-env.sh
+spack load fftw
+spack load hwloc
+spack load openmpi
+spack load starpu@svn-trunk+fxt
+## modules to load for the job
+export GROUP_SIZE=500
+export TREE_HEIGHT=8
+export NB_NODE=$SLURM_JOB_NUM_NODES
+export STARPU_NCPU=24
+export NB_PARTICLE_PER_NODE=50000000
+export STARPU_FXT_PREFIX=`pwd`/
+echo "=====my job informations ===="
+echo "Node List: " $SLURM_NODELIST
+echo "my jobID: " $SLURM_JOB_ID
+echo "Nb node: " $NB_NODE
+echo "Particle per node: " $NB_PARTICLE_PER_NODE
+echo "Total particles: " $(($NB_PARTICLE_PER_NODE*$NB_NODE))
+echo "In the directory: `pwd`"
+rm -f canard.fma > /dev/null 2>&1
+mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedChebyshev -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation | grep Kernel
 #+END_SRC
 
 The result given by the script after few minutes executing:
+
+Result for 10 nodes.
 #+BEGIN_EXAMPLE
+=====my job informations ====
+Node List:  miriel[022-031]
+my jobID:  109736
+Nb node:  10
+Particle per node:  5000000
+Total particles:  50000000
+In the directory: /home/mkhannou/scalfmm
+Average time per node (explicit Cheby) : 9.35586s
+Average time per node (implicit Cheby) : 10.3728s
 #+END_EXAMPLE
 
+Result for 1 node.
+#+BEGIN_EXAMPLE
+=====my job informations ====
+Node List:  miriel036
+my jobID:  109737
+Nb node:  1
+Particle per node:  50000000
+Total particles:  50000000
+In the directory: /home/mkhannou/scalfmm
+Kernel executed in in 62.0651s
+#+END_EXAMPLE
+
+As you can see, on only one node, it took a little more than one minutes to run the algorithm. It took only 10 seconds and 14 seconds for the explicit and implicit version.
+
 * Notes
+** Installing
+First, install StarPu and its dependancy.
+#+begin_src
+pacman -S hwloc
+svn checkout svn://scm.gforge.inria.fr/svn/starpu/trunk StarPU
+cd StarPU
+./autogen.sh
+mkdir install
+./configure --prefix=$PWD/install
+make
+make install
+#+end_src
+
+This are envirronement variable that might be useful to set. But of course, be smart and replace the path in STARPU_DIR by your path.
+#+begin_src
+export STARPU_DIR=/home/mkhannou/StarPU/install
+export PKG_CONFIG_PATH=$STARPU_DIR/lib/pkgconfig:$PKG_CONFIG_PATH
+export LD_LIBRARY_PATH=$STARPU_DIR/lib:$LD_LIBRARY_PATH
+export STARPU_GENERATE_TRACE=1
+export PATH=$PATH:$STARPU_DIR/bin
+#+end_src
+
+If you are on Debian or Debian like distribution, simpler way to install StarPU are described [[http://starpu.gforge.inria.fr/doc/html/BuildingAndInstallingStarPU.html][here]].
+
 ** Useful script
 *** Setup on plafrim
 To setup everything that is needed on plafrim I first install spack.
-#+begin src sh
+#+begin_src sh
 git clone https://github.com/fpruvost/spack.git
-##+end_src
+#+end_src
+
+
+
 Then you have to add spack binary in your path.
-#+begin src sh
+
+#+begin_src sh
 PATH=$PATH:spack/bin/spack
-##+end_src
-If your python interpreter isn't python 2, you might have to replace the first line of spack/bin/spack by
+#+end_src
+If your default python interpreter isn't python 2, you might have to replace the first line of spack/bin/spack by
 #+begin_src sh
 #!/usr/bin/env python2
 #+end_src
@@ -100,18 +307,64 @@ TODO add script I add on plafrim side with library links.
 *** Execute on plafrim
 To run my tests on plafrim, I used the two following scripts.
 One to send the scalfmm repository to plafrim.
-#+begin_src sh
-SCALFMM_DIRECTORY="scalfmm"
-tar czf /tmp/canard.tar.gz $SCALFMM_DIRECTORY
-scp /tmp/canard.tar.gz mkhannou@plafrim:/home/mkhannou
-rm -f /tmp/canard.tar.gz
-ssh mkhannou@plafrim "rm -rf $SCALFMM_DIRECTORY; tar xf canard.tar.gz; rm -f canard.tar.gz"
-#+end_src
+
+#+include: "~/narval.sh" src sh
+
 Note : you might have to add your ssh_key again if you killed your previous ssh agent.
 
 Then, the one that is runned on plafrim. It configure, compile and submit all the jobs on plafrim.
+
 #+begin_src sh
+module add slurm
+module add compiler/gcc/5.3.0 tools/module_cat/1.0.0 intel/mkl/64/11.2/2016.0.0
+
+# specific to plafrim to get missing system libs
+export LIBRARY_PATH=/usr/lib64:$LIBRARY_PATH
+
+# load spack env
+export SPACK_ROOT=$HOME/spack
+. $SPACK_ROOT/share/spack/setup-env.sh
+
+#Load dependencies for starpu and scalfmm
+spack load fftw
+spack load hwloc
+spack load openmpi
+spack load starpu@svn-trunk~fxt
+cd scalfmm/Build
+#Configure and build scalfmm and scalfmm tests
+rm -rf CMakeCache.txt CMakeFiles > /dev/null
+cmake .. -DSCALFMM_USE_MPI=ON -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_FFT=ON -DSCALFMM_BUILD_EXAMPLES=ON -DSCALFMM_BUILD_TESTS=ON -DCMAKE_CXX_COMPILER=`which g++`
+make clean
+make -j `nproc`
+
+#Submit jobs
+cd ..
+files=./jobs/*.sh
+
+for f in $files
+do
+    echo "Submit $f..."
+    sbatch $f
+    if [ "$?" != "0" ] ; then 
+		echo "Error submitting $f."
+        break;
+    fi
+done
 #+end_src
+
+*** Export orgmode somewhere accessible
+A good place I found to put your orgmode file and its html part is on the inria forge, in your project repository.
+For me it was the path /home/groups/scalfmm/htdocs.
+So I created a directory named orgmode and create the following script to update the files.
+#+begin_src sh
+cd Doc/noDist/implicit
+emacs implicit.org --batch -f org-html-export-to-html --kill
+ssh scm.gforge.inria.fr "cd /home/groups/scalfmm/htdocs/orgmode/; rm -rf implicit"
+cd ..
+scp -r implicit scm.gforge.inria.fr:/home/groups/scalfmm/htdocs/orgmode/
+ssh scm.gforge.inria.fr "cd /home/groups/scalfmm/htdocs/orgmode/; chmod og+r implicit -R;"
+#+end_src
+
 
 * Journal
 ** Implémentation mpi implicite très naïve
@@ -234,7 +487,6 @@ Mais c'est données n'impliquent pas de forcément des transitions de données m
 - Un arbre groupé identique à celui de la version explicite
 - Des tâches très similaires celles de la version explicite
 	- Quelque erreurs cependant (TODO check si elles y sont encore, car je pense les avoir corrigées)
-	- P2P à symétriser (intérragir avec les listes et tout le tralala)
 - Création de scripts
 	- Tout exporter sur plafrim
 	- Compiler et lancer les jobs
@@ -243,14 +495,19 @@ Mais c'est données n'impliquent pas de forcément des transitions de données m
 	- Exporter l'html du orgmode vers la forge	
 - Reflexion à propos du graphe de flux de données pour Treematch
 - Ajout de tests avec le noyau Chebyshev et la versin mpi implicite
+- Symétriser l'algorithme implicite au niveau des P2P
 
 
 ** Et après ?
 - Comparaison des performances
 	- Répartition des GFlop
+		- Utiliser le noyau FChebFlopsSymKernel
+		- Éventuellement utiliser le noyau FTaylorFlopsKernel
 	- Répartition du temps de calcul
 	- Mémoire utilisée par nœud
-- Symétriser l'algorithme implicite au niveau des P2P
+      - Volume de communication
+      - Répartition des communications tâche
+        - Quel tâche consomme le plus de communication
 - Étude d'autres /mapping/
 	- Proposer un formalisme simple pour transmettre le graphe de flux de données (Treematch)
 	- Proposer un formalisme simple pour transmettre la topologie (Treematch)
@@ -258,3 +515,9 @@ Mais c'est données n'impliquent pas de forcément des transitions de données m
 	- Ne pas allouer les cellules numériques si ce n'est pas necessaire (/up/ et /down/)
 	- Ne pas allouer les cellules symboliques si ce n'est pas necessaire
 	- Distribuer l'arbre
+- Post traiter les traces d'une exécution pour créer des graphiques.
+- Valider les résultats mpi explicite avec l'algorithme sequentiel plutôt que l'algorithme mpi non bloqué
+	- Reproduire l'arbre globale
+	- Ne comparer que les cellules du nœud
+- Modifier les jobs pour qu'il utilisent la même graine et générent le même ensemble de particules
+- État de l'art load balancing sur non-uniforme

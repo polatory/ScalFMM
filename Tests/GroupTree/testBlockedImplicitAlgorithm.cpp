@@ -65,7 +65,7 @@ using namespace std;
 
     // FFmmAlgorithmTask FFmmAlgorithmThread
     typedef FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass >     FmmClass;
-#define LOAD_FILE
+//#define LOAD_FILE
 #ifndef LOAD_FILE
 	typedef FRandomLoader<FReal> LoaderClass;
 #else
@@ -80,13 +80,9 @@ int main(int argc, char* argv[]){
         {"-bs"},
         "The size of the block of the blocked tree"
     };
-	const FParameterNames Mapping {
-		{"-map"} ,
-		"mapping  \\o/."
-	};
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbParticles,
-                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile, LocalOptionBlocSize, Mapping);
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile, LocalOptionBlocSize);
 
     // Get params
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
@@ -95,31 +91,46 @@ int main(int argc, char* argv[]){
 #ifndef STARPU_USE_MPI
 		cout << "Pas de mpi -_-\" " << endl;
 #endif
-#ifndef LOAD_FILE
-    const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(10000));
-	LoaderClass loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), 0);
-#else
-    // Load the particles
-    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
-    LoaderClass loader(filename);
-#endif
 	int mpi_rank, nproc;
     FMpi mpiComm(argc,argv);
 	mpi_rank = mpiComm.global().processId();
 	nproc = mpiComm.global().processCount();
+
+
+#ifndef LOAD_FILE
+    const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(10000));
+#else
+    // Load the particles
+    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
+    LoaderClass loader(filename);
     FAssertLF(loader.isOpen());
+	const FSize NbParticles   = loader.getNumberOfParticles();
+#endif
+
+	FPoint<FReal> * allParticlesToSort = new FPoint<FReal>[NbParticles*mpiComm.global().processCount()];
+
+	//Fill particles
+#ifndef LOAD_FILE
+	for(int i = 0; i < mpiComm.global().processCount(); ++i){
+		LoaderClass loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), i);
+		FAssertLF(loader.isOpen());
+		for(FSize idxPart = 0 ; idxPart < NbParticles ; ++idxPart){
+			loader.fillParticle(&allParticlesToSort[(NbParticles*i) + idxPart]);//Same with file or not
+		}
+	}
+	LoaderClass loader(NbParticles*mpiComm.global().processCount(), 1.0, FPoint<FReal>(0,0,0));
+#else
+    for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        loader.fillParticle(&allParticlesToSort[idxPart]);//Same with file or not
+    }
+#endif
 
     // Usual octree
     OctreeClass tree(NbLevels, FParameters::getValue(argc,argv,FParameterDefinitions::OctreeSubHeight.options, 2),
                      loader.getBoxWidth(), loader.getCenterOfBox());
-    FTestParticleContainer<FReal> allParticles;
-	FPoint<FReal> * allParticlesToSort = new FPoint<FReal>[loader.getNumberOfParticles()];
-    for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        loader.fillParticle(&allParticlesToSort[idxPart]);//Same with file or not
-    }
-
 	std::vector<MortonIndex> distributedMortonIndex;
 	vector<vector<int>> sizeForEachGroup;
+    FTestParticleContainer<FReal> allParticles;
 	sortParticle(allParticlesToSort, NbLevels, groupSize, sizeForEachGroup, distributedMortonIndex, loader, nproc);
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         allParticles.push(allParticlesToSort[idxPart]);
