@@ -64,12 +64,6 @@
 #include <sys/resource.h>
 #endif
 
-#ifdef OPENMP_SUPPORT_TASKNAME
-// The taskname() clause is only supported by KSTAR. Make sure to set it from
-// CMake to enable tracing.
-#define STARPU_USE_KSTAR
-#endif
-
 #define RANDOM_PARTICLES
 
 const FParameterNames LocalOrder { {"-order"}, "Order of the kernel"};
@@ -674,13 +668,15 @@ struct RunContainer{
                 FBinding::BindThreadToAnyProcs();
                 std::cout << "And now I am bind to " << (FBinding::GetThreadBinding()) << std::endl;
 
-#if defined(SCALFMM_USE_STARPU) || defined(SCALFMM_USE_KSTAR)
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                // The taskname() clause is only supported by KSTAR. Make sure
+                // to set it from CMake to enable tracing.
                 starpu_fxt_start_profiling();
 #endif
                 timer.tic();
                 groupalgo.execute();
                 timer.tac();
-#if defined(SCALFMM_USE_STARPU) || defined(SCALFMM_USE_KSTAR)
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
                 starpu_fxt_stop_profiling();
 #endif
                 std::cout << "Done  " << "(@Algorithm = " << timer.elapsed() << "s)." << std::endl;
