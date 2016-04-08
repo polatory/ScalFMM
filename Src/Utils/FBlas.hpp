@@ -29,6 +29,7 @@
 
 
 // for real
+namespace scalfmm {
 const double D_ZERO =  0.0;
 const double D_ONE  =  1.0;
 const double D_MONE = -1.0;
@@ -48,7 +49,7 @@ const float  C_MONE[2] =  {-1.0,0.0};
 const unsigned N_ONE = 1;
 const int N_MONE = -1;
 const char JOB_STR[] = "NTOSVULCR";
-
+}
 
 extern "C"
 {
@@ -165,21 +166,21 @@ namespace FBlas {
 
 	// copy
 	inline void copy(const unsigned n, double* orig, double* dest)
-	{	dcopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
+	{	dcopy_(&n, orig, &scalfmm::N_ONE, dest, &scalfmm::N_ONE);	}
 	inline void copy(const unsigned n, const double* orig, double* dest)
-	{	dcopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
+	{	dcopy_(&n, orig, &scalfmm::N_ONE, dest, &scalfmm::N_ONE);	}
 	inline void copy(const unsigned n, float* orig, float* dest)
-	{	scopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
+	{	scopy_(&n, orig, &scalfmm::N_ONE, dest, &scalfmm::N_ONE);	}
     inline void copy(const unsigned n, const float* orig, float* dest)
-    {   scopy_(&n, orig, &N_ONE, dest, &N_ONE); }
+    {   scopy_(&n, orig, &scalfmm::N_ONE, dest, &scalfmm::N_ONE); }
 	inline void c_copy(const unsigned n, double* orig, double* dest)
-	{	zcopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
+	{	zcopy_(&n, orig, &scalfmm::N_ONE, dest, &scalfmm::N_ONE);	}
 	inline void c_copy(const unsigned n, const double* orig, double* dest)
-	{	zcopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
+	{	zcopy_(&n, orig, &scalfmm::N_ONE, dest, &scalfmm::N_ONE);	}
 	inline void c_copy(const unsigned n, float* orig, float* dest)
-	{	ccopy_(&n, orig, &N_ONE, dest, &N_ONE);	}
+	{	ccopy_(&n, orig, &scalfmm::N_ONE, dest, &scalfmm::N_ONE);	}
     inline void c_copy(const unsigned n, const float* orig, float* dest)
-    {   ccopy_(&n, orig, &N_ONE, dest, &N_ONE); }
+    {   ccopy_(&n, orig, &scalfmm::N_ONE, dest, &scalfmm::N_ONE); }
 
 	// copy (variable increment)
 	inline void copy(const unsigned n, double* orig, const unsigned inco, double* dest, const unsigned incd)
@@ -193,13 +194,13 @@ namespace FBlas {
 
 	// scale
 	inline void scal(const unsigned n, const double d, double* const x)
-	{	dscal_(&n, &d, x, &N_ONE); }
+	{	dscal_(&n, &d, x, &scalfmm::N_ONE); }
 	inline void scal(const unsigned n, const float d, float* const x)
-	{	sscal_(&n, &d, x, &N_ONE); }
+	{	sscal_(&n, &d, x, &scalfmm::N_ONE); }
 	inline void c_scal(const unsigned n, const double d, double* const x)
-	{	zscal_(&n, &d, x, &N_ONE); }
+	{	zscal_(&n, &d, x, &scalfmm::N_ONE); }
 	inline void c_scal(const unsigned n, const float d, float* const x)
-	{	cscal_(&n, &d, x, &N_ONE); }
+	{	cscal_(&n, &d, x, &scalfmm::N_ONE); }
 
 	// scale (variable increment)
 	inline void scal(const unsigned n, const double d, double* const x, const unsigned incd)
@@ -223,93 +224,93 @@ namespace FBlas {
 
 	// y += x
 	inline void add(const unsigned n, double* const x, double* const y)
-	{	daxpy_(&n, &D_ONE, x, &N_ONE, y, &N_ONE);	}
+	{	daxpy_(&n, &scalfmm::D_ONE, x, &scalfmm::N_ONE, y, &scalfmm::N_ONE);	}
 	inline void add(const unsigned n, float* const x, float* const y)
-	{	saxpy_(&n, &S_ONE, x, &N_ONE, y, &N_ONE);	}
+	{	saxpy_(&n, &scalfmm::S_ONE, x, &scalfmm::N_ONE, y, &scalfmm::N_ONE);	}
 	inline void c_add(const unsigned n, float* const x, float* const y)
-	{	caxpy_(&n, C_ONE, x, &N_ONE, y, &N_ONE);	}
+	{	caxpy_(&n, scalfmm::C_ONE, x, &scalfmm::N_ONE, y, &scalfmm::N_ONE);	}
 	inline void c_add(const unsigned n, double* const x,double* const y)
-	{	zaxpy_(&n, Z_ONE, x, &N_ONE, y, &N_ONE);	}
+	{	zaxpy_(&n, scalfmm::Z_ONE, x, &scalfmm::N_ONE, y, &scalfmm::N_ONE);	}
 
 	// y += d x
 	inline void axpy(const unsigned n, const double d, const double* const x, double* const y)
-	{	daxpy_(&n, &d, x, &N_ONE, y, &N_ONE);	}
+	{	daxpy_(&n, &d, x, &scalfmm::N_ONE, y, &scalfmm::N_ONE);	}
 	inline void axpy(const unsigned n, const float d, const float* const x, float* const y)
-	{	saxpy_(&n, &d, x, &N_ONE, y, &N_ONE);	}
+	{	saxpy_(&n, &d, x, &scalfmm::N_ONE, y, &scalfmm::N_ONE);	}
 	inline void c_axpy(const unsigned n, const float* d, const float* const x, float* const y)
-	{	caxpy_(&n, d, x, &N_ONE, y, &N_ONE);	}
+	{	caxpy_(&n, d, x, &scalfmm::N_ONE, y, &scalfmm::N_ONE);	}
 	inline void c_axpy(const unsigned n, const double* d, const double* const x, double* const y)
-	{	zaxpy_(&n, d, x, &N_ONE, y, &N_ONE);	}
+	{	zaxpy_(&n, d, x, &scalfmm::N_ONE, y, &scalfmm::N_ONE);	}
 
 
 
 	//	// y = d Ax
 	//	inline void gemv(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
-	//	{	cblas_dgemv(CblasColMajor, CblasNoTrans, m, n, d, A, m, x, N_ONE, D_ZERO, y, N_ONE); }
+	//	{	cblas_dgemv(CblasColMajor, CblasNoTrans, m, n, d, A, m, x, scalfmm::N_ONE, scalfmm::D_ZERO, y, scalfmm::N_ONE); }
 	//	inline void gemv(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
-	//	{	cblas_sgemv(CblasColMajor, CblasNoTrans, m, n, d, A, m, x, N_ONE, S_ZERO, y, N_ONE); }
+	//	{	cblas_sgemv(CblasColMajor, CblasNoTrans, m, n, d, A, m, x, scalfmm::N_ONE, scalfmm::S_ZERO, y, scalfmm::N_ONE); }
 	// y = d Ax
 	inline void gemv(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
-	{	dgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &D_ZERO, y, &N_ONE); }
+	{	dgemv_(scalfmm::JOB_STR, &m, &n, &d, A, &m, x, &scalfmm::N_ONE, &scalfmm::D_ZERO, y, &scalfmm::N_ONE); }
 	inline void gemv(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
-	{	sgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &S_ZERO, y, &N_ONE); }
+	{	sgemv_(scalfmm::JOB_STR, &m, &n, &d, A, &m, x, &scalfmm::N_ONE, &scalfmm::S_ZERO, y, &scalfmm::N_ONE); }
 	inline void c_gemv(const unsigned m, const unsigned n, float* d, float* A, float *x, float *y)
-	{	cgemv_(JOB_STR, &m, &n, d, A, &m, x, &N_ONE, C_ZERO, y, &N_ONE); }
+	{	cgemv_(scalfmm::JOB_STR, &m, &n, d, A, &m, x, &scalfmm::N_ONE, scalfmm::C_ZERO, y, &scalfmm::N_ONE); }
 	inline void c_gemv(const unsigned m, const unsigned n, double* d, double* A, double *x, double *y)
-	{	zgemv_(JOB_STR, &m, &n, d, A, &m, x, &N_ONE, Z_ZERO, y, &N_ONE); }
+	{	zgemv_(scalfmm::JOB_STR, &m, &n, d, A, &m, x, &scalfmm::N_ONE, scalfmm::Z_ZERO, y, &scalfmm::N_ONE); }
 
 	//	// y += d Ax
 	//	inline void gemva(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
-	//	{	cblas_dgemv(CblasColMajor, CblasNoTrans, m, n, d, A, m, x, N_ONE, D_ONE, y, N_ONE); }
+	//	{	cblas_dgemv(CblasColMajor, CblasNoTrans, m, n, d, A, m, x, scalfmm::N_ONE, scalfmm::D_ONE, y, scalfmm::N_ONE); }
 	//	inline void gemva(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
-	//	{	cblas_sgemv(CblasColMajor, CblasNoTrans, m, n, d, A, m, x, N_ONE, S_ONE, y, N_ONE); }
+	//	{	cblas_sgemv(CblasColMajor, CblasNoTrans, m, n, d, A, m, x, scalfmm::N_ONE, scalfmm::S_ONE, y, scalfmm::N_ONE); }
 	// y += d Ax
 	inline void gemva(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
-	{	dgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &D_ONE, y, &N_ONE);	}
+	{	dgemv_(scalfmm::JOB_STR, &m, &n, &d, A, &m, x, &scalfmm::N_ONE, &scalfmm::D_ONE, y, &scalfmm::N_ONE);	}
 	inline void gemva(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
-	{	sgemv_(JOB_STR, &m, &n, &d, A, &m, x, &N_ONE, &S_ONE, y, &N_ONE);	}
+	{	sgemv_(scalfmm::JOB_STR, &m, &n, &d, A, &m, x, &scalfmm::N_ONE, &scalfmm::S_ONE, y, &scalfmm::N_ONE);	}
 	inline void c_gemva(const unsigned m, const unsigned n, const float* d, const float* A, const float *x, float *y)
-	{	cgemv_(JOB_STR, &m, &n, d, A, &m, x, &N_ONE, C_ONE, y, &N_ONE);	}
+	{	cgemv_(scalfmm::JOB_STR, &m, &n, d, A, &m, x, &scalfmm::N_ONE, scalfmm::C_ONE, y, &scalfmm::N_ONE);	}
 	inline void c_gemva(const unsigned m, const unsigned n, const double* d, const double* A, const double *x, double *y)
-	{	zgemv_(JOB_STR, &m, &n, d, A, &m, x, &N_ONE, Z_ONE, y, &N_ONE);	}
+	{	zgemv_(scalfmm::JOB_STR, &m, &n, d, A, &m, x, &scalfmm::N_ONE, scalfmm::Z_ONE, y, &scalfmm::N_ONE);	}
 
 	//	// y = d A^T x
 	//	inline void gemtv(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
-	//	{ cblas_dgemv(CblasColMajor, CblasTrans, m, n, d, A, m, x, N_ONE, D_ZERO, y, N_ONE); }
+	//	{ cblas_dgemv(CblasColMajor, CblasTrans, m, n, d, A, m, x, scalfmm::N_ONE, scalfmm::D_ZERO, y, scalfmm::N_ONE); }
 	//	inline void gemtv(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
-	//	{	cblas_sgemv(CblasColMajor, CblasTrans, m, n, d, A, m, x, N_ONE, S_ZERO, y, N_ONE); }
+	//	{	cblas_sgemv(CblasColMajor, CblasTrans, m, n, d, A, m, x, scalfmm::N_ONE, scalfmm::S_ZERO, y, scalfmm::N_ONE); }
 	// y = d A^T x
 	inline void gemtv(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
-	{	dgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &D_ZERO, y, &N_ONE); }
+	{	dgemv_(scalfmm::JOB_STR+1, &m, &n, &d, A, &m, x, &scalfmm::N_ONE, &scalfmm::D_ZERO, y, &scalfmm::N_ONE); }
 	inline void gemtv(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
-	{	sgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &S_ZERO, y, &N_ONE); }
+	{	sgemv_(scalfmm::JOB_STR+1, &m, &n, &d, A, &m, x, &scalfmm::N_ONE, &scalfmm::S_ZERO, y, &scalfmm::N_ONE); }
 	inline void c_gemtv(const unsigned m, const unsigned n, float* d, float* A, float *x, float *y)
-	{	cgemv_(JOB_STR+1, &m, &n, d, A, &m, x, &N_ONE, C_ZERO, y, &N_ONE); }
+	{	cgemv_(scalfmm::JOB_STR+1, &m, &n, d, A, &m, x, &scalfmm::N_ONE, scalfmm::C_ZERO, y, &scalfmm::N_ONE); }
 	inline void c_gemtv(const unsigned m, const unsigned n, double* d, double* A, double *x, double *y)
-	{	zgemv_(JOB_STR+1, &m, &n, d, A, &m, x, &N_ONE, Z_ZERO, y, &N_ONE); }
+	{	zgemv_(scalfmm::JOB_STR+1, &m, &n, d, A, &m, x, &scalfmm::N_ONE, scalfmm::Z_ZERO, y, &scalfmm::N_ONE); }
 	inline void c_gemhv(const unsigned m, const unsigned n, float* d, float* A, float *x, float *y)
-	{	cgemv_(JOB_STR+7, &m, &n, d, A, &m, x, &N_ONE, C_ZERO, y, &N_ONE); } // hermitian transposed
+	{	cgemv_(scalfmm::JOB_STR+7, &m, &n, d, A, &m, x, &scalfmm::N_ONE, scalfmm::C_ZERO, y, &scalfmm::N_ONE); } // hermitian transposed
 	inline void c_gemhv(const unsigned m, const unsigned n, double* d, double* A, double *x, double *y)
-	{	zgemv_(JOB_STR+7, &m, &n, d, A, &m, x, &N_ONE, Z_ZERO, y, &N_ONE); } // hermitian transposed
+	{	zgemv_(scalfmm::JOB_STR+7, &m, &n, d, A, &m, x, &scalfmm::N_ONE, scalfmm::Z_ZERO, y, &scalfmm::N_ONE); } // hermitian transposed
 
 	//	// y += d A^T x
 	//	inline void gemtva(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
-	//	{	cblas_dgemv(CblasColMajor, CblasTrans, m, n, d, A, m, x, N_ONE, D_ONE, y, N_ONE); }
+	//	{	cblas_dgemv(CblasColMajor, CblasTrans, m, n, d, A, m, x, scalfmm::N_ONE, scalfmm::D_ONE, y, scalfmm::N_ONE); }
 	//	inline void gemtva(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
-	//	{	cblas_sgemv(CblasColMajor, CblasTrans, m, n, d, A, m, x, N_ONE, S_ONE, y, N_ONE); }
+	//	{	cblas_sgemv(CblasColMajor, CblasTrans, m, n, d, A, m, x, scalfmm::N_ONE, scalfmm::S_ONE, y, scalfmm::N_ONE); }
 	// y += d A^T x
 	inline void gemtva(const unsigned m, const unsigned n, double d, double* A, double *x, double *y)
-	{	dgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &D_ONE, y, &N_ONE);	}
+	{	dgemv_(scalfmm::JOB_STR+1, &m, &n, &d, A, &m, x, &scalfmm::N_ONE, &scalfmm::D_ONE, y, &scalfmm::N_ONE);	}
 	inline void gemtva(const unsigned m, const unsigned n, float d, float* A, float *x, float *y)
-	{	sgemv_(JOB_STR+1, &m, &n, &d, A, &m, x, &N_ONE, &S_ONE, y, &N_ONE);	}
+	{	sgemv_(scalfmm::JOB_STR+1, &m, &n, &d, A, &m, x, &scalfmm::N_ONE, &scalfmm::S_ONE, y, &scalfmm::N_ONE);	}
 	inline void c_gemtva(const unsigned m, const unsigned n, float* d, float* A, float *x, float *y)
-	{	cgemv_(JOB_STR+1, &m, &n, d, A, &m, x, &N_ONE, C_ONE, y, &N_ONE);	}
+	{	cgemv_(scalfmm::JOB_STR+1, &m, &n, d, A, &m, x, &scalfmm::N_ONE, scalfmm::C_ONE, y, &scalfmm::N_ONE);	}
 	inline void c_gemtva(const unsigned m, const unsigned n, double* d, double* A, double *x, double *y)
-	{	zgemv_(JOB_STR+1, &m, &n, d, A, &m, x, &N_ONE, Z_ONE, y, &N_ONE); }
+	{	zgemv_(scalfmm::JOB_STR+1, &m, &n, d, A, &m, x, &scalfmm::N_ONE, scalfmm::Z_ONE, y, &scalfmm::N_ONE); }
 	inline void c_gemhva(const unsigned m, const unsigned n, float* d, float* A, float *x, float *y)
-	{	cgemv_(JOB_STR+7, &m, &n, d, A, &m, x, &N_ONE, C_ONE, y, &N_ONE);	} // hermitian transposed
+	{	cgemv_(scalfmm::JOB_STR+7, &m, &n, d, A, &m, x, &scalfmm::N_ONE, scalfmm::C_ONE, y, &scalfmm::N_ONE);	} // hermitian transposed
 	inline void c_gemhva(const unsigned m, const unsigned n, double* d, double* A, double *x, double *y)
-	{	zgemv_(JOB_STR+7, &m, &n, d, A, &m, x, &N_ONE, Z_ONE, y, &N_ONE);	} // hermitian transposed
+	{	zgemv_(scalfmm::JOB_STR+7, &m, &n, d, A, &m, x, &scalfmm::N_ONE, scalfmm::Z_ONE, y, &scalfmm::N_ONE);	} // hermitian transposed
 
 
 
@@ -317,113 +318,113 @@ namespace FBlas {
 	// C = d A B, A is m x p, B is p x n
 	inline void gemm(unsigned m, unsigned p, unsigned n, double d,
 									 double* A, unsigned ldA, double* B, unsigned ldB, double* C, unsigned ldC)
-	{	dgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &D_ZERO, C, &ldC);	}
+	{	dgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &scalfmm::D_ZERO, C, &ldC);	}
 	inline void gemm(unsigned m, unsigned p, unsigned n, float d,
 									 float* A, unsigned ldA, float* B, unsigned ldB, float* C, unsigned ldC)
-	{	sgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &S_ZERO, C, &ldC);	}
+	{	sgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &scalfmm::S_ZERO, C, &ldC);	}
 	inline void c_gemm(const unsigned m, const unsigned p, const unsigned n, const float* d,
 										 float* A, const unsigned ldA, float* B, const unsigned ldB, float* C, const unsigned ldC)
 	{
-		cgemm_(JOB_STR, JOB_STR, &m, &n, &p, d, A, &ldA, B, &ldB, C_ZERO, C, &ldC);	}
+		cgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR, &m, &n, &p, d, A, &ldA, B, &ldB, scalfmm::C_ZERO, C, &ldC);	}
 	inline void c_gemm(const unsigned m, const unsigned p, const unsigned n, const double* d,
 										 double* A, const unsigned ldA, double* B, const unsigned ldB, double* C, const unsigned ldC)
 	{
-		zgemm_(JOB_STR, JOB_STR, &m, &n, &p, d, A, &ldA, B, &ldB, Z_ZERO, C, &ldC);	}
+		zgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR, &m, &n, &p, d, A, &ldA, B, &ldB, scalfmm::Z_ZERO, C, &ldC);	}
 
 	// C += d A B, A is m x p, B is p x n
 	inline void gemma(unsigned m, unsigned p, unsigned n, double d,
 										double* A, unsigned ldA, double* B, unsigned ldB,	double* C, unsigned ldC)
-	{	dgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &D_ONE, C, &ldC); }
+	{	dgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &scalfmm::D_ONE, C, &ldC); }
 	inline void gemma(unsigned m, unsigned p, unsigned n, float d,
 										float* A, unsigned ldA, float* B, unsigned ldB,	float* C, unsigned ldC)
-	{	sgemm_(JOB_STR, JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &S_ONE, C, &ldC); }
+	{	sgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR, &m, &n, &p, &d, A, &ldA, B, &ldB, &scalfmm::S_ONE, C, &ldC); }
 	inline void c_gemma(unsigned m, unsigned p, unsigned n, float* d,
 											float* A, unsigned ldA, float* B, unsigned ldB,	float* C, unsigned ldC)
-	{	cgemm_(JOB_STR, JOB_STR, &m, &n, &p, d, A, &ldA, B, &ldB, C_ONE, C, &ldC); }
+	{	cgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR, &m, &n, &p, d, A, &ldA, B, &ldB, scalfmm::C_ONE, C, &ldC); }
 	inline void c_gemma(unsigned m, unsigned p, unsigned n, double* d,
 											double* A, unsigned ldA, double* B, unsigned ldB,	double* C, unsigned ldC)
-	{	zgemm_(JOB_STR, JOB_STR, &m, &n, &p, d, A, &ldA, B, &ldB, Z_ONE, C, &ldC); }
+	{	zgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR, &m, &n, &p, d, A, &ldA, B, &ldB, scalfmm::Z_ONE, C, &ldC); }
 
 	// C = d A^T B, A is m x p, B is m x n
 	inline void gemtm(unsigned m, unsigned p, unsigned n, double d,
 										double* A, unsigned ldA, double *B, unsigned ldB,	double* C, unsigned ldC)
-	{	dgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &D_ZERO, C, &ldC);	}
+	{	dgemm_(scalfmm::JOB_STR+1, scalfmm::JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &scalfmm::D_ZERO, C, &ldC);	}
 	inline void gemtm(unsigned m, unsigned p, unsigned n, float d,
 										float* A, unsigned ldA, float *B, unsigned ldB,	float* C, unsigned ldC)
-	{	sgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &S_ZERO, C, &ldC);	}
+	{	sgemm_(scalfmm::JOB_STR+1, scalfmm::JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &scalfmm::S_ZERO, C, &ldC);	}
 	inline void c_gemtm(unsigned m, unsigned p, unsigned n, float* d,
 											float* A, unsigned ldA, float *B, unsigned ldB,	float* C, unsigned ldC)
-	{	cgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, C_ZERO, C, &ldC);	}
+	{	cgemm_(scalfmm::JOB_STR+1, scalfmm::JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, scalfmm::C_ZERO, C, &ldC);	}
 	inline void c_gemtm(unsigned m, unsigned p, unsigned n, double* d,
 											double* A, unsigned ldA, double *B, unsigned ldB,	double* C, unsigned ldC)
-	{	zgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, Z_ZERO, C, &ldC);	}
+	{	zgemm_(scalfmm::JOB_STR+1, scalfmm::JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, scalfmm::Z_ZERO, C, &ldC);	}
 	inline void c_gemhm(unsigned m, unsigned p, unsigned n, float* d, // hermitialn transposed
 											float* A, unsigned ldA, float *B, unsigned ldB,	float* C, unsigned ldC)
-	{	cgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, C_ZERO, C, &ldC);	}
+	{	cgemm_(scalfmm::JOB_STR+7, scalfmm::JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, scalfmm::C_ZERO, C, &ldC);	}
 	inline void c_gemhm(unsigned m, unsigned p, unsigned n, double* d, // hermitian transposed
 											double* A, unsigned ldA, double *B, unsigned ldB,	double* C, unsigned ldC)
-	{	zgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, Z_ZERO, C, &ldC);	}
+	{	zgemm_(scalfmm::JOB_STR+7, scalfmm::JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, scalfmm::Z_ZERO, C, &ldC);	}
 
 	// C += d A^T B, A is m x p, B is m x n
 	inline void gemtma(unsigned m, unsigned p, unsigned n, double d,
 										 double* A, unsigned ldA, double *B, unsigned ldB, double* C, unsigned ldC)
-	{	dgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &D_ONE, C, &ldC); }
+	{	dgemm_(scalfmm::JOB_STR+1, scalfmm::JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &scalfmm::D_ONE, C, &ldC); }
 	inline void gemtma(unsigned m, unsigned p, unsigned n, float d,
 										 float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
-	{	sgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &S_ONE, C, &ldC); }
+	{	sgemm_(scalfmm::JOB_STR+1, scalfmm::JOB_STR, &p, &n, &m, &d, A, &ldA, B, &ldB, &scalfmm::S_ONE, C, &ldC); }
 	inline void c_gemtma(unsigned m, unsigned p, unsigned n, float* d,
 											 float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
-	{	cgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, C_ONE, C, &ldC); }
+	{	cgemm_(scalfmm::JOB_STR+1, scalfmm::JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, scalfmm::C_ONE, C, &ldC); }
 	inline void c_gemtma(unsigned m, unsigned p, unsigned n, double* d,
 											 double* A, unsigned ldA, double *B, unsigned ldB, double* C, unsigned ldC)
-	{	zgemm_(JOB_STR+1, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, Z_ONE, C, &ldC); }
+	{	zgemm_(scalfmm::JOB_STR+1, scalfmm::JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, scalfmm::Z_ONE, C, &ldC); }
 	inline void c_gemhma(unsigned m, unsigned p, unsigned n, float* d, // hermitian transposed
 											 float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
-	{	cgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, C_ONE, C, &ldC); }
+	{	cgemm_(scalfmm::JOB_STR+7, scalfmm::JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, scalfmm::C_ONE, C, &ldC); }
 	inline void c_gemhma(unsigned m, unsigned p, unsigned n, double* d, // hermitian transposed
 											 double* A, unsigned ldA, double *B, unsigned ldB, double* C, unsigned ldC)
-	{	zgemm_(JOB_STR+7, JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, Z_ONE, C, &ldC); }
+	{	zgemm_(scalfmm::JOB_STR+7, scalfmm::JOB_STR, &p, &n, &m, d, A, &ldA, B, &ldB, scalfmm::Z_ONE, C, &ldC); }
 	
 	
 	// C = d A B^T, A is m x p, B is n x p
 	inline void gemmt(unsigned m, unsigned p, unsigned n, double d,
 										double* A, unsigned ldA, double *B, unsigned ldB, double* C, unsigned ldC)
-	{	dgemm_(JOB_STR, JOB_STR+1, &m, &n, &p, &d, A, &ldA, B, &ldB, &D_ZERO, C, &ldC);	}
+	{	dgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR+1, &m, &n, &p, &d, A, &ldA, B, &ldB, &scalfmm::D_ZERO, C, &ldC);	}
 	inline void gemmt(unsigned m, unsigned p, unsigned n, float d,
 										float* A, unsigned ldA, float *B, unsigned ldB,	float* C, unsigned ldC)
-	{	sgemm_(JOB_STR, JOB_STR+1, &m, &n, &p, &d, A, &ldA, B, &ldB, &S_ZERO, C, &ldC);	}
+	{	sgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR+1, &m, &n, &p, &d, A, &ldA, B, &ldB, &scalfmm::S_ZERO, C, &ldC);	}
 	inline void c_gemmt(unsigned m, unsigned p, unsigned n, float d,
 											float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
-	{	cgemm_(JOB_STR, JOB_STR+1, &m, &n, &p, &d, A, &ldA, B, &ldB, C_ZERO, C, &ldC); }
+	{	cgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR+1, &m, &n, &p, &d, A, &ldA, B, &ldB, scalfmm::C_ZERO, C, &ldC); }
 	inline void c_gemmt(unsigned m, unsigned p, unsigned n, double d,
 											double* A, unsigned ldA, double *B, unsigned ldB,	double* C, unsigned ldC)
-	{	zgemm_(JOB_STR, JOB_STR+1, &m, &n, &p, &d, A, &ldA, B, &ldB, Z_ZERO, C, &ldC);	}
+	{	zgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR+1, &m, &n, &p, &d, A, &ldA, B, &ldB, scalfmm::Z_ZERO, C, &ldC);	}
 	inline void c_gemmh(unsigned m, unsigned p, unsigned n, float d, // hermitian transposed
 											float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
-	{	cgemm_(JOB_STR, JOB_STR+7, &m, &n, &p, &d, A, &ldA, B, &ldB, C_ZERO, C, &ldC); }
+	{	cgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR+7, &m, &n, &p, &d, A, &ldA, B, &ldB, scalfmm::C_ZERO, C, &ldC); }
 	inline void c_gemmh(unsigned m, unsigned p, unsigned n, double d, // hermitian transposed
 											double* A, unsigned ldA, double *B, unsigned ldB,	double* C, unsigned ldC)
-	{	zgemm_(JOB_STR, JOB_STR+7, &m, &n, &p, &d, A, &ldA, B, &ldB, Z_ZERO, C, &ldC);	}
+	{	zgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR+7, &m, &n, &p, &d, A, &ldA, B, &ldB, scalfmm::Z_ZERO, C, &ldC);	}
 
 	// C += d A B^T, A is m x p, B is n x p
 	inline void gemmta(unsigned m, unsigned p, unsigned n, double d,
 										 double* A, unsigned ldA, double *B, unsigned ldB, double* C, unsigned ldC)
-	{	dgemm_(JOB_STR, JOB_STR+1, &m, &n, &p, &d, A, &ldA, B, &ldB, &D_ONE, C, &ldC); }
+	{	dgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR+1, &m, &n, &p, &d, A, &ldA, B, &ldB, &scalfmm::D_ONE, C, &ldC); }
 	inline void gemmta(unsigned m, unsigned p, unsigned n, float d,
 										 float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
-	{	sgemm_(JOB_STR, JOB_STR+1, &m, &n, &p, &d, A, &ldA, B, &ldB, &S_ONE, C, &ldC); }
+	{	sgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR+1, &m, &n, &p, &d, A, &ldA, B, &ldB, &scalfmm::S_ONE, C, &ldC); }
 	inline void c_gemmta(unsigned m, unsigned p, unsigned n, float* d,
 											 float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
-	{	cgemm_(JOB_STR, JOB_STR+1, &m, &n, &p, d, A, &ldA, B, &ldB, C_ONE, C, &ldC); }
+	{	cgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR+1, &m, &n, &p, d, A, &ldA, B, &ldB, scalfmm::C_ONE, C, &ldC); }
 	inline void c_gemmta(unsigned m, unsigned p, unsigned n, double* d,
 											 double* A, unsigned ldA, double *B, unsigned ldB, double* C, unsigned ldC)
-	{	zgemm_(JOB_STR, JOB_STR+1, &m, &n, &p, d, A, &ldA, B, &ldB, Z_ONE, C, &ldC); }
+	{	zgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR+1, &m, &n, &p, d, A, &ldA, B, &ldB, scalfmm::Z_ONE, C, &ldC); }
 	inline void c_gemmha(unsigned m, unsigned p, unsigned n, float* d, // hermitian transposed
 											 float* A, unsigned ldA, float *B, unsigned ldB, float* C, unsigned ldC)
-	{	cgemm_(JOB_STR, JOB_STR+7, &m, &n, &p, d, A, &ldA, B, &ldB, C_ONE, C, &ldC); }
+	{	cgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR+7, &m, &n, &p, d, A, &ldA, B, &ldB, scalfmm::C_ONE, C, &ldC); }
 	inline void c_gemmha(unsigned m, unsigned p, unsigned n, double* d, // hermitian transposed
 											 double* A, unsigned ldA, double *B, unsigned ldB, double* C, unsigned ldC)
-	{	zgemm_(JOB_STR, JOB_STR+7, &m, &n, &p, d, A, &ldA, B, &ldB, Z_ONE, C, &ldC); }
+	{	zgemm_(scalfmm::JOB_STR, scalfmm::JOB_STR+7, &m, &n, &p, d, A, &ldA, B, &ldB, scalfmm::Z_ONE, C, &ldC); }
 
 
 	// singular value decomposition
@@ -432,17 +433,17 @@ namespace FBlas {
 									 unsigned nwk, double* wk)
 	{
 		int INF;
-		dgesvd_(JOB_STR+2, JOB_STR+3, &m, &n, A, &m, S, A, &m, VT, &ldVT,	wk, &nwk, &INF);
+		dgesvd_(scalfmm::JOB_STR+2, scalfmm::JOB_STR+3, &m, &n, A, &m, S, A, &m, VT, &ldVT,	wk, &nwk, &INF);
 		return INF;
 	}
 	//
 	//    A = U * SIGMA * conjugate-transpose(V)
-	// JOB_STR+2 = 'O':  the first min(m,n) columns of U (the left singular vectors) are overwritten on the array A;
+	// scalfmm::JOB_STR+2 = 'O':  the first min(m,n) columns of U (the left singular vectors) are overwritten on the array A;
 	inline int c_gesvd(unsigned m, unsigned n, double* A, double* S, double* VT, unsigned ldVT,
 			int& nwk, double* wk,double* rwk)
 	{
 		int INF;
-		zgesvd_(JOB_STR+2, JOB_STR+3, &m, &n, A, &m, S, A, &m, VT, &ldVT,	wk, &nwk, rwk,&INF);
+		zgesvd_(scalfmm::JOB_STR+2, scalfmm::JOB_STR+3, &m, &n, A, &m, S, A, &m, VT, &ldVT,	wk, &nwk, rwk,&INF);
 		return INF;
 	}
 
@@ -450,7 +451,7 @@ namespace FBlas {
 									 unsigned nwk, float* wk)
 	{
 		int INF;
-		sgesvd_(JOB_STR+2, JOB_STR+3, &m, &n, A, &m, S, A, &m, VT, &ldVT,	wk, &nwk, &INF);
+		sgesvd_(scalfmm::JOB_STR+2, scalfmm::JOB_STR+3, &m, &n, A, &m, S, A, &m, VT, &ldVT,	wk, &nwk, &INF);
 		return INF;
 	}
 
@@ -459,14 +460,14 @@ namespace FBlas {
                        unsigned nwk, double* wk)
     {
         int INF;
-        dgesvd_(JOB_STR+3, JOB_STR+2, &m, &n, A, &m, S, U, &m, A, &ldU, wk, &nwk, &INF);
+        dgesvd_(scalfmm::JOB_STR+3, scalfmm::JOB_STR+2, &m, &n, A, &m, S, U, &m, A, &ldU, wk, &nwk, &INF);
         return INF;
     }
     inline int gesvdSO(unsigned m, unsigned n, float* A, float* S, float* U, unsigned ldU,
                        unsigned nwk, float* wk)
     {
         int INF;
-        sgesvd_(JOB_STR+3, JOB_STR+2, &m, &n, A, &m, S, U, &m, A, &ldU, wk, &nwk, &INF);
+        sgesvd_(scalfmm::JOB_STR+3, scalfmm::JOB_STR+2, &m, &n, A, &m, S, U, &m, A, &ldU, wk, &nwk, &INF);
         return INF;
     }
 
@@ -488,9 +489,9 @@ namespace FBlas {
 
 	// Scalar product v1'*v2
 	inline double scpr(const unsigned n, const double* const v1, const double* const v2)
-	{	return ddot_(&n, v1, &N_ONE, v2, &N_ONE); }
+	{	return ddot_(&n, v1, &scalfmm::N_ONE, v2, &scalfmm::N_ONE); }
 	inline float scpr(const unsigned n, const float* const v1, const float* const v2)
-	{	return sdot_(&n, v1, &N_ONE, v2, &N_ONE);	}
+	{	return sdot_(&n, v1, &scalfmm::N_ONE, v2, &scalfmm::N_ONE);	}
 
 
 
