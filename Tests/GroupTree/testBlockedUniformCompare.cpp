@@ -668,9 +668,18 @@ struct RunContainer{
                 FBinding::BindThreadToAnyProcs();
                 std::cout << "And now I am bind to " << (FBinding::GetThreadBinding()) << std::endl;
 
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                // The taskname() clause is only supported by KSTAR. Make sure
+                // to set it from CMake to enable tracing.
+                starpu_fxt_start_profiling();
+#endif
                 timer.tic();
                 groupalgo.execute();
-                std::cout << "Done  " << "(@Algorithm = " << timer.tacAndElapsed() << "s)." << std::endl;
+                timer.tac();
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                starpu_fxt_stop_profiling();
+#endif
+                std::cout << "Done  " << "(@Algorithm = " << timer.elapsed() << "s)." << std::endl;
            }
     #ifdef MEMORY_USAGE
             // Get the maximum resident set size (RSS) in kilobytes

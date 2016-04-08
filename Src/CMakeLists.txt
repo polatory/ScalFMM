@@ -64,7 +64,6 @@ endif()
 # Adding cpp files to project
 add_library(
 	scalfmm
-	STATIC
 	${source_lib_files_enabled}
 	${SCALFMM_CUDA_SOURCES}
 )
@@ -81,12 +80,11 @@ INCLUDE_DIRECTORIES(
      ${CMAKE_CURRENT_SOURCE_DIR}
      ${CMAKE_CURRENT_BINARY_DIR}
      ${SCALFMM_INCLUDES}
-     
 )
 
 
 # Install lib
-install( TARGETS scalfmm ARCHIVE DESTINATION lib )
+install( TARGETS scalfmm DESTINATION lib )
 
 # Install header
 SET(my_include_dirs "."

@@ -63,6 +63,10 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   # the RPATH to be used when installing
   set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
 
+  # Build ScalFmm as static or dynamic lib
+  # --------------------------------------
+  option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+
   #
   # Options
   #
