@@ -48,7 +48,7 @@
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
-    FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
+    FHelpDescribeAndExit(argc, argv, "Perform Lagrange Kernel based simulation with StarPU",
                          FParameterDefinitions::OctreeHeight,
 #ifdef RANDOM_PARTICLES
                          FParameterDefinitions::NbParticles,
