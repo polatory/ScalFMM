@@ -267,7 +267,8 @@ int main(int argc, char* argv[]){
                          FParameterDefinitions::InputFile,
 #endif
                          FParameterDefinitions::NbThreads,
-                         LocalOptionBlocSize, LocalOptionValidate);
+                         LocalOptionBlocSize, LocalOptionValidate,
+                         LocalOptionP2PM2LCudaOnly);
 
     if(FParameters::existParameter(argc, argv, LocalOptionP2PM2LCudaOnly.options)){
         std::cout << "/!\\ P2P and M2L only on GPU\n";
