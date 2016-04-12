@@ -496,6 +496,9 @@ Mais c'est données n'impliquent pas de forcément des transitions de données m
 - Reflexion à propos du graphe de flux de données pour Treematch
 - Ajout de tests avec le noyau Chebyshev et la versin mpi implicite
 - Symétriser l'algorithme implicite au niveau des P2P
+- Modifier les jobs pour qu'il utilisent la même graine et générent le même ensemble de particules
+- Post traiter les traces d'une exécution pour créer des graphiques.
+      - Exploiter les scripts de Samuel
 
 
 ** Et après ?
@@ -516,8 +519,10 @@ Mais c'est données n'impliquent pas de forcément des transitions de données m
 	- Ne pas allouer les cellules symboliques si ce n'est pas necessaire
 	- Distribuer l'arbre
 - Post traiter les traces d'une exécution pour créer des graphiques.
+      - Modifier la génération du trace.rec
+            - Pour récupérer le temps d'attente active des comm mpi
+            - Pour qu'il réagisse bien en distribué
 - Valider les résultats mpi explicite avec l'algorithme sequentiel plutôt que l'algorithme mpi non bloqué
 	- Reproduire l'arbre globale
 	- Ne comparer que les cellules du nœud
-- Modifier les jobs pour qu'il utilisent la même graine et générent le même ensemble de particules
 - État de l'art load balancing sur non-uniforme

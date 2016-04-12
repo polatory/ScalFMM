@@ -28,9 +28,12 @@ export NB_PARTICLE_PER_NODE=5000000
 export STARPU_FXT_PREFIX=`pwd`/
 echo "===== Implicit MPI ===="
 echo "my jobID: " $SLURM_JOB_ID
+echo "Model: cube"
 echo "Nb node: " $NB_NODE
+echo "Nb thread: " $STARPU_NCPU
 echo "Tree height: " $TREE_HEIGHT
 echo "Group size: " $GROUP_SIZE
+echo "Algorithm: implicit"
 echo "Particle per node: " $NB_PARTICLE_PER_NODE
 echo "Total particles: " $(($NB_PARTICLE_PER_NODE*$NB_NODE))
 mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedImplicitChebyshev -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation | grep Average

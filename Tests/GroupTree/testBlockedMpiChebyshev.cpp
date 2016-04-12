@@ -170,7 +170,7 @@ int main(int argc, char* argv[]){
         GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
         timer.tic();
         groupalgo.execute();
-
+		mpiComm.global().barrier();
         timer.tac();
 		timeAverage(mpiComm.global().processId(), mpiComm.global().processCount(), timer.elapsed());
         //std::cout << "Done  " << "(@Algorithm = " << timer.elapsed() << "s)." << std::endl;
@@ -293,16 +293,14 @@ void timeAverage(int mpi_rank, int nproc, double elapsedTime)
 	if(mpi_rank == 0)
 	{
 		double sumElapsedTime = elapsedTime;
-		std::cout << "Executing time node 0 (explicit Cheby) : " << sumElapsedTime << "s" << std::endl;
 		for(int i = 1; i < nproc; ++i)
 		{
 			double tmp;
 			MPI_Recv(&tmp, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, 0);
-			sumElapsedTime += tmp;
-			std::cout << "Executing time node " << i << " (explicit Cheby) : " << tmp << "s" << std::endl;
+			if(tmp > sumElapsedTime)
+				sumElapsedTime = tmp;
 		}
-		sumElapsedTime = sumElapsedTime / (double)nproc;
-		std::cout << "Average time per node (explicit Cheby) : " << sumElapsedTime << "s" << std::endl;
+		std::cout << "Average time per node (implicit Cheby) : " << sumElapsedTime << "s" << std::endl;
 	}
 	else
 	{

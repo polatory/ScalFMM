@@ -149,8 +149,8 @@ int main(int argc, char* argv[]){
     GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
 	FTic timerExecute;
     groupalgo.execute();
-	double elapsedTime = timerExecute.tacAndElapsed();
     mpiComm.global().barrier();
+	double elapsedTime = timerExecute.tacAndElapsed();
 	timeAverage(mpiComm.global().processId(), mpiComm.global().processCount(), elapsedTime);
 
     groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass cell, GroupContainerClass* leaf){
@@ -214,19 +214,18 @@ void timeAverage(int mpi_rank, int nproc, double elapsedTime)
 	if(mpi_rank == 0)
 	{
 		double sumElapsedTime = elapsedTime;
-		std::cout << "Executing time node 0 (explicit) : " << sumElapsedTime << "s" << std::endl;
 		for(int i = 1; i < nproc; ++i)
 		{
 			double tmp;
 			MPI_Recv(&tmp, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, 0);
-			sumElapsedTime += tmp;
-			std::cout << "Executing time node " << i << " (explicit) : " << tmp << "s" << std::endl;
+			if(tmp > sumElapsedTime)
+				sumElapsedTime = tmp;
 		}
-		sumElapsedTime = sumElapsedTime / (double)nproc;
-		std::cout << "Average time per node (explicit) : " << sumElapsedTime << "s" << std::endl;
+		std::cout << "Average time per node (implicit Cheby) : " << sumElapsedTime << "s" << std::endl;
 	}
 	else
 	{
 		MPI_Send(&elapsedTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 	}
+	MPI_Barrier(MPI_COMM_WORLD);
 }

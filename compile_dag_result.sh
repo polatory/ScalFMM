@@ -4,7 +4,7 @@ export GROUP_SIZE=50
 export TREE_HEIGHT=5
 export NB_NODE=4
 #export NB_PARTICLE_PER_NODE=$(( (`awk "BEGIN{print 8 ** ($TREE_HEIGHT-1)}"` / $NB_NODE) ))
-export NB_PARTICLE_PER_NODE=5000
+export NB_PARTICLE_PER_NODE=50000
 export STARPU_NCPU=1
 export STARPU_FXT_PREFIX=`pwd`/
 
@@ -79,7 +79,7 @@ chebyshev_kernel()
 	#Get task information
 	cp -f $SCALFMM_SIMGRIDOUT scalfmm_explicit.out
 
-	mpiexec -n $NB_NODE ./Tests/Release/testBlockedImplicitChebyshev -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT
+	mpiexec -n $NB_NODE ./Tests/Release/testBlockedImplicitChebyshev -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT > pieuvre
 	if [ $? -ne 0 ]; then
 		echo
 		echo " /!\\Error on implicit Chebyshev"
@@ -96,6 +96,6 @@ chebyshev_kernel()
 	./Tests/Release/compareDAGmapping -e scalfmm_explicit.out -i scalfmm_implicit.out -h $TREE_HEIGHT > narval
 }
 
-test_kernel
+#test_kernel
 chebyshev_kernel
 
