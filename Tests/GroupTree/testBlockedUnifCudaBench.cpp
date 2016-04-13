@@ -180,7 +180,7 @@ int mainCore(int argc, char* argv[]){
 
     timer.tic();
     groupalgo.execute();
-    std::cout << "Kernel executed in in " << timer.tacAndElapsed() << "s\n";
+    std::cout << "@EXEC TIME = " << timer.tacAndElapsed() << "s\n";
 
     // Validate the result
     if(FParameters::existParameter(argc, argv, LocalOptionValidate.options)){
