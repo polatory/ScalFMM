@@ -1,0 +1,15 @@
+#!/usr/bin/gnuplot
+reset
+set terminal png
+set output "file.png"
+
+set xlabel "bs"
+
+set ylabel "time (s)"
+
+set title "Bs"
+set grid
+
+set style data linespoints
+
+plot "<sort -g -k1 file.data" using 1:2 title "Example"
