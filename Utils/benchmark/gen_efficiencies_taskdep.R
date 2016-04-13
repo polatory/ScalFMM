@@ -78,7 +78,7 @@ compute_efficiency <- function(data, n)
 
 gen_efficiency <- function(data_init, algo_wanted, model_wanted)
 {
-	data <- subset(data_init, algo == algo_wanted && model == model_wanted)
+	data <- subset(data_init, algo == algo_wanted & model == model_wanted)
 	if(nrow(data))
 	{
 		sdata <- NULL
@@ -94,15 +94,15 @@ gen_efficiency <- function(data_init, algo_wanted, model_wanted)
 				sdata <- rbind(sdata, compute_efficiency(data, all_nparts[i]))
 			}
 		}
-		output <- paste(algo_wanted, "-", model_wanted, "-efficiencies.pdf", sep="")
+		output <- paste(get_output_directory(), "/", model_wanted, "-", algo_wanted, "-efficiencies.pdf", sep="")
 		gen_efficiencies_plot(output, sdata)
 	}
 }
 gen_efficiencies <- function(dbfile)
 {
     data_init <- get_data_subset(dbfile, 0L, 0L, "False")
+	data_init <- subset(data_init, algo != get_one_node_reference_algorithm())
 	data <- melt(data_init, id=c("model", "algo", "nnode", "nthreads", "npart","height","bsize"))
-	data$nthreads <- NULL
 	data <- rename(data, c("variable"="event", "value"="duration"))
 
 	all_algorithm <- unique(data$algo)

@@ -6,12 +6,12 @@ library(ggplot2)
 gen_times_taskdep_plot <- function(data, algo_wanted, model_wanted)
 {
     # Sort data to have task, runtime and idle.
-	subdata <- subset(data, model == model_wanted && algo == algo_wanted)
+	subdata <- subset(data, model == model_wanted & algo == algo_wanted)
 	subdata$rmem <- NULL
 	subdata$global_time <- NULL
 	subdata <- melt(subdata, id=c("model", "algo", "nnode", "nthreads", "npart","height","bsize"))
 	subdata <- rename(subdata, c("variable"="event", "value"="duration"))
-	#subdata <- subdata[order(subdata$event, decreasing = TRUE),] 
+
     g <- ggplot(data=subdata, aes(x=nnode, y=duration, fill=event))
 	g <- g + geom_bar(stat="identity", position="fill")
 
@@ -38,10 +38,9 @@ gen_times_taskdep_plot <- function(data, algo_wanted, model_wanted)
     g <- g + xlab("Number of nodes")
     g <- g + ylab("% of time")
 
-	output <- paste(algo_wanted, "-", model_wanted, "-times.pdf", sep="")
+	output <- paste(get_output_directory(), "/", model_wanted, "-", algo_wanted, "-times.pdf", sep="")
     # Save generated plot.
     ggsave(output, g, width=29.7, height=21, units=c("cm"), device=cairo_pdf)
-	print(output)
 }
 
 #Use this function to normalize
@@ -83,6 +82,7 @@ gen_times_taskdep <- function(dbfile)
 {
     # Cube (volume)
     data <- get_data_subset(dbfile, 0L, 0L, "False")
+	data <- subset(data, algo != get_one_node_reference_algorithm())
 
 	all_algorithm <- unique(data$algo)
 	all_model <- unique(data$model)
@@ -93,11 +93,4 @@ gen_times_taskdep <- function(dbfile)
 			gen_times_taskdep_plot(data, all_algorithm[i], all_model[j])
 		}
 	}
-
-    # Ellipsoid (Surface)
-    #data <- get_data_subset(dbfile, 0L, 0L, "True")
-    #data <- subset(data, name == compiler)
-    #output <- paste("times_taskdep/", machine, "_", compiler, "_ellipsoid.pdf", sep="")
-    #gen_times_taskdep_plot(output, data)
 }
-

@@ -8,7 +8,6 @@ calc_speedup <- function(data, ref_algo)
     data_ref <- subset(data, algo == ref_algo)
     for (i in 1:nrow(data)) {
         tmp_ref <- subset(data_ref, npart == data$npart[i] & height == data$height[i] & nnode == data$nnode[i])
-		#tmp_ref <- subset(tmp_ref, nthreads == data$nthreads[i])
         data$speedup[i] <- tmp_ref$global_time / data$global_time[i]
     }
     return (data)
@@ -40,14 +39,14 @@ gen_speedup_taskdep_plot <- function(d, model_wanted)
     #g <- g + ylim(ylimits)
 
     # Save generated plot.
-	output <- paste(model_wanted, "-speedup.pdf", sep="")
+	output <- paste(get_output_directory(), "/", model_wanted, "-speedup.pdf", sep="")
 	ggsave(output, g, width=29.7, height=21, units=c("cm"), device=cairo_pdf)
 }
 
 gen_speedup <- function(dbfile)
 {
     data <- get_data_subset(dbfile, 0L, 0L, "False")
-    #output <- paste(output_dir, node, "-1M-7-cube-speedup.pdf", sep="")
+	data <- subset(data, algo != get_one_node_reference_algorithm())
 
 	all_model <- unique(data$model)
 	for (i in 1:length(all_model))

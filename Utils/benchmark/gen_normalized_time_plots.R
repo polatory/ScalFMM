@@ -1,0 +1,69 @@
+library(plyr)
+library(ggplot2)
+
+calc_normalized_time <- function(data, ref_name)
+{
+	# TODO: put starpu algorithm instead
+    dataref <- subset(data, algo == get_one_node_reference_algorithm())
+
+    # XXX: Most likely suboptimal but it works as expected!
+    for (i in 1:length(ref_name)) {
+        for (j in 1:nrow(data)) {
+            if (data$algo[j] == ref_name[i]) {
+                tmp_ref <- subset(dataref, npart == data$npart[j] &
+                                           height == data$height[j])
+
+                seq_time <- subset(tmp_ref, nnode == 1)
+                tid = as.integer(as.vector(data$nnode[j]))
+                data$efficiency[j] <- seq_time$global_time / (data$global_time[j] * tid)
+            }
+        }
+    }
+    return (data)
+}
+
+gen_normalized_time_plot <- function(db, d_breaks, model_wanted)
+{
+	db <- subset(db, model == model_wanted)
+	#Compute normalized time with one node reference
+    db <- calc_normalized_time(db, d_breaks) 
+	#Then remove one node reference because it's only available on one node
+	db <- subset(db, algo != get_one_node_reference_algorithm())
+
+    g <- ggplot(data=db,aes_string(x="nnode", y="efficiency", color="algo"))
+    g <- g + geom_line()
+    g <- g + facet_wrap(npart ~ height, scales="free",
+                        labeller = labeller(npart = as_labeller(npart_labeller),
+                                            height = as_labeller(height_labeller),
+                                            .default=label_both,
+                                            .multi_line=FALSE))
+
+    # Set our own colors, linetypes and point shapes.
+    g <- g + scale_color_manual(name="Algorithm",
+                                breaks=get_breaks_runtime(),
+                                labels=get_labels_runtime(),
+                                values=get_colors_runtime())
+
+    # Set X/Y labels.
+    g <- g + xlab("Number of nodes")
+    g <- g + ylab("Normalized time")
+
+    g <- g + scale_x_continuous(breaks=c(1, 2, 3, 4, 5, 6, 9, 12, 16, 20, 24))
+
+    # Save generated plot.
+	output <- paste(get_output_directory(), "/", model_wanted, "-normalized-time.pdf", sep="")
+    ggsave(output, g, width=29.7, height=21, units=c("cm"), device=cairo_pdf)
+}
+
+gen_normalized_time <- function(dbfile)
+{
+    data <- get_data_subset(dbfile, 0L, 0L, "False")
+	all_model <- unique(data$model)
+	#Get all algorithm without the reference algorithm
+	all_algo <- unique(subset(data, algo != get_one_node_reference_algorithm())$algo)
+	for (i in 1:length(all_model))
+	{
+		gen_normalized_time_plot(data, all_algo, all_model[i])
+	}
+}
+

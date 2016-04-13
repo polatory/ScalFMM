@@ -114,6 +114,14 @@ get_ltypes_scheme <- function()
               'tb-omp4#task#dep-CP' = "dashed"))
 }
 
+get_one_node_reference_algorithm <- function()
+{
+	return ("starpu")
+}
+get_output_directory <- function()
+{
+	return ("output")
+}
 # Timings
 get_breaks_timings <- function()
 {
