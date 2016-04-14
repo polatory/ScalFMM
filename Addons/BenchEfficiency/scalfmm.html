@@ -115,10 +115,12 @@ fi</code></pre>
 if [[ ! -d scalfmm-public ]] ; then
 git clone --depth=1 https://scm.gforge.inria.fr/anonscm/git/scalfmm-public/scalfmm-public.git
 fi    
-cd scalfmm-public/Build/
+cd scalfmm-public/
+export SCALFMM_SOURCE_DIR=`pwd`
+Build/
 export SCALFMM_BUILD_DIR=`pwd`</code></pre></li>
 </ul>
-<p><em>Output variables:</em> <code>SCALFMM_BUILD_DIR</code></p>
+<p><em>Output variables:</em> <code>SCALFMM_BUILD_DIR</code> <code>SCALFMM_SOURCE_DIR</code></p>
 <ul>
 <li><p>Configure (No MKL):</p>
 <pre class="bash"><code>cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=OFF -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR -DSCALFMM_USE_FFT=ON -DFFT_DIR=$SCALFMM_FFT_DIR</code></pre></li>
@@ -180,6 +182,43 @@ make testBlockedUnifCudaBench</code></pre>
 &quot;P2M&quot;,1,&quot;Task&quot;,2.543303
 &quot;L2P&quot;,1,&quot;Task&quot;,5.649106
 &quot;M2L-level-2&quot;,1,&quot;Task&quot;,2.167273</code></pre>
+<p>Most of the script are in the addon directories</p>
+<pre><code>export SCALFMM_AB=$SCALFMM_SOURCE_DIR/Addons/BenchEfficiency/</code></pre>
+<h2 id="homogeneous-efficiencies">Homogeneous Efficiencies</h2>
+<p>Here we compute the efficiencies for a given test case on CPU only.</p>
+<p>Go in the build dir and create output dir</p>
+<pre><code>cd $SCALFMM_BUILD_DIR
+mkdir homogeneous</code></pre>
+<p>Set up the configuration variables:</p>
+<pre class="bash"><code>SCALFMM_NB=10000000
+SCALFMM_H=7
+SCALFMM_MIN_BS=100
+SCALFMM_MAX_BS=3000
+SCALFMM_MAX_NB_CPU=24</code></pre>
+<p>Find best granularity in sequential and in parallel:</p>
+<pre class="bash"><code>STARPU_NCPUS=1
+STARPU_NCUDA=0
+SCALFMM_BS_CPU_SEQ=`$SCALFMM_AB/scalfmmFindBs.sh &quot;./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs&quot; $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key &quot;@BEST BS&quot; `
+if [[ `which gnuplot | wc -l` == &quot;1&quot; ]] ;  then
+    gnuplot -e &quot;filename=&#39;seq-bs-search&#39;&quot; $SCALFMM_AB/scalfmmFindBs.gplot
+fi
+
+STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
+STARPU_NCUDA=0
+=`$SCALFMM_AB/scalfmmFindBs.sh &quot;./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs&quot; $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key &quot;@BEST BS&quot; `
+if [[ `which gnuplot | wc -l` == &quot;1&quot; ]] ;  then
+    gnuplot -e &quot;filename=&#39;par-bs-search&#39;&quot; $SCALFMM_AB/scalfmmFindBs.gplot
+fi</code></pre>
+<p>Then we compute the efficiency using both granulirities and keep the .rec files.</p>
+<pre class="bash"><code>source $SCALFMM_AB/execAllHomogeneous.sh</code></pre>
+<p>We should end with all the rec files and their corresponding time files</p>
+<pre class="bash"><code></code></pre>
+<p>We compute the efficiencies</p>
+<pre class="bash"><code></code></pre>
+<p>We end with efficiency for the application and for the operators.</p>
+<pre class="bash"><code></code></pre>
+<p>We can plot each of them</p>
+<pre class="bash"><code></code></pre>
 <h2 id="generating-execution-results">Generating Execution Results</h2>
 <p>For test case <code>-nb 10000000</code> (10 million) and <code>-h 6</code> (height of the tree equal to 6), we first want to know the best granularity <code>-bs</code>.</p>
 <p>This parameter will certainly not be the same for sequential/parallel/heterogenous configurations.</p>
@@ -189,11 +228,26 @@ SCALFMM_MIN_BS=100
 SCALFMM_MAX_BS=3000
 SCALFMM_MAX_NB_CPU=24
 SCALFMM_MAX_NB_GPU=4</code></pre>
-<pre class="bash"><code>SCALFMM_BS_CPU_SEQ=`scalfmm_bench_get_best_bs -nb $SCALFMM_NB -h $SCALFMM_H -start $SCALFMM_MIN_BS -end $SCALFMM_MAX_BS | scalfmm_extract_key &quot;@BEST BS&quot; `
+<pre class="bash"><code>STARPU_NCPUS=1
+STARPU_NCUDA=0
+SCALFMM_BS_CPU_SEQ=`$SCALFMM_AB/scalfmmFindBs.sh -nb $SCALFMM_NB -h $SCALFMM_H $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key &quot;@BEST BS&quot; `
+if [[ `which gnuplot | wc -l` == &quot;1&quot; ]] ;  then
+    gnuplot -e &quot;filename=&#39;seq-bs-search&#39;&quot; $SCALFMM_AB/scalfmmFindBs.gplot
+fi
 
-SCALFMM_BS_CPU_PAR=`scalfmm_bench_get_best_bs -nb $SCALFMM_NB -h $SCALFMM_H -start $SCALFMM_MIN_BS -end $SCALFMM_MAX_BS | scalfmm_extract_key &quot;@BEST BS&quot; `
+STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
+STARPU_NCUDA=0
+SCALFMM_BS_CPU_PAR=`$SCALFMM_AB/scalfmmFindBs.sh -nb $SCALFMM_NB -h $SCALFMM_H $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key &quot;@BEST BS&quot; `
+if [[ `which gnuplot | wc -l` == &quot;1&quot; ]] ;  then
+    gnuplot -e &quot;filename=&#39;par-bs-search&#39;&quot; $SCALFMM_AB/scalfmmFindBs.gplot
+fi
 
-SCALFMM_BS_CPU_GPU=`scalfmm_bench_get_best_bs -nb $SCALFMM_NB -h $SCALFMM_H -start $SCALFMM_MIN_BS -end $SCALFMM_MAX_BS | scalfmm_extract_key &quot;@BEST BS&quot; `</code></pre>
+STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
+STARPU_NCUDA=$SCALFMM_MAX_NB_GPU
+SCALFMM_BS_CPU_GPU=`$SCALFMM_AB/scalfmmFindBs.sh -nb $SCALFMM_NB -h $SCALFMM_H $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key &quot;@BEST BS&quot; `
+if [[ `which gnuplot | wc -l` == &quot;1&quot; ]] ;  then
+    gnuplot -e &quot;filename=&#39;cpugpu-bs-search&#39;&quot; $SCALFMM_AB/scalfmmFindBs.gplot
+fi</code></pre>
 <p>Then, we can execute three best configurations, and keep .rec for each of them:</p>
 <pre class="bash"><code>STARPU_NCPUS=1
 STARPU_NCUDA=0
@@ -224,13 +278,22 @@ STARPU_NCUDA=0
 
 ./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs $SCALFMM_BS_CPU_PAR
 SCALFMM_SEQ_CPU_BS_REC=&quot;trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec&quot;
-mv trace.rec SCALFMM_SEQ_CPU_BS_REC
+mv trace.rec $SCALFMM_SEQ_CPU_BS_REC
 
 ./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs $SCALFMM_BS_CPU_GPU
 SCALFMM_SEQ_GPU_BS_REC=&quot;trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec&quot;
 mv trace.rec $SCALFMM_SEQ_GPU_BS_REC</code></pre>
 <p>From these files, we are able to get the different efficencies.</p>
 <h2 id="post-processing-and-plot">Post-processing and Plot</h2>
+<p>From the file:</p>
+<ul>
+<li><code>$SCALFMM_SEQ_REC</code> : the resulting file from the sequential execution with best sequential granularity</li>
+<li><code>$SCALFMM_PAR_REC</code> : the resulting file from a parallel execution (no GPU) with best parallel granularity</li>
+<li><code>$SCALFMM_PAR_CPU_GPU_REC</code> : the resulting file from a parallel execution (hybrid) with best parallel-hybrid granularity</li>
+<li><code>$SCALFMM_PAR_GPU_REC</code> : the resulting file with all possible tasks on GPU with best parallel-hybrid granularity</li>
+<li><code>$SCALFMM_SEQ_CPU_BS_REC</code> : the resulting file from sequential execution with best parallel granularity</li>
+<li><code>$SCALFMM_SEQ_GPU_BS_REC</code> : the resulting file from sequential execution with best parallel-hybrid granularity</li>
+</ul>
 <p>Getting all the efficency Solving the linear programming problem</p>
 <p>Plotting the results</p>
 <h2 id="automatization">Automatization</h2>
