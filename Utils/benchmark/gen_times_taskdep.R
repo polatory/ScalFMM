@@ -28,7 +28,7 @@ gen_times_taskdep_plot <- function(data, algo_wanted, model_wanted)
 		'task_time'      = "#619dff",
 		'runtime_time'   = "#01ba38",
 		'idle_time'      = "#f9766e",
-		'scheduling_time'   = "#02bb37",
+		'scheduling_time'   = "#fdbc43",
 		'communication_time'   = "#9D2FEA"
 	)
 	g <- g + scale_fill_manual(name="Time", breaks=breaks,
@@ -82,7 +82,6 @@ gen_times_taskdep <- function(dbfile)
 {
     # Cube (volume)
     data <- get_data_subset(dbfile, 0L, 0L, "False")
-	data <- subset(data, algo != get_one_node_reference_algorithm())
 
 	all_algorithm <- unique(data$algo)
 	all_model <- unique(data$model)
