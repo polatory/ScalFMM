@@ -122,7 +122,7 @@ int main(int argc, char* argv[]){
 
     timer.tic();
     groupalgo.execute();
-    std::cout << "Kernel executed in in " << timer.tacAndElapsed() << "s\n";
+    std::cout << "Average executed in in " << timer.tacAndElapsed() << "s\n";
 
     // Validate the result
     if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){

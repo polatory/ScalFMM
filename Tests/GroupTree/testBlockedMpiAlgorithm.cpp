@@ -147,6 +147,7 @@ int main(int argc, char* argv[]){
     // Run the algorithm
     GroupKernelClass groupkernel;
     GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
+	mpiComm.global().barrier();
 	FTic timerExecute;
     groupalgo.execute();
     mpiComm.global().barrier();

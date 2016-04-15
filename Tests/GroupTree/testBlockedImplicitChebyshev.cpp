@@ -138,6 +138,7 @@ int main(int argc, char* argv[]){
     const MatrixKernelClass MatrixKernel;
     GroupKernelClass groupkernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel, distributedMortonIndex);
+	mpiComm.global().barrier();
 	FTic timerExecute;
 	groupalgo.execute(operationsToProceed);
 	mpiComm.global().barrier();

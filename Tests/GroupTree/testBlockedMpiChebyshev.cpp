@@ -168,6 +168,7 @@ int main(int argc, char* argv[]){
         GroupKernelClass groupkernel(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
         // Run the algorithm
         GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
+		mpiComm.global().barrier();
         timer.tic();
         groupalgo.execute();
 		mpiComm.global().barrier();
