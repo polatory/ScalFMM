@@ -48,7 +48,6 @@
 
 #include "../StarPUUtils/FStarPUReduxCpu.hpp"
 
-#define SCALFMM_SIMGRID_TASKNAMEPARAMS
 #ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
 #include "../StarPUUtils/FStarPUTaskNameParams.hpp"
 #endif
