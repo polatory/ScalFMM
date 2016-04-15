@@ -21,6 +21,7 @@ In order to follow this tutorial, it is needed to have the following application
 * BLAS/LAPACK (The configure of ScalFMM is different if the MKL is used or not, but with the MKL it is recommended to set environment variable `MKLROOT`)
 * CUDA (>= 7) and `CUDA_PATH` must be set. In our case, `CUDA_PATH=/usr/local/cuda-7.5/`
 * __Optional__ Vite (from `sudo apt-get install vite` or see [http://vite.gforge.inria.fr/download.php](http://vite.gforge.inria.fr/download.php))
+*  __Optional__ Qt5 library to be able to change the colors of the execution traces in order to visualize the different FMM operators
 
 > Some installations of CUDA does not have libcuda file.
 > In this case, one needs to create a link : `sudo ln /usr/local/cuda-7.5/lib64/libcudart.so /usr/local/cuda-7.5/lib64/libcuda.so`
@@ -38,11 +39,20 @@ In order to follow this tutorial, it is needed to have the following application
 The variable `SCALFMM_TEST_DIR` is used to specify the working directory:
 ```bash
 export SCALFMM_TEST_DIR=~/scalfmm_test
-mkdir $SCALFMM_TEST_DIR
+if [[ ! -d $SCALFMM_TEST_DIR ]] ; then
+	mkdir $SCALFMM_TEST_DIR
+fi    
 cd $SCALFMM_TEST_DIR
 ```
 
-*Output variables:* `$SCALFMM_TEST_DIR`
+In order to be able to stop the tutorial in the middle and restart later, we will keep the register variables in a file that should be source to restart.
+```bash
+function scalfmmRegisterVariable() { echo "export $1=${!1}" >> "$SCALFMM_TEST_DIR/environment.source"; }
+echo "function scalfmmRegisterVariable() { echo \"export $1=${!1}\" >> \"$SCALFMM_TEST_DIR/environment.source\"; }" > "$SCALFMM_TEST_DIR/environment.source"
+```
+
+
+*Output variables:* `scalfmmRegisterVariable SCALFMM_TEST_DIR`
 
 Valid-if
 ```bash
@@ -72,12 +82,12 @@ if [[ ! -f hwloc-1.11.2.tar.gz ]] ; then
 fi
 tar xvf hwloc-1.11.2.tar.gz
 cd hwloc-1.11.2/
-SCALFMM_HWLOC_DIR=$SCALFMM_TEST_DIR/hwlocinstall
+export SCALFMM_HWLOC_DIR=$SCALFMM_TEST_DIR/hwlocinstall
 ./configure --prefix=$SCALFMM_HWLOC_DIR
 make install
 ```
 
-*Output variables:* `$SCALFMM_HWLOC_DIR`
+*Output variables:* `scalfmmRegisterVariable SCALFMM_HWLOC_DIR`
 
 Valid-if:
 ```bash
@@ -94,12 +104,12 @@ if [[ ! -f fxt-0.2.11.tar.gz ]] ; then
 fi
 tar xvf fxt-0.2.11.tar.gz
 cd fxt-0.2.11/
-SCALFMM_FXT_DIR=$SCALFMM_TEST_DIR/fxtinstall
+export SCALFMM_FXT_DIR=$SCALFMM_TEST_DIR/fxtinstall
 ./configure --prefix=$SCALFMM_FXT_DIR
 make install
 ```
 
-*Output variables:* `$SCALFMM_FXT_DIR`
+*Output variables:* `scalfmmRegisterVariable SCALFMM_FXT_DIR`
 
 Valid-if:
 ```bash
@@ -117,14 +127,14 @@ if [[ ! -f fftw-3.3.4.tar.gz ]] ; then
 fi    
 tar xvf fftw-3.3.4.tar.gz
 cd fftw-3.3.4/
-SCALFMM_FFTW_DIR=$SCALFMM_TEST_DIR/fftinstall
+export SCALFMM_FFTW_DIR=$SCALFMM_TEST_DIR/fftinstall
 ./configure --prefix=$SCALFMM_FFTW_DIR
 make install
 ./configure --prefix=$SCALFMM_FFTW_DIR --enable-float
 make install
 ```
 
-*Output variables:* `$SCALFMM_FFTW_DIR`
+*Output variables:* `scalfmmRegisterVariable SCALFMM_FFTW_DIR`
 
 Valid-if:
 ```bash
@@ -140,14 +150,14 @@ if [[ ! -d starpu ]] ; then
 	svn export svn://scm.gforge.inria.fr/svnroot/starpu/trunk starpu
 fi    
 cd starpu/
-SCALFMM_STARPU_DIR=$SCALFMM_TEST_DIR/starpuinstall
+export SCALFMM_STARPU_DIR=$SCALFMM_TEST_DIR/starpuinstall
 ./autogen.sh
 ./configure --prefix=$SCALFMM_STARPU_DIR --with-fxt=$SCALFMM_FXT_DIR --with-hwloc=$SCALFMM_HWLOC_DIR --with-cuda-dir=$CUDA_PATH --disable-opencl
 make install
 ```
 > __Optional__ In case you do not want to use trace (FXT) please remove the `--with-fxt=$SCALFMM_FXT_DIR` parameter from the command
 
-*Output variables:* `$SCALFMM_STARPU_DIR`
+*Output variables:* `scalfmmRegisterVariable SCALFMM_STARPU_DIR`
 
 Valid-if:
 ```bash
@@ -167,11 +177,11 @@ if [[ ! -d scalfmm-public ]] ; then
 fi    
 cd scalfmm-public/
 export SCALFMM_SOURCE_DIR=`pwd`
-Build/
+cd Build/
 export SCALFMM_BUILD_DIR=`pwd`
 ```
 
-*Output variables:* `SCALFMM_BUILD_DIR` `SCALFMM_SOURCE_DIR`
+*Output variables:* `scalfmmRegisterVariable SCALFMM_BUILD_DIR` `scalfmmRegisterVariable SCALFMM_SOURCE_DIR`
 
 + Configure (No MKL):
 ```bash
@@ -224,7 +234,30 @@ Information for scalfmm binaries
 Examples:
 
 ```
-STARPU_NCPUS=3 STARPU_NCUDA=1 ./Tests/Release/testBlockedUnifCudaBench -nb 10000 -h 3
+export STARPU_NCPUS=12
+export STARPU_NCUDA=2
+./Tests/Release/testBlockedUnifCudaBench -nb 30000000 -h 7 -bs 800
+```
+
+Last part of the output should be:
+```bash
+	Start FGroupTaskStarPUAlgorithm
+		 directPass in 0.0406482s
+			 inblock  in 0.000780428s
+			 outblock in 0.0398674s
+		 bottomPass in 0.00586269s
+		 upwardPass in 0.00265723s
+		 transferPass in 0.00323571s
+			 inblock in  0.000124817s
+			 outblock in 0.00298331s
+		 downardPass in 0.00257975s
+		 transferPass in 0.0652285s
+			 inblock in  0.00164774s
+			 outblock in 0.0635799s
+		 L2P in 0.0115733s
+		 Submitting the tasks took 0.139101s
+		 Moving data to the host took 0.0578765s
+@EXEC TIME = 14.6321s
 ```
 
 + Visualize the execution trace (__Optional__)
@@ -238,6 +271,17 @@ Then visualize the output with vite
 vite ./paje.trace
 ```
 
+Should be like: // IMAGE HERE
+
+We can convert the color of the trace by (it needs Qt5 library):
+
+```bash
+$SCALFMM_SOURCE_DIR/Addons/BenchEfficiency/pajecolor paje.trace $SCALFMM_SOURCE_DIR/Addons/BenchEfficiency/paintmodel.fmm.colors
+vite ./paje.trace.painted
+```
+
+Should be like: // IMAGE HERE
+
 + Get execution times
 
 ```bash
@@ -247,26 +291,45 @@ python $SCALFMM_STARPU_DIR/bin/starpu_trace_state_stats.py -t trace.rec
 Should give something like:
 ```
 "Name","Count","Type","Duration"
-"Initializing",3,"Runtime",5.027746
-"Overhead",37,"Runtime",0.110073
-"Idle",13,"Other",0.03678
-"Scheduling",24,"Runtime",16.529527
-"Sleeping",17,"Other",2197.255516
-"FetchingInput",10,"Runtime",0.012637
-"execute_on_all_wrapper",6,"Task",8.431909
-"PushingOutput",10,"Runtime",16.505568
-"P2P",1,"Task",105.131112
-"Callback",4,"Runtime",0.001048
-"Deinitializing",3,"Runtime",0.014547
-"P2M",1,"Task",2.543303
-"L2P",1,"Task",5.649106
-"M2L-level-2",1,"Task",2.167273
+"Initializing",14,"Runtime",7153.096196
+"Overhead",57010,"Runtime",376.473463
+"Idle",14355,"Other",12.815899
+"Scheduling",28441,"Runtime",238.367394
+"Sleeping",610,"Other",13786.513208
+"FetchingInput",14341,"Runtime",13918.805814
+"execute_on_all_wrapper",30,"Task",21.288802
+"Executing",414,"Runtime",26852.864578
+"PushingOutput",14341,"Runtime",284.96123
+"P2P-out",3846,"Task",60378.266619
+"Callback",13559,"Runtime",4.210633
+"P2P",328,"Task",15383.426991
+"M2L-level-5",41,"Task",2354.702554
+"M2L-level-6",328,"Task",18349.915495
+"Deinitializing",14,"Runtime",109.87483
+"M2L-level-4",6,"Task",275.088295
+"P2M",328,"Task",11312.022842
+"M2M-level-5",328,"Task",829.9055
+"M2M-level-4",41,"Task",93.130498
+"M2L-out-level-5",638,"Task",1914.900053
+"M2M-level-3",6,"Task",11.053067
+"M2M-level-2",1,"Task",1.363157
+"M2L-out-level-4",22,"Task",159.580457
+"L2L-level-4",41,"Task",84.554065
+"L2L-level-5",328,"Task",1087.717767
+"M2L-out-level-6",7692,"Task",18322.518045
+"L2P",328,"Task",27146.256793
+"M2L-level-2",1,"Task",2.661235
+"L2L-level-3",6,"Task",11.346978
+"M2L-level-3",1,"Task",47.612555
+"L2L-level-2",1,"Task",1.471873
 ```
 
 Most of the script are in the addon directories
 ```
 export SCALFMM_AB=$SCALFMM_SOURCE_DIR/Addons/BenchEfficiency/
 ```
+
+*Output variable:* `scalfmmRegisterVariable SCALFMM_AB`
 
 ## Homogeneous Efficiencies
 
@@ -275,61 +338,67 @@ Here we compute the efficiencies for a given test case on CPU only.
 Go in the build dir and create output dir
 ```
 cd $SCALFMM_BUILD_DIR
-mkdir homogeneous
+export SCALFMM_RES_DIR=$SCALFMM_BUILD_DIR/homogeneous
+mkdir $SCALFMM_RES_DIR
 ```
+
+*Output variable:* `scalfmmRegisterVariable SCALFMM_AB`
 
 Set up the configuration variables:
 ```bash
-SCALFMM_NB=10000000
-SCALFMM_H=7
-SCALFMM_MIN_BS=100
-SCALFMM_MAX_BS=3000
-SCALFMM_MAX_NB_CPU=24
+export SCALFMM_NB=10000000
+export SCALFMM_H=7
+export SCALFMM_MIN_BS=100
+export SCALFMM_MAX_BS=10000
+export SCALFMM_MAX_NB_CPU=24
 ```
 
 Find best granularity in sequential and in parallel:
 ```bash
-STARPU_NCPUS=1
-STARPU_NCUDA=0
-SCALFMM_BS_CPU_SEQ=`$SCALFMM_AB/scalfmmFindBs.sh "./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs" $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key "@BEST BS" `
+export STARPU_NCPUS=1
+export STARPU_NCUDA=0
+export SCALFMM_BS_CPU_SEQ=`$SCALFMM_AB/scalfmmFindBs.sh "./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs" $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmmExtractKey.sh "@BEST BS" `
 if [[ `which gnuplot | wc -l` == "1" ]] ;  then
     gnuplot -e "filename='seq-bs-search'" $SCALFMM_AB/scalfmmFindBs.gplot
 fi
 
-STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
-STARPU_NCUDA=0
-=`$SCALFMM_AB/scalfmmFindBs.sh "./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs" $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key "@BEST BS" `
+export STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
+export STARPU_NCUDA=0
+export SCALFMM_BS_CPU_PAR=`$SCALFMM_AB/scalfmmFindBs.sh "./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs" $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key "@BEST BS" `
 if [[ `which gnuplot | wc -l` == "1" ]] ;  then
     gnuplot -e "filename='par-bs-search'" $SCALFMM_AB/scalfmmFindBs.gplot
 fi
 ```
+In our case we get  and 5385.
 
-Then we compute the efficiency using both granulirities and keep the .rec files.
+*Output variable:* `scalfmmRegisterVariable SCALFMM_BS_CPU_SEQ`  `scalfmmRegisterVariable SCALFMM_BS_CPU_PAR`
 
+Then we compute the efficiency using both granulirities and keep the .rec files:
 ```bash
 source $SCALFMM_AB/execAllHomogeneous.sh
 ```
 
-We should end with all the rec files and their corresponding time files
+We should end with all the .rec files and their corresponding time files
 ```bash
-
+ls $SCALFMM_RES_DIR
 ```
-
 
 We compute the efficiencies
 ```bash
-
+source $SCALFMM_AB/computeHomogeneousEfficiencies
 ```
 
 We end with efficiency for the application and for the operators.
 ```bash
-
+cat $SCALFMM_RES_DIR/efficiencies.txt
 ```
 
 We can plot each of them
 ```bash
-
+source $SCALFMM_AB/plotEfficiencies.sh $SCALFMM_RES_DIR/efficiencies.txt
 ```
+
+Sould give: // IMAGE HERE
 
 
 ## Generating Execution Results
@@ -340,32 +409,32 @@ we first want to know the best granularity `-bs`.
 This parameter will certainly not be the same for sequential/parallel/heterogenous configurations.
 
 ```bash
-SCALFMM_NB=10000000
-SCALFMM_H=7
-SCALFMM_MIN_BS=100
-SCALFMM_MAX_BS=3000
-SCALFMM_MAX_NB_CPU=24
-SCALFMM_MAX_NB_GPU=4
+export SCALFMM_NB=10000000
+export SCALFMM_H=7
+export SCALFMM_MIN_BS=100
+export SCALFMM_MAX_BS=3000
+export SCALFMM_MAX_NB_CPU=24
+export SCALFMM_MAX_NB_GPU=4
 ```
 
 ```bash
-STARPU_NCPUS=1
-STARPU_NCUDA=0
-SCALFMM_BS_CPU_SEQ=`$SCALFMM_AB/scalfmmFindBs.sh -nb $SCALFMM_NB -h $SCALFMM_H $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key "@BEST BS" `
+export STARPU_NCPUS=1
+export STARPU_NCUDA=0
+export SCALFMM_BS_CPU_SEQ=`$SCALFMM_AB/scalfmmFindBs.sh -nb $SCALFMM_NB -h $SCALFMM_H $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key "@BEST BS" `
 if [[ `which gnuplot | wc -l` == "1" ]] ;  then
     gnuplot -e "filename='seq-bs-search'" $SCALFMM_AB/scalfmmFindBs.gplot
 fi
 
-STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
-STARPU_NCUDA=0
-SCALFMM_BS_CPU_PAR=`$SCALFMM_AB/scalfmmFindBs.sh -nb $SCALFMM_NB -h $SCALFMM_H $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key "@BEST BS" `
+export STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
+export STARPU_NCUDA=0
+export SCALFMM_BS_CPU_PAR=`$SCALFMM_AB/scalfmmFindBs.sh -nb $SCALFMM_NB -h $SCALFMM_H $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key "@BEST BS" `
 if [[ `which gnuplot | wc -l` == "1" ]] ;  then
     gnuplot -e "filename='par-bs-search'" $SCALFMM_AB/scalfmmFindBs.gplot
 fi
 
-STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
-STARPU_NCUDA=$SCALFMM_MAX_NB_GPU
-SCALFMM_BS_CPU_GPU=`$SCALFMM_AB/scalfmmFindBs.sh -nb $SCALFMM_NB -h $SCALFMM_H $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key "@BEST BS" `
+export STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
+export STARPU_NCUDA=$SCALFMM_MAX_NB_GPU
+export SCALFMM_BS_CPU_GPU=`$SCALFMM_AB/scalfmmFindBs.sh -nb $SCALFMM_NB -h $SCALFMM_H $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key "@BEST BS" `
 if [[ `which gnuplot | wc -l` == "1" ]] ;  then
     gnuplot -e "filename='cpugpu-bs-search'" $SCALFMM_AB/scalfmmFindBs.gplot
 fi
@@ -373,38 +442,38 @@ fi
 
 Then, we can execute three best configurations, and keep .rec for each of them:
 ```bash
-STARPU_NCPUS=1
-STARPU_NCUDA=0
+export STARPU_NCPUS=1
+export STARPU_NCUDA=0
 ./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs $SCALFMM_CPU_SEQ
-SCALFMM_SEQ_REC="trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec"
+export SCALFMM_SEQ_REC="trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec"
 mv trace.rec $SCALFMM_SEQ_REC
 
-STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
-STARPU_NCUDA=0
+export STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
+export STARPU_NCUDA=0
 ./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs $SCALFMM_BS_CPU_PAR
-SCALFMM_PAR_REC="trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec"
+export SCALFMM_PAR_REC="trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec"
 mv trace.rec $SCALFMM_PAR_REC
 
-STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
-STARPU_NCUDA=$SCALFMM_MAX_NB_GPU
+export STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
+export STARPU_NCUDA=$SCALFMM_MAX_NB_GPU
 ./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs $SCALFMM_BS_CPU_GPU
-SCALFMM_PAR_CPU_GPU_REC="trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec"
+export SCALFMM_PAR_CPU_GPU_REC="trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec"
 mv trace.rec $SCALFMM_PAR_CPU_GPU_REC
 ```
 
 And we also want the GPU tasks only on GPU
 ```bash
-STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
-STARPU_NCUDA=$SCALFMM_MAX_NB_GPU
+export STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
+export STARPU_NCUDA=$SCALFMM_MAX_NB_GPU
 ./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs $SCALFMM_BS_CPU_GPU -p2p-m2l-cuda-only
-SCALFMM_PAR_GPU_REC="trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA-GPUONLY.rec"
+export SCALFMM_PAR_GPU_REC="trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA-GPUONLY.rec"
 mv trace.rec $SCALFMM_PAR_GPU_REC
 ```
 
 And we want the sequential version with parallel granularity:
 ```bash
-STARPU_NCPUS=1
-STARPU_NCUDA=0
+export STARPU_NCPUS=1
+export STARPU_NCUDA=0
 
 ./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs $SCALFMM_BS_CPU_PAR
 SCALFMM_SEQ_CPU_BS_REC="trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec"

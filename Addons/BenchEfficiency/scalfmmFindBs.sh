@@ -5,7 +5,9 @@ function GetExecTime() {
     local res_output=`$1 "$2"`
     >&2 echo "[LOG]     Try to find $3"
     local time_result=`echo "$res_output" | grep "$3" | cut -d'=' -f2 | cut -d's' -f1`
-    # >&2 echo "[LOG] output : $res_output"
+    if [[ $VERBOSE ]] ; then    
+        >&2 echo "[LOG] output : $res_output"
+    fi
     >&2 echo "[LOG]     Done in $time_result"
     echo $time_result
 }
@@ -31,8 +33,10 @@ fi
 echo "You ask to find the best bs for:"
 echo "Command: $1"
 echo "From $2 to $3"
+echo "STARPU_NCPUS = $STARPU_NCPUS"
+echo "STARPU_NCUDA = $STARPU_NCUDA"
 
-outputfile=./bs_bench.data
+outputfile=./benchBs.data
 
 echo "# BS TIME" > $outputfile
 
