@@ -38,6 +38,7 @@ compute_efficiency <- function(data, n)
     #sdata <- subset(data, npart == n & height == h & model == m)
     sdata <- subset(data, npart == n)
 
+
     # Compute task efficiency
     #tt_1 <- subset(sdata, event == "task_time" & nthreads == 1)
 	tt_1 <- subset(sdata, event == "task_time" & nnode == 1)
@@ -98,11 +99,13 @@ gen_efficiency <- function(data_init, algo_wanted, model_wanted)
 		gen_efficiencies_plot(output, sdata)
 	}
 }
+
 gen_efficiencies <- function(dbfile)
 {
     data_init <- get_data_subset(dbfile, 0L, 0L, "False")
 	data_init <- subset(data_init, algo != get_one_node_reference_algorithm())
 	data <- melt(data_init, id=c("model", "algo", "nnode", "nthreads", "npart","height","bsize"))
+
 	data <- rename(data, c("variable"="event", "value"="duration"))
 
 	all_algorithm <- unique(data$algo)

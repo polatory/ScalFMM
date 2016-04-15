@@ -159,11 +159,7 @@ def main():
                 a = re.findall("[-+]?\d*\.\d+|\d+", line)
                 if len(a) == 1:
                     global_time = a[0]
-            elif re.search("Total Particles", line):
-                a = re.findall("[-+]?\d*\.\d+|\d+", line)
-                if len(a) == 1:
-                    config.num_particules = int(a[0])
-            elif re.search("Total Particles", line):
+            elif re.search("Total particles", line):
                 a = re.findall("[-+]?\d*\.\d+|\d+", line)
                 if len(a) == 1:
                     config.num_particules = int(a[0])
