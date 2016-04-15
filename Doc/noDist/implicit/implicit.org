@@ -8,18 +8,12 @@
 #+EXPORT_EXCLUDE_TAGS: noexport
 #+TAGS: noexport(n)
 
- 
-# #+BEGIN_SRC sh 
-# export SCALFMM_DIR=/home/mkhannou/scalfmm
-# cd $SCALFMM_DIR
-# git checkout mpi_implicit
-# spack install scalfmm@src+mpi+starpu \^starpu@svn-trunk+mpi+fxt \^openmpi
-# #+END_SRC
-
 * Abstract
-We live in a world were computer capacity get larger and larger, unfortunatly, our old algorithm ain't calibrate for such computer so it is important to find new paradigme to use the full power of those newest machine and then go faster than ever.
-
 The Fast Multipole Methode (FMM) is one of the most prominent algorithms to perform pair-wise particle interactions, with application in many physical problems such as astrophysical simulation, molecular dynmics, the boundary element method, radiosity in computer-graphics or dislocation dynamics. Its linear complexity makes it an excellent candidate for large-scale simulation.
+  The following paper/website/file aim to decribe how to switch from an
+  explicit starpu mpi code to an implicit starpu mpi code. It describe also
+  the methodology used to compare mpi algorithms on scalfmm and the result obtained.
+
 * Introduction
 ** N-Body problem
 <<sec:nbody_problem>>
@@ -42,15 +36,23 @@ The FMM is used to solve a variety of problems: astrophysical simulations, molec
 NOTE: Directly come from Bérenger thesis.
 
 *** Algorithm
-The FMM algorithm rely on an octree (quadtree in 2 dimensions) obtained by splitting the space of the simulation recursivly in 8 parts (4 parts in 2D). The building is shown on figure [[fig:octree]].
+The FMM algorithm rely on an octree (quadtree in 2D) obtained by splitting the space of the simulation recursivly in 8 parts (4 parts in 2D). The building is shown on figure [[fig:octree]].
 
-#+CAPTION: On the left side is the box with all the particles. In the middle is the same box as before, split three time in four parts. Whiche give 64 smaller boxes in the end. On the right is the quadtree (octree in 3D) with an height of 4 built from the different splitting. On top of it is the root of the tree that hold the whole box and so all particles.
+#+CAPTION: 2D space decomposition (Quadtree). Grid view and hierarchical view.
 #+name: fig:octree
 [[./figure/octree.png]]
 
 
-#+CAPTION: FMM algorithm.
+#+CAPTION: Different stepes of the FMM algorithm; upward pass (left), transfer pass and direct step (center), and downward pass (right).
+#+name: fig:algorithm
 [[./figure/FMM.png]]
+
+The algorithm is illustraded on figure [[fig:algorithm]]. It first compute
+the P2M operator to approximate particle interactions in the multipole.
+Then the M2M operator is applied between each level to approximate
+interactions to the next level. Then M2L and P2P are done between neighboors.
+Finnaly, the L2L operator apply approximations to the level below and the L2P
+will apply the approximations of the last level to the particles.
 
 * State of the art
 Nothing for now ...
@@ -77,20 +79,93 @@ In that way, the main algorithm remain almost as simple as the sequential one an
 It also create a DAG from which interesting property can be used to prove interesting stuff. (Not really sure)
 
 *** Group tree
-What is a group tree and what is it doing here ?
-The task scheduling with a smart runtime such as StarPU cost a lot.
-The FMM generate a huge amount of small tasks, which considerably increase the time spent into the scheduler.
-The group tree pack particule or multipole together into a group and execute a task (P2P, P2M, M2M, ...) on a group of particles (or multipole) rather than only one particle (or multipole).
-This granularity of the task and make the cost of the scheduler decrease.
+    A group tree is like the original octree (or quadtree in 2D) where cells and
+    particles are packed together in new cells and new "particles". Tasks are
+    then executed ont those groups rather than only on one particles (or
+    multipole).
 
-TODO: image of the group tree
+    The group tree was introduced because the original algorithm generated too
+    much small tasks and the time spent in the runtime was to high. With the
+    group tree, task got big enough so the runtime time got neglectable again.
 
+    A group tree is built following a simple rule. Given a group size,
+    particles (or multipoles) following the Morton index are grouped together
+    regardless their parents or children.
+
+#+CAPTION: A quadtree and the correspondig group tree with Ng=3.
+#+name: fig:grouptree
+[[./figure/blocked.png]]
+
+*** Scalfmm
 *** Distributed FMM
 * Implicit MPI FMM
 ** Sequential Task Flow with implicit communication
-Two differents things :
-- Register data handle in starpu_mpi
-- Define a data mapping function so each handle will be placed ton an mpi node.
+   There is very few difference between the STF and implicite MPI STF.
+
+*** Init
+    The first difference between a simple StarPU algorithm and a StarPU
+    MPI implicit is the call to /starpu_mpi_init/ right after /starpu_init/
+    and a call to /starpu_mpi_shutdown/ right before /starpu_shutdown/.
+
+    The call to /starpu_mpi_init/ looks like :
+#+begin_src src c 
+starpu_mpi_init(argc, argv, initialize_mpi)
+#+end_src
+    /initialize_mpi/ should be set to 0 if a call to /MPI_Init/ (or
+    /MPI_Init_thread/) has already be
+    made.
+
+*** Data handle
+    The second difference is the way StarPU handle are registered.
+    There is still the classical call to /starpu_variable_data_register/ so
+    StarPU know the data but it also need a call to /starpu_mpi_data_register/.
+
+    The call looks like this:
+#+begin_src src c 
+starpu_mpi_data_register(starpu_handle, tag, mpi_rank)
+#+end_src
+    /starpu_handle/ : is a the handle used by StarPU to work with data.
+
+    /tag/ : is the MPI tag which need to be different for each
+    handle, but must correspond to the same handle among all MPI node.
+
+    /mpi_rank/ : correspond to the MPI node on which the data will be stored.
+
+    Note that, when an handle is registered on a node different from the
+    current node the call to /starpu_variable_data_register/ should looks like :
+#+begin_src src c 
+starpu_variable_data_register(starpu_handle, -1, buffer, buffer_size);
+#+end_src
+    The -1 specify that the data is not stored in the main memory and in this
+    case, it is stored on another node. 
+
+    At the end of the application, handles should be unregister with /starpu_data_unregister/ only if it
+    were registered on the node.
+
+*** Data mapping function
+    The last difference and probably the most interesting one is the data
+    mapping function. This function must return the node on which the data
+    will be mapped given information about the data.
+
+    For now, in Scalfmm, it use the level in the octree and the Morton index
+    inthis level. But it could be anything, like external
+    information previously compute by another sofware.
+    
+    For now, here is the data mapping function: 
+#+begin_src src c 
+int dataMappingBerenger(MortonIndex const idx, int const idxLevel) const {
+      for(int i = 0; i < nproc; ++i)
+            if(nodeRepartition[idxLevel][i][0] <= nodeRepartition[idxLevel][i][1] && idx >= nodeRepartition[idxLevel][i][0] && idx <= nodeRepartition[idxLevel][i][1])
+                  return i;
+      if(mpi_rank == 0)
+            cout << "[scalfmm][map error] idx " << idx << " on level " << idxLevel << " isn't mapped on any proccess." << endl;
+      return -1;
+}
+#+end_src
+
+    /nodeRepartition/ is an array which describe at each level the working
+    interval per node.
+
 ** Data Mapping
 One of the main advantage of using implicit mpi communication in starpu is that tha data mapping can be separated from the algorithm. It is then possible to change the data mapping without changing the algorithm.
 
@@ -110,124 +185,90 @@ This tool could be used to force certain data mapping in the implicit mpi versio
 
 ** Result
 *** Hardware
-One node equal 2 Dodeca-core Haswell Intel® Xeon® E5-2680, 2,5GHz, 128Go de RAM (DDR4 2133MHz), 500 Go de stockage (Sata).
+One node has 2 Dodeca-core Haswell Intel® Xeon® E5-2680, 2,5GHz, 128Go de RAM (DDR4 2133MHz), 500 Go de stockage (Sata).
 *** Aims
-Compare explicit and implicit version.
-But to measure the impact of implicit communication we need an implicit version as close to the explicit version as possible.
-Mainly, this means, same particules onto the same grouped tree with same task executed on the same node.
+    The aims is to compare explicit and implicit version as well as any other mpi
+    version or mpi data mapping.
+    But to measure the impact of implicit communication we need an implicit version as close to the explicit version as possible.
+    Mainly, this means, same particules into the same group tree with same task executed on the same node.
+
+    All algorithm study two different particle disposition, a uniform cube
+    and an ellipsoid.
+    Both looks like figure [[fig:ellipsedistribution]] and
+    [[fig:uniformdistribution]].
+
+
+#+CAPTION: cube (volume).
+#+name: fig:uniform
+[[./figure/uniformdistribution.png]]
+
+#+CAPTION: Ellipsoid (surface).
+#+name: fig:ellipse
+[[./figure/ellipsedistribution.png]]
+
+    The point of working on the uniform cube is to validate algorithms on a
+    simple case. It also allows to check for any performance regression. The
+    ellipsoid (which is a surface and not a volume) is a more challenging
+    particle set because it generates an unbalenced tree. It is used to see
+    if an algorithm is better than another.
+
+*** Description of the plots
+**** Time
+     The time plots displays the time spent into each part of the execution.
+     It is useful to diagnose what take the most time in a run.
+**** Parallel efficiency
+     The parallel efficiency plots displays how faster is an algorithm
+     compare to it's one node version.
+**** Normalized time
+     The normalized time plot shows the speedup compare to a one node
+     algorithm. Which is the StarPU algorithm without any MPI communication
+     in it.
+**** Efficiency
+     Not sure yet
+**** Speedup
+     The speedup plot shows how faster is the algorithm compare a reference
+     algorithm.
+     The explicit algorithm was used as a reference. It was choosen instead
+     of the StarPU algorithm, because the comparison was done for each number
+     of node and the StarPU algorithm (without any MPI communication) only
+     run on one node.
+*** Measurement
+    To compute the execution time and make sure each algorithm has the way to
+    compute it we do it like the following:
+
+#+begin_src src C
+mpiComm.global().barrier();
+timer.tic();
+groupalgo.execute();
+mpiComm.global().barrier();
+timer.tac();
+#+end_src
+
+    With a barrier before starting the measurement. A barrier at the end,
+    before stop the measurement.
+    What is measured corresponds to the time of one iteration of the
+    algorithm without the time of object creation nor pre-computation of the
+    kernel.
+
+    There is still a tiny exception, for the StarPU algorithm
+    (which is the StarPU version without MPI) because this algortihm always run
+    on one node, there is no need to add MPI barrier to correctly measure its
+    execution time.
+
+
 *** Scripts and jobs
 <<sec:result>>
 The scripts of the jobs:
-#+BEGIN_SRC
-#!/usr/bin/env bash
-## name of job
-#SBATCH -J chebyshev_50M_10_node
-#SBATCH -p longq
-## Resources: (nodes, procs, tasks, walltime, ... etc)
-#SBATCH -N 10
-#SBATCH -c 24
-# #  standard output message
-#SBATCH -o chebyshev_50M_10_node%j.out
-# # output error message
-#SBATCH -e chebyshev_50M_10_node%j.err
-#SBATCH --mail-type=ALL --mail-user=martin.khannouz@inria.fr
-module purge
-module load slurm
-module add compiler/gcc/5.3.0 tools/module_cat/1.0.0 intel/mkl/64/11.2/2016.0.0
-. /home/mkhannou/spack/share/spack/setup-env.sh
-spack load fftw
-spack load hwloc
-spack load openmpi
-spack load starpu@svn-trunk+fxt
-## modules to load for the job
-export GROUP_SIZE=500
-export TREE_HEIGHT=8
-export NB_NODE=$SLURM_JOB_NUM_NODES
-export STARPU_NCPU=24
-export NB_PARTICLE_PER_NODE=5000000
-export STARPU_FXT_PREFIX=`pwd`/
-echo "=====my job informations ===="
-echo "Node List: " $SLURM_NODELIST
-echo "my jobID: " $SLURM_JOB_ID
-echo "Nb node: " $NB_NODE
-echo "Particle per node: " $NB_PARTICLE_PER_NODE
-echo "Total particles: " $(($NB_PARTICLE_PER_NODE*$NB_NODE))
-echo "In the directory: `pwd`"
-rm -f canard.fma > /dev/null 2>&1
-mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedMpiChebyshev -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation | grep Average
-#TODO probably move trace.rec somewhere else ...
-mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedImplicitChebyshev -f canard.fma -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation | grep Average
-#+END_SRC
 
-and
+#+include: "~/scalfmm/jobs/starpu_chebyshev.sh" src sh
 
-#+BEGIN_SRC
-#!/usr/bin/env bash
-## name of job
-#SBATCH -J chebyshev_50M_1_node
-#SBATCH -p longq
-## Resources: (nodes, procs, tasks, walltime, ... etc)
-#SBATCH -N 1
-#SBATCH -c 24
-# #  standard output message
-#SBATCH -o chebyshev_50M_1_node%j.out
-# # output error message
-#SBATCH -e chebyshev_50M_1_node%j.err
-#SBATCH --mail-type=ALL --mail-user=martin.khannouz@inria.fr
-module purge
-module load slurm
-module add compiler/gcc/5.3.0 tools/module_cat/1.0.0 intel/mkl/64/11.2/2016.0.0
-. /home/mkhannou/spack/share/spack/setup-env.sh
-spack load fftw
-spack load hwloc
-spack load openmpi
-spack load starpu@svn-trunk+fxt
-## modules to load for the job
-export GROUP_SIZE=500
-export TREE_HEIGHT=8
-export NB_NODE=$SLURM_JOB_NUM_NODES
-export STARPU_NCPU=24
-export NB_PARTICLE_PER_NODE=50000000
-export STARPU_FXT_PREFIX=`pwd`/
-echo "=====my job informations ===="
-echo "Node List: " $SLURM_NODELIST
-echo "my jobID: " $SLURM_JOB_ID
-echo "Nb node: " $NB_NODE
-echo "Particle per node: " $NB_PARTICLE_PER_NODE
-echo "Total particles: " $(($NB_PARTICLE_PER_NODE*$NB_NODE))
-echo "In the directory: `pwd`"
-rm -f canard.fma > /dev/null 2>&1
-mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedChebyshev -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation | grep Kernel
-#+END_SRC
+    The results are stored into one directories at ~/scalfmm/jobs_results on
+    plafrim. They need to be downloaded and aggregated.
+    The work is done by the two following scripts. All results are aggregated
+    into a single csv file which is used by R scripts to generated plots.
 
-The result given by the script after few minutes executing:
-
-Result for 10 nodes.
-#+BEGIN_EXAMPLE
-=====my job informations ====
-Node List:  miriel[022-031]
-my jobID:  109736
-Nb node:  10
-Particle per node:  5000000
-Total particles:  50000000
-In the directory: /home/mkhannou/scalfmm
-Average time per node (explicit Cheby) : 9.35586s
-Average time per node (implicit Cheby) : 10.3728s
-#+END_EXAMPLE
-
-Result for 1 node.
-#+BEGIN_EXAMPLE
-=====my job informations ====
-Node List:  miriel036
-my jobID:  109737
-Nb node:  1
-Particle per node:  50000000
-Total particles:  50000000
-In the directory: /home/mkhannou/scalfmm
-Kernel executed in in 62.0651s
-#+END_EXAMPLE
-
-As you can see, on only one node, it took a little more than one minutes to run the algorithm. It took only 10 seconds and 14 seconds for the explicit and implicit version.
+#+include: "~/suricate.sh" src sh
+#+include: "~/scalfmm/Utils/benchmark/loutre.py" src python
 
 * Notes
 ** Installing
@@ -302,7 +343,7 @@ ssh mkhannou@plafrim "/home/mkhannou/spack/bin/spack mirror add local_filesystem
 ssh mkhannou@plafrim '/home/mkhannou/spack/bin/spack install starpu@svn-trunk+mpi+fxt \^openmpi'
 #+end_src
 
-TODO add script I add on plafrim side with library links.
+      TODO add script I add on plafrim side with library links.
 
 *** Execute on plafrim
 To run my tests on plafrim, I used the two following scripts.
@@ -325,28 +366,26 @@ export LIBRARY_PATH=/usr/lib64:$LIBRARY_PATH
 export SPACK_ROOT=$HOME/spack
 . $SPACK_ROOT/share/spack/setup-env.sh
 
-#Load dependencies for starpu and scalfmm
 spack load fftw
 spack load hwloc
 spack load openmpi
-spack load starpu@svn-trunk~fxt
+spack load starpu@svn-trunk+fxt
 cd scalfmm/Build
-#Configure and build scalfmm and scalfmm tests
 rm -rf CMakeCache.txt CMakeFiles > /dev/null
-cmake .. -DSCALFMM_USE_MPI=ON -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_FFT=ON -DSCALFMM_BUILD_EXAMPLES=ON -DSCALFMM_BUILD_TESTS=ON -DCMAKE_CXX_COMPILER=`which g++`
+cmake .. -DSCALFMM_USE_MPI=ON -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_FFT=ON -DSCALFMM_BUILD_EXAMPLES=ON -DSCALFMM_BUILD_TESTS=ON -DCMAKE_CXX_COMPILER=`which g++` 
 make clean
-make -j `nproc`
+make  testBlockedChebyshev testBlockedImplicitChebyshev testBlockedMpiChebyshev testBlockedImplicitAlgorithm testBlockedMpiAlgorithm 
 
-#Submit jobs
 cd ..
-files=./jobs/*.sh
 
+files=./jobs/*.sh
+mkdir jobs_result
 for f in $files
 do
     echo "Submit $f..."
     sbatch $f
+    
     if [ "$?" != "0" ] ; then 
-		echo "Error submitting $f."
         break;
     fi
 done
@@ -356,14 +395,8 @@ done
 A good place I found to put your orgmode file and its html part is on the inria forge, in your project repository.
 For me it was the path /home/groups/scalfmm/htdocs.
 So I created a directory named orgmode and create the following script to update the files.
-#+begin_src sh
-cd Doc/noDist/implicit
-emacs implicit.org --batch -f org-html-export-to-html --kill
-ssh scm.gforge.inria.fr "cd /home/groups/scalfmm/htdocs/orgmode/; rm -rf implicit"
-cd ..
-scp -r implicit scm.gforge.inria.fr:/home/groups/scalfmm/htdocs/orgmode/
-ssh scm.gforge.inria.fr "cd /home/groups/scalfmm/htdocs/orgmode/; chmod og+r implicit -R;"
-#+end_src
+
+#+include: "~/scalfmm/export_orgmode.sh" src sh
 
 
 * Journal
@@ -499,6 +532,11 @@ Mais c'est données n'impliquent pas de forcément des transitions de données m
 - Modifier les jobs pour qu'il utilisent la même graine et générent le même ensemble de particules
 - Post traiter les traces d'une exécution pour créer des graphiques.
       - Exploiter les scripts de Samuel
+- Création du "pipeline" pour générer les graphiques
+      - Script pour envoyer sur plafrim
+      - Script pour soummettre tous les jobs
+      - Script pour aggréger les résultats et générer les graphiques
+      - Test du pipeline (un peu lent)
 
 
 ** Et après ?

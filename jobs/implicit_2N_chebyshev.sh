@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
 ## name of job
-#SBATCH -J starpu_50M
-## Queue where the job is executed
-#SBATCH -p defq
+#SBATCH -J implicit_50M_2N
+#SBATCH -p special
 ## Resources: (nodes, procs, tasks, walltime, ... etc)
-#SBATCH -N 1
+#SBATCH -N 2
 #SBATCH -c 24
-#SBATCH --time=02:00:00
+#SBATCH --time=00:30:00
 # # output error message
-#SBATCH -e starpu_50M_%j.err
+#SBATCH -e implicit_50M_2N_%j.err
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT --mail-user=martin.khannouz@inria.fr
 ## modules to load for the job
 module purge
@@ -19,29 +18,27 @@ spack load fftw
 spack load hwloc
 spack load openmpi
 spack load starpu@svn-trunk+fxt
-##Setting variable for the job
+## variable for the job
 export GROUP_SIZE=500
 export TREE_HEIGHT=8
 export NB_NODE=$SLURM_JOB_NUM_NODES
 export STARPU_NCPU=24
-export NB_PARTICLE_PER_NODE=50000000
+export NB_PARTICLE_PER_NODE=25000000
 export STARPU_FXT_PREFIX=$SLURM_JOB_ID
 export FINAL_DIR="`pwd`/dir_$SLURM_JOB_ID"
 mkdir $FINAL_DIR
-
-## Write data into an stdout file
 echo "my jobID: " $SLURM_JOB_ID > $FINAL_DIR/stdout
 echo "Model: cube" >> $FINAL_DIR/stdout
 echo "Nb node: " $NB_NODE >> $FINAL_DIR/stdout
 echo "Nb thread: " $STARPU_NCPU >> $FINAL_DIR/stdout
 echo "Tree height: " $TREE_HEIGHT >> $FINAL_DIR/stdout
 echo "Group size: " $GROUP_SIZE >> $FINAL_DIR/stdout
-echo "Algorithm: starpu" >> $FINAL_DIR/stdout
+echo "Algorithm: implicit" >> $FINAL_DIR/stdout
 echo "Particle per node: " $NB_PARTICLE_PER_NODE >> $FINAL_DIR/stdout
 echo "Total particles: " $(($NB_PARTICLE_PER_NODE*$NB_NODE)) >> $FINAL_DIR/stdout
-./Build/Tests/Release/testBlockedChebyshev -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation >> $FINAL_DIR/stdout
+mpiexec -n $NB_NODE ./Build/Tests/Release/testBlockedImplicitChebyshev -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation | grep Average >> $FINAL_DIR/stdout
 
-##Create argument list for starpu_fxt_tool
+#Create argument list for starpu_fxt_tool
 cd $FINAL_DIR
 list_fxt_file=`ls ../$STARPU_FXT_PREFIX*`
 
@@ -54,3 +51,4 @@ cd ..
 
 ##Move the result into a directory where all result goes
 mv $FINAL_DIR jobs_result
+
