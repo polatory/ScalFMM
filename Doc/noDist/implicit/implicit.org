@@ -25,7 +25,7 @@ NOTE: Come from wikipedia, not sure this is studious.
 
 ** Fast Multipole Method (FMM)
 *** Description
-The Fast Multipole Method (FMM) is a hierarchical method for the n − body problem introduced in [[sec:nbody_problem]] that has been classified to be one of the top ten algorithms of the 20th century by the SIAM (source).
+The Fast Multipole Method (FMM) is a hierarchical method for the /n−body/ problem introduced in [[sec:nbody_problem]] that has been classified to be one of the top ten algorithms of the 20th century by the SIAM (source).
 In the original study, the FMM was presented to solve a 2D particle interaction problem, but it was later extended to 3D.
 The FMM succeeds to dissociate the near and far field and still uses the accurate direct computation for the near field.
 The original FMM proposal was based on a mathematical method to approximate the far field and using an algorithm based on a quadtree/octree for molecular dynamics or astrophysics.
@@ -43,7 +43,7 @@ The FMM algorithm rely on an octree (quadtree in 2D) obtained by splitting the s
 [[./figure/octree.png]]
 
 
-#+CAPTION: Different stepes of the FMM algorithm; upward pass (left), transfer pass and direct step (center), and downward pass (right).
+#+CAPTION: Different steps of the FMM algorithm; upward pass (left), transfer pass and direct step (center), and downward pass (right).
 #+name: fig:algorithm
 [[./figure/FMM.png]]
 
@@ -55,11 +55,19 @@ Finnaly, the L2L operator apply approximations to the level below and the L2P
 will apply the approximations of the last level to the particles.
 
 * State of the art
-Nothing for now ...
+  TODO
+  What are the other fmm librairy ?
+  What are their performence ?
+
+  What are the other fmm library with mpi ?
+  What are their performence ?
+  What data mapping ?
+
+      
 ** Task based FMM
 *** Runtime
 In the field of HPC, a runtime system is in charge of the parallel execution of an application.
-A runtime system must provide facilities to split and to pipeline the work but also to use the hardware efficiently. In our case, we restrict this definition and remove the the thread libraries.
+A runtime system must provide facilities to split and to pipeline the work but also to use the hardware efficiently. In our case, we restrict this definition and remove the thread libraries.
 We list here some of the well-known runtime systems: [[https://www.bsc.es/computer-sciences/programming-models/smp-superscalar/programming-model][SMPSs]], [[http://starpu.gforge.inria.fr/][StarPU]], [[http://icl.cs.utk.edu/parsec/][PaRSEC]], [[https://software.intel.com/sites/landingpage/icc/api/index.html][CnC]], [[http://icl.cs.utk.edu/quark][Quark]], SuperMatrix and [[http://openmp.org/wp/][OpenMP]].
 These different runtime systems rely on several paradigms like the two well-known fork-join or task-based models.
 We can describe the tasks that composed an application and their dependencies with a direct acyclic graph (DAG); the tasks are represented by nodes/vertices and their dependencies by edges.
@@ -85,19 +93,27 @@ It also create a DAG from which interesting property can be used to prove intere
     multipole).
 
     The group tree was introduced because the original algorithm generated too
-    much small tasks and the time spent in the runtime was to high. With the
-    group tree, task got big enough so the runtime time got neglectable again.
+    much small tasks and the time spent in the runtime increased to much. With the
+    group tree, task got long enough so the time spent in the runtime got neglectable again.
 
     A group tree is built following a simple rule. Given a group size,
     particles (or multipoles) following the Morton index are grouped together
     regardless their parents or children.
 
-#+CAPTION: A quadtree and the correspondig group tree with Ng=3.
+#+CAPTION: A quadtree and the correspondig group tree with a group size of 3.
 #+name: fig:grouptree
 [[./figure/blocked.png]]
 
 *** Scalfmm
+    Scalfmm is a library to simulate N-body interactions using the Fast
+    Multipole Method and it can be found
+    [[http://scalfmm-public.gforge.inria.fr/doc/][here]]
 *** Distributed FMM
+    For later, I will refer to the initial distributed algorithm in Scalfmm
+    using StarPU as the explicit MPI algorithm.
+    TODO how is it currently working ?
+    Mpi task posted manualy. 
+
 * Implicit MPI FMM
 ** Sequential Task Flow with implicit communication
    There is very few difference between the STF and implicite MPI STF.
@@ -194,8 +210,8 @@ One node has 2 Dodeca-core Haswell Intel® Xeon® E5-2680, 2,5GHz, 128Go de RAM 
 
     All algorithm study two different particle disposition, a uniform cube
     and an ellipsoid.
-    Both looks like figure [[fig:ellipsedistribution]] and
-    [[fig:uniformdistribution]].
+    Both looks like figure [[fig:ellipse]] and
+    [[fig:uniform]].
 
 
 #+CAPTION: cube (volume).
@@ -258,9 +274,11 @@ timer.tac();
 
 *** Scripts and jobs
 <<sec:result>>
-The scripts of the jobs:
-
+The scripts of the jobs for StarPU on a single node:
 #+include: "~/scalfmm/jobs/starpu_chebyshev.sh" src sh
+
+The scripts of the jobs for StarPU with implicit mpi on 10 nodes:
+#+include: "~/scalfmm/jobs/implicit_10N_chebyshev.sh" src sh
 
     The results are stored into one directories at ~/scalfmm/jobs_results on
     plafrim. They need to be downloaded and aggregated.
@@ -270,16 +288,48 @@ The scripts of the jobs:
 #+include: "~/suricate.sh" src sh
 #+include: "~/scalfmm/Utils/benchmark/loutre.py" src python
 
+*** Display
+#+CAPTION: Cube speedup ([[./output/cube-speedup.pdf][pdf]]).
+[[./output/cube-speedup.png]]
+
+#+CAPTION: Implicit time on cube ([[./output/cube-implicit-times.pdf][pdf]]).
+[[./output/cube-implicit-times.png]]
+
+#+CAPTION: Explicit time on cube ([[./output/cube-explicit-times.pdf][pdf]]).
+[[./output/cube-explicit-times.png]]
+
+#+CAPTION: StarPU single node time on cube ([[./output/cube-starpu-times.pdf][pdf]]).
+[[./output/cube-starpu-times.png]]
+
+#+CAPTION:  Normalized time on cube ([[./output/cube-normalized-time.pdf][pdf]]).
+[[./output/cube-normalized-time.png]]
+
+#+CAPTION:  Parallel efficiency on cube ([[./output/cube-parallel-efficiency.pdf][pdf]]).
+[[./output/cube-parallel-efficiency.png]]
+
 * Notes
 ** Installing
-First, install StarPu and its dependancy.
+
+Installing Fxt for debbuging StarPU:
+#+begin_src
+wget http://download.savannah.gnu.org/releases/fkt/fxt-0.2.11.tar.gz
+tar xf fxt-0.2.11.tar.gz
+cd fxt
+mkdir install
+./configure --prefix=$PWD/install
+make
+make install
+export PKG_CONFIG_PATH=/home/mkhannou/fxt/install/lib/pkgconfig:$PKG_CONFIG_PATH
+#+end_src
+
+Then, install StarPu and its dependancy.
 #+begin_src
 pacman -S hwloc
 svn checkout svn://scm.gforge.inria.fr/svn/starpu/trunk StarPU
 cd StarPU
 ./autogen.sh
 mkdir install
-./configure --prefix=$PWD/install
+./configure --prefix=$PWD/install --with-fxt
 make
 make install
 #+end_src
@@ -294,6 +344,16 @@ export PATH=$PATH:$STARPU_DIR/bin
 #+end_src
 
 If you are on Debian or Debian like distribution, simpler way to install StarPU are described [[http://starpu.gforge.inria.fr/doc/html/BuildingAndInstallingStarPU.html][here]].
+
+Finally, install Scalfmm:
+#+begin_src
+git clone git+ssh://mkhannou@scm.gforge.inria.fr/gitroot/scalfmm/scalfmm.git
+cd scalfmm
+git checkout mpi_implicit
+cd Build
+cmake .. -DSCALFMM_USE_MPI=ON -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_FFT=ON -DSCALFMM_BUILD_EXAMPLES=ON -DSCALFMM_BUILD_TESTS=ON -DCMAKE_CXX_COMPILER=`which g++` 
+make  testBlockedChebyshev testBlockedImplicitChebyshev testBlockedMpiChebyshev testBlockedImplicitAlgorithm testBlockedMpiAlgorithm 
+#+end_src
 
 ** Useful script
 *** Setup on plafrim
