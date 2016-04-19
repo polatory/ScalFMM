@@ -114,6 +114,203 @@ It also create a DAG from which interesting property can be used to prove intere
     TODO how is it currently working ?
     Mpi task posted manualy. 
 
+* Setup
+** Installing
+*** FxT
+Installing Fxt for debbuging StarPU:
+#+begin_src
+wget http://download.savannah.gnu.org/releases/fkt/fxt-0.2.11.tar.gz
+tar xf fxt-0.2.11.tar.gz
+cd fxt-0.2.11
+./configure --prefix=$FXT_INSTALL_DIR
+make
+make install
+#+end_src
+
+Remember to set /FXT_INSTALL_DIR/.
+
+For more information, check [[http://starpu.gforge.inria.fr/doc/html/OfflinePerformanceTools.html][here]].
+
+*** starpu
+Then, install starpu and its dependancy.
+You may have to install /hwloc/ package with your favorite package manager.
+#+begin_src
+svn checkout svn://scm.gforge.inria.fr/svn/starpu/trunk StarPU
+cd StarPU
+./autogen.sh
+mkdir install
+./configure --prefix=$STARPU_INSTALL_DIR \
+      --disable-cuda \
+      --disable-opencl \
+      --disable-fortran \
+      --with-fxt=$FXT_INSTALL_DIR \
+      --disable-debug \
+      --enable-openmp \
+      --disable-verbose \
+      --disable-gcc-extensions \
+      --disable-starpu-top \
+      --disable-build-doc \
+      --disable-build-examples \
+      --disable-starpufft \
+      --disable-allocation-cache
+./configure --prefix=$PWD/install --with-fxt
+make
+make install
+#+end_src
+
+Remember to set /STARPU_INSTALL_DIR/.
+
+This are envirronement variable that might be useful to set. But of course, be smart and replace the path in STARPU_DIR by your path.
+#+begin_src
+export PKG_CONFIG_PATH=$FXT_INSTALL_DIR/lib/pkgconfig:$PKG_CONFIG_PATH
+export PKG_CONFIG_PATH=$STARPU_INSTALL_DIR/lib/pkgconfig:$PKG_CONFIG_PATH
+export LD_LIBRARY_PATH=$STARPU_INSTALL_DIR/lib:$LD_LIBRARY_PATH
+export PATH=$PATH:$STARPU_INSTALL_DIR/bin
+#+end_src
+
+If you are on Debian or Debian like distribution, simpler way to install StarPU are described [[http://starpu.gforge.inria.fr/doc/html/BuildingAndInstallingStarPU.html][here]].
+
+*** Scalfmm
+Finally, install Scalfmm:
+For those with access on the scalfmm repository, you can get scalfmm this way:
+#+begin_src
+git clone git+ssh://mkhannou@scm.gforge.inria.fr/gitroot/scalfmm/scalfmm.git
+cd scalfmm
+git checkout mpi_implicit
+#+end_src
+If you don't have any access to this repository, you can 
+get a tarbal this way:
+#+begin_src
+wget http://scalfmm.gforge.inria.fr/orgmode/implicit/scalfmm.tar.gz
+tar xf scalfmm.tar.gz
+cd scalfmm
+#+end_src
+
+Then:
+#+begin_src
+cd Build
+cmake .. -DSCALFMM_USE_MPI=ON -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_FFT=ON -DSCALFMM_BUILD_EXAMPLES=ON -DSCALFMM_BUILD_TESTS=ON 
+make  testBlockedChebyshev testBlockedImplicitChebyshev testBlockedMpiChebyshev testBlockedImplicitAlgorithm testBlockedMpiAlgorithm 
+#+end_src
+
+*** Execute
+Here is a quick way to execute on your computer:
+#+begin_src
+cd scalfmm/Build
+export STARPU_FXT_PREFIX=otter
+mpiexec -n 2 ./Tests/Release/testBlockedImplicitChebyshev -nb 50000 -bs 100 -h 5
+#+end_src
+
+If you want to gather the traces for this specific case:
+#+begin_src
+starpu_fxt_tool -i otter*
+#+end_src
+This will create /paje.trace/, /trace.rec/, /task.rec/ and many other trace file.
+
+
+** Useful script
+*** Setup on plafrim
+To setup everything that is needed on plafrim I first install spack.
+#+begin_src sh
+git clone https://github.com/fpruvost/spack.git
+#+end_src
+
+
+
+Then you have to add spack binary in your path.
+
+#+begin_src sh
+PATH=$PATH:spack/bin/spack
+#+end_src
+If your default python interpreter isn't python 2, you might have to replace the first line of spack/bin/spack by
+#+begin_src sh
+#!/usr/bin/env python2
+#+end_src
+So the script is automaticly run with python 2.
+Then, you have to add your ssh key to your ssh agent. The following script kill all ssh agent, then respawn it and add the ssh key.
+#+begin_src sh
+SSH_KEY=".ssh/rsa_inria"
+killall -9 ssh-agent > /dev/null
+eval `ssh-agent` > /dev/null
+ssh-add $SSH_KEY
+#+end_src
+
+Because on plafrim, users can't connect to the rest of the world, you have to copy data there.
+So copy spack directory, use spack to create a mirror that will be sent to plafrim so spack will be able to install package.
+
+#+begin_src sh
+MIRROR_DIRECTORY="tarball_scalfmm"
+#Copy spack to plafrim
+scp -r spack mkhannou@plafrim:/home/mkhannou
+#Recreate the mirror
+rm -rf $MIRROR_DIRECTORY
+mkdir $MIRROR_DIRECTORY
+spack mirror create -D -d $MIRROR_DIRECTORY starpu@svn-trunk+mpi \^openmpi
+#Create an archive and send it to plafrim
+tar czf /tmp/canard.tar.gz $MIRROR_DIRECTORY 
+scp /tmp/canard.tar.gz mkhannou@plafrim-ext:/home/mkhannou
+rm -f /tmp/canard.tar.gz
+#Install on plafrim
+ssh mkhannou@plafrim 'tar xf canard.tar.gz; rm -f canard.tar.gz'
+ssh mkhannou@plafrim "/home/mkhannou/spack/bin/spack mirror add local_filesystem file:///home/mkhannou/$MIRROR_DIRECTORY"
+ssh mkhannou@plafrim '/home/mkhannou/spack/bin/spack install starpu@svn-trunk+mpi+fxt \^openmpi'
+#+end_src
+
+      TODO add script I add on plafrim side with library links.
+
+*** Execute on plafrim
+To run my tests on plafrim, I used the two following scripts.
+One to send the scalfmm repository to plafrim.
+
+#+include: "~/narval.sh" src sh
+
+Note : you might have to add your ssh_key again if you killed your previous ssh agent.
+
+Then, the one that is runned on plafrim. It configure, compile and submit all the jobs on plafrim.
+
+#+begin_src sh
+module add slurm
+module add compiler/gcc/5.3.0 tools/module_cat/1.0.0 intel/mkl/64/11.2/2016.0.0
+
+# specific to plafrim to get missing system libs
+export LIBRARY_PATH=/usr/lib64:$LIBRARY_PATH
+
+# load spack env
+export SPACK_ROOT=$HOME/spack
+. $SPACK_ROOT/share/spack/setup-env.sh
+
+spack load fftw
+spack load hwloc
+spack load openmpi
+spack load starpu@svn-trunk+fxt
+cd scalfmm/Build
+rm -rf CMakeCache.txt CMakeFiles > /dev/null
+cmake .. -DSCALFMM_USE_MPI=ON -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_FFT=ON -DSCALFMM_BUILD_EXAMPLES=ON -DSCALFMM_BUILD_TESTS=ON -DCMAKE_CXX_COMPILER=`which g++` 
+make clean
+make  testBlockedChebyshev testBlockedImplicitChebyshev testBlockedMpiChebyshev testBlockedImplicitAlgorithm testBlockedMpiAlgorithm 
+
+cd ..
+
+files=./jobs/*.sh
+mkdir jobs_result
+for f in $files
+do
+    echo "Submit $f..."
+    sbatch $f
+    
+    if [ "$?" != "0" ] ; then 
+        break;
+    fi
+done
+#+end_src
+
+*** Export orgmode somewhere accessible
+A good place I found to put your orgmode file and its html part is on the inria forge, in your project repository.
+For me it was the path /home/groups/scalfmm/htdocs.
+So I created a directory named orgmode and create the following script to update the files.
+
+#+include: "~/scalfmm/export_orgmode.sh" src sh
+
 * Implicit MPI FMM
 ** Sequential Task Flow with implicit communication
    There is very few difference between the STF and implicite MPI STF.
@@ -254,9 +451,11 @@ One node has 2 Dodeca-core Haswell Intel® Xeon® E5-2680, 2,5GHz, 128Go de RAM 
 
 #+begin_src src C
 mpiComm.global().barrier();
-timer.tic();
+FTic timer;
+starpu_fxt_start_profiling();
 groupalgo.execute();
 mpiComm.global().barrier();
+starpu_fxt_stop_profiling();
 timer.tac();
 #+end_src
 
@@ -306,158 +505,6 @@ The scripts of the jobs for StarPU with implicit mpi on 10 nodes:
 
 #+CAPTION:  Parallel efficiency on cube ([[./output/cube-parallel-efficiency.pdf][pdf]]).
 [[./output/cube-parallel-efficiency.png]]
-
-* Notes
-** Installing
-
-Installing Fxt for debbuging StarPU:
-#+begin_src
-wget http://download.savannah.gnu.org/releases/fkt/fxt-0.2.11.tar.gz
-tar xf fxt-0.2.11.tar.gz
-cd fxt
-mkdir install
-./configure --prefix=$PWD/install
-make
-make install
-export PKG_CONFIG_PATH=/home/mkhannou/fxt/install/lib/pkgconfig:$PKG_CONFIG_PATH
-#+end_src
-
-Then, install StarPu and its dependancy.
-#+begin_src
-pacman -S hwloc
-svn checkout svn://scm.gforge.inria.fr/svn/starpu/trunk StarPU
-cd StarPU
-./autogen.sh
-mkdir install
-./configure --prefix=$PWD/install --with-fxt
-make
-make install
-#+end_src
-
-This are envirronement variable that might be useful to set. But of course, be smart and replace the path in STARPU_DIR by your path.
-#+begin_src
-export STARPU_DIR=/home/mkhannou/StarPU/install
-export PKG_CONFIG_PATH=$STARPU_DIR/lib/pkgconfig:$PKG_CONFIG_PATH
-export LD_LIBRARY_PATH=$STARPU_DIR/lib:$LD_LIBRARY_PATH
-export STARPU_GENERATE_TRACE=1
-export PATH=$PATH:$STARPU_DIR/bin
-#+end_src
-
-If you are on Debian or Debian like distribution, simpler way to install StarPU are described [[http://starpu.gforge.inria.fr/doc/html/BuildingAndInstallingStarPU.html][here]].
-
-Finally, install Scalfmm:
-#+begin_src
-git clone git+ssh://mkhannou@scm.gforge.inria.fr/gitroot/scalfmm/scalfmm.git
-cd scalfmm
-git checkout mpi_implicit
-cd Build
-cmake .. -DSCALFMM_USE_MPI=ON -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_FFT=ON -DSCALFMM_BUILD_EXAMPLES=ON -DSCALFMM_BUILD_TESTS=ON -DCMAKE_CXX_COMPILER=`which g++` 
-make  testBlockedChebyshev testBlockedImplicitChebyshev testBlockedMpiChebyshev testBlockedImplicitAlgorithm testBlockedMpiAlgorithm 
-#+end_src
-
-** Useful script
-*** Setup on plafrim
-To setup everything that is needed on plafrim I first install spack.
-#+begin_src sh
-git clone https://github.com/fpruvost/spack.git
-#+end_src
-
-
-
-Then you have to add spack binary in your path.
-
-#+begin_src sh
-PATH=$PATH:spack/bin/spack
-#+end_src
-If your default python interpreter isn't python 2, you might have to replace the first line of spack/bin/spack by
-#+begin_src sh
-#!/usr/bin/env python2
-#+end_src
-So the script is automaticly run with python 2.
-Then, you have to add your ssh key to your ssh agent. The following script kill all ssh agent, then respawn it and add the ssh key.
-#+begin_src sh
-SSH_KEY=".ssh/rsa_inria"
-killall -9 ssh-agent > /dev/null
-eval `ssh-agent` > /dev/null
-ssh-add $SSH_KEY
-#+end_src
-
-Because on plafrim, users can't connect to the rest of the world, you have to copy data there.
-So copy spack directory, use spack to create a mirror that will be sent to plafrim so spack will be able to install package.
-
-#+begin_src sh
-MIRROR_DIRECTORY="tarball_scalfmm"
-#Copy spack to plafrim
-scp -r spack mkhannou@plafrim:/home/mkhannou
-#Recreate the mirror
-rm -rf $MIRROR_DIRECTORY
-mkdir $MIRROR_DIRECTORY
-spack mirror create -D -d $MIRROR_DIRECTORY starpu@svn-trunk+mpi \^openmpi
-#Create an archive and send it to plafrim
-tar czf /tmp/canard.tar.gz $MIRROR_DIRECTORY 
-scp /tmp/canard.tar.gz mkhannou@plafrim-ext:/home/mkhannou
-rm -f /tmp/canard.tar.gz
-#Install on plafrim
-ssh mkhannou@plafrim 'tar xf canard.tar.gz; rm -f canard.tar.gz'
-ssh mkhannou@plafrim "/home/mkhannou/spack/bin/spack mirror add local_filesystem file:///home/mkhannou/$MIRROR_DIRECTORY"
-ssh mkhannou@plafrim '/home/mkhannou/spack/bin/spack install starpu@svn-trunk+mpi+fxt \^openmpi'
-#+end_src
-
-      TODO add script I add on plafrim side with library links.
-
-*** Execute on plafrim
-To run my tests on plafrim, I used the two following scripts.
-One to send the scalfmm repository to plafrim.
-
-#+include: "~/narval.sh" src sh
-
-Note : you might have to add your ssh_key again if you killed your previous ssh agent.
-
-Then, the one that is runned on plafrim. It configure, compile and submit all the jobs on plafrim.
-
-#+begin_src sh
-module add slurm
-module add compiler/gcc/5.3.0 tools/module_cat/1.0.0 intel/mkl/64/11.2/2016.0.0
-
-# specific to plafrim to get missing system libs
-export LIBRARY_PATH=/usr/lib64:$LIBRARY_PATH
-
-# load spack env
-export SPACK_ROOT=$HOME/spack
-. $SPACK_ROOT/share/spack/setup-env.sh
-
-spack load fftw
-spack load hwloc
-spack load openmpi
-spack load starpu@svn-trunk+fxt
-cd scalfmm/Build
-rm -rf CMakeCache.txt CMakeFiles > /dev/null
-cmake .. -DSCALFMM_USE_MPI=ON -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_FFT=ON -DSCALFMM_BUILD_EXAMPLES=ON -DSCALFMM_BUILD_TESTS=ON -DCMAKE_CXX_COMPILER=`which g++` 
-make clean
-make  testBlockedChebyshev testBlockedImplicitChebyshev testBlockedMpiChebyshev testBlockedImplicitAlgorithm testBlockedMpiAlgorithm 
-
-cd ..
-
-files=./jobs/*.sh
-mkdir jobs_result
-for f in $files
-do
-    echo "Submit $f..."
-    sbatch $f
-    
-    if [ "$?" != "0" ] ; then 
-        break;
-    fi
-done
-#+end_src
-
-*** Export orgmode somewhere accessible
-A good place I found to put your orgmode file and its html part is on the inria forge, in your project repository.
-For me it was the path /home/groups/scalfmm/htdocs.
-So I created a directory named orgmode and create the following script to update the files.
-
-#+include: "~/scalfmm/export_orgmode.sh" src sh
-
 
 * Journal
 ** Implémentation mpi implicite très naïve

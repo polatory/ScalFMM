@@ -170,8 +170,10 @@ int main(int argc, char* argv[]){
         GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
 		mpiComm.global().barrier();
         timer.tic();
+		starpu_fxt_start_profiling();
         groupalgo.execute();
 		mpiComm.global().barrier();
+		starpu_fxt_stop_profiling();
         timer.tac();
 		timeAverage(mpiComm.global().processId(), mpiComm.global().processCount(), timer.elapsed());
         //std::cout << "Done  " << "(@Algorithm = " << timer.elapsed() << "s)." << std::endl;

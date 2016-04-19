@@ -140,10 +140,12 @@ int main(int argc, char* argv[]){
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel, distributedMortonIndex);
 	mpiComm.global().barrier();
 	FTic timerExecute;
+	starpu_fxt_start_profiling();
 	groupalgo.execute(operationsToProceed);
 	mpiComm.global().barrier();
-	double elapsedTime = timerExecute.tacAndElapsed();
-	timeAverage(mpi_rank, nproc, elapsedTime);
+	starpu_fxt_stop_profiling();
+	timerExecute.tac();
+	timeAverage(mpi_rank, nproc, timerExecute.elapsed());
 	
     // Validate the result
     if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){

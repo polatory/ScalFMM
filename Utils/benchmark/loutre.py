@@ -55,7 +55,7 @@ class ScalFMMConfig(object):
         return header
 
 
-    def gen_record(self, global_time, runtime_time, task_time, idle_time, scheduling_time, rmem):
+    def gen_record(self, global_time, runtime_time, task_time, idle_time, scheduling_time, communication_time, rmem):
         columns = [
             self.model,
             self.algorithm,
@@ -69,7 +69,7 @@ class ScalFMMConfig(object):
             task_time,
             idle_time,
             scheduling_time,
-            0.0,
+            communication_time,
             rmem,
         ]
         record = ""
@@ -97,6 +97,7 @@ def get_times_from_trace_file(filename):
     idle_time = 0.0
     runtime_time = 0.0
     scheduling_time = 0.0
+    communication_time = 0.0
     for line in stdout.decode().splitlines():
         arr = line.replace("\"", "").split(",")
         if arr[0] == "Name":
@@ -112,7 +113,7 @@ def get_times_from_trace_file(filename):
             elif arr[2] == "Other":
                 idle_time = float(arr[3])
             # sys.exit("Invalid time!")
-    return runtime_time, task_time, idle_time, scheduling_time
+    return runtime_time, task_time, idle_time, scheduling_time, communication_time
 
 def main():
     output_trace_file=""
@@ -158,7 +159,7 @@ def main():
             if re.search("Average", line):
                 a = re.findall("[-+]?\d*\.\d+|\d+", line)
                 if len(a) == 1:
-                    global_time = a[0]
+                    global_time = float(a[0])*1000 # Else it is in sec
             elif re.search("Total particles", line):
                 a = re.findall("[-+]?\d*\.\d+|\d+", line)
                 if len(a) == 1:
@@ -185,16 +186,22 @@ def main():
                 config.algorithm = line[line.index(":")+1:].strip()
 
     if (os.path.isfile(trace_filename)): #Time in milli
-        runtime_time, task_time, idle_time, scheduling_time = get_times_from_trace_file(trace_filename)
+        runtime_time, task_time, idle_time, scheduling_time, communication_time = get_times_from_trace_file(trace_filename)
     else:
         print("File doesn't exist " + trace_filename)
+    sum_time = (runtime_time + task_time + scheduling_time + communication_time)/(config.num_nodes*config.num_threads)
+    diff_time = float('%.2f'%(abs(global_time-sum_time)/global_time))
+
+    if diff_time > 0.01:   
+        print('\033[31m/!\\Timing Error of ' + str(diff_time) + '\033[39m')
 
     # Write a record to the output file.
-    output_file.write(config.gen_record(float(global_time),
+    output_file.write(config.gen_record(global_time,
                       float(runtime_time),
                       float(task_time),
                       float(idle_time),
                       float(scheduling_time),
+                      float(communication_time),
                       int(rmem)))
 
 main()

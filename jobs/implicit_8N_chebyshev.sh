@@ -26,6 +26,7 @@ export STARPU_NCPU=24
 export NB_PARTICLE_PER_NODE=6250000
 export STARPU_FXT_PREFIX=$SLURM_JOB_ID
 export FINAL_DIR="`pwd`/dir_$SLURM_JOB_ID"
+export STARPU_COMM_STATS=1
 $NUMACTL=numactl --interleave=all
 mkdir $FINAL_DIR
 echo "my jobID: " $SLURM_JOB_ID > $FINAL_DIR/stdout
@@ -37,7 +38,7 @@ echo "Group size: " $GROUP_SIZE >> $FINAL_DIR/stdout
 echo "Algorithm: implicit" >> $FINAL_DIR/stdout
 echo "Particle per node: " $NB_PARTICLE_PER_NODE >> $FINAL_DIR/stdout
 echo "Total particles: " $(($NB_PARTICLE_PER_NODE*$NB_NODE)) >> $FINAL_DIR/stdout
-mpiexec -n $NB_NODE $NUMACTL ./Build/Tests/Release/testBlockedImplicitChebyshev -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation | grep Average >> $FINAL_DIR/stdout
+mpiexec -n $NB_NODE $NUMACTL ./Build/Tests/Release/testBlockedImplicitChebyshev -nb $NB_PARTICLE_PER_NODE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation >> $FINAL_DIR/stdout
 
 #Create argument list for starpu_fxt_tool
 cd $FINAL_DIR

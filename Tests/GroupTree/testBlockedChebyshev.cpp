@@ -121,8 +121,11 @@ int main(int argc, char* argv[]){
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
 
     timer.tic();
+	starpu_fxt_start_profiling();
     groupalgo.execute();
-    std::cout << "Average executed in in " << timer.tacAndElapsed() << "s\n";
+	starpu_fxt_stop_profiling();
+	timer.tac();
+    std::cout << "Average executed in in " << timer.elapsed() << "s\n";
 
     // Validate the result
     if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
