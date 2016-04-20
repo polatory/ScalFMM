@@ -464,34 +464,38 @@ protected:
         p2m_cl.modes[1] = STARPU_RW;
         p2m_cl.modes[2] = STARPU_R;
         p2m_cl.name = "p2m_cl";
-        /* ############################################ */
-        /*      Automatically generated code */
-        	 // Adding multiple regression codelet model for codelet p2m_cl
-        	 // Computed from execution:  4 Native execution on miriel
-        	 // Adjusted R-squared:  0.946292861692958
-        	 p2m_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
-        	 p2m_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
-        	 p2m_cl.model->symbol = p2m_cl.name;
+/* ################################################ */
+/* Defining perfmodel, #parameters and their names  */
+	p2m_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
+	p2m_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
+    p2m_cl.model->symbol = p2m_cl.name;
+	p2m_cl.model->parameters = p2m_cl_perf_func;
+	p2m_cl.model->nparameters = 4;
+	p2m_cl.model->parameters_names = (const char **) calloc(1, p2m_cl.model->nparameters*sizeof(char *));
+	p2m_cl.model->parameters_names[0] = "A";
+	p2m_cl.model->parameters_names[1] = "B";
+	p2m_cl.model->parameters_names[2] = "C";
+	p2m_cl.model->parameters_names[3] = "D";
+/* Automatically generated code for parameter combinations */
+    // Adding multiple regression codelet model for codelet p2m_cl
+    // Computed from execution:  4 Native execution on miriel
+    // Adjusted R-squared:  0.0805250871530648
+	p2m_cl.model->ncombinations = 1;
+    p2m_cl.model->combinations = (unsigned **) malloc(p2m_cl.model->ncombinations*sizeof(unsigned *));
 
-        	 p2m_cl.model->nparameters = 1;
-        	 p2m_cl.model->ncombinations = 1;
-        	 p2m_cl.model->combinations = (unsigned **) malloc(p2m_cl.model->ncombinations*sizeof(unsigned *));
+    if (p2m_cl.model->combinations)
+    {
+       for (unsigned i = 0; i < p2m_cl.model->ncombinations; i++)
+       {
+           p2m_cl.model->combinations[i] = (unsigned *) malloc(p2m_cl.model->nparameters*sizeof(unsigned));
+       }
+    }
 
-        	 if (p2m_cl.model->combinations)
-        	 {
-        	   for (unsigned i = 0; i < p2m_cl.model->ncombinations; i++)
-        	   {
-        	     p2m_cl.model->combinations[i] = (unsigned *) malloc(p2m_cl.model->nparameters*sizeof(unsigned));
-        	   }
-        	 }
-
-        	 p2m_cl.model->parameters_names = (const char **) calloc(1, p2m_cl.model->ncombinations*sizeof(char *));
-        	 p2m_cl.model->parameters_names[0] = "B";
-        	 p2m_cl.model->combinations[0][0] = 1;
-
-        	 p2m_cl.model->parameters = p2m_cl_perf_func;
-        /* ############################################ */
-
+	p2m_cl.model->combinations[0][0] = 0;
+	p2m_cl.model->combinations[0][1] = 1;
+	p2m_cl.model->combinations[0][2] = 0;
+	p2m_cl.model->combinations[0][3] = 0;
+/* ####################################################### */
         memset(&m2m_cl, 0, sizeof(m2m_cl));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportM2M(FSTARPU_CPU_IDX)){
@@ -518,40 +522,60 @@ protected:
         m2m_cl.name = "m2m_cl";
         m2m_cl.dyn_modes[2] = STARPU_R;
         m2m_cl.dyn_modes[3] = STARPU_R;
-        /* ############################################ */
-        /*      Automatically generated code */
-        	 // Adding multiple regression codelet model for codelet m2m_cl
-        	 // Computed from execution:  4 Native execution on miriel
-        	 // Adjusted R-squared:  0.162558068051248
-        	 m2m_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
-        	 m2m_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
-        	 m2m_cl.model->symbol = m2m_cl.name;
+/* ################################################ */
+/* Defining perfmodel, #parameters and their names  */
+	m2m_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
+	m2m_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
+    m2m_cl.model->symbol = m2m_cl.name;
+	m2m_cl.model->parameters = m2m_cl_perf_func;
+	m2m_cl.model->nparameters = 7;
+	m2m_cl.model->parameters_names = (const char **) calloc(1, m2m_cl.model->nparameters*sizeof(char *));
+	m2m_cl.model->parameters_names[0] = "A";
+	m2m_cl.model->parameters_names[1] = "B";
+	m2m_cl.model->parameters_names[2] = "C";
+	m2m_cl.model->parameters_names[3] = "D";
+	m2m_cl.model->parameters_names[4] = "E";
+	m2m_cl.model->parameters_names[5] = "F";
+	m2m_cl.model->parameters_names[6] = "G";
+/* Automatically generated code for parameter combinations */
+    // Adding multiple regression codelet model for codelet m2m_cl
+    // Computed from execution:  4 Native execution on miriel
+    // Adjusted R-squared:  0.0805250871530648
+	m2m_cl.model->ncombinations = 3;
+    m2m_cl.model->combinations = (unsigned **) malloc(m2m_cl.model->ncombinations*sizeof(unsigned *));
 
-        	 m2m_cl.model->nparameters = 2;
-        	 m2m_cl.model->ncombinations = 3;
-        	 m2m_cl.model->combinations = (unsigned **) malloc(m2m_cl.model->ncombinations*sizeof(unsigned *));
+    if (m2m_cl.model->combinations)
+    {
+       for (unsigned i = 0; i < m2m_cl.model->ncombinations; i++)
+       {
+           m2m_cl.model->combinations[i] = (unsigned *) malloc(m2m_cl.model->nparameters*sizeof(unsigned));
+       }
+    }
 
-        	 if (m2m_cl.model->combinations)
-        	 {
-        	   for (unsigned i = 0; i < m2m_cl.model->ncombinations; i++)
-        	   {
-        	     m2m_cl.model->combinations[i] = (unsigned *) malloc(m2m_cl.model->nparameters*sizeof(unsigned));
-        	   }
-        	 }
-
-        	 m2m_cl.model->parameters_names = (const char **) calloc(1, m2m_cl.model->ncombinations*sizeof(char *));
-        	 m2m_cl.model->parameters_names[0] = "E";
-        	 m2m_cl.model->combinations[0][0] = 1;
-        	 m2m_cl.model->combinations[0][1] = 0;
-        	 m2m_cl.model->parameters_names[1] = "F";
-        	 m2m_cl.model->combinations[1][0] = 0;
-        	 m2m_cl.model->combinations[1][1] = 1;
-        	 m2m_cl.model->parameters_names[2] = "E*F";
-        	 m2m_cl.model->combinations[2][0] = 1;
-        	 m2m_cl.model->combinations[2][1] = 1;
-
-        	 m2m_cl.model->parameters = m2m_cl_perf_func;
-        /* ############################################ */
+	m2m_cl.model->combinations[0][0] = 0;
+	m2m_cl.model->combinations[0][1] = 0;
+	m2m_cl.model->combinations[0][2] = 0;
+	m2m_cl.model->combinations[0][3] = 0;
+	m2m_cl.model->combinations[0][4] = 1;
+	m2m_cl.model->combinations[0][5] = 0;
+	m2m_cl.model->combinations[0][6] = 0;
+	
+	m2m_cl.model->combinations[1][0] = 0;
+	m2m_cl.model->combinations[1][1] = 0;
+	m2m_cl.model->combinations[1][2] = 0;
+	m2m_cl.model->combinations[1][3] = 0;
+	m2m_cl.model->combinations[1][4] = 0;
+	m2m_cl.model->combinations[1][5] = 1;
+	m2m_cl.model->combinations[1][6] = 0;
+	
+	m2m_cl.model->combinations[2][0] = 0;
+	m2m_cl.model->combinations[2][1] = 0;
+	m2m_cl.model->combinations[2][2] = 0;
+	m2m_cl.model->combinations[2][3] = 0;
+	m2m_cl.model->combinations[2][4] = 1;
+	m2m_cl.model->combinations[2][5] = 1;
+	m2m_cl.model->combinations[2][6] = 0;
+/* ####################################################### */
         memset(&l2l_cl, 0, sizeof(l2l_cl));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportL2L(FSTARPU_CPU_IDX)){
@@ -579,15 +603,23 @@ protected:
         l2l_cl.dyn_modes[2] = STARPU_R;
         l2l_cl.dyn_modes[3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
         /* ############################################ */
+	l2l_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
+	l2l_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
+    l2l_cl.model->symbol = l2l_cl.name;
+	l2l_cl.model->parameters = l2l_cl_perf_func;
+	l2l_cl.model->nparameters = 7;
+	l2l_cl.model->parameters_names = (const char **) calloc(1, l2l_cl.model->nparameters*sizeof(char *));
+	l2l_cl.model->parameters_names[0] = "A";
+	l2l_cl.model->parameters_names[1] = "B";
+	l2l_cl.model->parameters_names[2] = "C";
+	l2l_cl.model->parameters_names[3] = "D";
+	l2l_cl.model->parameters_names[4] = "E";
+	l2l_cl.model->parameters_names[5] = "F";
+	l2l_cl.model->parameters_names[6] = "G";
         /*      Automatically generated code */
         	 // Adding multiple regression codelet model for codelet l2l_cl
         	 // Computed from execution:  4 Native execution on miriel
         	 // Adjusted R-squared:  0.124904804564829
-        	 l2l_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
-        	 l2l_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
-        	 l2l_cl.model->symbol = l2l_cl.name;
-
-        	 l2l_cl.model->nparameters = 3;
         	 l2l_cl.model->ncombinations = 7;
         	 l2l_cl.model->combinations = (unsigned **) malloc(l2l_cl.model->ncombinations*sizeof(unsigned *));
 
@@ -599,37 +631,61 @@ protected:
         	   }
         	 }
 
-        	 l2l_cl.model->parameters_names = (const char **) calloc(1, l2l_cl.model->ncombinations*sizeof(char *));
-        	 l2l_cl.model->parameters_names[0] = "D";
-        	 l2l_cl.model->combinations[0][0] = 1;
-        	 l2l_cl.model->combinations[0][1] = 0;
-        	 l2l_cl.model->combinations[0][2] = 0;
-        	 l2l_cl.model->parameters_names[1] = "E";
-        	 l2l_cl.model->combinations[1][0] = 0;
-        	 l2l_cl.model->combinations[1][1] = 1;
-        	 l2l_cl.model->combinations[1][2] = 0;
-        	 l2l_cl.model->parameters_names[2] = "F";
-        	 l2l_cl.model->combinations[2][0] = 0;
-        	 l2l_cl.model->combinations[2][1] = 0;
-        	 l2l_cl.model->combinations[2][2] = 1;
-        	 l2l_cl.model->parameters_names[3] = "D*E";
-        	 l2l_cl.model->combinations[3][0] = 1;
-        	 l2l_cl.model->combinations[3][1] = 1;
-        	 l2l_cl.model->combinations[3][2] = 0;
-        	 l2l_cl.model->parameters_names[4] = "D*F";
-        	 l2l_cl.model->combinations[4][0] = 1;
-        	 l2l_cl.model->combinations[4][1] = 0;
-        	 l2l_cl.model->combinations[4][2] = 1;
-        	 l2l_cl.model->parameters_names[5] = "E*F";
-        	 l2l_cl.model->combinations[5][0] = 0;
-        	 l2l_cl.model->combinations[5][1] = 1;
-        	 l2l_cl.model->combinations[5][2] = 1;
-        	 l2l_cl.model->parameters_names[6] = "D*E*F";
-        	 l2l_cl.model->combinations[6][0] = 1;
-        	 l2l_cl.model->combinations[6][1] = 1;
-        	 l2l_cl.model->combinations[6][2] = 1;
+	l2l_cl.model->combinations[0][0] = 0;
+	l2l_cl.model->combinations[0][1] = 0;
+	l2l_cl.model->combinations[0][2] = 0;
+	l2l_cl.model->combinations[0][3] = 1;
+	l2l_cl.model->combinations[0][4] = 0;
+	l2l_cl.model->combinations[0][5] = 0;
+	l2l_cl.model->combinations[0][6] = 0;
 
-        	 l2l_cl.model->parameters = l2l_cl_perf_func;
+	l2l_cl.model->combinations[1][0] = 0;
+	l2l_cl.model->combinations[1][1] = 0;
+	l2l_cl.model->combinations[1][2] = 0;
+	l2l_cl.model->combinations[1][3] = 0;
+	l2l_cl.model->combinations[1][4] = 1;
+	l2l_cl.model->combinations[1][5] = 0;
+	l2l_cl.model->combinations[1][6] = 0;
+
+	l2l_cl.model->combinations[2][0] = 0;
+	l2l_cl.model->combinations[2][1] = 0;
+	l2l_cl.model->combinations[2][2] = 0;
+	l2l_cl.model->combinations[2][3] = 0;
+	l2l_cl.model->combinations[2][4] = 0;
+	l2l_cl.model->combinations[2][5] = 1;
+	l2l_cl.model->combinations[2][6] = 0;
+
+	l2l_cl.model->combinations[3][0] = 0;
+	l2l_cl.model->combinations[3][1] = 0;
+	l2l_cl.model->combinations[3][2] = 0;
+	l2l_cl.model->combinations[3][3] = 1;
+	l2l_cl.model->combinations[3][4] = 1;
+	l2l_cl.model->combinations[3][5] = 0;
+	l2l_cl.model->combinations[3][6] = 0;
+
+	l2l_cl.model->combinations[4][0] = 0;
+	l2l_cl.model->combinations[4][1] = 0;
+	l2l_cl.model->combinations[4][2] = 0;
+	l2l_cl.model->combinations[4][3] = 1;
+	l2l_cl.model->combinations[4][4] = 0;
+	l2l_cl.model->combinations[4][5] = 1;
+	l2l_cl.model->combinations[4][6] = 0;
+
+	l2l_cl.model->combinations[5][0] = 0;
+	l2l_cl.model->combinations[5][1] = 0;
+	l2l_cl.model->combinations[5][2] = 0;
+	l2l_cl.model->combinations[5][3] = 0;
+	l2l_cl.model->combinations[5][4] = 1;
+	l2l_cl.model->combinations[5][5] = 1;
+	l2l_cl.model->combinations[5][6] = 0;
+
+	l2l_cl.model->combinations[6][0] = 0;
+	l2l_cl.model->combinations[6][1] = 0;
+	l2l_cl.model->combinations[6][2] = 0;
+	l2l_cl.model->combinations[6][3] = 1;
+	l2l_cl.model->combinations[6][4] = 1;
+	l2l_cl.model->combinations[6][5] = 1;
+	l2l_cl.model->combinations[6][6] = 0;
         /* ############################################ */
 
 
@@ -660,15 +716,23 @@ protected:
         l2l_cl_nocommute.dyn_modes[2] = STARPU_R;
         l2l_cl_nocommute.dyn_modes[3] = STARPU_RW;
         /* ############################################ */
+	l2l_cl_nocommute.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
+	l2l_cl_nocommute.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
+    l2l_cl_nocommute.model->symbol = l2l_cl_nocommute.name;
+	l2l_cl_nocommute.model->parameters = l2l_cl_nocommute_perf_func;
+	l2l_cl_nocommute.model->nparameters = 7;
+	l2l_cl_nocommute.model->parameters_names = (const char **) calloc(1, l2l_cl_nocommute.model->nparameters*sizeof(char *));
+	l2l_cl_nocommute.model->parameters_names[0] = "A";
+	l2l_cl_nocommute.model->parameters_names[1] = "B";
+	l2l_cl_nocommute.model->parameters_names[2] = "C";
+	l2l_cl_nocommute.model->parameters_names[3] = "D";
+	l2l_cl_nocommute.model->parameters_names[4] = "E";
+	l2l_cl_nocommute.model->parameters_names[5] = "F";
+	l2l_cl_nocommute.model->parameters_names[6] = "G";
         /*      Automatically generated code */
-        	 // Adding multiple regression codelet model for codelet l2l_cl
+        	 // Adding multiple regression codelet model for codelet l2l_cl_nocommute
         	 // Computed from execution:  4 Native execution on miriel
         	 // Adjusted R-squared:  0.124904804564829
-        	 l2l_cl_nocommute.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
-        	 l2l_cl_nocommute.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
-        	 l2l_cl_nocommute.model->symbol = l2l_cl_nocommute.name;
-
-        	 l2l_cl_nocommute.model->nparameters = 3;
         	 l2l_cl_nocommute.model->ncombinations = 7;
         	 l2l_cl_nocommute.model->combinations = (unsigned **) malloc(l2l_cl_nocommute.model->ncombinations*sizeof(unsigned *));
 
@@ -680,37 +744,61 @@ protected:
         	   }
         	 }
 
-        	 l2l_cl_nocommute.model->parameters_names = (const char **) calloc(1, l2l_cl_nocommute.model->ncombinations*sizeof(char *));
-        	 l2l_cl_nocommute.model->parameters_names[0] = "D";
-        	 l2l_cl_nocommute.model->combinations[0][0] = 1;
-        	 l2l_cl_nocommute.model->combinations[0][1] = 0;
-        	 l2l_cl_nocommute.model->combinations[0][2] = 0;
-        	 l2l_cl_nocommute.model->parameters_names[1] = "E";
-        	 l2l_cl_nocommute.model->combinations[1][0] = 0;
-        	 l2l_cl_nocommute.model->combinations[1][1] = 1;
-        	 l2l_cl_nocommute.model->combinations[1][2] = 0;
-        	 l2l_cl_nocommute.model->parameters_names[2] = "F";
-        	 l2l_cl_nocommute.model->combinations[2][0] = 0;
-        	 l2l_cl_nocommute.model->combinations[2][1] = 0;
-        	 l2l_cl_nocommute.model->combinations[2][2] = 1;
-        	 l2l_cl_nocommute.model->parameters_names[3] = "D*E";
-        	 l2l_cl_nocommute.model->combinations[3][0] = 1;
-        	 l2l_cl_nocommute.model->combinations[3][1] = 1;
-        	 l2l_cl_nocommute.model->combinations[3][2] = 0;
-        	 l2l_cl_nocommute.model->parameters_names[4] = "D*F";
-        	 l2l_cl_nocommute.model->combinations[4][0] = 1;
-        	 l2l_cl_nocommute.model->combinations[4][1] = 0;
-        	 l2l_cl_nocommute.model->combinations[4][2] = 1;
-        	 l2l_cl_nocommute.model->parameters_names[5] = "E*F";
-        	 l2l_cl_nocommute.model->combinations[5][0] = 0;
-        	 l2l_cl_nocommute.model->combinations[5][1] = 1;
-        	 l2l_cl_nocommute.model->combinations[5][2] = 1;
-        	 l2l_cl_nocommute.model->parameters_names[6] = "D*E*F";
-        	 l2l_cl_nocommute.model->combinations[6][0] = 1;
-        	 l2l_cl_nocommute.model->combinations[6][1] = 1;
-        	 l2l_cl_nocommute.model->combinations[6][2] = 1;
+	l2l_cl_nocommute.model->combinations[0][0] = 0;
+	l2l_cl_nocommute.model->combinations[0][1] = 0;
+	l2l_cl_nocommute.model->combinations[0][2] = 0;
+	l2l_cl_nocommute.model->combinations[0][3] = 1;
+	l2l_cl_nocommute.model->combinations[0][4] = 0;
+	l2l_cl_nocommute.model->combinations[0][5] = 0;
+	l2l_cl_nocommute.model->combinations[0][6] = 0;
 
-        	 l2l_cl_nocommute.model->parameters = l2l_cl_nocommute_perf_func;
+	l2l_cl_nocommute.model->combinations[1][0] = 0;
+	l2l_cl_nocommute.model->combinations[1][1] = 0;
+	l2l_cl_nocommute.model->combinations[1][2] = 0;
+	l2l_cl_nocommute.model->combinations[1][3] = 0;
+	l2l_cl_nocommute.model->combinations[1][4] = 1;
+	l2l_cl_nocommute.model->combinations[1][5] = 0;
+	l2l_cl_nocommute.model->combinations[1][6] = 0;
+
+	l2l_cl_nocommute.model->combinations[2][0] = 0;
+	l2l_cl_nocommute.model->combinations[2][1] = 0;
+	l2l_cl_nocommute.model->combinations[2][2] = 0;
+	l2l_cl_nocommute.model->combinations[2][3] = 0;
+	l2l_cl_nocommute.model->combinations[2][4] = 0;
+	l2l_cl_nocommute.model->combinations[2][5] = 1;
+	l2l_cl_nocommute.model->combinations[2][6] = 0;
+
+	l2l_cl_nocommute.model->combinations[3][0] = 0;
+	l2l_cl_nocommute.model->combinations[3][1] = 0;
+	l2l_cl_nocommute.model->combinations[3][2] = 0;
+	l2l_cl_nocommute.model->combinations[3][3] = 1;
+	l2l_cl_nocommute.model->combinations[3][4] = 1;
+	l2l_cl_nocommute.model->combinations[3][5] = 0;
+	l2l_cl_nocommute.model->combinations[3][6] = 0;
+
+	l2l_cl_nocommute.model->combinations[4][0] = 0;
+	l2l_cl_nocommute.model->combinations[4][1] = 0;
+	l2l_cl_nocommute.model->combinations[4][2] = 0;
+	l2l_cl_nocommute.model->combinations[4][3] = 1;
+	l2l_cl_nocommute.model->combinations[4][4] = 0;
+	l2l_cl_nocommute.model->combinations[4][5] = 1;
+	l2l_cl_nocommute.model->combinations[4][6] = 0;
+
+	l2l_cl_nocommute.model->combinations[5][0] = 0;
+	l2l_cl_nocommute.model->combinations[5][1] = 0;
+	l2l_cl_nocommute.model->combinations[5][2] = 0;
+	l2l_cl_nocommute.model->combinations[5][3] = 0;
+	l2l_cl_nocommute.model->combinations[5][4] = 1;
+	l2l_cl_nocommute.model->combinations[5][5] = 1;
+	l2l_cl_nocommute.model->combinations[5][6] = 0;
+
+	l2l_cl_nocommute.model->combinations[6][0] = 0;
+	l2l_cl_nocommute.model->combinations[6][1] = 0;
+	l2l_cl_nocommute.model->combinations[6][2] = 0;
+	l2l_cl_nocommute.model->combinations[6][3] = 1;
+	l2l_cl_nocommute.model->combinations[6][4] = 1;
+	l2l_cl_nocommute.model->combinations[6][5] = 1;
+	l2l_cl_nocommute.model->combinations[6][6] = 0;
         /* ############################################ */
 
         memset(&l2p_cl, 0, sizeof(l2p_cl));
@@ -743,31 +831,36 @@ protected:
 #endif
         l2p_cl.name = "l2p_cl";
         /* ############################################ */
+	/* Defining perfmodel, #parameters and their names  */
+	l2p_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
+	l2p_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
+    l2p_cl.model->symbol = l2p_cl.name;
+	l2p_cl.model->parameters = l2p_cl_perf_func;
+	l2p_cl.model->nparameters = 4;
+	l2p_cl.model->parameters_names = (const char **) calloc(1, l2p_cl.model->nparameters*sizeof(char *));
+	l2p_cl.model->parameters_names[0] = "A";
+	l2p_cl.model->parameters_names[1] = "B";
+	l2p_cl.model->parameters_names[2] = "C";
+	l2p_cl.model->parameters_names[3] = "D";
         /*      Automatically generated code */
         	 // Adding multiple regression codelet model for codelet l2p_cl
         	 // Computed from execution:  4 Native execution on miriel
         	 // Adjusted R-squared:  0.958336736971338
-        	 l2p_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
-        	 l2p_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
-        	 l2p_cl.model->symbol = l2p_cl.name;
+	l2p_cl.model->ncombinations = 1;
+    l2p_cl.model->combinations = (unsigned **) malloc(l2p_cl.model->ncombinations*sizeof(unsigned *));
 
-        	 l2p_cl.model->nparameters = 1;
-        	 l2p_cl.model->ncombinations = 1;
-        	 l2p_cl.model->combinations = (unsigned **) malloc(l2p_cl.model->ncombinations*sizeof(unsigned *));
+    if (l2p_cl.model->combinations)
+    {
+       for (unsigned i = 0; i < l2p_cl.model->ncombinations; i++)
+       {
+           l2p_cl.model->combinations[i] = (unsigned *) malloc(l2p_cl.model->nparameters*sizeof(unsigned));
+       }
+    }
 
-        	 if (l2p_cl.model->combinations)
-        	 {
-        	   for (unsigned i = 0; i < l2p_cl.model->ncombinations; i++)
-        	   {
-        	     l2p_cl.model->combinations[i] = (unsigned *) malloc(l2p_cl.model->nparameters*sizeof(unsigned));
-        	   }
-        	 }
-
-        	 l2p_cl.model->parameters_names = (const char **) calloc(1, l2p_cl.model->ncombinations*sizeof(char *));
-        	 l2p_cl.model->parameters_names[0] = "B";
-        	 l2p_cl.model->combinations[0][0] = 1;
-
-        	 l2p_cl.model->parameters = l2p_cl_perf_func;
+	l2p_cl.model->combinations[0][0] = 0;
+	l2p_cl.model->combinations[0][1] = 1;
+	l2p_cl.model->combinations[0][2] = 0;
+	l2p_cl.model->combinations[0][3] = 0;
         /* ############################################ */
 
         memset(&p2p_cl_in, 0, sizeof(p2p_cl_in));
@@ -797,33 +890,38 @@ protected:
         p2p_cl_in.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
 #endif
         p2p_cl_in.name = "p2p_cl_in";
-        /* ############################################ */
-        /*      Automatically generated code */
-        	 // Adding multiple regression codelet model for codelet p2p_cl_in
-        	 // Computed from execution:  4 Native execution on miriel
-        	 // Adjusted R-squared:  0.989103210634436
-        	 p2p_cl_in.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
-        	 p2p_cl_in.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
-        	 p2p_cl_in.model->symbol = p2p_cl_in.name;
+/* ################################################ */
+/* Defining perfmodel, #parameters and their names  */
+	p2p_cl_in.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
+	p2p_cl_in.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
+    p2p_cl_in.model->symbol = p2p_cl_in.name;
+	p2p_cl_in.model->parameters = p2p_cl_in_perf_func;
+	p2p_cl_in.model->nparameters = 4;
+	p2p_cl_in.model->parameters_names = (const char **) calloc(1, p2p_cl_in.model->nparameters*sizeof(char *));
+	p2p_cl_in.model->parameters_names[0] = "A";
+	p2p_cl_in.model->parameters_names[1] = "B";
+	p2p_cl_in.model->parameters_names[2] = "C";
+	p2p_cl_in.model->parameters_names[3] = "D";
+/* Automatically generated code for parameter combinations */
+    // Adding multiple regression codelet model for codelet p2p_cl_in
+    // Computed from execution:  4 Native execution on miriel
+    // Adjusted R-squared:  0.0805250871530648
+	p2p_cl_in.model->ncombinations = 1;
+    p2p_cl_in.model->combinations = (unsigned **) malloc(p2p_cl_in.model->ncombinations*sizeof(unsigned *));
 
-        	 p2p_cl_in.model->nparameters = 1;
-        	 p2p_cl_in.model->ncombinations = 1;
-        	 p2p_cl_in.model->combinations = (unsigned **) malloc(p2p_cl_in.model->ncombinations*sizeof(unsigned *));
+    if (p2p_cl_in.model->combinations)
+    {
+       for (unsigned i = 0; i < p2p_cl_in.model->ncombinations; i++)
+       {
+           p2p_cl_in.model->combinations[i] = (unsigned *) malloc(p2p_cl_in.model->nparameters*sizeof(unsigned));
+       }
+    }
 
-        	 if (p2p_cl_in.model->combinations)
-        	 {
-        	   for (unsigned i = 0; i < p2p_cl_in.model->ncombinations; i++)
-        	   {
-        	     p2p_cl_in.model->combinations[i] = (unsigned *) malloc(p2p_cl_in.model->nparameters*sizeof(unsigned));
-        	   }
-        	 }
-
-        	 p2p_cl_in.model->parameters_names = (const char **) calloc(1, p2p_cl_in.model->ncombinations*sizeof(char *));
-        	 p2p_cl_in.model->parameters_names[0] = "C";
-        	 p2p_cl_in.model->combinations[0][0] = 1;
-
-        	 p2p_cl_in.model->parameters = p2p_cl_in_perf_func;
-        /* ############################################ */
+	p2p_cl_in.model->combinations[0][0] = 0;
+	p2p_cl_in.model->combinations[0][1] = 0;
+	p2p_cl_in.model->combinations[0][2] = 1;
+	p2p_cl_in.model->combinations[0][3] = 0;
+/* ####################################################### */
         memset(&p2p_cl_inout, 0, sizeof(p2p_cl_inout));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportP2PExtern(FSTARPU_CPU_IDX)){
@@ -863,7 +961,7 @@ protected:
 	p2p_cl_inout.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
     p2p_cl_inout.model->symbol = p2p_cl_inout.name;
 	p2p_cl_inout.model->parameters = p2p_cl_inout_perf_func;
-	p2p_cl_inout.model->nparameters = 7;
+	p2p_cl_inout.model->nparameters = 10;
 	p2p_cl_inout.model->parameters_names = (const char **) calloc(1, p2p_cl_inout.model->nparameters*sizeof(char *));
 	p2p_cl_inout.model->parameters_names[0] = "A";
 	p2p_cl_inout.model->parameters_names[1] = "B";
@@ -872,6 +970,9 @@ protected:
 	p2p_cl_inout.model->parameters_names[4] = "E";
 	p2p_cl_inout.model->parameters_names[5] = "F";
 	p2p_cl_inout.model->parameters_names[6] = "G";
+	p2p_cl_inout.model->parameters_names[7] = "H";
+	p2p_cl_inout.model->parameters_names[8] = "I";
+	p2p_cl_inout.model->parameters_names[9] = "J";
 /* Automatically generated code for parameter combinations */
     // Adding multiple regression codelet model for codelet p2p_cl_inout
     // Computed from execution:  4 Native execution on miriel
@@ -894,6 +995,9 @@ protected:
 	p2p_cl_inout.model->combinations[0][4] = 0;
 	p2p_cl_inout.model->combinations[0][5] = 1;
 	p2p_cl_inout.model->combinations[0][6] = 0;
+	p2p_cl_inout.model->combinations[0][7] = 0;
+	p2p_cl_inout.model->combinations[0][8] = 0;
+	p2p_cl_inout.model->combinations[0][9] = 0;
 	
 	p2p_cl_inout.model->combinations[1][0] = 0;
 	p2p_cl_inout.model->combinations[1][1] = 0;
@@ -902,6 +1006,9 @@ protected:
 	p2p_cl_inout.model->combinations[1][4] = 0;
 	p2p_cl_inout.model->combinations[1][5] = 0;
 	p2p_cl_inout.model->combinations[1][6] = 1;
+	p2p_cl_inout.model->combinations[1][7] = 0;
+	p2p_cl_inout.model->combinations[1][8] = 0;
+	p2p_cl_inout.model->combinations[1][9] = 0;
 	
 	p2p_cl_inout.model->combinations[2][0] = 0;
 	p2p_cl_inout.model->combinations[2][1] = 0;
@@ -910,7 +1017,10 @@ protected:
 	p2p_cl_inout.model->combinations[2][4] = 0;
 	p2p_cl_inout.model->combinations[2][5] = 0;
 	p2p_cl_inout.model->combinations[2][6] = 2;
-	
+	p2p_cl_inout.model->combinations[2][7] = 0;
+	p2p_cl_inout.model->combinations[2][8] = 0;
+	p2p_cl_inout.model->combinations[2][9] = 0;
+
 	p2p_cl_inout.model->combinations[3][0] = 0;
 	p2p_cl_inout.model->combinations[3][1] = 0;
 	p2p_cl_inout.model->combinations[3][2] = 0;
@@ -918,6 +1028,9 @@ protected:
 	p2p_cl_inout.model->combinations[3][4] = 0;
 	p2p_cl_inout.model->combinations[3][5] = 0;
 	p2p_cl_inout.model->combinations[3][6] = 3;
+	p2p_cl_inout.model->combinations[3][7] = 0;
+	p2p_cl_inout.model->combinations[3][8] = 0;
+	p2p_cl_inout.model->combinations[3][9] = 0;
 
 	p2p_cl_inout.model->combinations[4][0] = 0;
 	p2p_cl_inout.model->combinations[4][1] = 0;
@@ -926,6 +1039,9 @@ protected:
 	p2p_cl_inout.model->combinations[4][4] = 0;
 	p2p_cl_inout.model->combinations[4][5] = 1;
 	p2p_cl_inout.model->combinations[4][6] = 1;
+	p2p_cl_inout.model->combinations[4][7] = 0;
+	p2p_cl_inout.model->combinations[4][8] = 0;
+	p2p_cl_inout.model->combinations[4][9] = 0;
 	
 	p2p_cl_inout.model->combinations[5][0] = 0;
 	p2p_cl_inout.model->combinations[5][1] = 0;
@@ -934,6 +1050,9 @@ protected:
 	p2p_cl_inout.model->combinations[5][4] = 0;
 	p2p_cl_inout.model->combinations[5][5] = 1;
 	p2p_cl_inout.model->combinations[5][6] = 2;
+	p2p_cl_inout.model->combinations[5][7] = 0;
+	p2p_cl_inout.model->combinations[5][8] = 0;
+	p2p_cl_inout.model->combinations[5][9] = 0;
 
 	p2p_cl_inout.model->combinations[6][0] = 0;
 	p2p_cl_inout.model->combinations[6][1] = 0;
@@ -942,6 +1061,9 @@ protected:
 	p2p_cl_inout.model->combinations[6][4] = 0;
 	p2p_cl_inout.model->combinations[6][5] = 1;
 	p2p_cl_inout.model->combinations[6][6] = 3;
+	p2p_cl_inout.model->combinations[6][7] = 0;
+	p2p_cl_inout.model->combinations[6][8] = 0;
+	p2p_cl_inout.model->combinations[6][9] = 0;
 /* ####################################################### */
         memset(&m2l_cl_in, 0, sizeof(m2l_cl_in));
 #ifdef STARPU_USE_CPU
@@ -968,15 +1090,21 @@ protected:
         m2l_cl_in.modes[2] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
         m2l_cl_in.name = "m2l_cl_in";
         /* ############################################ */
+	/* Defining perfmodel, #parameters and their names  */
+	m2l_cl_in.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
+	m2l_cl_in.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
+    m2l_cl_in.model->symbol = m2l_cl_in.name;
+	m2l_cl_in.model->parameters = m2l_cl_in_perf_func;
+	m2l_cl_in.model->nparameters = 4;
+	m2l_cl_in.model->parameters_names = (const char **) calloc(1, m2l_cl_in.model->nparameters*sizeof(char *));
+	m2l_cl_in.model->parameters_names[0] = "A";
+	m2l_cl_in.model->parameters_names[1] = "B";
+	m2l_cl_in.model->parameters_names[2] = "C";
+	m2l_cl_in.model->parameters_names[3] = "D";
         /*      Automatically generated code */
         	 // Adding multiple regression codelet model for codelet m2l_cl_in
         	 // Computed from execution:  4 Native execution on miriel
         	 // Adjusted R-squared:  0.931285194817575
-        	 m2l_cl_in.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
-        	 m2l_cl_in.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
-        	 m2l_cl_in.model->symbol = m2l_cl_in.name;
-
-        	 m2l_cl_in.model->nparameters = 2;
         	 m2l_cl_in.model->ncombinations = 4;
         	 m2l_cl_in.model->combinations = (unsigned **) malloc(m2l_cl_in.model->ncombinations*sizeof(unsigned *));
 
@@ -988,21 +1116,25 @@ protected:
         	   }
         	 }
 
-        	 m2l_cl_in.model->parameters_names = (const char **) calloc(1, m2l_cl_in.model->ncombinations*sizeof(char *));
-        	 m2l_cl_in.model->parameters_names[0] = "B";
-        	 m2l_cl_in.model->combinations[0][0] = 1;
-        	 m2l_cl_in.model->combinations[0][1] = 0;
-        	 m2l_cl_in.model->parameters_names[1] = "C";
-        	 m2l_cl_in.model->combinations[1][0] = 0;
-        	 m2l_cl_in.model->combinations[1][1] = 1;
-        	 m2l_cl_in.model->parameters_names[2] = "C^2";
-        	 m2l_cl_in.model->combinations[2][0] = 0;
-        	 m2l_cl_in.model->combinations[2][1] = 2;
-        	 m2l_cl_in.model->parameters_names[3] = "B*C";
-        	 m2l_cl_in.model->combinations[3][0] = 1;
-        	 m2l_cl_in.model->combinations[3][1] = 1;
+	m2l_cl_in.model->combinations[0][0] = 0;
+	m2l_cl_in.model->combinations[0][1] = 1;
+	m2l_cl_in.model->combinations[0][2] = 0;
+	m2l_cl_in.model->combinations[0][3] = 0;
 
-        	 m2l_cl_in.model->parameters = m2l_cl_in_perf_func;
+	m2l_cl_in.model->combinations[0][0] = 0;
+	m2l_cl_in.model->combinations[0][1] = 0;
+	m2l_cl_in.model->combinations[0][2] = 1;
+	m2l_cl_in.model->combinations[0][3] = 0;
+
+	m2l_cl_in.model->combinations[0][0] = 0;
+	m2l_cl_in.model->combinations[0][1] = 0;
+	m2l_cl_in.model->combinations[0][2] = 2;
+	m2l_cl_in.model->combinations[0][3] = 0;
+
+	m2l_cl_in.model->combinations[0][0] = 0;
+	m2l_cl_in.model->combinations[0][1] = 1;
+	m2l_cl_in.model->combinations[0][2] = 1;
+	m2l_cl_in.model->combinations[0][3] = 0;
         /* ############################################ */
 
         memset(&m2l_cl_inout, 0, sizeof(m2l_cl_inout));
@@ -1031,15 +1163,25 @@ protected:
         m2l_cl_inout.modes[3] = STARPU_R;
         m2l_cl_inout.name = "m2l_cl_inout";
         /* ############################################ */
+	m2l_cl_inout.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
+	m2l_cl_inout.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
+    m2l_cl_inout.model->symbol = m2l_cl_inout.name;
+	m2l_cl_inout.model->parameters = m2l_cl_inout_perf_func;
+	m2l_cl_inout.model->nparameters = 8;
+	m2l_cl_inout.model->parameters_names = (const char **) calloc(1, m2l_cl_inout.model->nparameters*sizeof(char *));
+	m2l_cl_inout.model->parameters_names[0] = "A";
+	m2l_cl_inout.model->parameters_names[1] = "B";
+	m2l_cl_inout.model->parameters_names[2] = "C";
+	m2l_cl_inout.model->parameters_names[3] = "D";
+	m2l_cl_inout.model->parameters_names[4] = "E";
+	m2l_cl_inout.model->parameters_names[5] = "F";
+	m2l_cl_inout.model->parameters_names[6] = "G";
+	m2l_cl_inout.model->parameters_names[7] = "H";
+	
         /*      Automatically generated code */
         	 // Adding multiple regression codelet model for codelet m2l_cl_inout
         	 // Computed from execution:  4 Native execution on miriel
         	 // Adjusted R-squared:  0.293905542115529
-        	 m2l_cl_inout.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
-        	 m2l_cl_inout.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
-        	 m2l_cl_inout.model->symbol = m2l_cl_inout.name;
-
-        	 m2l_cl_inout.model->nparameters = 1;
         	 m2l_cl_inout.model->ncombinations = 1;
         	 m2l_cl_inout.model->combinations = (unsigned **) malloc(m2l_cl_inout.model->ncombinations*sizeof(unsigned *));
 
@@ -1051,11 +1193,14 @@ protected:
         	   }
         	 }
 
-        	 m2l_cl_inout.model->parameters_names = (const char **) calloc(1, m2l_cl_inout.model->ncombinations*sizeof(char *));
-        	 m2l_cl_inout.model->parameters_names[0] = "F";
-        	 m2l_cl_inout.model->combinations[0][0] = 1;
-
-        	 m2l_cl_inout.model->parameters = m2l_cl_inout_perf_func;
+	m2l_cl_inout.model->combinations[0][0] = 0;
+	m2l_cl_inout.model->combinations[0][1] = 0;
+	m2l_cl_inout.model->combinations[0][2] = 0;
+	m2l_cl_inout.model->combinations[0][3] = 0;
+	m2l_cl_inout.model->combinations[0][4] = 0;
+	m2l_cl_inout.model->combinations[0][5] = 1;
+	m2l_cl_inout.model->combinations[0][6] = 0;
+	m2l_cl_inout.model->combinations[0][7] = 0;
         /* ############################################ */
 
 
@@ -1379,11 +1524,19 @@ protected:
 
         FAssertLF(cellHandles[tree->getHeight()-1].size() == particleHandles.size());
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
-        	double p0 = (double) tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval();
+	        double *parameters = (double*) calloc(1,p2m_cl.model->nparameters*sizeof(double));
+		parameters[0] = (double) tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock();
+                parameters[1] = (double) tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval();
+                parameters[2] = (double) tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock();
+                parameters[3] = (double) tree->getParticleGroup(idxGroup)->getNbParticlesInGroup();
+	  
             starpu_insert_task(&p2m_cl,
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
-							   STARPU_VALUE, &p0, sizeof(double),
+			       STARPU_VALUE, &parameters[0], sizeof(double),
+			       STARPU_VALUE, &parameters[1], sizeof(double),								   
+								   STARPU_VALUE, &parameters[2], sizeof(double),
+   								   STARPU_VALUE, &parameters[3], sizeof(double),
 #ifdef SCALFMM_STARPU_USE_PRIO
                     STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2M(),
 #endif
@@ -1443,27 +1596,6 @@ protected:
                     // put args values
                     char *arg_buffer;
                     size_t arg_buffer_size;
-                    double p0 = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval();
-                    double p1 = (double) FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
-	                        FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3);
-
-                    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                                             STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                                             STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-											 STARPU_VALUE, &p0, sizeof(double),
-											 STARPU_VALUE, &p1, sizeof(double),
-                                             0);
-                    task->cl_arg = arg_buffer;
-                    task->cl_arg_size = arg_buffer_size;                   
-                    task->cl_arg_free = 1;
-#ifdef SCALFMM_STARPU_USE_PRIO
-                    task->priority = PrioClass::Controller().getInsertionPosM2M(idxLevel);
-#endif
-    #ifdef STARPU_USE_TASK_NAME
-#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
-                    task->name = m2mTaskNames[idxLevel].get();
-#else
                     size_t nbChildParent = 0;
                     {
                         CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
@@ -1489,6 +1621,39 @@ protected:
                             idxParentCell += 1;
                         }
                     }
+		    
+      	        double *parameters = (double*) calloc(1,m2m_cl.model->nparameters*sizeof(double));
+                parameters[0] = (double) idxLevel;
+                parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
+                parameters[2] = (double) tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval();
+                parameters[3] = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getNumberOfCellsInBlock();
+                parameters[4] = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval();
+                parameters[5] = (double) FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
+                        FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3);
+                parameters[6] = (double) nbChildParent;
+
+                    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                                             STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                             STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+											 STARPU_VALUE, &parameters[0], sizeof(double),
+											 STARPU_VALUE, &parameters[1], sizeof(double),
+											 STARPU_VALUE, &parameters[2], sizeof(double),
+											 STARPU_VALUE, &parameters[3], sizeof(double),
+											 STARPU_VALUE, &parameters[4], sizeof(double),
+											 STARPU_VALUE, &parameters[5], sizeof(double),
+											 STARPU_VALUE, &parameters[6], sizeof(double),
+                                             0);
+                    task->cl_arg = arg_buffer;
+                    task->cl_arg_size = arg_buffer_size;                   
+                    task->cl_arg_free = 1;
+#ifdef SCALFMM_STARPU_USE_PRIO
+                    task->priority = PrioClass::Controller().getInsertionPosM2M(idxLevel);
+#endif
+    #ifdef STARPU_USE_TASK_NAME
+#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                    task->name = m2mTaskNames[idxLevel].get();
+#else
                     //"M2M-l_nb_i_nbc_ic_s"
                     task->name = taskNames.print("M2M", "%d, %d, %lld, %d, %lld, %lld, %lld\n",
                                                  idxLevel,
@@ -1522,28 +1687,6 @@ protected:
                     // put args values
                     char *arg_buffer;
                     size_t arg_buffer_size;
-                    double p0 = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval();
-                    double p1 = (double) FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
-                            FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3);
-
-                    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
-                                             STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                                             STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-											 STARPU_VALUE, &p0, sizeof(double),
-											 STARPU_VALUE, &p1, sizeof(double),
-                                             0);
-                    task->cl_arg = arg_buffer;
-                    task->cl_arg_size = arg_buffer_size;
-                    task->cl_arg_free = 1;
-
-#ifdef SCALFMM_STARPU_USE_PRIO
-                    task->priority = PrioClass::Controller().getInsertionPosM2M(idxLevel);
-#endif
-    #ifdef STARPU_USE_TASK_NAME
-#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
-                    task->name = m2mTaskNames[idxLevel].get();
-#else
                     size_t nbChildParent = 0;
                     {
                         CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
@@ -1570,7 +1713,39 @@ protected:
                             idxParentCell += 1;
                         }
                     }
+          	        double *parameters = (double*) calloc(1,m2m_cl.model->nparameters*sizeof(double));
+                    parameters[0] = (double) idxLevel;
+                    parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
+                    parameters[2] = (double) tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval();
+                    parameters[3] = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getNumberOfCellsInBlock();
+                    parameters[4] = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval();
+                    parameters[5] = (double) FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
+                            FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3);
+                    parameters[6] = (double) nbChildParent;
 
+                    starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
+                                             STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                             STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                             STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+											 STARPU_VALUE, &parameters[0], sizeof(double),
+											 STARPU_VALUE, &parameters[1], sizeof(double),
+											 STARPU_VALUE, &parameters[2], sizeof(double),
+											 STARPU_VALUE, &parameters[3], sizeof(double),
+											 STARPU_VALUE, &parameters[4], sizeof(double),
+											 STARPU_VALUE, &parameters[5], sizeof(double),
+											 STARPU_VALUE, &parameters[6], sizeof(double),
+                                             0);
+                    task->cl_arg = arg_buffer;
+                    task->cl_arg_size = arg_buffer_size;
+                    task->cl_arg_free = 1;
+
+#ifdef SCALFMM_STARPU_USE_PRIO
+                    task->priority = PrioClass::Controller().getInsertionPosM2M(idxLevel);
+#endif
+    #ifdef STARPU_USE_TASK_NAME
+#ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                    task->name = m2mTaskNames[idxLevel].get();
+#else
                     //M2M-l_nb_i_nbc_ic_s
                     task->name = taskNames.print("M2M", "%d, %d, %lld, %d, %lld, %lld, %lld\n",
                                                  idxLevel,
@@ -1625,14 +1800,21 @@ protected:
                             }
                         }
                     }
-                	double p0 = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
-                	double p1 = (double) tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval();
+
+                    double *parameters = (double*) calloc(1,m2l_cl_in.model->nparameters*sizeof(double));
+                    parameters[0] = (double) idxLevel;
+                    parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
+                    parameters[2] = (double) tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval();
+                    parameters[3] = (double) nbM2LInteractions;
+	  
                     starpu_insert_task(&m2l_cl_in,
                                        STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                        STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                        STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-									   STARPU_VALUE, &p0, sizeof(double),
-									   STARPU_VALUE, &p1, sizeof(double),
+									   STARPU_VALUE, &parameters[0], sizeof(double),
+									   STARPU_VALUE, &parameters[1], sizeof(double),
+									   STARPU_VALUE, &parameters[2], sizeof(double),
+									   STARPU_VALUE, &parameters[3], sizeof(double),
                    #ifdef SCALFMM_STARPU_USE_PRIO
                                        STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2L(idxLevel),
                    #endif
@@ -1679,14 +1861,30 @@ protected:
                             }
                         }
                         int mode = 1;
-                        double p0 = (double) outsideInteractions->size();
+				        double *parameters = (double*) calloc(1,m2l_cl_inout.model->nparameters*sizeof(double));
+				        parameters[0] = (double) idxLevel;
+				        parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
+				        parameters[2] = (double) tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval();
+				        parameters[3] = (double) tree->getCellGroup(idxLevel,interactionid)->getNumberOfCellsInBlock();
+				        parameters[4] = (double) tree->getCellGroup(idxLevel,interactionid)->getSizeOfInterval();
+				        parameters[5] = (double) outsideInteractions->size();
+				        parameters[6] = (double) nbDiff0;
+				        parameters[7] = (double) nbDiff1;
+          
                         starpu_insert_task(&m2l_cl_inout,
                                            STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                            STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                            STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                            STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                            STARPU_VALUE, &mode, sizeof(int),
-										   STARPU_VALUE, &p0, sizeof(double),
+										   STARPU_VALUE, &parameters[0], sizeof(double),
+										   STARPU_VALUE, &parameters[1], sizeof(double),
+										   STARPU_VALUE, &parameters[2], sizeof(double),
+										   STARPU_VALUE, &parameters[3], sizeof(double),
+										   STARPU_VALUE, &parameters[4], sizeof(double),
+										   STARPU_VALUE, &parameters[5], sizeof(double),
+										   STARPU_VALUE, &parameters[6], sizeof(double),
+										   STARPU_VALUE, &parameters[7], sizeof(double),
                    #ifdef SCALFMM_STARPU_USE_PRIO
                                            STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
                    #endif
@@ -1718,7 +1916,14 @@ protected:
                                            STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                            STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                            STARPU_VALUE, &mode, sizeof(int),
-										   STARPU_VALUE, &p0, sizeof(double),
+										   STARPU_VALUE, &parameters[0], sizeof(double),
+										   STARPU_VALUE, &parameters[1], sizeof(double),
+										   STARPU_VALUE, &parameters[2], sizeof(double),
+										   STARPU_VALUE, &parameters[3], sizeof(double),
+										   STARPU_VALUE, &parameters[4], sizeof(double),
+										   STARPU_VALUE, &parameters[5], sizeof(double),
+										   STARPU_VALUE, &parameters[6], sizeof(double),
+										   STARPU_VALUE, &parameters[7], sizeof(double),
                    #ifdef SCALFMM_STARPU_USE_PRIO
                                            STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
                    #endif
@@ -1790,17 +1995,52 @@ protected:
                     // put args values
                     char *arg_buffer;
                     size_t arg_buffer_size;
-                    double p0 = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getNumberOfCellsInBlock();
-                    double p1 = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval();
-                    double p2 = (double) FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
+                    size_t nbChildParent = 0;
+                     {
+                         CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
+                         CellContainerClass*const subCellGroup = tree->getCellGroup(idxLevel+1, idxSubGroup);
+
+                         const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
+                         const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
+                         int idxParentCell = currentCells->getCellIndex(firstParent);
+                         int idxChildCell  = subCellGroup->getFistChildIdx(firstParent);
+
+                         while(true){
+                             auto cell = currentCells->getUpCell(idxParentCell);
+                             do{
+                                 idxChildCell += 1;
+                             }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+
+                             nbChildParent += 1;
+
+                             if(currentCells->getCellMortonIndex(idxParentCell) == lastParent){
+                                 break;
+                             }
+
+                             idxParentCell += 1;
+                         }
+                     }
+                    double *parameters = (double*) calloc(1,l2l_cl.model->nparameters*sizeof(double));
+                    parameters[0] = (double) idxLevel;
+                    parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
+                    parameters[2] = (double) tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval();
+                    parameters[3] = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getNumberOfCellsInBlock();
+                    parameters[4] = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval();
+                    parameters[5] = (double) FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
                             FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3);
+                    parameters[6] = (double) nbChildParent;
+		    
                     starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
                                              STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                              STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                              STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-											 STARPU_VALUE, &p0, sizeof(double),
-											 STARPU_VALUE, &p1, sizeof(double),
-											 STARPU_VALUE, &p2, sizeof(double),
+											 STARPU_VALUE, &parameters[0], sizeof(double),
+											 STARPU_VALUE, &parameters[1], sizeof(double),
+											 STARPU_VALUE, &parameters[2], sizeof(double),
+											 STARPU_VALUE, &parameters[3], sizeof(double),
+											 STARPU_VALUE, &parameters[4], sizeof(double),
+											 STARPU_VALUE, &parameters[5], sizeof(double),
+											 STARPU_VALUE, &parameters[6], sizeof(double),
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
@@ -1812,31 +2052,6 @@ protected:
 #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     task->name = l2lTaskNames[idxLevel].get();
 #else
-                    size_t nbChildParent = 0;
-                    {
-                        CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
-                        CellContainerClass*const subCellGroup = tree->getCellGroup(idxLevel+1, idxSubGroup);
-
-                        const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
-                        const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
-                        int idxParentCell = currentCells->getCellIndex(firstParent);
-                        int idxChildCell  = subCellGroup->getFistChildIdx(firstParent);
-
-                        while(true){
-                            auto cell = currentCells->getUpCell(idxParentCell);
-                            do{
-                                idxChildCell += 1;
-                            }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
-
-                            nbChildParent += 1;
-
-                            if(currentCells->getCellMortonIndex(idxParentCell) == lastParent){
-                                break;
-                            }
-
-                            idxParentCell += 1;
-                        }
-                    }
                     //"L2L-l_nb_i_nbc_ic_s"
                     task->name = taskNames.print("L2L", "%d, %d, %lld, %d, %lld, %lld, %lld\n",
                                                  idxLevel,
@@ -1874,17 +2089,52 @@ protected:
                     // put args values
                     char *arg_buffer;
                     size_t arg_buffer_size;
-                    double p0 = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getNumberOfCellsInBlock();
-                    double p1 = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval();
-                    double p2 = (double) FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
-                                                FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3);
+                    size_t nbChildParent = 0;
+                       {
+                           CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
+                           CellContainerClass*const subCellGroup = tree->getCellGroup(idxLevel+1, idxSubGroup);
+
+                           const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
+                           const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
+                           int idxParentCell = currentCells->getCellIndex(firstParent);
+                           int idxChildCell  = subCellGroup->getFistChildIdx(firstParent);
+
+                           while(true){
+                               auto cell = currentCells->getUpCell(idxParentCell);
+                               do{
+                                   idxChildCell += 1;
+                               }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
+
+                               nbChildParent += 1;
+
+                               if(currentCells->getCellMortonIndex(idxParentCell) == lastParent){
+                                   break;
+                               }
+
+                               idxParentCell += 1;
+                           }
+                       }
+                      double *parameters = (double*) calloc(1,l2l_cl.model->nparameters*sizeof(double));
+                      parameters[0] = (double) idxLevel;
+                      parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
+                      parameters[2] = (double) tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval();
+                      parameters[3] = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getNumberOfCellsInBlock();
+                      parameters[4] = (double) tree->getCellGroup(idxLevel+1,idxSubGroup)->getSizeOfInterval();
+                      parameters[5] = (double) FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
+                              FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3);
+                      parameters[6] = (double) nbChildParent;
+
                     starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
                                              STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                              STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                              STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-											 STARPU_VALUE, &p0, sizeof(double),
-											 STARPU_VALUE, &p1, sizeof(double),
-											 STARPU_VALUE, &p2, sizeof(double),
+											 STARPU_VALUE, &parameters[0], sizeof(double),
+											 STARPU_VALUE, &parameters[1], sizeof(double),
+											 STARPU_VALUE, &parameters[2], sizeof(double),
+											 STARPU_VALUE, &parameters[3], sizeof(double),
+											 STARPU_VALUE, &parameters[4], sizeof(double),
+											 STARPU_VALUE, &parameters[5], sizeof(double),
+											 STARPU_VALUE, &parameters[6], sizeof(double),
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
@@ -1896,31 +2146,6 @@ protected:
 #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                     task->name = l2lTaskNames[idxLevel].get();
 #else
-                    size_t nbChildParent = 0;
-                    {
-                        CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
-                        CellContainerClass*const subCellGroup = tree->getCellGroup(idxLevel+1, idxSubGroup);
-
-                        const MortonIndex firstParent = FMath::Max(currentCells->getStartingIndex(), subCellGroup->getStartingIndex()>>3);
-                        const MortonIndex lastParent = FMath::Min(currentCells->getEndingIndex()-1, (subCellGroup->getEndingIndex()-1)>>3);
-                        int idxParentCell = currentCells->getCellIndex(firstParent);
-                        int idxChildCell  = subCellGroup->getFistChildIdx(firstParent);
-
-                        while(true){
-                            auto cell = currentCells->getUpCell(idxParentCell);
-                            do{
-                                idxChildCell += 1;
-                            }while(idxChildCell != subCellGroup->getNumberOfCellsInBlock() && cell.getMortonIndex() == (subCellGroup->getCellMortonIndex(idxChildCell)>>3));
-
-                            nbChildParent += 1;
-
-                            if(currentCells->getCellMortonIndex(idxParentCell) == lastParent){
-                                break;
-                            }
-
-                            idxParentCell += 1;
-                        }
-                    }
                     //"L2L-l_nb_i_nbc_ic_s"
                     task->name = taskNames.print("L2L", "%d, %d, %lld, %d, %lld, %lld, %lld\n",
                                                  idxLevel,
@@ -1984,6 +2209,9 @@ protected:
                 parameters[4] = (double) tree->getParticleGroup(interactionid)->getSizeOfInterval();
                 parameters[5] = (double) tree->getParticleGroup(interactionid)->getNbParticlesInGroup();
                 parameters[6] = (double) outsideInteractions->size();
+		parameters[7] = (double) nbDiff0;
+		parameters[8] = (double) nbDiff1;
+		parameters[9] = (double) nbInteractions;
 
                 starpu_insert_task(&p2p_cl_inout,
                                    STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
@@ -1996,6 +2224,10 @@ protected:
 								   STARPU_VALUE, &parameters[4], sizeof(double),
    								   STARPU_VALUE, &parameters[5], sizeof(double),								   
 								   STARPU_VALUE, &parameters[6], sizeof(double),
+   								   STARPU_VALUE, &parameters[7], sizeof(double),
+   								   STARPU_VALUE, &parameters[8], sizeof(double),
+   								   STARPU_VALUE, &parameters[9], sizeof(double),
+
                    #ifdef SCALFMM_STARPU_USE_PRIO
                                    STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2PExtern(),
                    #endif
@@ -2062,11 +2294,19 @@ protected:
                 }
             }
 
-        	double p0 = (double) tree->getParticleGroup(idxGroup)->getNbParticlesInGroup();
+	        double *parameters = (double*) calloc(1,p2p_cl_in.model->nparameters*sizeof(double));
+                parameters[0] = (double) tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock();
+                parameters[1] = (double) tree->getParticleGroup(idxGroup)->getSizeOfInterval();
+                parameters[2] = (double) tree->getParticleGroup(idxGroup)->getNbParticlesInGroup();
+                parameters[3] = (double) nbInteractions;
+                
             starpu_insert_task(&p2p_cl_in,
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
-							   STARPU_VALUE, &p0, sizeof(double),
+			       STARPU_VALUE, &parameters[0], sizeof(double),
+			       STARPU_VALUE, &parameters[1], sizeof(double),								   
+								   STARPU_VALUE, &parameters[2], sizeof(double),
+   								   STARPU_VALUE, &parameters[3], sizeof(double),
                    #ifdef SCALFMM_STARPU_USE_PRIO
                                STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2P(),
                    #endif
@@ -2106,11 +2346,18 @@ protected:
         FAssertLF(cellHandles[tree->getHeight()-1].size() == particleHandles.size());
 
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
-        	double p0 = (double) tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval();
+        	double *parameters = (double*) calloc(1,p2m_cl.model->nparameters*sizeof(double));
+        	parameters[0] = (double) tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock();
+        	parameters[1] = (double) tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval();
+        	parameters[2] = (double) tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock();
+        	parameters[3] = (double) tree->getParticleGroup(idxGroup)->getNbParticlesInGroup();
             starpu_insert_task(&l2p_cl,
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
-							   STARPU_VALUE, &p0, sizeof(double),
+							   STARPU_VALUE, &parameters[0], sizeof(double),
+							   STARPU_VALUE, &parameters[1], sizeof(double),
+							   STARPU_VALUE, &parameters[2], sizeof(double),
+   							   STARPU_VALUE, &parameters[3], sizeof(double),
         #ifdef SCALFMM_STARPU_USE_PRIO
                     STARPU_PRIORITY, PrioClass::Controller().getInsertionPosL2P(),
         #endif

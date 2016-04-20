@@ -15,7 +15,10 @@ static inline void p2p_cl_in_perf_func(struct starpu_task *task, double *paramet
   starpu_codelet_unpack_args(task->cl_arg,
 	  	  	  	  &wrapperptr,
 				  &i,
-				  &parameters[0]);
+			       	  &parameters[0],
+                                  &parameters[1],
+			      	  &parameters[2],
+				  &parameters[3]);
 }
 
 static inline void p2p_cl_inout_perf_func(struct starpu_task *task, double *parameters){
@@ -32,17 +35,22 @@ static inline void p2p_cl_inout_perf_func(struct starpu_task *task, double *para
 			     	  &parameters[3],
 			     	  &parameters[4],
 			     	  &parameters[5],
-			          &parameters[6]);
+			       	  &parameters[6],
+			     	  &parameters[7],
+			     	  &parameters[8],
+			          &parameters[9]);
 }
 
 static inline void p2m_cl_perf_func(struct starpu_task *task, double *parameters){
   FStarPUPtrInterface* wrapperptr;
-  int idxLevel, i;
+  int i;
   starpu_codelet_unpack_args(task->cl_arg,
       	  	  	  	  &wrapperptr,
-				  &idxLevel,
 				  &i,
-                                  &parameters[0]);
+			       	  &parameters[0],
+                                  &parameters[1],
+			      	  &parameters[2],
+				  &parameters[3]);
 }
   
 static inline void m2m_cl_perf_func(struct starpu_task *task, double *parameters){
@@ -52,8 +60,13 @@ static inline void m2m_cl_perf_func(struct starpu_task *task, double *parameters
       	  	  	  	  &wrapperptr,
 				  &idxLevel,
 				  &i,
-			     	  &parameters[0],
-				  &parameters[1]);
+				  &parameters[0],
+                                  &parameters[1],
+			      	  &parameters[2],
+			     	  &parameters[3],
+			     	  &parameters[4],
+			     	  &parameters[5],
+                                  &parameters[6]);
 }
   
 static inline void m2l_cl_in_perf_func(struct starpu_task *task, double *parameters){
@@ -64,7 +77,9 @@ static inline void m2l_cl_in_perf_func(struct starpu_task *task, double *paramet
 				  &idxLevel,
 				  &i,
 			     	  &parameters[0],
-				  &parameters[1]);
+     			     	  &parameters[1],
+     			     	  &parameters[2],
+				  &parameters[3]);
 }
 
 static inline void m2l_cl_inout_perf_func(struct starpu_task *task, double *parameters){
@@ -77,7 +92,14 @@ static inline void m2l_cl_inout_perf_func(struct starpu_task *task, double *para
 			          &outsideInteractions,
 				  &i,
                                   &m,
-				  &parameters[0]);
+				  &parameters[0],
+                                  &parameters[1],
+			      	  &parameters[2],
+			     	  &parameters[3],
+			     	  &parameters[4],
+			     	  &parameters[5],
+			      	  &parameters[6],
+                                  &parameters[7]);
 }
 
 static inline void l2l_cl_perf_func(struct starpu_task *task, double *parameters){
@@ -87,9 +109,13 @@ static inline void l2l_cl_perf_func(struct starpu_task *task, double *parameters
       	  	  	  	  &wrapperptr,
 				  &idxLevel,
 				  &i,
-			     	  &parameters[0],
-		        	  &parameters[1],
-				  &parameters[2]);
+				  &parameters[0],
+                                  &parameters[1],
+			      	  &parameters[2],
+			     	  &parameters[3],
+			     	  &parameters[4],
+			     	  &parameters[5],
+                                  &parameters[6]);
 }
 
 static inline void l2l_cl_nocommute_perf_func(struct starpu_task *task, double *parameters){
@@ -100,8 +126,12 @@ static inline void l2l_cl_nocommute_perf_func(struct starpu_task *task, double *
 				  &idxLevel,
 				  &i,
 			     	  &parameters[0],
-		        	  &parameters[1],
-				  &parameters[2]);
+                                  &parameters[1],
+			      	  &parameters[2],
+			     	  &parameters[3],
+			     	  &parameters[4],
+			     	  &parameters[5],
+                                  &parameters[6]);
 }
 
 static inline void l2p_cl_perf_func(struct starpu_task *task, double *parameters){
@@ -110,7 +140,10 @@ static inline void l2p_cl_perf_func(struct starpu_task *task, double *parameters
   starpu_codelet_unpack_args(task->cl_arg,
       	  	  	  	  &wrapperptr,
 				  &i,
-			     	  &parameters[0]);
+			      	  &parameters[0],
+                                  &parameters[1],
+			      	  &parameters[2],
+			     	  &parameters[3]);
 }
   
 #ifdef __cplusplus
