@@ -18,7 +18,7 @@ for (( cpu=1 ; cpu<=$SCALFMM_MAX_NB_CPU ; cpu++)) ; do
         echo $logoutput
     fi
     rec_name="$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$cpu.rec"
-    mv trace.rec output/$rec_name
+    mv trace.rec $rec_name
     python $SCALFMM_STARPU_DIR/bin/starpu_trace_state_stats.py -t $rec_name > $rec_name.time
 
     logoutput=`./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs $SCALFMM_BS_CPU_PAR`
@@ -26,7 +26,7 @@ for (( cpu=1 ; cpu<=$SCALFMM_MAX_NB_CPU ; cpu++)) ; do
         echo $logoutput
     fi
     rec_name="$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_PAR-CPU_$cpu.rec"
-    mv trace.rec output/$rec_name
+    mv trace.rec $rec_name
     python $SCALFMM_STARPU_DIR/bin/starpu_trace_state_stats.py -t $rec_name > $rec_name.time
 done
 

@@ -1,14 +1,18 @@
 ScalFMM with StarPU+CUDA
 ========================
 
+In this tutorial, we provide the commands to install ScalFMM and the needed tools in order to compute parallel efficiencies.
+We first show how to obtain the homogeneous efficencies and then the heterogeneous ones (not done yet).
+
 ## Installing the libraries
 
-For some installation steps, we provide a "valid-if" command which provide a basic test to ensure it should work.
+For some installation steps, we provide a "valid-if" test which shows if the previous command has been done correctly or not.
 In case of success `STEP-OK` will be print-out.
-In addition, if a library is already installed on the system, it is possible to set the output variables directly and test with the "valid-if" command if it should work.
+In addition, if a library is already installed on the system, it is possible to set the output variables directly and test with the "valid-if" command if it will work.
 
-The installation and configuration to have the execution traces and executions times are marked as __Optional__ but higly recommended since they let have the efficiencies.
-However, if one wants to execute without any overhead, it might need to remove the usage of FXT.
+It is possible to follow these steps only to compile ScalFMM above StarPU and so we marked the installation of execution-trace tools as __Optional__.
+However, we higly recommended to install them and to follow all the steps since they let have the efficiencies.
+But if one wants to execute without any overhead, it might need to remove the usage of FXT.
 
 ### Pre-requiste:
 In order to follow this tutorial, it is needed to have the following applications installed:
@@ -23,34 +27,32 @@ In order to follow this tutorial, it is needed to have the following application
 * __Optional__ Vite (from `sudo apt-get install vite` or see [http://vite.gforge.inria.fr/download.php](http://vite.gforge.inria.fr/download.php))
 *  __Optional__ Qt5 library to be able to change the colors of the execution traces in order to visualize the different FMM operators
 
-> Some installations of CUDA does not have libcuda file.
+> [Remark] Some installations of CUDA does not have libcuda file.
 > In this case, one needs to create a link : `sudo ln /usr/local/cuda-7.5/lib64/libcudart.so /usr/local/cuda-7.5/lib64/libcuda.so`
 
 > [Plafrim-Developers] 
 >
-> Alloc a node : salloc -N 1 --time=03:00:00 --exclusive -p court_sirocco -CHaswell --gres=gpu:4 -x sirocco06
-> 
-> Find it: squeue and ssh on it
+> For those who use this tutorial on Plafrim (or a similar cluster), we provide extra informations.
 >
-> Load modules : module load compiler/gcc/4.9.2 cuda75/toolkit/7.5.18 intel/mkl/64/11.2/2016.0.0 build/cmake/3.2.1
+> To allocate an heterogeneous node : `salloc -N 1 --time=03:00:00 --exclusive -p court_sirocco -CHaswell --gres=gpu:4 -x sirocco06`
+> 
+> Then, find it using `squeue` and access it by `ssh`.
+>
+> We have run this tutorial with the modules : `module load compiler/gcc/4.9.2 cuda75/toolkit/7.5.18 intel/mkl/64/11.2/2016.0.0 build/cmake/3.2.1`
 
 ### Working directory
 
-The variable `SCALFMM_TEST_DIR` is used to specify the working directory:
+The variable `SCALFMM_TEST_DIR` is used to specify the working directory where all the tools are going to be installed:
 ```bash
-export SCALFMM_TEST_DIR=~/scalfmm_test
-if [[ ! -d $SCALFMM_TEST_DIR ]] ; then
-	mkdir $SCALFMM_TEST_DIR
-fi    
+export SCALFMM_TEST_DIR=~/scalfmm_test   
 cd $SCALFMM_TEST_DIR
 ```
 
-In order to be able to stop the tutorial in the middle and restart later, we will keep the register variables in a file that should be source to restart.
+In order to be able to stop the tutorial in the middle and restart later, we will register the variables in a file that should be source to restart later:
 ```bash
 function scalfmmRegisterVariable() { echo "export $1=${!1}" >> "$SCALFMM_TEST_DIR/environment.source"; }
 echo "function scalfmmRegisterVariable() { echo \"export $1=${!1}\" >> \"$SCALFMM_TEST_DIR/environment.source\"; }" > "$SCALFMM_TEST_DIR/environment.source"
 ```
-
 
 *Output variables:* `scalfmmRegisterVariable SCALFMM_TEST_DIR`
 
@@ -61,10 +63,21 @@ if [[ -n $SCALFMM_TEST_DIR ]] && [[ -d $SCALFMM_TEST_DIR ]] ; then
 fi
 ```
 
+- Restarting the tutorial
+
+To restart the tutorial, one needs to re-define the working directory and to source the save file before to resume:
+```
+export SCALFMM_TEST_DIR=~/scalfmm_test
+if [[ ! -d $SCALFMM_TEST_DIR ]] ; then
+	mkdir $SCALFMM_TEST_DIR
+fi    
+cd $SCALFMM_TEST_DIR
+source "$SCALFMM_TEST_DIR/environment.source"
+```
+
 ### Downloading Packages
 
-In case the node used for compiling/testing do not have access to internet, then download the following packages first.
-
+If the computational node does not have access to internet, we provide a command to download the needed packages (otherwise the next commands still include just in time download):
 ```bash
 cd $SCALFMM_TEST_DIR
 wget https://www.open-mpi.org/software/hwloc/v1.11/downloads/hwloc-1.11.2.tar.gz
@@ -92,7 +105,7 @@ make install
 Valid-if:
 ```bash
 if [[ -n $SCALFMM_HWLOC_DIR ]] && [[ -d $SCALFMM_HWLOC_DIR/lib/ ]] && [[ -f  $SCALFMM_HWLOC_DIR/lib/libhwloc.so ]]; then
-   echo “OK”
+   echo "STEP-OK"
 fi
 ```
 
@@ -114,12 +127,12 @@ make install
 Valid-if:
 ```bash
 if [[ -n $SCALFMM_FXT_DIR ]] && [[ -d $SCALFMM_FXT_DIR/lib/ ]] && [[ -f  $SCALFMM_FXT_DIR/lib/libfxt.so ]]; then
-   echo “OK”
+   echo "STEP-OK"
 fi
 ```
 
-### FFTW
-The MKL can be used otherwise we need the FFTW lib:
+### FFTW (If No MKL-FFT)
+For those who do not use MKL FFT interface, they have to install FFTW (float/double):
 ```bash
 cd $SCALFMM_TEST_DIR
 if [[ ! -f fftw-3.3.4.tar.gz ]] ; then
@@ -139,7 +152,7 @@ make install
 Valid-if:
 ```bash
 if [[ -n $SCALFMM_FFTW_DIR ]] && [[ -d $SCALFMM_FFTW_DIR/lib/ ]] && [[ -f  $SCALFMM_FFTW_DIR/lib/libfftw3.a ]] && [[ -f  $SCALFMM_FFTW_DIR/lib/libfftw3f.a ]]; then
-   echo “OK”
+   echo "STEP-OK"
 fi
 ```
 
@@ -162,7 +175,7 @@ make install
 Valid-if:
 ```bash
 if [[ -n $SCALFMM_STARPU_DIR ]] && [[ -d $SCALFMM_STARPU_DIR/lib/ ]] && [[ -f  $SCALFMM_STARPU_DIR/lib/libstarpu.so ]] ; then
-   echo “OK”
+   echo "STEP-OK"
 fi
 ```
 
@@ -201,7 +214,7 @@ cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF -DSCALFMM_BUILD_TESTS=O
 
 Valid-if:
 ```
-cmake .. ; if [[ "$?" == "0" ]] ; then echo "OK" ; fi
+cmake .. ; if [[ "$?" == "0" ]] ; then echo "STEP-OK" ; fi
 ```
 
 #### Build
@@ -213,12 +226,13 @@ make testBlockedUnifCudaBench
 
 Valid-if:
 ```
-ls ./Tests/Release/testBlockedUnifCudaBench ; if [[ "$?" == "0" ]] ; then echo "OK" ; fi
+ls ./Tests/Release/testBlockedUnifCudaBench ; if [[ "$?" == "0" ]] ; then echo "STEP-OK" ; fi
 ```
 
-#### Basic Executions
+#### First Execution
 
-Information for scalfmm binaries
+In this section we compute a simulation and look at the resulting trace.
+ScalFMM binary parameters and descriptions:
 
 * Passing `--help` as parameter provide the possible/valid parameters
 * Simulation properties are choosen by :
@@ -266,14 +280,14 @@ Convert the fxt file
 ```bash
 $SCALFMM_STARPU_DIR/bin/starpu_fxt_tool -i "/tmp/prof_file_"$USER"_0"
 ```
-Then visualize the output with vite
+Then visualize the output with `vite`
 ```bash
 vite ./paje.trace
 ```
 
 Should be like: // IMAGE HERE
 
-We can convert the color of the trace by (it needs Qt5 library):
+We can convert the color of the trace by (requiere Qt5 library):
 
 ```bash
 $SCALFMM_SOURCE_DIR/Addons/BenchEfficiency/pajecolor paje.trace $SCALFMM_SOURCE_DIR/Addons/BenchEfficiency/paintmodel.fmm.colors
@@ -341,8 +355,7 @@ cd $SCALFMM_BUILD_DIR
 export SCALFMM_RES_DIR=$SCALFMM_BUILD_DIR/homogeneous
 mkdir $SCALFMM_RES_DIR
 ```
-
-*Output variable:* `scalfmmRegisterVariable SCALFMM_AB`
+*Output variable:* `scalfmmRegisterVariable SCALFMM_RES_DIR` 
 
 Set up the configuration variables:
 ```bash
@@ -369,12 +382,15 @@ if [[ `which gnuplot | wc -l` == "1" ]] ;  then
     gnuplot -e "filename='par-bs-search'" $SCALFMM_AB/scalfmmFindBs.gplot
 fi
 ```
-In our case we get  and 5385.
+In our case we get 9710  and 5385.
 
 *Output variable:* `scalfmmRegisterVariable SCALFMM_BS_CPU_SEQ`  `scalfmmRegisterVariable SCALFMM_BS_CPU_PAR`
 
+
 Then we compute the efficiency using both granulirities and keep the .rec files:
 ```bash
+export SCALFMM_MAX_NB_CPU=24
+export STARPU_NCUDA=0
 source $SCALFMM_AB/execAllHomogeneous.sh
 ```
 
@@ -401,7 +417,7 @@ source $SCALFMM_AB/plotEfficiencies.sh $SCALFMM_RES_DIR/efficiencies.txt
 Sould give: // IMAGE HERE
 
 
-## Generating Execution Results
+## Heterogeneous
 
 For test case `-nb 10000000` (10 million) and `-h 6` (height of the tree equal to 6),
 we first want to know the best granularity `-bs`.
