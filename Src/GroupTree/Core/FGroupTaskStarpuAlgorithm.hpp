@@ -476,26 +476,28 @@ protected:
 	p2m_cl.model->parameters_names[1] = "B";
 	p2m_cl.model->parameters_names[2] = "C";
 	p2m_cl.model->parameters_names[3] = "D";
-/* Automatically generated code for parameter combinations */
-    // Adding multiple regression codelet model for codelet p2m_cl
-    // Computed from execution:  4 Native execution on miriel
-    // Adjusted R-squared:  0.0805250871530648
-	p2m_cl.model->ncombinations = 1;
-    p2m_cl.model->combinations = (unsigned **) malloc(p2m_cl.model->ncombinations*sizeof(unsigned *));
+	/* ############################################ */
+	/*      Automatically generated code */
+		 // Adding multiple regression codelet model for codelet p2m_cl
+		 // Computed from execution:  4 Native execution on miriel
+		 // Adjusted R-squared:  0.999114070285755
+		 p2m_cl.model->ncombinations = 1;
+		 p2m_cl.model->combinations = (unsigned **) malloc(p2m_cl.model->ncombinations*sizeof(unsigned *));
 
-    if (p2m_cl.model->combinations)
-    {
-       for (unsigned i = 0; i < p2m_cl.model->ncombinations; i++)
-       {
-           p2m_cl.model->combinations[i] = (unsigned *) malloc(p2m_cl.model->nparameters*sizeof(unsigned));
-       }
-    }
+		 if (p2m_cl.model->combinations)
+		 {
+		   for (unsigned i = 0; i < p2m_cl.model->ncombinations; i++)
+		   {
+		     p2m_cl.model->combinations[i] = (unsigned *) malloc(p2m_cl.model->nparameters*sizeof(unsigned));
+		   }
+		 }
 
-	p2m_cl.model->combinations[0][0] = 0;
-	p2m_cl.model->combinations[0][1] = 1;
-	p2m_cl.model->combinations[0][2] = 0;
-	p2m_cl.model->combinations[0][3] = 0;
-/* ####################################################### */
+		 p2m_cl.model->combinations[0][0] = 0;
+		 p2m_cl.model->combinations[0][1] = 0;
+		 p2m_cl.model->combinations[0][2] = 0;
+		 p2m_cl.model->combinations[0][3] = 1;
+
+	/* ############################################ */
         memset(&m2m_cl, 0, sizeof(m2m_cl));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportM2M(FSTARPU_CPU_IDX)){
@@ -537,45 +539,79 @@ protected:
 	m2m_cl.model->parameters_names[4] = "E";
 	m2m_cl.model->parameters_names[5] = "F";
 	m2m_cl.model->parameters_names[6] = "G";
-/* Automatically generated code for parameter combinations */
-    // Adding multiple regression codelet model for codelet m2m_cl
-    // Computed from execution:  4 Native execution on miriel
-    // Adjusted R-squared:  0.0805250871530648
-	m2m_cl.model->ncombinations = 3;
-    m2m_cl.model->combinations = (unsigned **) malloc(m2m_cl.model->ncombinations*sizeof(unsigned *));
+	/* ############################################ */
+	/*      Automatically generated code */
+		 // Adding multiple regression codelet model for codelet m2m_cl
+		 // Computed from execution:  4 Native execution on miriel
+		 // Adjusted R-squared:  0.999192278325419
+		 m2m_cl.model->ncombinations = 7;
+		 m2m_cl.model->combinations = (unsigned **) malloc(m2m_cl.model->ncombinations*sizeof(unsigned *));
 
-    if (m2m_cl.model->combinations)
-    {
-       for (unsigned i = 0; i < m2m_cl.model->ncombinations; i++)
-       {
-           m2m_cl.model->combinations[i] = (unsigned *) malloc(m2m_cl.model->nparameters*sizeof(unsigned));
-       }
-    }
+		 if (m2m_cl.model->combinations)
+		 {
+		   for (unsigned i = 0; i < m2m_cl.model->ncombinations; i++)
+		   {
+		     m2m_cl.model->combinations[i] = (unsigned *) malloc(m2m_cl.model->nparameters*sizeof(unsigned));
+		   }
+		 }
 
-	m2m_cl.model->combinations[0][0] = 0;
-	m2m_cl.model->combinations[0][1] = 0;
-	m2m_cl.model->combinations[0][2] = 0;
-	m2m_cl.model->combinations[0][3] = 0;
-	m2m_cl.model->combinations[0][4] = 1;
-	m2m_cl.model->combinations[0][5] = 0;
-	m2m_cl.model->combinations[0][6] = 0;
-	
-	m2m_cl.model->combinations[1][0] = 0;
-	m2m_cl.model->combinations[1][1] = 0;
-	m2m_cl.model->combinations[1][2] = 0;
-	m2m_cl.model->combinations[1][3] = 0;
-	m2m_cl.model->combinations[1][4] = 0;
-	m2m_cl.model->combinations[1][5] = 1;
-	m2m_cl.model->combinations[1][6] = 0;
-	
-	m2m_cl.model->combinations[2][0] = 0;
-	m2m_cl.model->combinations[2][1] = 0;
-	m2m_cl.model->combinations[2][2] = 0;
-	m2m_cl.model->combinations[2][3] = 0;
-	m2m_cl.model->combinations[2][4] = 1;
-	m2m_cl.model->combinations[2][5] = 1;
-	m2m_cl.model->combinations[2][6] = 0;
-/* ####################################################### */
+		 m2m_cl.model->combinations[0][0] = 0;
+		 m2m_cl.model->combinations[0][1] = 0;
+		 m2m_cl.model->combinations[0][2] = 0;
+		 m2m_cl.model->combinations[0][3] = 0;
+		 m2m_cl.model->combinations[0][4] = 1;
+		 m2m_cl.model->combinations[0][5] = 0;
+		 m2m_cl.model->combinations[0][6] = 0;
+
+		 m2m_cl.model->combinations[1][0] = 0;
+		 m2m_cl.model->combinations[1][1] = 0;
+		 m2m_cl.model->combinations[1][2] = 0;
+		 m2m_cl.model->combinations[1][3] = 0;
+		 m2m_cl.model->combinations[1][4] = 0;
+		 m2m_cl.model->combinations[1][5] = 1;
+		 m2m_cl.model->combinations[1][6] = 0;
+
+		 m2m_cl.model->combinations[2][0] = 0;
+		 m2m_cl.model->combinations[2][1] = 0;
+		 m2m_cl.model->combinations[2][2] = 0;
+		 m2m_cl.model->combinations[2][3] = 0;
+		 m2m_cl.model->combinations[2][4] = 0;
+		 m2m_cl.model->combinations[2][5] = 0;
+		 m2m_cl.model->combinations[2][6] = 1;
+
+		 m2m_cl.model->combinations[3][0] = 0;
+		 m2m_cl.model->combinations[3][1] = 0;
+		 m2m_cl.model->combinations[3][2] = 0;
+		 m2m_cl.model->combinations[3][3] = 0;
+		 m2m_cl.model->combinations[3][4] = 1;
+		 m2m_cl.model->combinations[3][5] = 1;
+		 m2m_cl.model->combinations[3][6] = 0;
+
+		 m2m_cl.model->combinations[4][0] = 0;
+		 m2m_cl.model->combinations[4][1] = 0;
+		 m2m_cl.model->combinations[4][2] = 0;
+		 m2m_cl.model->combinations[4][3] = 0;
+		 m2m_cl.model->combinations[4][4] = 1;
+		 m2m_cl.model->combinations[4][5] = 0;
+		 m2m_cl.model->combinations[4][6] = 1;
+
+		 m2m_cl.model->combinations[5][0] = 0;
+		 m2m_cl.model->combinations[5][1] = 0;
+		 m2m_cl.model->combinations[5][2] = 0;
+		 m2m_cl.model->combinations[5][3] = 0;
+		 m2m_cl.model->combinations[5][4] = 0;
+		 m2m_cl.model->combinations[5][5] = 1;
+		 m2m_cl.model->combinations[5][6] = 1;
+
+		 m2m_cl.model->combinations[6][0] = 0;
+		 m2m_cl.model->combinations[6][1] = 0;
+		 m2m_cl.model->combinations[6][2] = 0;
+		 m2m_cl.model->combinations[6][3] = 0;
+		 m2m_cl.model->combinations[6][4] = 1;
+		 m2m_cl.model->combinations[6][5] = 1;
+		 m2m_cl.model->combinations[6][6] = 1;
+
+	/* ############################################ */
         memset(&l2l_cl, 0, sizeof(l2l_cl));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportL2L(FSTARPU_CPU_IDX)){
@@ -616,79 +652,47 @@ protected:
 	l2l_cl.model->parameters_names[4] = "E";
 	l2l_cl.model->parameters_names[5] = "F";
 	l2l_cl.model->parameters_names[6] = "G";
-        /*      Automatically generated code */
-        	 // Adding multiple regression codelet model for codelet l2l_cl
-        	 // Computed from execution:  4 Native execution on miriel
-        	 // Adjusted R-squared:  0.124904804564829
-        	 l2l_cl.model->ncombinations = 7;
-        	 l2l_cl.model->combinations = (unsigned **) malloc(l2l_cl.model->ncombinations*sizeof(unsigned *));
+	/* ############################################ */
+	/*      Automatically generated code */
+		 // Adding multiple regression codelet model for codelet l2l_cl
+		 // Computed from execution:  4 Native execution on miriel
+		 // Adjusted R-squared:  0.997721944139429
+		 l2l_cl.model->ncombinations = 3;
+		 l2l_cl.model->combinations = (unsigned **) malloc(l2l_cl.model->ncombinations*sizeof(unsigned *));
 
-        	 if (l2l_cl.model->combinations)
-        	 {
-        	   for (unsigned i = 0; i < l2l_cl.model->ncombinations; i++)
-        	   {
-        	     l2l_cl.model->combinations[i] = (unsigned *) malloc(l2l_cl.model->nparameters*sizeof(unsigned));
-        	   }
-        	 }
+		 if (l2l_cl.model->combinations)
+		 {
+		   for (unsigned i = 0; i < l2l_cl.model->ncombinations; i++)
+		   {
+		     l2l_cl.model->combinations[i] = (unsigned *) malloc(l2l_cl.model->nparameters*sizeof(unsigned));
+		   }
+		 }
 
-	l2l_cl.model->combinations[0][0] = 0;
-	l2l_cl.model->combinations[0][1] = 0;
-	l2l_cl.model->combinations[0][2] = 0;
-	l2l_cl.model->combinations[0][3] = 1;
-	l2l_cl.model->combinations[0][4] = 0;
-	l2l_cl.model->combinations[0][5] = 0;
-	l2l_cl.model->combinations[0][6] = 0;
+		 l2l_cl.model->combinations[0][0] = 0;
+		 l2l_cl.model->combinations[0][1] = 0;
+		 l2l_cl.model->combinations[0][2] = 0;
+		 l2l_cl.model->combinations[0][3] = 1;
+		 l2l_cl.model->combinations[0][4] = 0;
+		 l2l_cl.model->combinations[0][5] = 0;
+		 l2l_cl.model->combinations[0][6] = 0;
 
-	l2l_cl.model->combinations[1][0] = 0;
-	l2l_cl.model->combinations[1][1] = 0;
-	l2l_cl.model->combinations[1][2] = 0;
-	l2l_cl.model->combinations[1][3] = 0;
-	l2l_cl.model->combinations[1][4] = 1;
-	l2l_cl.model->combinations[1][5] = 0;
-	l2l_cl.model->combinations[1][6] = 0;
+		 l2l_cl.model->combinations[1][0] = 0;
+		 l2l_cl.model->combinations[1][1] = 0;
+		 l2l_cl.model->combinations[1][2] = 0;
+		 l2l_cl.model->combinations[1][3] = 0;
+		 l2l_cl.model->combinations[1][4] = 1;
+		 l2l_cl.model->combinations[1][5] = 0;
+		 l2l_cl.model->combinations[1][6] = 0;
 
-	l2l_cl.model->combinations[2][0] = 0;
-	l2l_cl.model->combinations[2][1] = 0;
-	l2l_cl.model->combinations[2][2] = 0;
-	l2l_cl.model->combinations[2][3] = 0;
-	l2l_cl.model->combinations[2][4] = 0;
-	l2l_cl.model->combinations[2][5] = 1;
-	l2l_cl.model->combinations[2][6] = 0;
+		 l2l_cl.model->combinations[2][0] = 0;
+		 l2l_cl.model->combinations[2][1] = 0;
+		 l2l_cl.model->combinations[2][2] = 0;
+		 l2l_cl.model->combinations[2][3] = 0;
+		 l2l_cl.model->combinations[2][4] = 0;
+		 l2l_cl.model->combinations[2][5] = 1;
+		 l2l_cl.model->combinations[2][6] = 0;
 
-	l2l_cl.model->combinations[3][0] = 0;
-	l2l_cl.model->combinations[3][1] = 0;
-	l2l_cl.model->combinations[3][2] = 0;
-	l2l_cl.model->combinations[3][3] = 1;
-	l2l_cl.model->combinations[3][4] = 1;
-	l2l_cl.model->combinations[3][5] = 0;
-	l2l_cl.model->combinations[3][6] = 0;
-
-	l2l_cl.model->combinations[4][0] = 0;
-	l2l_cl.model->combinations[4][1] = 0;
-	l2l_cl.model->combinations[4][2] = 0;
-	l2l_cl.model->combinations[4][3] = 1;
-	l2l_cl.model->combinations[4][4] = 0;
-	l2l_cl.model->combinations[4][5] = 1;
-	l2l_cl.model->combinations[4][6] = 0;
-
-	l2l_cl.model->combinations[5][0] = 0;
-	l2l_cl.model->combinations[5][1] = 0;
-	l2l_cl.model->combinations[5][2] = 0;
-	l2l_cl.model->combinations[5][3] = 0;
-	l2l_cl.model->combinations[5][4] = 1;
-	l2l_cl.model->combinations[5][5] = 1;
-	l2l_cl.model->combinations[5][6] = 0;
-
-	l2l_cl.model->combinations[6][0] = 0;
-	l2l_cl.model->combinations[6][1] = 0;
-	l2l_cl.model->combinations[6][2] = 0;
-	l2l_cl.model->combinations[6][3] = 1;
-	l2l_cl.model->combinations[6][4] = 1;
-	l2l_cl.model->combinations[6][5] = 1;
-	l2l_cl.model->combinations[6][6] = 0;
-        /* ############################################ */
-
-
+	/* ############################################ */
         memset(&l2l_cl_nocommute, 0, sizeof(l2l_cl_nocommute));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportL2L(FSTARPU_CPU_IDX)){
@@ -729,78 +733,79 @@ protected:
 	l2l_cl_nocommute.model->parameters_names[4] = "E";
 	l2l_cl_nocommute.model->parameters_names[5] = "F";
 	l2l_cl_nocommute.model->parameters_names[6] = "G";
-        /*      Automatically generated code */
-        	 // Adding multiple regression codelet model for codelet l2l_cl_nocommute
-        	 // Computed from execution:  4 Native execution on miriel
-        	 // Adjusted R-squared:  0.124904804564829
-        	 l2l_cl_nocommute.model->ncombinations = 7;
-        	 l2l_cl_nocommute.model->combinations = (unsigned **) malloc(l2l_cl_nocommute.model->ncombinations*sizeof(unsigned *));
+	/* ############################################ */
+	/*      Automatically generated code */
+		 // Adding multiple regression codelet model for codelet l2l_cl_nocommute
+		 // Computed from execution:  4 Native execution on miriel
+		 // Adjusted R-squared:  0.998843743882726
+		 l2l_cl_nocommute.model->ncombinations = 7;
+		 l2l_cl_nocommute.model->combinations = (unsigned **) malloc(l2l_cl_nocommute.model->ncombinations*sizeof(unsigned *));
 
-        	 if (l2l_cl_nocommute.model->combinations)
-        	 {
-        	   for (unsigned i = 0; i < l2l_cl_nocommute.model->ncombinations; i++)
-        	   {
-        	     l2l_cl_nocommute.model->combinations[i] = (unsigned *) malloc(l2l_cl_nocommute.model->nparameters*sizeof(unsigned));
-        	   }
-        	 }
+		 if (l2l_cl_nocommute.model->combinations)
+		 {
+		   for (unsigned i = 0; i < l2l_cl_nocommute.model->ncombinations; i++)
+		   {
+		     l2l_cl_nocommute.model->combinations[i] = (unsigned *) malloc(l2l_cl_nocommute.model->nparameters*sizeof(unsigned));
+		   }
+		 }
 
-	l2l_cl_nocommute.model->combinations[0][0] = 0;
-	l2l_cl_nocommute.model->combinations[0][1] = 0;
-	l2l_cl_nocommute.model->combinations[0][2] = 0;
-	l2l_cl_nocommute.model->combinations[0][3] = 1;
-	l2l_cl_nocommute.model->combinations[0][4] = 0;
-	l2l_cl_nocommute.model->combinations[0][5] = 0;
-	l2l_cl_nocommute.model->combinations[0][6] = 0;
+		 l2l_cl_nocommute.model->combinations[0][0] = 0;
+		 l2l_cl_nocommute.model->combinations[0][1] = 0;
+		 l2l_cl_nocommute.model->combinations[0][2] = 0;
+		 l2l_cl_nocommute.model->combinations[0][3] = 0;
+		 l2l_cl_nocommute.model->combinations[0][4] = 1;
+		 l2l_cl_nocommute.model->combinations[0][5] = 0;
+		 l2l_cl_nocommute.model->combinations[0][6] = 0;
 
-	l2l_cl_nocommute.model->combinations[1][0] = 0;
-	l2l_cl_nocommute.model->combinations[1][1] = 0;
-	l2l_cl_nocommute.model->combinations[1][2] = 0;
-	l2l_cl_nocommute.model->combinations[1][3] = 0;
-	l2l_cl_nocommute.model->combinations[1][4] = 1;
-	l2l_cl_nocommute.model->combinations[1][5] = 0;
-	l2l_cl_nocommute.model->combinations[1][6] = 0;
+		 l2l_cl_nocommute.model->combinations[1][0] = 0;
+		 l2l_cl_nocommute.model->combinations[1][1] = 0;
+		 l2l_cl_nocommute.model->combinations[1][2] = 0;
+		 l2l_cl_nocommute.model->combinations[1][3] = 0;
+		 l2l_cl_nocommute.model->combinations[1][4] = 0;
+		 l2l_cl_nocommute.model->combinations[1][5] = 1;
+		 l2l_cl_nocommute.model->combinations[1][6] = 0;
 
-	l2l_cl_nocommute.model->combinations[2][0] = 0;
-	l2l_cl_nocommute.model->combinations[2][1] = 0;
-	l2l_cl_nocommute.model->combinations[2][2] = 0;
-	l2l_cl_nocommute.model->combinations[2][3] = 0;
-	l2l_cl_nocommute.model->combinations[2][4] = 0;
-	l2l_cl_nocommute.model->combinations[2][5] = 1;
-	l2l_cl_nocommute.model->combinations[2][6] = 0;
+		 l2l_cl_nocommute.model->combinations[2][0] = 0;
+		 l2l_cl_nocommute.model->combinations[2][1] = 0;
+		 l2l_cl_nocommute.model->combinations[2][2] = 0;
+		 l2l_cl_nocommute.model->combinations[2][3] = 0;
+		 l2l_cl_nocommute.model->combinations[2][4] = 0;
+		 l2l_cl_nocommute.model->combinations[2][5] = 0;
+		 l2l_cl_nocommute.model->combinations[2][6] = 1;
 
-	l2l_cl_nocommute.model->combinations[3][0] = 0;
-	l2l_cl_nocommute.model->combinations[3][1] = 0;
-	l2l_cl_nocommute.model->combinations[3][2] = 0;
-	l2l_cl_nocommute.model->combinations[3][3] = 1;
-	l2l_cl_nocommute.model->combinations[3][4] = 1;
-	l2l_cl_nocommute.model->combinations[3][5] = 0;
-	l2l_cl_nocommute.model->combinations[3][6] = 0;
+		 l2l_cl_nocommute.model->combinations[3][0] = 0;
+		 l2l_cl_nocommute.model->combinations[3][1] = 0;
+		 l2l_cl_nocommute.model->combinations[3][2] = 0;
+		 l2l_cl_nocommute.model->combinations[3][3] = 0;
+		 l2l_cl_nocommute.model->combinations[3][4] = 1;
+		 l2l_cl_nocommute.model->combinations[3][5] = 1;
+		 l2l_cl_nocommute.model->combinations[3][6] = 0;
 
-	l2l_cl_nocommute.model->combinations[4][0] = 0;
-	l2l_cl_nocommute.model->combinations[4][1] = 0;
-	l2l_cl_nocommute.model->combinations[4][2] = 0;
-	l2l_cl_nocommute.model->combinations[4][3] = 1;
-	l2l_cl_nocommute.model->combinations[4][4] = 0;
-	l2l_cl_nocommute.model->combinations[4][5] = 1;
-	l2l_cl_nocommute.model->combinations[4][6] = 0;
+		 l2l_cl_nocommute.model->combinations[4][0] = 0;
+		 l2l_cl_nocommute.model->combinations[4][1] = 0;
+		 l2l_cl_nocommute.model->combinations[4][2] = 0;
+		 l2l_cl_nocommute.model->combinations[4][3] = 0;
+		 l2l_cl_nocommute.model->combinations[4][4] = 1;
+		 l2l_cl_nocommute.model->combinations[4][5] = 0;
+		 l2l_cl_nocommute.model->combinations[4][6] = 1;
 
-	l2l_cl_nocommute.model->combinations[5][0] = 0;
-	l2l_cl_nocommute.model->combinations[5][1] = 0;
-	l2l_cl_nocommute.model->combinations[5][2] = 0;
-	l2l_cl_nocommute.model->combinations[5][3] = 0;
-	l2l_cl_nocommute.model->combinations[5][4] = 1;
-	l2l_cl_nocommute.model->combinations[5][5] = 1;
-	l2l_cl_nocommute.model->combinations[5][6] = 0;
+		 l2l_cl_nocommute.model->combinations[5][0] = 0;
+		 l2l_cl_nocommute.model->combinations[5][1] = 0;
+		 l2l_cl_nocommute.model->combinations[5][2] = 0;
+		 l2l_cl_nocommute.model->combinations[5][3] = 0;
+		 l2l_cl_nocommute.model->combinations[5][4] = 0;
+		 l2l_cl_nocommute.model->combinations[5][5] = 1;
+		 l2l_cl_nocommute.model->combinations[5][6] = 1;
 
-	l2l_cl_nocommute.model->combinations[6][0] = 0;
-	l2l_cl_nocommute.model->combinations[6][1] = 0;
-	l2l_cl_nocommute.model->combinations[6][2] = 0;
-	l2l_cl_nocommute.model->combinations[6][3] = 1;
-	l2l_cl_nocommute.model->combinations[6][4] = 1;
-	l2l_cl_nocommute.model->combinations[6][5] = 1;
-	l2l_cl_nocommute.model->combinations[6][6] = 0;
-        /* ############################################ */
+		 l2l_cl_nocommute.model->combinations[6][0] = 0;
+		 l2l_cl_nocommute.model->combinations[6][1] = 0;
+		 l2l_cl_nocommute.model->combinations[6][2] = 0;
+		 l2l_cl_nocommute.model->combinations[6][3] = 0;
+		 l2l_cl_nocommute.model->combinations[6][4] = 1;
+		 l2l_cl_nocommute.model->combinations[6][5] = 1;
+		 l2l_cl_nocommute.model->combinations[6][6] = 1;
 
+	/* ############################################ */
         memset(&l2p_cl, 0, sizeof(l2p_cl));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportL2P(FSTARPU_CPU_IDX)){
@@ -842,27 +847,28 @@ protected:
 	l2p_cl.model->parameters_names[1] = "B";
 	l2p_cl.model->parameters_names[2] = "C";
 	l2p_cl.model->parameters_names[3] = "D";
-        /*      Automatically generated code */
-        	 // Adding multiple regression codelet model for codelet l2p_cl
-        	 // Computed from execution:  4 Native execution on miriel
-        	 // Adjusted R-squared:  0.958336736971338
-	l2p_cl.model->ncombinations = 1;
-    l2p_cl.model->combinations = (unsigned **) malloc(l2p_cl.model->ncombinations*sizeof(unsigned *));
+	/* ############################################ */
+	/*      Automatically generated code */
+		 // Adding multiple regression codelet model for codelet l2p_cl
+		 // Computed from execution:  4 Native execution on miriel
+		 // Adjusted R-squared:  0.999681763380329
+		 l2p_cl.model->ncombinations = 1;
+		 l2p_cl.model->combinations = (unsigned **) malloc(l2p_cl.model->ncombinations*sizeof(unsigned *));
 
-    if (l2p_cl.model->combinations)
-    {
-       for (unsigned i = 0; i < l2p_cl.model->ncombinations; i++)
-       {
-           l2p_cl.model->combinations[i] = (unsigned *) malloc(l2p_cl.model->nparameters*sizeof(unsigned));
-       }
-    }
+		 if (l2p_cl.model->combinations)
+		 {
+		   for (unsigned i = 0; i < l2p_cl.model->ncombinations; i++)
+		   {
+		     l2p_cl.model->combinations[i] = (unsigned *) malloc(l2p_cl.model->nparameters*sizeof(unsigned));
+		   }
+		 }
 
-	l2p_cl.model->combinations[0][0] = 0;
-	l2p_cl.model->combinations[0][1] = 1;
-	l2p_cl.model->combinations[0][2] = 0;
-	l2p_cl.model->combinations[0][3] = 0;
-        /* ############################################ */
+		 l2p_cl.model->combinations[0][0] = 0;
+		 l2p_cl.model->combinations[0][1] = 0;
+		 l2p_cl.model->combinations[0][2] = 0;
+		 l2p_cl.model->combinations[0][3] = 1;
 
+	/* ############################################ */
         memset(&p2p_cl_in, 0, sizeof(p2p_cl_in));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportP2P(FSTARPU_CPU_IDX)){
@@ -902,26 +908,33 @@ protected:
 	p2p_cl_in.model->parameters_names[1] = "B";
 	p2p_cl_in.model->parameters_names[2] = "C";
 	p2p_cl_in.model->parameters_names[3] = "D";
-/* Automatically generated code for parameter combinations */
-    // Adding multiple regression codelet model for codelet p2p_cl_in
-    // Computed from execution:  4 Native execution on miriel
-    // Adjusted R-squared:  0.0805250871530648
-	p2p_cl_in.model->ncombinations = 1;
-    p2p_cl_in.model->combinations = (unsigned **) malloc(p2p_cl_in.model->ncombinations*sizeof(unsigned *));
+	/* ############################################ */
+	/*      Automatically generated code */
+		 // Adding multiple regression codelet model for codelet p2p_cl_in
+		 // Computed from execution:  4 Native execution on miriel
+		 // Adjusted R-squared:  0.997841800968477
+		 p2p_cl_in.model->ncombinations = 2;
+		 p2p_cl_in.model->combinations = (unsigned **) malloc(p2p_cl_in.model->ncombinations*sizeof(unsigned *));
 
-    if (p2p_cl_in.model->combinations)
-    {
-       for (unsigned i = 0; i < p2p_cl_in.model->ncombinations; i++)
-       {
-           p2p_cl_in.model->combinations[i] = (unsigned *) malloc(p2p_cl_in.model->nparameters*sizeof(unsigned));
-       }
-    }
+		 if (p2p_cl_in.model->combinations)
+		 {
+		   for (unsigned i = 0; i < p2p_cl_in.model->ncombinations; i++)
+		   {
+		     p2p_cl_in.model->combinations[i] = (unsigned *) malloc(p2p_cl_in.model->nparameters*sizeof(unsigned));
+		   }
+		 }
 
-	p2p_cl_in.model->combinations[0][0] = 0;
-	p2p_cl_in.model->combinations[0][1] = 0;
-	p2p_cl_in.model->combinations[0][2] = 1;
-	p2p_cl_in.model->combinations[0][3] = 0;
-/* ####################################################### */
+		 p2p_cl_in.model->combinations[0][0] = 0;
+		 p2p_cl_in.model->combinations[0][1] = 0;
+		 p2p_cl_in.model->combinations[0][2] = 1;
+		 p2p_cl_in.model->combinations[0][3] = 0;
+
+		 p2p_cl_in.model->combinations[1][0] = 0;
+		 p2p_cl_in.model->combinations[1][1] = 0;
+		 p2p_cl_in.model->combinations[1][2] = 0;
+		 p2p_cl_in.model->combinations[1][3] = 1;
+
+	/* ############################################ */
         memset(&p2p_cl_inout, 0, sizeof(p2p_cl_inout));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportP2PExtern(FSTARPU_CPU_IDX)){
@@ -973,98 +986,100 @@ protected:
 	p2p_cl_inout.model->parameters_names[7] = "H";
 	p2p_cl_inout.model->parameters_names[8] = "I";
 	p2p_cl_inout.model->parameters_names[9] = "J";
-/* Automatically generated code for parameter combinations */
-    // Adding multiple regression codelet model for codelet p2p_cl_inout
-    // Computed from execution:  4 Native execution on miriel
-    // Adjusted R-squared:  0.0805250871530648
-	p2p_cl_inout.model->ncombinations = 7;
-    p2p_cl_inout.model->combinations = (unsigned **) malloc(p2p_cl_inout.model->ncombinations*sizeof(unsigned *));
+	/* ############################################ */
+	/*      Automatically generated code */
+		 // Adding multiple regression codelet model for codelet p2p_cl_inout
+		 // Computed from execution:  4 Native execution on miriel
+		 // Adjusted R-squared:  0.999382492562838
+		 p2p_cl_inout.model->ncombinations = 7;
+		 p2p_cl_inout.model->combinations = (unsigned **) malloc(p2p_cl_inout.model->ncombinations*sizeof(unsigned *));
 
-    if (p2p_cl_inout.model->combinations)
-    {
-       for (unsigned i = 0; i < p2p_cl_inout.model->ncombinations; i++)
-       {
-           p2p_cl_inout.model->combinations[i] = (unsigned *) malloc(p2p_cl_inout.model->nparameters*sizeof(unsigned));
-       }
-    }
+		 if (p2p_cl_inout.model->combinations)
+		 {
+		   for (unsigned i = 0; i < p2p_cl_inout.model->ncombinations; i++)
+		   {
+		     p2p_cl_inout.model->combinations[i] = (unsigned *) malloc(p2p_cl_inout.model->nparameters*sizeof(unsigned));
+		   }
+		 }
 
-	p2p_cl_inout.model->combinations[0][0] = 0;
-	p2p_cl_inout.model->combinations[0][1] = 0;
-	p2p_cl_inout.model->combinations[0][2] = 0;
-	p2p_cl_inout.model->combinations[0][3] = 0;
-	p2p_cl_inout.model->combinations[0][4] = 0;
-	p2p_cl_inout.model->combinations[0][5] = 1;
-	p2p_cl_inout.model->combinations[0][6] = 0;
-	p2p_cl_inout.model->combinations[0][7] = 0;
-	p2p_cl_inout.model->combinations[0][8] = 0;
-	p2p_cl_inout.model->combinations[0][9] = 0;
-	
-	p2p_cl_inout.model->combinations[1][0] = 0;
-	p2p_cl_inout.model->combinations[1][1] = 0;
-	p2p_cl_inout.model->combinations[1][2] = 0;
-	p2p_cl_inout.model->combinations[1][3] = 0;
-	p2p_cl_inout.model->combinations[1][4] = 0;
-	p2p_cl_inout.model->combinations[1][5] = 0;
-	p2p_cl_inout.model->combinations[1][6] = 1;
-	p2p_cl_inout.model->combinations[1][7] = 0;
-	p2p_cl_inout.model->combinations[1][8] = 0;
-	p2p_cl_inout.model->combinations[1][9] = 0;
-	
-	p2p_cl_inout.model->combinations[2][0] = 0;
-	p2p_cl_inout.model->combinations[2][1] = 0;
-	p2p_cl_inout.model->combinations[2][2] = 0;
-	p2p_cl_inout.model->combinations[2][3] = 0;
-	p2p_cl_inout.model->combinations[2][4] = 0;
-	p2p_cl_inout.model->combinations[2][5] = 0;
-	p2p_cl_inout.model->combinations[2][6] = 2;
-	p2p_cl_inout.model->combinations[2][7] = 0;
-	p2p_cl_inout.model->combinations[2][8] = 0;
-	p2p_cl_inout.model->combinations[2][9] = 0;
+		 p2p_cl_inout.model->combinations[0][0] = 0;
+		 p2p_cl_inout.model->combinations[0][1] = 0;
+		 p2p_cl_inout.model->combinations[0][2] = 1;
+		 p2p_cl_inout.model->combinations[0][3] = 0;
+		 p2p_cl_inout.model->combinations[0][4] = 0;
+		 p2p_cl_inout.model->combinations[0][5] = 0;
+		 p2p_cl_inout.model->combinations[0][6] = 0;
+		 p2p_cl_inout.model->combinations[0][7] = 0;
+		 p2p_cl_inout.model->combinations[0][8] = 0;
+		 p2p_cl_inout.model->combinations[0][9] = 0;
 
-	p2p_cl_inout.model->combinations[3][0] = 0;
-	p2p_cl_inout.model->combinations[3][1] = 0;
-	p2p_cl_inout.model->combinations[3][2] = 0;
-	p2p_cl_inout.model->combinations[3][3] = 0;
-	p2p_cl_inout.model->combinations[3][4] = 0;
-	p2p_cl_inout.model->combinations[3][5] = 0;
-	p2p_cl_inout.model->combinations[3][6] = 3;
-	p2p_cl_inout.model->combinations[3][7] = 0;
-	p2p_cl_inout.model->combinations[3][8] = 0;
-	p2p_cl_inout.model->combinations[3][9] = 0;
+		 p2p_cl_inout.model->combinations[1][0] = 0;
+		 p2p_cl_inout.model->combinations[1][1] = 0;
+		 p2p_cl_inout.model->combinations[1][2] = 0;
+		 p2p_cl_inout.model->combinations[1][3] = 0;
+		 p2p_cl_inout.model->combinations[1][4] = 1;
+		 p2p_cl_inout.model->combinations[1][5] = 0;
+		 p2p_cl_inout.model->combinations[1][6] = 0;
+		 p2p_cl_inout.model->combinations[1][7] = 0;
+		 p2p_cl_inout.model->combinations[1][8] = 0;
+		 p2p_cl_inout.model->combinations[1][9] = 0;
 
-	p2p_cl_inout.model->combinations[4][0] = 0;
-	p2p_cl_inout.model->combinations[4][1] = 0;
-	p2p_cl_inout.model->combinations[4][2] = 0;
-	p2p_cl_inout.model->combinations[4][3] = 0;
-	p2p_cl_inout.model->combinations[4][4] = 0;
-	p2p_cl_inout.model->combinations[4][5] = 1;
-	p2p_cl_inout.model->combinations[4][6] = 1;
-	p2p_cl_inout.model->combinations[4][7] = 0;
-	p2p_cl_inout.model->combinations[4][8] = 0;
-	p2p_cl_inout.model->combinations[4][9] = 0;
-	
-	p2p_cl_inout.model->combinations[5][0] = 0;
-	p2p_cl_inout.model->combinations[5][1] = 0;
-	p2p_cl_inout.model->combinations[5][2] = 0;
-	p2p_cl_inout.model->combinations[5][3] = 0;
-	p2p_cl_inout.model->combinations[5][4] = 0;
-	p2p_cl_inout.model->combinations[5][5] = 1;
-	p2p_cl_inout.model->combinations[5][6] = 2;
-	p2p_cl_inout.model->combinations[5][7] = 0;
-	p2p_cl_inout.model->combinations[5][8] = 0;
-	p2p_cl_inout.model->combinations[5][9] = 0;
+		 p2p_cl_inout.model->combinations[2][0] = 0;
+		 p2p_cl_inout.model->combinations[2][1] = 0;
+		 p2p_cl_inout.model->combinations[2][2] = 0;
+		 p2p_cl_inout.model->combinations[2][3] = 0;
+		 p2p_cl_inout.model->combinations[2][4] = 0;
+		 p2p_cl_inout.model->combinations[2][5] = 1;
+		 p2p_cl_inout.model->combinations[2][6] = 0;
+		 p2p_cl_inout.model->combinations[2][7] = 0;
+		 p2p_cl_inout.model->combinations[2][8] = 0;
+		 p2p_cl_inout.model->combinations[2][9] = 0;
 
-	p2p_cl_inout.model->combinations[6][0] = 0;
-	p2p_cl_inout.model->combinations[6][1] = 0;
-	p2p_cl_inout.model->combinations[6][2] = 0;
-	p2p_cl_inout.model->combinations[6][3] = 0;
-	p2p_cl_inout.model->combinations[6][4] = 0;
-	p2p_cl_inout.model->combinations[6][5] = 1;
-	p2p_cl_inout.model->combinations[6][6] = 3;
-	p2p_cl_inout.model->combinations[6][7] = 0;
-	p2p_cl_inout.model->combinations[6][8] = 0;
-	p2p_cl_inout.model->combinations[6][9] = 0;
-/* ####################################################### */
+		 p2p_cl_inout.model->combinations[3][0] = 0;
+		 p2p_cl_inout.model->combinations[3][1] = 0;
+		 p2p_cl_inout.model->combinations[3][2] = 0;
+		 p2p_cl_inout.model->combinations[3][3] = 0;
+		 p2p_cl_inout.model->combinations[3][4] = 0;
+		 p2p_cl_inout.model->combinations[3][5] = 0;
+		 p2p_cl_inout.model->combinations[3][6] = 1;
+		 p2p_cl_inout.model->combinations[3][7] = 0;
+		 p2p_cl_inout.model->combinations[3][8] = 0;
+		 p2p_cl_inout.model->combinations[3][9] = 0;
+
+		 p2p_cl_inout.model->combinations[4][0] = 0;
+		 p2p_cl_inout.model->combinations[4][1] = 0;
+		 p2p_cl_inout.model->combinations[4][2] = 0;
+		 p2p_cl_inout.model->combinations[4][3] = 0;
+		 p2p_cl_inout.model->combinations[4][4] = 0;
+		 p2p_cl_inout.model->combinations[4][5] = 0;
+		 p2p_cl_inout.model->combinations[4][6] = 0;
+		 p2p_cl_inout.model->combinations[4][7] = 1;
+		 p2p_cl_inout.model->combinations[4][8] = 0;
+		 p2p_cl_inout.model->combinations[4][9] = 0;
+
+		 p2p_cl_inout.model->combinations[5][0] = 0;
+		 p2p_cl_inout.model->combinations[5][1] = 0;
+		 p2p_cl_inout.model->combinations[5][2] = 0;
+		 p2p_cl_inout.model->combinations[5][3] = 0;
+		 p2p_cl_inout.model->combinations[5][4] = 0;
+		 p2p_cl_inout.model->combinations[5][5] = 0;
+		 p2p_cl_inout.model->combinations[5][6] = 0;
+		 p2p_cl_inout.model->combinations[5][7] = 0;
+		 p2p_cl_inout.model->combinations[5][8] = 1;
+		 p2p_cl_inout.model->combinations[5][9] = 0;
+
+		 p2p_cl_inout.model->combinations[6][0] = 0;
+		 p2p_cl_inout.model->combinations[6][1] = 0;
+		 p2p_cl_inout.model->combinations[6][2] = 0;
+		 p2p_cl_inout.model->combinations[6][3] = 0;
+		 p2p_cl_inout.model->combinations[6][4] = 0;
+		 p2p_cl_inout.model->combinations[6][5] = 0;
+		 p2p_cl_inout.model->combinations[6][6] = 0;
+		 p2p_cl_inout.model->combinations[6][7] = 0;
+		 p2p_cl_inout.model->combinations[6][8] = 0;
+		 p2p_cl_inout.model->combinations[6][9] = 1;
+
+	/* ############################################ */
         memset(&m2l_cl_in, 0, sizeof(m2l_cl_in));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportM2L(FSTARPU_CPU_IDX)){
@@ -1101,42 +1116,28 @@ protected:
 	m2l_cl_in.model->parameters_names[1] = "B";
 	m2l_cl_in.model->parameters_names[2] = "C";
 	m2l_cl_in.model->parameters_names[3] = "D";
-        /*      Automatically generated code */
-        	 // Adding multiple regression codelet model for codelet m2l_cl_in
-        	 // Computed from execution:  4 Native execution on miriel
-        	 // Adjusted R-squared:  0.931285194817575
-        	 m2l_cl_in.model->ncombinations = 4;
-        	 m2l_cl_in.model->combinations = (unsigned **) malloc(m2l_cl_in.model->ncombinations*sizeof(unsigned *));
+	/* ############################################ */
+	/*      Automatically generated code */
+		 // Adding multiple regression codelet model for codelet m2l_cl_in
+		 // Computed from execution:  4 Native execution on miriel
+		 // Adjusted R-squared:  0.999910070027862
+		 m2l_cl_in.model->ncombinations = 1;
+		 m2l_cl_in.model->combinations = (unsigned **) malloc(m2l_cl_in.model->ncombinations*sizeof(unsigned *));
 
-        	 if (m2l_cl_in.model->combinations)
-        	 {
-        	   for (unsigned i = 0; i < m2l_cl_in.model->ncombinations; i++)
-        	   {
-        	     m2l_cl_in.model->combinations[i] = (unsigned *) malloc(m2l_cl_in.model->nparameters*sizeof(unsigned));
-        	   }
-        	 }
+		 if (m2l_cl_in.model->combinations)
+		 {
+		   for (unsigned i = 0; i < m2l_cl_in.model->ncombinations; i++)
+		   {
+		     m2l_cl_in.model->combinations[i] = (unsigned *) malloc(m2l_cl_in.model->nparameters*sizeof(unsigned));
+		   }
+		 }
 
-	m2l_cl_in.model->combinations[0][0] = 0;
-	m2l_cl_in.model->combinations[0][1] = 1;
-	m2l_cl_in.model->combinations[0][2] = 0;
-	m2l_cl_in.model->combinations[0][3] = 0;
+		 m2l_cl_in.model->combinations[0][0] = 0;
+		 m2l_cl_in.model->combinations[0][1] = 0;
+		 m2l_cl_in.model->combinations[0][2] = 0;
+		 m2l_cl_in.model->combinations[0][3] = 1;
 
-	m2l_cl_in.model->combinations[0][0] = 0;
-	m2l_cl_in.model->combinations[0][1] = 0;
-	m2l_cl_in.model->combinations[0][2] = 1;
-	m2l_cl_in.model->combinations[0][3] = 0;
-
-	m2l_cl_in.model->combinations[0][0] = 0;
-	m2l_cl_in.model->combinations[0][1] = 0;
-	m2l_cl_in.model->combinations[0][2] = 2;
-	m2l_cl_in.model->combinations[0][3] = 0;
-
-	m2l_cl_in.model->combinations[0][0] = 0;
-	m2l_cl_in.model->combinations[0][1] = 1;
-	m2l_cl_in.model->combinations[0][2] = 1;
-	m2l_cl_in.model->combinations[0][3] = 0;
-        /* ############################################ */
-
+	/* ############################################ */
         memset(&m2l_cl_inout, 0, sizeof(m2l_cl_inout));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportM2LExtern(FSTARPU_CPU_IDX)){
@@ -1177,33 +1178,41 @@ protected:
 	m2l_cl_inout.model->parameters_names[5] = "F";
 	m2l_cl_inout.model->parameters_names[6] = "G";
 	m2l_cl_inout.model->parameters_names[7] = "H";
-	
-        /*      Automatically generated code */
-        	 // Adding multiple regression codelet model for codelet m2l_cl_inout
-        	 // Computed from execution:  4 Native execution on miriel
-        	 // Adjusted R-squared:  0.293905542115529
-        	 m2l_cl_inout.model->ncombinations = 1;
-        	 m2l_cl_inout.model->combinations = (unsigned **) malloc(m2l_cl_inout.model->ncombinations*sizeof(unsigned *));
+	/* ############################################ */
+	/*      Automatically generated code */
+		 // Adding multiple regression codelet model for codelet m2l_cl_inout
+		 // Computed from execution:  4 Native execution on miriel
+		 // Adjusted R-squared:  0.999960032827893
+		 m2l_cl_inout.model->ncombinations = 2;
+		 m2l_cl_inout.model->combinations = (unsigned **) malloc(m2l_cl_inout.model->ncombinations*sizeof(unsigned *));
 
-        	 if (m2l_cl_inout.model->combinations)
-        	 {
-        	   for (unsigned i = 0; i < m2l_cl_inout.model->ncombinations; i++)
-        	   {
-        	     m2l_cl_inout.model->combinations[i] = (unsigned *) malloc(m2l_cl_inout.model->nparameters*sizeof(unsigned));
-        	   }
-        	 }
+		 if (m2l_cl_inout.model->combinations)
+		 {
+		   for (unsigned i = 0; i < m2l_cl_inout.model->ncombinations; i++)
+		   {
+		     m2l_cl_inout.model->combinations[i] = (unsigned *) malloc(m2l_cl_inout.model->nparameters*sizeof(unsigned));
+		   }
+		 }
 
-	m2l_cl_inout.model->combinations[0][0] = 0;
-	m2l_cl_inout.model->combinations[0][1] = 0;
-	m2l_cl_inout.model->combinations[0][2] = 0;
-	m2l_cl_inout.model->combinations[0][3] = 0;
-	m2l_cl_inout.model->combinations[0][4] = 0;
-	m2l_cl_inout.model->combinations[0][5] = 1;
-	m2l_cl_inout.model->combinations[0][6] = 0;
-	m2l_cl_inout.model->combinations[0][7] = 0;
-        /* ############################################ */
+		 m2l_cl_inout.model->combinations[0][0] = 0;
+		 m2l_cl_inout.model->combinations[0][1] = 0;
+		 m2l_cl_inout.model->combinations[0][2] = 0;
+		 m2l_cl_inout.model->combinations[0][3] = 0;
+		 m2l_cl_inout.model->combinations[0][4] = 0;
+		 m2l_cl_inout.model->combinations[0][5] = 1;
+		 m2l_cl_inout.model->combinations[0][6] = 0;
+		 m2l_cl_inout.model->combinations[0][7] = 0;
 
+		 m2l_cl_inout.model->combinations[1][0] = 0;
+		 m2l_cl_inout.model->combinations[1][1] = 0;
+		 m2l_cl_inout.model->combinations[1][2] = 0;
+		 m2l_cl_inout.model->combinations[1][3] = 0;
+		 m2l_cl_inout.model->combinations[1][4] = 0;
+		 m2l_cl_inout.model->combinations[1][5] = 0;
+		 m2l_cl_inout.model->combinations[1][6] = 1;
+		 m2l_cl_inout.model->combinations[1][7] = 0;
 
+	/* ############################################ */
 #ifdef STARPU_USE_REDUX
         memset(&p2p_redux_init, 0, sizeof(p2p_redux_init));
 #ifdef STARPU_USE_CPU
