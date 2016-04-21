@@ -26,6 +26,7 @@ In order to follow this tutorial, it is needed to have the following application
 * CUDA (>= 7) and `CUDA_PATH` must be set. In our case, `CUDA_PATH=/usr/local/cuda-7.5/`
 * __Optional__ Vite (from `sudo apt-get install vite` or see [http://vite.gforge.inria.fr/download.php](http://vite.gforge.inria.fr/download.php))
 *  __Optional__ Qt5 library to be able to change the colors of the execution traces in order to visualize the different FMM operators
+* gnuplot to generate the figures
 
 > [Remark] Some installations of CUDA does not have libcuda file.
 > In this case, one needs to create a link : `sudo ln /usr/local/cuda-7.5/lib64/libcudart.so /usr/local/cuda-7.5/lib64/libcuda.so`
@@ -50,8 +51,9 @@ cd $SCALFMM_TEST_DIR
 
 In order to be able to stop the tutorial in the middle and restart later, we will register the variables in a file that should be source to restart later:
 ```bash
-function scalfmmRegisterVariable() { echo "export $1=${!1}" >> "$SCALFMM_TEST_DIR/environment.source"; }
-echo "function scalfmmRegisterVariable() { echo \"export $1=${!1}\" >> \"$SCALFMM_TEST_DIR/environment.source\"; }" > "$SCALFMM_TEST_DIR/environment.source"
+# function scalfmmRegisterVariable() { echo "export $1=${!1}" >> "$SCALFMM_TEST_DIR/environment.source"; }
+echo "function scalfmmRegisterVariable() { echo \"export \$1=\${!1}\" >> \"$SCALFMM_TEST_DIR/environment.source\"; }" > "$SCALFMM_TEST_DIR/environment.source"
+source "$SCALFMM_TEST_DIR/environment.source"
 ```
 
 *Output variables:* `scalfmmRegisterVariable SCALFMM_TEST_DIR`
@@ -75,7 +77,7 @@ cd $SCALFMM_TEST_DIR
 source "$SCALFMM_TEST_DIR/environment.source"
 ```
 
-### Downloading Packages
+### Downloading the Packages (in Advance)
 
 If the computational node does not have access to internet, we provide a command to download the needed packages (otherwise the next commands still include just in time download):
 ```bash
@@ -285,7 +287,8 @@ Then visualize the output with `vite`
 vite ./paje.trace
 ```
 
-Should be like: // IMAGE HERE
+Should be like:
+![Trace](trace-example.png)
 
 We can convert the color of the trace by (requiere Qt5 library):
 
@@ -294,7 +297,8 @@ $SCALFMM_SOURCE_DIR/Addons/BenchEfficiency/pajecolor paje.trace $SCALFMM_SOURCE_
 vite ./paje.trace.painted
 ```
 
-Should be like: // IMAGE HERE
+Should be like: 
+![Trace](trace-example-colors.png)
 
 + Get execution times
 
@@ -386,38 +390,64 @@ In our case we get 9710  and 5385.
 
 *Output variable:* `scalfmmRegisterVariable SCALFMM_BS_CPU_SEQ`  `scalfmmRegisterVariable SCALFMM_BS_CPU_PAR`
 
+We can look to the work that has been done to find the best granularity:
+![In sequential](seq-bs-search.png)
+![In parallel](par-bs-search.png)
+
 
 Then we compute the efficiency using both granulirities and keep the .rec files:
 ```bash
 export SCALFMM_MAX_NB_CPU=24
 export STARPU_NCUDA=0
-source $SCALFMM_AB/execAllHomogeneous.sh
+source "$SCALFMM_AB/execAllHomogeneous.sh"
 ```
 
-We should end with all the .rec files and their corresponding time files
+We should end with all the .rec files and their corresponding time files and `ls "$SCALFMM_RES_DIR"` should return something like:
 ```bash
-ls $SCALFMM_RES_DIR
+trace-nb_10000000-h_7-bs_5385-CPU_1.rec        trace-nb_10000000-h_7-bs_9710-CPU_15.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_21.rec       trace-nb_10000000-h_7-bs_9710-CPU_4.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_1.rec.time   trace-nb_10000000-h_7-bs_9710-CPU_16.rec       trace-nb_10000000-h_7-bs_9710-CPU_21.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_5.rec
+trace-nb_10000000-h_7-bs_9710-CPU_10.rec       trace-nb_10000000-h_7-bs_9710-CPU_16.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_22.rec       trace-nb_10000000-h_7-bs_9710-CPU_5.rec.time
+trace-nb_10000000-h_7-bs_9710-CPU_10.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_17.rec       trace-nb_10000000-h_7-bs_9710-CPU_22.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_6.rec
+trace-nb_10000000-h_7-bs_9710-CPU_11.rec       trace-nb_10000000-h_7-bs_9710-CPU_17.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_23.rec       trace-nb_10000000-h_7-bs_9710-CPU_6.rec.time
+trace-nb_10000000-h_7-bs_9710-CPU_11.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_18.rec       trace-nb_10000000-h_7-bs_9710-CPU_23.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_7.rec
+trace-nb_10000000-h_7-bs_9710-CPU_12.rec       trace-nb_10000000-h_7-bs_9710-CPU_18.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_24.rec       trace-nb_10000000-h_7-bs_9710-CPU_7.rec.time
+trace-nb_10000000-h_7-bs_9710-CPU_12.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_19.rec       trace-nb_10000000-h_7-bs_9710-CPU_24.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_8.rec
+trace-nb_10000000-h_7-bs_9710-CPU_13.rec       trace-nb_10000000-h_7-bs_9710-CPU_19.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_2.rec        trace-nb_10000000-h_7-bs_9710-CPU_8.rec.time
+trace-nb_10000000-h_7-bs_9710-CPU_13.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_1.rec        trace-nb_10000000-h_7-bs_9710-CPU_2.rec.time   trace-nb_10000000-h_7-bs_9710-CPU_9.rec
+trace-nb_10000000-h_7-bs_9710-CPU_14.rec       trace-nb_10000000-h_7-bs_9710-CPU_1.rec.time   trace-nb_10000000-h_7-bs_9710-CPU_3.rec        trace-nb_10000000-h_7-bs_9710-CPU_9.rec.time
+trace-nb_10000000-h_7-bs_9710-CPU_14.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_20.rec       trace-nb_10000000-h_7-bs_9710-CPU_3.rec.time
+trace-nb_10000000-h_7-bs_9710-CPU_15.rec       trace-nb_10000000-h_7-bs_9710-CPU_20.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_4.rec
 ```
 
-We compute the efficiencies
+We now compute the efficiencies from these files
 ```bash
-source $SCALFMM_AB/computeHomogeneousEfficiencies
+g++ -std=c++11 $SCALFMM_AB/mergetimefile.cpp -o $SCALFMM_AB/mergetimefile.exe
+$SCALFMM_AB/mergetimefile.exe "$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_BS_CPU_SEQ-CPU_1.rec" "$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_BS_CPU_SEQ-CPU_%d.rec" $SCALFMM_MAX_NB_CPU
 ```
 
 We end with efficiency for the application and for the operators.
 ```bash
-cat $SCALFMM_RES_DIR/efficiencies.txt
+Create global-eff.data
+Create task-eff.data
+Create task-gr-eff.dat
 ```
 
 We can plot each of them
 ```bash
-source $SCALFMM_AB/plotEfficiencies.sh $SCALFMM_RES_DIR/efficiencies.txt
+gnuplot -e "filename='global-eff'" $SCALFMM_AB/scalfmmPlotAll.gplot
+gnuplot -e "filename='task-eff'" $SCALFMM_AB/scalfmmPlotAll.gplot
+gnuplot -e "filename='task-gr-eff'" $SCALFMM_AB/scalfmmPlotAll.gplot
 ```
 
-Sould give: // IMAGE HERE
+In our case it gives:
+![global-eff](global-eff.png)
+![task-eff](task-eff.png)
+![task-gr-eff](task-gr-eff.png)
 
 
 ## Heterogeneous
+
+__NOT FINISHED!!!!__
 
 For test case `-nb 10000000` (10 million) and `-h 6` (height of the tree equal to 6),
 we first want to know the best granularity `-bs`.
