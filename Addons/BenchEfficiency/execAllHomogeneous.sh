@@ -9,7 +9,8 @@ echo "Using granularities:"
 echo "$SCALFMM_BS_CPU_SEQ and $SCALFMM_BS_CPU_PAR"
 
 # only in seq with the seq bs
-STARPU_NCPUS=1
+cpu=1
+STARPU_NCPUS=$cpu
 STARPU_NCUDA=0
 
 logoutput=`./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs $SCALFMM_BS_CPU_SEQ`

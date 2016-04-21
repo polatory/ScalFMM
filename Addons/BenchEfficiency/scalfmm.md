@@ -72,9 +72,10 @@ To restart the tutorial, one needs to re-define the working directory and to sou
 export SCALFMM_TEST_DIR=~/scalfmm_test
 if [[ ! -d $SCALFMM_TEST_DIR ]] ; then
 	mkdir $SCALFMM_TEST_DIR
+else
+	source "$SCALFMM_TEST_DIR/environment.source"
 fi    
 cd $SCALFMM_TEST_DIR
-source "$SCALFMM_TEST_DIR/environment.source"
 ```
 
 ### Downloading the Packages (in Advance)
@@ -200,18 +201,36 @@ export SCALFMM_BUILD_DIR=`pwd`
 
 + Configure (No MKL):
 ```bash
-cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=OFF -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR -DSCALFMM_USE_FFT=ON -DFFT_DIR=$SCALFMM_FFT_DIR
+cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
+               -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF \
+               -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=OFF \
+               -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON \
+               -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF \
+               -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR \
+               -DSCALFMM_USE_FFT=ON -DFFT_DIR=$SCALFMM_FFT_DIR
 ```
 + Configure (MKL BLAS/LAPACK and FFTW):
 ```bash
-cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=ON -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR -DSCALFMM_USE_FFT=ON -DFFT_DIR=$SCALFMM_FFT_DIR
+cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
+               -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF \
+               -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=ON \
+               -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON \
+               -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF \
+               -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR \
+               -DSCALFMM_USE_FFT=ON -DFFT_DIR=$SCALFMM_FFT_DIR
 ```
 + Configure (MKL BLAS/LAPACK/FFT and No FFTW):
 
 > [Plafrim-Developers] Should use that one
 
 ```bash
-cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=ON -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR -DSCALFMM_USE_FFT=ON -DSCALFMM_USE_MKL_AS_FFTW=ON
+cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
+               -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF \
+               -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=ON \
+               -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON \
+               -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF \
+               -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR \
+               -DSCALFMM_USE_FFT=ON -DSCALFMM_USE_MKL_AS_FFTW=ON
 ```
 
 Valid-if:
@@ -282,7 +301,7 @@ Convert the fxt file
 ```bash
 $SCALFMM_STARPU_DIR/bin/starpu_fxt_tool -i "/tmp/prof_file_"$USER"_0"
 ```
-Then visualize the output with `vite`
+Then visualize the output with `vite` (maybe by copying the paje.trace file locally)
 ```bash
 vite ./paje.trace
 ```
@@ -404,28 +423,31 @@ source "$SCALFMM_AB/execAllHomogeneous.sh"
 
 We should end with all the .rec files and their corresponding time files and `ls "$SCALFMM_RES_DIR"` should return something like:
 ```bash
-trace-nb_10000000-h_7-bs_5385-CPU_1.rec        trace-nb_10000000-h_7-bs_9710-CPU_15.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_21.rec       trace-nb_10000000-h_7-bs_9710-CPU_4.rec.time
-trace-nb_10000000-h_7-bs_5385-CPU_1.rec.time   trace-nb_10000000-h_7-bs_9710-CPU_16.rec       trace-nb_10000000-h_7-bs_9710-CPU_21.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_5.rec
-trace-nb_10000000-h_7-bs_9710-CPU_10.rec       trace-nb_10000000-h_7-bs_9710-CPU_16.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_22.rec       trace-nb_10000000-h_7-bs_9710-CPU_5.rec.time
-trace-nb_10000000-h_7-bs_9710-CPU_10.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_17.rec       trace-nb_10000000-h_7-bs_9710-CPU_22.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_6.rec
-trace-nb_10000000-h_7-bs_9710-CPU_11.rec       trace-nb_10000000-h_7-bs_9710-CPU_17.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_23.rec       trace-nb_10000000-h_7-bs_9710-CPU_6.rec.time
-trace-nb_10000000-h_7-bs_9710-CPU_11.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_18.rec       trace-nb_10000000-h_7-bs_9710-CPU_23.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_7.rec
-trace-nb_10000000-h_7-bs_9710-CPU_12.rec       trace-nb_10000000-h_7-bs_9710-CPU_18.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_24.rec       trace-nb_10000000-h_7-bs_9710-CPU_7.rec.time
-trace-nb_10000000-h_7-bs_9710-CPU_12.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_19.rec       trace-nb_10000000-h_7-bs_9710-CPU_24.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_8.rec
-trace-nb_10000000-h_7-bs_9710-CPU_13.rec       trace-nb_10000000-h_7-bs_9710-CPU_19.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_2.rec        trace-nb_10000000-h_7-bs_9710-CPU_8.rec.time
-trace-nb_10000000-h_7-bs_9710-CPU_13.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_1.rec        trace-nb_10000000-h_7-bs_9710-CPU_2.rec.time   trace-nb_10000000-h_7-bs_9710-CPU_9.rec
-trace-nb_10000000-h_7-bs_9710-CPU_14.rec       trace-nb_10000000-h_7-bs_9710-CPU_1.rec.time   trace-nb_10000000-h_7-bs_9710-CPU_3.rec        trace-nb_10000000-h_7-bs_9710-CPU_9.rec.time
-trace-nb_10000000-h_7-bs_9710-CPU_14.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_20.rec       trace-nb_10000000-h_7-bs_9710-CPU_3.rec.time
-trace-nb_10000000-h_7-bs_9710-CPU_15.rec       trace-nb_10000000-h_7-bs_9710-CPU_20.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_4.rec
+trace-nb_10000000-h_7-bs_5385-CPU_10.rec       trace-nb_10000000-h_7-bs_5385-CPU_16.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_22.rec       trace-nb_10000000-h_7-bs_5385-CPU_5.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_10.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_17.rec       trace-nb_10000000-h_7-bs_5385-CPU_22.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_6.rec
+trace-nb_10000000-h_7-bs_5385-CPU_11.rec       trace-nb_10000000-h_7-bs_5385-CPU_17.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_23.rec       trace-nb_10000000-h_7-bs_5385-CPU_6.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_11.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_18.rec       trace-nb_10000000-h_7-bs_5385-CPU_23.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_7.rec
+trace-nb_10000000-h_7-bs_5385-CPU_12.rec       trace-nb_10000000-h_7-bs_5385-CPU_18.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_24.rec       trace-nb_10000000-h_7-bs_5385-CPU_7.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_12.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_19.rec       trace-nb_10000000-h_7-bs_5385-CPU_24.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_8.rec
+trace-nb_10000000-h_7-bs_5385-CPU_13.rec       trace-nb_10000000-h_7-bs_5385-CPU_19.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_2.rec        trace-nb_10000000-h_7-bs_5385-CPU_8.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_13.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_1.rec        trace-nb_10000000-h_7-bs_5385-CPU_2.rec.time   trace-nb_10000000-h_7-bs_5385-CPU_9.rec
+trace-nb_10000000-h_7-bs_5385-CPU_14.rec       trace-nb_10000000-h_7-bs_5385-CPU_1.rec.time   trace-nb_10000000-h_7-bs_5385-CPU_3.rec        trace-nb_10000000-h_7-bs_5385-CPU_9.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_14.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_20.rec       trace-nb_10000000-h_7-bs_5385-CPU_3.rec.time   trace-nb_10000000-h_7-bs_9710-CPU_1.rec
+trace-nb_10000000-h_7-bs_5385-CPU_15.rec       trace-nb_10000000-h_7-bs_5385-CPU_20.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_4.rec        trace-nb_10000000-h_7-bs_9710-CPU_1.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_15.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_21.rec       trace-nb_10000000-h_7-bs_5385-CPU_4.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_16.rec       trace-nb_10000000-h_7-bs_5385-CPU_21.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_5.rec
 ```
 
-We now compute the efficiencies from these files
+We then compute the efficiencies from these files
 ```bash
 g++ -std=c++11 $SCALFMM_AB/mergetimefile.cpp -o $SCALFMM_AB/mergetimefile.exe
-$SCALFMM_AB/mergetimefile.exe "$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_BS_CPU_SEQ-CPU_1.rec" "$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_BS_CPU_SEQ-CPU_%d.rec" $SCALFMM_MAX_NB_CPU
+$SCALFMM_AB/mergetimefile.exe \
+        "$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_BS_CPU_SEQ-CPU_1.rec.time" \
+        "$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_BS_CPU_PAR-CPU_%d.rec.time"\
+         $SCALFMM_MAX_NB_CPU
 ```
 
-We end with efficiency for the application and for the operators.
+We end-up with the global efficiencies (for the application) but also for the different operators.
 ```bash
 Create global-eff.data
 Create task-eff.data

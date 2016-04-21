@@ -1,4 +1,15 @@
+<!DOCTYPE HTML>
 <html>
+ <head>
+  <meta charset="utf-8"/>
+  <title>
+   Made with Remarkable!
+  </title>
+  <link href="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.1/styles/github.min.css" rel="stylesheet"/>
+  <style type="text/css">
+   body{font-family:Helvetica,Arial,sans-serif;background-color:#fff}h1,h2{text-align:center;color:#6495ed}h3,h4{color:#6495ed}blockquote{background:#f9f9f9;border-left:10px solid #6495ed;margin:1.5em 10px;padding:.5em 10px;font-style:italic}blockquote p{display:inline}hr{clear:both;float:none;width:100%;height:2.5px;margin:1.4em 0;border:none;background:#ddd;background:#ddd -webkit-gradient(linear,left bottom,right bottom,color-stop(0,#fff),color-stop(0.1,#ddd),color-stop(0.9,#ddd),color-stop(1,#fff));background:#ddd -moz-linear-gradient(left center,#fff 0,#ddd 10%,#ddd 90%,#fff 100%)}table{padding:0}table tr{border-top:1px solid #ccc;background-color:#fff;margin:0;padding:0}table tr:nth-child(2n){background-color:#aaa}table tr th{font-weight:700;border:1px solid #ccc;text-align:left;margin:0;padding:6px 13px}table tr td{border:1px solid #ccc;text-align:left;margin:0;padding:6px 13px}table tr td :first-child,table tr th :first-child{margin-top:0}table tr td:last-child,table tr th :last-child{margin-bottom:0}
+  </style>
+ </head>
  <body>
   <h1 id="scalfmm-with-starpucuda">
    ScalFMM with StarPU+CUDA
@@ -94,6 +105,9 @@
     </strong>
     Qt5 library to be able to change the colors of the execution traces in order to visualize the different FMM operators
    </li>
+   <li>
+    gnuplot to generate the figures
+   </li>
   </ul>
   <blockquote>
    <p>
@@ -180,9 +194,10 @@ fi
   <pre><code>export SCALFMM_TEST_DIR=~/scalfmm_test
 if [[ ! -d $SCALFMM_TEST_DIR ]] ; then
     mkdir $SCALFMM_TEST_DIR
+else
+    source "$SCALFMM_TEST_DIR/environment.source"
 fi    
 cd $SCALFMM_TEST_DIR
-source "$SCALFMM_TEST_DIR/environment.source"
 </code></pre>
   <h3 id="downloading-the-packages-in-advance">
    Downloading the Packages (in Advance)
@@ -366,14 +381,26 @@ export SCALFMM_BUILD_DIR=`pwd`
     Configure (No MKL):
    </li>
   </ul>
-  <pre><code class="bash">cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=OFF -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR -DSCALFMM_USE_FFT=ON -DFFT_DIR=$SCALFMM_FFT_DIR
+  <pre><code class="bash">cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
+               -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF \
+               -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=OFF \
+               -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON \
+               -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF \
+               -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR \
+               -DSCALFMM_USE_FFT=ON -DFFT_DIR=$SCALFMM_FFT_DIR
 </code></pre>
   <ul>
    <li>
     Configure (MKL BLAS/LAPACK and FFTW):
    </li>
   </ul>
-  <pre><code class="bash">cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=ON -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR -DSCALFMM_USE_FFT=ON -DFFT_DIR=$SCALFMM_FFT_DIR
+  <pre><code class="bash">cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
+               -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF \
+               -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=ON \
+               -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON \
+               -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF \
+               -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR \
+               -DSCALFMM_USE_FFT=ON -DFFT_DIR=$SCALFMM_FFT_DIR
 </code></pre>
   <ul>
    <li>
@@ -385,7 +412,13 @@ export SCALFMM_BUILD_DIR=`pwd`
     [Plafrim-Developers] Should use that one
    </p>
   </blockquote>
-  <pre><code class="bash">cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=ON -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR -DSCALFMM_USE_FFT=ON -DSCALFMM_USE_MKL_AS_FFTW=ON
+  <pre><code class="bash">cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
+               -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF \
+               -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=ON \
+               -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON \
+               -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF \
+               -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR \
+               -DSCALFMM_USE_FFT=ON -DSCALFMM_USE_MKL_AS_FFTW=ON
 </code></pre>
   <p>
    Valid-if:
@@ -515,6 +548,7 @@ export STARPU_NCUDA=2
    <code>
     vite
    </code>
+   (maybe by copying the paje.trace file locally)
   </p>
   <pre><code class="bash">vite ./paje.trace
 </code></pre>
@@ -672,28 +706,31 @@ source "$SCALFMM_AB/execAllHomogeneous.sh"
    </code>
    should return something like:
   </p>
-  <pre><code class="bash">trace-nb_10000000-h_7-bs_5385-CPU_1.rec        trace-nb_10000000-h_7-bs_9710-CPU_15.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_21.rec       trace-nb_10000000-h_7-bs_9710-CPU_4.rec.time
-trace-nb_10000000-h_7-bs_5385-CPU_1.rec.time   trace-nb_10000000-h_7-bs_9710-CPU_16.rec       trace-nb_10000000-h_7-bs_9710-CPU_21.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_5.rec
-trace-nb_10000000-h_7-bs_9710-CPU_10.rec       trace-nb_10000000-h_7-bs_9710-CPU_16.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_22.rec       trace-nb_10000000-h_7-bs_9710-CPU_5.rec.time
-trace-nb_10000000-h_7-bs_9710-CPU_10.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_17.rec       trace-nb_10000000-h_7-bs_9710-CPU_22.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_6.rec
-trace-nb_10000000-h_7-bs_9710-CPU_11.rec       trace-nb_10000000-h_7-bs_9710-CPU_17.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_23.rec       trace-nb_10000000-h_7-bs_9710-CPU_6.rec.time
-trace-nb_10000000-h_7-bs_9710-CPU_11.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_18.rec       trace-nb_10000000-h_7-bs_9710-CPU_23.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_7.rec
-trace-nb_10000000-h_7-bs_9710-CPU_12.rec       trace-nb_10000000-h_7-bs_9710-CPU_18.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_24.rec       trace-nb_10000000-h_7-bs_9710-CPU_7.rec.time
-trace-nb_10000000-h_7-bs_9710-CPU_12.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_19.rec       trace-nb_10000000-h_7-bs_9710-CPU_24.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_8.rec
-trace-nb_10000000-h_7-bs_9710-CPU_13.rec       trace-nb_10000000-h_7-bs_9710-CPU_19.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_2.rec        trace-nb_10000000-h_7-bs_9710-CPU_8.rec.time
-trace-nb_10000000-h_7-bs_9710-CPU_13.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_1.rec        trace-nb_10000000-h_7-bs_9710-CPU_2.rec.time   trace-nb_10000000-h_7-bs_9710-CPU_9.rec
-trace-nb_10000000-h_7-bs_9710-CPU_14.rec       trace-nb_10000000-h_7-bs_9710-CPU_1.rec.time   trace-nb_10000000-h_7-bs_9710-CPU_3.rec        trace-nb_10000000-h_7-bs_9710-CPU_9.rec.time
-trace-nb_10000000-h_7-bs_9710-CPU_14.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_20.rec       trace-nb_10000000-h_7-bs_9710-CPU_3.rec.time
-trace-nb_10000000-h_7-bs_9710-CPU_15.rec       trace-nb_10000000-h_7-bs_9710-CPU_20.rec.time  trace-nb_10000000-h_7-bs_9710-CPU_4.rec
+  <pre><code class="bash">trace-nb_10000000-h_7-bs_5385-CPU_10.rec       trace-nb_10000000-h_7-bs_5385-CPU_16.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_22.rec       trace-nb_10000000-h_7-bs_5385-CPU_5.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_10.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_17.rec       trace-nb_10000000-h_7-bs_5385-CPU_22.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_6.rec
+trace-nb_10000000-h_7-bs_5385-CPU_11.rec       trace-nb_10000000-h_7-bs_5385-CPU_17.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_23.rec       trace-nb_10000000-h_7-bs_5385-CPU_6.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_11.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_18.rec       trace-nb_10000000-h_7-bs_5385-CPU_23.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_7.rec
+trace-nb_10000000-h_7-bs_5385-CPU_12.rec       trace-nb_10000000-h_7-bs_5385-CPU_18.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_24.rec       trace-nb_10000000-h_7-bs_5385-CPU_7.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_12.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_19.rec       trace-nb_10000000-h_7-bs_5385-CPU_24.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_8.rec
+trace-nb_10000000-h_7-bs_5385-CPU_13.rec       trace-nb_10000000-h_7-bs_5385-CPU_19.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_2.rec        trace-nb_10000000-h_7-bs_5385-CPU_8.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_13.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_1.rec        trace-nb_10000000-h_7-bs_5385-CPU_2.rec.time   trace-nb_10000000-h_7-bs_5385-CPU_9.rec
+trace-nb_10000000-h_7-bs_5385-CPU_14.rec       trace-nb_10000000-h_7-bs_5385-CPU_1.rec.time   trace-nb_10000000-h_7-bs_5385-CPU_3.rec        trace-nb_10000000-h_7-bs_5385-CPU_9.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_14.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_20.rec       trace-nb_10000000-h_7-bs_5385-CPU_3.rec.time   trace-nb_10000000-h_7-bs_9710-CPU_1.rec
+trace-nb_10000000-h_7-bs_5385-CPU_15.rec       trace-nb_10000000-h_7-bs_5385-CPU_20.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_4.rec        trace-nb_10000000-h_7-bs_9710-CPU_1.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_15.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_21.rec       trace-nb_10000000-h_7-bs_5385-CPU_4.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_16.rec       trace-nb_10000000-h_7-bs_5385-CPU_21.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_5.rec
 </code></pre>
   <p>
-   We now compute the efficiencies from these files
+   We then compute the efficiencies from these files
   </p>
   <pre><code class="bash">g++ -std=c++11 $SCALFMM_AB/mergetimefile.cpp -o $SCALFMM_AB/mergetimefile.exe
-$SCALFMM_AB/mergetimefile.exe "$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_BS_CPU_SEQ-CPU_1.rec" "$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_BS_CPU_SEQ-CPU_%d.rec" $SCALFMM_MAX_NB_CPU
+$SCALFMM_AB/mergetimefile.exe \
+        "$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_BS_CPU_SEQ-CPU_1.rec.time" \
+        "$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_BS_CPU_PAR-CPU_%d.rec.time"\
+         $SCALFMM_MAX_NB_CPU
 </code></pre>
   <p>
-   We end with efficiency for the application and for the operators.
+   We end-up with the global efficiencies (for the application) but also for the different operators.
   </p>
   <pre><code class="bash">Create global-eff.data
 Create task-eff.data
@@ -882,5 +919,15 @@ SCALFMM_MAX_NB_GPU=4
 
 scalfmm_generate_efficiency -nb $SCALFMM_NB -h $SCALFMM_H -start $SCALFMM_MIN_BS -end $SCALFMM_MAX_BS
 </code></pre>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.1/highlight.min.js">
+  </script>
+  <script>
+   hljs.initHighlightingOnLoad();
+  </script>
+  <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript">
+  </script>
+  <script type="text/javascript">
+   MathJax.Hub.Config({"showProcessingMessages" : false,"messageStyle" : "none","tex2jax": { inlineMath: [ [ "$", "$" ] ] }});
+  </script>
  </body>
 </html>
