@@ -1,221 +1,66 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html>
- <head>
-  <meta charset="utf-8"/>
-  <title>
-   Made with Remarkable!
-  </title>
-  <link href="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.1/styles/github.min.css" rel="stylesheet"/>
-  <style type="text/css">
-   body{font-family:Helvetica,Arial,sans-serif;background-color:#fff}h1,h2{text-align:center;color:#6495ed}h3,h4{color:#6495ed}blockquote{background:#f9f9f9;border-left:10px solid #6495ed;margin:1.5em 10px;padding:.5em 10px;font-style:italic}blockquote p{display:inline}hr{clear:both;float:none;width:100%;height:2.5px;margin:1.4em 0;border:none;background:#ddd;background:#ddd -webkit-gradient(linear,left bottom,right bottom,color-stop(0,#fff),color-stop(0.1,#ddd),color-stop(0.9,#ddd),color-stop(1,#fff));background:#ddd -moz-linear-gradient(left center,#fff 0,#ddd 10%,#ddd 90%,#fff 100%)}table{padding:0}table tr{border-top:1px solid #ccc;background-color:#fff;margin:0;padding:0}table tr:nth-child(2n){background-color:#aaa}table tr th{font-weight:700;border:1px solid #ccc;text-align:left;margin:0;padding:6px 13px}table tr td{border:1px solid #ccc;text-align:left;margin:0;padding:6px 13px}table tr td :first-child,table tr th :first-child{margin-top:0}table tr td:last-child,table tr th :last-child{margin-bottom:0}
-  </style>
- </head>
- <body>
-  <h1 id="scalfmm-with-starpucuda">
-   ScalFMM with StarPU+CUDA
-  </h1>
-  <p>
-   In this tutorial, we provide the commands to install ScalFMM and the needed tools in order to compute parallel efficiencies.
-   <br/>
-   We first show how to obtain the homogeneous efficencies and then the heterogeneous ones (not done yet).
-  </p>
-  <h2 id="installing-the-libraries">
-   Installing the libraries
-  </h2>
-  <p>
-   For some installation steps, we provide a “valid-if” test which shows if the previous command has been done correctly or not.
-   <br/>
-   In case of success
-   <code>
-    STEP-OK
-   </code>
-   will be print-out.
-   <br/>
-   In addition, if a library is already installed on the system, it is possible to set the output variables directly and test with the “valid-if” command if it will work.
-  </p>
-  <p>
-   It is possible to follow these steps only to compile ScalFMM above StarPU and so we marked the installation of execution-trace tools as
-   <strong>
-    Optional
-   </strong>
-   .
-   <br/>
-   However, we higly recommended to install them and to follow all the steps since they let have the efficiencies.
-   <br/>
-   But if one wants to execute without any overhead, it might need to remove the usage of FXT.
-  </p>
-  <h3 id="pre-requiste">
-   Pre-requiste:
-  </h3>
-  <p>
-   In order to follow this tutorial, it is needed to have the following applications installed:
-  </p>
-  <ul>
-   <li>
-    autoconf (&gt;= 2.69)
-   </li>
-   <li>
-    gawk (Awk &gt;= 4.0.1)
-   </li>
-   <li>
-    make (&gt;= 3.81)
-   </li>
-   <li>
-    cmake (&gt;= 3.2.2)
-   </li>
-   <li>
-    gcc/g++ (&gt;= 4.9) and the gcc/g++ names should point to the correct binaries
-   </li>
-   <li>
-    BLAS/LAPACK (The configure of ScalFMM is different if the MKL is used or not, but with the MKL it is recommended to set environment variable
-    <code>
-     MKLROOT
-    </code>
-    )
-   </li>
-   <li>
-    CUDA (&gt;= 7) and
-    <code>
-     CUDA_PATH
-    </code>
-    must be set. In our case,
-    <code>
-     CUDA_PATH=/usr/local/cuda-7.5/
-    </code>
-   </li>
-   <li>
-    <strong>
-     Optional
-    </strong>
-    Vite (from
-    <code>
-     sudo apt-get install vite
-    </code>
-    or see
-    <a href="http://vite.gforge.inria.fr/download.php">
-    </a>
-    <a href="http://vite.gforge.inria.fr/download.php">
-     http://vite.gforge.inria.fr/download.php
-    </a>
-    )
-   </li>
-   <li>
-    <strong>
-     Optional
-    </strong>
-    Qt5 library to be able to change the colors of the execution traces in order to visualize the different FMM operators
-   </li>
-   <li>
-    gnuplot to generate the figures
-   </li>
-  </ul>
-  <blockquote>
-   <p>
-    [Remark] Some installations of CUDA does not have libcuda file.
-    <br/>
-    In this case, one needs to create a link :
-    <code>
-     sudo ln /usr/local/cuda-7.5/lib64/libcudart.so /usr/local/cuda-7.5/lib64/libcuda.so
-    </code>
-   </p>
-   <p>
-    [Plafrim-Developers]
-   </p>
-   <p>
-    For those who use this tutorial on Plafrim (or a similar cluster), we provide extra informations.
-   </p>
-   <p>
-    To allocate an heterogeneous node :
-    <code>
-     salloc -N 1 --time=03:00:00 --exclusive -p court_sirocco -CHaswell --gres=gpu:4 -x sirocco06
-    </code>
-   </p>
-   <p>
-    Then, find it using
-    <code>
-     squeue
-    </code>
-    and access it by
-    <code>
-     ssh
-    </code>
-    .
-   </p>
-   <p>
-    We have run this tutorial with the modules :
-    <code>
-     module load compiler/gcc/4.9.2 cuda75/toolkit/7.5.18 intel/mkl/64/11.2/2016.0.0 build/cmake/3.2.1
-    </code>
-   </p>
-  </blockquote>
-  <h3 id="working-directory">
-   Working directory
-  </h3>
-  <p>
-   The variable
-   <code>
-    SCALFMM_TEST_DIR
-   </code>
-   is used to specify the working directory where all the tools are going to be installed:
-  </p>
-  <pre><code class="bash">export SCALFMM_TEST_DIR=~/scalfmm_test   
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <title>scalfmm.html</title>
+  <meta name="generator" content="Haroopad 0.13.1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>div.oembedall-githubrepos{border:1px solid #DDD;border-radius:4px;list-style-type:none;margin:0 0 10px;padding:8px 10px 0;font:13.34px/1.4 helvetica,arial,freesans,clean,sans-serif;width:452px;background-color:#fff}div.oembedall-githubrepos .oembedall-body{background:-moz-linear-gradient(center top,#FAFAFA,#EFEFEF);background:-webkit-gradient(linear,left top,left bottom,from(#FAFAFA),to(#EFEFEF));border-bottom-left-radius:4px;border-bottom-right-radius:4px;border-top:1px solid #EEE;margin-left:-10px;margin-top:8px;padding:5px 10px;width:100%}div.oembedall-githubrepos h3{font-size:14px;margin:0;padding-left:18px;white-space:nowrap}div.oembedall-githubrepos p.oembedall-description{color:#444;font-size:12px;margin:0 0 3px}div.oembedall-githubrepos p.oembedall-updated-at{color:#888;font-size:11px;margin:0}div.oembedall-githubrepos ul.oembedall-repo-stats{border:none;float:right;font-size:11px;font-weight:700;padding-left:15px;position:relative;z-index:5;margin:0}div.oembedall-githubrepos ul.oembedall-repo-stats li{border:none;color:#666;display:inline-block;list-style-type:none;margin:0!important}div.oembedall-githubrepos ul.oembedall-repo-stats li a{background-color:transparent;border:none;color:#666!important;background-position:5px -2px;background-repeat:no-repeat;border-left:1px solid #DDD;display:inline-block;height:21px;line-height:21px;padding:0 5px 0 23px}div.oembedall-githubrepos ul.oembedall-repo-stats li:first-child a{border-left:medium none;margin-right:-3px}div.oembedall-githubrepos ul.oembedall-repo-stats li a:hover{background:5px -27px no-repeat #4183C4;color:#FFF!important;text-decoration:none}div.oembedall-githubrepos ul.oembedall-repo-stats li:first-child a:hover{border-bottom-left-radius:3px;border-top-left-radius:3px}ul.oembedall-repo-stats li:last-child a:hover{border-bottom-right-radius:3px;border-top-right-radius:3px}span.oembedall-closehide{background-color:#aaa;border-radius:2px;cursor:pointer;margin-right:3px}div.oembedall-container{margin-top:5px;text-align:left}.oembedall-ljuser{font-weight:700}.oembedall-ljuser img{vertical-align:bottom;border:0;padding-right:1px}.oembedall-stoqembed{border-bottom:1px dotted #999;float:left;overflow:hidden;width:730px;line-height:1;background:#FFF;color:#000;font-family:Arial,Liberation Sans,DejaVu Sans,sans-serif;font-size:80%;text-align:left;margin:0;padding:0}.oembedall-stoqembed a{color:#07C;text-decoration:none;margin:0;padding:0}.oembedall-stoqembed a:hover{text-decoration:underline}.oembedall-stoqembed a:visited{color:#4A6B82}.oembedall-stoqembed h3{font-family:Trebuchet MS,Liberation Sans,DejaVu Sans,sans-serif;font-size:130%;font-weight:700;margin:0;padding:0}.oembedall-stoqembed .oembedall-reputation-score{color:#444;font-size:120%;font-weight:700;margin-right:2px}.oembedall-stoqembed .oembedall-user-info{height:35px;width:185px}.oembedall-stoqembed .oembedall-user-info .oembedall-user-gravatar32{float:left;height:32px;width:32px}.oembedall-stoqembed .oembedall-user-info .oembedall-user-details{float:left;margin-left:5px;overflow:hidden;white-space:nowrap;width:145px}.oembedall-stoqembed .oembedall-question-hyperlink{font-weight:700}.oembedall-stoqembed .oembedall-stats{background:#EEE;margin:0 0 0 7px;padding:4px 7px 6px;width:58px}.oembedall-stoqembed .oembedall-statscontainer{float:left;margin-right:8px;width:86px}.oembedall-stoqembed .oembedall-votes{color:#555;padding:0 0 7px;text-align:center}.oembedall-stoqembed .oembedall-vote-count-post{font-size:240%;color:#808185;display:block;font-weight:700}.oembedall-stoqembed .oembedall-views{color:#999;padding-top:4px;text-align:center}.oembedall-stoqembed .oembedall-status{margin-top:-3px;padding:4px 0;text-align:center;background:#75845C;color:#FFF}.oembedall-stoqembed .oembedall-status strong{color:#FFF;display:block;font-size:140%}.oembedall-stoqembed .oembedall-summary{float:left;width:635px}.oembedall-stoqembed .oembedall-excerpt{line-height:1.2;margin:0;padding:0 0 5px}.oembedall-stoqembed .oembedall-tags{float:left;line-height:18px}.oembedall-stoqembed .oembedall-tags a:hover{text-decoration:none}.oembedall-stoqembed .oembedall-post-tag{background-color:#E0EAF1;border-bottom:1px solid #3E6D8E;border-right:1px solid #7F9FB6;color:#3E6D8E;font-size:90%;line-height:2.4;margin:2px 2px 2px 0;padding:3px 4px;text-decoration:none;white-space:nowrap}.oembedall-stoqembed .oembedall-post-tag:hover{background-color:#3E6D8E;border-bottom:1px solid #37607D;border-right:1px solid #37607D;color:#E0EAF1}.oembedall-stoqembed .oembedall-fr{float:right}.oembedall-stoqembed .oembedall-statsarrow{background-image:url(http://cdn.sstatic.net/stackoverflow/img/sprites.png?v=3);background-repeat:no-repeat;overflow:hidden;background-position:0 -435px;float:right;height:13px;margin-top:12px;width:7px}.oembedall-facebook1{border:1px solid #1A3C6C;padding:0;font:13.34px/1.4 verdana;width:500px}.oembedall-facebook2{background-color:#627add}.oembedall-facebook2 a{color:#e8e8e8;text-decoration:none}.oembedall-facebookBody{background-color:#fff;vertical-align:top;padding:5px}.oembedall-facebookBody .contents{display:inline-block;width:100%}.oembedall-facebookBody div img{float:left;margin-right:5px}div.oembedall-lanyard{-webkit-box-shadow:none;-webkit-transition-delay:0s;-webkit-transition-duration:.4000000059604645s;-webkit-transition-property:width;-webkit-transition-timing-function:cubic-bezier(0.42,0,.58,1);background-attachment:scroll;background-clip:border-box;background-color:transparent;background-image:none;background-origin:padding-box;border-width:0;box-shadow:none;color:#112644;display:block;float:left;font-family:'Trebuchet MS',Trebuchet,sans-serif;font-size:16px;height:253px;line-height:19px;margin:0;max-width:none;min-height:0;outline:#112644 0;overflow-x:visible;overflow-y:visible;padding:0;position:relative;text-align:left;vertical-align:baseline;width:804px}div.oembedall-lanyard .tagline{font-size:1.5em}div.oembedall-lanyard .wrapper{overflow:hidden;clear:both}div.oembedall-lanyard .split{float:left;display:inline}div.oembedall-lanyard .prominent-place .flag:active,div.oembedall-lanyard .prominent-place .flag:focus,div.oembedall-lanyard .prominent-place .flag:hover,div.oembedall-lanyard .prominent-place .flag:link,div.oembedall-lanyard .prominent-place .flag:visited{float:left;display:block;width:48px;height:48px;position:relative;top:-5px;margin-right:10px}div.oembedall-lanyard .place-context{font-size:.889em}div.oembedall-lanyard .prominent-place .sub-place{display:block}div.oembedall-lanyard .prominent-place{font-size:1.125em;line-height:1.1em;font-weight:400}div.oembedall-lanyard .main-date{color:#8CB4E0;font-weight:700;line-height:1.1}div.oembedall-lanyard .first{width:48.57%;margin:0 0 0 2.857%}.mermaid .label{color:#333}.node circle,.node polygon,.node rect{fill:#cde498;stroke:#13540c;stroke-width:1px}.edgePath .path{stroke:green;stroke-width:1.5px}.cluster rect{fill:#cdffb2;rx:40;stroke:#6eaa49;stroke-width:1px}.cluster text{fill:#333}.actor{stroke:#13540c;fill:#cde498}text.actor{fill:#000;stroke:none}.actor-line{stroke:grey}.messageLine0{stroke-width:1.5;stroke-dasharray:"2 2";marker-end:"url(#arrowhead)";stroke:#333}.messageLine1{stroke-width:1.5;stroke-dasharray:"2 2";stroke:#333}#arrowhead{fill:#333}#crosshead path{fill:#333!important;stroke:#333!important}.messageText{fill:#333;stroke:none}.labelBox{stroke:#326932;fill:#cde498}.labelText,.loopText{fill:#000;stroke:none}.loopLine{stroke-width:2;stroke-dasharray:"2 2";marker-end:"url(#arrowhead)";stroke:#326932}.note{stroke:#6eaa49;fill:#fff5ad}.noteText{fill:#000;stroke:none;font-family:'trebuchet ms',verdana,arial;font-size:14px}.section{stroke:none;opacity:.2}.section0,.section2{fill:#6eaa49}.section1,.section3{fill:#fff;opacity:.2}.sectionTitle0,.sectionTitle1,.sectionTitle2,.sectionTitle3{fill:#333}.sectionTitle{text-anchor:start;font-size:11px;text-height:14px}.grid .tick{stroke:lightgrey;opacity:.3;shape-rendering:crispEdges}.grid path{stroke-width:0}.today{fill:none;stroke:red;stroke-width:2px}.task{stroke-width:2}.taskText{text-anchor:middle;font-size:11px}.taskTextOutsideRight{fill:#000;text-anchor:start;font-size:11px}.taskTextOutsideLeft{fill:#000;text-anchor:end;font-size:11px}.taskText0,.taskText1,.taskText2,.taskText3{fill:#fff}.task0,.task1,.task2,.task3{fill:#487e3a;stroke:#13540c}.taskTextOutside0,.taskTextOutside1,.taskTextOutside2,.taskTextOutside3{fill:#000}.active0,.active1,.active2,.active3{fill:#cde498;stroke:#13540c}.activeText0,.activeText1,.activeText2,.activeText3{fill:#000!important}.done0,.done1,.done2,.done3{stroke:grey;fill:lightgrey;stroke-width:2}.doneText0,.doneText1,.doneText2,.doneText3{fill:#000!important}.crit0,.crit1,.crit2,.crit3{stroke:#f88;fill:red;stroke-width:2}.activeCrit0,.activeCrit1,.activeCrit2,.activeCrit3{stroke:#f88;fill:#cde498;stroke-width:2}.doneCrit0,.doneCrit1,.doneCrit2,.doneCrit3{stroke:#f88;fill:lightgrey;stroke-width:2;cursor:pointer;shape-rendering:crispEdges}.activeCritText0,.activeCritText1,.activeCritText2,.activeCritText3,.doneCritText0,.doneCritText1,.doneCritText2,.doneCritText3{fill:#000!important}.titleText{text-anchor:middle;font-size:18px;fill:#000}text{font-family:'trebuchet ms',verdana,arial;font-size:14px}html{height:100%}body{margin:0!important;padding:5px 20px 26px!important;background-color:#fff;font-family:"Lucida Grande","Segoe UI","Apple SD Gothic Neo","Malgun Gothic","Lucida Sans Unicode",Helvetica,Arial,sans-serif;font-size:.9em;overflow-x:hidden;overflow-y:auto}br,h1,h2,h3,h4,h5,h6{clear:both}hr.page{background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAYAAAAECAYAAACtBE5DAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBNYWNpbnRvc2giIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6OENDRjNBN0E2NTZBMTFFMEI3QjRBODM4NzJDMjlGNDgiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6OENDRjNBN0I2NTZBMTFFMEI3QjRBODM4NzJDMjlGNDgiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo4Q0NGM0E3ODY1NkExMUUwQjdCNEE4Mzg3MkMyOUY0OCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo4Q0NGM0E3OTY1NkExMUUwQjdCNEE4Mzg3MkMyOUY0OCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PqqezsUAAAAfSURBVHjaYmRABcYwBiM2QSA4y4hNEKYDQxAEAAIMAHNGAzhkPOlYAAAAAElFTkSuQmCC) repeat-x;border:0;height:3px;padding:0}hr.underscore{border-top-style:dashed!important}body >:first-child{margin-top:0!important}img.plugin{box-shadow:0 1px 3px rgba(0,0,0,.1);border-radius:3px}iframe{border:0}figure{-webkit-margin-before:0;-webkit-margin-after:0;-webkit-margin-start:0;-webkit-margin-end:0}kbd{border:1px solid #aaa;-moz-border-radius:2px;-webkit-border-radius:2px;border-radius:2px;-moz-box-shadow:1px 2px 2px #ddd;-webkit-box-shadow:1px 2px 2px #ddd;box-shadow:1px 2px 2px #ddd;background-color:#f9f9f9;background-image:-moz-linear-gradient(top,#eee,#f9f9f9,#eee);background-image:-o-linear-gradient(top,#eee,#f9f9f9,#eee);background-image:-webkit-linear-gradient(top,#eee,#f9f9f9,#eee);background-image:linear-gradient(top,#eee,#f9f9f9,#eee);padding:1px 3px;font-family:inherit;font-size:.85em}.oembeded .oembed_photo{display:inline-block}img[data-echo]{margin:25px 0;width:100px;height:100px;background:url(../img/ajax.gif) center center no-repeat #fff}.spinner{display:inline-block;width:10px;height:10px;margin-bottom:-.1em;border:2px solid rgba(0,0,0,.5);border-top-color:transparent;border-radius:100%;-webkit-animation:spin 1s infinite linear;animation:spin 1s infinite linear}.spinner:after{content:'';display:block;width:0;height:0;position:absolute;top:-6px;left:0;border:4px solid transparent;border-bottom-color:rgba(0,0,0,.5);-webkit-transform:rotate(45deg);transform:rotate(45deg)}@-webkit-keyframes spin{to{-webkit-transform:rotate(360deg)}}@keyframes spin{to{transform:rotate(360deg)}}p.toc{margin:0!important}p.toc ul{padding-left:10px}p.toc>ul{padding:10px;margin:0 10px;display:inline-block;border:1px solid #ededed;border-radius:5px}p.toc li,p.toc ul{list-style-type:none}p.toc li{width:100%;padding:0;overflow:hidden}p.toc li a::after{content:"."}p.toc li a:before{content:"• "}p.toc h5{text-transform:uppercase}p.toc .title{float:left;padding-right:3px}p.toc .number{margin:0;float:right;padding-left:3px;background:#fff;display:none}input.task-list-item{margin-left:-1.62em}.markdown{font-family:"Hiragino Sans GB","Microsoft YaHei",STHeiti,SimSun,"Lucida Grande","Lucida Sans Unicode","Lucida Sans",'Segoe UI',AppleSDGothicNeo-Medium,'Malgun Gothic',Verdana,Tahoma,sans-serif;padding:20px}.markdown a{text-decoration:none;vertical-align:baseline}.markdown a:hover{text-decoration:underline}.markdown h1{font-size:2.2em;font-weight:700;margin:1.5em 0 1em}.markdown h2{font-size:1.8em;font-weight:700;margin:1.275em 0 .85em}.markdown h3{font-size:1.6em;font-weight:700;margin:1.125em 0 .75em}.markdown h4{font-size:1.4em;font-weight:700;margin:.99em 0 .66em}.markdown h5{font-size:1.2em;font-weight:700;margin:.855em 0 .57em}.markdown h6{font-size:1em;font-weight:700;margin:.75em 0 .5em}.markdown h1+p,.markdown h1:first-child,.markdown h2+p,.markdown h2:first-child,.markdown h3+p,.markdown h3:first-child,.markdown h4+p,.markdown h4:first-child,.markdown h5+p,.markdown h5:first-child,.markdown h6+p,.markdown h6:first-child{margin-top:0}.markdown hr{border:1px solid #ccc}.markdown p{margin:1em 0;word-wrap:break-word}.markdown ol{list-style-type:decimal}.markdown li{display:list-item;line-height:1.4em}.markdown blockquote{margin:1em 20px}.markdown blockquote>:first-child{margin-top:0}.markdown blockquote>:last-child{margin-bottom:0}.markdown blockquote cite:before{content:'\2014 \00A0'}.markdown .code{border-radius:3px;word-wrap:break-word}.markdown pre{border-radius:3px;word-wrap:break-word;border:1px solid #ccc;overflow:auto;padding:.5em}.markdown pre code{border:0;display:block}.markdown pre>code{font-family:Consolas,Inconsolata,Courier,monospace;font-weight:700;white-space:pre;margin:0}.markdown code{border-radius:3px;word-wrap:break-word;border:1px solid #ccc;padding:0 5px;margin:0 2px}.markdown img{max-width:100%}.markdown mark{color:#000;background-color:#fcf8e3}.markdown table{padding:0;border-collapse:collapse;border-spacing:0;margin-bottom:16px}.markdown table tr td,.markdown table tr th{border:1px solid #ccc;margin:0;padding:6px 13px}.markdown table tr th{font-weight:700}.markdown table tr th>:first-child{margin-top:0}.markdown table tr th>:last-child{margin-bottom:0}.markdown table tr td>:first-child{margin-top:0}.markdown table tr td>:last-child{margin-bottom:0}@import url(http://fonts.googleapis.com/css?family=Roboto+Condensed:300italic,400italic,700italic,400,300,700);.haroopad{padding:20px;color:#222;font-size:15px;font-family:"Roboto Condensed",Tauri,"Hiragino Sans GB","Microsoft YaHei",STHeiti,SimSun,"Lucida Grande","Lucida Sans Unicode","Lucida Sans",'Segoe UI',AppleSDGothicNeo-Medium,'Malgun Gothic',Verdana,Tahoma,sans-serif;background:#fff;line-height:1.6;-webkit-font-smoothing:antialiased}.haroopad a{color:#3269a0}.haroopad a:hover{color:#4183c4}.haroopad h2{border-bottom:1px solid #e6e6e6}.haroopad h6{color:#777}.haroopad hr{border:1px solid #e6e6e6}.haroopad blockquote>code,.haroopad h1>code,.haroopad h2>code,.haroopad h3>code,.haroopad h4>code,.haroopad h5>code,.haroopad h6>code,.haroopad li>code,.haroopad p>code,.haroopad td>code{font-family:Consolas,"Liberation Mono",Menlo,Courier,monospace;font-size:85%;background-color:rgba(0,0,0,.02);padding:.2em .5em;border:1px solid #efefef}.haroopad pre>code{font-size:1em;letter-spacing:-1px;font-weight:700}.haroopad blockquote{border-left:4px solid #e6e6e6;padding:0 15px;color:#777}.haroopad table{background-color:#fafafa}.haroopad table tr td,.haroopad table tr th{border:1px solid #e6e6e6}.haroopad table tr:nth-child(2n){background-color:#f2f2f2}.hljs{display:block;overflow-x:auto;padding:.5em;background:#282b2e;-webkit-text-size-adjust:none}.css .hljs-id,.hljs-change,.hljs-flow,.hljs-keyword,.hljs-literal,.hljs-winutils,.nginx .hljs-title,.tex .hljs-special{color:#93c763}.hljs-number{color:#ffcd22}.hljs{color:#e0e2e4}.css .hljs-pseudo,.css .hljs-tag{color:#d0d2b5}.hljs .hljs-constant,.hljs-attribute{color:#668bb0}.xml .hljs-attribute{color:#b3b689}.xml .hljs-tag .hljs-value{color:#e8e2b7}.hljs-class .hljs-title,.hljs-code,.hljs-header{color:#fff}.hljs-class,.hljs-hexcolor{color:#93c763}.hljs-regexp{color:#d39745}.hljs-at_rule,.hljs-at_rule .hljs-keyword{color:#a082bd}.hljs-doctype{color:#557182}.apache .hljs-cbracket,.apache .hljs-tag,.django .hljs-filter .hljs-argument,.django .hljs-template_tag,.django .hljs-variable,.hljs-addition,.hljs-attr_selector,.hljs-built_in,.hljs-bullet,.hljs-emphasis,.hljs-envvar,.hljs-javadoc,.hljs-link_url,.hljs-pragma,.hljs-preprocessor,.hljs-prompt,.hljs-pseudo,.hljs-stream,.hljs-subst,.hljs-tag,.hljs-tag .hljs-title,.hljs-type,.ruby .hljs-class .hljs-parent,.smalltalk .hljs-array,.smalltalk .hljs-class,.smalltalk .hljs-localvars,.tex .hljs-command{color:#8cbbad}.hljs-string{color:#ec7600}.apache .hljs-sqbracket,.hljs-annotation,.hljs-blockquote,.hljs-comment,.hljs-decorator,.hljs-deletion,.hljs-horizontal_rule,.hljs-pi,.hljs-shebang,.tex .hljs-formula{color:#818e96}.apache .hljs-tag,.bash .hljs-variable,.css .hljs-id,.diff .hljs-header,.hljs-at_rule .hljs-keyword,.hljs-chunk,.hljs-dartdoc,.hljs-header,.hljs-keyword,.hljs-literal,.hljs-phpdoc,.hljs-request,.hljs-status,.hljs-title,.hljs-type,.hljs-winutils,.rsl .hljs-built_in,.smalltalk .hljs-class,.tex .hljs-special,.vbscript .hljs-built_in{font-weight:700}.coffeescript .javascript,.javascript .xml,.tex .hljs-formula,.xml .css,.xml .hljs-cdata,.xml .javascript,.xml .vbscript{opacity:.5}.MathJax_Hover_Frame{border-radius:.25em;-webkit-border-radius:.25em;-moz-border-radius:.25em;-khtml-border-radius:.25em;box-shadow:0 0 15px #83A;-webkit-box-shadow:0 0 15px #83A;-moz-box-shadow:0 0 15px #83A;-khtml-box-shadow:0 0 15px #83A;border:1px solid #A6D!important;display:inline-block;position:absolute}.MathJax_Hover_Arrow{position:absolute;width:15px;height:11px;cursor:pointer}#MathJax_About{position:fixed;left:50%;width:auto;text-align:center;border:3px outset;padding:1em 2em;background-color:#DDD;color:#000;cursor:default;font-family:message-box;font-size:120%;font-style:normal;text-indent:0;text-transform:none;line-height:normal;letter-spacing:normal;word-spacing:normal;word-wrap:normal;white-space:nowrap;float:none;z-index:201;border-radius:15px;-webkit-border-radius:15px;-moz-border-radius:15px;-khtml-border-radius:15px;box-shadow:0 10px 20px gray;-webkit-box-shadow:0 10px 20px gray;-moz-box-shadow:0 10px 20px gray;-khtml-box-shadow:0 10px 20px gray;filter:progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}.MathJax_Menu{position:absolute;background-color:#fff;color:#000;width:auto;padding:5px 0;border:1px solid #CCC;margin:0;cursor:default;font:menu;text-align:left;text-indent:0;text-transform:none;line-height:normal;letter-spacing:normal;word-spacing:normal;word-wrap:normal;white-space:nowrap;float:none;z-index:201;border-radius:5px;-webkit-border-radius:5px;-moz-border-radius:5px;-khtml-border-radius:5px;box-shadow:0 10px 20px gray;-webkit-box-shadow:0 10px 20px gray;-moz-box-shadow:0 10px 20px gray;-khtml-box-shadow:0 10px 20px gray;filter:progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}.MathJax_MenuItem{padding:1px 2em;background:0 0}.MathJax_MenuArrow{position:absolute;right:.5em;color:#666}.MathJax_MenuActive .MathJax_MenuArrow{color:#fff}.MathJax_MenuArrow.RTL{left:.5em;right:auto}.MathJax_MenuCheck{position:absolute;left:.7em}.MathJax_MenuCheck.RTL{right:.7em;left:auto}.MathJax_MenuRadioCheck{position:absolute;left:.7em}.MathJax_MenuRadioCheck.RTL{right:.7em;left:auto}.MathJax_MenuLabel{padding:1px 2em 3px 1.33em;font-style:italic}.MathJax_MenuRule{border-top:1px solid #DDD;margin:4px 3px}.MathJax_MenuDisabled{color:GrayText}.MathJax_MenuActive{background-color:#606872;color:#fff}.MathJax_Menu_Close{position:absolute;width:31px;height:31px;top:-15px;left:-15px}#MathJax_Zoom{position:absolute;background-color:#F0F0F0;overflow:auto;display:block;z-index:301;padding:.5em;border:1px solid #000;margin:0;font-weight:400;font-style:normal;text-align:left;text-indent:0;text-transform:none;line-height:normal;letter-spacing:normal;word-spacing:normal;word-wrap:normal;white-space:nowrap;float:none;box-shadow:5px 5px 15px #AAA;-webkit-box-shadow:5px 5px 15px #AAA;-moz-box-shadow:5px 5px 15px #AAA;-khtml-box-shadow:5px 5px 15px #AAA;filter:progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color='gray', Positive='true')}#MathJax_ZoomOverlay{position:absolute;left:0;top:0;z-index:300;display:inline-block;width:100%;height:100%;border:0;padding:0;margin:0;background-color:#fff;opacity:0;filter:alpha(opacity=0)}#MathJax_ZoomFrame{position:relative;display:inline-block;height:0;width:0}#MathJax_ZoomEventTrap{position:absolute;left:0;top:0;z-index:302;display:inline-block;border:0;padding:0;margin:0;background-color:#fff;opacity:0;filter:alpha(opacity=0)}.MathJax_Preview{color:#888}#MathJax_Message{position:fixed;left:1px;bottom:2px;background-color:#E6E6E6;border:1px solid #959595;margin:0;padding:2px 8px;z-index:102;color:#000;font-size:80%;width:auto;white-space:nowrap}#MathJax_MSIE_Frame{position:absolute;top:0;left:0;width:0;z-index:101;border:0;margin:0;padding:0}.MathJax_Error{color:#C00;font-style:italic}footer{position:fixed;font-size:.8em;text-align:right;bottom:0;margin-left:-25px;height:20px;width:100%}</style>
+</head>
+<body class="markdown haroopad">
+<h1 id="scalfmm-with-starpu+cuda"><a name="scalfmm-with-starpu+cuda" href="#scalfmm-with-starpu+cuda"></a>ScalFMM with StarPU+CUDA</h1><p>In this tutorial, we provide the commands to install ScalFMM and the needed tools in order to compute parallel efficiencies.<br>We first show how to obtain the homogeneous efficencies and then the heterogeneous ones (not done yet).</p><h2 id="installing-the-libraries"><a name="installing-the-libraries" href="#installing-the-libraries"></a>Installing the libraries</h2><p>For some installation steps, we provide a “valid-if” test which shows if the previous command has been done correctly or not.<br>In case of success <code>STEP-OK</code> will be print-out.<br>In addition, if a library is already installed on the system, it is possible to set the output variables directly and test with the “valid-if” command if it will work.</p><p>It is possible to follow these steps only to compile ScalFMM above StarPU and so we marked the installation of execution-trace tools as <strong>Optional</strong>.<br>However, we higly recommended to install them and to follow all the steps since they let have the efficiencies.<br>But if one wants to execute without any overhead, it might need to remove the usage of FXT.</p><h3 id="pre-requiste:"><a name="pre-requiste:" href="#pre-requiste:"></a>Pre-requiste:</h3><p>In order to follow this tutorial, it is needed to have the following applications installed:</p><ul>
+<li>autoconf (&gt;= 2.69)</li><li>gawk (Awk &gt;= 4.0.1)</li><li>make (&gt;= 3.81) </li><li>cmake (&gt;= 3.2.2)</li><li>gcc/g<ins> (&gt;= 4.9) and the gcc/g</ins> names should point to the correct binaries</li><li>BLAS/LAPACK (The configure of ScalFMM is different if the MKL is used or not, but with the MKL it is recommended to set environment variable <code>MKLROOT</code>)</li><li>CUDA (&gt;= 7) and <code>CUDA_PATH</code> must be set. In our case, <code>CUDA_PATH=/usr/local/cuda-7.5/</code></li><li><strong>Optional</strong> Vite (from <code>sudo apt-get install vite</code> or see <a href="http://vite.gforge.inria.fr/download.php"></a><a href="http://vite.gforge.inria.fr/download.php">http://vite.gforge.inria.fr/download.php</a>)</li><li><strong>Optional</strong> Qt5 library to be able to change the colors of the execution traces in order to visualize the different FMM operators</li><li>gnuplot to generate the figures</li></ul><blockquote>
+<p>[Remark] Some installations of CUDA does not have libcuda file.<br>In this case, one needs to create a link : <code>sudo ln /usr/local/cuda-7.5/lib64/libcudart.so /usr/local/cuda-7.5/lib64/libcuda.so</code></p>
+<p>[Plafrim-Developers] </p>
+<p>For those who use this tutorial on Plafrim (or a similar cluster), we provide extra informations.</p>
+<p>To allocate an heterogeneous node : <code>salloc -N 1 --time=03:00:00 --exclusive -p court_sirocco -CHaswell --gres=gpu:4 -x sirocco06</code></p>
+<p>Then, find it using <code>squeue</code> and access it by <code>ssh</code>.</p>
+<p>We have run this tutorial with the modules : <code>module load compiler/gcc/4.9.2 cuda75/toolkit/7.5.18 intel/mkl/64/11.2/2016.0.0 build/cmake/3.2.1</code></p>
+</blockquote><h3 id="working-directory"><a name="working-directory" href="#working-directory"></a>Working directory</h3><p>The variable <code>SCALFMM_TEST_DIR</code> is used to specify the working directory where all the tools are going to be installed:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>export SCALFMM_TEST_DIR=~/scalfmm_test   
 cd $SCALFMM_TEST_DIR
-</code></pre>
-  <p>
-   In order to be able to stop the tutorial in the middle and restart later, we will register the variables in a file that should be source to restart later:
-  </p>
-  <pre><code class="bash"># function scalfmmRegisterVariable() { echo "export $1=${!1}" &gt;&gt; "$SCALFMM_TEST_DIR/environment.source"; }
-echo "function scalfmmRegisterVariable() { echo \"export \$1=\${!1}\" &gt;&gt; \"$SCALFMM_TEST_DIR/environment.source\"; }" &gt; "$SCALFMM_TEST_DIR/environment.source"
-source "$SCALFMM_TEST_DIR/environment.source"
-</code></pre>
-  <p>
-   <em>
-    Output variables:
-   </em>
-   <code>
-    scalfmmRegisterVariable SCALFMM_TEST_DIR
-   </code>
-  </p>
-  <p>
-   Valid-if
-  </p>
-  <pre><code class="bash">if [[ -n $SCALFMM_TEST_DIR ]] &amp;&amp; [[ -d $SCALFMM_TEST_DIR ]] ; then
+</code></pre>"><span class="hljs-built_in">export</span> SCALFMM_TEST_DIR=~/scalfmm_<span class="hljs-built_in">test</span>   
+<span class="hljs-built_in">cd</span> <span class="hljs-variable">$SCALFMM_TEST_DIR</span>
+</code></pre><p>In order to be able to stop the tutorial in the middle and restart later, we will register the variables in a file that should be source to restart later:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;># function scalfmmRegisterVariable() { echo &quot;export $1=${!1}&quot; &amp;gt;&amp;gt; &quot;$SCALFMM_TEST_DIR/environment.source&quot;; }
+echo &quot;function scalfmmRegisterVariable() { echo \&quot;export \$1=\${!1}\&quot; &amp;gt;&amp;gt; \&quot;$SCALFMM_TEST_DIR/environment.source\&quot;; }&quot; &amp;gt; &quot;$SCALFMM_TEST_DIR/environment.source&quot;
+source &quot;$SCALFMM_TEST_DIR/environment.source&quot;
+</code></pre>"><span class="hljs-comment"># function scalfmmRegisterVariable() { echo "export $1=${!1}" &gt;&gt; "$SCALFMM_TEST_DIR/environment.source"; }</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-string">"function scalfmmRegisterVariable() { echo \"export \$1=\${!1}\" &gt;&gt; \"<span class="hljs-variable">$SCALFMM_TEST_DIR</span>/environment.source\"; }"</span> &gt; <span class="hljs-string">"<span class="hljs-variable">$SCALFMM_TEST_DIR</span>/environment.source"</span>
+<span class="hljs-built_in">source</span> <span class="hljs-string">"<span class="hljs-variable">$SCALFMM_TEST_DIR</span>/environment.source"</span>
+</code></pre><p><em>Output variables:</em> <code>scalfmmRegisterVariable SCALFMM_TEST_DIR</code></p><p>Valid-if</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>if [[ -n $SCALFMM_TEST_DIR ]] &amp;amp;&amp;amp; [[ -d $SCALFMM_TEST_DIR ]] ; then
    echo “STEP-OK”
 fi
-</code></pre>
-  <ul>
-   <li>
-    Restarting the tutorial
-   </li>
-  </ul>
-  <p>
-   To restart the tutorial, one needs to re-define the working directory and to source the save file before to resume:
-  </p>
-  <pre><code>export SCALFMM_TEST_DIR=~/scalfmm_test
+</code></pre>"><span class="hljs-keyword">if</span> [[ -n <span class="hljs-variable">$SCALFMM_TEST_DIR</span> ]] &amp;&amp; [[ <span class="hljs-operator">-d</span> <span class="hljs-variable">$SCALFMM_TEST_DIR</span> ]] ; <span class="hljs-keyword">then</span>
+   <span class="hljs-built_in">echo</span> “STEP-OK”
+<span class="hljs-keyword">fi</span>
+</code></pre><ul>
+<li>Restarting the tutorial</li></ul><p>To restart the tutorial, one needs to re-define the working directory and to source the save file before to resume:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>export SCALFMM_TEST_DIR=~/scalfmm_test
 if [[ ! -d $SCALFMM_TEST_DIR ]] ; then
     mkdir $SCALFMM_TEST_DIR
 else
-    source "$SCALFMM_TEST_DIR/environment.source"
+    source &quot;$SCALFMM_TEST_DIR/environment.source&quot;
 fi    
 cd $SCALFMM_TEST_DIR
-</code></pre>
-  <h3 id="downloading-the-packages-in-advance">
-   Downloading the Packages (in Advance)
-  </h3>
-  <p>
-   If the computational node does not have access to internet, we provide a command to download the needed packages (otherwise the next commands still include just in time download):
-  </p>
-  <pre><code class="bash">cd $SCALFMM_TEST_DIR
+</code></pre>"><span class="hljs-built_in">export</span> SCALFMM_TEST_DIR=~/scalfmm_<span class="hljs-built_in">test</span>
+<span class="hljs-keyword">if</span> [[ ! <span class="hljs-operator">-d</span> <span class="hljs-variable">$SCALFMM_TEST_DIR</span> ]] ; <span class="hljs-keyword">then</span>
+    mkdir <span class="hljs-variable">$SCALFMM_TEST_DIR</span>
+<span class="hljs-keyword">else</span>
+    <span class="hljs-built_in">source</span> <span class="hljs-string">"<span class="hljs-variable">$SCALFMM_TEST_DIR</span>/environment.source"</span>
+<span class="hljs-keyword">fi</span>    
+<span class="hljs-built_in">cd</span> <span class="hljs-variable">$SCALFMM_TEST_DIR</span>
+</code></pre><h3 id="downloading-the-packages-(in-advance)"><a name="downloading-the-packages-(in-advance)" href="#downloading-the-packages-(in-advance)"></a>Downloading the Packages (in Advance)</h3><p>If the computational node does not have access to internet, we provide a command to download the needed packages (otherwise the next commands still include just in time download):</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>cd $SCALFMM_TEST_DIR
 wget https://www.open-mpi.org/software/hwloc/v1.11/downloads/hwloc-1.11.2.tar.gz
 wget http://download.savannah.gnu.org/releases/fkt/fxt-0.2.11.tar.gz # Optional
 wget http://www.fftw.org/fftw-3.3.4.tar.gz
 svn export svn://scm.gforge.inria.fr/svnroot/starpu/trunk starpu
 git clone --depth=1 https://scm.gforge.inria.fr/anonscm/git/scalfmm-public/scalfmm-public.git
-</code></pre>
-  <h3 id="hwloc">
-   HWLOC
-  </h3>
-  <pre><code class="bash">cd $SCALFMM_TEST_DIR
+</code></pre>"><span class="hljs-built_in">cd</span> <span class="hljs-variable">$SCALFMM_TEST_DIR</span>
+wget https://www.open-mpi.org/software/hwloc/v1.<span class="hljs-number">11</span>/downloads/hwloc-<span class="hljs-number">1.11</span>.<span class="hljs-number">2</span>.tar.gz
+wget http://download.savannah.gnu.org/releases/fkt/fxt-<span class="hljs-number">0.2</span>.<span class="hljs-number">11</span>.tar.gz <span class="hljs-comment"># Optional</span>
+wget http://www.fftw.org/fftw-<span class="hljs-number">3.3</span>.<span class="hljs-number">4</span>.tar.gz
+svn <span class="hljs-built_in">export</span> svn://scm.gforge.inria.fr/svnroot/starpu/trunk starpu
+git <span class="hljs-built_in">clone</span> --depth=<span class="hljs-number">1</span> https://scm.gforge.inria.fr/anonscm/git/scalfmm-public/scalfmm-public.git
+</code></pre><h3 id="hwloc"><a name="hwloc" href="#hwloc"></a>HWLOC</h3><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>cd $SCALFMM_TEST_DIR
 if [[ ! -f hwloc-1.11.2.tar.gz ]] ; then
     wget https://www.open-mpi.org/software/hwloc/v1.11/downloads/hwloc-1.11.2.tar.gz
 fi
@@ -224,30 +69,22 @@ cd hwloc-1.11.2/
 export SCALFMM_HWLOC_DIR=$SCALFMM_TEST_DIR/hwlocinstall
 ./configure --prefix=$SCALFMM_HWLOC_DIR
 make install
-</code></pre>
-  <p>
-   <em>
-    Output variables:
-   </em>
-   <code>
-    scalfmmRegisterVariable SCALFMM_HWLOC_DIR
-   </code>
-  </p>
-  <p>
-   Valid-if:
-  </p>
-  <pre><code class="bash">if [[ -n $SCALFMM_HWLOC_DIR ]] &amp;&amp; [[ -d $SCALFMM_HWLOC_DIR/lib/ ]] &amp;&amp; [[ -f  $SCALFMM_HWLOC_DIR/lib/libhwloc.so ]]; then
-   echo "STEP-OK"
+</code></pre>"><span class="hljs-built_in">cd</span> <span class="hljs-variable">$SCALFMM_TEST_DIR</span>
+<span class="hljs-keyword">if</span> [[ ! <span class="hljs-operator">-f</span> hwloc-<span class="hljs-number">1.11</span>.<span class="hljs-number">2</span>.tar.gz ]] ; <span class="hljs-keyword">then</span>
+    wget https://www.open-mpi.org/software/hwloc/v1.<span class="hljs-number">11</span>/downloads/hwloc-<span class="hljs-number">1.11</span>.<span class="hljs-number">2</span>.tar.gz
+<span class="hljs-keyword">fi</span>
+tar xvf hwloc-<span class="hljs-number">1.11</span>.<span class="hljs-number">2</span>.tar.gz
+<span class="hljs-built_in">cd</span> hwloc-<span class="hljs-number">1.11</span>.<span class="hljs-number">2</span>/
+<span class="hljs-built_in">export</span> SCALFMM_HWLOC_DIR=<span class="hljs-variable">$SCALFMM_TEST_DIR</span>/hwlocinstall
+./configure --prefix=<span class="hljs-variable">$SCALFMM_HWLOC_DIR</span>
+make install
+</code></pre><p><em>Output variables:</em> <code>scalfmmRegisterVariable SCALFMM_HWLOC_DIR</code></p><p>Valid-if:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>if [[ -n $SCALFMM_HWLOC_DIR ]] &amp;amp;&amp;amp; [[ -d $SCALFMM_HWLOC_DIR/lib/ ]] &amp;amp;&amp;amp; [[ -f  $SCALFMM_HWLOC_DIR/lib/libhwloc.so ]]; then
+   echo &quot;STEP-OK&quot;
 fi
-</code></pre>
-  <h3 id="fxt-optional">
-   FXT (
-   <strong>
-    Optional
-   </strong>
-   )
-  </h3>
-  <pre><code class="bash">cd $SCALFMM_TEST_DIR
+</code></pre>"><span class="hljs-keyword">if</span> [[ -n <span class="hljs-variable">$SCALFMM_HWLOC_DIR</span> ]] &amp;&amp; [[ <span class="hljs-operator">-d</span> <span class="hljs-variable">$SCALFMM_HWLOC_DIR</span>/lib/ ]] &amp;&amp; [[ <span class="hljs-operator">-f</span>  <span class="hljs-variable">$SCALFMM_HWLOC_DIR</span>/lib/libhwloc.so ]]; <span class="hljs-keyword">then</span>
+   <span class="hljs-built_in">echo</span> <span class="hljs-string">"STEP-OK"</span>
+<span class="hljs-keyword">fi</span>
+</code></pre><h3 id="fxt-(__optional__)"><a name="fxt-(__optional__)" href="#fxt-(__optional__)"></a>FXT (<strong>Optional</strong>)</h3><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>cd $SCALFMM_TEST_DIR
 if [[ ! -f fxt-0.2.11.tar.gz ]] ; then
     wget http://download.savannah.gnu.org/releases/fkt/fxt-0.2.11.tar.gz
 fi
@@ -256,29 +93,22 @@ cd fxt-0.2.11/
 export SCALFMM_FXT_DIR=$SCALFMM_TEST_DIR/fxtinstall
 ./configure --prefix=$SCALFMM_FXT_DIR
 make install
-</code></pre>
-  <p>
-   <em>
-    Output variables:
-   </em>
-   <code>
-    scalfmmRegisterVariable SCALFMM_FXT_DIR
-   </code>
-  </p>
-  <p>
-   Valid-if:
-  </p>
-  <pre><code class="bash">if [[ -n $SCALFMM_FXT_DIR ]] &amp;&amp; [[ -d $SCALFMM_FXT_DIR/lib/ ]] &amp;&amp; [[ -f  $SCALFMM_FXT_DIR/lib/libfxt.so ]]; then
-   echo "STEP-OK"
+</code></pre>"><span class="hljs-built_in">cd</span> <span class="hljs-variable">$SCALFMM_TEST_DIR</span>
+<span class="hljs-keyword">if</span> [[ ! <span class="hljs-operator">-f</span> fxt-<span class="hljs-number">0.2</span>.<span class="hljs-number">11</span>.tar.gz ]] ; <span class="hljs-keyword">then</span>
+    wget http://download.savannah.gnu.org/releases/fkt/fxt-<span class="hljs-number">0.2</span>.<span class="hljs-number">11</span>.tar.gz
+<span class="hljs-keyword">fi</span>
+tar xvf fxt-<span class="hljs-number">0.2</span>.<span class="hljs-number">11</span>.tar.gz
+<span class="hljs-built_in">cd</span> fxt-<span class="hljs-number">0.2</span>.<span class="hljs-number">11</span>/
+<span class="hljs-built_in">export</span> SCALFMM_FXT_DIR=<span class="hljs-variable">$SCALFMM_TEST_DIR</span>/fxtinstall
+./configure --prefix=<span class="hljs-variable">$SCALFMM_FXT_DIR</span>
+make install
+</code></pre><p><em>Output variables:</em> <code>scalfmmRegisterVariable SCALFMM_FXT_DIR</code></p><p>Valid-if:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>if [[ -n $SCALFMM_FXT_DIR ]] &amp;amp;&amp;amp; [[ -d $SCALFMM_FXT_DIR/lib/ ]] &amp;amp;&amp;amp; [[ -f  $SCALFMM_FXT_DIR/lib/libfxt.so ]]; then
+   echo &quot;STEP-OK&quot;
 fi
-</code></pre>
-  <h3 id="fftw-if-no-mkl-fft">
-   FFTW (If No MKL-FFT)
-  </h3>
-  <p>
-   For those who do not use MKL FFT interface, they have to install FFTW (float/double):
-  </p>
-  <pre><code class="bash">cd $SCALFMM_TEST_DIR
+</code></pre>"><span class="hljs-keyword">if</span> [[ -n <span class="hljs-variable">$SCALFMM_FXT_DIR</span> ]] &amp;&amp; [[ <span class="hljs-operator">-d</span> <span class="hljs-variable">$SCALFMM_FXT_DIR</span>/lib/ ]] &amp;&amp; [[ <span class="hljs-operator">-f</span>  <span class="hljs-variable">$SCALFMM_FXT_DIR</span>/lib/libfxt.so ]]; <span class="hljs-keyword">then</span>
+   <span class="hljs-built_in">echo</span> <span class="hljs-string">"STEP-OK"</span>
+<span class="hljs-keyword">fi</span>
+</code></pre><h3 id="fftw-(if-no-mkl-fft)"><a name="fftw-(if-no-mkl-fft)" href="#fftw-(if-no-mkl-fft)"></a>FFTW (If No MKL-FFT)</h3><p>For those who do not use MKL FFT interface, they have to install FFTW (float/double):</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>cd $SCALFMM_TEST_DIR
 if [[ ! -f fftw-3.3.4.tar.gz ]] ; then
     wget http://www.fftw.org/fftw-3.3.4.tar.gz
 fi    
@@ -289,26 +119,24 @@ export SCALFMM_FFTW_DIR=$SCALFMM_TEST_DIR/fftinstall
 make install
 ./configure --prefix=$SCALFMM_FFTW_DIR --enable-float
 make install
-</code></pre>
-  <p>
-   <em>
-    Output variables:
-   </em>
-   <code>
-    scalfmmRegisterVariable SCALFMM_FFTW_DIR
-   </code>
-  </p>
-  <p>
-   Valid-if:
-  </p>
-  <pre><code class="bash">if [[ -n $SCALFMM_FFTW_DIR ]] &amp;&amp; [[ -d $SCALFMM_FFTW_DIR/lib/ ]] &amp;&amp; [[ -f  $SCALFMM_FFTW_DIR/lib/libfftw3.a ]] &amp;&amp; [[ -f  $SCALFMM_FFTW_DIR/lib/libfftw3f.a ]]; then
-   echo "STEP-OK"
+</code></pre>"><span class="hljs-built_in">cd</span> <span class="hljs-variable">$SCALFMM_TEST_DIR</span>
+<span class="hljs-keyword">if</span> [[ ! <span class="hljs-operator">-f</span> fftw-<span class="hljs-number">3.3</span>.<span class="hljs-number">4</span>.tar.gz ]] ; <span class="hljs-keyword">then</span>
+    wget http://www.fftw.org/fftw-<span class="hljs-number">3.3</span>.<span class="hljs-number">4</span>.tar.gz
+<span class="hljs-keyword">fi</span>    
+tar xvf fftw-<span class="hljs-number">3.3</span>.<span class="hljs-number">4</span>.tar.gz
+<span class="hljs-built_in">cd</span> fftw-<span class="hljs-number">3.3</span>.<span class="hljs-number">4</span>/
+<span class="hljs-built_in">export</span> SCALFMM_FFTW_DIR=<span class="hljs-variable">$SCALFMM_TEST_DIR</span>/fftinstall
+./configure --prefix=<span class="hljs-variable">$SCALFMM_FFTW_DIR</span>
+make install
+./configure --prefix=<span class="hljs-variable">$SCALFMM_FFTW_DIR</span> --enable-float
+make install
+</code></pre><p><em>Output variables:</em> <code>scalfmmRegisterVariable SCALFMM_FFTW_DIR</code></p><p>Valid-if:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>if [[ -n $SCALFMM_FFTW_DIR ]] &amp;amp;&amp;amp; [[ -d $SCALFMM_FFTW_DIR/lib/ ]] &amp;amp;&amp;amp; [[ -f  $SCALFMM_FFTW_DIR/lib/libfftw3.a ]] &amp;amp;&amp;amp; [[ -f  $SCALFMM_FFTW_DIR/lib/libfftw3f.a ]]; then
+   echo &quot;STEP-OK&quot;
 fi
-</code></pre>
-  <h3 id="starpu">
-   StarPU
-  </h3>
-  <pre><code class="bash">cd $SCALFMM_TEST_DIR
+</code></pre>"><span class="hljs-keyword">if</span> [[ -n <span class="hljs-variable">$SCALFMM_FFTW_DIR</span> ]] &amp;&amp; [[ <span class="hljs-operator">-d</span> <span class="hljs-variable">$SCALFMM_FFTW_DIR</span>/lib/ ]] &amp;&amp; [[ <span class="hljs-operator">-f</span>  <span class="hljs-variable">$SCALFMM_FFTW_DIR</span>/lib/libfftw3.a ]] &amp;&amp; [[ <span class="hljs-operator">-f</span>  <span class="hljs-variable">$SCALFMM_FFTW_DIR</span>/lib/libfftw3f.a ]]; <span class="hljs-keyword">then</span>
+   <span class="hljs-built_in">echo</span> <span class="hljs-string">"STEP-OK"</span>
+<span class="hljs-keyword">fi</span>
+</code></pre><h3 id="starpu"><a name="starpu" href="#starpu"></a>StarPU</h3><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>cd $SCALFMM_TEST_DIR
 if [[ ! -d starpu ]] ; then
     svn export svn://scm.gforge.inria.fr/svnroot/starpu/trunk starpu
 fi    
@@ -317,201 +145,108 @@ export SCALFMM_STARPU_DIR=$SCALFMM_TEST_DIR/starpuinstall
 ./autogen.sh
 ./configure --prefix=$SCALFMM_STARPU_DIR --with-fxt=$SCALFMM_FXT_DIR --with-hwloc=$SCALFMM_HWLOC_DIR --with-cuda-dir=$CUDA_PATH --disable-opencl
 make install
-</code></pre>
-  <blockquote>
-   <p>
-    <strong>
-     Optional
-    </strong>
-    In case you do not want to use trace (FXT) please remove the
-    <code>
-     --with-fxt=$SCALFMM_FXT_DIR
-    </code>
-    parameter from the command
-   </p>
-  </blockquote>
-  <p>
-   <em>
-    Output variables:
-   </em>
-   <code>
-    scalfmmRegisterVariable SCALFMM_STARPU_DIR
-   </code>
-  </p>
-  <p>
-   Valid-if:
-  </p>
-  <pre><code class="bash">if [[ -n $SCALFMM_STARPU_DIR ]] &amp;&amp; [[ -d $SCALFMM_STARPU_DIR/lib/ ]] &amp;&amp; [[ -f  $SCALFMM_STARPU_DIR/lib/libstarpu.so ]] ; then
-   echo "STEP-OK"
+</code></pre>"><span class="hljs-built_in">cd</span> <span class="hljs-variable">$SCALFMM_TEST_DIR</span>
+<span class="hljs-keyword">if</span> [[ ! <span class="hljs-operator">-d</span> starpu ]] ; <span class="hljs-keyword">then</span>
+    svn <span class="hljs-built_in">export</span> svn://scm.gforge.inria.fr/svnroot/starpu/trunk starpu
+<span class="hljs-keyword">fi</span>    
+<span class="hljs-built_in">cd</span> starpu/
+<span class="hljs-built_in">export</span> SCALFMM_STARPU_DIR=<span class="hljs-variable">$SCALFMM_TEST_DIR</span>/starpuinstall
+./autogen.sh
+./configure --prefix=<span class="hljs-variable">$SCALFMM_STARPU_DIR</span> --with-fxt=<span class="hljs-variable">$SCALFMM_FXT_DIR</span> --with-hwloc=<span class="hljs-variable">$SCALFMM_HWLOC_DIR</span> --with-cuda-dir=<span class="hljs-variable">$CUDA_PATH</span> --disable-opencl
+make install
+</code></pre><blockquote>
+<p><strong>Optional</strong> In case you do not want to use trace (FXT) please remove the <code>--with-fxt=$SCALFMM_FXT_DIR</code> parameter from the command</p>
+</blockquote><p><em>Output variables:</em> <code>scalfmmRegisterVariable SCALFMM_STARPU_DIR</code></p><p>Valid-if:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>if [[ -n $SCALFMM_STARPU_DIR ]] &amp;amp;&amp;amp; [[ -d $SCALFMM_STARPU_DIR/lib/ ]] &amp;amp;&amp;amp; [[ -f  $SCALFMM_STARPU_DIR/lib/libstarpu.so ]] ; then
+   echo &quot;STEP-OK&quot;
 fi
-</code></pre>
-  <h3 id="scalfmm">
-   ScalFMM
-  </h3>
-  <h4 id="configure">
-   Configure
-  </h4>
-  <ul>
-   <li>
-    Getting the source from the last commit:
-   </li>
-  </ul>
-  <pre><code class="bash">cd $SCALFMM_TEST_DIR
+</code></pre>"><span class="hljs-keyword">if</span> [[ -n <span class="hljs-variable">$SCALFMM_STARPU_DIR</span> ]] &amp;&amp; [[ <span class="hljs-operator">-d</span> <span class="hljs-variable">$SCALFMM_STARPU_DIR</span>/lib/ ]] &amp;&amp; [[ <span class="hljs-operator">-f</span>  <span class="hljs-variable">$SCALFMM_STARPU_DIR</span>/lib/libstarpu.so ]] ; <span class="hljs-keyword">then</span>
+   <span class="hljs-built_in">echo</span> <span class="hljs-string">"STEP-OK"</span>
+<span class="hljs-keyword">fi</span>
+</code></pre><h3 id="scalfmm"><a name="scalfmm" href="#scalfmm"></a>ScalFMM</h3><h4 id="configure"><a name="configure" href="#configure"></a>Configure</h4><ul>
+<li>Getting the source from the last commit:<pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>cd $SCALFMM_TEST_DIR
 if [[ ! -d scalfmm-public ]] ; then
-    git clone --depth=1 https://scm.gforge.inria.fr/anonscm/git/scalfmm-public/scalfmm-public.git
+  git clone --depth=1 https://scm.gforge.inria.fr/anonscm/git/scalfmm-public/scalfmm-public.git
 fi    
 cd scalfmm-public/
 export SCALFMM_SOURCE_DIR=`pwd`
 cd Build/
 export SCALFMM_BUILD_DIR=`pwd`
+</code></pre>"><span class="hljs-built_in">cd</span> <span class="hljs-variable">$SCALFMM_TEST_DIR</span>
+<span class="hljs-keyword">if</span> [[ ! <span class="hljs-operator">-d</span> scalfmm-public ]] ; <span class="hljs-keyword">then</span>
+  git <span class="hljs-built_in">clone</span> --depth=<span class="hljs-number">1</span> https://scm.gforge.inria.fr/anonscm/git/scalfmm-public/scalfmm-public.git
+<span class="hljs-keyword">fi</span>    
+<span class="hljs-built_in">cd</span> scalfmm-public/
+<span class="hljs-built_in">export</span> SCALFMM_SOURCE_DIR=`<span class="hljs-built_in">pwd</span>`
+<span class="hljs-built_in">cd</span> Build/
+<span class="hljs-built_in">export</span> SCALFMM_BUILD_DIR=`<span class="hljs-built_in">pwd</span>`
 </code></pre>
-  <p>
-   <em>
-    Output variables:
-   </em>
-   <code>
-    scalfmmRegisterVariable SCALFMM_BUILD_DIR
-   </code>
-   <code>
-    scalfmmRegisterVariable SCALFMM_SOURCE_DIR
-   </code>
-  </p>
-  <ul>
-   <li>
-    Configure (No MKL):
-   </li>
-  </ul>
-  <pre><code class="bash">cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
-               -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF \
-               -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=OFF \
-               -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON \
-               -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF \
-               -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR \
-               -DSCALFMM_USE_FFT=ON -DFFT_DIR=$SCALFMM_FFT_DIR
+</li></ul><p><em>Output variables:</em> <code>scalfmmRegisterVariable SCALFMM_BUILD_DIR</code> <code>scalfmmRegisterVariable SCALFMM_SOURCE_DIR</code></p><ul>
+<li>Configure (No MKL):<pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
+             -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF \
+             -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=OFF \
+             -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON \
+             -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF \
+             -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR \
+             -DSCALFMM_USE_FFT=ON -DFFT_DIR=$SCALFMM_FFT_DIR
+</code></pre>">cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
+             -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF \
+             -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=OFF \
+             -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON \
+             -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF \
+             -DHWLOC_DIR=<span class="hljs-variable">$SCALFMM_HWLOC_DIR</span> -DSTARPU_DIR=<span class="hljs-variable">$SCALFMM_STARPU_DIR</span> \
+             -DSCALFMM_USE_FFT=ON -DFFT_DIR=<span class="hljs-variable">$SCALFMM_FFT_DIR</span>
 </code></pre>
-  <ul>
-   <li>
-    Configure (MKL BLAS/LAPACK and FFTW):
-   </li>
-  </ul>
-  <pre><code class="bash">cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
-               -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF \
-               -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=ON \
-               -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON \
-               -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF \
-               -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR \
-               -DSCALFMM_USE_FFT=ON -DFFT_DIR=$SCALFMM_FFT_DIR
+</li><li>Configure (MKL BLAS/LAPACK and FFTW):<pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
+             -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF \
+             -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=ON \
+             -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON \
+             -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF \
+             -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR \
+             -DSCALFMM_USE_FFT=ON -DFFT_DIR=$SCALFMM_FFT_DIR
+</code></pre>">cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
+             -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF \
+             -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=ON \
+             -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON \
+             -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF \
+             -DHWLOC_DIR=<span class="hljs-variable">$SCALFMM_HWLOC_DIR</span> -DSTARPU_DIR=<span class="hljs-variable">$SCALFMM_STARPU_DIR</span> \
+             -DSCALFMM_USE_FFT=ON -DFFT_DIR=<span class="hljs-variable">$SCALFMM_FFT_DIR</span>
 </code></pre>
-  <ul>
-   <li>
-    Configure (MKL BLAS/LAPACK/FFT and No FFTW):
-   </li>
-  </ul>
-  <blockquote>
-   <p>
-    [Plafrim-Developers] Should use that one
-   </p>
-  </blockquote>
-  <pre><code class="bash">cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
+</li><li>Configure (MKL BLAS/LAPACK/FFT and No FFTW):</li></ul><blockquote>
+<p>[Plafrim-Developers] Should use that one</p>
+</blockquote><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
                -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF \
                -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=ON \
                -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON \
                -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF \
                -DHWLOC_DIR=$SCALFMM_HWLOC_DIR -DSTARPU_DIR=$SCALFMM_STARPU_DIR \
                -DSCALFMM_USE_FFT=ON -DSCALFMM_USE_MKL_AS_FFTW=ON
-</code></pre>
-  <p>
-   Valid-if:
-  </p>
-  <pre><code>cmake .. ; if [[ "$?" == "0" ]] ; then echo "STEP-OK" ; fi
-</code></pre>
-  <h4 id="build">
-   Build
-  </h4>
-  <pre><code class="bash">cd $SCALFMM_BUILD_DIR
+</code></pre>">cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
+               -DSCALFMM_BUILD_TESTS=ON -DSCALFMM_BUILD_UTESTS=OFF \
+               -DSCALFMM_USE_BLAS=ON -DSCALFMM_USE_MKL_AS_BLAS=ON \
+               -DSCALFMM_USE_LOG=ON -DSCALFMM_USE_STARPU=ON \
+               -DSCALFMM_USE_CUDA=ON -DSCALFMM_USE_OPENCL=OFF \
+               -DHWLOC_DIR=<span class="hljs-variable">$SCALFMM_HWLOC_DIR</span> -DSTARPU_DIR=<span class="hljs-variable">$SCALFMM_STARPU_DIR</span> \
+               -DSCALFMM_USE_FFT=ON -DSCALFMM_USE_MKL_AS_FFTW=ON
+</code></pre><p>Valid-if:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>cmake .. ; if [[ &quot;$?&quot; == &quot;0&quot; ]] ; then echo &quot;STEP-OK&quot; ; fi
+</code></pre>">cmake .. ; <span class="hljs-keyword">if</span> [[ <span class="hljs-string">"$?"</span> == <span class="hljs-string">"0"</span> ]] ; <span class="hljs-keyword">then</span> <span class="hljs-built_in">echo</span> <span class="hljs-string">"STEP-OK"</span> ; <span class="hljs-keyword">fi</span>
+</code></pre><h4 id="build"><a name="build" href="#build"></a>Build</h4><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>cd $SCALFMM_BUILD_DIR
 make testBlockedUnifCudaBench
-</code></pre>
-  <p>
-   Valid-if:
-  </p>
-  <pre><code>ls ./Tests/Release/testBlockedUnifCudaBench ; if [[ "$?" == "0" ]] ; then echo "STEP-OK" ; fi
-</code></pre>
-  <h4 id="first-execution">
-   First Execution
-  </h4>
-  <p>
-   In this section we compute a simulation and look at the resulting trace.
-   <br/>
-   ScalFMM binary parameters and descriptions:
-  </p>
-  <ul>
-   <li>
-    Passing
-    <code>
-     --help
-    </code>
-    as parameter provide the possible/valid parameters
-   </li>
-   <li>
-    Simulation properties are choosen by :
-   </li>
-   <li>
-    <code>
-     -h
-    </code>
-    : height of the tree
-   </li>
-   <li>
-    <code>
-     -bs
-    </code>
-    : granularity/size of the group
-   </li>
-   <li>
-    <code>
-     -nb
-    </code>
-    : number of particles generated
-   </li>
-   <li>
-    Execution properties are choosen by the StarPU environment variables :
-   </li>
-   <li>
-    <code>
-     STARPU_NCPUS
-    </code>
-    : the number of CPU workers
-   </li>
-   <li>
-    <code>
-     STARPU_NCUDA
-    </code>
-    : the number of GPU workers (for heterogeneous binary)
-   </li>
-   <li>
-    By default the application will not compare the FMM interactions against the direct method (which is N^2) and so it is recommended to avoid the validation for large test cases. But to get the accuracy one must pass the parameter
-    <code>
-     -validation
-    </code>
-   </li>
-   <li>
-    <code>
-     -p2p-m2l-cuda-only
-    </code>
-    : to compute the P2P and the M2L only on GPU (the rest on the CPU)
-   </li>
-  </ul>
-  <p>
-   Examples:
-  </p>
-  <pre><code>export STARPU_NCPUS=12
+</code></pre>"><span class="hljs-built_in">cd</span> <span class="hljs-variable">$SCALFMM_BUILD_DIR</span>
+make <span class="hljs-built_in">test</span>BlockedUnifCudaBench
+</code></pre><p>Valid-if:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>ls ./Tests/Release/testBlockedUnifCudaBench ; if [[ &quot;$?&quot; == &quot;0&quot; ]] ; then echo &quot;STEP-OK&quot; ; fi
+</code></pre>">ls ./Tests/Release/<span class="hljs-built_in">test</span>BlockedUnifCudaBench ; <span class="hljs-keyword">if</span> [[ <span class="hljs-string">"$?"</span> == <span class="hljs-string">"0"</span> ]] ; <span class="hljs-keyword">then</span> <span class="hljs-built_in">echo</span> <span class="hljs-string">"STEP-OK"</span> ; <span class="hljs-keyword">fi</span>
+</code></pre><h4 id="first-execution"><a name="first-execution" href="#first-execution"></a>First Execution</h4><p>In this section we compute a simulation and look at the resulting trace.<br>ScalFMM binary parameters and descriptions:</p><ul>
+<li>Passing <code>--help</code> as parameter provide the possible/valid parameters</li><li>Simulation properties are choosen by :<ul>
+<li><code>-h</code> : height of the tree</li><li><code>-bs</code> : granularity/size of the group</li><li><code>-nb</code> : number of particles generated</li></ul>
+</li><li>Execution properties are choosen by the StarPU environment variables :<ul>
+<li><code>STARPU_NCPUS</code> : the number of CPU workers</li><li><code>STARPU_NCUDA</code> : the number of GPU workers (for heterogeneous binary)</li></ul>
+</li><li>By default the application will not compare the FMM interactions against the direct method (which is N^2) and so it is recommended to avoid the validation for large test cases. But to get the accuracy one must pass the parameter <code>-validation</code></li><li><code>-p2p-m2l-cuda-only</code> : to compute the P2P and the M2L only on GPU (the rest on the CPU)</li></ul><p>Examples:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>export STARPU_NCPUS=12
 export STARPU_NCUDA=2
 ./Tests/Release/testBlockedUnifCudaBench -nb 30000000 -h 7 -bs 800
-</code></pre>
-  <p>
-   Last part of the output should be:
-  </p>
-  <pre><code class="bash">    Start FGroupTaskStarPUAlgorithm
+</code></pre>"><span class="hljs-built_in">export</span> STARPU_NCPUS=<span class="hljs-number">12</span>
+<span class="hljs-built_in">export</span> STARPU_NCUDA=<span class="hljs-number">2</span>
+./Tests/Release/<span class="hljs-built_in">test</span>BlockedUnifCudaBench -nb <span class="hljs-number">30000000</span> -h <span class="hljs-number">7</span> -bs <span class="hljs-number">800</span>
+</code></pre><p>Last part of the output should be:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>    Start FGroupTaskStarPUAlgorithm
          directPass in 0.0406482s
              inblock  in 0.000780428s
              outblock in 0.0398674s
@@ -528,57 +263,68 @@ export STARPU_NCUDA=2
          Submitting the tasks took 0.139101s
          Moving data to the host took 0.0578765s
 @EXEC TIME = 14.6321s
-</code></pre>
-  <ul>
-   <li>
-    Visualize the execution trace (
-    <strong>
-     Optional
-    </strong>
-    )
-   </li>
-  </ul>
-  <p>
-   Convert the fxt file
-  </p>
-  <pre><code class="bash">$SCALFMM_STARPU_DIR/bin/starpu_fxt_tool -i "/tmp/prof_file_"$USER"_0"
-</code></pre>
-  <p>
-   Then visualize the output with
-   <code>
-    vite
-   </code>
-   (maybe by copying the paje.trace file locally)
-  </p>
-  <pre><code class="bash">vite ./paje.trace
-</code></pre>
-  <p>
-   Should be like:
-   <br/>
-   <img alt="Trace" src="trace-example.png"/>
-  </p>
-  <p>
-   We can convert the color of the trace by (requiere Qt5 library):
-  </p>
-  <pre><code class="bash">$SCALFMM_SOURCE_DIR/Addons/BenchEfficiency/pajecolor paje.trace $SCALFMM_SOURCE_DIR/Addons/BenchEfficiency/paintmodel.fmm.colors
+</code></pre>">    Start FGroupTaskStarPUAlgorithm
+         directPass <span class="hljs-keyword">in</span> <span class="hljs-number">0.0406482</span>s
+             inblock  <span class="hljs-keyword">in</span> <span class="hljs-number">0.000780428</span>s
+             outblock <span class="hljs-keyword">in</span> <span class="hljs-number">0.0398674</span>s
+         bottomPass <span class="hljs-keyword">in</span> <span class="hljs-number">0.00586269</span>s
+         upwardPass <span class="hljs-keyword">in</span> <span class="hljs-number">0.00265723</span>s
+         transferPass <span class="hljs-keyword">in</span> <span class="hljs-number">0.00323571</span>s
+             inblock <span class="hljs-keyword">in</span>  <span class="hljs-number">0.000124817</span>s
+             outblock <span class="hljs-keyword">in</span> <span class="hljs-number">0.00298331</span>s
+         downardPass <span class="hljs-keyword">in</span> <span class="hljs-number">0.00257975</span>s
+         transferPass <span class="hljs-keyword">in</span> <span class="hljs-number">0.0652285</span>s
+             inblock <span class="hljs-keyword">in</span>  <span class="hljs-number">0.00164774</span>s
+             outblock <span class="hljs-keyword">in</span> <span class="hljs-number">0.0635799</span>s
+         L2P <span class="hljs-keyword">in</span> <span class="hljs-number">0.0115733</span>s
+         Submitting the tasks took <span class="hljs-number">0.139101</span>s
+         Moving data to the host took <span class="hljs-number">0.0578765</span>s
+@EXEC TIME = <span class="hljs-number">14.6321</span>s
+</code></pre><ul>
+<li>Visualize the execution trace (<strong>Optional</strong>)</li></ul><p>Convert the fxt file</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>$SCALFMM_STARPU_DIR/bin/starpu_fxt_tool -i &quot;/tmp/prof_file_&quot;$USER&quot;_0&quot;
+</code></pre>"><span class="hljs-variable">$SCALFMM_STARPU_DIR</span>/bin/starpu_fxt_tool -i <span class="hljs-string">"/tmp/prof_file_"</span><span class="hljs-variable">$USER</span><span class="hljs-string">"_0"</span>
+</code></pre><p>Then visualize the output with <code>vite</code> (maybe by copying the paje.trace file locally)</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>vite ./paje.trace
+</code></pre>">vite ./paje.trace
+</code></pre><p>Should be like:<br><img src="/home/bbramas/Projects/ScalfmmGit/scalfmm/Addons/BenchEfficiency/trace-example.png" alt="Trace"></p><p>We can convert the color of the trace by (requiere Qt5 library):</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>$SCALFMM_SOURCE_DIR/Addons/BenchEfficiency/pajecolor paje.trace $SCALFMM_SOURCE_DIR/Addons/BenchEfficiency/paintmodel.fmm.colors
 vite ./paje.trace.painted
-</code></pre>
-  <p>
-   Should be like:
-   <br/>
-   <img alt="Trace" src="trace-example-colors.png"/>
-  </p>
-  <ul>
-   <li>
-    Get execution times
-   </li>
-  </ul>
-  <pre><code class="bash">python $SCALFMM_STARPU_DIR/bin/starpu_trace_state_stats.py -t trace.rec
-</code></pre>
-  <p>
-   Should give something like:
-  </p>
-  <pre><code>"Name","Count","Type","Duration"
+</code></pre>"><span class="hljs-variable">$SCALFMM_SOURCE_DIR</span>/Addons/BenchEfficiency/pajecolor paje.trace <span class="hljs-variable">$SCALFMM_SOURCE_DIR</span>/Addons/BenchEfficiency/paintmodel.fmm.colors
+vite ./paje.trace.painted
+</code></pre><p>Should be like:<br><img src="/home/bbramas/Projects/ScalfmmGit/scalfmm/Addons/BenchEfficiency/trace-example-colors.png" alt="Trace"></p><ul>
+<li>Get execution times</li></ul><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>python $SCALFMM_STARPU_DIR/bin/starpu_trace_state_stats.py -t trace.rec
+</code></pre>">python <span class="hljs-variable">$SCALFMM_STARPU_DIR</span>/bin/starpu_trace_state_stats.py -t trace.rec
+</code></pre><p>Should give something like:</p><pre><code data-origin="<pre><code>&quot;Name&quot;,&quot;Count&quot;,&quot;Type&quot;,&quot;Duration&quot;
+&quot;Initializing&quot;,14,&quot;Runtime&quot;,7153.096196
+&quot;Overhead&quot;,57010,&quot;Runtime&quot;,376.473463
+&quot;Idle&quot;,14355,&quot;Other&quot;,12.815899
+&quot;Scheduling&quot;,28441,&quot;Runtime&quot;,238.367394
+&quot;Sleeping&quot;,610,&quot;Other&quot;,13786.513208
+&quot;FetchingInput&quot;,14341,&quot;Runtime&quot;,13918.805814
+&quot;execute_on_all_wrapper&quot;,30,&quot;Task&quot;,21.288802
+&quot;Executing&quot;,414,&quot;Runtime&quot;,26852.864578
+&quot;PushingOutput&quot;,14341,&quot;Runtime&quot;,284.96123
+&quot;P2P-out&quot;,3846,&quot;Task&quot;,60378.266619
+&quot;Callback&quot;,13559,&quot;Runtime&quot;,4.210633
+&quot;P2P&quot;,328,&quot;Task&quot;,15383.426991
+&quot;M2L-level-5&quot;,41,&quot;Task&quot;,2354.702554
+&quot;M2L-level-6&quot;,328,&quot;Task&quot;,18349.915495
+&quot;Deinitializing&quot;,14,&quot;Runtime&quot;,109.87483
+&quot;M2L-level-4&quot;,6,&quot;Task&quot;,275.088295
+&quot;P2M&quot;,328,&quot;Task&quot;,11312.022842
+&quot;M2M-level-5&quot;,328,&quot;Task&quot;,829.9055
+&quot;M2M-level-4&quot;,41,&quot;Task&quot;,93.130498
+&quot;M2L-out-level-5&quot;,638,&quot;Task&quot;,1914.900053
+&quot;M2M-level-3&quot;,6,&quot;Task&quot;,11.053067
+&quot;M2M-level-2&quot;,1,&quot;Task&quot;,1.363157
+&quot;M2L-out-level-4&quot;,22,&quot;Task&quot;,159.580457
+&quot;L2L-level-4&quot;,41,&quot;Task&quot;,84.554065
+&quot;L2L-level-5&quot;,328,&quot;Task&quot;,1087.717767
+&quot;M2L-out-level-6&quot;,7692,&quot;Task&quot;,18322.518045
+&quot;L2P&quot;,328,&quot;Task&quot;,27146.256793
+&quot;M2L-level-2&quot;,1,&quot;Task&quot;,2.661235
+&quot;L2L-level-3&quot;,6,&quot;Task&quot;,11.346978
+&quot;M2L-level-3&quot;,1,&quot;Task&quot;,47.612555
+&quot;L2L-level-2&quot;,1,&quot;Task&quot;,1.471873
+</code></pre>">"Name","Count","Type","Duration"
 "Initializing",14,"Runtime",7153.096196
 "Overhead",57010,"Runtime",376.473463
 "Idle",14355,"Other",12.815899
@@ -610,103 +356,57 @@ vite ./paje.trace.painted
 "L2L-level-3",6,"Task",11.346978
 "M2L-level-3",1,"Task",47.612555
 "L2L-level-2",1,"Task",1.471873
-</code></pre>
-  <p>
-   Most of the script are in the addon directories
-  </p>
-  <pre><code>export SCALFMM_AB=$SCALFMM_SOURCE_DIR/Addons/BenchEfficiency/
-</code></pre>
-  <p>
-   <em>
-    Output variable:
-   </em>
-   <code>
-    scalfmmRegisterVariable SCALFMM_AB
-   </code>
-  </p>
-  <h2 id="homogeneous-efficiencies">
-   Homogeneous Efficiencies
-  </h2>
-  <p>
-   Here we compute the efficiencies for a given test case on CPU only.
-  </p>
-  <p>
-   Go in the build dir and create output dir
-  </p>
-  <pre><code>cd $SCALFMM_BUILD_DIR
+</code></pre><p>Most of the script are in the addon directories</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>export SCALFMM_AB=$SCALFMM_SOURCE_DIR/Addons/BenchEfficiency/
+</code></pre>"><span class="hljs-built_in">export</span> SCALFMM_AB=<span class="hljs-variable">$SCALFMM_SOURCE_DIR</span>/Addons/BenchEfficiency/
+</code></pre><p><em>Output variable:</em> <code>scalfmmRegisterVariable SCALFMM_AB</code></p><h2 id="homogeneous-efficiencies"><a name="homogeneous-efficiencies" href="#homogeneous-efficiencies"></a>Homogeneous Efficiencies</h2><p>Here we compute the efficiencies for a given test case on CPU only.</p><p>Go in the build dir and create output dir</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>cd $SCALFMM_BUILD_DIR
 export SCALFMM_RES_DIR=$SCALFMM_BUILD_DIR/homogeneous
 mkdir $SCALFMM_RES_DIR
-</code></pre>
-  <p>
-   <em>
-    Output variable:
-   </em>
-   <code>
-    scalfmmRegisterVariable SCALFMM_RES_DIR
-   </code>
-  </p>
-  <p>
-   Set up the configuration variables:
-  </p>
-  <pre><code class="bash">export SCALFMM_NB=10000000
+</code></pre>"><span class="hljs-built_in">cd</span> <span class="hljs-variable">$SCALFMM_BUILD_DIR</span>
+<span class="hljs-built_in">export</span> SCALFMM_RES_DIR=<span class="hljs-variable">$SCALFMM_BUILD_DIR</span>/homogeneous
+mkdir <span class="hljs-variable">$SCALFMM_RES_DIR</span>
+</code></pre><p><em>Output variable:</em> <code>scalfmmRegisterVariable SCALFMM_RES_DIR</code> </p><p>Set up the configuration variables:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>export SCALFMM_NB=10000000
 export SCALFMM_H=7
 export SCALFMM_MIN_BS=100
 export SCALFMM_MAX_BS=10000
 export SCALFMM_MAX_NB_CPU=24
-</code></pre>
-  <p>
-   Find best granularity in sequential and in parallel:
-  </p>
-  <pre><code class="bash">export STARPU_NCPUS=1
+</code></pre>"><span class="hljs-built_in">export</span> SCALFMM_NB=<span class="hljs-number">10000000</span>
+<span class="hljs-built_in">export</span> SCALFMM_H=<span class="hljs-number">7</span>
+<span class="hljs-built_in">export</span> SCALFMM_MIN_BS=<span class="hljs-number">100</span>
+<span class="hljs-built_in">export</span> SCALFMM_MAX_BS=<span class="hljs-number">10000</span>
+<span class="hljs-built_in">export</span> SCALFMM_MAX_NB_CPU=<span class="hljs-number">24</span>
+</code></pre><p>Find best granularity in sequential and in parallel:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>export STARPU_NCPUS=1
 export STARPU_NCUDA=0
-export SCALFMM_BS_CPU_SEQ=`$SCALFMM_AB/scalfmmFindBs.sh "./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs" $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmmExtractKey.sh "@BEST BS" `
-if [[ `which gnuplot | wc -l` == "1" ]] ;  then
-    gnuplot -e "filename='seq-bs-search'" $SCALFMM_AB/scalfmmFindBs.gplot
+export SCALFMM_BS_CPU_SEQ=`$SCALFMM_AB/scalfmmFindBs.sh &quot;./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs&quot; $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmmExtractKey.sh &quot;@BEST BS&quot; `
+if [[ `which gnuplot | wc -l` == &quot;1&quot; ]] ;  then
+    gnuplot -e &quot;filename='seq-bs-search'&quot; $SCALFMM_AB/scalfmmFindBs.gplot
 fi
 
 export STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
 export STARPU_NCUDA=0
-export SCALFMM_BS_CPU_PAR=`$SCALFMM_AB/scalfmmFindBs.sh "./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs" $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key "@BEST BS" `
-if [[ `which gnuplot | wc -l` == "1" ]] ;  then
-    gnuplot -e "filename='par-bs-search'" $SCALFMM_AB/scalfmmFindBs.gplot
+export SCALFMM_BS_CPU_PAR=`$SCALFMM_AB/scalfmmFindBs.sh &quot;./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs&quot; $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key &quot;@BEST BS&quot; `
+if [[ `which gnuplot | wc -l` == &quot;1&quot; ]] ;  then
+    gnuplot -e &quot;filename='par-bs-search'&quot; $SCALFMM_AB/scalfmmFindBs.gplot
 fi
-</code></pre>
-  <p>
-   In our case we get 9710  and 5385.
-  </p>
-  <p>
-   <em>
-    Output variable:
-   </em>
-   <code>
-    scalfmmRegisterVariable SCALFMM_BS_CPU_SEQ
-   </code>
-   <code>
-    scalfmmRegisterVariable SCALFMM_BS_CPU_PAR
-   </code>
-  </p>
-  <p>
-   We can look to the work that has been done to find the best granularity:
-   <br/>
-   <img alt="In sequential" src="seq-bs-search.png"/>
-   <br/>
-   <img alt="In parallel" src="par-bs-search.png"/>
-  </p>
-  <p>
-   Then we compute the efficiency using both granulirities and keep the .rec files:
-  </p>
-  <pre><code class="bash">export SCALFMM_MAX_NB_CPU=24
+</code></pre>"><span class="hljs-built_in">export</span> STARPU_NCPUS=<span class="hljs-number">1</span>
+<span class="hljs-built_in">export</span> STARPU_NCUDA=<span class="hljs-number">0</span>
+<span class="hljs-built_in">export</span> SCALFMM_BS_CPU_SEQ=`<span class="hljs-variable">$SCALFMM_AB</span>/scalfmmFindBs.sh <span class="hljs-string">"./Tests/Release/testBlockedUnifCudaBench -nb <span class="hljs-variable">$SCALFMM_NB</span> -h <span class="hljs-variable">$SCALFMM_H</span> -bs"</span> <span class="hljs-variable">$SCALFMM_MIN_BS</span> <span class="hljs-variable">$SCALFMM_MAX_BS</span> | <span class="hljs-variable">$SCALFMM_AB</span>/scalfmmExtractKey.sh <span class="hljs-string">"@BEST BS"</span> `
+<span class="hljs-keyword">if</span> [[ `<span class="hljs-built_in">which</span> gnuplot | wc <span class="hljs-operator">-l</span>` == <span class="hljs-string">"1"</span> ]] ;  <span class="hljs-keyword">then</span>
+    gnuplot <span class="hljs-operator">-e</span> <span class="hljs-string">"filename='seq-bs-search'"</span> <span class="hljs-variable">$SCALFMM_AB</span>/scalfmmFindBs.gplot
+<span class="hljs-keyword">fi</span>
+
+<span class="hljs-built_in">export</span> STARPU_NCPUS=<span class="hljs-variable">$SCALFMM_MAX_NB_CPU</span>
+<span class="hljs-built_in">export</span> STARPU_NCUDA=<span class="hljs-number">0</span>
+<span class="hljs-built_in">export</span> SCALFMM_BS_CPU_PAR=`<span class="hljs-variable">$SCALFMM_AB</span>/scalfmmFindBs.sh <span class="hljs-string">"./Tests/Release/testBlockedUnifCudaBench -nb <span class="hljs-variable">$SCALFMM_NB</span> -h <span class="hljs-variable">$SCALFMM_H</span> -bs"</span> <span class="hljs-variable">$SCALFMM_MIN_BS</span> <span class="hljs-variable">$SCALFMM_MAX_BS</span> | <span class="hljs-variable">$SCALFMM_AB</span>/scalfmm_extract_key <span class="hljs-string">"@BEST BS"</span> `
+<span class="hljs-keyword">if</span> [[ `<span class="hljs-built_in">which</span> gnuplot | wc <span class="hljs-operator">-l</span>` == <span class="hljs-string">"1"</span> ]] ;  <span class="hljs-keyword">then</span>
+    gnuplot <span class="hljs-operator">-e</span> <span class="hljs-string">"filename='par-bs-search'"</span> <span class="hljs-variable">$SCALFMM_AB</span>/scalfmmFindBs.gplot
+<span class="hljs-keyword">fi</span>
+</code></pre><p>In our case we get 9710  and 5385.</p><p><em>Output variable:</em> <code>scalfmmRegisterVariable SCALFMM_BS_CPU_SEQ</code>  <code>scalfmmRegisterVariable SCALFMM_BS_CPU_PAR</code></p><p>We can look to the work that has been done to find the best granularity:<br><img src="/home/bbramas/Projects/ScalfmmGit/scalfmm/Addons/BenchEfficiency/seq-bs-search.png" alt="In sequential"><br><img src="/home/bbramas/Projects/ScalfmmGit/scalfmm/Addons/BenchEfficiency/par-bs-search.png" alt="In parallel"></p><p>Then we compute the efficiency using both granulirities and keep the .rec files:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>export SCALFMM_MAX_NB_CPU=24
 export STARPU_NCUDA=0
-source "$SCALFMM_AB/execAllHomogeneous.sh"
-</code></pre>
-  <p>
-   We should end with all the .rec files and their corresponding time files and
-   <code>
-    ls "$SCALFMM_RES_DIR"
-   </code>
-   should return something like:
-  </p>
-  <pre><code class="bash">trace-nb_10000000-h_7-bs_5385-CPU_10.rec       trace-nb_10000000-h_7-bs_5385-CPU_16.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_22.rec       trace-nb_10000000-h_7-bs_5385-CPU_5.rec.time
+source &quot;$SCALFMM_AB/execAllHomogeneous.sh&quot;
+</code></pre>"><span class="hljs-built_in">export</span> SCALFMM_MAX_NB_CPU=<span class="hljs-number">24</span>
+<span class="hljs-built_in">export</span> STARPU_NCUDA=<span class="hljs-number">0</span>
+<span class="hljs-built_in">source</span> <span class="hljs-string">"<span class="hljs-variable">$SCALFMM_AB</span>/execAllHomogeneous.sh"</span>
+</code></pre><p>We should end with all the .rec files and their corresponding time files and <code>ls "$SCALFMM_RES_DIR"</code> should return something like:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>trace-nb_10000000-h_7-bs_5385-CPU_10.rec       trace-nb_10000000-h_7-bs_5385-CPU_16.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_22.rec       trace-nb_10000000-h_7-bs_5385-CPU_5.rec.time
 trace-nb_10000000-h_7-bs_5385-CPU_10.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_17.rec       trace-nb_10000000-h_7-bs_5385-CPU_22.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_6.rec
 trace-nb_10000000-h_7-bs_5385-CPU_11.rec       trace-nb_10000000-h_7-bs_5385-CPU_17.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_23.rec       trace-nb_10000000-h_7-bs_5385-CPU_6.rec.time
 trace-nb_10000000-h_7-bs_5385-CPU_11.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_18.rec       trace-nb_10000000-h_7-bs_5385-CPU_23.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_7.rec
@@ -719,198 +419,159 @@ trace-nb_10000000-h_7-bs_5385-CPU_14.rec.time  trace-nb_10000000-h_7-bs_5385-CPU
 trace-nb_10000000-h_7-bs_5385-CPU_15.rec       trace-nb_10000000-h_7-bs_5385-CPU_20.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_4.rec        trace-nb_10000000-h_7-bs_9710-CPU_1.rec.time
 trace-nb_10000000-h_7-bs_5385-CPU_15.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_21.rec       trace-nb_10000000-h_7-bs_5385-CPU_4.rec.time
 trace-nb_10000000-h_7-bs_5385-CPU_16.rec       trace-nb_10000000-h_7-bs_5385-CPU_21.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_5.rec
-</code></pre>
-  <p>
-   We then compute the efficiencies from these files
-  </p>
-  <pre><code class="bash">g++ -std=c++11 $SCALFMM_AB/mergetimefile.cpp -o $SCALFMM_AB/mergetimefile.exe
+</code></pre>">trace-nb_10000000-h_7-bs_5385-CPU_10.rec       trace-nb_10000000-h_7-bs_5385-CPU_16.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_22.rec       trace-nb_10000000-h_7-bs_5385-CPU_5.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_10.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_17.rec       trace-nb_10000000-h_7-bs_5385-CPU_22.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_6.rec
+trace-nb_10000000-h_7-bs_5385-CPU_11.rec       trace-nb_10000000-h_7-bs_5385-CPU_17.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_23.rec       trace-nb_10000000-h_7-bs_5385-CPU_6.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_11.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_18.rec       trace-nb_10000000-h_7-bs_5385-CPU_23.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_7.rec
+trace-nb_10000000-h_7-bs_5385-CPU_12.rec       trace-nb_10000000-h_7-bs_5385-CPU_18.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_24.rec       trace-nb_10000000-h_7-bs_5385-CPU_7.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_12.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_19.rec       trace-nb_10000000-h_7-bs_5385-CPU_24.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_8.rec
+trace-nb_10000000-h_7-bs_5385-CPU_13.rec       trace-nb_10000000-h_7-bs_5385-CPU_19.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_2.rec        trace-nb_10000000-h_7-bs_5385-CPU_8.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_13.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_1.rec        trace-nb_10000000-h_7-bs_5385-CPU_2.rec.time   trace-nb_10000000-h_7-bs_5385-CPU_9.rec
+trace-nb_10000000-h_7-bs_5385-CPU_14.rec       trace-nb_10000000-h_7-bs_5385-CPU_1.rec.time   trace-nb_10000000-h_7-bs_5385-CPU_3.rec        trace-nb_10000000-h_7-bs_5385-CPU_9.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_14.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_20.rec       trace-nb_10000000-h_7-bs_5385-CPU_3.rec.time   trace-nb_10000000-h_7-bs_9710-CPU_1.rec
+trace-nb_10000000-h_7-bs_5385-CPU_15.rec       trace-nb_10000000-h_7-bs_5385-CPU_20.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_4.rec        trace-nb_10000000-h_7-bs_9710-CPU_1.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_15.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_21.rec       trace-nb_10000000-h_7-bs_5385-CPU_4.rec.time
+trace-nb_10000000-h_7-bs_5385-CPU_16.rec       trace-nb_10000000-h_7-bs_5385-CPU_21.rec.time  trace-nb_10000000-h_7-bs_5385-CPU_5.rec
+</code></pre><p>We then compute the efficiencies from these files</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>g++ -std=c++11 $SCALFMM_AB/mergetimefile.cpp -o $SCALFMM_AB/mergetimefile.exe
 $SCALFMM_AB/mergetimefile.exe \
-        "$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_BS_CPU_SEQ-CPU_1.rec.time" \
-        "$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_BS_CPU_PAR-CPU_%d.rec.time"\
+        &quot;$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_BS_CPU_SEQ-CPU_1.rec.time&quot; \
+        &quot;$SCALFMM_RES_DIR/trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_BS_CPU_PAR-CPU_%d.rec.time&quot;\
          $SCALFMM_MAX_NB_CPU
-</code></pre>
-  <p>
-   We end-up with the global efficiencies (for the application) but also for the different operators.
-  </p>
-  <pre><code class="bash">Create global-eff.data
+</code></pre>">g++ -std=c++<span class="hljs-number">11</span> <span class="hljs-variable">$SCALFMM_AB</span>/mergetimefile.cpp -o <span class="hljs-variable">$SCALFMM_AB</span>/mergetimefile.exe
+<span class="hljs-variable">$SCALFMM_AB</span>/mergetimefile.exe \
+        <span class="hljs-string">"<span class="hljs-variable">$SCALFMM_RES_DIR</span>/trace-nb_<span class="hljs-variable">$SCALFMM_NB</span>-h_<span class="hljs-variable">$SCALFMM_H</span>-bs_<span class="hljs-variable">$SCALFMM_BS_CPU_SEQ</span>-CPU_1.rec.time"</span> \
+        <span class="hljs-string">"<span class="hljs-variable">$SCALFMM_RES_DIR</span>/trace-nb_<span class="hljs-variable">$SCALFMM_NB</span>-h_<span class="hljs-variable">$SCALFMM_H</span>-bs_<span class="hljs-variable">$SCALFMM_BS_CPU_PAR</span>-CPU_%d.rec.time"</span>\
+         <span class="hljs-variable">$SCALFMM_MAX_NB_CPU</span>
+</code></pre><p>We end-up with the global efficiencies (for the application) but also for the different operators.</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>Create global-eff.data
 Create task-eff.data
 Create task-gr-eff.dat
-</code></pre>
-  <p>
-   We can plot each of them
-  </p>
-  <pre><code class="bash">gnuplot -e "filename='global-eff'" $SCALFMM_AB/scalfmmPlotAll.gplot
-gnuplot -e "filename='task-eff'" $SCALFMM_AB/scalfmmPlotAll.gplot
-gnuplot -e "filename='task-gr-eff'" $SCALFMM_AB/scalfmmPlotAll.gplot
-</code></pre>
-  <p>
-   In our case it gives:
-   <br/>
-   <img alt="global-eff" src="global-eff.png"/>
-   <br/>
-   <img alt="task-eff" src="task-eff.png"/>
-   <br/>
-   <img alt="task-gr-eff" src="task-gr-eff.png"/>
-  </p>
-  <h2 id="heterogeneous">
-   Heterogeneous
-  </h2>
-  <p>
-   <strong>
-    NOT FINISHED!!!!
-   </strong>
-  </p>
-  <p>
-   For test case
-   <code>
-    -nb 10000000
-   </code>
-   (10 million) and
-   <code>
-    -h 6
-   </code>
-   (height of the tree equal to 6),
-   <br/>
-   we first want to know the best granularity
-   <code>
-    -bs
-   </code>
-   .
-  </p>
-  <p>
-   This parameter will certainly not be the same for sequential/parallel/heterogenous configurations.
-  </p>
-  <pre><code class="bash">export SCALFMM_NB=10000000
+</code></pre>">Create global-eff.data
+Create task-eff.data
+Create task-gr-eff.dat
+</code></pre><p>We can plot each of them</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>gnuplot -e &quot;filename='global-eff'&quot; $SCALFMM_AB/scalfmmPlotAll.gplot
+gnuplot -e &quot;filename='task-eff'&quot; $SCALFMM_AB/scalfmmPlotAll.gplot
+gnuplot -e &quot;filename='task-gr-eff'&quot; $SCALFMM_AB/scalfmmPlotAll.gplot
+</code></pre>">gnuplot <span class="hljs-operator">-e</span> <span class="hljs-string">"filename='global-eff'"</span> <span class="hljs-variable">$SCALFMM_AB</span>/scalfmmPlotAll.gplot
+gnuplot <span class="hljs-operator">-e</span> <span class="hljs-string">"filename='task-eff'"</span> <span class="hljs-variable">$SCALFMM_AB</span>/scalfmmPlotAll.gplot
+gnuplot <span class="hljs-operator">-e</span> <span class="hljs-string">"filename='task-gr-eff'"</span> <span class="hljs-variable">$SCALFMM_AB</span>/scalfmmPlotAll.gplot
+</code></pre><p>In our case it gives:<br><img src="/home/bbramas/Projects/ScalfmmGit/scalfmm/Addons/BenchEfficiency/global-eff.png" alt="global-eff"><br><img src="/home/bbramas/Projects/ScalfmmGit/scalfmm/Addons/BenchEfficiency/task-eff.png" alt="task-eff"><br><img src="/home/bbramas/Projects/ScalfmmGit/scalfmm/Addons/BenchEfficiency/task-gr-eff.png" alt="task-gr-eff"></p><h2 id="heterogeneous"><a name="heterogeneous" href="#heterogeneous"></a>Heterogeneous</h2><p><strong>NOT FINISHED!!!!</strong></p><p>For test case <code>-nb 10000000</code> (10 million) and <code>-h 6</code> (height of the tree equal to 6),<br>we first want to know the best granularity <code>-bs</code>.</p><p>This parameter will certainly not be the same for sequential/parallel/heterogenous configurations.</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>export SCALFMM_NB=10000000
 export SCALFMM_H=7
 export SCALFMM_MIN_BS=100
 export SCALFMM_MAX_BS=3000
 export SCALFMM_MAX_NB_CPU=24
 export SCALFMM_MAX_NB_GPU=4
-</code></pre>
-  <pre><code class="bash">export STARPU_NCPUS=1
+</code></pre>"><span class="hljs-built_in">export</span> SCALFMM_NB=<span class="hljs-number">10000000</span>
+<span class="hljs-built_in">export</span> SCALFMM_H=<span class="hljs-number">7</span>
+<span class="hljs-built_in">export</span> SCALFMM_MIN_BS=<span class="hljs-number">100</span>
+<span class="hljs-built_in">export</span> SCALFMM_MAX_BS=<span class="hljs-number">3000</span>
+<span class="hljs-built_in">export</span> SCALFMM_MAX_NB_CPU=<span class="hljs-number">24</span>
+<span class="hljs-built_in">export</span> SCALFMM_MAX_NB_GPU=<span class="hljs-number">4</span>
+</code></pre><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>export STARPU_NCPUS=1
 export STARPU_NCUDA=0
-export SCALFMM_BS_CPU_SEQ=`$SCALFMM_AB/scalfmmFindBs.sh -nb $SCALFMM_NB -h $SCALFMM_H $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key "@BEST BS" `
-if [[ `which gnuplot | wc -l` == "1" ]] ;  then
-    gnuplot -e "filename='seq-bs-search'" $SCALFMM_AB/scalfmmFindBs.gplot
+export SCALFMM_BS_CPU_SEQ=`$SCALFMM_AB/scalfmmFindBs.sh -nb $SCALFMM_NB -h $SCALFMM_H $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key &quot;@BEST BS&quot; `
+if [[ `which gnuplot | wc -l` == &quot;1&quot; ]] ;  then
+    gnuplot -e &quot;filename='seq-bs-search'&quot; $SCALFMM_AB/scalfmmFindBs.gplot
 fi
 
 export STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
 export STARPU_NCUDA=0
-export SCALFMM_BS_CPU_PAR=`$SCALFMM_AB/scalfmmFindBs.sh -nb $SCALFMM_NB -h $SCALFMM_H $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key "@BEST BS" `
-if [[ `which gnuplot | wc -l` == "1" ]] ;  then
-    gnuplot -e "filename='par-bs-search'" $SCALFMM_AB/scalfmmFindBs.gplot
+export SCALFMM_BS_CPU_PAR=`$SCALFMM_AB/scalfmmFindBs.sh -nb $SCALFMM_NB -h $SCALFMM_H $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key &quot;@BEST BS&quot; `
+if [[ `which gnuplot | wc -l` == &quot;1&quot; ]] ;  then
+    gnuplot -e &quot;filename='par-bs-search'&quot; $SCALFMM_AB/scalfmmFindBs.gplot
 fi
 
 export STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
 export STARPU_NCUDA=$SCALFMM_MAX_NB_GPU
-export SCALFMM_BS_CPU_GPU=`$SCALFMM_AB/scalfmmFindBs.sh -nb $SCALFMM_NB -h $SCALFMM_H $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key "@BEST BS" `
-if [[ `which gnuplot | wc -l` == "1" ]] ;  then
-    gnuplot -e "filename='cpugpu-bs-search'" $SCALFMM_AB/scalfmmFindBs.gplot
+export SCALFMM_BS_CPU_GPU=`$SCALFMM_AB/scalfmmFindBs.sh -nb $SCALFMM_NB -h $SCALFMM_H $SCALFMM_MIN_BS $SCALFMM_MAX_BS | $SCALFMM_AB/scalfmm_extract_key &quot;@BEST BS&quot; `
+if [[ `which gnuplot | wc -l` == &quot;1&quot; ]] ;  then
+    gnuplot -e &quot;filename='cpugpu-bs-search'&quot; $SCALFMM_AB/scalfmmFindBs.gplot
 fi
-</code></pre>
-  <p>
-   Then, we can execute three best configurations, and keep .rec for each of them:
-  </p>
-  <pre><code class="bash">export STARPU_NCPUS=1
+</code></pre>"><span class="hljs-built_in">export</span> STARPU_NCPUS=<span class="hljs-number">1</span>
+<span class="hljs-built_in">export</span> STARPU_NCUDA=<span class="hljs-number">0</span>
+<span class="hljs-built_in">export</span> SCALFMM_BS_CPU_SEQ=`<span class="hljs-variable">$SCALFMM_AB</span>/scalfmmFindBs.sh -nb <span class="hljs-variable">$SCALFMM_NB</span> -h <span class="hljs-variable">$SCALFMM_H</span> <span class="hljs-variable">$SCALFMM_MIN_BS</span> <span class="hljs-variable">$SCALFMM_MAX_BS</span> | <span class="hljs-variable">$SCALFMM_AB</span>/scalfmm_extract_key <span class="hljs-string">"@BEST BS"</span> `
+<span class="hljs-keyword">if</span> [[ `<span class="hljs-built_in">which</span> gnuplot | wc <span class="hljs-operator">-l</span>` == <span class="hljs-string">"1"</span> ]] ;  <span class="hljs-keyword">then</span>
+    gnuplot <span class="hljs-operator">-e</span> <span class="hljs-string">"filename='seq-bs-search'"</span> <span class="hljs-variable">$SCALFMM_AB</span>/scalfmmFindBs.gplot
+<span class="hljs-keyword">fi</span>
+
+<span class="hljs-built_in">export</span> STARPU_NCPUS=<span class="hljs-variable">$SCALFMM_MAX_NB_CPU</span>
+<span class="hljs-built_in">export</span> STARPU_NCUDA=<span class="hljs-number">0</span>
+<span class="hljs-built_in">export</span> SCALFMM_BS_CPU_PAR=`<span class="hljs-variable">$SCALFMM_AB</span>/scalfmmFindBs.sh -nb <span class="hljs-variable">$SCALFMM_NB</span> -h <span class="hljs-variable">$SCALFMM_H</span> <span class="hljs-variable">$SCALFMM_MIN_BS</span> <span class="hljs-variable">$SCALFMM_MAX_BS</span> | <span class="hljs-variable">$SCALFMM_AB</span>/scalfmm_extract_key <span class="hljs-string">"@BEST BS"</span> `
+<span class="hljs-keyword">if</span> [[ `<span class="hljs-built_in">which</span> gnuplot | wc <span class="hljs-operator">-l</span>` == <span class="hljs-string">"1"</span> ]] ;  <span class="hljs-keyword">then</span>
+    gnuplot <span class="hljs-operator">-e</span> <span class="hljs-string">"filename='par-bs-search'"</span> <span class="hljs-variable">$SCALFMM_AB</span>/scalfmmFindBs.gplot
+<span class="hljs-keyword">fi</span>
+
+<span class="hljs-built_in">export</span> STARPU_NCPUS=<span class="hljs-variable">$SCALFMM_MAX_NB_CPU</span>
+<span class="hljs-built_in">export</span> STARPU_NCUDA=<span class="hljs-variable">$SCALFMM_MAX_NB_GPU</span>
+<span class="hljs-built_in">export</span> SCALFMM_BS_CPU_GPU=`<span class="hljs-variable">$SCALFMM_AB</span>/scalfmmFindBs.sh -nb <span class="hljs-variable">$SCALFMM_NB</span> -h <span class="hljs-variable">$SCALFMM_H</span> <span class="hljs-variable">$SCALFMM_MIN_BS</span> <span class="hljs-variable">$SCALFMM_MAX_BS</span> | <span class="hljs-variable">$SCALFMM_AB</span>/scalfmm_extract_key <span class="hljs-string">"@BEST BS"</span> `
+<span class="hljs-keyword">if</span> [[ `<span class="hljs-built_in">which</span> gnuplot | wc <span class="hljs-operator">-l</span>` == <span class="hljs-string">"1"</span> ]] ;  <span class="hljs-keyword">then</span>
+    gnuplot <span class="hljs-operator">-e</span> <span class="hljs-string">"filename='cpugpu-bs-search'"</span> <span class="hljs-variable">$SCALFMM_AB</span>/scalfmmFindBs.gplot
+<span class="hljs-keyword">fi</span>
+</code></pre><p>Then, we can execute three best configurations, and keep .rec for each of them:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>export STARPU_NCPUS=1
 export STARPU_NCUDA=0
 ./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs $SCALFMM_CPU_SEQ
-export SCALFMM_SEQ_REC="trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec"
+export SCALFMM_SEQ_REC=&quot;trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec&quot;
 mv trace.rec $SCALFMM_SEQ_REC
 
 export STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
 export STARPU_NCUDA=0
 ./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs $SCALFMM_BS_CPU_PAR
-export SCALFMM_PAR_REC="trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec"
+export SCALFMM_PAR_REC=&quot;trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec&quot;
 mv trace.rec $SCALFMM_PAR_REC
 
 export STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
 export STARPU_NCUDA=$SCALFMM_MAX_NB_GPU
 ./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs $SCALFMM_BS_CPU_GPU
-export SCALFMM_PAR_CPU_GPU_REC="trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec"
+export SCALFMM_PAR_CPU_GPU_REC=&quot;trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec&quot;
 mv trace.rec $SCALFMM_PAR_CPU_GPU_REC
-</code></pre>
-  <p>
-   And we also want the GPU tasks only on GPU
-  </p>
-  <pre><code class="bash">export STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
+</code></pre>"><span class="hljs-built_in">export</span> STARPU_NCPUS=<span class="hljs-number">1</span>
+<span class="hljs-built_in">export</span> STARPU_NCUDA=<span class="hljs-number">0</span>
+./Tests/Release/<span class="hljs-built_in">test</span>BlockedUnifCudaBench -nb <span class="hljs-variable">$SCALFMM_NB</span> -h <span class="hljs-variable">$SCALFMM_H</span> -bs <span class="hljs-variable">$SCALFMM_CPU_SEQ</span>
+<span class="hljs-built_in">export</span> SCALFMM_SEQ_REC=<span class="hljs-string">"trace-nb_<span class="hljs-variable">$SCALFMM_NB</span>-h_<span class="hljs-variable">$SCALFMM_H</span>-bs_<span class="hljs-variable">$SCALFMM_CPU_SEQ</span>-CPU_<span class="hljs-variable">$STARPU_NCPUS</span>-GPU_<span class="hljs-variable">$STARPU_NCUDA</span>.rec"</span>
+mv trace.rec <span class="hljs-variable">$SCALFMM_SEQ_REC</span>
+
+<span class="hljs-built_in">export</span> STARPU_NCPUS=<span class="hljs-variable">$SCALFMM_MAX_NB_CPU</span>
+<span class="hljs-built_in">export</span> STARPU_NCUDA=<span class="hljs-number">0</span>
+./Tests/Release/<span class="hljs-built_in">test</span>BlockedUnifCudaBench -nb <span class="hljs-variable">$SCALFMM_NB</span> -h <span class="hljs-variable">$SCALFMM_H</span> -bs <span class="hljs-variable">$SCALFMM_BS_CPU_PAR</span>
+<span class="hljs-built_in">export</span> SCALFMM_PAR_REC=<span class="hljs-string">"trace-nb_<span class="hljs-variable">$SCALFMM_NB</span>-h_<span class="hljs-variable">$SCALFMM_H</span>-bs_<span class="hljs-variable">$SCALFMM_CPU_SEQ</span>-CPU_<span class="hljs-variable">$STARPU_NCPUS</span>-GPU_<span class="hljs-variable">$STARPU_NCUDA</span>.rec"</span>
+mv trace.rec <span class="hljs-variable">$SCALFMM_PAR_REC</span>
+
+<span class="hljs-built_in">export</span> STARPU_NCPUS=<span class="hljs-variable">$SCALFMM_MAX_NB_CPU</span>
+<span class="hljs-built_in">export</span> STARPU_NCUDA=<span class="hljs-variable">$SCALFMM_MAX_NB_GPU</span>
+./Tests/Release/<span class="hljs-built_in">test</span>BlockedUnifCudaBench -nb <span class="hljs-variable">$SCALFMM_NB</span> -h <span class="hljs-variable">$SCALFMM_H</span> -bs <span class="hljs-variable">$SCALFMM_BS_CPU_GPU</span>
+<span class="hljs-built_in">export</span> SCALFMM_PAR_CPU_GPU_REC=<span class="hljs-string">"trace-nb_<span class="hljs-variable">$SCALFMM_NB</span>-h_<span class="hljs-variable">$SCALFMM_H</span>-bs_<span class="hljs-variable">$SCALFMM_CPU_SEQ</span>-CPU_<span class="hljs-variable">$STARPU_NCPUS</span>-GPU_<span class="hljs-variable">$STARPU_NCUDA</span>.rec"</span>
+mv trace.rec <span class="hljs-variable">$SCALFMM_PAR_CPU_GPU_REC</span>
+</code></pre><p>And we also want the GPU tasks only on GPU</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>export STARPU_NCPUS=$SCALFMM_MAX_NB_CPU
 export STARPU_NCUDA=$SCALFMM_MAX_NB_GPU
 ./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs $SCALFMM_BS_CPU_GPU -p2p-m2l-cuda-only
-export SCALFMM_PAR_GPU_REC="trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA-GPUONLY.rec"
+export SCALFMM_PAR_GPU_REC=&quot;trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA-GPUONLY.rec&quot;
 mv trace.rec $SCALFMM_PAR_GPU_REC
-</code></pre>
-  <p>
-   And we want the sequential version with parallel granularity:
-  </p>
-  <pre><code class="bash">export STARPU_NCPUS=1
+</code></pre>"><span class="hljs-built_in">export</span> STARPU_NCPUS=<span class="hljs-variable">$SCALFMM_MAX_NB_CPU</span>
+<span class="hljs-built_in">export</span> STARPU_NCUDA=<span class="hljs-variable">$SCALFMM_MAX_NB_GPU</span>
+./Tests/Release/<span class="hljs-built_in">test</span>BlockedUnifCudaBench -nb <span class="hljs-variable">$SCALFMM_NB</span> -h <span class="hljs-variable">$SCALFMM_H</span> -bs <span class="hljs-variable">$SCALFMM_BS_CPU_GPU</span> -p2p-m2l-cuda-only
+<span class="hljs-built_in">export</span> SCALFMM_PAR_GPU_REC=<span class="hljs-string">"trace-nb_<span class="hljs-variable">$SCALFMM_NB</span>-h_<span class="hljs-variable">$SCALFMM_H</span>-bs_<span class="hljs-variable">$SCALFMM_CPU_SEQ</span>-CPU_<span class="hljs-variable">$STARPU_NCPUS</span>-GPU_<span class="hljs-variable">$STARPU_NCUDA</span>-GPUONLY.rec"</span>
+mv trace.rec <span class="hljs-variable">$SCALFMM_PAR_GPU_REC</span>
+</code></pre><p>And we want the sequential version with parallel granularity:</p><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>export STARPU_NCPUS=1
 export STARPU_NCUDA=0
 
 ./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs $SCALFMM_BS_CPU_PAR
-SCALFMM_SEQ_CPU_BS_REC="trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec"
+SCALFMM_SEQ_CPU_BS_REC=&quot;trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec&quot;
 mv trace.rec $SCALFMM_SEQ_CPU_BS_REC
 
 ./Tests/Release/testBlockedUnifCudaBench -nb $SCALFMM_NB -h $SCALFMM_H -bs $SCALFMM_BS_CPU_GPU
-SCALFMM_SEQ_GPU_BS_REC="trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec"
+SCALFMM_SEQ_GPU_BS_REC=&quot;trace-nb_$SCALFMM_NB-h_$SCALFMM_H-bs_$SCALFMM_CPU_SEQ-CPU_$STARPU_NCPUS-GPU_$STARPU_NCUDA.rec&quot;
 mv trace.rec $SCALFMM_SEQ_GPU_BS_REC
-</code></pre>
-  <p>
-   From these files, we are able to get the different efficencies.
-  </p>
-  <h2 id="post-processing-and-plot">
-   Post-processing and Plot
-  </h2>
-  <p>
-   From the file:
-  </p>
-  <ul>
-   <li>
-    <code>
-     $SCALFMM_SEQ_REC
-    </code>
-    : the resulting file from the sequential execution with best sequential granularity
-   </li>
-   <li>
-    <code>
-     $SCALFMM_PAR_REC
-    </code>
-    : the resulting file from a parallel execution (no GPU) with best parallel granularity
-   </li>
-   <li>
-    <code>
-     $SCALFMM_PAR_CPU_GPU_REC
-    </code>
-    : the resulting file from a parallel execution (hybrid) with best parallel-hybrid granularity
-   </li>
-   <li>
-    <code>
-     $SCALFMM_PAR_GPU_REC
-    </code>
-    : the resulting file with all possible tasks on GPU with best parallel-hybrid granularity
-   </li>
-   <li>
-    <code>
-     $SCALFMM_SEQ_CPU_BS_REC
-    </code>
-    : the resulting file from sequential execution with best parallel granularity
-   </li>
-   <li>
-    <code>
-     $SCALFMM_SEQ_GPU_BS_REC
-    </code>
-    : the resulting file from sequential execution with best parallel-hybrid granularity
-   </li>
-  </ul>
-  <p>
-   Getting all the efficency
-   <br/>
-   Solving the linear programming problem
-  </p>
-  <p>
-   Plotting the results
-  </p>
-  <h2 id="automatization">
-   Automatization
-  </h2>
-  <pre><code class="bash">SCALFMM_NB=10000000
+</code></pre>"><span class="hljs-built_in">export</span> STARPU_NCPUS=<span class="hljs-number">1</span>
+<span class="hljs-built_in">export</span> STARPU_NCUDA=<span class="hljs-number">0</span>
+
+./Tests/Release/<span class="hljs-built_in">test</span>BlockedUnifCudaBench -nb <span class="hljs-variable">$SCALFMM_NB</span> -h <span class="hljs-variable">$SCALFMM_H</span> -bs <span class="hljs-variable">$SCALFMM_BS_CPU_PAR</span>
+SCALFMM_SEQ_CPU_BS_REC=<span class="hljs-string">"trace-nb_<span class="hljs-variable">$SCALFMM_NB</span>-h_<span class="hljs-variable">$SCALFMM_H</span>-bs_<span class="hljs-variable">$SCALFMM_CPU_SEQ</span>-CPU_<span class="hljs-variable">$STARPU_NCPUS</span>-GPU_<span class="hljs-variable">$STARPU_NCUDA</span>.rec"</span>
+mv trace.rec <span class="hljs-variable">$SCALFMM_SEQ_CPU_BS_REC</span>
+
+./Tests/Release/<span class="hljs-built_in">test</span>BlockedUnifCudaBench -nb <span class="hljs-variable">$SCALFMM_NB</span> -h <span class="hljs-variable">$SCALFMM_H</span> -bs <span class="hljs-variable">$SCALFMM_BS_CPU_GPU</span>
+SCALFMM_SEQ_GPU_BS_REC=<span class="hljs-string">"trace-nb_<span class="hljs-variable">$SCALFMM_NB</span>-h_<span class="hljs-variable">$SCALFMM_H</span>-bs_<span class="hljs-variable">$SCALFMM_CPU_SEQ</span>-CPU_<span class="hljs-variable">$STARPU_NCPUS</span>-GPU_<span class="hljs-variable">$STARPU_NCUDA</span>.rec"</span>
+mv trace.rec <span class="hljs-variable">$SCALFMM_SEQ_GPU_BS_REC</span>
+</code></pre><p>From these files, we are able to get the different efficencies.</p><h2 id="post-processing-and-plot"><a name="post-processing-and-plot" href="#post-processing-and-plot"></a>Post-processing and Plot</h2><p>From the file:</p><ul>
+<li><code>$SCALFMM_SEQ_REC</code> : the resulting file from the sequential execution with best sequential granularity</li><li><code>$SCALFMM_PAR_REC</code> : the resulting file from a parallel execution (no GPU) with best parallel granularity</li><li><code>$SCALFMM_PAR_CPU_GPU_REC</code> : the resulting file from a parallel execution (hybrid) with best parallel-hybrid granularity</li><li><code>$SCALFMM_PAR_GPU_REC</code> : the resulting file with all possible tasks on GPU with best parallel-hybrid granularity</li><li><code>$SCALFMM_SEQ_CPU_BS_REC</code> : the resulting file from sequential execution with best parallel granularity</li><li><code>$SCALFMM_SEQ_GPU_BS_REC</code> : the resulting file from sequential execution with best parallel-hybrid granularity</li></ul><p>Getting all the efficency<br>Solving the linear programming problem</p><p>Plotting the results</p><h2 id="automatization"><a name="automatization" href="#automatization"></a>Automatization</h2><pre class="bash hljs"><code class="bash" data-origin="<pre><code class=&quot;bash&quot;>SCALFMM_NB=10000000
 SCALFMM_H=7
 SCALFMM_MIN_BS=100
 SCALFMM_MAX_BS=3000
@@ -918,16 +579,16 @@ SCALFMM_MAX_NB_CPU=24
 SCALFMM_MAX_NB_GPU=4
 
 scalfmm_generate_efficiency -nb $SCALFMM_NB -h $SCALFMM_H -start $SCALFMM_MIN_BS -end $SCALFMM_MAX_BS
+</code></pre>">SCALFMM_NB=<span class="hljs-number">10000000</span>
+SCALFMM_H=<span class="hljs-number">7</span>
+SCALFMM_MIN_BS=<span class="hljs-number">100</span>
+SCALFMM_MAX_BS=<span class="hljs-number">3000</span>
+SCALFMM_MAX_NB_CPU=<span class="hljs-number">24</span>
+SCALFMM_MAX_NB_GPU=<span class="hljs-number">4</span>
+
+scalfmm_generate_efficiency -nb <span class="hljs-variable">$SCALFMM_NB</span> -h <span class="hljs-variable">$SCALFMM_H</span> -start <span class="hljs-variable">$SCALFMM_MIN_BS</span> -end <span class="hljs-variable">$SCALFMM_MAX_BS</span>
 </code></pre>
-  <script src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.1/highlight.min.js">
-  </script>
-  <script>
-   hljs.initHighlightingOnLoad();
-  </script>
-  <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript">
-  </script>
-  <script type="text/javascript">
-   MathJax.Hub.Config({"showProcessingMessages" : false,"messageStyle" : "none","tex2jax": { inlineMath: [ [ "$", "$" ] ] }});
-  </script>
- </body>
+
+<footer style="position:fixed; font-size:.8em; text-align:right; bottom:0px; margin-left:-25px; height:20px; width:100%;">generated by <a href="http://pad.haroopress.com" target="_blank">haroopad</a></footer>
+</body>
 </html>

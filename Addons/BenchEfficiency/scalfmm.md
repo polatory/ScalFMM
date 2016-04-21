@@ -68,7 +68,7 @@ fi
 - Restarting the tutorial
 
 To restart the tutorial, one needs to re-define the working directory and to source the save file before to resume:
-```
+```bash
 export SCALFMM_TEST_DIR=~/scalfmm_test
 if [[ ! -d $SCALFMM_TEST_DIR ]] ; then
 	mkdir $SCALFMM_TEST_DIR
@@ -234,7 +234,7 @@ cmake .. -DSCALFMM_BUILD_DEBUG=OFF -DSCALFMM_USE_MPI=OFF \
 ```
 
 Valid-if:
-```
+```bash
 cmake .. ; if [[ "$?" == "0" ]] ; then echo "STEP-OK" ; fi
 ```
 
@@ -246,7 +246,7 @@ make testBlockedUnifCudaBench
 ```
 
 Valid-if:
-```
+```bash
 ls ./Tests/Release/testBlockedUnifCudaBench ; if [[ "$?" == "0" ]] ; then echo "STEP-OK" ; fi
 ```
 
@@ -268,7 +268,7 @@ ScalFMM binary parameters and descriptions:
 
 Examples:
 
-```
+```bash
 export STARPU_NCPUS=12
 export STARPU_NCUDA=2
 ./Tests/Release/testBlockedUnifCudaBench -nb 30000000 -h 7 -bs 800
@@ -362,7 +362,7 @@ Should give something like:
 ```
 
 Most of the script are in the addon directories
-```
+```bash
 export SCALFMM_AB=$SCALFMM_SOURCE_DIR/Addons/BenchEfficiency/
 ```
 
@@ -373,7 +373,7 @@ export SCALFMM_AB=$SCALFMM_SOURCE_DIR/Addons/BenchEfficiency/
 Here we compute the efficiencies for a given test case on CPU only.
 
 Go in the build dir and create output dir
-```
+```bash
 cd $SCALFMM_BUILD_DIR
 export SCALFMM_RES_DIR=$SCALFMM_BUILD_DIR/homogeneous
 mkdir $SCALFMM_RES_DIR
