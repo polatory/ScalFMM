@@ -543,8 +543,8 @@ protected:
 	/*      Automatically generated code */
 		 // Adding multiple regression codelet model for codelet m2m_cl
 		 // Computed from execution:  4 Native execution on miriel
-		 // Adjusted R-squared:  0.999192278325419
-		 m2m_cl.model->ncombinations = 7;
+		 // Adjusted R-squared:  0.999546484363881
+		 m2m_cl.model->ncombinations = 2;
 		 m2m_cl.model->combinations = (unsigned **) malloc(m2m_cl.model->ncombinations*sizeof(unsigned *));
 
 		 if (m2m_cl.model->combinations)
@@ -559,57 +559,17 @@ protected:
 		 m2m_cl.model->combinations[0][1] = 0;
 		 m2m_cl.model->combinations[0][2] = 0;
 		 m2m_cl.model->combinations[0][3] = 0;
-		 m2m_cl.model->combinations[0][4] = 1;
-		 m2m_cl.model->combinations[0][5] = 0;
+		 m2m_cl.model->combinations[0][4] = 0;
+		 m2m_cl.model->combinations[0][5] = 1;
 		 m2m_cl.model->combinations[0][6] = 0;
 
 		 m2m_cl.model->combinations[1][0] = 0;
 		 m2m_cl.model->combinations[1][1] = 0;
 		 m2m_cl.model->combinations[1][2] = 0;
 		 m2m_cl.model->combinations[1][3] = 0;
-		 m2m_cl.model->combinations[1][4] = 0;
+		 m2m_cl.model->combinations[1][4] = 1;
 		 m2m_cl.model->combinations[1][5] = 1;
 		 m2m_cl.model->combinations[1][6] = 0;
-
-		 m2m_cl.model->combinations[2][0] = 0;
-		 m2m_cl.model->combinations[2][1] = 0;
-		 m2m_cl.model->combinations[2][2] = 0;
-		 m2m_cl.model->combinations[2][3] = 0;
-		 m2m_cl.model->combinations[2][4] = 0;
-		 m2m_cl.model->combinations[2][5] = 0;
-		 m2m_cl.model->combinations[2][6] = 1;
-
-		 m2m_cl.model->combinations[3][0] = 0;
-		 m2m_cl.model->combinations[3][1] = 0;
-		 m2m_cl.model->combinations[3][2] = 0;
-		 m2m_cl.model->combinations[3][3] = 0;
-		 m2m_cl.model->combinations[3][4] = 1;
-		 m2m_cl.model->combinations[3][5] = 1;
-		 m2m_cl.model->combinations[3][6] = 0;
-
-		 m2m_cl.model->combinations[4][0] = 0;
-		 m2m_cl.model->combinations[4][1] = 0;
-		 m2m_cl.model->combinations[4][2] = 0;
-		 m2m_cl.model->combinations[4][3] = 0;
-		 m2m_cl.model->combinations[4][4] = 1;
-		 m2m_cl.model->combinations[4][5] = 0;
-		 m2m_cl.model->combinations[4][6] = 1;
-
-		 m2m_cl.model->combinations[5][0] = 0;
-		 m2m_cl.model->combinations[5][1] = 0;
-		 m2m_cl.model->combinations[5][2] = 0;
-		 m2m_cl.model->combinations[5][3] = 0;
-		 m2m_cl.model->combinations[5][4] = 0;
-		 m2m_cl.model->combinations[5][5] = 1;
-		 m2m_cl.model->combinations[5][6] = 1;
-
-		 m2m_cl.model->combinations[6][0] = 0;
-		 m2m_cl.model->combinations[6][1] = 0;
-		 m2m_cl.model->combinations[6][2] = 0;
-		 m2m_cl.model->combinations[6][3] = 0;
-		 m2m_cl.model->combinations[6][4] = 1;
-		 m2m_cl.model->combinations[6][5] = 1;
-		 m2m_cl.model->combinations[6][6] = 1;
 
 	/* ############################################ */
         memset(&l2l_cl, 0, sizeof(l2l_cl));
@@ -656,8 +616,8 @@ protected:
 	/*      Automatically generated code */
 		 // Adding multiple regression codelet model for codelet l2l_cl
 		 // Computed from execution:  4 Native execution on miriel
-		 // Adjusted R-squared:  0.997721944139429
-		 l2l_cl.model->ncombinations = 3;
+		 // Adjusted R-squared:  0.999917734903129
+		 l2l_cl.model->ncombinations = 2;
 		 l2l_cl.model->combinations = (unsigned **) malloc(l2l_cl.model->ncombinations*sizeof(unsigned *));
 
 		 if (l2l_cl.model->combinations)
@@ -680,17 +640,9 @@ protected:
 		 l2l_cl.model->combinations[1][1] = 0;
 		 l2l_cl.model->combinations[1][2] = 0;
 		 l2l_cl.model->combinations[1][3] = 0;
-		 l2l_cl.model->combinations[1][4] = 1;
-		 l2l_cl.model->combinations[1][5] = 0;
+		 l2l_cl.model->combinations[1][4] = 0;
+		 l2l_cl.model->combinations[1][5] = 1;
 		 l2l_cl.model->combinations[1][6] = 0;
-
-		 l2l_cl.model->combinations[2][0] = 0;
-		 l2l_cl.model->combinations[2][1] = 0;
-		 l2l_cl.model->combinations[2][2] = 0;
-		 l2l_cl.model->combinations[2][3] = 0;
-		 l2l_cl.model->combinations[2][4] = 0;
-		 l2l_cl.model->combinations[2][5] = 1;
-		 l2l_cl.model->combinations[2][6] = 0;
 
 	/* ############################################ */
         memset(&l2l_cl_nocommute, 0, sizeof(l2l_cl_nocommute));
@@ -737,8 +689,8 @@ protected:
 	/*      Automatically generated code */
 		 // Adding multiple regression codelet model for codelet l2l_cl_nocommute
 		 // Computed from execution:  4 Native execution on miriel
-		 // Adjusted R-squared:  0.998843743882726
-		 l2l_cl_nocommute.model->ncombinations = 7;
+		 // Adjusted R-squared:  0.999566134931915
+		 l2l_cl_nocommute.model->ncombinations = 1;
 		 l2l_cl_nocommute.model->combinations = (unsigned **) malloc(l2l_cl_nocommute.model->ncombinations*sizeof(unsigned *));
 
 		 if (l2l_cl_nocommute.model->combinations)
@@ -753,57 +705,9 @@ protected:
 		 l2l_cl_nocommute.model->combinations[0][1] = 0;
 		 l2l_cl_nocommute.model->combinations[0][2] = 0;
 		 l2l_cl_nocommute.model->combinations[0][3] = 0;
-		 l2l_cl_nocommute.model->combinations[0][4] = 1;
-		 l2l_cl_nocommute.model->combinations[0][5] = 0;
+		 l2l_cl_nocommute.model->combinations[0][4] = 0;
+		 l2l_cl_nocommute.model->combinations[0][5] = 1;
 		 l2l_cl_nocommute.model->combinations[0][6] = 0;
-
-		 l2l_cl_nocommute.model->combinations[1][0] = 0;
-		 l2l_cl_nocommute.model->combinations[1][1] = 0;
-		 l2l_cl_nocommute.model->combinations[1][2] = 0;
-		 l2l_cl_nocommute.model->combinations[1][3] = 0;
-		 l2l_cl_nocommute.model->combinations[1][4] = 0;
-		 l2l_cl_nocommute.model->combinations[1][5] = 1;
-		 l2l_cl_nocommute.model->combinations[1][6] = 0;
-
-		 l2l_cl_nocommute.model->combinations[2][0] = 0;
-		 l2l_cl_nocommute.model->combinations[2][1] = 0;
-		 l2l_cl_nocommute.model->combinations[2][2] = 0;
-		 l2l_cl_nocommute.model->combinations[2][3] = 0;
-		 l2l_cl_nocommute.model->combinations[2][4] = 0;
-		 l2l_cl_nocommute.model->combinations[2][5] = 0;
-		 l2l_cl_nocommute.model->combinations[2][6] = 1;
-
-		 l2l_cl_nocommute.model->combinations[3][0] = 0;
-		 l2l_cl_nocommute.model->combinations[3][1] = 0;
-		 l2l_cl_nocommute.model->combinations[3][2] = 0;
-		 l2l_cl_nocommute.model->combinations[3][3] = 0;
-		 l2l_cl_nocommute.model->combinations[3][4] = 1;
-		 l2l_cl_nocommute.model->combinations[3][5] = 1;
-		 l2l_cl_nocommute.model->combinations[3][6] = 0;
-
-		 l2l_cl_nocommute.model->combinations[4][0] = 0;
-		 l2l_cl_nocommute.model->combinations[4][1] = 0;
-		 l2l_cl_nocommute.model->combinations[4][2] = 0;
-		 l2l_cl_nocommute.model->combinations[4][3] = 0;
-		 l2l_cl_nocommute.model->combinations[4][4] = 1;
-		 l2l_cl_nocommute.model->combinations[4][5] = 0;
-		 l2l_cl_nocommute.model->combinations[4][6] = 1;
-
-		 l2l_cl_nocommute.model->combinations[5][0] = 0;
-		 l2l_cl_nocommute.model->combinations[5][1] = 0;
-		 l2l_cl_nocommute.model->combinations[5][2] = 0;
-		 l2l_cl_nocommute.model->combinations[5][3] = 0;
-		 l2l_cl_nocommute.model->combinations[5][4] = 0;
-		 l2l_cl_nocommute.model->combinations[5][5] = 1;
-		 l2l_cl_nocommute.model->combinations[5][6] = 1;
-
-		 l2l_cl_nocommute.model->combinations[6][0] = 0;
-		 l2l_cl_nocommute.model->combinations[6][1] = 0;
-		 l2l_cl_nocommute.model->combinations[6][2] = 0;
-		 l2l_cl_nocommute.model->combinations[6][3] = 0;
-		 l2l_cl_nocommute.model->combinations[6][4] = 1;
-		 l2l_cl_nocommute.model->combinations[6][5] = 1;
-		 l2l_cl_nocommute.model->combinations[6][6] = 1;
 
 	/* ############################################ */
         memset(&l2p_cl, 0, sizeof(l2p_cl));
@@ -990,8 +894,8 @@ protected:
 	/*      Automatically generated code */
 		 // Adding multiple regression codelet model for codelet p2p_cl_inout
 		 // Computed from execution:  4 Native execution on miriel
-		 // Adjusted R-squared:  0.999382492562838
-		 p2p_cl_inout.model->ncombinations = 7;
+		 // Adjusted R-squared:  0.999996919870662
+		 p2p_cl_inout.model->ncombinations = 5;
 		 p2p_cl_inout.model->combinations = (unsigned **) malloc(p2p_cl_inout.model->ncombinations*sizeof(unsigned *));
 
 		 if (p2p_cl_inout.model->combinations)
@@ -1004,9 +908,9 @@ protected:
 
 		 p2p_cl_inout.model->combinations[0][0] = 0;
 		 p2p_cl_inout.model->combinations[0][1] = 0;
-		 p2p_cl_inout.model->combinations[0][2] = 1;
+		 p2p_cl_inout.model->combinations[0][2] = 0;
 		 p2p_cl_inout.model->combinations[0][3] = 0;
-		 p2p_cl_inout.model->combinations[0][4] = 0;
+		 p2p_cl_inout.model->combinations[0][4] = 1;
 		 p2p_cl_inout.model->combinations[0][5] = 0;
 		 p2p_cl_inout.model->combinations[0][6] = 0;
 		 p2p_cl_inout.model->combinations[0][7] = 0;
@@ -1017,9 +921,9 @@ protected:
 		 p2p_cl_inout.model->combinations[1][1] = 0;
 		 p2p_cl_inout.model->combinations[1][2] = 0;
 		 p2p_cl_inout.model->combinations[1][3] = 0;
-		 p2p_cl_inout.model->combinations[1][4] = 1;
+		 p2p_cl_inout.model->combinations[1][4] = 0;
 		 p2p_cl_inout.model->combinations[1][5] = 0;
-		 p2p_cl_inout.model->combinations[1][6] = 0;
+		 p2p_cl_inout.model->combinations[1][6] = 1;
 		 p2p_cl_inout.model->combinations[1][7] = 0;
 		 p2p_cl_inout.model->combinations[1][8] = 0;
 		 p2p_cl_inout.model->combinations[1][9] = 0;
@@ -1029,9 +933,9 @@ protected:
 		 p2p_cl_inout.model->combinations[2][2] = 0;
 		 p2p_cl_inout.model->combinations[2][3] = 0;
 		 p2p_cl_inout.model->combinations[2][4] = 0;
-		 p2p_cl_inout.model->combinations[2][5] = 1;
+		 p2p_cl_inout.model->combinations[2][5] = 0;
 		 p2p_cl_inout.model->combinations[2][6] = 0;
-		 p2p_cl_inout.model->combinations[2][7] = 0;
+		 p2p_cl_inout.model->combinations[2][7] = 1;
 		 p2p_cl_inout.model->combinations[2][8] = 0;
 		 p2p_cl_inout.model->combinations[2][9] = 0;
 
@@ -1041,9 +945,9 @@ protected:
 		 p2p_cl_inout.model->combinations[3][3] = 0;
 		 p2p_cl_inout.model->combinations[3][4] = 0;
 		 p2p_cl_inout.model->combinations[3][5] = 0;
-		 p2p_cl_inout.model->combinations[3][6] = 1;
+		 p2p_cl_inout.model->combinations[3][6] = 0;
 		 p2p_cl_inout.model->combinations[3][7] = 0;
-		 p2p_cl_inout.model->combinations[3][8] = 0;
+		 p2p_cl_inout.model->combinations[3][8] = 1;
 		 p2p_cl_inout.model->combinations[3][9] = 0;
 
 		 p2p_cl_inout.model->combinations[4][0] = 0;
@@ -1053,31 +957,9 @@ protected:
 		 p2p_cl_inout.model->combinations[4][4] = 0;
 		 p2p_cl_inout.model->combinations[4][5] = 0;
 		 p2p_cl_inout.model->combinations[4][6] = 0;
-		 p2p_cl_inout.model->combinations[4][7] = 1;
+		 p2p_cl_inout.model->combinations[4][7] = 0;
 		 p2p_cl_inout.model->combinations[4][8] = 0;
-		 p2p_cl_inout.model->combinations[4][9] = 0;
-
-		 p2p_cl_inout.model->combinations[5][0] = 0;
-		 p2p_cl_inout.model->combinations[5][1] = 0;
-		 p2p_cl_inout.model->combinations[5][2] = 0;
-		 p2p_cl_inout.model->combinations[5][3] = 0;
-		 p2p_cl_inout.model->combinations[5][4] = 0;
-		 p2p_cl_inout.model->combinations[5][5] = 0;
-		 p2p_cl_inout.model->combinations[5][6] = 0;
-		 p2p_cl_inout.model->combinations[5][7] = 0;
-		 p2p_cl_inout.model->combinations[5][8] = 1;
-		 p2p_cl_inout.model->combinations[5][9] = 0;
-
-		 p2p_cl_inout.model->combinations[6][0] = 0;
-		 p2p_cl_inout.model->combinations[6][1] = 0;
-		 p2p_cl_inout.model->combinations[6][2] = 0;
-		 p2p_cl_inout.model->combinations[6][3] = 0;
-		 p2p_cl_inout.model->combinations[6][4] = 0;
-		 p2p_cl_inout.model->combinations[6][5] = 0;
-		 p2p_cl_inout.model->combinations[6][6] = 0;
-		 p2p_cl_inout.model->combinations[6][7] = 0;
-		 p2p_cl_inout.model->combinations[6][8] = 0;
-		 p2p_cl_inout.model->combinations[6][9] = 1;
+		 p2p_cl_inout.model->combinations[4][9] = 1;
 
 	/* ############################################ */
         memset(&m2l_cl_in, 0, sizeof(m2l_cl_in));
