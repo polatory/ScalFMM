@@ -894,8 +894,8 @@ protected:
 	/*      Automatically generated code */
 		 // Adding multiple regression codelet model for codelet p2p_cl_inout
 		 // Computed from execution:  4 Native execution on miriel
-		 // Adjusted R-squared:  0.999996919870662
-		 p2p_cl_inout.model->ncombinations = 5;
+		 // Adjusted R-squared:  0.999382492562838
+		 p2p_cl_inout.model->ncombinations = 7;
 		 p2p_cl_inout.model->combinations = (unsigned **) malloc(p2p_cl_inout.model->ncombinations*sizeof(unsigned *));
 
 		 if (p2p_cl_inout.model->combinations)
@@ -908,9 +908,9 @@ protected:
 
 		 p2p_cl_inout.model->combinations[0][0] = 0;
 		 p2p_cl_inout.model->combinations[0][1] = 0;
-		 p2p_cl_inout.model->combinations[0][2] = 0;
+		 p2p_cl_inout.model->combinations[0][2] = 1;
 		 p2p_cl_inout.model->combinations[0][3] = 0;
-		 p2p_cl_inout.model->combinations[0][4] = 1;
+		 p2p_cl_inout.model->combinations[0][4] = 0;
 		 p2p_cl_inout.model->combinations[0][5] = 0;
 		 p2p_cl_inout.model->combinations[0][6] = 0;
 		 p2p_cl_inout.model->combinations[0][7] = 0;
@@ -921,9 +921,9 @@ protected:
 		 p2p_cl_inout.model->combinations[1][1] = 0;
 		 p2p_cl_inout.model->combinations[1][2] = 0;
 		 p2p_cl_inout.model->combinations[1][3] = 0;
-		 p2p_cl_inout.model->combinations[1][4] = 0;
+		 p2p_cl_inout.model->combinations[1][4] = 1;
 		 p2p_cl_inout.model->combinations[1][5] = 0;
-		 p2p_cl_inout.model->combinations[1][6] = 1;
+		 p2p_cl_inout.model->combinations[1][6] = 0;
 		 p2p_cl_inout.model->combinations[1][7] = 0;
 		 p2p_cl_inout.model->combinations[1][8] = 0;
 		 p2p_cl_inout.model->combinations[1][9] = 0;
@@ -933,9 +933,9 @@ protected:
 		 p2p_cl_inout.model->combinations[2][2] = 0;
 		 p2p_cl_inout.model->combinations[2][3] = 0;
 		 p2p_cl_inout.model->combinations[2][4] = 0;
-		 p2p_cl_inout.model->combinations[2][5] = 0;
+		 p2p_cl_inout.model->combinations[2][5] = 1;
 		 p2p_cl_inout.model->combinations[2][6] = 0;
-		 p2p_cl_inout.model->combinations[2][7] = 1;
+		 p2p_cl_inout.model->combinations[2][7] = 0;
 		 p2p_cl_inout.model->combinations[2][8] = 0;
 		 p2p_cl_inout.model->combinations[2][9] = 0;
 
@@ -945,9 +945,9 @@ protected:
 		 p2p_cl_inout.model->combinations[3][3] = 0;
 		 p2p_cl_inout.model->combinations[3][4] = 0;
 		 p2p_cl_inout.model->combinations[3][5] = 0;
-		 p2p_cl_inout.model->combinations[3][6] = 0;
+		 p2p_cl_inout.model->combinations[3][6] = 1;
 		 p2p_cl_inout.model->combinations[3][7] = 0;
-		 p2p_cl_inout.model->combinations[3][8] = 1;
+		 p2p_cl_inout.model->combinations[3][8] = 0;
 		 p2p_cl_inout.model->combinations[3][9] = 0;
 
 		 p2p_cl_inout.model->combinations[4][0] = 0;
@@ -957,9 +957,31 @@ protected:
 		 p2p_cl_inout.model->combinations[4][4] = 0;
 		 p2p_cl_inout.model->combinations[4][5] = 0;
 		 p2p_cl_inout.model->combinations[4][6] = 0;
-		 p2p_cl_inout.model->combinations[4][7] = 0;
+		 p2p_cl_inout.model->combinations[4][7] = 1;
 		 p2p_cl_inout.model->combinations[4][8] = 0;
-		 p2p_cl_inout.model->combinations[4][9] = 1;
+		 p2p_cl_inout.model->combinations[4][9] = 0;
+
+		 p2p_cl_inout.model->combinations[5][0] = 0;
+		 p2p_cl_inout.model->combinations[5][1] = 0;
+		 p2p_cl_inout.model->combinations[5][2] = 0;
+		 p2p_cl_inout.model->combinations[5][3] = 0;
+		 p2p_cl_inout.model->combinations[5][4] = 0;
+		 p2p_cl_inout.model->combinations[5][5] = 0;
+		 p2p_cl_inout.model->combinations[5][6] = 0;
+		 p2p_cl_inout.model->combinations[5][7] = 0;
+		 p2p_cl_inout.model->combinations[5][8] = 1;
+		 p2p_cl_inout.model->combinations[5][9] = 0;
+
+		 p2p_cl_inout.model->combinations[6][0] = 0;
+		 p2p_cl_inout.model->combinations[6][1] = 0;
+		 p2p_cl_inout.model->combinations[6][2] = 0;
+		 p2p_cl_inout.model->combinations[6][3] = 0;
+		 p2p_cl_inout.model->combinations[6][4] = 0;
+		 p2p_cl_inout.model->combinations[6][5] = 0;
+		 p2p_cl_inout.model->combinations[6][6] = 0;
+		 p2p_cl_inout.model->combinations[6][7] = 0;
+		 p2p_cl_inout.model->combinations[6][8] = 0;
+		 p2p_cl_inout.model->combinations[6][9] = 1;
 
 	/* ############################################ */
         memset(&m2l_cl_in, 0, sizeof(m2l_cl_in));
