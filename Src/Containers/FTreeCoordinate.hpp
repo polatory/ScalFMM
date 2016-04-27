@@ -37,14 +37,16 @@
 class FTreeCoordinate : public FAbstractSerializable, public FPoint<int, 3> {
 private:
     using point_t = FPoint<int, 3>;
+    enum {Dim = point_t::Dim};
 
 public:
     /** Default constructor (position = {0,0,0})*/
     FTreeCoordinate(): point_t() {}
 
     /** Constructor from Morton index */
-    explicit FTreeCoordinate(const MortonIndex mindex, const int indexLevel) {
-        setPositionFromMorton(mindex, indexLevel);
+    [[gnu::deprecated]]
+    explicit FTreeCoordinate(const MortonIndex mindex, const int) {
+        setPositionFromMorton(mindex);
     }
 
     explicit FTreeCoordinate(const MortonIndex mindex) {
@@ -66,11 +68,8 @@ public:
 
     /**
     * Copy constructor
-    * @param other the source class to copy
     */
-    FTreeCoordinate(const FTreeCoordinate& other)
-        : point_t(other)
-    {}
+    FTreeCoordinate(const FTreeCoordinate&) = default;
 
     /** Copy and increment constructor
      * @param other the source class to copy
@@ -84,9 +83,11 @@ public:
     * @param other the source class to copy
     * @return this a reference to the current object
     */
-    FTreeCoordinate& operator=(const FTreeCoordinate& other){
-        point_t::operator=(other);
-        return *this;
+    FTreeCoordinate& operator=(const FTreeCoordinate& other) = default;
+
+    [[gnu::deprecated]]
+    MortonIndex getMortonIndex(const int /*inLevel*/) const {
+        return getMortonIndex();
     }
 
 
@@ -96,15 +97,18 @@ public:
     * @param inLevel the level of the component
     * @return morton index
     */
-    MortonIndex getMortonIndex(const int inLevel) const{
+    MortonIndex getMortonIndex() const{
         MortonIndex index = 0x0LL;
         MortonIndex mask = 0x1LL;
-        // the ordre is xyz.xyz...
+        // the order is xyz.xyz...
         MortonIndex mx = point_t::data()[0] << 2;
         MortonIndex my = point_t::data()[1] << 1;
         MortonIndex mz = point_t::data()[2];
 
-        for(int indexLevel = 0; indexLevel < inLevel ; ++indexLevel){
+        while( (mask <= mz)
+               || ((mask << 1) <= my)
+               || ((mask << 2) <= mx))
+        {
             index |= (mz & mask);
             mask <<= 1;
             index |= (my & mask);
@@ -120,14 +124,14 @@ public:
         return index;
     }
 
-    /** This function set the position of the current object using a morton index
-          * @param inIndex the morton index to compute position
-          * @param unused the level of the morton index
-          */
+    [[gnu::deprecated]]
     void setPositionFromMorton(MortonIndex inIndex, const int /*inLevel*/){
         setPositionFromMorton(inIndex);
     }
 
+    /** This function set the position of the current object using a morton index
+     * @param inIndex the morton index to compute position
+     */
     void setPositionFromMorton(MortonIndex inIndex) {
         MortonIndex mask = 0x1LL;
 
@@ -135,7 +139,7 @@ public:
         point_t::data()[1] = 0;
         point_t::data()[2] = 0;
 
-        while(inIndex != 0) {
+        while(inIndex >= mask) {
             point_t::data()[2] |= int(inIndex & mask);
             inIndex >>= 1;
             point_t::data()[1] |= int(inIndex & mask);
@@ -207,7 +211,7 @@ public:
                     // if we are not on the current cell
                     if( idxX || idxY || idxZ ){
                         const FTreeCoordinate other(this->getX() + idxX, this->getY() + idxY, this->getZ() + idxZ);
-                        indexes[ idxNeig ] = other.getMortonIndex(OctreeHeight - 1);
+                        indexes[ idxNeig ] = other.getMortonIndex();
                         if(indexInArray)
                             indexInArray[ idxNeig ] = ((idxX+1)*3 + (idxY+1)) * 3 + (idxZ+1);
                         ++idxNeig;
@@ -244,7 +248,7 @@ public:
                     // if we are not on the current cell
                     if(neighSeparation<1 || idxX || idxY || idxZ ){
                         const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
-                        const MortonIndex mortonOther = otherParent.getMortonIndex(inLevel-1);
+                        const MortonIndex mortonOther = otherParent.getMortonIndex();
 
                         // For each child
                         for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
