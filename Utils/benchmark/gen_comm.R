@@ -1,0 +1,43 @@
+library(plyr)
+library(ggplot2)
+
+gen_comm_plot <- function(db, d_breaks, model_wanted)
+{
+	db <- subset(db, model == model_wanted)
+
+    g <- ggplot(data=db,aes_string(x="nnode", y="communication_vol", color="algo"))
+    g <- g + geom_line()
+    g <- g + facet_wrap(npart ~ height, scales="free",
+                        labeller = labeller(npart = as_labeller(npart_labeller),
+                                            height = as_labeller(height_labeller),
+                                            .default=label_both,
+                                            .multi_line=FALSE))
+
+    # Set our own colors, linetypes and point shapes.
+    g <- g + scale_color_manual(name="Algorithm",
+                                breaks=get_breaks_runtime(),
+                                labels=get_labels_runtime(),
+                                values=get_colors_runtime())
+
+    # Set X/Y labels.
+    g <- g + xlab("Number of nodes")
+    g <- g + ylab("Volume of Communication (MB)")
+
+    g <- g + scale_x_continuous(breaks=c(1, 2, 3, 4, 5, 6, 9, 12, 16, 20, 24))
+
+    # Save generated plot.
+	output <- paste(get_output_directory(), "/", model_wanted, "-comm.pdf", sep="")
+    ggsave(output, g, width=29.7, height=21, units=c("cm"), device=cairo_pdf)
+}
+
+gen_comm <- function(dbfile)
+{
+    data <- get_data_subset(dbfile, 0L, 0L, "False")
+	data <- subset(data, algo != get_one_node_reference_algorithm())
+	all_model <- unique(data$model)
+	for (i in 1:length(all_model))
+	{
+		gen_comm_plot(data, unique(data$algo), all_model[i])
+	}
+}
+

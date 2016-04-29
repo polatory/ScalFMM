@@ -15,6 +15,7 @@ get_data_subset <- function(f, n, h, p)
 		"numeric",	# idle_time
 		"numeric",	# scheduling_time
 		"numeric",	# communuication_time
+		"numeric",	# communuication_vol
 		"numeric"	# rmen
 		))
 
@@ -26,50 +27,6 @@ get_data_subset <- function(f, n, h, p)
         d <- subset(d, npart == n)
     if (h)
         d <- subset(d, height == h)
-
-    return (d)
-}
-get_db_with_time <- function(f, s, n, h, m)
-{
-    d <- read.csv(file=f,comment.char = "#", sep=",", quote = "\"", head=TRUE,
-                  dec=".", colClasses=
-	    c("integer",	# nthreads
-		"factor",	# name
-		"factor",	# scheme
-                "factor",	# compiler
-		"factor",	# runtime
-		"factor",	# model
-		"integer",	# npart
-		"integer",	# height
-		"integer",	# bsize
-                "integer",      # niter
-		"numeric",	# time
-                "integer"       # rmem
-		))
-
-    d$npart     <- ordered(d$npart)
-    d$height    <- ordered(d$height)
-    d$bsize     <- ordered(d$bsize)
-
-    d <- subset(d, scheme %in% s)
-    if (n)
-        d <- subset(d, npart == n)
-    if (h)
-        d <- subset(d, height == h)
-    d <- subset(d, model == m)
-
-    d <- within(d, "compiler_runtime" <- paste(compiler, runtime, sep='-'))
-
-    names <- c(
-        'GCC-OMP4',
-        'Klang',
-        'Klang-C',
-        'Klang-CP',
-        'StarPU',
-        'StarPU-C',
-        'StarPU-CP'
-    )
-    d <- subset(d, name %in% names)
 
     return (d)
 }

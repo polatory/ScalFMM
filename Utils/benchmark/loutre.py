@@ -8,6 +8,7 @@ import socket
 import subprocess
 import re
 import types
+import glob
 
 class ScalFMMConfig(object):
     num_threads    = 1
@@ -44,6 +45,7 @@ class ScalFMMConfig(object):
             "idle_time",
             "scheduling_time",
             "communication_time",
+            "communication_vol",
             "rmem",
         ]
         header = ""
@@ -54,8 +56,28 @@ class ScalFMMConfig(object):
         header += "\n"
         return header
 
+    def gen_header_gantt(self):
+        columns = [
+            "model",
+            "algo",
+            "nnode",
+            "nthreads",
+            "npart",
+            "height",
+            "bsize",
+            "filename",
+            "start_profiling",
+            "stop_profiling",
+        ]
+        header = ""
+        for i in range(len(columns)):
+            if not i == 0:
+                header += ","
+            header += "\"" + columns[i] + "\""
+        header += "\n"
+        return header
 
-    def gen_record(self, global_time, runtime_time, task_time, idle_time, scheduling_time, communication_time, rmem):
+    def gen_record(self, global_time, runtime_time, task_time, idle_time, scheduling_time, communication_time, communication_vol, rmem):
         columns = [
             self.model,
             self.algorithm,
@@ -70,7 +92,35 @@ class ScalFMMConfig(object):
             idle_time,
             scheduling_time,
             communication_time,
+            communication_vol,
             rmem,
+        ]
+        record = ""
+        for i in range(len(columns)):
+            if not i == 0:
+                record += ","
+            if (type(columns[i]) is bool or
+                type(columns[i]) == str):
+                record += "\""
+            record += str(columns[i])
+            if (type(columns[i]) == bool or
+                type(columns[i]) == str):
+                record += "\""
+        record += "\n"
+        return record
+
+    def gen_record_gantt(self, filename, start_profiling, stop_profiling):
+        columns = [
+            self.model,
+            self.algorithm,
+            self.num_nodes,
+            self.num_threads,
+            self.num_particules,
+            self.height,
+            self.bloc_size,
+            filename,
+            start_profiling,
+            stop_profiling,
         ]
         record = ""
         for i in range(len(columns)):
@@ -105,27 +155,81 @@ def get_times_from_trace_file(filename):
         if len(arr) >= 4:
             if arr[2] == "Runtime":
                 if arr[0] == "Scheduling":
-                    scheduling_time = float(arr[3])
+                    scheduling_time += float(arr[3])
                 else:
-                    runtime_time = float(arr[3])
+                    runtime_time += float(arr[3])
             elif arr[2] == "Task":
                 task_time += float(arr[3])
             elif arr[2] == "Other":
-                idle_time = float(arr[3])
+                idle_time += float(arr[3])
+            elif arr[2] == "MPI":
+                communication_time += float(arr[3])
+            elif arr[2] == "User":
+                if arr[0] == "Decoding task for MPI":
+                    communication_time += float(arr[3])
+                elif arr[0] == "Preparing task for MPI":
+                    communication_time += float(arr[3])
+                elif arr[0] == "Post-processing task for MPI":
+                    communication_time += float(arr[3])
+                else:
+                    runtime_time += float(arr[3])
+            else:
+                print("Error type " + arr[2])
             # sys.exit("Invalid time!")
     return runtime_time, task_time, idle_time, scheduling_time, communication_time
+
+def generate_gantt(config, gantt_filename, initial_dir):
+    if (os.path.isfile(gantt_filename)):
+        gantt_file = open(gantt_filename, "a")
+    else:
+        gantt_file = open(gantt_filename, "w")
+        gantt_file.write(config.gen_header_gantt())
+    csv_paje_filename = initial_dir + "/paje.csv"
+    simple_paje_filename = initial_dir + "/paje.trace"
+
+    #Get start profiling time
+    cmd = "grep start_profiling " + simple_paje_filename
+    proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
+    stdout, stderr = proc.communicate()
+    if not proc.returncode == 0:
+        sys.exit("FATAL: Failed to parse " + simple_paje_filename + "!")
+        return proc.returncode
+    start_profiling = float("inf")
+    for line in stdout.decode().splitlines():
+        arr = line.split()
+        start_marker = float(arr[1])
+        if(start_marker < start_profiling):
+            start_profiling = start_marker
+    
+    #Get stop profiling time
+    cmd = "grep stop_profiling " + simple_paje_filename
+    proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
+    stdout, stderr = proc.communicate()
+    if not proc.returncode == 0:
+        sys.exit("FATAL: Failed to parse " + simple_paje_filename + "!")
+        return proc.returncode
+    stop_profiling = 0.0
+    for line in stdout.decode().splitlines():
+        arr = line.split()
+        stop_marker = float(arr[1])
+        if(stop_marker > stop_profiling):
+            stop_profiling = stop_marker
+
+    gantt_file.write(config.gen_record_gantt(csv_paje_filename, start_profiling, stop_profiling))
 
 def main():
     output_trace_file=""
     trace_filename="trace.rec"
     output_filename="loutre.db"
+    gantt_database=""
 
     long_opts = ["help",
                  "trace-file=",
                  "output-trace-file=",
+                 "gantt-database=",
                  "output-file="]
 
-    opts, args = getopt.getopt(sys.argv[1:], "ht:i:o:", long_opts)
+    opts, args = getopt.getopt(sys.argv[1:], "ht:i:o:g:", long_opts)
     for o, a in opts:
         if o in ("-h", "--help"):
             # usage()
@@ -137,6 +241,8 @@ def main():
             output_trace_file = str(a)
         elif o in ("-o", "--output-file"):
             output_filename = str(a)
+        elif o in ("-g", "--gantt-database"):
+            gantt_database = str(a)
         else:
             assert False, "unhandled option"
 
@@ -147,6 +253,8 @@ def main():
     task_time = 0.0
     idle_time = 0.0
     scheduling_time = 0.0
+    communication_time = 0.0
+    communication_vol = 0.0
 
     if (os.path.isfile(output_filename)): #Time in milli
         output_file = open(output_filename, "a")
@@ -184,16 +292,26 @@ def main():
                 config.model = line[line.index(":")+1:].strip()
             elif re.search("Algorithm", line):
                 config.algorithm = line[line.index(":")+1:].strip()
+            elif re.search("TOTAL", line) and re.search("starpu_comm_stats", line):
+                a = re.findall("(\d*\.\d+|\d+).MB", line)
+                if len(a) == 1:
+                    communication_vol += float(a[0])
+                
+    if(gantt_database != ""):
+        generate_gantt(config, gantt_database, os.path.dirname(trace_filename))
 
+    print("Generating time ...")
     if (os.path.isfile(trace_filename)): #Time in milli
         runtime_time, task_time, idle_time, scheduling_time, communication_time = get_times_from_trace_file(trace_filename)
     else:
         print("File doesn't exist " + trace_filename)
+
     sum_time = (runtime_time + task_time + scheduling_time + communication_time)/(config.num_nodes*config.num_threads)
     diff_time = float('%.2f'%(abs(global_time-sum_time)/global_time))
 
     if diff_time > 0.01:   
         print('\033[31m/!\\Timing Error of ' + str(diff_time) + '\033[39m')
+        print('\033[31m Global ' + str(global_time) + ' Sum ' + str(sum_time) + '\033[39m')
 
     # Write a record to the output file.
     output_file.write(config.gen_record(global_time,
@@ -202,6 +320,7 @@ def main():
                       float(idle_time),
                       float(scheduling_time),
                       float(communication_time),
+                      float(communication_vol),
                       int(rmem)))
 
 main()

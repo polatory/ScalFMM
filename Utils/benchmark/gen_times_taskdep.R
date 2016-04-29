@@ -8,6 +8,7 @@ gen_times_taskdep_plot <- function(data, algo_wanted, model_wanted)
     # Sort data to have task, runtime and idle.
 	subdata <- subset(data, model == model_wanted & algo == algo_wanted)
 	subdata$rmem <- NULL
+	subdata$communication_vol <- NULL
 	subdata$global_time <- NULL
 	subdata <- melt(subdata, id=c("model", "algo", "nnode", "nthreads", "npart","height","bsize"))
 	subdata <- rename(subdata, c("variable"="event", "value"="duration"))
