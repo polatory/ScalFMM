@@ -11,14 +11,8 @@
 #SBATCH -e starpu_50M_%j.err
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT --mail-user=martin.khannouz@inria.fr
 ## modules to load for the job
-module purge
-module load slurm
-module add compiler/gcc/5.3.0 tools/module_cat/1.0.0 intel/mkl/64/11.2/2016.0.0
-. /home/mkhannou/spack/share/spack/setup-env.sh
-spack load fftw
-spack load hwloc
-spack load openmpi
-spack load starpu@svn-trunk+fxt
+source $HOME/env.sh
+
 ##Setting variable for the job
 export GROUP_SIZE=500
 export TREE_HEIGHT=8
@@ -27,8 +21,10 @@ export STARPU_NCPU=24
 export NB_PARTICLE_PER_NODE=50000000
 export STARPU_FXT_PREFIX=$SLURM_JOB_ID
 export FINAL_DIR="`pwd`/dir_$SLURM_JOB_ID"
+export STARPU_WATCHDOG_TIMEOUT=20000000
+export STARPU_WATCHDOG_CRASH=1
 mkdir $FINAL_DIR
-$NUMACTL=numactl --interleave=all
+NUMACTL="numactl --interleave=all"
 
 ## Write data into an stdout file
 echo "my jobID: " $SLURM_JOB_ID > $FINAL_DIR/stdout
