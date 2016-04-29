@@ -117,7 +117,9 @@ It also create a DAG from which interesting property can be used to prove intere
 * Setup
 ** Installing
 *** FxT
-Installing Fxt for debbuging StarPU:
+StarPU can use the FxT library to generate traces to help in identifying bottlenecks and to compute different runtime metrics.
+
+To installing Fxt:
 #+begin_src
 wget http://download.savannah.gnu.org/releases/fkt/fxt-0.2.11.tar.gz
 tar xf fxt-0.2.11.tar.gz
@@ -133,12 +135,12 @@ For more information, check [[http://starpu.gforge.inria.fr/doc/html/OfflinePerf
 
 *** starpu
 Then, install starpu and its dependancy.
-You may have to install /hwloc/ package with your favorite package manager.
+It is recommended to install hwloc. Please refer to your package manager, or
+follow the installation guide from [[https://www.open-mpi.org/projects/hwloc/][here]].
 #+begin_src
 svn checkout svn://scm.gforge.inria.fr/svn/starpu/trunk StarPU
 cd StarPU
 ./autogen.sh
-mkdir install
 ./configure --prefix=$STARPU_INSTALL_DIR \
       --disable-cuda \
       --disable-opencl \
@@ -153,22 +155,26 @@ mkdir install
       --disable-build-examples \
       --disable-starpufft \
       --disable-allocation-cache
-./configure --prefix=$PWD/install --with-fxt
 make
 make install
 #+end_src
 
 Remember to set /STARPU_INSTALL_DIR/.
 
-This are envirronement variable that might be useful to set. But of course, be smart and replace the path in STARPU_DIR by your path.
+If you are on Debian or Debian like distribution, simpler way to install StarPU are described [[http://starpu.gforge.inria.fr/doc/html/BuildingAndInstallingStarPU.html][here]].
+This package may not be the very last release and some feature may not be
+available.
+For now, Scalfmm require the trunk version.
+
+**** Set up environment
+This are envirronement variable that might be useful to set.
 #+begin_src
 export PKG_CONFIG_PATH=$FXT_INSTALL_DIR/lib/pkgconfig:$PKG_CONFIG_PATH
 export PKG_CONFIG_PATH=$STARPU_INSTALL_DIR/lib/pkgconfig:$PKG_CONFIG_PATH
 export LD_LIBRARY_PATH=$STARPU_INSTALL_DIR/lib:$LD_LIBRARY_PATH
 export PATH=$PATH:$STARPU_INSTALL_DIR/bin
+export STARPU_DIR=$STARPU_INSTALL_DIR
 #+end_src
-
-If you are on Debian or Debian like distribution, simpler way to install StarPU are described [[http://starpu.gforge.inria.fr/doc/html/BuildingAndInstallingStarPU.html][here]].
 
 *** Scalfmm
 Finally, install Scalfmm:
@@ -446,6 +452,7 @@ One node has 2 Dodeca-core Haswell Intel® Xeon® E5-2680, 2,5GHz, 128Go de RAM 
      of node and the StarPU algorithm (without any MPI communication) only
      run on one node.
 *** Measurement
+<<sec:measurement>>
     To compute the execution time and make sure each algorithm has the way to
     compute it we do it like the following:
 
@@ -470,6 +477,26 @@ timer.tac();
     on one node, there is no need to add MPI barrier to correctly measure its
     execution time.
 
+*** One percent checking
+    The one percent checking is a check made while running the post
+    traitements. It aim to measure the correctness of our time measurement.
+
+    It is compute by the following python script where
+    /config.num_nodes/ is the number of MPI node and /config.num_threads/ the
+    number of threads by MPI node.
+
+#+begin_src src python
+sum_time = (runtime_time + task_time + scheduling_time + communication_time)/(config.num_nodes*config.num_threads)
+diff_time = float('%.2f'%(abs(global_time-sum_time)/global_time))
+
+if diff_time > 0.01:   
+  print('/!\\Timing Error of ' + str(diff_time))
+#+end_src
+
+    Note that /runtime_time/, /task_time/, scheduling_time/ and
+    /communication_time/ are computed from the execution traces and
+    /global_time/ is computed during the running time as explain in section
+    [[sec:measurement]].
 
 *** Scripts and jobs
 <<sec:result>>
@@ -477,7 +504,7 @@ The scripts of the jobs for StarPU on a single node:
 #+include: "~/scalfmm/jobs/starpu_chebyshev.sh" src sh
 
 The scripts of the jobs for StarPU with implicit mpi on 10 nodes:
-#+include: "~/scalfmm/jobs/implicit_10N_chebyshev.sh" src sh
+#+include: "~/scalfmm/jobs/implicit_chebyshev.sh" src sh
 
     The results are stored into one directories at ~/scalfmm/jobs_results on
     plafrim. They need to be downloaded and aggregated.
@@ -488,9 +515,20 @@ The scripts of the jobs for StarPU with implicit mpi on 10 nodes:
 #+include: "~/scalfmm/Utils/benchmark/loutre.py" src python
 
 *** Display
+**** General
 #+CAPTION: Cube speedup ([[./output/cube-speedup.pdf][pdf]]).
 [[./output/cube-speedup.png]]
 
+#+CAPTION:  Normalized time on cube ([[./output/cube-normalized-time.pdf][pdf]]).
+[[./output/cube-normalized-time.png]]
+
+#+CAPTION:  Parallel efficiency on cube ([[./output/cube-parallel-efficiency.pdf][pdf]]).
+[[./output/cube-parallel-efficiency.png]]
+
+#+CAPTION:  Communication volume ([[./output/cube-comm.pdf][pdf]]).
+[[./output/cube-comm.png]]
+
+**** Individual time
 #+CAPTION: Implicit time on cube ([[./output/cube-implicit-times.pdf][pdf]]).
 [[./output/cube-implicit-times.png]]
 
@@ -500,11 +538,28 @@ The scripts of the jobs for StarPU with implicit mpi on 10 nodes:
 #+CAPTION: StarPU single node time on cube ([[./output/cube-starpu-times.pdf][pdf]]).
 [[./output/cube-starpu-times.png]]
 
-#+CAPTION:  Normalized time on cube ([[./output/cube-normalized-time.pdf][pdf]]).
-[[./output/cube-normalized-time.png]]
+**** Individual Efficiencies
+#+CAPTION:  Implicit efficiencies ([[./output/cube-implicit-efficiencies.pdf][pdf]]).
+[[./output/cube-implicit-efficiencies.png]]
 
-#+CAPTION:  Parallel efficiency on cube ([[./output/cube-parallel-efficiency.pdf][pdf]]).
-[[./output/cube-parallel-efficiency.png]]
+#+CAPTION:  Explicit efficiencies ([[./output/cube-explicit-efficiencies.pdf][pdf]]).
+[[./output/cube-explicit-efficiencies.png]]
+
+**** Gantt
+#+CAPTION:  Implicit gantt 10 nodes ([[./output/cube-implicit-10N-50M-gantt.pdf][pdf]]).
+[[./output/cube-implicit-10N-50M-gantt.png]]
+
+#+CAPTION:  Explicit gantt 10 nodes ([[./output/cube-explicit-10N-50M-gantt.pdf][pdf]]).
+[[./output/cube-explicit-10N-50M-gantt.png]]
+
+#+CAPTION:  Vite view.
+[[./figure/narva_full.png]]
+
+#+CAPTION:  Implicit gantt 4 nodes ([[./output/cube-implicit-4N-50M-gantt.pdf][pdf]]).
+[[./output/cube-implicit-4N-50M-gantt.png]]
+
+#+CAPTION:  Explicit gantt 4 nodes ([[./output/cube-explicit-4N-50M-gantt.pdf][pdf]]).
+[[./output/cube-explicit-4N-50M-gantt.png]]
 
 * Journal
 ** Implémentation mpi implicite très naïve
@@ -638,13 +693,14 @@ Mais c'est données n'impliquent pas de forcément des transitions de données m
 - Symétriser l'algorithme implicite au niveau des P2P
 - Modifier les jobs pour qu'il utilisent la même graine et générent le même ensemble de particules
 - Post traiter les traces d'une exécution pour créer des graphiques.
-      - Exploiter les scripts de Samuel
+      - Exploiter les scripts de Samuel (Efficiencies, time, ...)
+      - Exploiter les scripts de Luka (Gantt)
+      - Script pour les volumes de communication
 - Création du "pipeline" pour générer les graphiques
       - Script pour envoyer sur plafrim
       - Script pour soummettre tous les jobs
       - Script pour aggréger les résultats et générer les graphiques
       - Test du pipeline (un peu lent)
-
 
 ** Et après ?
 - Comparaison des performances
