@@ -65,9 +65,11 @@ using namespace std;
 #else
 	typedef FFmaGenericLoader<FReal> LoaderClass;
 #endif
+
 void timeAverage(int mpi_rank, int nproc, double elapsedTime);
 void sortParticle(FPoint<FReal> * allParticlesToSort, int treeHeight, int groupSize, vector<vector<int>> & sizeForEachGroup, vector<MortonIndex> & distributedMortonIndex, LoaderClass& loader, int nproc);
 void createNodeRepartition(std::vector<MortonIndex> distributedMortonIndex, std::vector<std::vector<std::vector<MortonIndex>>>& nodeRepartition, int nproc, int treeHeight);
+FSize getNbParticlesPerNode(FSize mpi_count, FSize mpi_rank, FSize total);
 
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize {
@@ -101,18 +103,23 @@ int main(int argc, char* argv[]){
 	const FSize NbParticles   = loader.getNumberOfParticles();
 #endif
 
-	FPoint<FReal> * allParticlesToSort = new FPoint<FReal>[NbParticles*mpiComm.global().processCount()];
+	FPoint<FReal> * allParticlesToSort = new FPoint<FReal>[NbParticles];
 
 	//Fill particles
 #ifndef LOAD_FILE
-	for(int i = 0; i < mpiComm.global().processCount(); ++i){
-		LoaderClass loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), i);
-		FAssertLF(loader.isOpen());
-		for(FSize idxPart = 0 ; idxPart < NbParticles ; ++idxPart){
-			loader.fillParticle(&allParticlesToSort[(NbParticles*i) + idxPart]);//Same with file or not
+	{
+		FSize idxPart = 0;
+		for(int i = 0; i < mpiComm.global().processCount(); ++i){
+			FSize NbParticlesPerNode = getNbParticlesPerNode(nproc, i, NbParticles);
+			LoaderClass loader(NbParticlesPerNode, 1.0, FPoint<FReal>(0,0,0), i);
+			FAssertLF(loader.isOpen());
+			for(FSize j= 0 ; j < NbParticlesPerNode ; ++j){
+				loader.fillParticle(&allParticlesToSort[idxPart]);//Same with file or not
+				++idxPart;
+			}
 		}
 	}
-	LoaderClass loader(NbParticles*mpiComm.global().processCount(), 1.0, FPoint<FReal>(0,0,0));
+	LoaderClass loader(NbParticles, 1.0, FPoint<FReal>(0,0,0));
 #else
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         loader.fillParticle(&allParticlesToSort[idxPart]);//Same with file or not
@@ -412,5 +419,11 @@ void createNodeRepartition(std::vector<MortonIndex> distributedMortonIndex, std:
 			nodeRepartition[idxLevel][node_id][1] = nodeRepartition[idxLevel+1][node_id][1] >> 3;
 		}
 	}
+}
+
+FSize getNbParticlesPerNode(FSize mpi_count, FSize mpi_rank, FSize total){
+	if(mpi_rank < (total%mpi_count))
+		return ((total - (total%mpi_count))/mpi_count)+1;
+	return ((total - (total%mpi_count))/mpi_count);
 }
 

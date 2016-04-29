@@ -50,6 +50,7 @@
 #include <memory>
 
 void timeAverage(int mpi_rank, int nproc, double elapsedTime);
+FSize getNbParticlesPerNode(FSize mpi_count, FSize mpi_rank, FSize total);
 
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
@@ -85,8 +86,8 @@ int main(int argc, char* argv[]){
 
     const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
-    const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
-    const FSize totalNbParticles = (NbParticles*mpiComm.global().processCount());
+    const FSize totalNbParticles = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
+    const FSize NbParticles   = getNbParticlesPerNode(mpiComm.global().processCount(), mpiComm.global().processId(), totalNbParticles);
 
     // init particles position and physical value
     struct TestParticle{
@@ -310,4 +311,9 @@ void timeAverage(int mpi_rank, int nproc, double elapsedTime)
 		MPI_Send(&elapsedTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
+}
+FSize getNbParticlesPerNode(FSize mpi_count, FSize mpi_rank, FSize total){
+	if(mpi_rank < (total%mpi_count))
+		return ((total - (total%mpi_count))/mpi_count)+1;
+	return ((total - (total%mpi_count))/mpi_count);
 }

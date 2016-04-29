@@ -47,6 +47,7 @@
 #include <fstream>
 
 void timeAverage(int mpi_rank, int nproc, double elapsedTime);
+FSize getNbParticlesPerNode(FSize mpi_count, FSize mpi_rank, FSize total);
 
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize {
@@ -75,9 +76,9 @@ int main(int argc, char* argv[]){
     FMpi mpiComm(argc, argv);
     // Get params
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
-    const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
     const int groupSize      = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 8);
-    const FSize totalNbParticles = (NbParticles*mpiComm.global().processCount());
+    const FSize totalNbParticles = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
+    const FSize NbParticles   = getNbParticlesPerNode(mpiComm.global().processCount(), mpiComm.global().processId(), totalNbParticles);
     // Load the particles
     FRandomLoader<FReal> loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), mpiComm.global().processId());
     FAssertLF(loader.isOpen());
@@ -178,7 +179,7 @@ int main(int argc, char* argv[]){
         // Usual octree
         OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());
         for(int idxProc = 0 ; idxProc < mpiComm.global().processCount() ; ++idxProc){
-            FRandomLoader<FReal> loaderAll(NbParticles, 1.0, FPoint<FReal>(0,0,0), idxProc);
+            FRandomLoader<FReal> loaderAll(getNbParticlesPerNode(mpiComm.global().processCount(), idxProc, totalNbParticles), 1.0, FPoint<FReal>(0,0,0), idxProc);
             for(FSize idxPart = 0 ; idxPart < loaderAll.getNumberOfParticles() ; ++idxPart){
                 FPoint<FReal> pos;
 				loaderAll.fillParticle(&pos);
@@ -229,4 +230,9 @@ void timeAverage(int mpi_rank, int nproc, double elapsedTime)
 		MPI_Send(&elapsedTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
 	}
 	MPI_Barrier(MPI_COMM_WORLD);
+}
+FSize getNbParticlesPerNode(FSize mpi_count, FSize mpi_rank, FSize total){
+	if(mpi_rank < (total%mpi_count))
+		return ((total - (total%mpi_count))/mpi_count)+1;
+	return ((total - (total%mpi_count))/mpi_count);
 }
