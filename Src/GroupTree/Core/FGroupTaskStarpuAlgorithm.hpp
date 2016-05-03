@@ -617,7 +617,7 @@ protected:
 		 // Adding multiple regression codelet model for codelet l2l_cl
 		 // Computed from execution:  4 Native execution on miriel
 		 // Adjusted R-squared:  0.999917734903129
-		 l2l_cl.model->ncombinations = 2;
+		 l2l_cl.model->ncombinations = 1;
 		 l2l_cl.model->combinations = (unsigned **) malloc(l2l_cl.model->ncombinations*sizeof(unsigned *));
 
 		 if (l2l_cl.model->combinations)
