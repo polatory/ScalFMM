@@ -631,18 +631,10 @@ protected:
 		 l2l_cl.model->combinations[0][0] = 0;
 		 l2l_cl.model->combinations[0][1] = 0;
 		 l2l_cl.model->combinations[0][2] = 0;
-		 l2l_cl.model->combinations[0][3] = 1;
+		 l2l_cl.model->combinations[0][3] = 0;
 		 l2l_cl.model->combinations[0][4] = 0;
-		 l2l_cl.model->combinations[0][5] = 0;
+		 l2l_cl.model->combinations[0][5] = 1;
 		 l2l_cl.model->combinations[0][6] = 0;
-
-		 l2l_cl.model->combinations[1][0] = 0;
-		 l2l_cl.model->combinations[1][1] = 0;
-		 l2l_cl.model->combinations[1][2] = 0;
-		 l2l_cl.model->combinations[1][3] = 0;
-		 l2l_cl.model->combinations[1][4] = 0;
-		 l2l_cl.model->combinations[1][5] = 1;
-		 l2l_cl.model->combinations[1][6] = 0;
 
 	/* ############################################ */
         memset(&l2l_cl_nocommute, 0, sizeof(l2l_cl_nocommute));
