@@ -506,7 +506,7 @@ struct RunContainer{
                         time.tac();
 #if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
                         starpu_fxt_stop_profiling();
-
+#endif
                         std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
                     }
                     else if(FParameters::existParameter(argc, argv, LocalOptionOmpTask.options)){
