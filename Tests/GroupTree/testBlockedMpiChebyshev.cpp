@@ -202,7 +202,12 @@ int main(int argc, char* argv[]){
         MatrixKernelClass MatrixKernel;
         KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
         FmmClass algorithm(mpiComm.global(),&treeCheck, &kernels);
+		mpiComm.global().barrier();
+        timer.tic();
         algorithm.execute();
+		mpiComm.global().barrier();
+        timer.tac();
+		timeAverage(mpiComm.global().processId(), mpiComm.global().processCount(), timer.elapsed());
         //std::cout << "Algo is over" << std::endl;
 
         groupedTree.forEachCellWithLevel([&](GroupCellClass gcell, const int level){

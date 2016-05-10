@@ -5,6 +5,7 @@
 ## Resources: (nodes, procs, tasks, walltime, ... etc)
 #SBATCH -c 24
 #SBATCH --time=00:30:00
+#SBATCH --exclusive
 # # output error message
 #SBATCH -e explicit_%j.err
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT --mail-user=martin.khannouz@inria.fr
@@ -12,7 +13,6 @@
 source $HOME/env.sh
 
 ## variable for the job
-export GROUP_SIZE=500
 export TREE_HEIGHT=8
 export NB_NODE=$SLURM_JOB_NUM_NODES
 export STARPU_NCPU=24
@@ -31,7 +31,7 @@ echo "Tree height: " $TREE_HEIGHT >> $FINAL_DIR/stdout
 echo "Group size: " $GROUP_SIZE >> $FINAL_DIR/stdout
 echo "Algorithm: explicit" >> $FINAL_DIR/stdout
 echo "Total particles: " $NB_PARTICLE >> $FINAL_DIR/stdout
-mpiexec -n $NB_NODE $NUMACTL ./Build/Tests/Release/testBlockedMpiChebyshev -nb $NB_PARTICLE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation >> $FINAL_DIR/stdout 2>&1
+mpiexec -n $NB_NODE $NUMACTL ./Build/Tests/Release/testBlockedMpiChebyshev -nb $NB_PARTICLE -bs $GROUP_SIZE -h $TREE_HEIGHT >> $FINAL_DIR/stdout 2>&1
 
 #Create argument list for starpu_fxt_tool
 cd $FINAL_DIR

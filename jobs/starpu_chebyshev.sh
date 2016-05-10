@@ -7,6 +7,7 @@
 #SBATCH -N 1
 #SBATCH -c 24
 #SBATCH --time=02:00:00
+#SBATCH --exclusive
 # # output error message
 #SBATCH -e starpu_50M_%j.err
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT --mail-user=martin.khannouz@inria.fr
@@ -14,7 +15,6 @@
 source $HOME/env.sh
 
 ##Setting variable for the job
-export GROUP_SIZE=500
 export TREE_HEIGHT=8
 export NB_NODE=$SLURM_JOB_NUM_NODES
 export STARPU_NCPU=24

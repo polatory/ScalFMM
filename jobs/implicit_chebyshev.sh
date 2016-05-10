@@ -5,6 +5,7 @@
 ## Resources: (nodes, procs, tasks, walltime, ... etc)
 #SBATCH -c 24
 #SBATCH --time=00:30:00
+#SBATCH --exclusive
 # # output error message
 #SBATCH -e implicit_%j.err
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT --mail-user=martin.khannouz@inria.fr
@@ -12,7 +13,6 @@
 source $HOME/env.sh
 
 ## variable for the job
-export GROUP_SIZE=500
 export TREE_HEIGHT=8
 export NB_NODE=$SLURM_JOB_NUM_NODES
 export STARPU_NCPU=24
