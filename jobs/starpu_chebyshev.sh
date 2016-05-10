@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 ## name of job
 #SBATCH -J starpu_50M
-## Queue where the job is executed
 #SBATCH -p defq
 ## Resources: (nodes, procs, tasks, walltime, ... etc)
 #SBATCH -N 1
@@ -15,6 +14,7 @@
 source $HOME/env.sh
 
 ##Setting variable for the job
+export GROUP_SIZE=2000
 export TREE_HEIGHT=8
 export NB_NODE=$SLURM_JOB_NUM_NODES
 export STARPU_NCPU=24

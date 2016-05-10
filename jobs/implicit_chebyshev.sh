@@ -4,7 +4,7 @@
 #SBATCH -p special
 ## Resources: (nodes, procs, tasks, walltime, ... etc)
 #SBATCH -c 24
-#SBATCH --time=00:30:00
+#SBATCH --time=0-00:30:00
 #SBATCH --exclusive
 # # output error message
 #SBATCH -e implicit_%j.err
@@ -20,7 +20,10 @@ export STARPU_FXT_PREFIX=$SLURM_JOB_ID
 export FINAL_DIR="`pwd`/dir_$SLURM_JOB_ID"
 export STARPU_COMM_STATS=1
 export STARPU_WATCHDOG_TIMEOUT=20000000
-export STARPU_WATCHDOG_CRASH=1
+export STARPU_WATCHDOG_CRASH=0
+export STARPU_GENERATE_TRACE=0
+export STARPU_SILENT=1
+export STARPU_MPI_COMM=1
 NUMACTL="numactl --interleave=all"
 mkdir $FINAL_DIR
 echo "my jobID: " $SLURM_JOB_ID > $FINAL_DIR/stdout
