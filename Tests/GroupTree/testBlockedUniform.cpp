@@ -125,9 +125,13 @@ int main(int argc, char* argv[]){
     GroupKernelClass groupkernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
 
+    // Extended for Native vs SimGrid makespans comparison
     timer.tic();
+    double start_time = starpu_timing_now();
     groupalgo.execute();
+    double end_time = starpu_timing_now();
     std::cout << "Kernel executed in in " << timer.tacAndElapsed() << "s\n";
+    std::cout << (end_time - start_time)/1000 << "\n";
 
     // Validate the result
     if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
