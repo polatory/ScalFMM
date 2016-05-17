@@ -172,13 +172,16 @@ find_package(PkgConfig QUIET)
 if( PKG_CONFIG_EXECUTABLE AND NOT FFTW_GIVEN_BY_USER )
 
   if(FFTW_LOOK_FOR_FFTW_SIMPLE)
-    pkg_search_module(FFTW fftw3f)
+    pkg_search_module(FFTW3F fftw3f)
+    pkg_search_module(FFTW3 fftw3)
   elseif(FFTW_LOOK_FOR_FFTW_LONG)
-    pkg_search_module(FFTW fftw3)
+	pkg_search_module(FFTW3L fftw3l)
+    pkg_search_module(FFTW3 fftw3)
   elseif(FFTW_LOOK_FOR_FFTW_QUAD)
-    pkg_search_module(FFTW fftw3q)
+    pkg_search_module(FFTW3Q fftw3q)
+    pkg_search_module(FFTW3 fftw3)
   else()
-    pkg_search_module(FFTW fftw3)
+    pkg_search_module(FFTW3 fftw3)
   endif()
 
   if (NOT FFTW_FIND_QUIETLY)
@@ -198,7 +201,19 @@ if( PKG_CONFIG_EXECUTABLE AND NOT FFTW_GIVEN_BY_USER )
 
   set(FFTW_INCLUDE_DIRS_DEP "${FFTW_INCLUDE_DIRS}")
   set(FFTW_LIBRARY_DIRS_DEP "${FFTW_LIBRARY_DIRS}")
-  set(FFTW_LIBRARIES_DEP "${FFTW_LIBRARIES}")
+  set(FFTW_LIBRARIES_DEP)
+  if( FFTW3Q_LIBRARIES )
+	list(APPEND FFTW_LIBRARIES_DEP "${FFTW3Q_LIBRARIES}")
+  endif()
+  if( FFTW3L_LIBRARIES )
+	list(APPEND FFTW_LIBRARIES_DEP "${FFTW3L_LIBRARIES}")
+  endif()
+  if( FFTW3F_LIBRARIES )
+	list(APPEND FFTW_LIBRARIES_DEP "${FFTW3F_LIBRARIES}")
+  endif()
+if( FFTW3_LIBRARIES )
+	list(APPEND FFTW_LIBRARIES_DEP "${FFTW3_LIBRARIES}")
+endif()
   set(FFTW_WORKS TRUE)
 
 endif( PKG_CONFIG_EXECUTABLE AND NOT FFTW_GIVEN_BY_USER )
@@ -551,7 +566,13 @@ endif()
 # check that FFTW has been found
 # -------------------------------
 include(FindPackageHandleStandardArgs)
+if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FFTW_FOUND) OR (FFTW_GIVEN_BY_USER) )
 find_package_handle_standard_args(FFTW DEFAULT_MSG
   FFTW_LIBRARIES
   FFTW_INCLUDE_DIRS
   FFTW_WORKS)
+else()
+find_package_handle_standard_args(FFTW DEFAULT_MSG
+  FFTW_LIBRARIES
+  FFTW_WORKS)
+endif()
