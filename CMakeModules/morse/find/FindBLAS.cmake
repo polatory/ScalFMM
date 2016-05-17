@@ -279,6 +279,7 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
             find_library(${_prefix}_${_library}_LIBRARY
                 NAMES ${_library}
                 HINTS ${_libdir}
+                NO_DEFAULT_PATH
               )
             mark_as_advanced(${_prefix}_${_library}_LIBRARY)
             # Print status if not found
@@ -293,6 +294,10 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
 
     if(_libraries_work)
         # Test this combination of libraries.
+        if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND BLA_STATIC)
+            list(INSERT ${LIBRARIES} 0 "-Wl,--start-group")
+            list(APPEND ${LIBRARIES} "-Wl,--end-group")
+        endif()
         set(CMAKE_REQUIRED_LIBRARIES "${_flags};${${LIBRARIES}};${_thread}")
         set(CMAKE_REQUIRED_FLAGS "${BLAS_COMPILER_FLAGS}")
         if (BLAS_VERBOSE)
