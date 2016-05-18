@@ -313,9 +313,13 @@ public:
 
 extern "C" {
 int main(int argc, char* argv[]){
-    const FParameterNames LocalOptionProlateNonUnif { {"-prolate-nonunif"}, "To generate prolate distribution"};
     const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
+    const FParameterNames LocalOptionNonUnif { {"-nonunif"}, "To generate non uniform"};
+    const FParameterNames LocalOptionProlateNonUnif { {"-prolate-nonunif"}, "To generate prolate non unif distribution"};
+    const FParameterNames LocalOptionProlate { {"-prolate"}, "To generate prolate distribution"};
+    const FParameterNames LocalOptionSpherical { {"-spherical"}, "To generate spherical distribution"};
+    const FParameterNames LocalOptionSphericalNonUnif { {"-spherical-nonunif"}, "To generate spherical non unif distribution"};
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight,
 #ifdef RANDOM_PARTICLES
@@ -324,7 +328,8 @@ int main(int argc, char* argv[]){
                          FParameterDefinitions::InputFile,
 #endif
                          FParameterDefinitions::NbThreads,
-                         LocalOptionProlateNonUnif,
+                         LocalOptionProlateNonUnif, LocalOptionProlate,
+                         LocalOptionSpherical, LocalOptionSphericalNonUnif,LocalOptionNonUnif,
                          LocalOptionBlocSize, LocalOptionNoValidate);
 
     // Initialize the types
@@ -360,9 +365,13 @@ int main(int argc, char* argv[]){
 
     // Load the particles
 #ifdef RANDOM_PARTICLES
+    const bool prolate = FParameters::existParameter(argc,argv,LocalOptionProlate.options);
     const bool prolatenonunif = FParameters::existParameter(argc,argv,LocalOptionProlateNonUnif.options);
+    const bool spherical = FParameters::existParameter(argc,argv,LocalOptionSpherical.options);
+    const bool sphericalnonunif = FParameters::existParameter(argc,argv,LocalOptionSphericalNonUnif.options);
+    const bool nonunif = FParameters::existParameter(argc,argv,LocalOptionNonUnif.options);
     FSphericalRandomLoader<FReal> loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000),
-                                  false, false, false, false, false, prolatenonunif);
+                                  nonunif, false, spherical, prolate, sphericalnonunif, prolatenonunif);
 
 #else
     const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
