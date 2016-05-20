@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 #ifndef FTIC_HPP
@@ -18,7 +18,11 @@
 
 #include "FGlobal.hpp"
 
-#ifdef _OPENMP
+#define USE_STD_CHRONO
+
+#if defined(USE_STD_CHRONO)
+    #include <chrono>
+#elif defined(_OPENMP)
     #include <omp.h>
 #elif defined(WINDOWS) // We need an os specific function
     #include <time.h>
@@ -42,7 +46,7 @@
  *
  *  - use elapsed() to get the last time interval;
  *  - use cumulated() to get the total running time;
- *  - use reset() to stop and reset the counter. 
+ *  - use reset() to stop and reset the counter.
  *
  * \code
  * FTic timer;
@@ -66,12 +70,12 @@ private:
 
     double start    = 0;    ///< start time (tic)
     double end      = 0;    ///< stop time (tac)
-    double cumulate = 0;    ///< the cumulate time
+    double cumulate = 0;    ///< cumulated duration
 
 public:
     /// Constructor
     FTic() {
-        tic();
+        this->reset();
     }
 
     /// Copy constructor
@@ -100,12 +104,12 @@ public:
         res.cumulate += other.cumulate;
         return res;
     }
-    
+
     /// Resets the timer
     /**\warning Use tic() to restart the timer. */
     void reset() {
-        start    = 0;
-        end      = 0;
+        start    = FTic::GetTime();
+        end      = start;
         cumulate = 0;
     }
 
@@ -114,26 +118,35 @@ public:
         this->start = FTic::GetTime();
     }
 
+    /// Peek at current elapsed time without stopping timer
+    double peek() const {
+        return FTic::GetTime() - this->start;;
+    }
+
     /// Stop measuring time and add to cumulated time.
-    void tac(){
+    double tac(){
         this->end = FTic::GetTime();
-        cumulate += elapsed();
+        auto lapse = this->elapsed();
+        cumulate += lapse;
+        return lapse;
     }
 
     /// Elapsed time between the last tic() and tac() (in seconds).
     /** \return the time elapsed between tic() & tac() in second. */
-    double elapsed() const{
+    double elapsed() const {
         return this->end - this->start;
     }
 
     /// Cumulated tic() - tac() time spans
     /** \return the time elapsed between ALL tic() & tac() in second. */
-    double cumulated() const{
+    double cumulated() const {
         return cumulate;
     }
 
     /// Combination of tic() and elapsed().
-    /** \return the time elapsed between tic() & tac() in second. */
+    /**
+     * \todo deprecate
+     * \return the time elapsed between tic() & tac() in second. */
     double tacAndElapsed() {
         tac();
         return elapsed();
@@ -145,7 +158,11 @@ public:
      *  \return A system dependent time point.
      */
     static double GetTime(){
-#ifdef _OPENMP
+#if defined(USE_STD_CHRONO)
+        using clock = std::chrono::high_resolution_clock;
+        using duration = std::chrono::duration<double>;
+        return duration(clock::now().time_since_epoch()).count();
+#elif defined(_OPENMP)
         return omp_get_wtime();
 #elif defined(WINDOWS)
         return static_cast<double>(GetTickCount())/1000.0;
@@ -159,4 +176,3 @@ public:
 
 
 #endif
-
