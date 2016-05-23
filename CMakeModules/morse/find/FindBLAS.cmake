@@ -906,7 +906,7 @@ if (BLA_VENDOR STREQUAL "IBMESSL" OR BLA_VENDOR STREQUAL "All")
         BLAS
         sgemm
         ""
-        "essl;blas"
+        "essl"
         ""
         )
     endif()

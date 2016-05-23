@@ -154,7 +154,7 @@ macro(Check_Lapack_Libraries LIBRARIES _prefix _name _flags _list _blas _threads
 
 # N.B. _prefix is the prefix applied to the names of all cached variables that
 # are generated internally and marked advanced by this macro.
-
+set(_libdir ${ARGN})
 set(_libraries_work TRUE)
 set(${LIBRARIES})
 set(_combined_name)
