@@ -519,8 +519,6 @@ private:
         this->centerOfBox.setPosition(x,y,z);
         this->boxWidth *= 2;
         otherDataToRead = typeData[1] -  (unsigned int)(4);
-		if(typeData[1] < 4)
-			otherDataToRead = 0;
     };
     void readBinaryHeader(){
         FLOG(FLog::Controller << " File open in binary mode "<< std::endl);
