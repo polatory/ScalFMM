@@ -225,6 +225,10 @@ if(PKG_CONFIG_EXECUTABLE AND NOT STARPU_GIVEN_BY_USER)
             #        "Perhaps the path to starpu headers is already present in your"
             #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
             #endif()
+            set(STARPU_VERSION_STRING "${STARPU_SHM_VERSION}")
+            string(REPLACE "." ";" STARPU_VERSION_STRING_LIST ${STARPU_VERSION_STRING})
+            list(GET STARPU_VERSION_STRING_LIST 0 STARPU_VERSION_MAJOR)
+            list(GET STARPU_VERSION_STRING_LIST 1 STARPU_VERSION_MINOR)
         else()
             message("${Magenta}Looking for STARPU - not found using PkgConfig."
                 "Perhaps you should add the directory containing libstarpu.pc"
