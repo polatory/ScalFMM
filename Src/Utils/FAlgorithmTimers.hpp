@@ -22,6 +22,8 @@
 
 #include "FTic.hpp"
 
+using FTimerMap = std::map<std::string, FTic>;
+
 /**
  * @brief Collection of timers for FMM operators.
  *
@@ -42,7 +44,7 @@ public:
     enum {nbTimers = 9};
 
     /// Timers
-    std::map<std::string, FTic> Timers;
+    FTimerMap Timers;
 
     /// Constructor: resets all timers
     FAlgorithmTimers() = default;
