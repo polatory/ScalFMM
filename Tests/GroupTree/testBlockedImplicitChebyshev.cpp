@@ -59,7 +59,7 @@ using namespace std;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
     typedef FGroupTaskStarPUImplicitAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
 
-//#define LOAD_FILE
+#define LOAD_FILE
 #ifndef LOAD_FILE
 	typedef FRandomLoader<FReal> LoaderClass;
 #else
@@ -122,7 +122,8 @@ int main(int argc, char* argv[]){
 	LoaderClass loader(NbParticles, 1.0, FPoint<FReal>(0,0,0));
 #else
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        loader.fillParticle(&allParticlesToSort[idxPart]);//Same with file or not
+		FReal physicalValue = 0.1;
+        loader.fillParticle(&allParticlesToSort[idxPart], &physicalValue);//Same with file or not
     }
 #endif
 
@@ -139,6 +140,7 @@ int main(int argc, char* argv[]){
 	
 	//GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, false);
 	GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, sizeForEachGroup, true);
+	groupedTree.printInfoBlocks();
 
     // Run the algorithm
 	int operationsToProceed = FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P | FFmmP2P;
@@ -276,7 +278,7 @@ void timeAverage(int mpi_rank, int nproc, double elapsedTime)
 			if(tmp > sumElapsedTime)
 				sumElapsedTime = tmp;
 		}
-		std::cout << "Average time per node (implicit Cheby) : " << sumElapsedTime << "s" << std::endl;
+		std::cout << std::endl << "Average time per node (implicit Cheby) : " << sumElapsedTime << "s" << std::endl << std::endl;
 	}
 	else
 	{
