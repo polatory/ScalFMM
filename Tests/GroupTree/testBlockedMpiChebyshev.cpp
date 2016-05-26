@@ -62,7 +62,7 @@ int main(int argc, char* argv[]){
 
     typedef double FReal;
     // Initialize the types
-    static const int ORDER = 6;
+    static const int ORDER = 4;
     typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
 
     typedef FChebCellPODCore         GroupCellSymbClass;
@@ -161,6 +161,7 @@ int main(int argc, char* argv[]){
     timer.tac();
 	//std::cerr << "Done  " << "(@Creating and Inserting Particles = " << timer.elapsed() << "s)." << std::endl;
 
+	int operationsToProceed = FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P | FFmmP2P;
     { // -----------------------------------------------------
         //std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ") ... " << std::endl;
 
@@ -172,7 +173,7 @@ int main(int argc, char* argv[]){
 		mpiComm.global().barrier();
         timer.tic();
 		starpu_fxt_start_profiling();
-        groupalgo.execute();
+        groupalgo.execute(operationsToProceed);
 		mpiComm.global().barrier();
 		starpu_fxt_stop_profiling();
         timer.tac();
@@ -204,7 +205,7 @@ int main(int argc, char* argv[]){
         FmmClass algorithm(mpiComm.global(),&treeCheck, &kernels);
 		mpiComm.global().barrier();
         timer.tic();
-        algorithm.execute();
+        algorithm.execute(operationsToProceed);
 		mpiComm.global().barrier();
         timer.tac();
 		timeAverage(mpiComm.global().processId(), mpiComm.global().processCount(), timer.elapsed());
