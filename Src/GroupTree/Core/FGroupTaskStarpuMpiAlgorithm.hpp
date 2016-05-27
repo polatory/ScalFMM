@@ -72,7 +72,7 @@ protected:
 #endif
     > ThisClass;
 
-    int getTag(const int inLevel, const MortonIndex mindex, const int mode, const int idxBlockMpi = 0) const{
+    int getTag(const int inLevel, const int mindex, const int mode, const int idxBlockMpi = 0) const{
         int shift = 0;
         int height = tree->getHeight();
         while(height) { shift += 1; height >>= 1; }
@@ -846,6 +846,7 @@ protected:
     struct BlockDescriptor{
         MortonIndex firstIndex;
         MortonIndex lastIndex;
+		int globalIdx;
         int owner;
         int bufferSize;
         size_t bufferSizeSymb;
@@ -929,6 +930,7 @@ protected:
                 myBlocksAtLevel[idxGroup].firstIndex = currentCells->getStartingIndex();
                 myBlocksAtLevel[idxGroup].lastIndex  = currentCells->getEndingIndex();
                 myBlocksAtLevel[idxGroup].owner = comm.processId();
+				myBlocksAtLevel[idxGroup].globalIdx = nbBlocksBeforeMinPerLevel[idxLevel] + idxGroup;
                 myBlocksAtLevel[idxGroup].bufferSizeSymb = currentCells->getBufferSizeInByte();
                 myBlocksAtLevel[idxGroup].bufferSizeUp   = currentCells->getMultipoleBufferSizeInByte();
                 myBlocksAtLevel[idxGroup].bufferSizeDown = currentCells->getLocalBufferSizeInByte();
@@ -1264,19 +1266,19 @@ protected:
                     if(remoteCellGroups[idxLevel][idxHandle].ptrSymb){
                         FAssertLF(remoteCellGroups[idxLevel][idxHandle].ptrUp);
                         FLOG(FLog::Controller << "[SMpi] " << idxLevel << " Post a recv during M2L for Idx " << processesBlockInfos[idxLevel][idxHandle].firstIndex <<
-                             " and dest is " << processesBlockInfos[idxLevel][idxHandle].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 0) << "\n");
+                             " and dest is " << processesBlockInfos[idxLevel][idxHandle].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].globalIdx, 0) << "\n");
                         FLOG(FLog::Controller << "[SMpi] " << idxLevel << " Post a recv during M2L for Idx " << processesBlockInfos[idxLevel][idxHandle].firstIndex <<
-                             " and dest is " << processesBlockInfos[idxLevel][idxHandle].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 1) << "\n");
+                             " and dest is " << processesBlockInfos[idxLevel][idxHandle].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].globalIdx, 1) << "\n");
 
 						mpiPostIRecv(remoteCellGroups[idxLevel][idxHandle].handleSymb,
 									processesBlockInfos[idxLevel][idxHandle].owner,
 									idxLevel,
-									processesBlockInfos[idxLevel][idxHandle].firstIndex,
+									processesBlockInfos[idxLevel][idxHandle].globalIdx,
 									0);
 						mpiPostIRecv(remoteCellGroups[idxLevel][idxHandle].handleUp,
 									processesBlockInfos[idxLevel][idxHandle].owner,
 									idxLevel,
-									processesBlockInfos[idxLevel][idxHandle].firstIndex,
+									processesBlockInfos[idxLevel][idxHandle].globalIdx,
 									1);
                     }
                 }
@@ -1286,12 +1288,12 @@ protected:
             for(int idxHandle = 0 ; idxHandle < int(remoteParticleGroupss.size()) ; ++idxHandle){
                 if(remoteParticleGroupss[idxHandle].ptrSymb){
                     FLOG(FLog::Controller << "[SMpi] Post a recv during P2P for Idx " << processesBlockInfos[tree->getHeight()-1][idxHandle].firstIndex <<
-                                  " and dest is " << processesBlockInfos[tree->getHeight()-1][idxHandle].owner << " tag " << getTag(tree->getHeight(),processesBlockInfos[tree->getHeight()-1][idxHandle].firstIndex, 0) << "\n");
+                                  " and dest is " << processesBlockInfos[tree->getHeight()-1][idxHandle].owner << " tag " << getTag(tree->getHeight(),processesBlockInfos[tree->getHeight()-1][idxHandle].globalIdx, 0) << "\n");
 
 						mpiPostIRecv(remoteParticleGroupss[idxHandle].handleSymb,
 									processesBlockInfos[tree->getHeight()-1][idxHandle].owner,
 									tree->getHeight(),
-									processesBlockInfos[tree->getHeight()-1][idxHandle].firstIndex,
+									processesBlockInfos[tree->getHeight()-1][idxHandle].globalIdx,
 									0);
                 }
             }
@@ -1308,12 +1310,12 @@ protected:
                 FAssertLF(localId < tree->getNbParticleGroup());
 
                 FLOG(FLog::Controller << "[SMpi] Post a send during P2P for Idx " << tree->getParticleGroup(localId)->getStartingIndex() <<
-                     " and dest is " << sd.dest << " tag " << getTag(tree->getHeight(),tree->getParticleGroup(localId)->getStartingIndex(), 0) <<  "\n");
+                     " and dest is " << sd.dest << " tag " << getTag(tree->getHeight(), nbBlocksBeforeMinPerLevel[tree->getHeight()-1] + localId, 0) <<  "\n");
 
 				mpiPostISend(particleHandles[localId].symb,
 							sd.dest,
 							tree->getHeight(),
-							tree->getParticleGroup(localId)->getStartingIndex(),
+							nbBlocksBeforeMinPerLevel[tree->getHeight()-1] + localId,
 							0);
             }
         }
@@ -1330,19 +1332,19 @@ protected:
                 FAssertLF(localId < tree->getNbCellGroupAtLevel(sd.level));
 
                 FLOG(FLog::Controller << "[SMpi] " << sd.level << " Post a send during M2L for Idx " << tree->getCellGroup(sd.level, localId)->getStartingIndex() <<
-                     " and dest is " << sd.dest << " tag " << getTag(sd.level,tree->getCellGroup(sd.level, localId)->getStartingIndex(), 0) << "\n");
+                     " and dest is " << sd.dest << " tag " << getTag(sd.level, nbBlocksBeforeMinPerLevel[sd.level] + localId, 0) << "\n");
                 FLOG(FLog::Controller << "[SMpi] " << sd.level << " Post a send during M2L for Idx " << tree->getCellGroup(sd.level, localId)->getStartingIndex() <<
-                     " and dest is " << sd.dest << " tag " << getTag(sd.level,tree->getCellGroup(sd.level, localId)->getStartingIndex(), 1) << "\n");
+                     " and dest is " << sd.dest << " tag " << getTag(sd.level, nbBlocksBeforeMinPerLevel[sd.level] + localId, 1) << "\n");
 
 				mpiPostISend(cellHandles[sd.level][localId].symb,
 							sd.dest,
 							sd.level,
-							tree->getCellGroup(sd.level, localId)->getStartingIndex(),
+							nbBlocksBeforeMinPerLevel[sd.level] + localId,
 							0);
 				mpiPostISend(cellHandles[sd.level][localId].up,
 							sd.dest,
 							sd.level,
-							tree->getCellGroup(sd.level, localId)->getStartingIndex(),
+							nbBlocksBeforeMinPerLevel[sd.level] + localId,
 							1);
             }
         }
@@ -1629,8 +1631,8 @@ protected:
     /////////////////////////////////////////////////////////////////////////////////////
     /// Mpi Function overload
     /////////////////////////////////////////////////////////////////////////////////////
-#define LIMIT_SIZE_MPI 500000//1Mo
-	void mpiPostISend(starpu_data_handle_t handle, const int dest, const int level, const MortonIndex startingIndex, const int mode)
+#define LIMIT_SIZE_MPI 1000000//1Mo
+	void mpiPostISend(starpu_data_handle_t handle, const int dest, const int level, const int startingIndex, const int mode)
 	{
 		size_t size = starpu_data_get_size(handle);
 		const size_t limitSize = LIMIT_SIZE_MPI;
@@ -1661,7 +1663,7 @@ protected:
 		starpu_data_unpartition_submit(handle, countPart, splitHandles, -1);
 		starpu_data_partition_clean(handle, countPart, splitHandles);
 	}
-	void mpiPostIRecv(starpu_data_handle_t handle, const int dest, const int level, const MortonIndex startingIndex, const int mode)
+	void mpiPostIRecv(starpu_data_handle_t handle, const int dest, const int level, const int startingIndex, const int mode)
 	{
 		size_t size = starpu_data_get_size(handle);
 		const size_t limitSize = LIMIT_SIZE_MPI;
@@ -1884,21 +1886,21 @@ protected:
                     }
 
                     FLOG(FLog::Controller << "[SMpi] " << idxLevel << " Post a recv during M2M for Idx " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex <<
-                                                                                                                                                                         " and owner is " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, 0) << "\n");
+                                                                                                                                                                         " and owner is " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].globalIdx, 0) << "\n");
                     FLOG(FLog::Controller << "[SMpi] " << idxLevel << " Post a recv during M2M for Idx " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex <<
-                                                                                                                                                                         " and owner is " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, 1) << "\n");
+                                                                                                                                                                         " and owner is " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].globalIdx, 1) << "\n");
                     FLOG(FLog::Controller.flush());
 
 					mpiPostIRecv(remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handleSymb,
 								processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner,
 								idxLevel,
-								processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex,
+								processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].globalIdx,
 								0);
 
 					mpiPostIRecv(remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handleUp,
 								processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner,
 								idxLevel,
-								processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex,
+								processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].globalIdx,
 								1);
 
                     idxBlockToRecv += 1;
@@ -1974,20 +1976,20 @@ protected:
                           && missingParentIdx == (tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex()>>3)){
 
                         FLOG(FLog::Controller << "[SMpi] " << idxLevel << " Post a send during M2M for Idx " << tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex() <<
-                             " and dest is " << dest << " tag " << getTag(idxLevel,tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex(), 0) << "\n");
+                             " and dest is " << dest << " tag " << getTag(idxLevel, nbBlocksBeforeMinPerLevel[idxLevel+1] + lowerIdxToSend, 0) << "\n");
                         FLOG(FLog::Controller << "[SMpi] " << idxLevel << " Post a send during M2M for Idx " << tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex() <<
-                             " and dest is " << dest << " tag " << getTag(idxLevel,tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex(), 1) << "\n");
+                             " and dest is " << dest << " tag " << getTag(idxLevel, nbBlocksBeforeMinPerLevel[idxLevel+1] + lowerIdxToSend, 1) << "\n");
                         FLOG(FLog::Controller.flush());
 
 						mpiPostISend(cellHandles[idxLevel+1][lowerIdxToSend].symb,
 								dest,
 								idxLevel,
-								tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex(),
+								nbBlocksBeforeMinPerLevel[idxLevel+1] + lowerIdxToSend,
 								0);
 						mpiPostISend(cellHandles[idxLevel+1][lowerIdxToSend].up,
 								dest,
 								idxLevel,
-								tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex(),
+								nbBlocksBeforeMinPerLevel[idxLevel+1] + lowerIdxToSend,
 								1);
                         lowerIdxToSend += 1;
                     }
@@ -2206,21 +2208,21 @@ protected:
                         FLOG(FLog::Controller << "[SMpi] " << idxLevel << " Post a send during L2L for Idx " << tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex() <<
                              " and dest is " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner
                                 << " size " << tree->getCellGroup(idxLevel, idxLastBlock)->getBufferSizeInByte()
-                                << " tag " << getTag(idxLevel,tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex(), 0) << "\n");
+                                << " tag " << getTag(idxLevel, nbBlocksBeforeMinPerLevel[idxLevel] + idxLastBlock, 0) << "\n");
                         FLOG(FLog::Controller << "[SMpi] " << idxLevel << " Post a send during L2L for Idx " << tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex() <<
                              " and dest is " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner
                                 << " size " << tree->getCellGroup(idxLevel, idxLastBlock)->getLocalBufferSizeInByte()
-                                << " tag " << getTag(idxLevel,tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex(), 2) << "\n");
+                                << " tag " << getTag(idxLevel, nbBlocksBeforeMinPerLevel[idxLevel] + idxLastBlock, 2) << "\n");
 
 						mpiPostISend(cellHandles[idxLevel][idxLastBlock].symb,
 									processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner,
 									idxLevel,
-									tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex(),
+									nbBlocksBeforeMinPerLevel[idxLevel] + idxLastBlock,
 									0);
 						mpiPostISend(cellHandles[idxLevel][idxLastBlock].down,
 									processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner,
 									idxLevel,
-									tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex(),
+									nbBlocksBeforeMinPerLevel[idxLevel] + idxLastBlock,
 									2);
 
                         lastProcSend = processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner;
@@ -2262,21 +2264,21 @@ protected:
                     FLOG(FLog::Controller << "[SMpi] " << idxLevel << " Post a recv during L2L for Idx " << processesBlockInfos[idxLevel][firstOtherBlock].firstIndex <<
                          " and owner " << processesBlockInfos[idxLevel][firstOtherBlock].owner
                          << " size " << processesBlockInfos[idxLevel][firstOtherBlock].bufferSizeSymb
-                         << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel][firstOtherBlock].firstIndex, 0) << "\n");
+                         << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel][firstOtherBlock].globalIdx, 0) << "\n");
                     FLOG(FLog::Controller << "[SMpi] " << idxLevel << " Post a recv during L2L for Idx " << processesBlockInfos[idxLevel][firstOtherBlock].firstIndex <<
                          " and owner " << processesBlockInfos[idxLevel][firstOtherBlock].owner
                          << " size " << processesBlockInfos[idxLevel][firstOtherBlock].bufferSizeDown
-                         << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel][firstOtherBlock].firstIndex, 2) << "\n");
+                         << " tag " << getTag(idxLevel,processesBlockInfos[idxLevel][firstOtherBlock].globalIdx, 2) << "\n");
 
 					mpiPostIRecv(remoteCellGroups[idxLevel][firstOtherBlock].handleSymb,
 								processesBlockInfos[idxLevel][firstOtherBlock].owner,
 								idxLevel,
-								processesBlockInfos[idxLevel][firstOtherBlock].firstIndex,
+								processesBlockInfos[idxLevel][firstOtherBlock].globalIdx,
 								0);
 					mpiPostIRecv(remoteCellGroups[idxLevel][firstOtherBlock].handleDown,
 								processesBlockInfos[idxLevel][firstOtherBlock].owner,
 								idxLevel,
-								processesBlockInfos[idxLevel][firstOtherBlock].firstIndex,
+								processesBlockInfos[idxLevel][firstOtherBlock].globalIdx,
 								2);
                     {
                         const MortonIndex parentStartingIdx = processesBlockInfos[idxLevel][firstOtherBlock].firstIndex;
