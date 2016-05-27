@@ -1629,37 +1629,37 @@ protected:
     /////////////////////////////////////////////////////////////////////////////////////
     /// Mpi Function overload
     /////////////////////////////////////////////////////////////////////////////////////
-#define LIMIT_SIZE_MPI 1000000000//1Mo
+#define LIMIT_SIZE_MPI 500000//1Mo
 	void mpiPostISend(starpu_data_handle_t handle, const int dest, const int level, const MortonIndex startingIndex, const int mode)
 	{
 		size_t size = starpu_data_get_size(handle);
 		const size_t limitSize = LIMIT_SIZE_MPI;
 		if( size < limitSize)
 		{
+			std::cerr << "Classic send " << getTag(level,startingIndex, mode) << std::endl;
 			starpu_mpi_isend_detached(handle, dest,
 					getTag(level,startingIndex, mode),
 					comm.getComm(), 0/*callback*/, 0/*arg*/ );
 			return;
 		}
-		std::cerr << "Split send" << std::endl;
-		int countPart = static_cast<int>(ceil(static_cast<float>(size)/static_cast<float>(limitSize)));
+		const int countPart = static_cast<int>(ceil(static_cast<float>(size)/static_cast<float>(limitSize)));
+		std::cerr << "Split send " << getTag(level,startingIndex, mode) << std::endl;
 		struct starpu_data_filter filter =
 		{
 			.filter_func = starpu_vector_filter_block,
 			.nchildren = countPart
 		};
-		starpu_data_handle_t splitHandles;
-		starpu_data_partition_plan(handle, &filter, &splitHandles);
-		starpu_data_partition_submit(handle, countPart, &splitHandles);
+		starpu_data_handle_t splitHandles[countPart];
+		starpu_data_partition_plan(handle, &filter, splitHandles);
+		starpu_data_partition_submit(handle, countPart, splitHandles);
 		for(int i = 0; i < countPart; ++i)
 		{
-			starpu_data_handle_t subHandle = starpu_data_get_sub_data(splitHandles, 1, i);
-			starpu_mpi_isend_detached( subHandle, dest,
+			starpu_mpi_isend_detached( splitHandles[i], dest,
 					getTag(level, startingIndex, mode, i),
 					comm.getComm(), 0/*callback*/, 0/*arg*/ );
-
 		}
-		starpu_data_unpartition_submit(handle, countPart, &splitHandles, -1);
+		starpu_data_unpartition_submit(handle, countPart, splitHandles, -1);
+		starpu_data_partition_clean(handle, countPart, splitHandles);
 	}
 	void mpiPostIRecv(starpu_data_handle_t handle, const int dest, const int level, const MortonIndex startingIndex, const int mode)
 	{
@@ -1667,12 +1667,14 @@ protected:
 		const size_t limitSize = LIMIT_SIZE_MPI;
 		if( size < limitSize)
 		{
+			std::cerr << "Classic recv " << getTag(level,startingIndex, mode) << std::endl;
 			starpu_mpi_irecv_detached(handle, dest,
 					getTag(level,startingIndex, mode),
 					comm.getComm(), 0/*callback*/, 0/*arg*/ );
 			return;
 		}
 		const int countPart = static_cast<int>(ceil(static_cast<float>(size)/static_cast<float>(limitSize)));
+		std::cerr << "Split recv " << getTag(level,startingIndex, mode) << std::endl;
 		struct starpu_data_filter filter =
 		{
 			.filter_func = starpu_vector_filter_block,
@@ -1689,6 +1691,7 @@ protected:
 
 		}
 		starpu_data_unpartition_submit(handle, countPart, splitHandles, -1);
+		starpu_data_partition_clean(handle, countPart, splitHandles);
 	}
     /////////////////////////////////////////////////////////////////////////////////////
     /// Bottom Pass
