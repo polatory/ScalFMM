@@ -17,6 +17,7 @@
 // ==== CMAKE ====
 // Keep in private GIT
 // @SCALFMM_PRIVATE
+// @FUSE_BLAS
 
 
 #include <string>
