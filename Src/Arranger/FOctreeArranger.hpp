@@ -85,7 +85,7 @@ public:
                     const MortonIndex particuleIndex = tree->getMortonFromPosition(currentPart);
                     if(particuleIndex != currentMortonIndex){
                         //Need to move this one
-                        interface->removeFromLeafAndKeep(particles,currentPart,idxPart,FParticleTypeSource);
+                        interface->removeFromLeafAndKeep(particles,currentPart,idxPart,FParticleType::FParticleTypeSource);
                     }
                     else{
                         //Need to increment idx;
@@ -102,7 +102,7 @@ public:
                         const MortonIndex particuleIndex = tree->getMortonFromPosition(currentPart);
                         if(particuleIndex != currentMortonIndex){
                             //Need to move this one
-                            interface->removeFromLeafAndKeep(particleTargets,currentPart,idxPart, FParticleTypeTarget);
+                            interface->removeFromLeafAndKeep(particleTargets,currentPart,idxPart, FParticleType::FParticleTypeTarget);
                         }
                         else{
                             //Need to increment idx;

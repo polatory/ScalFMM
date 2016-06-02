@@ -380,12 +380,12 @@ public:
         }else{
             if(type==SOURCE){
                 for(FSize idPart = 0; idPart<NbPositions ; ++idPart){
-                    octree->insert(FPoint<FReal>(X[idPart],Y[idPart],Z[idPart]),FParticleTypeSource,idPart);
+                    octree->insert(FPoint<FReal>(X[idPart],Y[idPart],Z[idPart]),FParticleType::FParticleTypeSource,idPart);
                 }
                 FScalFMMEngine<FReal>::nbPart += NbPositions;
             }else{
                 for(FSize idPart = 0; idPart<NbPositions ; ++idPart){
-                    octree->insert(FPoint<FReal>(X[idPart],Y[idPart],Z[idPart]),FParticleTypeTarget,idPart);
+                    octree->insert(FPoint<FReal>(X[idPart],Y[idPart],Z[idPart]),FParticleType::FParticleTypeTarget,idPart);
                 }
                 FScalFMMEngine<FReal>::nbPart += NbPositions;
             }
@@ -403,12 +403,12 @@ public:
         }else{
             if(type==SOURCE){
                 for(FSize idPart = 0; idPart<NbPositions ; ++idPart){
-                    octree->insert(FPoint<FReal>(&XYZ[3*idPart]),FParticleTypeSource,idPart);
+                    octree->insert(FPoint<FReal>(&XYZ[3*idPart]),FParticleType::FParticleTypeSource,idPart);
                 }
                 FScalFMMEngine<FReal>::nbPart += NbPositions;
             }else{
                 for(FSize idPart = 0; idPart<NbPositions ; ++idPart){
-                    octree->insert(FPoint<FReal>(&XYZ[3*idPart]),FParticleTypeTarget,idPart);
+                    octree->insert(FPoint<FReal>(&XYZ[3*idPart]),FParticleType::FParticleTypeTarget,idPart);
                 }
                 FScalFMMEngine<FReal>::nbPart += NbPositions;
             }
