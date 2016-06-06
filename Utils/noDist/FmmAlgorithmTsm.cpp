@@ -152,7 +152,7 @@ struct TempMainStruct{
 
 		{
 			// Insert sources
-			FParticleType particleType, source = FParticleTypeSource;
+			FParticleType particleType, source = FParticleType::FParticleTypeSource;
 			for(FSize idxPart = 0 ; idxPart < nbSRC ; ++idxPart){
 				loader.fillParticle(&particlePosition, &particleType);
 //				std::cout << idxPart << "  " << particlePosition << "  type " << particleType
@@ -175,9 +175,9 @@ struct TempMainStruct{
 			//		int nbTargets = 256;
 			for(FSize idxPart = 0 ; idxPart < nbTargets; ++idxPart){
                 particlePosition2.incX(dx);
-                std::cout << idxPart << "  " <<particlePosition2.getX()/dimLeaf<< "   " <<  particlePosition2 << "  type " << FParticleTypeTarget
+                std::cout << idxPart << "  " <<particlePosition2.getX()/dimLeaf<< "   " <<  particlePosition2 << "  type " << static_cast<int>(FParticleType::FParticleTypeTarget)
 						<< "  " <<physicalValue<<std::endl;
-                tree.insert(particlePosition2, FParticleTypeTarget,idxPart,physicalValue );
+                tree.insert(particlePosition2, FParticleType::FParticleTypeTarget,idxPart,physicalValue );
 
 			}
 		}

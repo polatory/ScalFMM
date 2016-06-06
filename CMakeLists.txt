@@ -321,6 +321,13 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   ##############################################################################
   #
   if( SCALFMM_USE_BLAS )
+ #   include(FortranCInterface)
+ #    # Define a Fortran interface file (FCMangle.hpp)
+ #   FortranCInterface_HEADER( ${CMAKE_CURRENT_SOURCE_DIR}/Src/FCMangle.hpp
+ #                            MACRO_NAMESPACE "PM_"
+ #                           SYMBOL_NAMESPACE "PM_"
+ #                           SYMBOLS init testPPM:init)
+ 	set(SCALFMM_BLAS_ADD_ ON)    # A enlever lorsque MORSE detectera le mangling fortan
     message(STATUS "CMAKE_CXX_COMPILER_ID STREQUAL  ${CMAKE_CXX_COMPILER_ID}")
 
     option( SCALFMM_USE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
