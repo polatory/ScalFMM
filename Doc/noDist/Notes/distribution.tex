@@ -107,9 +107,9 @@ If you consider the
 \subsection{Plummer Model}
 This is a hard test case in astrophysics problem, and it models a globular cluster of stars, which is highly non uniform.  It is called   the plummer distribution. To construct such distribution, first we construct a uniform points distribution on the unit sphere. Second, the radius is chosen according to the plummer distribution (double power law in astrophysics). We consider $u$ a random number between 0 and 1, then the associated radius is given by
 \begin{equation*}
-r = \sqrt{\frac{u^{2/3}}{u^{2/3}-1}}
+r = 1.0/\sqrt{u^{-2/3}-1},
 \end{equation*}
-
+and the total mass is one. Then, $m_i = \frac{1}{Npt}$.
 \begin{figure}[h]
   \centering
   \begin{minipage}{0.45\textwidth}%
@@ -140,6 +140,8 @@ The corresponding potential is
 \begin{equation}
 \Phi_P(r) = - \frac{G M}{\sqrt{r^2+a^2}}
 \end{equation}
+
+In N-body units, $G = M = 1$ and $a = 3\pi/16 \sim 0.589$
 \subsection{Diagonal Model}
 
 %, shape end size=.5cm},decoration={shape start size=.5cm, shape end size=.125cm

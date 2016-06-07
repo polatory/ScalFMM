@@ -243,12 +243,12 @@ FReal plummerDist(FSize& cpt, const FReal &R) {
     }
 }
 
-
 /**
  * \brief Build N points following the Plummer distribution
  *
  * First we construct N points uniformly distributed on the unit sphere. Then
- * the radius in construct according to the Plummr distribution.
+ * the radius in construct according to the Plummer distribution for
+ * a  constant mass of 1/N
  *
  * \tparam FReal Floating point type
  *
@@ -258,6 +258,32 @@ FReal plummerDist(FSize& cpt, const FReal &R) {
  */
 template <class FReal>
 void unifRandomPlummer(const FSize N, const FReal R, FReal * points) {
+    unifRandomPointsOnSphere<FReal>(N, 1, points);
+    FReal mc = 1.0/static_cast<FReal>(N);
+    for (FSize i = 0, j = 0 ; i< N ; ++i, j+=4)  {
+    	FReal m = getRandom<FReal>();
+    	FReal r = FMath::Sqrt( 1.0/(FMath::pow(m, -2.0/3.0) - 1.0)) ;
+        points[j]    *= r;
+        points[j+1]  *= r;
+        points[j+2]  *= r;
+        points[j+3]   = mc;  // the mass
+    }
+}
+/**
+ * \brief Build N points following the Plummer like distribution
+ *
+ * First we construct N points uniformly distributed on the unit sphere. Then
+ * the radius in construct according to the Plummer like distribution.
+ *
+ * \tparam FReal Floating point type
+ *
+ * \param N the number of points following the Plummer distribution
+ * \param R the radius of the sphere that contains all the points
+ * \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
+ */
+template <class FReal>
+void unifRandomPlummerLike(const FSize N, const FReal R, FReal * points) {
+	FReal a = 1.0 ;
     unifRandomPointsOnSphere<FReal>(N, 1, points);
     FReal r, rm = 0.0;
     FSize cpt = 0;

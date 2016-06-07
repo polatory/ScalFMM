@@ -97,7 +97,7 @@ namespace Param {
     const FParameterNames Size
     = {{"-size"}, "Size of the geometry a:b:c - default values are 1.0:1.0:2.0"};
     const FParameterNames Radius
-    = {{"-radius"}, "used to specified the radius of the sphere an dthe plummer distribution or R - default value for R is 2.0"};
+    = {{"-radius"}, "used to specified the radius of the sphere and the plummer distribution or R - default value for R is 2.0"};
     const FParameterNames Charge
     = {{"-charge"}, "generate physical values between -1 and 1 otherwise generate between 0 and 1"};
     const FParameterNames ZM
@@ -250,6 +250,10 @@ int main(int argc, char ** argv){
     std::cout << "End of writing" <<std::endl;
 
     //  Generate  file for visualization
+//    if(FParameters::existParameter(argc, argv, FParameterDefinitions::OutputVisuFile.options)){
+//        std::string outfilename(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output.vtp"));
+//        driverExportData(outfilename, particles , NbPoints,loader.getNbRecordPerline() );
+//    }
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::OutputVisuFile.options)) {
         std::string visufile(FParameters::getStr(argc, argv, FParameterDefinitions::OutputVisuFile.options, "output.vtp"));
         driverExportData(visufile, particles , NbPoints);
