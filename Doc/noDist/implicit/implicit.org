@@ -327,7 +327,7 @@ So I created a directory named orgmode and create the following script to update
     and a call to /starpu_mpi_shutdown/ right before /starpu_shutdown/.
 
     The call to /starpu_mpi_init/ looks like :
-#+begin_src src c 
+#+begin_src c 
 starpu_mpi_init(argc, argv, initialize_mpi)
 #+end_src
     /initialize_mpi/ should be set to 0 if a call to /MPI_Init/ (or
@@ -340,7 +340,7 @@ starpu_mpi_init(argc, argv, initialize_mpi)
     StarPU know the data but it also need a call to /starpu_mpi_data_register/.
 
     The call looks like this:
-#+begin_src src c 
+#+begin_src c 
 starpu_mpi_data_register(starpu_handle, tag, mpi_rank)
 #+end_src
     /starpu_handle/ : is a the handle used by StarPU to work with data.
@@ -352,7 +352,7 @@ starpu_mpi_data_register(starpu_handle, tag, mpi_rank)
 
     Note that, when an handle is registered on a node different from the
     current node the call to /starpu_variable_data_register/ should looks like :
-#+begin_src src c 
+#+begin_src c 
 starpu_variable_data_register(starpu_handle, -1, buffer, buffer_size);
 #+end_src
     The -1 specify that the data is not stored in the main memory and in this
@@ -486,7 +486,8 @@ timer.tac();
     number of threads by MPI node.
 
 #+begin_src src python
-sum_time = (runtime_time + task_time + scheduling_time + communication_time)/(config.num_nodes*config.num_threads)
+sum_time = (runtime_time + task_time + scheduling_time + communication_time +
+idle_time)/(config.num_nodes*config.num_threads)
 diff_time = float('%.2f'%(abs(global_time-sum_time)/global_time))
 
 if diff_time > 0.01:   
@@ -678,6 +679,139 @@ Problème : L'algorithme Treematch semble placer des /workers/ sur des « nœud 
 Typiquement, si deux process mpi communiquent beaucoup il faut les mettre plus proche. Or dans notre cas, si deux process mpi communiquent beaucoup c'est essentiellement car il partage les même données. Données qu'il faudrait remapper sur un autre nœud.
 Mais c'est données n'impliquent pas de forcément des transitions de données mpi ... si elles sont sur le même nœud mpi.
 
+** Bugs rencontrés
+*** Livelock
+Sur de très gros cas, il y a un livelock qui survient. C'est-à-dire que tous
+les processus se retrouve figé et que le programme ne progresse plus.
+
+Cette erreur est aléatoire et il est possible qu'en relancant plusieurs fois
+l'exécution, le programme arrive à son terme.
+
+- Plus la hauteur de l'arbre est haute, plus il y a de chance de survenir
+  (hauteur >= 8)
+- Plus les groupe de l'arbre sont gros (ng=2000 ou ng=6000), plus il y a de
+  chance de livelock
+- Plus il y a de particules (avec une hauteur de 6 et 100M de particules par
+  example alors qu'en temps normale une hauteur de 6 passe bien), plus il y a
+  de livelock
+- Pour détécter le livelock, j'utilise le watchdog de starpu. Mais il arrive
+  que le watchdog se déclanche, mais si on laisse durer l'exécution, elle
+  termine. Au lieu de mettre 2 secondes, elle met une minutes.
+- Si on ralenti l'application, avec des wait un peu partout, le livelock a
+  moins de chance d'arriver.
+- La version scalfmm mpi sans les tâches n'est pas sujette au livelock.
+- Le livelock n'apparait pas sur un seul nœud, ni sur une unique machine.
+- Il n'apparait pas sur les Daltons (cluster de runtime), mais l'exécution
+  d'un cas simple prend 50 secondes au lieux de 7.
+- De même pour intel mpi, pas de livelock, mais une exécution dix fois trop
+  longue et des traces qui montre beaucoup de temps en sleeping.
+- En utilisant gdb et en s'attachant au processus qui livelock, il s'avère
+  que:
+  - Tous les threads sont en attente
+  - Il n'y a pas de communication manquante. Les quelques cas étrange de tag
+    disparue s'explique facilement.
+  - On peut voir que le thread correspondant à starpu mpi est bloqué dans un
+    appel à MPI_ISend, en train d'essayer de faire un rendez-vous.
+- Si l'on split les handles, le livelock apparait tout autant. Même en
+  splittant avec des tailles inférieur au eager.
+ 
+
+*** Erreur numérique
+Cette erreur consiste en une différence entre l'exécution de l'algorithme
+distribué et une autre version de la fmm qui a été testé.
+
+S'il y a une différence entre les deux arbres, alors une erreur s'affiche.
+
+Cette erreur n'a que peu était étudiée et est globalement inconstante. Elle
+apparait sur des petit cas comme sur des gros cas.
+
+*** Segfault
+Lors de l'exécution, à la destruction des objets, il arrive qu'il y ai un
+segfault qui apparait au milieu de l'affichage des stats de starpu.
+
+L'application étant intérrompu, il n'y a qu'une partie des informations sur
+les volumes de communication et les trace fxt ne sont pas générées.
+
+Cette erreur n'apparait que dans la version explicite de l'algorithme.
+
+*** Invalid read
+En passant une exécution dans l'outil /valgrind/, il s'est avéré qu'il y
+avait des /invalid read/ dans les noyaux.
+
+Cette étude a était faite sur la version implicite avec les noyaux chebyshev
+et uniforme avec des arbres régulier et en activant la seul opération P2P.
+Cet /invalid read/ survient:
+- Quelque soit le noyaux
+- Lorsque l'on accède au pointeur correspondant au groupe de particule
+  (l'attribut blockHeader)
+- Que dans les codelets
+- Que lorsque le codelet P2P mpi (non symétrique) est appelé
+- Pas forcément dans la fonction correspondant au P2P mpi
+- N'apparait pas sur un seul nœud
+
+** Résolution du livelock
+*** Explication
+Pour contourner le livelock qui semble être dû à une surcharge de MPI, autant
+par la taille des buffers à envoyer que par leur nombres, il est possible de
+limiter le nombre de tâches soumises à StarPU.
+Indirectement, cela limite le nombre de tâches mpi soumises par StarPU-MPI.
+
+Cela n'est possible que dans la version implicite car elle se base sur un STF
+global et commun à tous les processus.
+Comme il n'y a pas ce STF global et commun dans la version explicite, le fait
+de limiter le nombre de tâches soumise peut provoquer une situation de
+deadlock évidente.
+Où un nœud A sera bloqué en attendant que B post la bonne tâche de
+communication et que B est bloqué en attendant que A post une autre
+communication.
+
+*** Étude
+La limitation de la soumission de tâche fonctionne avec deux variables
+d'environnement.
+
+#+begin_src sh
+export STARPU_LIMIT_MAX_SUBMITTED_TASKS=8000
+export STARPU_LIMIT_MIN_SUBMITTED_TASKS=2000
+#+end_src 
+
+Cela se lit de la manière suivante :
+Le /thread/ de soumissions sera bloqué lorsqu'il y aura 8000 tâches en
+attente de réalisation. Il ne sera débloqué que lorsque le nombre de tâches
+en cours atteindra 2000.
+
+La présence de deux variables, min et max, impose de bien calibrer trois
+choses.
+- La borne max, de telle sorte qu'elle ne soit pas trop haute sinon on
+  surcharge openmpi
+- La borne min, de telle sorte que lorsque le thread de soumission sera
+  réveillé, il y ai encore suffisament de tâches dans starpu pour ne pas se
+  retrouver en attente.
+- La taille de la fenêtre donnée par min-max, qui doit être suffisament grand pour
+  éviter des /livelock/ et pour garantir une certaine performance en évitant de
+  révéiller et d'endormir le /thread/ de soumission en permanence.
+
+*** Resultats
+
+#+CAPTION: Diagramme de gantt sur un cube uniforme. 8 nœuds MPI, 70M de particules, arbre de hauteur h = 8 et de groupe ng=2000. Version explicite.
+#+NAME:   fig:SED-HR4049
+[[./figure/cube-explicit-8N-70M-h8-ng2000-gantt.png]]
+
+#+CAPTION: Diagramme de gantt sur un cube uniforme. 8 nœuds MPI, 70M de particules, arbre de hauteur h = 8 et de groupe ng=2000. Version implicite sans borne.
+#+NAME:   fig:SED-HR4049
+[[./figure/cube-implicit-8N-70M-h8-ng2000-gantt.png]]
+
+#+CAPTION: Diagramme de gantt sur un cube uniforme. 8 nœuds MPI, 70M de particules, arbre de hauteur h = 8 et de groupe ng=2000. Version implicite avec les bornes [2000,8000].
+#+NAME:   fig:SED-HR4049
+[[./figure/cube-implicit-limited-8N-70M-h8-ng2000-gantt.png]]
+
+On peut voir en regardant les trois diagrammes de gantt qu'ils sont très
+similaire, surtout les deux diagrammes /implicite/ et /implicit limited/.
+
+On peut aussi voir que le temps d'exécution est globalement similaire à une
+seconde près. Il faut noter que, bien que la différence est de une seconde
+sur ces trois exécutions, sur plusieurs exécutions, les trois versions on un temps d'exécution moyenne
+similaire qui est de l'ordre de dix secondes.
+
 ** What have been done so far ?
 - Un arbre groupé identique à celui de la version explicite
 - Des tâches très similaires celles de la version explicite
@@ -701,6 +835,8 @@ Mais c'est données n'impliquent pas de forcément des transitions de données m
       - Script pour soummettre tous les jobs
       - Script pour aggréger les résultats et générer les graphiques
       - Test du pipeline (un peu lent)
+- Comparaison des performances
+      - Volume de communication
 
 ** Et après ?
 - Comparaison des performances
@@ -709,7 +845,6 @@ Mais c'est données n'impliquent pas de forcément des transitions de données m
 		- Éventuellement utiliser le noyau FTaylorFlopsKernel
 	- Répartition du temps de calcul
 	- Mémoire utilisée par nœud
-      - Volume de communication
       - Répartition des communications tâche
         - Quel tâche consomme le plus de communication
 - Étude d'autres /mapping/
