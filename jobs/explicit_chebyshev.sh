@@ -34,18 +34,8 @@ echo "Tree height: " $TREE_HEIGHT >> $FINAL_DIR/stdout
 echo "Group size: " $GROUP_SIZE >> $FINAL_DIR/stdout
 echo "Algorithm: explicit" >> $FINAL_DIR/stdout
 echo "Total particles: " $NB_PARTICLE >> $FINAL_DIR/stdout
-mpiexec -n $NB_NODE $NUMACTL ./Build/Tests/Release/testBlockedMpiChebyshev -nb $NB_PARTICLE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation  >> $FINAL_DIR/stdout 2>&1
+srun hostname -s| sort -u > mpd.hosts
+export I_MPI_FABRICS=shm:dapl
+mpiexec.hydra -f mpd.hosts -n $NB_NODE $NUMACTL ./Build/Tests/Release/testBlockedMpiChebyshev -nb $NB_PARTICLE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation >> $FINAL_DIR/stdout 2>&1
 
-#Create argument list for starpu_fxt_tool
-cd $FINAL_DIR
-list_fxt_file=`ls ../$STARPU_FXT_PREFIX*`
-
-#Clean to only keep trace.rec
-mkdir fxt
-for i in $list_fxt_file; do
-	mv $i fxt
-done
-cd ..
-
-##Move the result into a directory where all result goes
-mv $FINAL_DIR jobs_result
+source $HOME/move_trace.sh
