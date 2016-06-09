@@ -35,9 +35,6 @@ gen_speedup_taskdep_plot <- function(d, model_wanted)
 	g <- g + xlab("Number of nodes")
 	g <- g + ylab("Speedup")
 
-    # Set y-axis range
-    #g <- g + ylim(ylimits)
-
     # Save generated plot.
 	output <- paste(get_output_directory(), "/", model_wanted, "-speedup.pdf", sep="")
 	ggsave(output, g, width=29.7, height=21, units=c("cm"), device=cairo_pdf)

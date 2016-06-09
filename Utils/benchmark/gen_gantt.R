@@ -140,7 +140,7 @@ gen_gantt_plot <- function(data, model, algo, nnode, npart)
 	g <- g + scale_color_brewer(palette="Set1")
 	g <- g + facet_wrap(~Origin, ncol=1, scales="free_y") 
 	g <- g + scale_y_discrete(breaks=NULL)
-    ggsave(output, g, width=29.7, height=21, units=c("cm"), device=cairo_pdf)
+    ggsave(output, g, width=29.7, height=42, units=c("cm"), device=cairo_pdf)
 }
 gen_gantt_grab_data <- function(df)
 {

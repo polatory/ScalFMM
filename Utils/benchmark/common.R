@@ -34,18 +34,19 @@ get_data_subset <- function(f, n, h, p)
 # OMP Compiler/runtime breaks, colors...
 get_breaks_runtime <- function()
 {
-    return (c('implicit', 'explicit'))
+    return (c('implicit', 'explicit', 'implicit limited'))
 }
 
 get_labels_runtime <- function()
 {
-    return (c('Implicit', 'Explicit'))
+    return (c('Implicit', 'Explicit', 'Implicit Limited'))
 }
 
 get_colors_runtime <- function()
 {
     return (c('implicit'  = "#266d83",
-              'explicit'   = "#e20025"))
+              'explicit'   = "#e20025",
+			  'implicit limited' = "#bd02b6"))
 }
 
 # Scheme breaks, colors ...

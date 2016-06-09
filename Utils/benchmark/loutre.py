@@ -153,26 +153,30 @@ def get_times_from_trace_file(filename):
         if arr[0] == "Name":
             continue
         if len(arr) >= 4:
+            value = float(arr[3])
+            if value < 0:
+                print("\033[31mError negative " + arr[2] + ":" + arr[0] + " -> " + arr[3] + "\033[39m")
+            value = math.fabs(value)
             if arr[2] == "Runtime":
                 if arr[0] == "Scheduling":
-                    scheduling_time += float(arr[3])
+                    scheduling_time += value
                 else:
-                    runtime_time += float(arr[3])
+                    runtime_time += value
             elif arr[2] == "Task":
-                task_time += float(arr[3])
+                task_time += value
             elif arr[2] == "Other":
-                idle_time += float(arr[3])
+                idle_time += value
             elif arr[2] == "MPI":
-                communication_time += float(arr[3])
+                communication_time += value
             elif arr[2] == "User":
                 if arr[0] == "Decoding task for MPI":
-                    communication_time += float(arr[3])
+                    communication_time += value
                 elif arr[0] == "Preparing task for MPI":
-                    communication_time += float(arr[3])
+                    communication_time += value
                 elif arr[0] == "Post-processing task for MPI":
-                    communication_time += float(arr[3])
+                    communication_time += value
                 else:
-                    runtime_time += float(arr[3])
+                    runtime_time += value
             else:
                 print("Error type " + arr[2])
             # sys.exit("Invalid time!")
@@ -186,6 +190,14 @@ def generate_gantt(config, gantt_filename, initial_dir):
         gantt_file.write(config.gen_header_gantt())
     csv_paje_filename = initial_dir + "/paje.csv"
     simple_paje_filename = initial_dir + "/paje.trace"
+    if not os.path.exists(csv_paje_filename):
+        return
+
+    proc = subprocess.Popen(['wc', '-l', csv_paje_filename], stdout=subprocess.PIPE)
+    stdout, stderr = proc.communicate()
+    line = stdout.decode().splitlines()[0].split(" ")[0]
+    if int(line) <= 2:
+        return
 
     #Get start profiling time
     cmd = "grep start_profiling " + simple_paje_filename
@@ -306,12 +318,13 @@ def main():
     else:
         print("File doesn't exist " + trace_filename)
 
-    sum_time = (runtime_time + task_time + scheduling_time + communication_time)/(config.num_nodes*config.num_threads)
+    sum_time = (runtime_time + task_time + scheduling_time + communication_time + idle_time)/(config.num_nodes*config.num_threads)
     diff_time = float('%.2f'%(abs(global_time-sum_time)/global_time))
 
     if diff_time > 0.01:   
         print('\033[31m/!\\Timing Error of ' + str(diff_time) + '\033[39m')
         print('\033[31m Global ' + str(global_time) + ' Sum ' + str(sum_time) + '\033[39m')
+        print('\033[31m Nodes number ' + str(config.num_nodes) + ' CPU ' + str(config.num_threads) + '\033[39m')
 
     # Write a record to the output file.
     output_file.write(config.gen_record(global_time,

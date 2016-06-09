@@ -1,6 +1,6 @@
-library(plyr)
 library(reshape)
 library(ggplot2)
+library(plyr)
 
 gen_efficiencies_plot <- function(output, data)
 {
