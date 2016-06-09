@@ -62,7 +62,7 @@ int main(int argc, char* argv[]){
 
     typedef double FReal;
     // Initialize the types
-    static const int ORDER = 4;
+    static const int ORDER = 6;
     typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
 
     typedef FChebCellPODCore         GroupCellSymbClass;
