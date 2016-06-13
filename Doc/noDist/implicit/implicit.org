@@ -680,8 +680,8 @@ Typiquement, si deux process mpi communiquent beaucoup il faut les mettre plus p
 Mais c'est données n'impliquent pas de forcément des transitions de données mpi ... si elles sont sur le même nœud mpi.
 
 ** Bugs rencontrés
-*** Livelock
-Sur de très gros cas, il y a un livelock qui survient. C'est-à-dire que tous
+*** Deadlock
+Sur de très gros cas, il y a un deadlock qui survient. C'est-à-dire que tous
 les processus se retrouve figé et que le programme ne progresse plus.
 
 Cette erreur est aléatoire et il est possible qu'en relancant plusieurs fois
@@ -690,29 +690,29 @@ l'exécution, le programme arrive à son terme.
 - Plus la hauteur de l'arbre est haute, plus il y a de chance de survenir
   (hauteur >= 8)
 - Plus les groupe de l'arbre sont gros (ng=2000 ou ng=6000), plus il y a de
-  chance de livelock
+  chance de deadlock
 - Plus il y a de particules (avec une hauteur de 6 et 100M de particules par
   example alors qu'en temps normale une hauteur de 6 passe bien), plus il y a
-  de livelock
-- Pour détécter le livelock, j'utilise le watchdog de starpu. Mais il arrive
+  de deadlock
+- Pour détécter le deadlock, j'utilise le watchdog de starpu. Mais il arrive
   que le watchdog se déclanche, mais si on laisse durer l'exécution, elle
   termine. Au lieu de mettre 2 secondes, elle met une minutes.
-- Si on ralenti l'application, avec des wait un peu partout, le livelock a
+- Si on ralenti l'application, avec des wait un peu partout, le deadlock a
   moins de chance d'arriver.
-- La version scalfmm mpi sans les tâches n'est pas sujette au livelock.
-- Le livelock n'apparait pas sur un seul nœud, ni sur une unique machine.
+- La version scalfmm mpi sans les tâches n'est pas sujette au deadlock.
+- Le deadlock n'apparait pas sur un seul nœud, ni sur une unique machine.
 - Il n'apparait pas sur les Daltons (cluster de runtime), mais l'exécution
   d'un cas simple prend 50 secondes au lieux de 7.
-- De même pour intel mpi, pas de livelock, mais une exécution dix fois trop
+- De même pour intel mpi, pas de deadlock, mais une exécution dix fois trop
   longue et des traces qui montre beaucoup de temps en sleeping.
-- En utilisant gdb et en s'attachant au processus qui livelock, il s'avère
+- En utilisant gdb et en s'attachant au processus qui deadlock, il s'avère
   que:
   - Tous les threads sont en attente
   - Il n'y a pas de communication manquante. Les quelques cas étrange de tag
     disparue s'explique facilement.
   - On peut voir que le thread correspondant à starpu mpi est bloqué dans un
     appel à MPI_ISend, en train d'essayer de faire un rendez-vous.
-- Si l'on split les handles, le livelock apparait tout autant. Même en
+- Si l'on split les handles, le deadlock apparait tout autant. Même en
   splittant avec des tailles inférieur au eager.
  
 
@@ -749,9 +749,9 @@ Cet /invalid read/ survient:
 - Pas forcément dans la fonction correspondant au P2P mpi
 - N'apparait pas sur un seul nœud
 
-** Résolution du livelock
+** Résolution du deadlock
 *** Explication
-Pour contourner le livelock qui semble être dû à une surcharge de MPI, autant
+Pour contourner le deadlock qui semble être dû à une surcharge de MPI, autant
 par la taille des buffers à envoyer que par leur nombres, il est possible de
 limiter le nombre de tâches soumises à StarPU.
 Indirectement, cela limite le nombre de tâches mpi soumises par StarPU-MPI.
@@ -787,7 +787,7 @@ choses.
   réveillé, il y ai encore suffisament de tâches dans starpu pour ne pas se
   retrouver en attente.
 - La taille de la fenêtre donnée par min-max, qui doit être suffisament grand pour
-  éviter des /livelock/ et pour garantir une certaine performance en évitant de
+  éviter des /deadlock/ et pour garantir une certaine performance en évitant de
   révéiller et d'endormir le /thread/ de soumission en permanence.
 
 *** Resultats
@@ -797,11 +797,9 @@ choses.
 [[./figure/cube-explicit-8N-70M-h8-ng2000-gantt.png]]
 
 #+CAPTION: Diagramme de gantt sur un cube uniforme. 8 nœuds MPI, 70M de particules, arbre de hauteur h = 8 et de groupe ng=2000. Version implicite sans borne.
-#+NAME:   fig:SED-HR4049
 [[./figure/cube-implicit-8N-70M-h8-ng2000-gantt.png]]
 
 #+CAPTION: Diagramme de gantt sur un cube uniforme. 8 nœuds MPI, 70M de particules, arbre de hauteur h = 8 et de groupe ng=2000. Version implicite avec les bornes [2000,8000].
-#+NAME:   fig:SED-HR4049
 [[./figure/cube-implicit-limited-8N-70M-h8-ng2000-gantt.png]]
 
 On peut voir en regardant les trois diagrammes de gantt qu'ils sont très
@@ -811,6 +809,27 @@ On peut aussi voir que le temps d'exécution est globalement similaire à une
 seconde près. Il faut noter que, bien que la différence est de une seconde
 sur ces trois exécutions, sur plusieurs exécutions, les trois versions on un temps d'exécution moyenne
 similaire qui est de l'ordre de dix secondes.
+
+#+CAPTION: Temps normalisé par rapport à une exécution de l'algorithme starpu classique sur cube uniforme, 70M de particules, hauteur 8, ng = 2000. Noyaux Chebyshev. La version /implicit limited/ a des bornes [2000,8000].
+[[./figure/cube-normalized-time-h8-70M-ng2000-limited.png]]
+
+#+CAPTION: Temps sur cube uniforme, 70M de particules, hauteur 8, ng = 2000. Noyaux Chebyshev. La version /implicit limited/ a des bornes [2000,8000].
+[[./figure/cube-speed-h8-70M-ng2000-limited.png]]
+
+En prenant les bonnes valeurs pour les bornes min et max on peut voir que la
+version /implicit limited/ met autant de temps que les autres.
+** Occigen
+*** Qu'est-ce que c'est ?
+Occigen est un super calculateur hébergé et administré par le CINES.
+*** Resultats
+#+CAPTION: Diagramme de gantt sur un cube uniforme. 10 nœuds MPI, 100M de particules, arbre de hauteur h = 8 et de groupe ng=2000. Noyaux Chebyshev. Version implicite sur Occigen.
+[[./figure/cube-implicit-10N-100M-h8-ng2000-gantt-occigen.png]]
+
+#+CAPTION: Diagramme de gantt sur un cube uniforme. 30 nœuds MPI, 200M de particules, arbre de hauteur h = 8 et de groupe ng=2000. Noyaux Chebyshev. Version implicite sur Occigen.
+[[./figure/cube-implicit-30N-200M-h8-ng2000-gantt-occigen.png]]
+
+#+CAPTION: Temps d'exécution avec 200M de particules, arbre de hauteur h = 8 et de groupe ng=2000. Noyaux Chebyshev. Sur Occigen.
+[[./figure/cube-speed-h8-200M-ng2000-occigen.png]]
 
 ** What have been done so far ?
 - Un arbre groupé identique à celui de la version explicite
