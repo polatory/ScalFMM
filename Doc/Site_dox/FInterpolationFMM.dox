@@ -1,0 +1,25 @@
+/*! \page interFMM Kernel Independent FMM
+
+ * In this section, we briefly discuss the 
+
+ * \section general
+
+ * \section MatrixKernel
+ *
+  * \subsection AddKernel How add a new Matrix Kernel
+
+   * \subsection predKernel predefined Matrix Kernel
+   * Different kernels are predefined in ScalFMM. The kernels are in located
+   * in FInterpMatrixKernel.hpp
+   *<ul>
+   * <li> Laplacian kernel K(x,y)= 1/r with r=|x-y|          <--> class FInterpMatrixKernelR
+   * <li> Laplacian kernel K(x,y)=1/rh with rh=sqrt(L_i*(x_i-y_i)^2)   <--> class FInterpMatrixKernelRH
+   * <li>                  K(x,y)=1/r^2 with r=|x-y|     <--> class FInterpMatrixKernelRR
+   * <li> Lennard Jones    K(x,y)=1/r^12 - 1/r^6 with r=|x-y|"   <--> class  FInterpMatrixKernelLJ
+   * <li>Modified  Laplacian kernel  K(x,y)=1/r exp(-lambda r) with r=|x-y| <--> FInterpMatrixKernelML
+   * <li> K(x,y)=1/(r^2 + coreWidth) with r=|x-y|  <-->  FInterpMatrixKernelAPLUSRR
+   * </ul>
+ 
+ 
+
+*/

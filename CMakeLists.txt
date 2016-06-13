@@ -813,6 +813,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   ##################################################################
   #                           Add - doc                            #
   ##################################################################
+  message(STATUS "SCALFMM_BUILD_DOC           =  ${SCALFMM_BUILD_DOC}" ) 
   if(SCALFMM_BUILD_DOC)
     add_subdirectory(Doc)
   endif()
