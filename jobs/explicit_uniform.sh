@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 ## name of job
-#SBATCH -J implicit
+#SBATCH -J explicit
 #SBATCH -p special
 ## Resources: (nodes, procs, tasks, walltime, ... etc)
 #SBATCH -c 24
-#SBATCH --time=0-00:30:00
+#SBATCH --time=00:30:00
 #SBATCH --exclusive
 # # output error message
-#SBATCH -e implicit_%j.err
+#SBATCH -e explicit_%j.err
 #SBATCH --mail-type=END,FAIL,TIME_LIMIT --mail-user=martin.khannouz@inria.fr
 ## modules to load for the job
 source $HOME/env.sh
 
 ## variable for the job
-export TREE_HEIGHT=8
+export TREE_HEIGHT=6
 export NB_NODE=$SLURM_JOB_NUM_NODES
 export STARPU_NCPU=24
 export STARPU_FXT_PREFIX=$SLURM_JOB_ID
@@ -32,8 +32,8 @@ echo "Nb node: " $NB_NODE >> $FINAL_DIR/stdout
 echo "Nb thread: " $STARPU_NCPU >> $FINAL_DIR/stdout
 echo "Tree height: " $TREE_HEIGHT >> $FINAL_DIR/stdout
 echo "Group size: " $GROUP_SIZE >> $FINAL_DIR/stdout
-echo "Algorithm: implicit" >> $FINAL_DIR/stdout
+echo "Algorithm: explicit_uniforme" >> $FINAL_DIR/stdout
 echo "Total particles: " $NB_PARTICLE >> $FINAL_DIR/stdout
-mpiexec -n $NB_NODE $NUMACTL ./Build/Tests/Release/testBlockedImplicitChebyshev -nb $NB_PARTICLE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation >> $FINAL_DIR/stdout 2>&1
+mpiexec -n $NB_NODE $NUMACTL ./Build/Tests/Release/testBlockedMpiUniform -nb $NB_PARTICLE -bs $GROUP_SIZE -h $TREE_HEIGHT >> $FINAL_DIR/stdout 2>&1
 
 source $HOME/move_trace.sh
