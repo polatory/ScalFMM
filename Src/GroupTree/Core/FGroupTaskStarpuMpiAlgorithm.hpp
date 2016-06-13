@@ -241,7 +241,6 @@ public:
 		int *tag_ub = 0; 
         int ok = 0; 
         MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &tag_ub, &ok);
-        std::cerr << "Tag ub : " << *tag_ub << " " << ok << std::endl;
 
 
         starpu_malloc_set_align(32);

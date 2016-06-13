@@ -157,9 +157,9 @@ int main(int argc, char* argv[]){
     }
     GroupOctreeClass groupedTree(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize,
                                  &myParticlesInContainer, true, leftLimite);
-    //groupedTree.printInfoBlocks();
+    
     timer.tac();
-	//std::cerr << "Done  " << "(@Creating and Inserting Particles = " << timer.elapsed() << "s)." << std::endl;
+	std::cerr << "Done  " << "(@Creating and Inserting Particles = " << timer.elapsed() << "s)." << std::endl;
 
 	int operationsToProceed = FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P | FFmmP2P;
     { // -----------------------------------------------------
