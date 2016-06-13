@@ -100,20 +100,14 @@ protected:
 				}
 			 };   
 			static std::unordered_map<int, TagInfo> previousTag;
-			//static std::unordered_map<int, std::set<int>> alreadySentTag;
 			const TagInfo currentInfo = {inLevel, mindex, idxBloc, mode, idxBlockMpi};
 			auto found = previousTag.find(tag);
 			if(found != previousTag.end()){
 				const TagInfo prev = found->second;
 				assert(currentInfo == prev);
-				//std::set<int>& setOfTag = alreadySentTag[tag];
-				//std::cerr << setOfTag.count(otherProc) << std::endl;
-				//assert(setOfTag.count(otherProc) == 0);
 			}    
 			else{
 				previousTag[tag] = currentInfo;
-				//alreadySentTag[tag] = std::set<int>();
-				//alreadySentTag[tag].insert(otherProc);
 			}    
 		}    
 		return tag; 
@@ -1691,59 +1685,17 @@ protected:
 	{
 		size_t size = starpu_data_get_size(handle);
 		const size_t limitSize = LIMIT_SIZE_MPI;
-		//if( size < limitSize)
-		{
-			starpu_mpi_isend_detached(handle, dest,
-					getTag(level,startingIndex,idxBlock, mode, dest),
-					comm.getComm(), 0/*callback*/, 0/*arg*/ );
-			return;
-		}
-		const int countPart = static_cast<int>(ceil(static_cast<float>(size)/static_cast<float>(limitSize)));
-		struct starpu_data_filter filter =
-		{
-			.filter_func = starpu_vector_filter_block,
-			.nchildren = countPart
-		};
-		starpu_data_handle_t splitHandles[countPart];
-		starpu_data_partition_plan(handle, &filter, splitHandles);
-		starpu_data_partition_submit(handle, countPart, splitHandles);
-		for(int i = 0; i < countPart; ++i)
-		{
-			starpu_mpi_isend_detached( splitHandles[i], dest,
-					getTag(level, startingIndex, idxBlock, mode, dest, i+1),
-					comm.getComm(), 0/*callback*/, 0/*arg*/ );
-		}
-		starpu_data_unpartition_submit(handle, countPart, splitHandles, -1);
-		starpu_data_partition_clean(handle, countPart, splitHandles);
+		starpu_mpi_isend_detached(handle, dest,
+				getTag(level,startingIndex,idxBlock, mode, dest),
+				comm.getComm(), 0/*callback*/, 0/*arg*/ );
 	}
 	void mpiPostIRecv(starpu_data_handle_t handle, const int dest, const int level, const MortonIndex startingIndex, const int idxBlock, const int mode)
 	{
 		size_t size = starpu_data_get_size(handle);
 		const size_t limitSize = LIMIT_SIZE_MPI;
-		//if( size < limitSize)
-		{
-			starpu_mpi_irecv_detached(handle, dest,
-					getTag(level,startingIndex,idxBlock, mode, dest),
-					comm.getComm(), 0/*callback*/, 0/*arg*/ );
-			return;
-		}
-		const int countPart = static_cast<int>(ceil(static_cast<float>(size)/static_cast<float>(limitSize)));
-		struct starpu_data_filter filter =
-		{
-			.filter_func = starpu_vector_filter_block,
-			.nchildren = countPart
-		};
-		starpu_data_handle_t splitHandles[countPart];
-		starpu_data_partition_plan(handle, &filter, splitHandles);
-		starpu_data_partition_submit(handle, countPart, splitHandles);
-		for(int i = 0; i < countPart; ++i)
-		{
-			starpu_mpi_irecv_detached( splitHandles[i], dest,
-					getTag(level, startingIndex, idxBlock, mode, dest, i+1),
-					comm.getComm(), 0/*callback*/, 0/*arg*/ );
-		}
-		starpu_data_unpartition_submit(handle, countPart, splitHandles, -1);
-		starpu_data_partition_clean(handle, countPart, splitHandles);
+		starpu_mpi_irecv_detached(handle, dest,
+				getTag(level,startingIndex,idxBlock, mode, dest),
+				comm.getComm(), 0/*callback*/, 0/*arg*/ );
 	}
     /////////////////////////////////////////////////////////////////////////////////////
     /// Bottom Pass
