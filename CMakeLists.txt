@@ -327,7 +327,6 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
  #                            MACRO_NAMESPACE "PM_"
  #                           SYMBOL_NAMESPACE "PM_"
  #                           SYMBOLS init testPPM:init)
- 	set(SCALFMM_BLAS_ADD_ ON)    # A enlever lorsque MORSE detectera le mangling fortan
     message(STATUS "CMAKE_CXX_COMPILER_ID STREQUAL  ${CMAKE_CXX_COMPILER_ID}")
 
     option( SCALFMM_USE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
@@ -364,6 +363,32 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
         # the RPATH to be used when installing
         list(APPEND CMAKE_INSTALL_RPATH "${LAPACK_LIBRARY_DIRS}")
       endif()
+      # check blas and lapack symbols naming
+      set(CMAKE_REQUIRED_LIBRARIES "${BLAS_LIBRARIES}")
+      check_function_exists(dgemv_ DGEMV_ADD_)
+      check_function_exists(DGEMV  DGEMV_UPCASE)
+      check_function_exists(dgemv  DGEMV_NOCHANGE)
+      if (DGEMV_ADD_)
+        set (SCALFMM_BLAS_ADD_ ON)
+        message (STATUS "BLAS dgemv_ symbol found, SCALFMM_BLAS_ADD_ is ON")
+      else ()
+        set (SCALFMM_BLAS_ADD_ OFF)
+      endif ()
+      if (DGEMV_UPCASE)
+       set (SCALFMM_BLAS_UPCASE ON)
+       message (STATUS "BLAS DGEMV symbol found, SCALFMM_BLAS_UPCASE is ON")
+      else ()
+        set (SCALFMM_BLAS_UPCASE OFF)
+      endif ()
+      if (DGEMV_NOCHANGE)
+        set (SCALFMM_BLAS_NOCHANGE ON)
+        message (STATUS "BLAS dgemv symbol found, SCALFMM_BLAS_NOCHANGE is ON")
+      else   ()
+        set (SCALFMM_BLAS_NOCHANGE OFF)
+      endif ()
+      if ( (NOT DGEMV_ADD_) AND (NOT DGEMV_UPCASE) AND (NOT DGEMV_NOCHANGE) )
+        message(FATAL_ERROR "BLAS Fortran mangling cannot be properly detected")
+      endif ()
     else()
       message(WARNING "BLAS has not been found, SCALFMM will continue to compile but some applications will be disabled.")
       message(WARNING "If you have BLAS set BLAS_LIBDIR, BLAS_INCDIR or BLAS_DIR (CMake variables using -D or environment variables).")        
@@ -619,7 +644,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       OUTPUT_VARIABLE COMPILE_AVX_OUTPUT)
     if(${COMPILE_AVX})
       message(STATUS "%%%%%%%%%%%% COMPILE_AVX               = ${COMPILE_AVX}  %%%%<    ${AVX_FLAGS}")
-      
+
       set(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS}   ${AVX_FLAGS}")
       message(STATUS "%%%%%%%%%%%% SCALFMM_CXX_FLAGS               = ${SCALFMM_CXX_FLAGS}")
       #set( SCALFMM_USE_SSE   OFF   FORCE) # ne marche pas
@@ -732,7 +757,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
     endif(PKG_CONFIG_FOUND)
 
   endif(SCALFMM_USE_EZTRACE)
-  
+
   ##################################################################
   #
   #   To catch signals
@@ -745,7 +770,6 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
         IF( NOT APPLE)
         SET(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS} -rdynamic")
         ENDIF()
-        
     endif()
   ##################################################################
   #                                                                #
