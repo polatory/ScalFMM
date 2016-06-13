@@ -32,9 +32,10 @@ gen_normalized_time_plot <- function(db, d_breaks, model_wanted)
 
     g <- ggplot(data=db,aes_string(x="nnode", y="efficiency", color="algo"))
     g <- g + geom_line()
-    g <- g + facet_wrap(npart ~ height, scales="free",
+    g <- g + facet_wrap(npart ~ height ~ bsize, scales="free",
                         labeller = labeller(npart = as_labeller(npart_labeller),
                                             height = as_labeller(height_labeller),
+											bsize = as_labeller(group_size_labeller),
                                             .default=label_both,
                                             .multi_line=FALSE))
 

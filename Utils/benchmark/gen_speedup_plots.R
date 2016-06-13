@@ -16,12 +16,13 @@ calc_speedup <- function(data, ref_algo)
 gen_speedup_taskdep_plot <- function(d, model_wanted)
 {
 	d <- subset(d, model == model_wanted)
-	d <- calc_speedup(d, "explicit")
+	d <- calc_speedup(d, "simple-mpi")
 	g <- ggplot(data=d,aes_string(x="nnode", y="speedup", color="algo"))
     g <- g + geom_line()
-	g <- g + facet_wrap(npart ~ height, scales="free",
+	g <- g + facet_wrap(npart ~ height ~ bsize, scales="free",
 						labeller = labeller(npart = as_labeller(npart_labeller),
 											height = as_labeller(height_labeller),
+											bsize = as_labeller(group_size_labeller),
 											.default=label_both,
 											.multi_line=FALSE))
 

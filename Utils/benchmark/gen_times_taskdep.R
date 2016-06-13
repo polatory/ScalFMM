@@ -17,9 +17,10 @@ gen_times_taskdep_plot <- function(data, algo_wanted, model_wanted)
 	g <- g + geom_bar(stat="identity", position="fill")
 
 	#Pour le titre
-	g <- g + facet_wrap(npart ~ height, scales="free",
+	g <- g + facet_wrap(npart ~ height ~ bsize, scales="free",
 						labeller = labeller(npart = as_labeller(npart_labeller),
 											height = as_labeller(height_labeller),
+											bsize = as_labeller(group_size_labeller),
 											.default=label_both,
 											.multi_line=FALSE))
     # Set colors.

@@ -107,10 +107,10 @@ read_trace <- function(file, nnode, nthreads, start_profiling, stop_profiling)
 	#Return
 	df
 } 
-gen_simple_gantt_plot <- function(data, model, algo, nnode, npart)
+gen_simple_gantt_plot <- function(data, model, algo, nnode, npart, bsize, height)
 {
-	output <- paste(get_output_directory(), "/", model, "-", algo, "-", nnode, "N-", npart/1000000, "M-simple-gantt.pdf", sep="")
-	title <- paste(model, " ", algo, " ", nnode, "N ", npart/1000000, "M", sep="")
+	output <- paste(get_output_directory(), "/", model, "-", algo, "-", nnode, "N-", npart/1000000, "M-h", height, "-bs", bsize, "-simple-gantt.pdf", sep="")
+	title <- paste(model, " ", algo, " ", nnode, "N ", npart/1000000, "M", " h = ", height, " bs = ", bsize, sep="")
 	breaks <- c('Sleeping', 'Far Field', 'Near Field')
 	labels <- c('Sleeping', 'Far Field', 'Near Field')
 	colors <- c(
@@ -128,10 +128,10 @@ gen_simple_gantt_plot <- function(data, model, algo, nnode, npart)
 	g <- g + scale_y_discrete(breaks=NULL)
     ggsave(output, g, width=29.7, height=21, units=c("cm"), device=cairo_pdf)
 }
-gen_gantt_plot <- function(data, model, algo, nnode, npart)
+gen_gantt_plot <- function(data, model, algo, nnode, npart, bsize, height)
 {
-	output <- paste(get_output_directory(), "/", model, "-", algo, "-", nnode, "N-", npart/1000000, "M-gantt.pdf", sep="")
-	title <- paste(model, " ", algo, " ", nnode, "N ", npart/1000000, "M", sep="")
+	output <- paste(get_output_directory(), "/", model, "-", algo, "-", nnode, "N-", npart/1000000, "M-h", height, "-bs", bsize, "-gantt.pdf", sep="")
+	title <- paste(model, " ", algo, " ", nnode, "N ", npart/1000000, "M", " h = ", height, " bs = ", bsize, sep="")
 	g <- ggplot(data,aes(x=Start,xend=End, y=factor(ResourceId), yend=factor(ResourceId),color=Value)) 
 	g <- g + theme_bw()
 	g <- g + geom_segment(size=8)
@@ -167,30 +167,38 @@ gen_gantt <- function(dbfile)
 	all_model <- unique(df$model)
 	all_nnode <- unique(df$nnode)
 	all_npart <- unique(df$npart)
-	for (mod in 1:length(all_model))
+	all_bsize <- unique(df$bsize)
+	all_height <- unique(df$height)
+	for (bsi in 1:length(all_bsize))
 	{
-		for (alg in 1:length(all_algorithm))
+		for (hei in 1:length(all_height))
 		{
-			for (nno in 1:length(all_nnode))
+			for (mod in 1:length(all_model))
 			{
-				for (npa in 1:length(all_npart))
+				for (alg in 1:length(all_algorithm))
 				{
-					#Get the corresponding line
-					tmp_df <- subset(df, model == all_model[mod] & algo == all_algorithm[alg] & nnode == all_nnode[nno] & npart == all_npart[npa])
-					if(nrow(tmp_df) > 0)
+					for (nno in 1:length(all_nnode))
 					{
-						look <- paste("Grab data ", all_model[mod],all_algorithm[alg], all_nnode[nno], "N", all_npart[npa], sep="-")
-						#Print something so I know were is the script
-						print(look) 
-						data <- gen_gantt_grab_data(tmp_df)
-						gen_gantt_plot(data, all_model[mod], all_algorithm[alg], all_nnode[nno], all_npart[npa])
-						gen_simple_gantt_plot(data, all_model[mod], all_algorithm[alg], all_nnode[nno], all_npart[npa])
-						#rm(data)
-						#gc()
+						for (npa in 1:length(all_npart))
+						{
+							#Get the corresponding line
+							tmp_df <- subset(df, model == all_model[mod] & algo == all_algorithm[alg] & nnode == all_nnode[nno] & npart == all_npart[npa] & bsize == all_bsize[bsi] & height == all_height[hei])
+							if(nrow(tmp_df) > 0)
+							{
+								look <- paste("Grab data ", all_model[mod],all_algorithm[alg], all_nnode[nno], "N", all_npart[npa], all_height[hei], all_bsize[bsi], sep="-")
+								#Print something so I know were is the script
+								print(look) 
+								data <- gen_gantt_grab_data(tmp_df)
+								gen_gantt_plot(data, all_model[mod], all_algorithm[alg], all_nnode[nno], all_npart[npa], all_bsize[bsi], all_height[hei])
+								gen_simple_gantt_plot(data, all_model[mod], all_algorithm[alg], all_nnode[nno], all_npart[npa], all_bsize[bsi], all_height[hei])
+								rm(data)
+								gc()
+							}
+						}
 					}
+
 				}
 			}
-
 		}
 	}
 }

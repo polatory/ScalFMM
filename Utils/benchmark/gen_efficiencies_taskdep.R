@@ -8,9 +8,10 @@ gen_efficiencies_plot <- function(output, data)
                 color="event", group="event"))
     g <- g + geom_line()
     g <- g + geom_point(aes_string(color="event"), size=2)
-    g <- g + facet_wrap(npart ~ height, scales="free",
+    g <- g + facet_wrap(npart ~ height ~ bsize, scales="free",
                         labeller = labeller(npart = as_labeller(npart_labeller),
                                             height = as_labeller(height_labeller),
+											bsize = as_labeller(group_size_labeller),
                                             .default=label_both,
                                             .multi_line=FALSE))
     # Set colors.
@@ -23,7 +24,7 @@ gen_efficiencies_plot <- function(output, data)
     g <- g + xlab("Number of node")
     g <- g + ylab("Efficiency")
 
-    g <- g + scale_x_continuous(breaks=c(1, 2, 3, 4, 6, 9, 12, 16, 20, 24))
+    #g <- g + scale_x_continuous(breaks=c(1, 2, 3, 4, 6, 9, 12, 16, 20, 24))
 
     # Set y-axis range
     g <- g + ylim(c(0.0, 1.10))
@@ -40,9 +41,12 @@ compute_efficiency <- function(data, n)
 
 
     # Compute task efficiency
-    #tt_1 <- subset(sdata, event == "task_time" & nthreads == 1)
 	tt_1 <- subset(sdata, event == "task_time" & nnode == 1)
     et <- subset(sdata, event == "task_time")
+	if(nrow(tt_1))
+	{
+		print("There is no one node reference for this algorithm")
+	}
     et$efficiency <- tt_1$duration / et$duration
 
     # Compute scheduling efficiency

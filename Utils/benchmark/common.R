@@ -31,22 +31,22 @@ get_data_subset <- function(f, n, h, p)
     return (d)
 }
 
-# OMP Compiler/runtime breaks, colors...
 get_breaks_runtime <- function()
 {
-    return (c('implicit', 'explicit', 'implicit limited'))
+    return (c('implicit', 'explicit', 'implicit limited', 'simple-mpi'))
 }
 
 get_labels_runtime <- function()
 {
-    return (c('Implicit', 'Explicit', 'Implicit Limited'))
+    return (c('Implicit', 'Explicit', 'Implicit Limited', 'Simple MPI'))
 }
 
 get_colors_runtime <- function()
 {
     return (c('implicit'  = "#266d83",
               'explicit'   = "#e20025",
-			  'implicit limited' = "#bd02b6"))
+			  'implicit limited' = "#bd02b6",
+			  'simple-mpi' = "#9aff4f"))
 }
 
 # Scheme breaks, colors ...
@@ -108,4 +108,12 @@ npart_labeller <- function(value)
 height_labeller <- function(value)
 {
     return (paste("h =", value))
+}
+group_size_labeller <- function(value)
+{
+    return (paste("bs =", value))
+}
+nnode_labeller <- function(value)
+{
+    return (paste("node =", value))
 }
