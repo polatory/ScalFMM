@@ -197,6 +197,7 @@ def generate_gantt(config, gantt_filename, initial_dir):
     stdout, stderr = proc.communicate()
     line = stdout.decode().splitlines()[0].split(" ")[0]
     if int(line) <= 2:
+        print("There is too m few line in " + csv_paje_filename)
         return
 
     #Get start profiling time
@@ -234,12 +235,13 @@ def main():
     trace_filename="trace.rec"
     output_filename="loutre.db"
     gantt_database=""
-
+    only_gantt=False
     long_opts = ["help",
                  "trace-file=",
                  "output-trace-file=",
                  "gantt-database=",
-                 "output-file="]
+                 "output-file=",
+                 "only-gantt"]
 
     opts, args = getopt.getopt(sys.argv[1:], "ht:i:o:g:", long_opts)
     for o, a in opts:
@@ -255,6 +257,8 @@ def main():
             output_filename = str(a)
         elif o in ("-g", "--gantt-database"):
             gantt_database = str(a)
+        elif o in ("--only-gantt"):
+            only_gantt = True
         else:
             assert False, "unhandled option"
 
@@ -312,28 +316,29 @@ def main():
     if(gantt_database != ""):
         generate_gantt(config, gantt_database, os.path.dirname(trace_filename))
 
-    print("Generating time ...")
-    if (os.path.isfile(trace_filename)): #Time in milli
-        runtime_time, task_time, idle_time, scheduling_time, communication_time = get_times_from_trace_file(trace_filename)
-    else:
-        print("File doesn't exist " + trace_filename)
+    if not only_gantt:
+        print("Generating time ...")
+        if (os.path.isfile(trace_filename)): #Time in milli
+            runtime_time, task_time, idle_time, scheduling_time, communication_time = get_times_from_trace_file(trace_filename)
+        else:
+            print("File doesn't exist " + trace_filename)
 
-    sum_time = (runtime_time + task_time + scheduling_time + communication_time + idle_time)/(config.num_nodes*config.num_threads)
-    diff_time = float('%.2f'%(abs(global_time-sum_time)/global_time))
+        sum_time = (runtime_time + task_time + scheduling_time + communication_time + idle_time)/(config.num_nodes*config.num_threads)
+        diff_time = float('%.2f'%(abs(global_time-sum_time)/global_time))
 
-    if diff_time > 0.01:   
-        print('\033[31m/!\\Timing Error of ' + str(diff_time) + '\033[39m')
-        print('\033[31m Global ' + str(global_time) + ' Sum ' + str(sum_time) + '\033[39m')
-        print('\033[31m Nodes number ' + str(config.num_nodes) + ' CPU ' + str(config.num_threads) + '\033[39m')
+        if diff_time > 0.01:   
+            print('\033[31m/!\\Timing Error of ' + str(diff_time) + '\033[39m')
+            print('\033[31m Global ' + str(global_time) + ' Sum ' + str(sum_time) + '\033[39m')
+            print('\033[31m Nodes number ' + str(config.num_nodes) + ' CPU ' + str(config.num_threads) + '\033[39m')
 
-    # Write a record to the output file.
-    output_file.write(config.gen_record(global_time,
-                      float(runtime_time),
-                      float(task_time),
-                      float(idle_time),
-                      float(scheduling_time),
-                      float(communication_time),
-                      float(communication_vol),
-                      int(rmem)))
+        # Write a record to the output file.
+        output_file.write(config.gen_record(global_time,
+                          float(runtime_time),
+                          float(task_time),
+                          float(idle_time),
+                          float(scheduling_time),
+                          float(communication_time),
+                          float(communication_vol),
+                          int(rmem)))
 
 main()

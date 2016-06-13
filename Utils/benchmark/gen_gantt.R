@@ -185,6 +185,8 @@ gen_gantt <- function(dbfile)
 						data <- gen_gantt_grab_data(tmp_df)
 						gen_gantt_plot(data, all_model[mod], all_algorithm[alg], all_nnode[nno], all_npart[npa])
 						gen_simple_gantt_plot(data, all_model[mod], all_algorithm[alg], all_nnode[nno], all_npart[npa])
+						#rm(data)
+						#gc()
 					}
 				}
 			}
