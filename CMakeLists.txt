@@ -321,16 +321,16 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   ##############################################################################
   #
   if( SCALFMM_USE_BLAS )
- #   include(FortranCInterface)
- #    # Define a Fortran interface file (FCMangle.hpp)
- #   FortranCInterface_HEADER( ${CMAKE_CURRENT_SOURCE_DIR}/Src/FCMangle.hpp
- #                            MACRO_NAMESPACE "PM_"
- #                           SYMBOL_NAMESPACE "PM_"
- #                           SYMBOLS init testPPM:init)
+    #   include(FortranCInterface)
+    #    # Define a Fortran interface file (FCMangle.hpp)
+    #   FortranCInterface_HEADER( ${CMAKE_CURRENT_SOURCE_DIR}/Src/FCMangle.hpp
+    #                            MACRO_NAMESPACE "PM_"
+    #                           SYMBOL_NAMESPACE "PM_"
+    #                           SYMBOLS init testPPM:init)
     message(STATUS "CMAKE_CXX_COMPILER_ID STREQUAL  ${CMAKE_CXX_COMPILER_ID}")
-
+    
     option( SCALFMM_USE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
-
+    
     if( SCALFMM_USE_MKL_AS_BLAS )
       set(BLA_VENDOR "Intel10_64lp_seq")
       find_package(BLASEXT QUIET) # not REQUIRED
@@ -352,7 +352,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
         list(APPEND BLASLAPACK_LIBRARIES "${BLAS_LIBRARIES}")
       endif()
     endif()
-
+    
     if(BLAS_FOUND)
       set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${BLASLAPACK_LIBRARIES}")
       if(BLAS_LIBRARY_DIRS)
@@ -366,26 +366,29 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       # check blas and lapack symbols naming
       set(CMAKE_REQUIRED_LIBRARIES "${BLAS_LIBRARIES}")
       check_function_exists(dgemv_ DGEMV_ADD_)
-      check_function_exists(DGEMV  DGEMV_UPCASE)
-      check_function_exists(dgemv  DGEMV_NOCHANGE)
+      set (SCALFMM_BLAS_UPCASE OFF)
+      set (SCALFMM_BLAS_NOCHANGE OFF)
+      message (STATUS "BLAS dgemv_ " ${DGEMV_ADD_}   ${SCALFMM_BLAS_UPCASE})
       if (DGEMV_ADD_)
         set (SCALFMM_BLAS_ADD_ ON)
         message (STATUS "BLAS dgemv_ symbol found, SCALFMM_BLAS_ADD_ is ON")
-      else ()
+      else (DGEMV_ADD_)
         set (SCALFMM_BLAS_ADD_ OFF)
-      endif ()
-      if (DGEMV_UPCASE)
-       set (SCALFMM_BLAS_UPCASE ON)
-       message (STATUS "BLAS DGEMV symbol found, SCALFMM_BLAS_UPCASE is ON")
-      else ()
-        set (SCALFMM_BLAS_UPCASE OFF)
-      endif ()
-      if (DGEMV_NOCHANGE)
-        set (SCALFMM_BLAS_NOCHANGE ON)
-        message (STATUS "BLAS dgemv symbol found, SCALFMM_BLAS_NOCHANGE is ON")
-      else   ()
-        set (SCALFMM_BLAS_NOCHANGE OFF)
-      endif ()
+	check_function_exists(DGEMV  DGEMV_UPCASE)
+	if (DGEMV_UPCASE)
+	  set (SCALFMM_BLAS_UPCASE ON)
+	  message (STATUS "BLAS DGEMV symbol found, SCALFMM_BLAS_UPCASE is ON")
+	else (DGEMV_UPCASE)
+	  #          set (SCALFMM_BLAS_UPCASE OFF)
+          check_function_exists(dgemv  DGEMV_NOCHANGE)
+          if (DGEMV_NOCHANGE) 
+            set (SCALFMM_BLAS_NOCHANGE ON)
+            message (STATUS "BLAS dgemv symbol found, SCALFMM_BLAS_NOCHANGE is ON")
+	    #	  else   (DGEMV_NOCHANGE)
+	    #            set (SCALFMM_BLAS_NOCHANGE OFF)
+	  endif (DGEMV_NOCHANGE)
+        endif (DGEMV_UPCASE)
+      endif (DGEMV_ADD_)
       if ( (NOT DGEMV_ADD_) AND (NOT DGEMV_UPCASE) AND (NOT DGEMV_NOCHANGE) )
         message(FATAL_ERROR "BLAS Fortran mangling cannot be properly detected")
       endif ()
