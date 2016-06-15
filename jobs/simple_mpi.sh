@@ -16,6 +16,7 @@ source $HOME/env.sh
 export TREE_HEIGHT=8
 export NB_NODE=$SLURM_JOB_NUM_NODES
 export FINAL_DIR="`pwd`/dir_$SLURM_JOB_ID"
+export STARPU_FXT_PREFIX=$SLURM_JOB_ID
 NUMACTL="numactl --interleave=all"
 mkdir $FINAL_DIR
 echo "my jobID: " $SLURM_JOB_ID > $FINAL_DIR/stdout
