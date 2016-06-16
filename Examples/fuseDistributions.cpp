@@ -104,16 +104,19 @@ std::vector<distribution> subparse_file(const std::vector<std::string>& args, st
             sstr >> dist.scale;
         } else if (args[i] == "-c") {
             ++i;
-            char c; // Used to get the ':' from argument format
+            char c; // Used to discard the ':' from argument format
             sstr.str(args.at(i));
             sstr >> dist.offset[0] >> c >> dist.offset[1] >> c >> dist.offset[2];
         } else if(args[i] == "-g") {
             ++i;
-            char c; // Used to get the ':' from argument format
+            char c; // Used to discard the ':' from argument format
             sstr.str(args.at(i));
-            std::cerr << sstr.str() << '\n';
             sstr >> gx >> c >> gy >> c >> gz;
-            std::cerr << gx << ' ' << gy << ' ' << gz << '\n';
+        } else if(args[i] == "-r") {
+            ++i;
+            char c; // Used to discard the ':' from argument format
+            sstr.str(args.at(i));
+            sstr >> dist.rot[0] >> c >> dist.rot[1] >> c >> dist.rot[2];
         } else {
             if(dist.filename != "") {
                 --i;
@@ -180,6 +183,27 @@ parameters parse(const std::vector<std::string>& args) {
 }
 
 
+void rotate(Particle& p, const distribution& dist) {
+    // Rotate around x axis
+    if(dist.rot[0] > 1e-5 || dist.rot[0] < -1e-5) {
+        FReal alpha = dist.rot[0];
+        p.pos[1] = p.pos[1] * cos(alpha) - p.pos[2] * sin(alpha);
+        p.pos[2] = p.pos[1] * sin(alpha) + p.pos[2] * cos(alpha);
+    }
+    // Rotate around y axis
+    if(dist.rot[1] > 1e-5 || dist.rot[1] < -1e-5) {
+        FReal alpha = dist.rot[1];
+        p.pos[0] =  p.pos[0] * cos(alpha) + p.pos[2] * sin(alpha);
+        p.pos[2] = -p.pos[0] * sin(alpha) + p.pos[2] * cos(alpha);
+    }
+    // Rotate around z axis
+    if(dist.rot[2] > 1e-5 || dist.rot[2] < -1e-5) {
+        FReal alpha = dist.rot[1];
+        p.pos[0] = p.pos[0] * cos(alpha) - p.pos[1] * sin(alpha);
+        p.pos[1] = p.pos[0] * sin(alpha) + p.pos[1] * cos(alpha);
+    }
+}
+
 
 
 
@@ -213,8 +237,7 @@ int main(int argc, char** argv) {
             // Scale distribution
             p.pos *= dist.scale;
             // Rotate distribution
-            // TODO
-
+            rotate(p, dist);
             // Move to new position
             p.pos += dist.offset;
             // Add particle to list
