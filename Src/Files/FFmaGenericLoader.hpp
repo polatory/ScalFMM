@@ -297,10 +297,9 @@ public:
 
     /**
      * To get the number of particles from this loader
-     * @param the number of particles the loader can fill
      */
     FSize getNumberOfParticles() const{
-        return this->nbParticles;
+        return this->getParticleCount();
     }
 
     /**
@@ -308,8 +307,25 @@ public:
      * @return box center
      */
     FPoint<FReal> getCenterOfBox() const{
+        return this->getBoxCenter();
+    }
+
+    /**
+     * \brief Get the distribution particle count
+     * \return The distribution particle count
+     */
+    FSize getParticleCount() const {
+        return this->nbParticles;
+    }
+
+    /**
+     * \brief Get distribution center
+     * \return A point representing the box center
+     */
+    FPoint<FReal> getBoxCenter() const{
         return this->centerOfBox;
     }
+
     /**
      * The box width from the simulation file opened by the loader
      * @return box width
