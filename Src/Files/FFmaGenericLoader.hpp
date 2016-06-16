@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 // author Berenger Bramas and Olivier Coulaud
@@ -36,7 +36,7 @@
 /** \brief Particle class used in FMA loader and writer.
  *
  *
- * The pieces of data are : PosX, PosY, PosZ, physicalValue, 
+ * The pieces of data are : PosX, PosY, PosZ, physicalValue,
  * Potential, forceX, forceY, forceZ. The first 4 are mandatory.
  * Data is stored as FReal.
  *
@@ -165,10 +165,10 @@ public:
  * example below shows how to use the loader to read from a file.
  *
  *
- * \code 
- * // Instanciate the loader with the particle file. 
- * FFmaGenericLoader<FReal> loader("../Data/unitCubeXYZQ20k.fma"); // extension fma -> ascii format 
- * // Retrieve the number of particles 
+ * \code
+ * // Instanciate the loader with the particle file.
+ * FFmaGenericLoader<FReal> loader("../Data/unitCubeXYZQ20k.fma"); // extension fma -> ascii format
+ * // Retrieve the number of particles
  * FSize nbParticles = loader.getNumberOfParticles();
  *
  * // Create an array of particles, initialize to 0.
@@ -190,7 +190,7 @@ public:
  * \endcode
  *
  * `DatatypeSize` can have one of two values:
- *  - 4, float ; 
+ *  - 4, float ;
  *  - 8, double.
  *
  * `Number_of_records_per_line` gives the data count for each line of
@@ -241,7 +241,7 @@ public:
      * @param binary   true if the file to open is in binary mode
      */
     FFmaGenericLoader(const std::string & filename,const bool binary ):
-        file(nullptr), binaryFile(binary), centerOfBox(0.0,0.0,0.0), boxWidth(0.0), 
+        file(nullptr), binaryFile(binary), centerOfBox(0.0,0.0,0.0), boxWidth(0.0),
         nbParticles(0), tmpVal(nullptr), otherDataToRead(0)
         {
             this->open_file(filename, binary);
@@ -254,7 +254,7 @@ public:
      *
      * - The opening mode is guessed from the file extension : `.fma` will open
      * in ASCII mode, `.bfma` will open in binary mode.
-     * - All information accessible in the header can be retreived after this call.  
+     * - All information accessible in the header can be retreived after this call.
      * - To test if the file has successfully been opened, call hasNotFinished().
      *
      * @param filename the name of the file to open. Must end with `.fma` or `.bfma`.
@@ -268,7 +268,7 @@ public:
             binaryFile = false;
         } else  {
             std::cout << "FFmaGenericLoader: "
-                      << "Only .fma or .bfma input file are allowed. Got " 
+                      << "Only .fma or .bfma input file are allowed. Got "
                       << filename << "."
                       << std::endl;
             std::exit ( EXIT_FAILURE) ;
@@ -518,7 +518,7 @@ private:
 };
 
 
-/**\class FFmaGenericWriter
+/**
  * \warning This class only works in shared memory (doesn't work with MPI).
  *
  * \brief Writes a set of particles to an FMA formated file.
@@ -545,14 +545,13 @@ private:
  * \endcode
  *
  * `DatatypeSize` can have one of two values:
- *  - 4, float ; 
+ *  - 4, float;
  *  - 8, double.
  *
  * `Number_of_records_per_line` gives the data count for each line of
  * the `Particle_values`. For example :
- *  - 4, the particle values are X Y Z Q;
- *  - 8, the particle values are X Y Z Q  P FX FY FZ<br>
-
+ *  - 4, the particle values are `X Y Z Q`;
+ *  - 8, the particle values are `X Y Z Q  P FX FY FZ`.
  */
 template <class FReal>
 class FFmaGenericWriter {
@@ -658,9 +657,9 @@ public:
 
     /**
      * Writes the header of FMA file.
-     * 
+     *
      * Should be used if we write the particles with writeArrayOfReal method
-     * 
+     *
      * @param centerOfBox      The center of the Box (FPoint<FReal> class)
      * @param boxWidth         The width of the box
      * @param nbParticles      Number of particles in the box (or to save)
@@ -688,7 +687,7 @@ public:
      * @tparam dataPart   The class of the particle array.
      * @param dataToWrite Array of particles of type dataPart
      * @param N           Number of element in the array
-     * 
+     *
      * Example 1
      * \code
      * FmaRParticle *  particles = new FmaRParticle[nbParticles];
@@ -698,7 +697,7 @@ public:
      * Fwriter.writeHeader(Centre,BoxWith, nbParticles,*particles) ;
      * Fwriter.writeArrayOfParticles(particles, nbParticles);
      * \endcode
-     * 
+     *
      * Example2
      * \code
      * FReal *  particles = new FReal[4*NbPoints] ; // store 4 data per particle
@@ -752,13 +751,13 @@ public:
 
     /**
      *  Write an array of data in a file Fill
-     * 
+     *
      * @param dataToWrite array of particles of type FReal
      * @param nbData number of data per particle
      * @param N number of particles
-     * 
+     *
      *   The size of the array is N*nbData
-     * 
+     *
      *   example
      * \code
      * FmaRParticle * const particles = new FmaRParticle[nbParticles];
@@ -869,5 +868,3 @@ private:
 
 
 #endif //FFmaGenericLoader_HPP
-
-
