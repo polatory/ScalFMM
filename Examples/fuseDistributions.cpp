@@ -18,6 +18,47 @@
 
 #include "Files/FFmaGenericLoader.hpp"
 
+
+void usage(const std::string& progname) {
+    std::size_t start = progname.find_last_of('/');
+    std::string name = progname.substr(start+1);
+    std::cout <<
+        "usage: " << name <<
+        " --file [[-s scale] [-c cx:cy:cz] [-g gx:gy:gz]] filename"
+        " -fout output_file"
+        " [--extra-length length]"
+        "\n"
+        "\n"
+        "Fuses multiple particle distributions into a bigger one."
+        "\n"
+        "\n"
+        "Options:\n"
+        "  -fout output_file\n"
+        "    The output file name, must hase .bfma or .fma extension\n"
+        "\n"
+        "  --file [opts] filename [opts]\n"
+        "    Add a .fma or .bfma distibution file. Multiple files may be specified by\n"
+        "    adding more --file options. 'opts' is a combination of:\n"
+        "      -s scale\n"
+        "        Scale the distribution by 'scale' factor.\n"
+        "      -c cx:cy:cz\n"
+        "        Center the distribution at given coordinates. cx, cy and cz are\n"
+        "        floating point numbers.\n"
+        "      -g gx:gy:gz\n"
+        "        Duplicate the distribution inside a grid of gx by gy by gz dimensions.\n"
+        "        gx, gy and gz are integers. The grid center is governed by the -c \n"
+        "        option.\n"
+        "\n"
+        "  --extra-length length\n"
+        "    Length to be added to the final box width.\n"
+        "\n"
+        "  --help\n"
+        "    Print this message."
+        "\n"
+        ;
+}
+
+
 using FReal = double;
 
 struct Particle {
@@ -116,7 +157,9 @@ parameters parse(const std::vector<std::string>& args) {
     parameters params;
     std::stringstream sstr;
     for(std::size_t i = 1; i < args.size(); ++i) {
-        if(false) { // To reorder cases without breaking format
+        if(args[i] == "--help") {
+            usage(args[0]);
+            exit(0);
         } else if(args[i] == "--file") {
             ++i;
             auto ds = subparse_file(args, i);
