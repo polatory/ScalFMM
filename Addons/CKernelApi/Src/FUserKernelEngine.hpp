@@ -125,10 +125,14 @@ public:
     virtual void M2M(CellClass* const FRestrict cell, const CellClass*const FRestrict *const FRestrict children, const int level) {
         if(kernel.m2m_full){
             std::vector<void *> userCellArray;
-            for(int i=0 ;i<8 ; ++i){
-                userCellArray.push_back(children[i]->getContainer());
-                kernel.m2m_full(level, cell->getContainer(), userCellArray.data(), userData);
+            for(int idx=0 ;idx<8 ; ++idx){
+                if( children[idx] ){
+                    userCellArray.push_back(children[idx]->getContainer());
+                }else{
+                    userCellArray.push_back(nullptr);
+                }
             }
+            kernel.m2m_full(level, cell->getContainer(), userCellArray.data(), userData);
         }else{
             if(kernel.m2m){
                 for(int idx = 0 ; idx < 8 ; ++idx){
@@ -167,7 +171,11 @@ public:
         if(kernel.l2l_full){
             std::vector<void *> userCellArray;
             for(int i=0 ;i<8 ; ++i){
-                userCellArray.push_back(children[i]->getContainer());
+                if(children[i]){
+                    userCellArray.push_back(children[i]->getContainer());
+                }else{
+                    userCellArray.push_back(nullptr);
+                }
                 kernel.l2l_full(level, cell->getContainer(), userCellArray.data(), userData);
             }
         }else{
