@@ -11,16 +11,15 @@
 #include <string>
 #include <cstdlib>
 //
-#include "Files/FFmaGenericLoader.hpp"
-#include "Files/FDlpolyLoader.hpp"
 //
 #include "Utils/FGlobal.hpp"
-#include "Utils/FPoint.hpp"
+
 #include "Utils/FParameters.hpp"
-#include "Files/FGenerateDistribution.hpp"
+#include "Utils/FParameterNames.hpp"
+
+#include "Files/FFmaGenericLoader.hpp"
 #include "Files/FExportWriter.hpp"
 
-#include "Utils/FParameterNames.hpp"
 
 //
 /// \file  changeFmaFormat.cpp
@@ -88,7 +87,7 @@ int main(int argc, char ** argv){
     //   Generate file for visualization purpose
     //
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::OutputVisuFile.options)){
-        std::string outfilename(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output.vtp"));
+        std::string outfilename(FParameters::getStr(argc,argv,FParameterDefinitions::OutputVisuFile.options,   "output.vtp"));
         driverExportData(outfilename, particles , NbPoints,loader.getNbRecordPerline() );
     }
     //

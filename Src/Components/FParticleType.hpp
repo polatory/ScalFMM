@@ -19,7 +19,7 @@
 /**
  * @brief The FParticleType enum is to make a difference between Target and Source (Tsm)
  */
-enum FParticleType {
+enum class FParticleType {
     FParticleTypeSource = 0,
     FParticleTypeTarget = 1
 };

@@ -16,7 +16,12 @@
 #ifndef FGENERATEDISTRIBUTION_HPP
 #define FGENERATEDISTRIBUTION_HPP
 
-// @author O. Coulaud
+/**
+ * \file
+ * \brief Distribution generation implementations
+ * \author O. Coulaud
+ */
+
 
 #include <cstdlib>
 #include <ctime>
@@ -27,250 +32,273 @@
 #include "Utils/FMath.hpp"
 #include "Utils/FParameters.hpp"
 
-/**  return a random number between 0 and 1 */
-
+/**
+ * \brief Seed the random number generator using current time
+ */
 void initRandom() {
-	srand48( static_cast<long int>(time(nullptr))) ;
-} ;
+    srand48(static_cast<long int>(time(nullptr)));
+}
+
+/**
+ * \brief Generate a random number
+ * \tparam FReal Floating point type
+ * \return A random number in [0,1]
+ */
 template <class FReal>
 FReal getRandom() {
-	return static_cast<FReal>(drand48());
-	//return static_cast<FReal>(rand()/FReal(RAND_MAX));
-} ;
-//!  \fn   unifRandonPointsOnUnitCube(const int N , FReal * points)
+    return static_cast<FReal>(drand48());
+}
 
-//! \brief Generate N points uniformly distributed on the unit cube
-
-//!
-//! \param N the number of points uniformly randomly sample on the unit cube
-//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
-//! \example  generateDistributions.cpp
+/**
+ * \brief Generate points uniformly inside a cuboid
+ *
+ * \tparam FReal Floating point type
+ *
+ * \param N the number of points uniformly randomly sample on the unit cube
+ * \param Lx the the X-length of the cuboid
+ * \param Ly the the Y-length of the cuboid
+ * \param Lz the the Z-length of the cuboid
+ * \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0...
+ */
 template <class FReal>
-void unifRandonPointsOnUnitCube(const FSize N , FReal * points) {
-	//
-	initRandom() ;
-	int j = 0;
-    for (FSize i = 0 ; i< N ; ++i, j+=4)  {
-		//
-        points[j]	  =	getRandom<FReal>()  ;
-        points[j+1] =	getRandom<FReal>()  ;
-        points[j+2] =	getRandom<FReal>()  ;
-		//
-	}
-};
-//!  \fn   unifRandonPointsOnCube(const int N , FReal * points)
+void unifRandomPointsInCube(const FSize N, const FReal& Lx, const FReal& Ly,
+                            const FReal& Lz, FReal* points)
+{
+    initRandom();
+    for(FSize i = 0, j = 0 ; i< N ; ++i, j+=4)  {
+        points[j]   = getRandom<FReal>() * Lx;
+        points[j+1] = getRandom<FReal>() * Ly;
+        points[j+2] = getRandom<FReal>() * Lz;
+    }
+}
 
-//! \brief Generate N points uniformly distributed on the cube of length R
+/**
+ * \brief Generate points uniformly inside a ball
+ *
+ * \tparam FReal Floating point type
+ *
+ * \param R the ball radius
+ * \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0...
+ */
+template<class FReal>
+void unifRandomPointsInBall(const FSize N, const FReal R, FReal* points) {
+    initRandom();
 
-//!
-//! \param N the number of points uniformly randomly sample on the unit cube
-//! \param Lx the the X-length of the  cube
-//! \param Ly the the Y-length of the  cube
-//! \param Lz the the Z-length of the  cube
-//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
-//! \example  generateDistributions.cpp
+    auto is_in_sphere = [&R](FReal* p) {
+        return p[0]*p[0] + p[1]*p[1] + p[2]*p[2] < R*R;
+    };
+
+    for(FSize i = 0, j = 0 ; i< N ; ++i, j+=4)  {
+        do {
+            points[j]   = (getRandom<FReal>() - 0.5) * 2 * R;
+            points[j+1] = (getRandom<FReal>() - 0.5) * 2 * R;
+            points[j+2] = (getRandom<FReal>() - 0.5) * 2 * R;
+        } while(! is_in_sphere(points + j));
+    }
+}
+
+/**
+ * \brief Generate N points non uniformly distributed on the ellipsoid of aspect ratio a:b:c
+ *
+ * \tparam FReal Floating point type
+ *
+ * \param N the number of points
+ * \param a  the x semi-axe length
+ * \param b  the y semi-axe length
+ * \param c  the z semi-axe length
+ * \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
+ */
 template <class FReal>
-void unifRandonPointsOnCube(const FSize N , const FReal& Lx,  const FReal &Ly,  const FReal& Lz, FReal * points) {
-	//
-	unifRandonPointsOnUnitCube(N , points) ;
-    FSize j =0 ;
-    for (FSize i = 0 ; i< N ; ++i, j+=4)  {
-		points[j]	   *= Lx ;
-		points[j+1]  *= Ly ;
-		points[j+2]  *= Lz ;
-	}
-};
-//!  \fn   unifRandonPointsOnUnitSphere(const int N , FReal * points)
+void nonunifRandomPointsOnElipsoid(const FSize N, const FReal& a, const FReal& b,
+                                   const FReal& c, FReal* points)
+{
+    FReal u, v, cosu;
+    for (FSize i = 0, j = 0 ; i< N ; ++i, j+=4)  {
+        u = FMath::FPi<FReal>() * getRandom<FReal>() - FMath::FPiDiv2<FReal>();
+        v = FMath::FTwoPi<FReal>() * getRandom<FReal>() - FMath::FPi<FReal>();
+        cosu = FMath::Cos(u);
+        points[j]   = a * cosu * FMath::Cos(v);
+        points[j+1] = b * cosu * FMath::Sin(v);
+        points[j+2] = c * FMath::Sin(u);
+    }
+}
 
-//! \brief Generate N points uniformly distributed on the unit sphere
 
-//!
-//! \param N the number of points uniformly randomly sample on the unit sphere
-//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
-//! \example  generateDistributions.cpp
+/**
+ * \brief Generate N points uniformly distributed on the ellipsoid of aspect ratio a:a:c
+ *
+ * \tparam FReal Floating point type
+ *
+ * \param N the number of points
+ * \param a  the x  semi-axe length
+ * \param c  the z  semi-axe length
+ * \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
+*/
 template <class FReal>
-void unifRandonPointsOnUnitSphere(const FSize N , FReal * points) {
-	FReal u, v, theta, phi, sinPhi ;
-	//
-	initRandom() ;
-    FSize j = 0 ;
-    for (FSize i = 0 ; i< N ; ++i, j+=4)  {
-		//
-        u = getRandom<FReal>() ;  v = getRandom<FReal>() ;
-        theta  = FMath::FTwoPi<FReal>()*u ;
-		phi     = FMath::ACos(2*v-1);
-		sinPhi = FMath::Sin(phi);
-		//
-		points[j]	  =	FMath::Cos(theta)*sinPhi ;
-		points[j+1] =	FMath::Sin(theta)*sinPhi ;
-		points[j+2] =	2*v-1 ;
-		//
-	}
-};
-//!  \fn  nonunifRandonPointsOnElipsoid(const int N , const FReal &a, const FReal &b, const FReal &c, FReal * points)
+void unifRandomPointsOnProlate(const FSize N, const FReal& a, const FReal& c,
+                               FReal* points)
+{
+    FReal u, w, v, ksi;
+    FReal e = (a*a*a*a)/(c*c*c*c);
+    bool isgood = false;
+    FSize cpt = 0;
 
-//! \brief  Generate N points non uniformly distributed on the ellipsoid of  aspect ratio a:b:c
+    for (FSize i = 0, j = 0 ; i< N ; ++i, j+=4)  {
+        // Select a random point on the prolate
+        do {
+            ++cpt;
+            u = 2.0 * getRandom<FReal>() - 1.0;
+            v = FMath::FTwoPi<FReal>() * getRandom<FReal>();
+            w = FMath::Sqrt(1 - u*u);
+            points[j]	= a * w * FMath::Cos(v);
+            points[j+1] = a * w * FMath::Sin(v);
+            points[j+2] = c * u;
+            // Accept the position ?
+            ksi = a * getRandom<FReal>();
+            isgood = (points[j]*points[j]
+                      + points[j+1]*points[j+1]
+                      + e*points[j+2]*points[j+2]) < ksi*ksi;
+        } while(isgood);
+    }
+    std::cout.precision(4);
+    std::cout << "Total tested points: " << cpt
+              << " % of rejected points: "
+              << 100 * static_cast<FReal>(cpt-N) / static_cast<FReal>(cpt) << " %"
+              << std::endl;
+}
 
-//!
-//! \param N the number of points
-//! \param a  the x  semi-axe length
-//! \param b  the y  semi-axe length
-//! \param c  the z  semi-axe length
-//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
-//!
+
+/**
+ * \brief  Generate N points uniformly distributed on the hyperbolic paraboloid of  aspect ratio a:b:c
+ *
+ * \tparam FReal Floating point type
+ *
+ * \param N the number of points
+ * \param a  the x  semi-axe length
+ * \param b  the y  semi-axe length
+ * \param c  the z  semi-axe length
+ * \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0...
+ */
 template <class FReal>
-void nonunifRandonPointsOnElipsoid(const FSize N , const FReal &a, const FReal &b, const FReal &c, FReal * points) {
-	//
-	FReal u, v , cosu ;
-    FSize j =0 ;
-    for (FSize i = 0 ; i< N ; ++i, j+=4)  {
-        u = getRandom<FReal>() ;  v = getRandom<FReal>() ;
-        u  = FMath::FPi<FReal>()*u - FMath::FPiDiv2<FReal>();   v   = FMath::FTwoPi<FReal>()*v - FMath::FPi<FReal>();
-		cosu = FMath::Cos(u) ;
-		points[j]	   = a*cosu*FMath::Cos(v)  ;
-		points[j+1]  = b*cosu*FMath::Sin(v)  ;
-		points[j+2]  = c*FMath::Sin(u)  ;
-	}
-};
-//!  \fn  nonunifRandonPointsOnElipsoid(const int N , const FReal &a, const FReal &c, FReal * points)
-
-//! \brief  Generate N points uniformly distributed on the ellipsoid of  aspect ratio a:a:c
-
-//!
-//! \param N the number of points
-//! \param a  the x  semi-axe length
-//! \param c  the z  semi-axe length
-//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
-//!
-template <class FReal>
-void unifRandonPointsOnProlate(const FSize N , const FReal &a, const FReal &c, FReal * points){
-	//
-	FReal u, w,v ,ksi ;
-	FReal e = (a*a*a*a)/(c*c*c*c) ;
-	bool isgood = false;
-    FSize j =0 , cpt =0 ;
-	//
-    for (FSize i = 0 ; i< N ; ++i, j+=4)  {
-		// Select a random point on the prolate
-		do {
-			cpt++	;
-            u = getRandom<FReal>() ;  v = getRandom<FReal>() ;
-            u  = 2.0*u - 1.0;   v   = FMath::FTwoPi<FReal>()*v;
-			w =FMath::Sqrt(1-u*u) ;
-			points[j]	   = a*w*FMath::Cos(v)  ;
-			points[j+1]  = a*w*FMath::Sin(v)  ;
-			points[j+2]  = c*u ;
-			// Accept the position ?
-            ksi = a*getRandom<FReal>()  ;
-			//			std::cout << "Gradf  "<<  points[j]*points[j] + points[j+1] *points[j+1]  +e*points[j+2] *points[j+2]  << std::endl;
-			isgood = (points[j]*points[j] + points[j+1] *points[j+1]  +e*points[j+2] *points[j+2]  < ksi*ksi );
-		} while (isgood);
-	}
-	std::cout.precision(4);
-    std::cout << "Total tested points: "<< cpt << " % of rejected points: "<<100*static_cast<FReal>(cpt-N)/static_cast<FReal>(cpt) << " %" <<std::endl;
-
-} ;
-
-//!  \fn  unifRandonPointsOnHyperPara(const int N , const FReal &a, const FReal &b, const FReal &c, FReal * points)
-
-//! \brief  Generate N points uniformly distributed on the hyperbolic paraboloid of  aspect ratio a:b:c
-
-//!
-//! \param N the number of points
-//! \param a  the x  semi-axe length
-//! \param b  the y  semi-axe length
-//! \param c  the z  semi-axe length
-//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
-//!
-template <class FReal>
-void unifRandonPointsOnHyperPara(const FSize N , const FReal &a, const FReal &b, const FReal &c, FReal * points) {
-    //
-    FReal u, v ;
-    FSize j =0 ;
-    for (FSize i = 0 ; i< N ; ++i, j+=4)  {
-        u = 2.0*getRandom<FReal>() - 1.0 ;  v = 2.0*getRandom<FReal>() - 1.0 ;
-        points[j]    = a*u ;
-        points[j+1]  = b*v ;
-        points[j+2]  = c*(u*u - v*v)  ;
+void unifRandomPointsOnHyperPara(const FSize N, const FReal &a, const FReal &b,
+                                 const FReal &c, FReal * points)
+{
+    FReal u, v;
+    for (FSize i = 0, j = 0 ; i< N ; ++i, j+=4)  {
+        u = 2.0 * getRandom<FReal>() - 1.0;
+        v = 2.0 * getRandom<FReal>() - 1.0;
+        points[j]   = a * u;
+        points[j+1] = b * v;
+        points[j+2] = c * (u*u - v*v);
     }
 };
 
 
-//!  \fn  unifRandonPointsOnSphere(const int N , const FReal R, FReal * points)
-
-//! \brief Generate N points uniformly distributed on the sphere of radius R
-
-//!
-//! \param N the number of points uniformly randomly sample on the sphere
-//! \param R the radius of the sphere
-//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
-//!
+/**
+ * \brief Generate N points uniformly distributed on the sphere of radius R
+ *
+ * \tparam FReal Floating point type
+ *
+ * \param N the number of points uniformly randomly sample on the sphere
+ * \param R the radius of the sphere
+ * \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0...
+ */
 template <class FReal>
-void unifRandonPointsOnSphere(const FSize N , const FReal R, FReal * points) {
-	//
-	unifRandonPointsOnUnitSphere(N , points) ;
-    FSize j =0 ;
-    for (FSize i = 0 ; i< N ; ++i, j+=4)  {
-		points[j]	   *= R ;
-		points[j+1]  *= R ;
-		points[j+2]  *= R ;
-	}
+void unifRandomPointsOnSphere(const FSize N, const FReal R, FReal* points) {
+    initRandom();
+    FReal u, v, theta, phi, sinPhi;
+    for (FSize i = 0, j = 0 ; i< N ; ++i, j+=4)  {
+        u = getRandom<FReal>();
+        v = getRandom<FReal>();
+        theta  = FMath::FTwoPi<FReal>() * u;
+        phi    = FMath::ACos(2*v - 1);
+        sinPhi = FMath::Sin(phi);
+
+        points[j]   = FMath::Cos(theta) * sinPhi * R;
+        points[j+1] = FMath::Sin(theta) * sinPhi * R;
+        points[j+2] = (2*v - 1) * R;
+    }
 };
-//!  \fn void plummerDist(int & cpt, const FReal &R)
 
-//! \brief   Radial Plummer distribution
 
-//!
-//! \param cpt : counter to know how many random selections we need to obtain a radius less than R
-//! \param R    : Radius of the sphere that contains the particles
-//! @return Return the radius according to the Plummer distribution either double type or float type
-//!
+/**
+ * \brief Radial Plummer distribution
+ *
+ * \tparam FReal Floating point type
+ *
+ * \param cpt counter to know how many random selections we need to obtain a radius less than R
+ * \param R   radius of the sphere that contains the particles
+ * \return The radius according to the Plummer distribution
+ */
 template <class FReal>
-FReal  plummerDist(FSize cpt, const FReal &R) {
-	//
-	FReal radius ,u ;
-	do  {
-		//
-        u        = FMath::pow (getRandom<FReal>() , 2.0/3.0) ;
-		radius = FMath::Sqrt (u/(1.0-u));
-		cpt++;
-		if(radius  <=R){
-			//			std::cout << radius << "    "  <<std::endl;
-			return static_cast<FReal>(radius);
-		}
-	} while (true);
+FReal plummerDist(FSize& cpt, const FReal &R) {
+    FReal radius, u;
+    while(true) {
+        u = FMath::pow(getRandom<FReal>(), 2.0/3.0);
+        radius = FMath::Sqrt(u/(1.0-u));
+        cpt++;
+        if(radius <= R) {
+            return static_cast<FReal>(radius);
+        }
+    }
 }
-//! \fn void unifRandonPlummer(const int N , const FReal R, const FReal M, FReal * points)
 
-//! \brief  Build N points following the Plummer distribution
-
-//! First we construct N points uniformly distributed on the unit sphere. Then the radius in construct according to the Plummr distribution.
-//!
-//! \param N the number of points following the Plummer distribution
-//! \param R the radius of the sphere that contains all the points
-//! \param M the total mass of all the particles inside the Sphere or radius R
-//! \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
+/**
+ * \brief Build N points following the Plummer distribution
+ *
+ * First we construct N points uniformly distributed on the unit sphere. Then
+ * the radius in construct according to the Plummer distribution for
+ * a  constant mass of 1/N
+ *
+ * \tparam FReal Floating point type
+ *
+ * \param N the number of points following the Plummer distribution
+ * \param R the radius of the sphere that contains all the points
+ * \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
+ */
 template <class FReal>
-void unifRandonPlummer(const FSize N , const FReal R, const FReal M, FReal * points) {
-	//
-	unifRandonPointsOnUnitSphere(N , points) ;
-	//
-	FReal r , rm= 0.0;
-    //	FReal Coeff =  3.0*M/(4.0*FMath::FPi<FReal>()*R*R*R) ;
-	//am1 = 0 ;//1/FMath::pow(1+R*R,2.5);
-    FSize cpt = 0 ;
-    for (FSize i = 0,j=0 ; i< N ; ++i, j+=4)  {
-		// u \in []
-		r = plummerDist(cpt,R) ;
-		rm = std::max(rm, r);
-		points[j]	   *= r ;
-		points[j+1]  *= r ;
-		points[j+2]  *= r ;
-	}
+void unifRandomPlummer(const FSize N, const FReal R, FReal * points) {
+    unifRandomPointsOnSphere<FReal>(N, 1, points);
+    FReal mc = 1.0/static_cast<FReal>(N);
+    for (FSize i = 0, j = 0 ; i< N ; ++i, j+=4)  {
+    	FReal m = getRandom<FReal>();
+    	FReal r = FMath::Sqrt( 1.0/(FMath::pow(m, -2.0/3.0) - 1.0)) ;
+        points[j]    *= r;
+        points[j+1]  *= r;
+        points[j+2]  *= r;
+        points[j+3]   = mc;  // the mass
+    }
+}
+/**
+ * \brief Build N points following the Plummer like distribution
+ *
+ * First we construct N points uniformly distributed on the unit sphere. Then
+ * the radius in construct according to the Plummer like distribution.
+ *
+ * \tparam FReal Floating point type
+ *
+ * \param N the number of points following the Plummer distribution
+ * \param R the radius of the sphere that contains all the points
+ * \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
+ */
+template <class FReal>
+void unifRandomPlummerLike(const FSize N, const FReal R, FReal * points) {
+	FReal a = 1.0 ;
+    unifRandomPointsOnSphere<FReal>(N, 1, points);
+    FReal r, rm = 0.0;
+    FSize cpt = 0;
+    for (FSize i = 0, j = 0 ; i< N ; ++i, j+=4)  {
+        r = plummerDist(cpt,R);
+        rm = std::max(rm, r);
+        points[j]    *= r;
+        points[j+1]  *= r;
+        points[j+2]  *= r;
+    }
 
-	std::cout << "Total tested points: "<< cpt << " % of rejected points: "
-            <<100*static_cast<FReal>(cpt-N)/static_cast<FReal>(cpt) << " %" <<std::endl;
-
-} ;
+    std::cout << "Total tested points: " << cpt << " % of rejected points: "
+              << 100 * static_cast<FReal>(cpt-N) / static_cast<FReal>(cpt)
+              << " %"
+              << std::endl;
+}
 //
 #endif

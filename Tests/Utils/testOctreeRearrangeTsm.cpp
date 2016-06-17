@@ -98,7 +98,7 @@ int main(int argc, char ** argv){
                                        (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2)),
                                        (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2)),
                                        (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2)));
-            tree.insert(particleToFill,FParticleTypeSource,idxPart);
+            tree.insert(particleToFill,FParticleType::FParticleTypeSource,idxPart);
         }
 
         for(FSize idxPart = 0 ; idxPart < NbPart_Target; ++idxPart){
@@ -106,7 +106,7 @@ int main(int argc, char ** argv){
                                        (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2)),
                                        (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2)),
                                        (BoxWidth*FReal(drand48())) + (BoxCenter-(BoxWidth/2)));
-            tree.insert(particleToFill,FParticleTypeTarget,idxPart);
+            tree.insert(particleToFill,FParticleType::FParticleTypeTarget,idxPart);
         }
     }
 

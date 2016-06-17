@@ -124,8 +124,8 @@ public:
 
     void fillParticle(FPoint<FReal>*const inParticlePositions, FParticleType*const isTarget){
         FRandomLoader<FReal>::fillParticle(inParticlePositions);
-        if(FRandomLoader<FReal>::getRandom() > 0.5 ) (*isTarget) = FParticleTypeTarget;
-        else (*isTarget) = FParticleTypeSource;
+        if(FRandomLoader<FReal>::getRandom() > 0.5 ) (*isTarget) = FParticleType::FParticleTypeTarget;
+        else (*isTarget) = FParticleType::FParticleTypeSource;
     }
 };
 

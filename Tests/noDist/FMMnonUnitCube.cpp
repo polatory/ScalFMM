@@ -98,20 +98,11 @@ int main(int argc, char* argv[])
     const std::string  filename(FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/UTest/unitCubeRef20kDouble.bfma"));
     const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
-    const unsigned int NbThreads      = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, omp_get_max_threads());
-
-	//
-#ifdef _OPENMP
-	omp_set_num_threads(NbThreads);
-#else
-	std::cout << "\n>> Sequential version.\n" << std::
-#endif
 
 			std::cout <<	 "Parameters  "<< std::endl
 			<<     "      Octree Depth      \t"<< TreeHeight <<std::endl
 			<<	  "      SubOctree depth \t"<< SubTreeHeight <<std::endl
 			<<     "      Input file  name: \t" <<filename <<std::endl
-			<<     "      Thread number:  \t" << NbThreads <<std::endl
 			<<std::endl;
 
 	// init timer

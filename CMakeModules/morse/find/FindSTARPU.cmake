@@ -225,6 +225,10 @@ if(PKG_CONFIG_EXECUTABLE AND NOT STARPU_GIVEN_BY_USER)
             #        "Perhaps the path to starpu headers is already present in your"
             #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
             #endif()
+            set(STARPU_VERSION_STRING "${STARPU_SHM_VERSION}")
+            string(REPLACE "." ";" STARPU_VERSION_STRING_LIST ${STARPU_VERSION_STRING})
+            list(GET STARPU_VERSION_STRING_LIST 0 STARPU_VERSION_MAJOR)
+            list(GET STARPU_VERSION_STRING_LIST 1 STARPU_VERSION_MINOR)
         else()
             message("${Magenta}Looking for STARPU - not found using PkgConfig."
                 "Perhaps you should add the directory containing libstarpu.pc"
@@ -461,14 +465,23 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT STARPU_FOUND) 
                 find_path(STARPU_${starpu_hdr}_INCLUDE_DIRS
                           NAMES ${starpu_hdr}
                           HINTS ${STARPU_DIR}
-                          PATH_SUFFIXES "include/starpu/${STARPU_VERSION_STRING}")
+                          PATH_SUFFIXES "include"
+                          "include/starpu/1.0"
+                          "include/starpu/1.1"
+                          "include/starpu/1.2"
+                          "include/starpu/1.3")
             endforeach()
         else()
             foreach(starpu_hdr ${STARPU_hdrs_to_find})
                 set(STARPU_${starpu_hdr}_INCLUDE_DIRS "STARPU_${starpu_hdr}_INCLUDE_DIRS-NOTFOUND")
                 find_path(STARPU_${starpu_hdr}_INCLUDE_DIRS
                           NAMES ${starpu_hdr}
-                          HINTS ${_inc_env})
+                          HINTS ${_inc_env}
+                          PATH_SUFFIXES
+                          "starpu/1.0"
+                          "starpu/1.1"
+                          "starpu/1.2"
+                          "starpu/1.3")
             endforeach()
         endif()
     endif()

@@ -68,7 +68,7 @@ struct LineData{
             }
         }
         if(words.size() != 4){
-            printf("Error line is no composed of 4 words\n");
+            printf("Error line is no composed of 4 words, has %lu for %s\n", words.size(), line);
             exit(111);
         }
         name = ReduceName(words[0].substr(1, words[0].size() - 2));
@@ -186,30 +186,32 @@ int main(int argc, char** argv){
         }
 
         while((sizeLine = getline((char**)&line, &sizeLine, timeFile)) != -1){
-            LineData dt(line);
-            // Task, Runtime, Other
-            if(dt.type == "Task"){
-                if(dt.name != "execute_on_all_wrapper"){
-                    timeTasks[idxFile][dt.name] += dt.duration;
-                    allTaskNames.insert(dt.name);
-                    times[idxFile].tt += dt.duration;
+            if(strncmp(line, "WARNING", 7) != 0){
+                LineData dt(line);
+                // Task, Runtime, Other
+                if(dt.type == "Task"){
+                    if(dt.name != "execute_on_all_wrapper"){
+                        timeTasks[idxFile][dt.name] += dt.duration;
+                        allTaskNames.insert(dt.name);
+                        times[idxFile].tt += dt.duration;
+                    }
                 }
-            }
-            else if(dt.type == "Runtime"){
-                if(dt.name == "Scheduling"
-                        || dt.name == "FetchingInput"
-                        || dt.name == "PushingOutput"){
-                    times[idxFile].tr += dt.duration;
+                else if(dt.type == "Runtime"){
+                    if(dt.name == "Scheduling"
+                            || dt.name == "FetchingInput"
+                            || dt.name == "PushingOutput"){
+                        times[idxFile].tr += dt.duration;
+                    }
                 }
-            }
-            else if(dt.type == "Other"){
-                if(dt.name == "Idle"){
-                    times[idxFile].ti += dt.duration;
+                else if(dt.type == "Other"){
+                    if(dt.name == "Idle"){
+                        times[idxFile].ti += dt.duration;
+                    }
                 }
-            }
-            else {
-                printf("Arg do not know type %s\n", dt.type.c_str());
-                return 3;
+                else {
+                    printf("Arg do not know type %s\n", dt.type.c_str());
+                    //return 3;
+                }
             }
         }
 

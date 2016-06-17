@@ -154,7 +154,7 @@ macro(Check_Lapack_Libraries LIBRARIES _prefix _name _flags _list _blas _threads
 
 # N.B. _prefix is the prefix applied to the names of all cached variables that
 # are generated internally and marked advanced by this macro.
-
+set(_libdir ${ARGN})
 set(_libraries_work TRUE)
 set(${LIBRARIES})
 set(_combined_name)
@@ -263,6 +263,7 @@ foreach(_library ${_list})
     find_library(${_prefix}_${_library}_LIBRARY
       NAMES ${_library}
       HINTS ${_libdir}
+      NO_DEFAULT_PATH
       )
     mark_as_advanced(${_prefix}_${_library}_LIBRARY)
     # Print status if not found
@@ -277,6 +278,10 @@ endforeach(_library ${_list})
 
 if(_libraries_work)
   # Test this combination of libraries.
+  if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND BLA_STATIC)
+    list(INSERT ${LIBRARIES} 0 "-Wl,--start-group")
+    list(APPEND ${LIBRARIES} "-Wl,--end-group")
+  endif()
   if(UNIX AND BLA_STATIC)
     set(CMAKE_REQUIRED_LIBRARIES ${_flags} "-Wl,--start-group" ${${LIBRARIES}} ${_blas} "-Wl,--end-group" ${_threads})
   else(UNIX AND BLA_STATIC)

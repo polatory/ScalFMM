@@ -33,11 +33,11 @@ public:
         for(int idxAttr = 0 ; idxAttr < ContainerClass::NbAttributes ; ++idxAttr){
             particleValues[idxAttr] = lf->getAttribute(idxAttr)[idxPart];
         }
-        if(type == FParticleTypeTarget){
-            toStoreRemovedTargetParts.push(particlePos,FParticleTypeTarget,lf->getIndexes()[idxPart],particleValues);
+        if(type == FParticleType::FParticleTypeTarget){
+            toStoreRemovedTargetParts.push(particlePos,FParticleType::FParticleTypeTarget,lf->getIndexes()[idxPart],particleValues);
         }
         else{
-            toStoreRemovedSourceParts.push(particlePos,FParticleTypeSource,lf->getIndexes()[idxPart],particleValues);
+            toStoreRemovedSourceParts.push(particlePos,FParticleType::FParticleTypeSource,lf->getIndexes()[idxPart],particleValues);
         }
         lf->removeParticles(&idxPart,1);
     }
@@ -53,7 +53,7 @@ public:
             const FPoint<FReal> particlePos(toStoreRemovedSourceParts.getPositions()[0][idxToInsert],
                                      toStoreRemovedSourceParts.getPositions()[1][idxToInsert],
                                      toStoreRemovedSourceParts.getPositions()[2][idxToInsert]);
-            tree->insert(particlePos, FParticleTypeSource, toStoreRemovedSourceParts.getIndexes()[idxToInsert], particleValues);
+            tree->insert(particlePos, FParticleType::FParticleTypeSource, toStoreRemovedSourceParts.getIndexes()[idxToInsert], particleValues);
         }
 
         for(FSize idxToInsert = 0; idxToInsert<toStoreRemovedTargetParts.getNbParticles() ; ++idxToInsert){
@@ -64,7 +64,7 @@ public:
                                      toStoreRemovedTargetParts.getPositions()[1][idxToInsert],
                                      toStoreRemovedTargetParts.getPositions()[2][idxToInsert]);
 
-            tree->insert(particlePos, FParticleTypeTarget, toStoreRemovedTargetParts.getIndexes()[idxToInsert], particleValues);
+            tree->insert(particlePos, FParticleType::FParticleTypeTarget, toStoreRemovedTargetParts.getIndexes()[idxToInsert], particleValues);
         }
 
         toStoreRemovedSourceParts.clear();

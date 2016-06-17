@@ -131,8 +131,8 @@ public:
 
         inParticlePositions->setPosition(x,y,z);
         *inPhysicalValue = data;
-        if(isTarget) (*particleType) = FParticleTypeTarget;
-        else (*particleType) = FParticleTypeSource;
+        if(isTarget) (*particleType) = FParticleType::FParticleTypeTarget;
+        else (*particleType) = FParticleType::FParticleTypeSource;
     }
 
 };

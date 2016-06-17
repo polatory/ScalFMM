@@ -69,7 +69,7 @@ class TestChebyshevDirectTsm : public FUTester<TestChebyshevDirectTsm> {
             FPoint<FReal> position;
             loader.fillParticle(&position);
             // put in tree
-            tree.insert(position, FParticleTypeTarget, idxPart, physicalValue);
+            tree.insert(position, FParticleType::FParticleTypeTarget, idxPart, physicalValue);
             // get copy
             particlesTargets[idxPart].setPosition(position);
             *(particlesTargets[idxPart].setPhysicalValue()) = physicalValue;
@@ -84,7 +84,7 @@ class TestChebyshevDirectTsm : public FUTester<TestChebyshevDirectTsm> {
             FPoint<FReal> position;
             loader.fillParticle(&position);
             // put in tree
-            tree.insert(position, FParticleTypeSource, idxPart, physicalValue);
+            tree.insert(position, FParticleType::FParticleTypeSource, idxPart, physicalValue);
             // get copy
             particlesSources[idxPart].setPosition(position);
             *(particlesSources[idxPart].setPhysicalValue()) = physicalValue;
