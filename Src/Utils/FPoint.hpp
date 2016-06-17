@@ -32,14 +32,14 @@
  * a few convenience operations such as addition, scalar multiplication and
  * division and formated stream output.
  *
- * \tparam Real The floating number type
+ * \tparam _Real The floating number type
  * \tparam Dim The space dimension
  **/
 template<typename _Real, std::size_t _Dim = 3>
 class FPoint : public std::array<_Real, _Dim> {
 public:
     /// Floating number type
-    using Real = _Real;
+    using FReal = _Real;
     /// Space dimension count
     constexpr static const std::size_t Dim = _Dim;
 
@@ -57,22 +57,22 @@ private:
 
 
     /** Recursive template for constructor */
-    template<typename A = Real, typename... Args>
+    template<typename A = FReal, typename... Args>
     void _fill_data(const A& arg, const Args... args) {
-        this->data()[Dim-sizeof...(args)-1] = Real(arg);
+        this->data()[Dim-sizeof...(args)-1] = FReal(arg);
         _fill_data(args...);
     }
 
     /** Recursive template end condition for constructor */
-    template<typename A = Real>
+    template<typename A = FReal>
     void _fill_data(const A& arg) {
-        this->data()[Dim-1] = Real(arg);
+        this->data()[Dim-1] = FReal(arg);
     }
 
 public:
 
     /** Default constructor */
-    FPoint() : std::array<Real, Dim>{{0}} {};
+    FPoint() = default;
     /** Copy constructor */
     FPoint(const FPoint&) = default;
 
@@ -85,21 +85,21 @@ public:
     }
 
     /** Constructor from array */
-    FPoint(const Real array[Dim]) {
+    FPoint(const FReal array_[Dim]) {
         for(std::size_t i = 0; i < Dim; ++i) {
-            this->data()[i] = array[i];
+            this->data()[i] = array_[i];
         }
     }
 
     /** Constructor from args */
-    template<typename A = Real, typename... Args>
-    FPoint(const Real& arg, const Args... args) {
+    template<typename A = FReal, typename... Args>
+    FPoint(const FReal& arg, const Args... args) {
         static_assert(sizeof...(args)+1 == Dim, "FPoint argument list isn't the right length.");
         _fill_data(arg, args...);
     }
 
     /** Additive contructor, same as FPoint(other + add_value) */
-    FPoint(const FPoint& other, const Real add_value) {
+    FPoint(const FPoint& other, const FReal add_value) {
         for(std::size_t i = 0; i < Dim; ++i) {
             this->data()[i] = other.data()[i] + add_value;
         }
@@ -124,15 +124,15 @@ public:
      * \param other A FPoint object.
      */
     template<typename T, must_be_arithmetic<T> = nullptr>
-    FPoint<Real, Dim>& operator=(const FPoint<T, Dim>& other) {
+    FPoint<FReal, Dim>& operator=(const FPoint<T, Dim>& other) {
         this->copy(other);
         return *this;
     }
 
 
     /** Sets the point value */
-    template<typename A = Real, typename... Args>
-    void setPosition(const Real& X, const Args... YandZ) {
+    template<typename A = FReal, typename... Args>
+    void setPosition(const FReal& X, const Args... YandZ) {
         static_assert(sizeof...(YandZ)+1 == Dim, "FPoint argument list isn't the right length.");
         _fill_data(X, YandZ...);
     }
@@ -140,7 +140,7 @@ public:
     /** \brief Get x
      * \return this->data()[0]
      */
-    Real getX() const{
+    FReal getX() const{
         return this->data()[0];
     }
 
@@ -148,7 +148,7 @@ public:
     /** \brief Get y
      * \return this->data()[1]
      */
-    Real getY() const{
+    FReal getY() const{
         return this->data()[1];
     }
 
@@ -156,7 +156,7 @@ public:
     /** \brief Get z
      * \return this->data()[2]
      */
-    Real getZ() const{
+    FReal getZ() const{
         return this->data()[2];
     }
 
@@ -164,7 +164,7 @@ public:
     /** \brief Set x
      * \param the new x
      */
-    void setX(const Real inX){
+    void setX(const FReal inX){
         this->data()[0] = inX;
     }
 
@@ -172,7 +172,7 @@ public:
     /** \brief Set y
      * \param the new y
      */
-    void setY(const Real inY){
+    void setY(const FReal inY){
         this->data()[1] = inY;
     }
 
@@ -180,7 +180,7 @@ public:
     /** \brief Set z
      * \param the new z
      */
-    void setZ(const Real inZ){
+    void setZ(const FReal inZ){
         this->data()[2] = inZ;
     }
 
@@ -188,7 +188,7 @@ public:
     /** \brief Add to the x-dimension the inX value
      * \param  inXthe increment in x
      */
-    void incX(const Real inX){
+    void incX(const FReal inX){
         this->data()[0] += inX;
     }
 
@@ -196,7 +196,7 @@ public:
     /** \brief Add to the y-dimension the inY value
      * \param  in<<<<<<y the increment in y
      */
-    void incY(const Real inY){
+    void incY(const FReal inY){
         this->data()[1] += inY;
     }
 
@@ -204,36 +204,36 @@ public:
     /** \brief Add to z-dimension the inZ value
      * \param inZ the increment in z
      */
-    void incZ(const Real inZ){
+    void incZ(const FReal inZ){
         this->data()[2] += inZ;
     }
 
-    /** \brief Get a pointer on the coordinate of FPoint<Real>
+    /** \brief Get a pointer on the coordinate of FPoint<FReal>
      * \return the data value array
      */
-    Real * getDataValue(){
+    FReal * getDataValue(){
         return this->data() ;
     }
 
-    /** \brief Get a pointer on the coordinate of FPoint<Real>
+    /** \brief Get a pointer on the coordinate of FPoint<FReal>
      * \return the data value array
      */
-    const Real *  getDataValue()  const{
+    const FReal *  getDataValue()  const{
         return this->data() ;
     }
 
     /** \brief Compute the distance to the origin
      * \return the norm of the FPoint
      */
-    Real norm() const {
+    FReal norm() const {
         return FMath::Sqrt(norm2()) ;
     }
 
     /** \brief Compute the distance to the origin
      * \return the square norm of the FPoint
      */
-    Real norm2() const {
-        Real square_sum = 0;
+    FReal norm2() const {
+        FReal square_sum = 0;
         for(std::size_t i = 0; i < Dim; ++i) {
             square_sum += this->data()[i]*this->data()[i];
         }
@@ -255,7 +255,7 @@ public:
 
     /** Addition operator */
     template<class T, must_be_arithmetic<T> = nullptr>
-    friend FPoint<Real, Dim> operator+(FPoint<Real, Dim> lhs, const FPoint<T, Dim>& rhs) {
+    friend FPoint<FReal, Dim> operator+(FPoint<FReal, Dim> lhs, const FPoint<T, Dim>& rhs) {
         lhs += rhs;
         return lhs;
     }
@@ -271,7 +271,7 @@ public:
 
     /** Scalar addition */
     template<class T, must_be_arithmetic<T> = nullptr>
-    friend FPoint<Real, Dim> operator+(FPoint<Real, Dim> lhs, const T& val) {
+    friend FPoint<FReal, Dim> operator+(FPoint<FReal, Dim> lhs, const T& val) {
         lhs += val;
         return lhs;
     }
@@ -289,7 +289,7 @@ public:
 
     /** Subtraction operator */
     template<class T, must_be_arithmetic<T> = nullptr>
-    friend FPoint<Real, Dim> operator-(FPoint<Real, Dim> lhs, const FPoint<T, Dim>& rhs) {
+    friend FPoint<FReal, Dim> operator-(FPoint<FReal, Dim> lhs, const FPoint<T, Dim>& rhs) {
         lhs -= rhs;
         return lhs;
     }
@@ -305,7 +305,7 @@ public:
 
     /** Scalar subtraction */
     template<class T, must_be_arithmetic<T> = nullptr>
-    friend FPoint<Real, Dim> operator-(FPoint<Real, Dim> lhs, const T& rhs) {
+    friend FPoint<FReal, Dim> operator-(FPoint<FReal, Dim> lhs, const T& rhs) {
         lhs -= rhs;
         return lhs;
     }
@@ -313,7 +313,7 @@ public:
 
     /** Right scalar multiplication assignment operator */
     template<class T, must_be_arithmetic<T> = nullptr>
-    FPoint<Real, Dim>& operator *=(const T& val) {
+    FPoint<FReal, Dim>& operator *=(const T& val) {
         for(std::size_t i = 0; i < Dim; ++i) {
             this->data()[i] *= val;
         }
@@ -322,21 +322,21 @@ public:
 
     /** Right scalar multiplication operator */
     template<class T, must_be_arithmetic<T> = nullptr>
-    friend FPoint<Real, Dim> operator*(FPoint<Real, Dim> lhs, const T& val) {
+    friend FPoint<FReal, Dim> operator*(FPoint<FReal, Dim> lhs, const T& val) {
         lhs *= val;
         return lhs;
     }
 
     /** Left scalar multiplication operator */
     template<class T, must_be_arithmetic<T> = nullptr>
-    friend FPoint<Real, Dim> operator*(const T& val, FPoint<Real, Dim> rhs) {
+    friend FPoint<FReal, Dim> operator*(const T& val, FPoint<FReal, Dim> rhs) {
         rhs *= val;
         return rhs;
     }
 
     /** Data to data division assignment */
     template<class T, must_be_arithmetic<T> = nullptr>
-    FPoint<Real, Dim>& operator /=(const FPoint<T, Dim>& other) {
+    FPoint<FReal, Dim>& operator /=(const FPoint<T, Dim>& other) {
         for(std::size_t i = 0; i < Dim; ++i) {
             this->data()[i] *= other.data()[i];
         }
@@ -345,14 +345,14 @@ public:
 
     /** Data to data division operator */
     template<class T, must_be_arithmetic<T> = nullptr>
-    friend FPoint<Real, Dim> operator/(FPoint<Real, Dim> lhs, const FPoint<Real, Dim>& rhs) {
+    friend FPoint<FReal, Dim> operator/(FPoint<FReal, Dim> lhs, const FPoint<FReal, Dim>& rhs) {
         lhs /= rhs;
         return lhs;
     }
 
     /** Right scalar division assignment operator */
     template<class T, must_be_arithmetic<T> = nullptr>
-    FPoint<Real, Dim>& operator /=(const T& val) {
+    FPoint<FReal, Dim>& operator /=(const T& val) {
         auto this_it  = this->begin();
         for(std::size_t i = 0; i < Dim; i++, ++this_it) {
             *this_it /= val;
@@ -363,14 +363,14 @@ public:
 
     /** Right scalar division operator */
     template<class T, must_be_arithmetic<T> = nullptr>
-    friend FPoint<Real, Dim> operator/(FPoint<Real, Dim> lhs, const T& val) {
+    friend FPoint<FReal, Dim> operator/(FPoint<FReal, Dim> lhs, const T& val) {
         lhs /= val;
         return lhs;
     }
 
     /** Equality test operator */
     template<class T, must_be_integral<T> = nullptr>
-    friend bool operator==(const FPoint<Real, Dim>& lhs, const FPoint<T, Dim>& rhs) {
+    friend bool operator==(const FPoint<FReal, Dim>& lhs, const FPoint<T, Dim>& rhs) {
         auto lhs_it = lhs.begin(), rhs_it  = rhs.begin();
         for(std::size_t i = 0; i < Dim; i++, ++lhs_it, ++rhs_it) {
             if( *lhs_it != *rhs_it) {
@@ -382,7 +382,7 @@ public:
 
     /** Equality test operator */
     template<class T, must_be_floating<T> = nullptr>
-    friend bool operator==(const FPoint<Real, Dim>& lhs, const FPoint<T, Dim>& rhs) {
+    friend bool operator==(const FPoint<FReal, Dim>& lhs, const FPoint<T, Dim>& rhs) {
         auto lhs_it = lhs.begin(), rhs_it  = rhs.begin();
         for(std::size_t i = 0; i < Dim; i++, ++lhs_it, ++rhs_it) {
             if(! Ffeq(*lhs_it, *rhs_it)) {
@@ -394,12 +394,12 @@ public:
 
     /** Non equality test operator */
     template<class T, must_be_arithmetic<T> = nullptr>
-    friend bool operator!=(const FPoint<Real, Dim>& lhs, const FPoint<T, Dim>& rhs) {
+    friend bool operator!=(const FPoint<FReal, Dim>& lhs, const FPoint<T, Dim>& rhs) {
         return ! (lhs == rhs);
     }
 
     /** Formated output stream operator */
-    friend std::ostream& operator<<(std::ostream& os, const FPoint<Real, Dim>& pos) {
+    friend std::ostream& operator<<(std::ostream& os, const FPoint<FReal, Dim>& pos) {
         os << "[";
         for(auto it = pos.begin(); it != pos.end()-1; it++)
             os << *it << ", ";
@@ -408,10 +408,15 @@ public:
     }
 
     /** Formated input stream operator */
-    friend std::istream& operator>>(std::istream& is, const FPoint<Real, Dim>& pos) {
-        for(std::size_t i = 0; i < Dim; ++i) {
+    friend std::istream& operator>>(std::istream& is, FPoint<FReal, Dim>& pos) {
+        char c;
+        is >> c; // opening '['
+        for(std::size_t i = 0; i + 1 < Dim; ++i) {
             is >> pos.data()[i];
+            is >> c; // get coma ','
         }
+        is >> pos.data()[Dim-1];
+        is >> c; // closing ']'
         return is;
     }
 
