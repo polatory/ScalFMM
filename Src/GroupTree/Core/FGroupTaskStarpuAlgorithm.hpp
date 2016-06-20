@@ -1722,6 +1722,7 @@ protected:
 									   STARPU_VALUE, &parameters[3], sizeof(double),
                    #ifdef SCALFMM_STARPU_USE_PRIO
                                        STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2L(idxLevel),
+                                       STARPU_TAG_ONLY, (starpu_tag_t) PrioClass::Controller().getInsertionPosM2L(idxLevel),
                    #endif
                                        STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                        STARPU_R, cellHandles[idxLevel][idxGroup].up,
@@ -1792,6 +1793,7 @@ protected:
 										   STARPU_VALUE, &parameters[7], sizeof(double),
                    #ifdef SCALFMM_STARPU_USE_PRIO
                                            STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
+                                           STARPU_TAG_ONLY, (starpu_tag_t) PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
                    #endif
                                            STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                            (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
@@ -1831,6 +1833,8 @@ protected:
 										   STARPU_VALUE, &parameters[7], sizeof(double),
                    #ifdef SCALFMM_STARPU_USE_PRIO
                                            STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
+					   STARPU_TAG_ONLY, (starpu_tag_t) PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
+
                    #endif
                                            STARPU_R, cellHandles[idxLevel][interactionid].symb,
                                            (STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
