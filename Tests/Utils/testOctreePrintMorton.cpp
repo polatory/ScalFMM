@@ -126,7 +126,7 @@ int main(int argc, char ** argv){
                 }while(sscanf(buffer,"%d %d %d",&x,&y,&z) != 3);
 
                 FTreeCoordinate coord(x,y,z);
-                const MortonIndex index = coord.getMortonIndex(requiredlevel) ;
+                const MortonIndex index = coord.getMortonIndex() ;
                 std::cout << "    Morton Index is " << index << " \t " << std::hex << index << "H \t " << MortonToBinary(index,requiredlevel) << "D\n\n";
             }
             break;
@@ -158,7 +158,7 @@ int main(int argc, char ** argv){
                 host.setY( int(FMath::dfloor(( FReal(y) - centerOfBox.getY() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
                 host.setZ( int(FMath::dfloor(( FReal(z) - centerOfBox.getZ() - rootBoxWidth/2) / boxWidthAtThisLevel ) ));
 
-                const MortonIndex index = host.getMortonIndex(requiredlevel);
+                const MortonIndex index = host.getMortonIndex();
                 std::cout << "    Morton Index is " << index << " \t " << std::hex << index << "h \t " << MortonToBinary(index,requiredlevel) << "d\n\n";
             }
             break;
@@ -193,7 +193,7 @@ int main(int argc, char ** argv){
                     for(int y = sy ; y <= ey ; ++y){
                         for(int x = sx ; x <= ex ; ++x){
                             FTreeCoordinate coord(x,y,z);
-                            const MortonIndex index = coord.getMortonIndex(requiredlevel);
+                            const MortonIndex index = coord.getMortonIndex();
                             std::cout << "[x = " << x << " y = " << y << " z = " << z << "]\n";
                             std::cout << "    Morton Index is " << index << " \t " << std::hex << index << "H \t " << MortonToBinary(index,requiredlevel) << "D\n\n";
                         }
@@ -219,7 +219,7 @@ int main(int argc, char ** argv){
                     for(int y = 0 ; y < maxBoxAtThisLevel ; ++y){
                         for(int x = 0 ; x < maxBoxAtThisLevel ; ++x){
                             FTreeCoordinate coord(x,y,z);
-                            const MortonIndex index = coord.getMortonIndex(requiredlevel);
+                            const MortonIndex index = coord.getMortonIndex();
                             std::cout << "[x = " << x << " y = " << y << " z = " << z << "]\n";
                             std::cout << "    Morton Index is " << index << " \t " << std::hex << index << "H \t " << MortonToBinary(index,requiredlevel) << "D\n\n";
                         }

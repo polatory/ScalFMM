@@ -129,7 +129,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
             host.setZ( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParticles[idxParts].getPosition().getZ() - boxCorner.getZ(), boxWidth, boxWidthAtLeafLevel, TreeHeight ));
 
             //Set Morton index from Tree Coordinate
-            arrayOfParticles[idxParts].index = host.getMortonIndex(TreeHeight - 1);
+            arrayOfParticles[idxParts].index = host.getMortonIndex();
         }
         //Save the original array
         struct TestParticle<FReal> * originalArray   =  new TestParticle<FReal>[nbOfParticles];

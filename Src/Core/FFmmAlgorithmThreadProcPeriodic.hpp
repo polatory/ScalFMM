@@ -1831,7 +1831,7 @@ protected:
                             otherParentInBox.setZ( otherParentInBox.getZ() - boxLimite );
                         }
 
-                        const MortonIndex mortonOtherParent = otherParentInBox.getMortonIndex(inLevel-1);
+                        const MortonIndex mortonOtherParent = otherParentInBox.getMortonIndex();
 
                         // For each child
                         for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
@@ -1871,7 +1871,7 @@ protected:
 
                         const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
 
-                        const MortonIndex mortonOtherParent = otherParent.getMortonIndex(inLevel-1);
+                        const MortonIndex mortonOtherParent = otherParent.getMortonIndex();
 
                         // For each child
                         for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){

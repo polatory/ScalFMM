@@ -35,7 +35,7 @@ class TestIndexes : public FUTester<TestIndexes> {
                     for(int z = 0 ; z < 3 ; ++z){
                         const int zbox = (z*(limit-1))/2;
 
-                        const MortonIndex mindex = FTreeCoordinate(xbox, ybox, zbox).getMortonIndex(idxLevel);
+                        const MortonIndex mindex = FTreeCoordinate(xbox, ybox, zbox).getMortonIndex();
 
                         FCoordinateNeighborIndex coordindexes(mindex, idxLevel);
                         FBitsNeighborIndex bitsindex(mindex, idxLevel);
@@ -80,7 +80,7 @@ class TestIndexes : public FUTester<TestIndexes> {
                 const int ybox = int(drand48()*double(limit));
                 const int zbox = int(drand48()*double(limit));
 
-                const MortonIndex mindex = FTreeCoordinate(xbox, ybox, zbox).getMortonIndex(idxLevel);
+                const MortonIndex mindex = FTreeCoordinate(xbox, ybox, zbox).getMortonIndex();
 
                 FCoordinateNeighborIndex coordindexes(mindex, idxLevel);
                 FBitsNeighborIndex bitsindex(mindex, idxLevel);
@@ -125,7 +125,7 @@ class TestIndexes : public FUTester<TestIndexes> {
                 for(int ybox = 0 ; ybox < limit ; ++ybox){
                     for(int zbox = 0 ; zbox < limit ; ++zbox){
 
-                        const MortonIndex mindex = FTreeCoordinate(xbox, ybox, zbox).getMortonIndex(idxLevel);
+                        const MortonIndex mindex = FTreeCoordinate(xbox, ybox, zbox).getMortonIndex();
 
                         FCoordinateNeighborIndex coordindexes(mindex, idxLevel);
                         FBitsNeighborIndex bitsindex(mindex, idxLevel);

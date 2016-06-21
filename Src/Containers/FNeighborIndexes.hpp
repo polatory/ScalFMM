@@ -87,7 +87,7 @@ public:
     }
 
     MortonIndex getIndex(const int inX, const int inY, const int inZ) override{
-        return FTreeCoordinate(inX+coord.getX(), inY+coord.getY(), inZ+coord.getZ()).getMortonIndex(level);
+        return FTreeCoordinate(inX+coord.getX(), inY+coord.getY(), inZ+coord.getZ()).getMortonIndex();
     }
 };
 

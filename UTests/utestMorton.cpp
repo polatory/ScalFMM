@@ -30,46 +30,46 @@ class TestMorton : public FUTester<TestMorton> {
             {
                 FTreeCoordinate pos(5,1,7);
                 FTreeCoordinate cp;
-                cp.setPositionFromMorton(pos.getMortonIndex(10),10);
+                cp.setPositionFromMorton(pos.getMortonIndex(),10);
                 uassert(pos == cp);
-                uassert(cp.getMortonIndex(10) == pos.getMortonIndex(10));
+                uassert(cp.getMortonIndex() == pos.getMortonIndex());
             }
             {
                 FTreeCoordinate pos(2,8,3);
                 FTreeCoordinate cp;
-                cp.setPositionFromMorton(pos.getMortonIndex(10),10);
+                cp.setPositionFromMorton(pos.getMortonIndex(),10);
                 uassert(pos == cp);
-                uassert(cp.getMortonIndex(10) == pos.getMortonIndex(10));
+                uassert(cp.getMortonIndex() == pos.getMortonIndex());
             }
             {
                 FTreeCoordinate pos(51,11,47);
                 FTreeCoordinate cp;
-                cp.setPositionFromMorton(pos.getMortonIndex(10),10);
+                cp.setPositionFromMorton(pos.getMortonIndex(),10);
                 uassert(pos == cp);
-                uassert(cp.getMortonIndex(10) == pos.getMortonIndex(10));
+                uassert(cp.getMortonIndex() == pos.getMortonIndex());
             }
 	}
 
         void Position(){
             {
                 FTreeCoordinate pos(0,0,0);
-                uassert(pos.getMortonIndex(1) == 0);
+                uassert(pos.getMortonIndex() == 0);
             }
             {
                 FTreeCoordinate pos(1,1,1);
-                uassert(pos.getMortonIndex(1) == 7);
+                uassert(pos.getMortonIndex() == 7);
             }
             {
                 FTreeCoordinate pos(0,1,1);
-                uassert(pos.getMortonIndex(1) == 3);
+                uassert(pos.getMortonIndex() == 3);
             }
             {
                 FTreeCoordinate pos(2,2,2);
-                uassert(pos.getMortonIndex(2) == (7 << 3) );
+                uassert(pos.getMortonIndex() == (7 << 3) );
             }
             {
                 FTreeCoordinate pos(1,2,4);
-                uassert(pos.getMortonIndex(3) == 84 );// 001 010 100 =>> 001010100 => 84d
+                uassert(pos.getMortonIndex() == 84 );// 001 010 100 =>> 001010100 => 84d
             }
 	}
 		

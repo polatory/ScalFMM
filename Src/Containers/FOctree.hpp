@@ -187,7 +187,7 @@ public:
     template<typename... Args>
     void insert(const FPoint<FReal>& inParticlePosition, Args... args){
         const FTreeCoordinate host = getCoordinateFromPosition( inParticlePosition );
-        const MortonIndex particleIndex = host.getMortonIndex(leafIndex);
+        const MortonIndex particleIndex = host.getMortonIndex();
         if(root->isLeafPart()){
             ((SubOctreeWithLeaves*)root)->insert( particleIndex, host, this->height, inParticlePosition, args... );
         }
@@ -200,7 +200,7 @@ public:
      * @param indexToRemove the index of the leaf to remove
      */
     LeafClass* createLeaf(const MortonIndex indexToCreate ){
-        const FTreeCoordinate host(indexToCreate,this->height-1);
+        const FTreeCoordinate host(indexToCreate);
         if(root->isLeafPart()){
             return ((SubOctreeWithLeaves*)root)->createLeaf( indexToCreate, host, this->height );
         }
@@ -222,7 +222,7 @@ public:
      * @return the morton index
      */
     MortonIndex getMortonFromPosition(const FPoint<FReal>& position) const {
-        return getCoordinateFromPosition(position).getMortonIndex(leafIndex);
+        return getCoordinateFromPosition(position).getMortonIndex();
     }
 
     /*
@@ -803,7 +803,7 @@ public:
                     // if we are not on the current cell
                     if( !(!idxX && !idxY && !idxZ) ){
                         const FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
-                        const MortonIndex mortonOther = other.getMortonIndex(inLevel);
+                        const MortonIndex mortonOther = other.getMortonIndex();
                         // if not a brother
                         if( mortonOther>>3 != inIndex>>3 ){
                             // get cell
@@ -888,7 +888,7 @@ public:
                     // if we are not on the current cell
                     if( neighSeparation<1 || idxX || idxY || idxZ ){
                         const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
-                        const MortonIndex mortonOtherParent = otherParent.getMortonIndex(inLevel-1) << 3;
+                        const MortonIndex mortonOtherParent = otherParent.getMortonIndex() << 3;
                         // Get child
                         CellClass** const cells = getCellPt(mortonOtherParent, inLevel);
 
@@ -950,7 +950,7 @@ public:
                     // if we are not on the current cell
                     if( neighSeparation<1 || idxX || idxY || idxZ ){
                         const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
-                        const MortonIndex mortonOtherParent = otherParent.getMortonIndex(inLevel-1) << 3;
+                        const MortonIndex mortonOtherParent = otherParent.getMortonIndex() << 3;
                         // Get child
                         CellClass** const cells = getCellPt(mortonOtherParent, inLevel);
 
@@ -1016,7 +1016,7 @@ public:
                     if(!FMath::Between(parentCell.getZ() + idxZ,0,boxLimite)) continue;
 
                     const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
-                    const MortonIndex mortonOtherParent = otherParent.getMortonIndex(inLevel-1) << 3;
+                    const MortonIndex mortonOtherParent = otherParent.getMortonIndex() << 3;
                     // Get child
                     CellClass** const cells = getCellPt(mortonOtherParent, inLevel);
 
@@ -1076,7 +1076,7 @@ public:
                     if(!FMath::Between(parentCell.getZ() + idxZ,0,boxLimite)) continue;
 
                     const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
-                    const MortonIndex mortonOtherParent = otherParent.getMortonIndex(inLevel-1) << 3;
+                    const MortonIndex mortonOtherParent = otherParent.getMortonIndex() << 3;
                     // Get child
                     CellClass** const cells = getCellPt(mortonOtherParent, inLevel);
 
@@ -1173,7 +1173,7 @@ public:
                             }
 
 
-                            const MortonIndex mortonOtherParent = otherParentInBox.getMortonIndex(inLevel-1) << 3;
+                            const MortonIndex mortonOtherParent = otherParentInBox.getMortonIndex() << 3;
                             // Get child
                             CellClass** const cells = getCellPt(mortonOtherParent, inLevel);
 
@@ -1270,7 +1270,7 @@ public:
                             }
 
 
-                            const MortonIndex mortonOtherParent = otherParentInBox.getMortonIndex(inLevel-1) << 3;
+                            const MortonIndex mortonOtherParent = otherParentInBox.getMortonIndex() << 3;
                             // Get child
                             CellClass** const cells = getCellPt(mortonOtherParent, inLevel);
 
@@ -1353,7 +1353,7 @@ public:
                     // if we are not on the current cell
                     if( idxX || idxY || idxZ ){
                         const FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
-                        const MortonIndex mortonOther = other.getMortonIndex(inLevel);
+                        const MortonIndex mortonOther = other.getMortonIndex();
                         // get cell
                         ContainerClass* const leaf = getLeafSrc(mortonOther);
                         // add to list if not null
@@ -1393,7 +1393,7 @@ public:
                     // if we are not on the current cell
                     if( idxX || idxY || idxZ ){
                         const FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
-                        const MortonIndex mortonOther = other.getMortonIndex(inLevel);
+                        const MortonIndex mortonOther = other.getMortonIndex();
                         // get cell
                         ContainerClass* const leaf = getLeafSrc(mortonOther);
                         // add to list if not null
@@ -1436,7 +1436,7 @@ public:
                     // if we are not on the current cell
                     if( idxX || idxY || idxZ ){
                         const FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
-                        const MortonIndex mortonOther = other.getMortonIndex(inLevel);
+                        const MortonIndex mortonOther = other.getMortonIndex();
                         // get cell
                         CellClass** const leaf = getCellPt(mortonOther, inLevel);
 
@@ -1477,7 +1477,7 @@ public:
                     // if we are not on the current cell
                     if( idxX || idxY || idxZ ){
                         const FTreeCoordinate other(center.getX() + idxX,center.getY() + idxY,center.getZ() + idxZ);
-                        const MortonIndex mortonOther = other.getMortonIndex(inLevel);
+                        const MortonIndex mortonOther = other.getMortonIndex();
                         // get cell
                         CellClass** const leaf = getCellPt(mortonOther, inLevel);
 
@@ -1567,7 +1567,7 @@ public:
                         }
                         other.setZ(otherZ);
 
-                        const MortonIndex mortonOther = other.getMortonIndex(inLevel);
+                        const MortonIndex mortonOther = other.getMortonIndex();
                         // get cell
                         ContainerClass* const leaf = getLeafSrc(mortonOther);
                         // add to list if not null
@@ -1656,7 +1656,7 @@ public:
                         }
                         other.setZ(otherZ);
 
-                        const MortonIndex mortonOther = other.getMortonIndex(inLevel);
+                        const MortonIndex mortonOther = other.getMortonIndex();
                         // get cell
                         ContainerClass* const leaf = getLeafSrc(mortonOther);
                         // add to list if not null
@@ -1746,4 +1746,3 @@ public:
 };
 
 #endif //FOCTREE_HPP
-

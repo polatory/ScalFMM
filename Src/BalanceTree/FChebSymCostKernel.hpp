@@ -316,7 +316,7 @@ public:
         flopsP2P += tmpCost;
 
         CellClass* cell = _tree->getCell(
-            LeafCellCoordinate.getMortonIndex(_treeHeight - 1),
+            LeafCellCoordinate.getMortonIndex(),
             _treeHeight - 1);
 
         cell->addNearCost(tmpCost);
@@ -344,7 +344,7 @@ public:
         flopsP2P += tmpCost;
 
         CellClass* cell = _tree->getCell(
-            LeafCellCoordinate.getMortonIndex(_treeHeight - 1),
+            LeafCellCoordinate.getMortonIndex(),
             _treeHeight - 1);
 
         cell->addNearCost(tmpCost);
