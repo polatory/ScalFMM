@@ -13,10 +13,8 @@
 # This module allows to find LAPACK libraries by calling the official FindLAPACK module
 # and handles the creation of different library lists whether the user wishes to link
 # with a sequential LAPACK or a multihreaded (LAPACK_SEQ_LIBRARIES and LAPACK_PAR_LIBRARIES).
-# LAPACK is detected with a FindLAPACK call then if the LAPACK vendor is in the following list,
-# Intel mkl, Goto, Openlapack, ACML, IBMESSL
-# then the module tries find the corresponding multithreaded libraries
-# LAPACK_LIBRARIES does not exists anymore.
+# LAPACK is detected with a FindLAPACK call and if the BLAS vendor is in the following list,
+# Intel mkl, ACML then the module tries find the corresponding multithreaded libraries
 #
 # The following variables have been added to manage links with sequential or multithreaded
 # versions:
@@ -54,6 +52,7 @@ if (NOT BLAS_FOUND)
     endif()
 endif ()
 
+message(STATUS "In FindLAPACKEXT")
 
 if(BLA_VENDOR MATCHES "Intel*")
 
@@ -145,6 +144,42 @@ if(BLA_VENDOR MATCHES "Intel*")
         endif()
     endif()
 
+elseif(BLA_VENDOR MATCHES "IBMESSL*")
+
+    ## look for the sequential version
+    set(BLA_VENDOR "IBMESSL")
+
+    if(LAPACKEXT_FIND_REQUIRED)
+        find_package(LAPACK REQUIRED)
+    else()
+        find_package(LAPACK)
+    endif()
+
+    if (LAPACK_FOUND)
+        if(LAPACK_LIBRARIES)
+            set(LAPACK_SEQ_LIBRARIES "${LAPACK_LIBRARIES}")
+        else()
+            set(LAPACK_SEQ_LIBRARIES "${LAPACK_SEQ_LIBRARIES-NOTFOUND}")
+        endif()
+    endif()
+
+    ## look for the multithreaded version
+    set(BLA_VENDOR "IBMESSLMT")
+
+    if(LAPACKEXT_FIND_REQUIRED)
+        find_package(LAPACK REQUIRED)
+    else()
+        find_package(LAPACK)
+    endif()
+
+    if (LAPACK_FOUND)
+        if(LAPACK_LIBRARIES)
+            set(LAPACK_PAR_LIBRARIES "${LAPACK_LIBRARIES}")
+        else()
+            set(LAPACK_PAR_LIBRARIES "${LAPACK_PAR_LIBRARIES-NOTFOUND}")
+        endif()
+    endif()
+
 elseif(BLA_VENDOR MATCHES "ACML*")
 
     ###
@@ -228,14 +263,6 @@ if (LAPACK_LIBRARY_DIRS)
 endif ()
 
 
-# message(STATUS "LAPACK_FOUND: ${LAPACK_FOUND}")
-# message(STATUS "LAPACK_VENDOR: ${LAPACK_VENDOR}")
-# message(STATUS "LAPACK_LIBRARIES: ${LAPACK_LIBRARIES}")
-# message(STATUS "LAPACK_SEQ_LIBRARIES: ${LAPACK_SEQ_LIBRARIES}")
-# message(STATUS "LAPACK_PAR_LIBRARIES: ${LAPACK_PAR_LIBRARIES}")
-# message(STATUS "LAPACK_INCLUDE_DIRS: ${LAPACK_INCLUDE_DIRS}")
-# message(STATUS "LAPACK_LIBRARY_DIRS: ${LAPACK_LIBRARY_DIRS}")
-
 # check that LAPACK has been found
 # ---------------------------------
 include(FindPackageHandleStandardArgs)
@@ -283,8 +310,27 @@ elseif(BLA_VENDOR MATCHES "ACML*")
     endif()
     find_package_handle_standard_args(LAPACK DEFAULT_MSG
                                       LAPACK_SEQ_LIBRARIES
-                                      LAPACK_LIBRARY_DIRS
-                                      LAPACK_INCLUDE_DIRS)
+                                      LAPACK_LIBRARY_DIRS)
+    if(LAPACK_PAR_LIBRARIES)
+        if(NOT LAPACKEXT_FIND_QUIETLY)
+            message(STATUS "LAPACK parallel libraries stored in"
+                           "LAPACK_PAR_LIBRARIES")
+        endif()
+        find_package_handle_standard_args(LAPACK DEFAULT_MSG
+                                        LAPACK_PAR_LIBRARIES)
+    endif()
+elseif(BLA_VENDOR MATCHES "IBMESSL*")
+    if(NOT LAPACKEXT_FIND_QUIETLY)
+        message(STATUS "LAPACK found is IBMESSL:"
+                        "we manage two lists of libs,"
+                        " one sequential and one parallel (see"
+                        "LAPACK_SEQ_LIBRARIES and LAPACK_PAR_LIBRARIES)")
+        message(STATUS "LAPACK sequential libraries stored in"
+                       "LAPACK_SEQ_LIBRARIES")
+    endif()
+    find_package_handle_standard_args(LAPACK DEFAULT_MSG
+                                      LAPACK_SEQ_LIBRARIES
+                                      LAPACK_LIBRARY_DIRS)
     if(LAPACK_PAR_LIBRARIES)
         if(NOT LAPACKEXT_FIND_QUIETLY)
             message(STATUS "LAPACK parallel libraries stored in"

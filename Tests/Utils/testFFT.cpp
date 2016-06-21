@@ -21,7 +21,11 @@
 #include <iostream>
 #include <stdlib.h>
 
+#ifdef SCALFMM_USE_ESSL_AS_FFTW
+#include <fftw3_essl.h>
+#else
 #include <fftw3.h>
+#endif
 
 #include "Utils/FGlobal.hpp"
 #include "Utils/FComplex.hpp"

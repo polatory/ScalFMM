@@ -41,7 +41,7 @@
 # environment variable
 # Note that if BLAS_DIR is set, it will also look for lapack in it
 ### List of vendors (BLA_VENDOR) valid in this module
-##  Intel(mkl), ACML,Apple, NAS, Generic
+##  Intel(mkl), ACML, Apple, NAS, Generic
 
 #=============================================================================
 # Copyright 2007-2009 Kitware, Inc.
@@ -347,6 +347,7 @@ endif()
 
 #intel lapack
 if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
+
   if (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
     if(LAPACK_FIND_QUIETLY OR NOT LAPACK_FIND_REQUIRED)
       find_PACKAGE(Threads)
@@ -391,7 +392,7 @@ if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
     if (NOT ${_LIBRARIES})
       check_lapack_libraries(
         ${_LIBRARIES}
-        BLAS
+        LAPACK
         ${LAPACK_mkl_SEARCH_SYMBOL}
         "${additional_flags}"
         ""
@@ -407,7 +408,7 @@ if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
       if (NOT ${_LIBRARIES})
         check_lapack_libraries(
           ${_LIBRARIES}
-          BLAS
+          LAPACK
           ${LAPACK_mkl_SEARCH_SYMBOL}
           "${additional_flags}"
           "${IT}"
@@ -419,6 +420,13 @@ if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
           endif()
       endif ()
     endforeach ()
+    if(NOT LAPACK_FIND_QUIETLY)
+        if(${_LIBRARIES})
+            message(STATUS "Looking for MKL LAPACK: found")
+        else()
+            message(STATUS "Looking for MKL LAPACK: not found")
+        endif()
+    endif()
   endif ()
 endif()
 
@@ -434,16 +442,73 @@ if (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
   "${BLAS_LIBRARIES}"
   ""
   )
+ if(NOT LAPACK_FIND_QUIETLY)
+     if(LAPACK_LIBRARIES)
+         message(STATUS "Looking for Goto LAPACK: found")
+     else()
+         message(STATUS "Looking for Goto LAPACK: not found")
+     endif()
+ endif()
  endif(NOT LAPACK_LIBRARIES)
 endif (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
 
+# LAPACK in IBM ESSL library (requires generic lapack lib, too)
+if (BLA_VENDOR STREQUAL "IBMESSL" OR BLA_VENDOR STREQUAL "All")
+ if(NOT LAPACK_LIBRARIES)
+     check_lapack_libraries(
+     LAPACK_LIBRARIES
+     LAPACK
+     cheevd
+     ""
+     "essl;lapack"
+     "${BLAS_LIBRARIES}"
+     ""
+     )
+ if(NOT LAPACK_FIND_QUIETLY)
+     if(LAPACK_LIBRARIES)
+         message(STATUS "Looking for IBM ESSL LAPACK: found")
+     else()
+         message(STATUS "Looking for IBM ESSL LAPACK: not found")
+     endif()
+ endif()
+ endif()
+endif ()
+
+# LAPACK in IBM ESSL_MT library (requires generic lapack lib, too)
+if (BLA_VENDOR STREQUAL "IBMESSLMT" OR BLA_VENDOR STREQUAL "All")
+ if(NOT LAPACK_LIBRARIES)
+     check_lapack_libraries(
+     LAPACK_LIBRARIES
+     LAPACK
+     cheevd
+     ""
+     "esslsmp;lapack"
+     "${BLAS_PAR_LIBRARIES}"
+     ""
+     )
+ if(NOT LAPACK_FIND_QUIETLY)
+     if(LAPACK_LIBRARIES)
+         message(STATUS "Looking for IBM ESSL MT LAPACK: found")
+     else()
+         message(STATUS "Looking for IBM ESSL MT LAPACK: not found")
+     endif()
+ endif()
+ endif()
+endif ()
 
 #acml lapack
- if (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All")
+if (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All")
    if (BLAS_LIBRARIES MATCHES ".+acml.+")
      set (LAPACK_LIBRARIES ${BLAS_LIBRARIES})
+     if(NOT LAPACK_FIND_QUIETLY)
+         if(LAPACK_LIBRARIES)
+             message(STATUS "Looking for ACML LAPACK: found")
+         else()
+             message(STATUS "Looking for ACML LAPACK: not found")
+         endif()
+     endif()
    endif ()
- endif ()
+endif ()
 
 # Apple LAPACK library?
 if (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
@@ -457,8 +522,16 @@ if (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
   "${BLAS_LIBRARIES}"
   ""
   )
+ if(NOT LAPACK_FIND_QUIETLY)
+     if(LAPACK_LIBRARIES)
+         message(STATUS "Looking for Apple Accelerate LAPACK: found")
+     else()
+         message(STATUS "Looking for Apple Accelerate LAPACK: not found")
+     endif()
+ endif()
  endif(NOT LAPACK_LIBRARIES)
 endif (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
+
 if (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
   if ( NOT LAPACK_LIBRARIES )
     check_lapack_libraries(
@@ -470,8 +543,16 @@ if (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
     "${BLAS_LIBRARIES}"
     ""
     )
+ if(NOT LAPACK_FIND_QUIETLY)
+     if(LAPACK_LIBRARIES)
+         message(STATUS "Looking for NAS LAPACK: found")
+     else()
+         message(STATUS "Looking for NAS LAPACK: not found")
+     endif()
+ endif()
   endif ( NOT LAPACK_LIBRARIES )
 endif (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
+
 # Generic LAPACK library?
 if (BLA_VENDOR STREQUAL "Generic" OR
     BLA_VENDOR STREQUAL "ATLAS" OR
@@ -486,6 +567,13 @@ if (BLA_VENDOR STREQUAL "Generic" OR
     "${BLAS_LIBRARIES};${LM}"
     ""
     )
+    if(NOT LAPACK_FIND_QUIETLY)
+        if(LAPACK_LIBRARIES)
+            message(STATUS "Looking for Generic LAPACK: found")
+        else()
+            message(STATUS "Looking for Generic LAPACK: not found")
+        endif()
+    endif()
   endif ( NOT LAPACK_LIBRARIES )
 endif ()
 else(BLAS_FOUND)
