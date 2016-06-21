@@ -1,4 +1,4 @@
-get_data_subset <- function(f, n, h, p)
+get_data_subset <- function(f, n, h, p, b)
 {
     d <- read.csv(file=f,comment.char = "#", sep=",", quote = "\"", head=TRUE,
                   dec=".", colClasses=
@@ -27,18 +27,20 @@ get_data_subset <- function(f, n, h, p)
         d <- subset(d, npart == n)
     if (h)
         d <- subset(d, height == h)
+    if (b)
+        d <- subset(d, bsize == b | algo == "simple-mpi")
 
     return (d)
 }
 
 get_breaks_runtime <- function()
 {
-    return (c('implicit', 'explicit', 'implicit limited', 'simple-mpi'))
+    return (c('implicit', 'explicit', 'implicit limited', 'simple-mpi', 'implicit-two-by'))
 }
 
 get_labels_runtime <- function()
 {
-    return (c('Implicit', 'Explicit', 'Implicit Limited', 'Simple MPI'))
+    return (c('Implicit', 'Explicit', 'Implicit Limited', 'Simple MPI', 'Implicit two by'))
 }
 
 get_colors_runtime <- function()
@@ -46,32 +48,14 @@ get_colors_runtime <- function()
     return (c('implicit'  = "#266d83",
               'explicit'   = "#e20025",
 			  'implicit limited' = "#bd02b6",
-			  'simple-mpi' = "#9aff4f"))
+			  'simple-mpi' = "#9aff4f",
+			  'implicit-two-by' = "#50de11"))
 }
 
-# Scheme breaks, colors ...
-get_breaks_scheme <- function()
+get_bsize_reference <- function()
 {
-    return (c('tb-omp4#task#dep', 'tb-omp4#task#dep-P','tb-omp4#task#dep-C',
-              'tb-omp4#task#dep-CP'))
+	return (2000)
 }
-
-get_shapes_scheme <- function()
-{
-    return(c('tb-omp4#task#dep'    = 0,
-             'tb-omp4#task#dep-P'  = 2,
-             'tb-omp4#task#dep-C'  = 10,
-             'tb-omp4#task#dep-CP' = 8))
-}
-
-get_ltypes_scheme <- function()
-{
-    return (c('tb-omp4#task#dep'    = "solid",
-              'tb-omp4#task#dep-P'  = "dotdash",
-              'tb-omp4#task#dep-C'  = "solid",
-              'tb-omp4#task#dep-CP' = "dashed"))
-}
-
 get_one_node_reference_algorithm <- function()
 {
 	return ("starpu")

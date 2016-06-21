@@ -6,7 +6,7 @@ gen_group_size_plot <- function(d, model_wanted)
 {
 	d <- subset(d, model == model_wanted)
 	d$global_time <- d$global_time/1000
-	g <- ggplot(data=d,aes_string(x="bsize", y="global_time", color="algo"))
+	g <- ggplot(data=d,aes_string(x="bsize", y="global_time", color="algo", group="algo"))
     g <- g + geom_line()
 	g <- g + facet_wrap(npart ~ height ~ nnode, scales="free",
 						labeller = labeller(npart = as_labeller(npart_labeller),
@@ -32,8 +32,11 @@ gen_group_size_plot <- function(d, model_wanted)
 
 gen_group_size <- function(dbfile)
 {
-    data <- get_data_subset(dbfile, 0L, 0L, "False")
-	data <- subset(data, algo != get_one_node_reference_algorithm())
+    data <- get_data_subset(dbfile, 0L, 0L, "False", 0L)
+
+	data <- subset(data, algo != get_one_node_reference_algorithm() & algo != "simple-mpi")
+	all_nnode <- unique(subset(data, bsize != get_bsize_reference())$nnode)
+	data <- subset(data, nnode %in% all_nnode)
 
 	all_model <- unique(data$model)
 	for (i in 1:length(all_model))

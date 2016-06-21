@@ -8,7 +8,16 @@ calc_speedup <- function(data, ref_algo)
     data_ref <- subset(data, algo == ref_algo)
     for (i in 1:nrow(data)) {
         tmp_ref <- subset(data_ref, npart == data$npart[i] & height == data$height[i] & nnode == data$nnode[i])
-        data$speedup[i] <- tmp_ref$global_time / data$global_time[i]
+		if(nrow(tmp_ref) == 0)
+		{
+			
+			print(paste("No time for ", ref_algo, " (", data$algo[i], ") ", data$nnode[i], "N ", data$npart[i], "part ", data$height[i], "h", sep=""))
+			data$speedup[i] <- NA
+		}
+		else
+		{
+			data$speedup[i] <- tmp_ref$global_time / data$global_time[i]
+		}
     }
     return (data)
 }
@@ -17,12 +26,12 @@ gen_speedup_taskdep_plot <- function(d, model_wanted)
 {
 	d <- subset(d, model == model_wanted)
 	d <- calc_speedup(d, "simple-mpi")
+	d <- d[!(is.na(d$speedup)),]
 	g <- ggplot(data=d,aes_string(x="nnode", y="speedup", color="algo"))
     g <- g + geom_line()
-	g <- g + facet_wrap(npart ~ height ~ bsize, scales="free",
+	g <- g + facet_wrap(npart ~ height, scales="free",
 						labeller = labeller(npart = as_labeller(npart_labeller),
 											height = as_labeller(height_labeller),
-											bsize = as_labeller(group_size_labeller),
 											.default=label_both,
 											.multi_line=FALSE))
 
@@ -43,7 +52,7 @@ gen_speedup_taskdep_plot <- function(d, model_wanted)
 
 gen_speedup <- function(dbfile)
 {
-    data <- get_data_subset(dbfile, 0L, 0L, "False")
+    data <- get_data_subset(dbfile, 0L, 0L, "False", get_bsize_reference())
 	data <- subset(data, algo != get_one_node_reference_algorithm())
 
 	all_model <- unique(data$model)

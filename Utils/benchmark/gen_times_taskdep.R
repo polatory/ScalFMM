@@ -41,6 +41,7 @@ gen_times_taskdep_plot <- function(data, algo_wanted, model_wanted)
     g <- g + ylab("% of time")
 
 	output <- paste(get_output_directory(), "/", model_wanted, "-", algo_wanted, "-times.pdf", sep="")
+
     # Save generated plot.
     ggsave(output, g, width=29.7, height=21, units=c("cm"), device=cairo_pdf)
 }
@@ -83,15 +84,18 @@ compute_timings <- function(data, n, h, m)
 gen_times_taskdep <- function(dbfile)
 {
     # Cube (volume)
-    data <- get_data_subset(dbfile, 0L, 0L, "False")
+    data <- get_data_subset(dbfile, 0L, 0L, "False", get_bsize_reference())
 
 	all_algorithm <- unique(data$algo)
 	all_model <- unique(data$model)
 	for (i in 1:length(all_algorithm))
 	{
-		for (j in 1:length(all_model))
+		if(all_algorithm[i] != "simple-mpi")
 		{
-			gen_times_taskdep_plot(data, all_algorithm[i], all_model[j])
+			for (j in 1:length(all_model))
+			{
+				gen_times_taskdep_plot(data, all_algorithm[i], all_model[j])
+			}
 		}
 	}
 }

@@ -15,7 +15,18 @@ calc_normalized_time <- function(data, ref_name)
 
                 seq_time <- subset(tmp_ref, nnode == 1)
                 tid = as.integer(as.vector(data$nnode[j]))
-                data$efficiency[j] <- seq_time$global_time / (data$global_time[j] * tid)
+				if(nrow(tmp_ref) == 0)
+				{
+					data$efficiency[j] <- NA
+				}
+				else if(data$global_time[j] == 0)
+				{
+					data$efficiency[j] <- 0
+				}
+				else
+				{
+					data$efficiency[j] <- seq_time$global_time / (data$global_time[j] * tid)
+				}
             }
         }
     }
@@ -29,13 +40,13 @@ gen_normalized_time_plot <- function(db, d_breaks, model_wanted)
     db <- calc_normalized_time(db, d_breaks) 
 	#Then remove one node reference because it's only available on one node
 	db <- subset(db, algo != get_one_node_reference_algorithm())
+	db <- db[!(is.na(db$efficiency)),]
 
     g <- ggplot(data=db,aes_string(x="nnode", y="efficiency", color="algo"))
     g <- g + geom_line()
-    g <- g + facet_wrap(npart ~ height ~ bsize, scales="free",
+    g <- g + facet_wrap(npart ~ height, scales="free",
                         labeller = labeller(npart = as_labeller(npart_labeller),
                                             height = as_labeller(height_labeller),
-											bsize = as_labeller(group_size_labeller),
                                             .default=label_both,
                                             .multi_line=FALSE))
 
@@ -49,7 +60,7 @@ gen_normalized_time_plot <- function(db, d_breaks, model_wanted)
     g <- g + xlab("Number of nodes")
     g <- g + ylab("Normalized time")
 
-    g <- g + scale_x_continuous(breaks=c(1, 2, 3, 4, 5, 6, 9, 12, 16, 20, 24))
+    #g <- g + scale_x_continuous(breaks=c(1, 2, 3, 4, 5, 6, 9, 12, 16, 20, 24))
 
     # Save generated plot.
 	output <- paste(get_output_directory(), "/", model_wanted, "-normalized-time.pdf", sep="")
@@ -58,7 +69,7 @@ gen_normalized_time_plot <- function(db, d_breaks, model_wanted)
 
 gen_normalized_time <- function(dbfile)
 {
-    data <- get_data_subset(dbfile, 0L, 0L, "False")
+    data <- get_data_subset(dbfile, 0L, 0L, "False", get_bsize_reference())
 	all_model <- unique(data$model)
 	#Get all algorithm without the reference algorithm
 	all_algo <- unique(subset(data, algo != get_one_node_reference_algorithm())$algo)

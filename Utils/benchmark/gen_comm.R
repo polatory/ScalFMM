@@ -5,6 +5,7 @@ gen_comm_plot <- function(db, d_breaks, model_wanted)
 {
 	db <- subset(db, model == model_wanted)
 
+	db <- db[db$communication_vol > 0,]
     g <- ggplot(data=db,aes_string(x="nnode", y="communication_vol", color="algo"))
     g <- g + geom_line()
     g <- g + facet_wrap(npart ~ height ~ bsize, scales="free",
@@ -33,8 +34,8 @@ gen_comm_plot <- function(db, d_breaks, model_wanted)
 
 gen_comm <- function(dbfile)
 {
-    data <- get_data_subset(dbfile, 0L, 0L, "False")
-	data <- subset(data, algo != get_one_node_reference_algorithm())
+    data <- get_data_subset(dbfile, 0L, 0L, "False", get_bsize_reference())
+	data <- subset(data, algo != get_one_node_reference_algorithm() & algo != "simple-mpi")
 	all_model <- unique(data$model)
 	for (i in 1:length(all_model))
 	{

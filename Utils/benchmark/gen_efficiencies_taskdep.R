@@ -24,8 +24,6 @@ gen_efficiencies_plot <- function(output, data)
     g <- g + xlab("Number of node")
     g <- g + ylab("Efficiency")
 
-    #g <- g + scale_x_continuous(breaks=c(1, 2, 3, 4, 6, 9, 12, 16, 20, 24))
-
     # Set y-axis range
     g <- g + ylim(c(0.0, 1.10))
 
@@ -106,7 +104,7 @@ gen_efficiency <- function(data_init, algo_wanted, model_wanted)
 
 gen_efficiencies <- function(dbfile)
 {
-    data_init <- get_data_subset(dbfile, 0L, 0L, "False")
+    data_init <- get_data_subset(dbfile, 0L, 0L, "False", get_bsize_reference())
 	data_init <- subset(data_init, algo != get_one_node_reference_algorithm())
 	data <- melt(data_init, id=c("model", "algo", "nnode", "nthreads", "npart","height","bsize"))
 
