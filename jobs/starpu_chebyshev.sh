@@ -26,13 +26,13 @@ NUMACTL="numactl --interleave=all"
 
 ## Write data into an stdout file
 echo "my jobID: " $SLURM_JOB_ID > $FINAL_DIR/stdout
-echo "Model: cube" >> $FINAL_DIR/stdout
+echo "Model: " $MODEL >> $FINAL_DIR/stdout
 echo "Nb node: " $NB_NODE >> $FINAL_DIR/stdout
 echo "Nb thread: " $STARPU_NCPU >> $FINAL_DIR/stdout
 echo "Tree height: " $TREE_HEIGHT >> $FINAL_DIR/stdout
 echo "Group size: " $GROUP_SIZE >> $FINAL_DIR/stdout
 echo "Algorithm: starpu" >> $FINAL_DIR/stdout
 echo "Total particles: " $NB_PARTICLE >> $FINAL_DIR/stdout
-$NUMACTL ./Build/Tests/Release/testBlockedChebyshev -nb $NB_PARTICLE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation >> $FINAL_DIR/stdout
+$NUMACTL ./Build/Tests/Release/testBlockedChebyshev -nb $NB_PARTICLE -bs $GROUP_SIZE -h $TREE_HEIGHT -no-validation -$MODEL >> $FINAL_DIR/stdout
 
 source $HOME/move_trace.sh
