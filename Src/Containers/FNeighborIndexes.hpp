@@ -53,7 +53,7 @@ class FCoordinateNeighborIndex : public FAbstractNeighborIndex{
 
 public:
     FCoordinateNeighborIndex(const MortonIndex inMindex, const int inLevel)
-        : mindex(inMindex), level(inLevel), coord(mindex, level) {
+        : mindex(inMindex), level(inLevel), coord(mindex) {
 
         currentMinX = (coord.getX()==0? 0 : -1);
         currentMinY = (coord.getY()==0? 0 : -1);
@@ -233,4 +233,3 @@ public:
 };
 
 #endif // FNEIGHBORINDEXES_HPP
-

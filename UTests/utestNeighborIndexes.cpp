@@ -55,7 +55,7 @@ class TestIndexes : public FUTester<TestIndexes> {
                                         uassert(coordindexes.getIndex(idxX, idxY, idxZ)
                                                 == bitsindex.getIndex(idxX, idxY, idxZ));
                                         const MortonIndex neigh = bitsindex.getIndex(idxX, idxY, idxZ);
-                                        const FTreeCoordinate neighCoord(neigh, idxLevel);
+                                        const FTreeCoordinate neighCoord(neigh);
                                         uassert(xbox + idxX == neighCoord.getX());
                                         uassert(ybox + idxY == neighCoord.getY());
                                         uassert(zbox + idxZ == neighCoord.getZ());
@@ -100,7 +100,7 @@ class TestIndexes : public FUTester<TestIndexes> {
                                 uassert(coordindexes.getIndex(idxX, idxY, idxZ)
                                         == bitsindex.getIndex(idxX, idxY, idxZ));
                                 const MortonIndex neigh = bitsindex.getIndex(idxX, idxY, idxZ);
-                                const FTreeCoordinate neighCoord(neigh, idxLevel);
+                                const FTreeCoordinate neighCoord(neigh);
                                 uassert(xbox + idxX == neighCoord.getX());
                                 uassert(ybox + idxY == neighCoord.getY());
                                 uassert(zbox + idxZ == neighCoord.getZ());
@@ -145,7 +145,7 @@ class TestIndexes : public FUTester<TestIndexes> {
                                         uassert(coordindexes.getIndex(idxX, idxY, idxZ)
                                                 == bitsindex.getIndex(idxX, idxY, idxZ));
                                         const MortonIndex neigh = bitsindex.getIndex(idxX, idxY, idxZ);
-                                        const FTreeCoordinate neighCoord(neigh, idxLevel);
+                                        const FTreeCoordinate neighCoord(neigh);
                                         uassert(xbox + idxX == neighCoord.getX());
                                         uassert(ybox + idxY == neighCoord.getY());
                                         uassert(zbox + idxZ == neighCoord.getZ());
@@ -167,12 +167,12 @@ class TestIndexes : public FUTester<TestIndexes> {
             const MortonIndex limit = FMath::pow2(idxLevel)*3L;
             for(MortonIndex idxV1 = 1 ; idxV1 < limit ; ++idxV1){
                 FBitsNeighborIndex bitsindex(idxV1, idxLevel);
-                const FTreeCoordinate coord1(idxV1, idxLevel);
+                const FTreeCoordinate coord1(idxV1);
 
                 for(MortonIndex idxV2 = 0 ; idxV2 < limit ; ++idxV2){
                     const bool isneig = bitsindex.areNeighbors(idxV1, idxV2);
 
-                    const FTreeCoordinate coord2(idxV2, idxLevel);
+                    const FTreeCoordinate coord2(idxV2);
                     const bool isreallyneig = (FMath::Abs(coord1.getX()-coord2.getX()) <= 1)
                             && (FMath::Abs(coord1.getY()-coord2.getY()) <= 1)
                             && (FMath::Abs(coord1.getZ()-coord2.getZ()) <= 1);
@@ -195,6 +195,3 @@ class TestIndexes : public FUTester<TestIndexes> {
 
 // You must do this
 TestClass(TestIndexes)
-
-
-
