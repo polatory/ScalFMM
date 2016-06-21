@@ -116,7 +116,7 @@ int main(int argc, char* argv[]){
     FRandomLoader<FReal> loader(NbParticles, boxWidth, FPoint<FReal>(0,0,0), mpiComm.global().processId());
     FAssertLF(loader.isOpen());
 
-	setSeed(mpiComm.global().processId());
+	setSeed(mpiComm.global().processId()+1);
     TestParticle* allParticles = new TestParticle[loader.getNumberOfParticles()];
 	FReal * tmpParticles = new FReal[4*loader.getNumberOfParticles()];
     memset(allParticles,0,(unsigned int) (sizeof(TestParticle)* loader.getNumberOfParticles()));

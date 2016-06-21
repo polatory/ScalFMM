@@ -113,12 +113,10 @@ int main(int argc, char* argv[]){
 #ifndef LOAD_FILE
 	FReal boxWidth = 1.0;
 	{
-		FRandomLoader<FReal> loader(NbParticles, boxWidth, FPoint<FReal>(0,0,0), mpiComm.global().processId());
-		FAssertLF(loader.isOpen());
 		FSize idxPart = 0;
 		for(int i = 0; i < mpiComm.global().processCount(); ++i){
-			FSize NbParticlesPerNode = getNbParticlesPerNode(nproc, i, NbParticles);
-			setSeed(i);
+			FSize NbParticlesPerNode = getNbParticlesPerNode(mpiComm.global().processCount(), i, NbParticles);
+			setSeed(i+1);//Add +1 so the seed given is never 0 which correspond to random
 			FReal * tmpParticles = new FReal[4*NbParticlesPerNode];
 			if(FParameters::existParameter(argc, argv, "-ellipsoid")) {
 				nonunifRandonPointsOnElipsoid(NbParticlesPerNode, boxWidth/2, boxWidth/4, boxWidth/8, tmpParticles);
@@ -156,7 +154,15 @@ int main(int argc, char* argv[]){
 	}
     // Put the data into the tree
 	
+	//GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, true);
+	for(int i =0; i<sizeForEachGroup.size(); ++i)
+	{
+		for(int j =0; j<sizeForEachGroup[i].size(); ++j)
+			cout << sizeForEachGroup[i][j] << " ";
+		cout << endl;
+	}
 	GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, sizeForEachGroup, true);
+	groupedTree.printInfoBlocks();
 
     // Run the algorithm
 	int operationsToProceed = FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P | FFmmP2P;
