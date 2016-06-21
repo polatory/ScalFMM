@@ -39,6 +39,7 @@ using namespace std;
 #include "../../Src/Utils/FParameterNames.hpp"
 
 #include "../../Src/Files/FFmaGenericLoader.hpp"
+#include "../../Src/Files/FGenerateDistribution.hpp"
 #include "../../Src/Core/FFmmAlgorithm.hpp"
 
     typedef double FReal;
@@ -59,7 +60,7 @@ using namespace std;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
     typedef FGroupTaskStarPUImplicitAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
 
-#define LOAD_FILE
+//#define LOAD_FILE
 #ifndef LOAD_FILE
 	typedef FRandomLoader<FReal> LoaderClass;
 #else
@@ -77,9 +78,12 @@ int main(int argc, char* argv[]){
         "The size of the block of the blocked tree"
     };
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
+    const FParameterNames LocalOptionEllipsoid = {{"-ellipsoid"} , " non uniform distribution on  an ellipsoid of aspect ratio given by 0.5:0.25:0.125"};
+    const FParameterNames LocalOptionPlummer = {{"-plummer"} , " (Highly non uniform) plummer distribution (astrophysics)"};
     FHelpDescribeAndExit(argc, argv, "Loutre",
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbParticles,
-                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile, LocalOptionBlocSize, LocalOptionNoValidate);
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile, LocalOptionBlocSize,
+						 LocalOptionNoValidate, LocalOptionEllipsoid, LocalOptionPlummer);
 
     // Get params
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
@@ -107,19 +111,33 @@ int main(int argc, char* argv[]){
 
 	//Fill particles
 #ifndef LOAD_FILE
+	FReal boxWidth = 1.0;
 	{
+		FRandomLoader<FReal> loader(NbParticles, boxWidth, FPoint<FReal>(0,0,0), mpiComm.global().processId());
+		FAssertLF(loader.isOpen());
 		FSize idxPart = 0;
 		for(int i = 0; i < mpiComm.global().processCount(); ++i){
 			FSize NbParticlesPerNode = getNbParticlesPerNode(nproc, i, NbParticles);
-			LoaderClass loader(NbParticlesPerNode, 1.0, FPoint<FReal>(0,0,0), i);
-			FAssertLF(loader.isOpen());
+			setSeed(i);
+			FReal * tmpParticles = new FReal[4*NbParticlesPerNode];
+			if(FParameters::existParameter(argc, argv, "-ellipsoid")) {
+				nonunifRandonPointsOnElipsoid(NbParticlesPerNode, boxWidth/2, boxWidth/4, boxWidth/8, tmpParticles);
+			}
+			else if(FParameters::existParameter(argc, argv, "-plummer")) {
+				//The M argument is not used in the algorithm of the plummer distribution
+				unifRandonPlummer(NbParticlesPerNode, boxWidth/2, 0.0, tmpParticles) ;
+			}
+			else { //Uniform cube
+				unifRandonPointsOnCube(NbParticlesPerNode, boxWidth/2, boxWidth/2, boxWidth/2, tmpParticles);
+			}
 			for(FSize j= 0 ; j < NbParticlesPerNode ; ++j){
-				loader.fillParticle(&allParticlesToSort[idxPart]);//Same with file or not
+				allParticlesToSort[idxPart].setPosition(tmpParticles[j*4], tmpParticles[j*4+1], tmpParticles[j*4+2]);//Same with file or not
 				++idxPart;
 			}
+			delete[] tmpParticles;
 		}
 	}
-	LoaderClass loader(NbParticles, 1.0, FPoint<FReal>(0,0,0));
+	LoaderClass loader(NbParticles, boxWidth, FPoint<FReal>(0,0,0));
 #else
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
 		FReal physicalValue = 0.1;

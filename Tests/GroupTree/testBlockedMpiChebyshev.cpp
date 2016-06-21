@@ -43,6 +43,7 @@
 #include "../../Src/GroupTree/Core/FGroupTaskStarpuMpiAlgorithm.hpp"
 
 #include "../../Src/Files/FMpiFmaGenericLoader.hpp"
+#include "../../Src/Files/FGenerateDistribution.hpp"
 #include "../../Src/Containers/FCoordinateComputer.hpp"
 
 #include "../../Src/GroupTree/StarPUUtils/FStarPUKernelCapacities.hpp"
@@ -55,10 +56,12 @@ FSize getNbParticlesPerNode(FSize mpi_count, FSize mpi_rank, FSize total);
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
+    const FParameterNames LocalOptionEllipsoid = {{"-ellipsoid"} , " non uniform distribution on  an ellipsoid of aspect ratio given by 0.5:0.25:0.125"};
+    const FParameterNames LocalOptionPlummer = {{"-plummer"} , " (Highly non uniform) plummer distribution (astrophysics)"};
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight,FParameterDefinitions::InputFile,
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::NbParticles,
-                         LocalOptionBlocSize, LocalOptionNoValidate);
+                         LocalOptionBlocSize, LocalOptionNoValidate, LocalOptionEllipsoid, LocalOptionPlummer);
 
     typedef double FReal;
     // Initialize the types
@@ -107,20 +110,35 @@ int main(int argc, char* argv[]){
 		}
     };
 
-#define LOAD_FILE
+//#define LOAD_FILE
 #ifndef LOAD_FILE
-    // open particle file
-    FRandomLoader<FReal> loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), mpiComm.global().processId());
+	FReal boxWidth = 1.0;
+    FRandomLoader<FReal> loader(NbParticles, boxWidth, FPoint<FReal>(0,0,0), mpiComm.global().processId());
     FAssertLF(loader.isOpen());
 
+	setSeed(mpiComm.global().processId());
     TestParticle* allParticles = new TestParticle[loader.getNumberOfParticles()];
+	FReal * tmpParticles = new FReal[4*loader.getNumberOfParticles()];
     memset(allParticles,0,(unsigned int) (sizeof(TestParticle)* loader.getNumberOfParticles()));
+	memset(tmpParticles,0,(unsigned int) (sizeof(FReal)* loader.getNumberOfParticles() * 4));
+	if(FParameters::existParameter(argc, argv, "-ellipsoid")) {
+		nonunifRandonPointsOnElipsoid(loader.getNumberOfParticles(), boxWidth/2, boxWidth/4, boxWidth/8, tmpParticles);
+	}
+	else if(FParameters::existParameter(argc, argv, "-plummer")) {
+		//The M argument is not used in the algorithm of the plummer distribution
+		unifRandonPlummer(loader.getNumberOfParticles(), boxWidth/2, 0.0, tmpParticles) ;
+	}
+	else { //Uniform cube
+		unifRandonPointsOnCube(loader.getNumberOfParticles(), boxWidth/2, boxWidth/2, boxWidth/2, tmpParticles);
+	}
+
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        loader.fillParticle(&allParticles[idxPart].position);
+		allParticles[idxPart].position.setPosition(tmpParticles[idxPart*4], tmpParticles[idxPart*4+1], tmpParticles[idxPart*4+2]);
 		allParticles[idxPart].physicalValue = 0.1;
     }
-
+	delete[] tmpParticles;
 #else
+    // open particle file
     const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     FMpiFmaGenericLoader<FReal> loader(filename,mpiComm.global());
     FAssertLF(loader.isOpen());
