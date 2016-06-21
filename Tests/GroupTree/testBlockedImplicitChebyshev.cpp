@@ -80,10 +80,11 @@ int main(int argc, char* argv[]){
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
     const FParameterNames LocalOptionEllipsoid = {{"-ellipsoid"} , " non uniform distribution on  an ellipsoid of aspect ratio given by a=0.5 b=0.25 c=0.125"};
     const FParameterNames LocalOptionPlummer = {{"-plummer"} , " (Highly non uniform) plummer distribution (astrophysics)"};
+    const FParameterNames LocalOptionCube = {{"-cube"} , " uniform distribution on cube (default)"};
     FHelpDescribeAndExit(argc, argv, "Loutre",
                          FParameterDefinitions::OctreeHeight, FParameterDefinitions::NbParticles,
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::InputFile, LocalOptionBlocSize,
-						 LocalOptionNoValidate, LocalOptionEllipsoid, LocalOptionPlummer);
+						 LocalOptionNoValidate, LocalOptionEllipsoid, LocalOptionPlummer, LocalOptionCube);
 
     // Get params
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);

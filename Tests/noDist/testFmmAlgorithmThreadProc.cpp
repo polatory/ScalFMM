@@ -48,10 +48,11 @@ int main(int argc, char* argv[]){
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
     const FParameterNames LocalOptionEllipsoid = {{"-ellipsoid"} , " non uniform distribution on  an ellipsoid of aspect ratio given by a=0.5 b=0.25 c=0.125"};
     const FParameterNames LocalOptionPlummer = {{"-plummer"} , " (Highly non uniform) plummer distribution (astrophysics)"};
+    const FParameterNames LocalOptionCube = {{"-cube"} , " uniform distribution on cube (default)"};
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight,FParameterDefinitions::InputFile,
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::NbParticles,
-                         LocalOptionBlocSize, LocalOptionNoValidate, LocalOptionEllipsoid, LocalOptionPlummer);
+                         LocalOptionBlocSize, LocalOptionNoValidate, LocalOptionEllipsoid, LocalOptionPlummer, LocalOptionCube);
 
     typedef double FReal;
     // Initialize the types
