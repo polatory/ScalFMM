@@ -137,6 +137,7 @@ class ScalFMMConfig(object):
         return record
 
 def get_times_from_trace_file(filename):
+    return 1.0, 1.0, 1.0, 1.0, 1.0
     cmd = "starpu_trace_state_stats.py " + filename
     proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
     stdout, stderr = proc.communicate()
@@ -313,6 +314,9 @@ def main():
                 if len(a) == 1:
                     communication_vol += float(a[0])
                 
+    if config.num_nodes > 1 and communication_vol == 0:
+        communication_vol = -1
+
     if(gantt_database != ""):
         generate_gantt(config, gantt_database, os.path.dirname(trace_filename))
 
@@ -323,13 +327,13 @@ def main():
         else:
             print("File doesn't exist " + trace_filename)
 
-        sum_time = (runtime_time + task_time + scheduling_time + communication_time + idle_time)/(config.num_nodes*config.num_threads)
-        diff_time = float('%.2f'%(abs(global_time-sum_time)/global_time))
+        # sum_time = (runtime_time + task_time + scheduling_time + communication_time + idle_time)/(config.num_nodes*config.num_threads)
+        # diff_time = float('%.2f'%(abs(global_time-sum_time)/global_time))
 
-        if diff_time > 0.01:   
-            print('\033[31m/!\\Timing Error of ' + str(diff_time) + '\033[39m')
-            print('\033[31m Global ' + str(global_time) + ' Sum ' + str(sum_time) + '\033[39m')
-            print('\033[31m Nodes number ' + str(config.num_nodes) + ' CPU ' + str(config.num_threads) + '\033[39m')
+        # if diff_time > 0.01:   
+            # print('\033[31m/!\\Timing Error of ' + str(diff_time) + '\033[39m')
+            # print('\033[31m Global ' + str(global_time) + ' Sum ' + str(sum_time) + '\033[39m')
+            # print('\033[31m Nodes number ' + str(config.num_nodes) + ' CPU ' + str(config.num_threads) + '\033[39m')
 
         # Write a record to the output file.
         output_file.write(config.gen_record(global_time,
