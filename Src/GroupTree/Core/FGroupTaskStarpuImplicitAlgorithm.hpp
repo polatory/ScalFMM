@@ -921,8 +921,8 @@ protected:
 			if(nodeRepartition[idxLevel][i][0] <= nodeRepartition[idxLevel][i][1] && idx >= nodeRepartition[idxLevel][i][0] && idx <= nodeRepartition[idxLevel][i][1])
 				return i;
 		if(mpi_rank == 0)
-			cout << "[scalfmm][map error] idx " << idx << " on level " << idxLevel << " isn't mapped on any proccess." << endl;
-		return -1;
+			cout << "[scalfmm][map error] idx " << idx << " on level " << idxLevel << " isn't mapped on any proccess. (Default set to 0)." << endl;
+		return nproc-1;
 	}
     /**
      * This function is creating the interactions vector between blocks.
