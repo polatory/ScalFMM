@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 ## name of job
-#SBATCH -J implicit
+#SBATCH -J simple-mpi
 #SBATCH -p special
 ## Resources: (nodes, procs, tasks, walltime, ... etc)
 #SBATCH -c 24
@@ -22,7 +22,7 @@ mkdir $FINAL_DIR
 echo "my jobID: " $SLURM_JOB_ID > $FINAL_DIR/stdout
 echo "Model: cube" >> $FINAL_DIR/stdout
 echo "Nb node: " $NB_NODE >> $FINAL_DIR/stdout
-echo "Nb thread: " $STARPU_NCPU >> $FINAL_DIR/stdout
+echo "Nb thread: 24" >> $FINAL_DIR/stdout
 echo "Tree height: " $TREE_HEIGHT >> $FINAL_DIR/stdout
 echo "Group size: 1" >> $FINAL_DIR/stdout
 echo "Algorithm: simple-mpi" >> $FINAL_DIR/stdout
