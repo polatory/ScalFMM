@@ -24,6 +24,7 @@
 
 #include "../../Src/Files/FRandomLoader.hpp"
 #include "../../Src/Files/FFmaGenericLoader.hpp"
+#include "../../Src/Files/FGenerateDistribution.hpp"
 
 #include "../../Src/GroupTree/Core/FGroupSeqAlgorithm.hpp"
 #include "../../Src/GroupTree/Core/FGroupTaskAlgorithm.hpp"
@@ -46,6 +47,8 @@
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
+    const FParameterNames LocalOptionEllipsoid = {{"-ellipsoid"} , " non uniform distribution on  an ellipsoid of aspect ratio given by a=0.5 b=0.25 c=0.125"};
+    const FParameterNames LocalOptionPlummer = {{"-plummer"} , " (Highly non uniform) plummer distribution (astrophysics)"};
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight,
 #ifdef RANDOM_PARTICLES
@@ -53,7 +56,7 @@ int main(int argc, char* argv[]){
 #else
                          FParameterDefinitions::InputFile,
 #endif
-                         LocalOptionBlocSize, LocalOptionNoValidate);
+                         LocalOptionBlocSize, LocalOptionNoValidate, LocalOptionEllipsoid, LocalOptionPlummer);
 
     // Initialize the types
     typedef double FReal;
@@ -95,18 +98,36 @@ int main(int argc, char* argv[]){
     FAssertLF(loader.isOpen());
     FTic timer;
 
+#ifdef RANDOM_PARTICLES
+	setSeed(1);
+	FReal * tmpParticles = new FReal[4*loader.getNumberOfParticles()];
+	if(FParameters::existParameter(argc, argv, "-ellipsoid")) {
+		nonunifRandonPointsOnElipsoid(loader.getNumberOfParticles(), loader.getBoxWidth()/2, loader.getBoxWidth()/4, loader.getBoxWidth()/8, tmpParticles);
+	}
+	else if(FParameters::existParameter(argc, argv, "-plummer")) {
+		//The M argument is not used in the algorithm of the plummer distribution
+		unifRandonPlummer(loader.getNumberOfParticles(), loader.getBoxWidth()/2, 0.0, tmpParticles) ;
+	}
+	else { //Uniform cube
+		unifRandonPointsOnCube(loader.getNumberOfParticles(), loader.getBoxWidth()/2, loader.getBoxWidth()/2, loader.getBoxWidth()/2, tmpParticles);
+	}
+#endif
+
     FP2PParticleContainer<FReal> allParticles;
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
         FPoint<FReal> particlePosition;
         FReal physicalValue;
 #ifdef RANDOM_PARTICLES
         physicalValue = 0.10;
-        loader.fillParticle(&particlePosition);
+		particlePosition.setPosition(tmpParticles[idxPart*4], tmpParticles[idxPart*4+1], tmpParticles[idxPart*4+2]);
 #else
         loader.fillParticle(&particlePosition, &physicalValue);
 #endif
         allParticles.push(particlePosition, physicalValue);
     }
+#ifdef RANDOM_PARTICLES
+	delete[] tmpParticles;
+#endif
     std::cout << "Particles loaded in " << timer.tacAndElapsed() << "s\n";
 
     // Put the data into the tree
