@@ -83,6 +83,8 @@ int main(int argc, char* argv[]){
 		}
     };
 
+#define LOAD_FILE
+#ifndef LOAD_FILE
     // open particle file
     FRandomLoader<FReal> loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), mpiComm.global().processId());
     FAssertLF(loader.isOpen());
@@ -93,6 +95,18 @@ int main(int argc, char* argv[]){
         loader.fillParticle(&allParticles[idxPart].position);
 		allParticles[idxPart].physicalValue = 0.1;
     }
+
+#else
+    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
+    FMpiFmaGenericLoader<FReal> loader(filename,mpiComm.global());
+    FAssertLF(loader.isOpen());
+
+    TestParticle* allParticles = new TestParticle[loader.getMyNumberOfParticles()];
+    memset(allParticles,0,(unsigned int) (sizeof(TestParticle)* loader.getMyNumberOfParticles()));
+    for(FSize idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
+        loader.fillParticle(&allParticles[idxPart].position,&allParticles[idxPart].physicalValue);
+    }
+#endif
 
     FVector<TestParticle> myParticles;
     FLeafBalance balancer;
