@@ -67,6 +67,7 @@ gen_pareff <- function(dbfile)
     file  <- paste(dbfile, sep="")
     data <- get_data_subset(dbfile, 0L, 0L, "False", get_bsize_reference())
 	data <- subset(data, algo != get_one_node_reference_algorithm())
+	data <- subset(data, global_time >= 0)
 	all_model <- unique(data$model)
 	for (i in 1:length(all_model))
 	{

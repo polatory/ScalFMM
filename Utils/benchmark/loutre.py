@@ -265,7 +265,7 @@ def main():
 
     config=ScalFMMConfig()
     rmem = 0
-    global_time = 0.0
+    global_time = -1.0
     runtime_time = 0.0
     task_time = 0.0
     idle_time = 0.0
