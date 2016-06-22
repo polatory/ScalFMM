@@ -134,7 +134,7 @@ int main(int argc, char* argv[]){
     // Put the data into the tree
     timer.tic();
     GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles);
-    groupedTree.printInfoBlocks();
+    //groupedTree.printInfoBlocks();
     std::cout << "Tree created in " << timer.tacAndElapsed() << "s\n";
 
     // Run the algorithm
