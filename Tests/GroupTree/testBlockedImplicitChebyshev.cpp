@@ -156,12 +156,6 @@ int main(int argc, char* argv[]){
     // Put the data into the tree
 	
 	//GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, true);
-	for(int i =0; i<sizeForEachGroup.size(); ++i)
-	{
-		for(int j =0; j<sizeForEachGroup[i].size(); ++j)
-			cout << sizeForEachGroup[i][j] << " ";
-		cout << endl;
-	}
 	GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, sizeForEachGroup, true);
 	//groupedTree.printInfoBlocks();
 
