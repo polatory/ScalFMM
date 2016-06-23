@@ -7,6 +7,7 @@ calc_normalized_time <- function(data, ref_name)
     dataref <- subset(data, algo == get_one_node_reference_algorithm())
 
     # XXX: Most likely suboptimal but it works as expected!
+	data$efficiency <- 0
     for (i in 1:length(ref_name)) {
         for (j in 1:nrow(data)) {
             if (data$algo[j] == ref_name[i]) {
@@ -60,7 +61,6 @@ gen_normalized_time_plot <- function(db, d_breaks, model_wanted)
     g <- g + xlab("Number of nodes")
     g <- g + ylab("Normalized time")
 
-    #g <- g + scale_x_continuous(breaks=c(1, 2, 3, 4, 5, 6, 9, 12, 16, 20, 24))
 
     # Save generated plot.
 	output <- paste(get_output_directory(), "/", model_wanted, "-normalized-time.pdf", sep="")
