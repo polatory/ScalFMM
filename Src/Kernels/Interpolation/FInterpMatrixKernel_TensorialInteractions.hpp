@@ -45,16 +45,42 @@
  * The table applyTab provides the indices in the reduced storage table
  * corresponding to the application scheme depicted earlier.
  *
- * PB: BEWARE! Homogeneous matrix kernels do not support cell width extension
+ * \warning BEWARE! Homogeneous matrix kernels do not support cell width extension
  * yet. Is it possible to find a reference width and a scale factor such that
  * only 1 set of M2L opt can be used for all levels??
- *
+ * The definition of the potential p and force f are extended to the case
+* of tensorial interaction kernels:
+* 
+*\f$ p_i(x) = K_{ip}(x,y)w_p(y),\f$    \f$ \forall i=1..NPOT, p=1..NPV\f$
+*
+* \f$f_{ik}= w_p(x)K_{ip,k}(x,y)w_p(y)\f$
+*
+* Since the interpolation scheme is such that
+*
+*\f$ p_i(x) \approx S^m(x) L^{m}_{ip}\f$
+*
+* \f$f_{ik}= w_p(x) \nabla_k S^m(x) L^{m}_{ip}\f$
+*
+* with
+*
+* \f$  L^{m}_{ip} = K^{mn}_{ip} S^n(y) w_p(y)\f$  (local expansion) 
+*
+ *\f$ M^{m}_{p} = S^n(y) w_p(y)\f$  (multipole expansion)  
+*
+* then the multipole exp have NPV components and the local exp NPOT*NPV.
+*
+* NB1: Only the computation of forces requires that the sum over p is 
+* performed at L2P step. It could be done at M2L step for the potential.
+*
+* NB2: An efficient application of the matrix kernel is highly kernel 
+* dependent, we recommand overriding the P2M/M2L/L2P function of the kernel 
+* you are using in order to have opsimal performances + set your own NRHS/NLHS.*
  */
 
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-//
+///
 // Tensorial Matrix Kernels (NCMP>1)
 //
 // The definition of the potential p and force f are extended to the case
