@@ -31,16 +31,16 @@ echo $DATE
 #
 #   INTEL
 #
-module add compiler/gcc/5.1.0 compiler/intel/64/2016_beta
-cd $project_dir/BuildIntel2016
-COMP=INTEL
-export KMP_AFFINITY=scatter
+#module add compiler/gcc/5.1.0 compiler/intel/64/2016_beta
+#cd $project_dir/BuildIntel2016
+#COMP=INTEL
+#export KMP_AFFINITY=scatter
 #
 #   GCC
 #
-#module add compiler/gcc/5.1.0 intel/mkl/64/11.2/2015.3.187  
-#cd $project_dir/BuildGCC51
-#COMP=GCC
+module add compiler/gcc/5.1.0 intel/mkl/64/11.2/2015.3.187  
+cd $project_dir/BuildGCC51
+COMP=GCC
 #
 # For eztrace
 #
@@ -62,7 +62,7 @@ ALGO=(basic balanced task  tasknew sectiontask sectiontasknew)
 #ALGO=( task )
 #
 pwd
-#export OMP_PROC_BIND=true
+export OMP_PROC_BIND=true
 NUM=`git rev-list HEAD --count`
 echo   $DISTRIB
 REP=${DATE}-${COMP}-${METH}
