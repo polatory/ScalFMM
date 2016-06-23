@@ -28,17 +28,21 @@
 #include <string>
 
 #include "ScalFmmConfig.h"
+#include "Utils/FGlobal.hpp"
+
+#include "Utils/FParameters.hpp"
+#include "Utils/FParameterNames.hpp"
 
 #include "Files/FFmaGenericLoader.hpp"
-
+// UFMM
 #include "Kernels/Uniform/FUnifCell.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "Kernels/Uniform/FUnifKernel.hpp"
-
+// Leaves 
 #include "Components/FSimpleLeaf.hpp"
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
-#include "Utils/FParameters.hpp"
+
 
 #include "Containers/FOctree.hpp"
 
@@ -49,7 +53,6 @@
 #include "Core/FFmmAlgorithm.hpp"
 #endif
 
-#include "Utils/FParameterNames.hpp"
 
 #include <memory>
 

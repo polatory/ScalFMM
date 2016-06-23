@@ -164,10 +164,10 @@ int main(int argc, char ** argv){
             FP2PR::MutualParticles(
                 particles[idxTarget].pos.getX(),particles[idxTarget].pos.getY(), particles[idxTarget].pos.getZ(),
                 particles[idxTarget].physicalValue, &particles[idxTarget].forces[0], &particles[idxTarget].forces[1],
-                    &particles[idxTarget].forces[2], &particles[idxTarget].pot,
+                &particles[idxTarget].forces[2], &particles[idxTarget].pot,
                 particles[idxSource].pos.getX(),particles[idxSource].pos.getY(), particles[idxSource].pos.getZ(),
                 particles[idxSource].physicalValue, &particles[idxSource].forces[0], &particles[idxSource].forces[1],
-                    &particles[idxSource].forces[2], &particles[idxSource].pot);
+                &particles[idxSource].forces[2], &particles[idxSource].pot);
         }
     }
 

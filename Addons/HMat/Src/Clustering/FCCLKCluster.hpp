@@ -207,6 +207,18 @@ public:
     }
 
 
+    void getCentroidsIdx(const int inNbElements, int inCentroidsIdx[]) const{
+
+        /// Map partitions to 0.. nbElements
+        FAssertLF(inNbElements == nbElements);
+
+        // Copy partitions into in/output array
+        for(int idx = 0 ; idx < nbElements ; ++idx){
+            inCentroidsIdx[idx]=partitions[idx];
+        }
+
+    }
+
 };
 
 #endif // FCCLKCLUSTER_HPP

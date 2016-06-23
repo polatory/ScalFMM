@@ -68,7 +68,7 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
             FPoint<FReal> position;
 			loader.fillParticle(&position);
 			// put in tree
-			tree.insert(position, FParticleTypeTarget, idxPart, physicalValue);
+            tree.insert(position, FParticleType::FParticleTypeTarget, idxPart, physicalValue);
 			// get copy
 			particlesTargets[idxPart].setPosition(position);
 			*(particlesTargets[idxPart].setPhysicalValue()) = physicalValue;
@@ -83,7 +83,7 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
             FPoint<FReal> position;
 			loader.fillParticle(&position);
 			// put in tree
-			tree.insert(position, FParticleTypeSource, idxPart, physicalValue);
+            tree.insert(position, FParticleType::FParticleTypeSource, idxPart, physicalValue);
 			// get copy
 			particlesSources[idxPart].setPosition(position);
 			*(particlesSources[idxPart].setPhysicalValue()) = physicalValue;
@@ -104,12 +104,12 @@ class TestRotationDirectTsm : public FUTester<TestRotationDirectTsm> {
 		for(int idxTarget = 0 ; idxTarget < nbTargets ; ++idxTarget){
 			for(int idxOther = 0 ; idxOther < nbSources ; ++idxOther){
                 FP2PR::NonMutualParticles(
-						particlesSources[idxOther].getPosition().getX(), particlesSources[idxOther].getPosition().getY(),
-						particlesSources[idxOther].getPosition().getZ(),particlesSources[idxOther].getPhysicalValue(),
 						particlesTargets[idxTarget].getPosition().getX(), particlesTargets[idxTarget].getPosition().getY(),
-						particlesTargets[idxTarget].getPosition().getZ(),particlesTargets[idxTarget].getPhysicalValue(),
-						&particlesTargets[idxTarget].setForces()[0],&particlesTargets[idxTarget].setForces()[1],
-                        &particlesTargets[idxTarget].setForces()[2],particlesTargets[idxTarget].setPotential());
+                        particlesTargets[idxTarget].getPosition().getZ(),particlesTargets[idxTarget].getPhysicalValue(),
+                        &particlesTargets[idxTarget].setForces()[0],&particlesTargets[idxTarget].setForces()[1],
+                        &particlesTargets[idxTarget].setForces()[2],particlesTargets[idxTarget].setPotential(),
+                        particlesSources[idxOther].getPosition().getX(), particlesSources[idxOther].getPosition().getY(),
+						particlesSources[idxOther].getPosition().getZ(),particlesSources[idxOther].getPhysicalValue());
 			}
 		}
 

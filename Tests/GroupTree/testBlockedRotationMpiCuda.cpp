@@ -135,7 +135,7 @@ int main(int argc, char* argv[]){
                 loader.getBoxWidth(),
                 TreeHeight,
                 myParticles[myParticles.getSize()-1].position );
-    const MortonIndex myLeftLimite = host.getMortonIndex(TreeHeight-1);
+    const MortonIndex myLeftLimite = host.getMortonIndex();
     MortonIndex leftLimite = -1;
     if(mpiComm.global().processId() != 0){
         FMpi::Assert(MPI_Recv(&leftLimite, sizeof(leftLimite), MPI_BYTE,

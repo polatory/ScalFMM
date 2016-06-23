@@ -253,15 +253,23 @@ public:
              ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict inSources,
              ContainerClass* const inNeighbors[], const int neighborPositions[],
              const int inSize) override {
-        if(inTargets == inSources){
-            P2POuter(inPosition, inTargets, inNeighbors, neighborPositions, inSize);
-            DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PInner(inTargets,MatrixKernel);
+        // Standard FMM separation criterion, i.e. max 27 neighbor clusters per leaf
+        if(LeafLevelSeparationCriterion==1) {
+            if(inTargets == inSources){
+                P2POuter(inPosition, inTargets, inNeighbors, neighborPositions, inSize);
+                DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PInner(inTargets,MatrixKernel);
+            }
+            else{
+                const ContainerClass* const srcPtr[1] = {inSources};
+                DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,srcPtr,1,MatrixKernel);
+                DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,inSize,MatrixKernel);
+            }
         }
-        else{
-            const ContainerClass* const srcPtr[1] = {inSources};
-            DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,srcPtr,1,MatrixKernel);
-            DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,inSize,MatrixKernel);
+        // Nearfield interactions are only computed within the target leaf
+        else if(LeafLevelSeparationCriterion==0){
+            DirectInteractionComputer<FReal,MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,inSize,MatrixKernel);
         }
+        // If criterion equals -1 then no P2P need to be performed.
     }
 
     void P2POuter(const FTreeCoordinate& /*inLeafPosition*/,
@@ -281,7 +289,13 @@ public:
                    ContainerClass* const FRestrict inTargets, const ContainerClass* const FRestrict /*inSources*/,
                    const ContainerClass* const inNeighbors[], const int /*neighborPositions*/[],
                    const int inSize) override {
-        DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,inSize,MatrixKernel);
+        // Standard FMM separation criterion, i.e. max 27 neighbor clusters per leaf
+        if(LeafLevelSeparationCriterion==1) 
+            DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,inSize,MatrixKernel);
+        // Nearfield interactions are only computed within the target leaf
+        if(LeafLevelSeparationCriterion==0) 
+            DirectInteractionComputer<FReal, MatrixKernelClass::NCMP, NVALS>::P2PRemote(inTargets,inNeighbors,0,MatrixKernel);
+        // If criterion equals -1 then no P2P need to be performed.        
     }
 
 };

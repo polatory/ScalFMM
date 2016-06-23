@@ -194,7 +194,7 @@ public:
 
 
         CellClass* cell = _tree->getCell(
-            LeafCellCoordinate.getMortonIndex(_treeHeight - 1),
+            LeafCellCoordinate.getMortonIndex(),
             _treeHeight - 1);
 
         flopsP2P += tmpCost;
@@ -210,7 +210,7 @@ public:
         FSize tmpCost = 0;
 
         CellClass* cell = _tree->getCell(
-            LeafCellCoordinate.getMortonIndex(_treeHeight - 1),
+            LeafCellCoordinate.getMortonIndex(),
             _treeHeight - 1);
 
         flopsP2P += tmpCost;

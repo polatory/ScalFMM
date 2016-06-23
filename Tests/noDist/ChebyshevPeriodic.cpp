@@ -83,12 +83,6 @@ int main(int argc, char* argv[])
     const unsigned int NbThreads        = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, 1);
     const int PeriodicDeep                     = FParameters::getValue(argc,argv,FParameterDefinitions::PeriodicityNbLevels.options, 3);
 
-#ifdef _OPENMP
-    omp_set_num_threads(NbThreads);
-    std::cout << "\n>> Using " << omp_get_max_threads() << " threads.\n" << std::endl;
-#else
-    std::cout << "\n>> Sequential version.\n" << std::endl;
-#endif
     //
     std::cout <<	 "Parameters  "<< std::endl
                   <<     "\t      Octree Depth      \t"<< TreeHeight <<std::endl

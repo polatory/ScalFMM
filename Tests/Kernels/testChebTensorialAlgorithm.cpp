@@ -27,7 +27,7 @@
 #include "Files/FFmaGenericLoader.hpp"
 
 
-#include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel_TensorialInteractions.hpp"
 #include "Kernels/Chebyshev/FChebCell.hpp"
 #include "Kernels/Chebyshev/FChebTensorialKernel.hpp"
 
@@ -72,25 +72,30 @@ int main(int argc, char* argv[])
     // init timer
     FTic time;
 
+    // typedefs and infos
+    typedef FInterpMatrixKernel_R_IJ<FReal> MatrixKernelClass;
+    MatrixKernelClass::printInfo();
 
-  // typedefs
-  typedef FInterpMatrixKernel_R_IJ<FReal> MatrixKernelClass;
+    // useful features of matrix kernel
+    const unsigned int NPV  = MatrixKernelClass::NPV;
+    const unsigned int NPOT = MatrixKernelClass::NPOT;
+    const unsigned int NRHS = MatrixKernelClass::NRHS;
+    const unsigned int NLHS = MatrixKernelClass::NLHS;
 
-  const unsigned int NPV  = MatrixKernelClass::NPV;
-  const unsigned int NPOT = MatrixKernelClass::NPOT;
-  const unsigned int NRHS = MatrixKernelClass::NRHS;
-  const unsigned int NLHS = MatrixKernelClass::NLHS;
+    const FReal CoreWidth = 0.;
+    std::cout << "Core width: a=" << CoreWidth << std::endl;
+    std::cout << std::endl;
 
-  const double CoreWidth = 0.1;
-  const MatrixKernelClass MatrixKernel(CoreWidth);
+    // Build matrix kernel
+    const MatrixKernelClass MatrixKernel(CoreWidth);
 
-  // init particles position and physical value
-  struct TestParticle{
-    FPoint<FReal> position;
-    FReal forces[3][NPOT];
-    FReal physicalValue[NPV];
-    FReal potential[NPOT];
-  };
+    // init particles position and physical value
+    struct TestParticle{
+        FPoint<FReal> position;
+        FReal forces[3][NPOT];
+        FReal physicalValue[NPV];
+        FReal potential[NPOT];
+    };
 
   // open particle file
   FFmaGenericLoader<FReal> loader(filename);

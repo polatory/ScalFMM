@@ -53,7 +53,7 @@ class FCoordinateNeighborIndex : public FAbstractNeighborIndex{
 
 public:
     FCoordinateNeighborIndex(const MortonIndex inMindex, const int inLevel)
-        : mindex(inMindex), level(inLevel), coord(mindex, level) {
+        : mindex(inMindex), level(inLevel), coord(mindex) {
 
         currentMinX = (coord.getX()==0? 0 : -1);
         currentMinY = (coord.getY()==0? 0 : -1);
@@ -87,7 +87,7 @@ public:
     }
 
     MortonIndex getIndex(const int inX, const int inY, const int inZ) override{
-        return FTreeCoordinate(inX+coord.getX(), inY+coord.getY(), inZ+coord.getZ()).getMortonIndex(level);
+        return FTreeCoordinate(inX+coord.getX(), inY+coord.getY(), inZ+coord.getZ()).getMortonIndex();
     }
 };
 
@@ -233,4 +233,3 @@ public:
 };
 
 #endif // FNEIGHBORINDEXES_HPP
-

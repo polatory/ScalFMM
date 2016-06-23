@@ -36,7 +36,7 @@ if(SCALFMM_ADDON_HMAT)
         file( GLOB_RECURSE source_lib_files Src/*.cpp )
 
         # Adding cpp files to project
-        add_library( scalfmmhmat STATIC ${source_lib_files} )
+        add_library( scalfmmhmat ${source_lib_files} )
         
         # Add blas library (even if it is set to off)
         target_link_libraries( scalfmmhmat scalfmm)
@@ -64,7 +64,7 @@ if(SCALFMM_ADDON_HMAT)
 
         # Add C Clustering Library
         file( GLOB_RECURSE ccl_lib_files CClusteringLibrary/*.c )
-        add_library( cclusteringlib STATIC ${ccl_lib_files} )
+        add_library( cclusteringlib ${ccl_lib_files} )
         INCLUDE_DIRECTORIES(CClusteringLibrary/)
         target_link_libraries( cclusteringlib scalfmm)
         install( TARGETS cclusteringlib ARCHIVE DESTINATION lib )

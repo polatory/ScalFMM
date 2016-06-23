@@ -143,7 +143,7 @@ private:
             return FCoordinateComputer::
                 GetCoordinateFromPosition(_boxCenter, _boxWidth,
                                           _divisionLevel, getPosition()).
-                getMortonIndex(_divisionLevel);
+                getMortonIndex();
             
         }
 

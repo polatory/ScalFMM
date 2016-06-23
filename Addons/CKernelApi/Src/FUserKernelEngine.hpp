@@ -123,10 +123,22 @@ public:
 
     /** Do nothing */
     virtual void M2M(CellClass* const FRestrict cell, const CellClass*const FRestrict *const FRestrict children, const int level) {
-        if(kernel.m2m){
-            for(int idx = 0 ; idx < 8 ; ++idx){
+        if(kernel.m2m_full){
+            std::vector<void *> userCellArray;
+            for(int idx=0 ;idx<8 ; ++idx){
                 if( children[idx] ){
-                    kernel.m2m(level, cell->getContainer(), idx, children[idx]->getContainer(), userData);
+                    userCellArray.push_back(children[idx]->getContainer());
+                }else{
+                    userCellArray.push_back(nullptr);
+                }
+            }
+            kernel.m2m_full(level, cell->getContainer(), userCellArray.data(), userData);
+        }else{
+            if(kernel.m2m){
+                for(int idx = 0 ; idx < 8 ; ++idx){
+                    if( children[idx] ){
+                        kernel.m2m(level, cell->getContainer(), idx, children[idx]->getContainer(), userData);
+                    }
                 }
             }
         }
@@ -144,8 +156,7 @@ public:
             }
             kernel.m2l_full(level,cell->getContainer(),neighborPositions,size,userCellArray.data(),userData);
             FAssertLF("m2l_full temporary disabled ...\n");
-        }
-        else{
+        }else{
             if(kernel.m2l){
                 for(int idx = 0 ; idx < size ; ++idx){
                     const int idxNeigh = neighborPositions[idx];
@@ -157,10 +168,22 @@ public:
 
     /** Do nothing */
     virtual void L2L(const CellClass* const FRestrict cell, CellClass* FRestrict *const FRestrict children, const int level) {
-        if(kernel.l2l){
-            for(int idx = 0 ; idx < 8 ; ++idx){
-                if( children[idx] ){
-                    kernel.l2l(level, cell->getContainer(), idx, children[idx]->getContainer(), userData);
+        if(kernel.l2l_full){
+            std::vector<void *> userCellArray;
+            for(int i=0 ;i<8 ; ++i){
+                if(children[i]){
+                    userCellArray.push_back(children[i]->getContainer());
+                }else{
+                    userCellArray.push_back(nullptr);
+                }
+                kernel.l2l_full(level, cell->getContainer(), userCellArray.data(), userData);
+            }
+        }else{
+            if(kernel.l2l){
+                for(int idx = 0 ; idx < 8 ; ++idx){
+                    if( children[idx] ){
+                        kernel.l2l(level, cell->getContainer(), idx, children[idx]->getContainer(), userData);
+                    }
                 }
             }
         }
@@ -365,12 +388,12 @@ public:
         }else{
             if(type==SOURCE){
                 for(FSize idPart = 0; idPart<NbPositions ; ++idPart){
-                    octree->insert(FPoint<FReal>(X[idPart],Y[idPart],Z[idPart]),FParticleTypeSource,idPart);
+                    octree->insert(FPoint<FReal>(X[idPart],Y[idPart],Z[idPart]),FParticleType::FParticleTypeSource,idPart);
                 }
                 FScalFMMEngine<FReal>::nbPart += NbPositions;
             }else{
                 for(FSize idPart = 0; idPart<NbPositions ; ++idPart){
-                    octree->insert(FPoint<FReal>(X[idPart],Y[idPart],Z[idPart]),FParticleTypeTarget,idPart);
+                    octree->insert(FPoint<FReal>(X[idPart],Y[idPart],Z[idPart]),FParticleType::FParticleTypeTarget,idPart);
                 }
                 FScalFMMEngine<FReal>::nbPart += NbPositions;
             }
@@ -388,12 +411,12 @@ public:
         }else{
             if(type==SOURCE){
                 for(FSize idPart = 0; idPart<NbPositions ; ++idPart){
-                    octree->insert(FPoint<FReal>(&XYZ[3*idPart]),FParticleTypeSource,idPart);
+                    octree->insert(FPoint<FReal>(&XYZ[3*idPart]),FParticleType::FParticleTypeSource,idPart);
                 }
                 FScalFMMEngine<FReal>::nbPart += NbPositions;
             }else{
                 for(FSize idPart = 0; idPart<NbPositions ; ++idPart){
-                    octree->insert(FPoint<FReal>(&XYZ[3*idPart]),FParticleTypeTarget,idPart);
+                    octree->insert(FPoint<FReal>(&XYZ[3*idPart]),FParticleType::FParticleTypeTarget,idPart);
                 }
                 FScalFMMEngine<FReal>::nbPart += NbPositions;
             }

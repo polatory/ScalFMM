@@ -28,13 +28,17 @@
 
 #cmakedefine SCALFMM_USE_BLAS
 #cmakedefine SCALFMM_USE_MKL_AS_BLAS
-
+// Fortran Mangling
+#cmakedefine SCALFMM_BLAS_ADD_
+#cmakedefine SCALFMM_BLAS_UPCASE
+#cmakedefine SCALFMM_BLAS_NOCHANGE
 ////////////////////////////////////////////////////////
 // FFT
 ///////////////////////////////////////////////////////
 
 #cmakedefine SCALFMM_USE_FFT
 #cmakedefine SCALFMM_USE_MKL_AS_FFTW
+#cmakedefine SCALFMM_USE_ESSL_AS_FFTW
 
 //////////////////////////////////////////////////////
 // MPI

@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
@@ -140,12 +140,12 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
                 for(FSize idxOther =  0 ; idxOther < loader.getNumberOfParticles() ; ++idxOther){
                     if(idxTarget != idxOther){
                         FP2P::NonMutualParticles(
-                                particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                                particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
                                 particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                 particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
                                 &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
                                 &particles[idxTarget].forces[2],&particles[idxTarget].potential,
+                                particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
                                 &MatrixKernel);
                     }
 
@@ -170,12 +170,13 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
                                 source.position += offset;
                                 FP2P::NonMutualParticles(
-                                            source.position.getX(), source.position.getY(),
-                                            source.position.getZ(),source.physicalValue,
                                             particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                             particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
                                             &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
-                                        &particles[idxTarget].forces[2],&particles[idxTarget].potential,&MatrixKernel);
+                                            &particles[idxTarget].forces[2],&particles[idxTarget].potential,
+                                            source.position.getX(), source.position.getY(),
+                                            source.position.getZ(),source.physicalValue,
+                                            &MatrixKernel);
                             }
                         }
                     }
@@ -482,7 +483,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
                 const FTreeCoordinate boundaryCoord(realCoord.getX() + offsetAtLevel,
                                                     realCoord.getY() + offsetAtLevel,
                                                     realCoord.getZ() + offsetAtLevel);
-                const MortonIndex boundaryIndex = boundaryCoord.getMortonIndex(idxLevel + diffLevel);
+                const MortonIndex boundaryIndex = boundaryCoord.getMortonIndex();
 
                 uassert((boundaryIndex & ~((~0LL)<<3*idxLevel))== iter.getCurrentGlobalIndex());
 
@@ -544,7 +545,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
                     const FTreeCoordinate boundaryCoord(realCoord.getX() + offsetAtLevel,
                                                         realCoord.getY() + offsetAtLevel,
                                                         realCoord.getZ() + offsetAtLevel);
-                    const MortonIndex boundaryIndex = boundaryCoord.getMortonIndex(idxLevel + diffLevel);
+                    const MortonIndex boundaryIndex = boundaryCoord.getMortonIndex();
 
                     uassert((boundaryIndex & ~((~0LL)<<3*idxLevel))== iter.getCurrentGlobalIndex());
 
@@ -637,7 +638,3 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
 // You must do this
 TestClass(TestChebyshevDirect)
-
-
-
-

@@ -108,7 +108,7 @@ public:
                                           boxWidth,boxWidthAtLeafLevel, NbLevels )
             );
             // Store morton index and original idx
-            particleIndexes[idxParts].mindex = host.getMortonIndex(NbLevels-1);
+            particleIndexes[idxParts].mindex = host.getMortonIndex();
             particleIndexes[idxParts].particlePositionInArray = idxParts;
         }
 

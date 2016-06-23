@@ -185,7 +185,7 @@ int main(int argc, char** argv){
         host.setZ( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParts[idxPart].getPosition().getZ() - boxCorner.getZ(), boxWidth, boxWidthAtLeafLevel, NbLevels ));
 
         //Set Morton index from Tree Coordinate
-        arrayOfParts[idxPart].index = host.getMortonIndex(NbLevels - 1);
+        arrayOfParts[idxPart].index = host.getMortonIndex();
         arrayOfParts[idxPart].indexInFile = idxPart;
 
     }

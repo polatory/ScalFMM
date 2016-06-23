@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 //
@@ -152,7 +152,7 @@ struct TempMainStruct{
 
 		{
 			// Insert sources
-			FParticleType particleType, source = FParticleTypeSource;
+			FParticleType particleType, source = FParticleType::FParticleTypeSource;
 			for(FSize idxPart = 0 ; idxPart < nbSRC ; ++idxPart){
 				loader.fillParticle(&particlePosition, &particleType);
 //				std::cout << idxPart << "  " << particlePosition << "  type " << particleType
@@ -175,9 +175,9 @@ struct TempMainStruct{
 			//		int nbTargets = 256;
 			for(FSize idxPart = 0 ; idxPart < nbTargets; ++idxPart){
                 particlePosition2.incX(dx);
-                std::cout << idxPart << "  " <<particlePosition2.getX()/dimLeaf<< "   " <<  particlePosition2 << "  type " << FParticleTypeTarget
+                std::cout << idxPart << "  " <<particlePosition2.getX()/dimLeaf<< "   " <<  particlePosition2 << "  type " << static_cast<int>(FParticleType::FParticleTypeTarget)
 						<< "  " <<physicalValue<<std::endl;
-                tree.insert(particlePosition2, FParticleTypeTarget,idxPart,physicalValue );
+                tree.insert(particlePosition2, FParticleType::FParticleTypeTarget,idxPart,physicalValue );
 
 			}
 		}
@@ -221,7 +221,7 @@ struct TempMainStruct{
             //
 			for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
 				double pot = 0.0 , xx,yy,zz;
-                FPoint<FReal>  FF ;
+                                FPoint<FReal>  FF{} ;
 				for(int idxSrc = 0 ; idxSrc < nbSRC ; ++idxSrc){
 					xx = posX[idxPart]-tabSrc[idxSrc].position.getX();
 					yy  = posY[idxPart]-tabSrc[idxSrc].position.getY();
@@ -254,5 +254,3 @@ int main(int argc, char** argv){
 	FRunIf::Run<unsigned int, 2, 13, 1, TempMainStruct>(order, argc, argv);
 	return 0;
 }
-
-

@@ -310,12 +310,13 @@ int main(int argc, char ** argv){
 			for(FSize idxOther = 0; idxOther < loader->getNumberOfParticles() ; ++idxOther){
 				if( idxOther != idxTarget ){
 					FP2P::NonMutualParticles(
-							particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-							particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
 							part.position.getX(), part.position.getY(),
-							part.position.getZ(),part.physicalValue,
-							&part.forces[0],&part.forces[1],
-							&part.forces[2],&part.potential,&MatrixKernel);
+                            part.position.getZ(),part.physicalValue,
+                            &part.forces[0],&part.forces[1],
+                            &part.forces[2],&part.potential,
+                            particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+							particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
+                            &MatrixKernel);
 				}
 			}
 			//
@@ -341,10 +342,10 @@ int main(int argc, char ** argv){
 								source.position += offset;
 								//								std::cout << "Part "<<idxSource<< " " <<source.position.getX()<< " " << source.position.getY()<< " " <<source.position.getZ()<< " " <<source.physicalValue <<std::endl ;
 								FP2P::NonMutualParticles(
-										source.position.getX(), source.position.getY(),source.position.getZ(),source.physicalValue,
 										part.position.getX(), part.position.getY(),part.position.getZ(),part.physicalValue,
-										&part.forces[0],&part.forces[1],&part.forces[2],&part.potential,&MatrixKernel
-								);
+                                        &part.forces[0],&part.forces[1],&part.forces[2],&part.potential,
+                                        source.position.getX(), source.position.getY(),source.position.getZ(),source.physicalValue,
+										&MatrixKernel);
 							}
 							//						std::cout <<std::endl<<std::endl<<std::endl;
 						}

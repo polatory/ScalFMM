@@ -17,6 +17,7 @@
 #
 #  PASTIX depends on the following libraries:
 #   - Threads, m, rt
+#   - MPI
 #   - HWLOC
 #   - BLAS
 #

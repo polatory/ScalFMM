@@ -38,6 +38,7 @@
 #  PARSEC_LIBRARY_DIRS_DEP       - parsec + dependencies link directories
 #  PARSEC_LIBRARIES_DEP          - parsec libraries + dependencies
 #  PARSEC_daguepp_BIN_DIR        - path to parsec driver daguepp
+#  PARSEC_DAGUEPP                - parsec jdf compiler
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DPARSEC=path/to/parsec):
 #  PARSEC_DIR                    - Where to find the base directory of parsec
@@ -149,6 +150,21 @@ if(UNIX AND NOT APPLE)
             message(FATAL_ERROR "Could NOT find librt on your system")
         endif()
     endif()
+endif()
+
+# Try to find libdl
+if (NOT PARSEC_FIND_QUIETLY)
+    message(STATUS "Looking for PARSEC - Try to detect libdl")
+endif()
+set(PARSEC_DL_LIBRARIES "")
+find_library(
+    PARSEC_DL_LIBRARY
+    NAMES dl
+    )
+mark_as_advanced(PARSEC_DL_LIBRARY)
+if (PARSEC_DL_LIBRARY)
+    list(APPEND PARSEC_DL_LIBRARIES "${PARSEC_DL_LIBRARY}")
+    list(APPEND PARSEC_EXTRA_LIBRARIES "${PARSEC_DL_LIBRARY}")
 endif()
 
 # PARSEC may depend on HWLOC, try to find it
@@ -549,7 +565,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PARSEC_FOUND) 
                 list(APPEND REQUIRED_LIBS "${FORTRAN_ifcore_LIBRARY}")
             endif()
         endif()
-        # EXTRA LIBS such that pthread, m, rt
+        # EXTRA LIBS such that pthread, m, rt, dl
         list(APPEND REQUIRED_LIBS ${PARSEC_EXTRA_LIBRARIES})
 
         # set required libraries for link
@@ -631,4 +647,12 @@ else()
                                       PARSEC_LIBRARIES
                                       PARSEC_daguepp_BIN_DIR
                                       PARSEC_WORKS)
+endif()
+
+if ( PARSEC_daguepp_BIN_DIR )
+    find_program(PARSEC_DAGUEPP
+        NAMES daguepp
+        HINTS ${PARSEC_daguepp_BIN_DIR})
+else()
+    set(PARSEC_DAGUEPP "PARSEC_DAGUEPP-NOTFOUND")
 endif()

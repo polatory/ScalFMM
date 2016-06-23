@@ -44,7 +44,7 @@
 ### List of vendors (BLA_VENDOR) valid in this module
 ########## List of vendors (BLA_VENDOR) valid in this module
 ##  Open (for OpenBlas), Eigen (for EigenBlas), Goto, ATLAS PhiPACK,
-##  CXML, DXML, SunPerf, SCSL, SGIMATH, IBMESSL,
+##  CXML, DXML, SunPerf, SCSL, SGIMATH, IBMESSL, IBMESSLMT
 ##  Intel10_32 (intel mkl v10 32 bit), Intel10_64lp (intel mkl v10 64 bit,lp thread model, lp64 model),
 ##  Intel10_64lp_seq (intel mkl v10 64 bit,sequential code, lp64 model),
 ##  Intel( older versions of mkl 32 and 64 bit),
@@ -279,6 +279,7 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
             find_library(${_prefix}_${_library}_LIBRARY
                 NAMES ${_library}
                 HINTS ${_libdir}
+                NO_DEFAULT_PATH
               )
             mark_as_advanced(${_prefix}_${_library}_LIBRARY)
             # Print status if not found
@@ -293,6 +294,10 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
 
     if(_libraries_work)
         # Test this combination of libraries.
+        if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND BLA_STATIC)
+            list(INSERT ${LIBRARIES} 0 "-Wl,--start-group")
+            list(APPEND ${LIBRARIES} "-Wl,--end-group")
+        endif()
         set(CMAKE_REQUIRED_LIBRARIES "${_flags};${${LIBRARIES}};${_thread}")
         set(CMAKE_REQUIRED_FLAGS "${BLAS_COMPILER_FLAGS}")
         if (BLAS_VERBOSE)
@@ -325,10 +330,8 @@ macro(Check_Fortran_Libraries LIBRARIES _prefix _name _flags _list _thread)
     if(_libraries_work)
       set(${LIBRARIES} ${${LIBRARIES}} ${_thread})
     else(_libraries_work)
-        set(${LIBRARIES} FALSE)
+      set(${LIBRARIES} FALSE)
     endif(_libraries_work)
-
-# message("DEBUG: ${LIBRARIES} = ${${LIBRARIES}}")
 
 endmacro(Check_Fortran_Libraries)
 
@@ -702,6 +705,14 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
 
     endif (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
 
+    if(NOT BLAS_FIND_QUIETLY)
+        if(${_LIBRARIES})
+            message(STATUS "Looking for MKL BLAS: found")
+        else()
+            message(STATUS "Looking for MKL BLAS: not found")
+        endif()
+    endif()
+
 endif (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
 
 
@@ -717,6 +728,13 @@ if (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
         "goto2"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for Goto BLAS: found")
+            else()
+                message(STATUS "Looking for Goto BLAS: not found")
+            endif()
+        endif()
     endif()
 
 endif (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
@@ -735,6 +753,13 @@ if (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
         "openblas"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for Open BLAS: found")
+            else()
+                message(STATUS "Looking for Open BLAS: not found")
+            endif()
+        endif()
     endif()
 
 endif (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
@@ -753,6 +778,13 @@ if (BLA_VENDOR STREQUAL "Eigen" OR BLA_VENDOR STREQUAL "All")
         "eigen_blas"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for Eigen BLAS: found")
+            else()
+                message(STATUS "Looking for Eigen BLAS: not found")
+            endif()
+        endif()
     endif()
 
     if(NOT BLAS_LIBRARIES)
@@ -765,6 +797,13 @@ if (BLA_VENDOR STREQUAL "Eigen" OR BLA_VENDOR STREQUAL "All")
         "eigen_blas_static"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for Eigen BLAS: found")
+            else()
+                message(STATUS "Looking for Eigen BLAS: not found")
+            endif()
+        endif()
     endif()
 
 endif (BLA_VENDOR STREQUAL "Eigen" OR BLA_VENDOR STREQUAL "All")
@@ -782,6 +821,13 @@ if (BLA_VENDOR STREQUAL "ATLAS" OR BLA_VENDOR STREQUAL "All")
         "f77blas;atlas"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for Atlas BLAS: found")
+            else()
+                message(STATUS "Looking for Atlas BLAS: not found")
+            endif()
+        endif()
     endif()
 
 endif (BLA_VENDOR STREQUAL "ATLAS" OR BLA_VENDOR STREQUAL "All")
@@ -799,6 +845,13 @@ if (BLA_VENDOR STREQUAL "PhiPACK" OR BLA_VENDOR STREQUAL "All")
         "sgemm;dgemm;blas"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for PhiPACK BLAS: found")
+            else()
+                message(STATUS "Looking for PhiPACK BLAS: not found")
+            endif()
+        endif()
     endif()
 
 endif (BLA_VENDOR STREQUAL "PhiPACK" OR BLA_VENDOR STREQUAL "All")
@@ -816,6 +869,13 @@ if (BLA_VENDOR STREQUAL "CXML" OR BLA_VENDOR STREQUAL "All")
         "cxml"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for CXML BLAS: found")
+            else()
+                message(STATUS "Looking for CXML BLAS: not found")
+            endif()
+        endif()
     endif()
 
 endif (BLA_VENDOR STREQUAL "CXML" OR BLA_VENDOR STREQUAL "All")
@@ -833,6 +893,13 @@ if (BLA_VENDOR STREQUAL "DXML" OR BLA_VENDOR STREQUAL "All")
         "dxml"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for DXML BLAS: found")
+            else()
+                message(STATUS "Looking for DXML BLAS: not found")
+            endif()
+        endif()
     endif()
 
 endif (BLA_VENDOR STREQUAL "DXML" OR BLA_VENDOR STREQUAL "All")
@@ -853,6 +920,13 @@ if (BLA_VENDOR STREQUAL "SunPerf" OR BLA_VENDOR STREQUAL "All")
         if(BLAS_LIBRARIES)
             set(BLAS_LINKER_FLAGS "-xlic_lib=sunperf")
         endif()
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for SunPerf BLAS: found")
+            else()
+                message(STATUS "Looking for SunPerf BLAS: not found")
+            endif()
+        endif()
     endif()
 
 endif ()
@@ -870,6 +944,13 @@ if (BLA_VENDOR STREQUAL "SCSL" OR BLA_VENDOR STREQUAL "All")
         "scsl"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for SCSL BLAS: found")
+            else()
+                message(STATUS "Looking for SCSL BLAS: not found")
+            endif()
+        endif()
     endif()
 
 endif ()
@@ -887,12 +968,19 @@ if (BLA_VENDOR STREQUAL "SGIMATH" OR BLA_VENDOR STREQUAL "All")
         "complib.sgimath"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for SGIMATH BLAS: found")
+            else()
+                message(STATUS "Looking for SGIMATH BLAS: not found")
+            endif()
+        endif()
     endif()
 
 endif ()
 
 
-# BLAS in IBM ESSL library? (requires generic BLAS lib, too)
+# BLAS in IBM ESSL library (requires generic BLAS lib, too)
 if (BLA_VENDOR STREQUAL "IBMESSL" OR BLA_VENDOR STREQUAL "All")
 
     if(NOT BLAS_LIBRARIES)
@@ -901,9 +989,39 @@ if (BLA_VENDOR STREQUAL "IBMESSL" OR BLA_VENDOR STREQUAL "All")
         BLAS
         sgemm
         ""
-        "essl;blas"
+        "essl;xlfmath;xlf90_r;blas"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for IBM ESSL BLAS: found")
+            else()
+                message(STATUS "Looking for IBM ESSL BLAS: not found")
+            endif()
+        endif()
+    endif()
+
+endif ()
+
+# BLAS in IBM ESSL_MT library (requires generic BLAS lib, too)
+if (BLA_VENDOR STREQUAL "IBMESSLMT" OR BLA_VENDOR STREQUAL "All")
+
+    if(NOT BLAS_LIBRARIES)
+        check_fortran_libraries(
+        BLAS_LIBRARIES
+        BLAS
+        sgemm
+        ""
+        "esslsmp;xlsmp;xlfmath;xlf90_r;blas"
+        ""
+        )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for IBM ESSL MT BLAS: found")
+            else()
+                message(STATUS "Looking for IBM ESSL MT BLAS: not found")
+            endif()
+        endif()
     endif()
 
 endif ()
@@ -1030,6 +1148,13 @@ if (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All")
         "acml;acml_mv"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for ACML BLAS: found")
+            else()
+                message(STATUS "Looking for ACML BLAS: not found")
+            endif()
+        endif()
     endif()
 
     if(NOT BLAS_LIBRARIES)
@@ -1041,6 +1166,13 @@ if (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All")
         "acml_mp;acml_mv"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for ACML BLAS: found")
+            else()
+                message(STATUS "Looking for ACML BLAS: not found")
+            endif()
+        endif()
     endif()
 
     if(NOT BLAS_LIBRARIES)
@@ -1052,6 +1184,13 @@ if (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All")
         "acml;acml_mv;CALBLAS"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for ACML BLAS: found")
+            else()
+                message(STATUS "Looking for ACML BLAS: not found")
+            endif()
+        endif()
     endif()
 
 endif (BLA_VENDOR MATCHES "ACML.*" OR BLA_VENDOR STREQUAL "All") # ACML
@@ -1069,6 +1208,13 @@ if (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
         "Accelerate"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for Apple BLAS: found")
+            else()
+                message(STATUS "Looking for Apple BLAS: not found")
+            endif()
+        endif()
     endif()
 
 endif (BLA_VENDOR STREQUAL "Apple" OR BLA_VENDOR STREQUAL "All")
@@ -1085,7 +1231,15 @@ if (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
         "vecLib"
         ""
         )
+        if(NOT BLAS_FIND_QUIETLY)
+            if(BLAS_LIBRARIES)
+                message(STATUS "Looking for NAS BLAS: found")
+            else()
+                message(STATUS "Looking for NAS BLAS: not found")
+            endif()
+        endif()
     endif ()
+
 
 endif (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
 
@@ -1105,6 +1259,13 @@ if (BLA_VENDOR STREQUAL "Generic" OR BLA_VENDOR STREQUAL "All")
             "${SEARCH_LIB}"
             "${LGFORTRAN}"
             )
+            if(NOT BLAS_FIND_QUIETLY)
+                if(BLAS_LIBRARIES)
+                    message(STATUS "Looking for Generic BLAS: found")
+                else()
+                    message(STATUS "Looking for Generic BLAS: not found")
+                endif()
+            endif()
         endif()
     endforeach ()
 
