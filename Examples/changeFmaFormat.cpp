@@ -87,7 +87,7 @@ int main(int argc, char ** argv){
     //   Generate file for visualization purpose
     //
     if(FParameters::existParameter(argc, argv, FParameterDefinitions::OutputVisuFile.options)){
-        std::string outfilename(FParameters::getStr(argc,argv,FParameterDefinitions::OutputFile.options,   "output.vtp"));
+        std::string outfilename(FParameters::getStr(argc,argv,FParameterDefinitions::OutputVisuFile.options,   "output.vtp"));
         driverExportData(outfilename, particles , NbPoints,loader.getNbRecordPerline() );
     }
     //

@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
@@ -483,7 +483,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
                 const FTreeCoordinate boundaryCoord(realCoord.getX() + offsetAtLevel,
                                                     realCoord.getY() + offsetAtLevel,
                                                     realCoord.getZ() + offsetAtLevel);
-                const MortonIndex boundaryIndex = boundaryCoord.getMortonIndex(idxLevel + diffLevel);
+                const MortonIndex boundaryIndex = boundaryCoord.getMortonIndex();
 
                 uassert((boundaryIndex & ~((~0LL)<<3*idxLevel))== iter.getCurrentGlobalIndex());
 
@@ -545,7 +545,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
                     const FTreeCoordinate boundaryCoord(realCoord.getX() + offsetAtLevel,
                                                         realCoord.getY() + offsetAtLevel,
                                                         realCoord.getZ() + offsetAtLevel);
-                    const MortonIndex boundaryIndex = boundaryCoord.getMortonIndex(idxLevel + diffLevel);
+                    const MortonIndex boundaryIndex = boundaryCoord.getMortonIndex();
 
                     uassert((boundaryIndex & ~((~0LL)<<3*idxLevel))== iter.getCurrentGlobalIndex());
 
@@ -638,7 +638,3 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
 // You must do this
 TestClass(TestChebyshevDirect)
-
-
-
-

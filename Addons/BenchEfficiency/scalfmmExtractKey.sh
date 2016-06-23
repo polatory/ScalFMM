@@ -6,5 +6,5 @@ if [[ $# -ne 1 ]] ; then
 fi
 
 input=$(cat)
-res=`echo "$input" | grep "$3" | cut -d'=' -f2 | cut -d's' -f1`
+res=`echo "$input" | grep "$1" | cut -d'=' -f2 | cut -d' ' -f2`
 echo $res

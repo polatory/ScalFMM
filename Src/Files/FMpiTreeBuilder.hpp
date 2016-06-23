@@ -101,7 +101,7 @@ public:
             host.setZ( FCoordinateComputer::GetTreeCoordinate<FReal>( originalParticlesUnsorted[idxPart].particle.getPosition().getZ() - boxCorner.getZ(), loader.getBoxWidth(), boxWidthAtLeafLevel,
                                            TreeHeight ));
 
-            originalParticlesUnsorted[idxPart].index = host.getMortonIndex(TreeHeight - 1);
+            originalParticlesUnsorted[idxPart].index = host.getMortonIndex();
         }
 
         // Sort particles
@@ -140,7 +140,7 @@ public:
             host.setZ( FCoordinateComputer::GetTreeCoordinate<FReal>( originalParticlesUnsorted[idxPart].particle.getPosition().getZ() - boxCorner.getZ(), boxWidth, boxWidthAtLeafLevel,
                                            TreeHeight ));
 
-            originalParticlesUnsorted[idxPart].index = host.getMortonIndex(TreeHeight - 1);
+            originalParticlesUnsorted[idxPart].index = host.getMortonIndex();
         }
 
         FLOG( FLog::Controller << "Particles Distribution: "  << "\tPrepare particles ("  << counterTime.tacAndElapsed() << "s)\n"; FLog::Controller.flush(); );

@@ -38,6 +38,7 @@
 
 #cmakedefine SCALFMM_USE_FFT
 #cmakedefine SCALFMM_USE_MKL_AS_FFTW
+#cmakedefine SCALFMM_USE_ESSL_AS_FFTW
 
 //////////////////////////////////////////////////////
 // MPI

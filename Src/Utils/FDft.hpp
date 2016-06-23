@@ -26,10 +26,11 @@
 #include <iostream>
 #include <stdlib.h>
 
-// include fftw3 (specify path in cmake)
-// if MKL: path/to/mkl/include/fftw/fftw3.h 
-// elseif libfftw_dev: usr/include/fftw3.h
+#ifdef SCALFMM_USE_ESSL_AS_FFTW
+#include <fftw3_essl.h>
+#else
 #include <fftw3.h>
+#endif
 
 // for @class FDft only
 #include "FBlas.hpp"
