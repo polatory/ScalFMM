@@ -307,7 +307,7 @@ def main():
                     config.num_threads = int(a[0])
             elif re.search("Model", line):
                 config.model = line[line.index(":")+1:].strip()
-            elif re.search("Algorithm", line):
+            elif re.search("Algorithm:", line):
                 config.algorithm = line[line.index(":")+1:].strip()
             elif re.search("TOTAL", line) and re.search("starpu_comm_stats", line):
                 a = re.findall("(\d*\.\d+|\d+).MB", line)
