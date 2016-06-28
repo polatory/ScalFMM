@@ -820,15 +820,17 @@ public:
      * get the time spent in each operator.
      */
     virtual void get_timers(FReal * Timers){
-        const FTic * timers = algoTimer->getAllTimers();
-        int nbTimers = algoTimer->getNbOfTimerRecorded();
-        for(int idTimer = 0; idTimer<nbTimers ; ++idTimer){
-            Timers[idTimer] = timers[idTimer].elapsed();
-        }
+        Timers[0] = algoTimer->Timers["P2M"].elapsed();
+        Timers[1] = algoTimer->Timers["M2M"].elapsed();
+        Timers[2] = algoTimer->Timers["M2L"].elapsed();
+        Timers[3] = algoTimer->Timers["L2L"].elapsed();
+        Timers[4] = algoTimer->Timers["L2P"].elapsed();
+        Timers[5] = algoTimer->Timers["P2P"].elapsed();
+        Timers[6] = algoTimer->Timers["NearField"].elapsed();
     }
 
     virtual int get_nb_timers(){
-        return algoTimer->getNbOfTimerRecorded();
+        return FAlgorithmTimers::nbTimers;
     }
 
     virtual void set_upper_limit(int upperLimit){
