@@ -178,37 +178,6 @@ public:
     }
 
 
-    /** Test ... */
-    struct RunContainer{
-        template< int nbAttributeToInsert,class ContainerClass,class LeafClass, class CellClass>
-        static void Run(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
-                        int NbPartToInsert,int * strideForEachAtt,
-                        FReal* rawDatas){
-            generic_tree_abstract_insert<ContainerClass,LeafClass,CellClass,nbAttributeToInsert>(octree,
-                                                                                                 NbPartToInsert,strideForEachAtt,rawDatas);
-        }
-    };
-
-    template<class ContainerClass,class LeafClass, class CellClass, int nbAttributeToInsert>
-    void generic_tree_abstract_insert(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
-                                      int NbPartToInsert,int * strideForEachAtt,
-                                      FReal* rawDatas){
-        for(FSize idxPart = 0; idxPart<NbPartToInsert ; ++idxPart){
-            FPoint<FReal> pos = FPoint<FReal>(rawDatas[0],rawDatas[1],rawDatas[2]);
-            MortonIndex index = octree->getMortonFromPosition(pos);
-            //Insert with how many attributes ???
-            octree->insert(pos,idxPart);
-            //Get again the container
-            ContainerClass * containerToFill = octree->getLeafSrc(index);//cannot be nullptr
-            std::array<FReal,nbAttributeToInsert> arrayOfAttribute;
-            for(int idxAtt = 0; idxAtt<nbAttributeToInsert ; ++idxAtt){
-                arrayOfAttribute[idxAtt] = rawDatas[3+ strideForEachAtt[idxAtt]];
-            }
-            int idxToRemove = containerToFill->getNbParticles();
-            containerToFill->remove(&idxToRemove,1);
-            containerToFill->push(pos,idxPart,arrayOfAttribute);
-        }
-    }
 
     template<class ContainerClass,class LeafClass,class CellClass>
     void generic_get_forces_xyz(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
@@ -820,15 +789,17 @@ public:
      * get the time spent in each operator.
      */
     virtual void get_timers(FReal * Timers){
-        const FTic * timers = algoTimer->getAllTimers();
-        int nbTimers = algoTimer->getNbOfTimerRecorded();
-        for(int idTimer = 0; idTimer<nbTimers ; ++idTimer){
-            Timers[idTimer] = timers[idTimer].elapsed();
-        }
+        Timers[0] = algoTimer->Timers["P2M"].elapsed();
+        Timers[1] = algoTimer->Timers["M2M"].elapsed();
+        Timers[2] = algoTimer->Timers["M2L"].elapsed();
+        Timers[3] = algoTimer->Timers["L2L"].elapsed();
+        Timers[4] = algoTimer->Timers["L2P"].elapsed();
+        Timers[5] = algoTimer->Timers["P2P"].elapsed();
+        Timers[6] = algoTimer->Timers["NearField"].elapsed();
     }
 
     virtual int get_nb_timers(){
-        return algoTimer->getNbOfTimerRecorded();
+        return FAlgorithmTimers::nbTimers;
     }
 
     virtual void set_upper_limit(int upperLimit){
