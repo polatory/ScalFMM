@@ -56,8 +56,13 @@ public:
 
     /// Elapsed time between last FTic::tic() and FTic::tac() for given timer.
     double getTime(std::string TimerName) const{
-        //assert to verify size
-        return Timers.at(TimerName).elapsed();
+        double res = 0;
+        try {
+            res = Timers.at(TimerName).elapsed();
+        } catch(std::out_of_range) {
+            res = 0;
+        }
+        return res;
     }
 
     /// Cumulated time between all FTic::tic() and FTic::tac() for given timer.
