@@ -35,8 +35,9 @@
 *
 */
 class FBasicCell : public FAbstractSerializable {
-    MortonIndex mortonIndex;    //< Morton index (need by most elements)
-    FTreeCoordinate coordinate; //< The position
+    MortonIndex mortonIndex;    ///< Morton index (need by most elements)
+    FTreeCoordinate coordinate; ///< The position
+    std::size_t level;          ///< Level in tree
 
 public:
     /** Default constructor */
@@ -45,7 +46,15 @@ public:
 
     /** Default destructor */
     virtual ~FBasicCell(){
-    }    
+    }
+
+    std::size_t getLevel() const {
+        return this->level;
+    }
+
+    void setLevel(std::size_t inLevel) {
+        this->level = inLevel;
+    }
 
     /** To get the morton index */
     MortonIndex getMortonIndex() const {

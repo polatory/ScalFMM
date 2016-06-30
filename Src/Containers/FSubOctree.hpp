@@ -101,6 +101,8 @@ protected:
                                    treePosition.getY() >> bottomToTop,
                                    treePosition.getZ() >> bottomToTop);
 
+            newNode->setLevel(this->subOctreePosition + indexLevel);
+
             this->cells[indexLevel][arrayIndex] = newNode;
 
             --indexLevel;
