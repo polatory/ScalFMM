@@ -16,6 +16,10 @@ calc_speedup <- function(data, ref_algo)
 		}
 		else
 		{
+			if(nrow(tmp_ref) > 1)
+			{
+				print(nrow(tmp_ref))
+			}
 			data$speedup[i] <- tmp_ref$global_time / data$global_time[i]
 		}
     }
