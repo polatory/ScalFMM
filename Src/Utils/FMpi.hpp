@@ -533,6 +533,7 @@ private:
     /// Counter to avoid several instanciations
     static int instanceCount;
 };
+int FMpi::instanceCount = 0;
 
 
 #endif //FMPI_HPP
