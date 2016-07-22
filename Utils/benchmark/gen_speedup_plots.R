@@ -48,6 +48,7 @@ gen_speedup_taskdep_plot <- function(d, model_wanted)
     # Set X/Y labels.
 	g <- g + xlab("Number of nodes")
 	g <- g + ylab("Speedup")
+	g <- g + get_theme()
 
     # Save generated plot.
 	output <- paste(get_output_directory(), "/", model_wanted, "-speedup.pdf", sep="")

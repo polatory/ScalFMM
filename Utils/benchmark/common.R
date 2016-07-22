@@ -35,21 +35,23 @@ get_data_subset <- function(f, n, h, p, b)
 
 get_breaks_runtime <- function()
 {
-    return (c('implicit', 'explicit', 'implicit limited', 'simple-mpi', 'implicit-two-by'))
+    return (c('implicit-variable-bsize', 'explicit-variable-bsize', 'implicit limited', 'simple-mpi', 'implicit-two-by', 'implicit', 'explicit'))
 }
 
 get_labels_runtime <- function()
 {
-    return (c('Implicit', 'Explicit', 'Implicit Limited', 'Simple MPI', 'Implicit two by'))
+    return (c('Implicit (STF)', 'Explicit (Hybrid STF+MPI)', 'Implicit Limited', 'Native MPI+OpenMP', 'Implicit two by', 'Implicit (2000)', 'Explicit (2000)'))
 }
 
 get_colors_runtime <- function()
 {
-    return (c('implicit'  = "#266d83",
-              'explicit'   = "#e20025",
-			  'implicit limited' = "#bd02b6",
-			  'simple-mpi' = "#9aff4f",
-			  'implicit-two-by' = "#50de11"))
+    return (c('implicit'  = "#96007d", # --> violet
+              'explicit'   = "#00af1b",# --> Vert
+			  'implicit limited' = "#f85c00", # --> orange
+			  'simple-mpi' = "#266d83", #--> bleu
+			  'implicit-two-by' = "#50de11",
+			  'implicit-variable-bsize' = "#e2aa00", #--> jaune
+			  'explicit-variable-bsize' = "#e20025")) #--> rouge
 }
 
 get_bsize_reference <- function()
@@ -100,4 +102,18 @@ group_size_labeller <- function(value)
 nnode_labeller <- function(value)
 {
     return (paste("node =", value))
+}
+data_distribution_labeller <- function(value)
+{
+    return (value)
+}
+get_theme <- function()
+{
+	(theme(legend.text = element_text(size = 14)) +
+	 theme(legend.title = element_text(size = 16)) +
+	 theme(axis.title.x = element_text(size = 13)) +
+	 theme(axis.title.y = element_text(size = 13)) +
+	 theme(strip.text.x = element_text(size = 13)) +
+	 theme(strip.text.y = element_text(size = 13)) +
+	 theme(text = element_text(size = 13)))
 }

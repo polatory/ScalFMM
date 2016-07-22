@@ -39,6 +39,7 @@ gen_times_taskdep_plot <- function(data, algo_wanted, model_wanted)
     # Set title and X/Y labels.
     g <- g + xlab("Number of nodes")
     g <- g + ylab("% of time")
+	g <- g + get_theme()
 
 	output <- paste(get_output_directory(), "/", model_wanted, "-", algo_wanted, "-times.pdf", sep="")
 

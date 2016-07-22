@@ -36,7 +36,8 @@ calc_normalized_time <- function(data, ref_name)
 
 gen_normalized_time_plot <- function(db, d_breaks, model_wanted)
 {
-	db <- subset(db, model == model_wanted)
+	if (is.character(model_wanted))
+		db <- subset(db, model == model_wanted)
 	#Compute normalized time with one node reference
     db <- calc_normalized_time(db, d_breaks) 
 	#Then remove one node reference because it's only available on one node
@@ -47,9 +48,10 @@ gen_normalized_time_plot <- function(db, d_breaks, model_wanted)
 	{
 		g <- ggplot(data=db,aes_string(x="nnode", y="efficiency", color="algo"))
 		g <- g + geom_line()
-		g <- g + facet_wrap(npart ~ height, scales="free",
+		g <- g + facet_wrap(model ~ npart ~ height, scales="free",
 							labeller = labeller(npart = as_labeller(npart_labeller),
 												height = as_labeller(height_labeller),
+												model = as_labeller(data_distribution_labeller),
 												.default=label_both,
 												.multi_line=FALSE))
 
@@ -62,10 +64,13 @@ gen_normalized_time_plot <- function(db, d_breaks, model_wanted)
 		# Set X/Y labels.
 		g <- g + xlab("Number of nodes")
 		g <- g + ylab("Normalized time")
+		g <- g + get_theme()
 
 
 		# Save generated plot.
-		output <- paste(get_output_directory(), "/", model_wanted, "-normalized-time.pdf", sep="")
+		if (!exists("output"))
+			output <- paste(get_output_directory(), "/", model_wanted, "-normalized-time.pdf", sep="")
+		print(output)
 		ggsave(output, g, width=29.7, height=21, units=c("cm"), device=cairo_pdf)
 	}
 }

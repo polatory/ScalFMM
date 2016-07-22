@@ -58,6 +58,7 @@ gen_pareff_plot <- function(db, d_breaks, model_wanted)
 		# Set X/Y labels.
 		g <- g + xlab("Number of nodes")
 		g <- g + ylab("Parallel efficiency")
+		g <- g + get_theme()
 
 		# Save generated plot.
 		output <- paste(get_output_directory(), "/", model_wanted, "-parallel-efficiency.pdf", sep="")

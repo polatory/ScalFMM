@@ -26,8 +26,7 @@ gen_comm_plot <- function(db, d_breaks, model_wanted)
 		# Set X/Y labels.
 		g <- g + xlab("Number of nodes")
 		g <- g + ylab("Volume of Communication (MB)")
-
-		g <- g + scale_x_continuous(breaks=c(1, 2, 3, 4, 5, 6, 9, 12, 16, 20, 24))
+		g <- g + get_theme()
 
 		# Save generated plot.
 		output <- paste(get_output_directory(), "/", model_wanted, "-comm.pdf", sep="")

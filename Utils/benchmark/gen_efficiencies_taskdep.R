@@ -23,6 +23,7 @@ gen_efficiencies_plot <- function(output, data)
     # Set title and X/Y labels.
     g <- g + xlab("Number of node")
     g <- g + ylab("Efficiency")
+	g <- g + get_theme()
 
     # Set y-axis range
     g <- g + ylim(c(0.0, 1.10))
