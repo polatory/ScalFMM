@@ -261,7 +261,6 @@ template <class FReal>
 void unifRandomPlummer(const FSize N, const FReal R, FReal * points) {
     constexpr const FReal rand_max = 0.8;
     constexpr const FReal r_max = std::sqrt(1.0/(std::pow(rand_max, -2.0/3.0) - 1.0));
-    std::cerr << r_max << '\n';
 
     unifRandomPointsOnSphere<FReal>(N, 1, points);
     FReal mc = 1.0/static_cast<FReal>(N);
