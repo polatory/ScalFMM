@@ -269,7 +269,7 @@ void unifRandomPlummer(const FSize N, const FReal R, FReal * points) {
         while(m > rand_max) {
             m = getRandom<FReal>();
         }
-    	FReal r = FMath::Sqrt(1.0/(FMath::pow(m, -2.0/3.0) - 1.0)) / r_max;
+        FReal r = FMath::Sqrt(1.0/(FMath::pow(m, -2.0/3.0) - 1.0)) / r_max * R;
         points[j]    *= r;
         points[j+1]  *= r;
         points[j+2]  *= r;
