@@ -103,14 +103,14 @@ int main(int argc, char* argv[]){
 	setSeed(1);
 	FReal * tmpParticles = new FReal[4*loader.getNumberOfParticles()];
 	if(FParameters::existParameter(argc, argv, "-ellipsoid")) {
-		nonunifRandonPointsOnElipsoid(loader.getNumberOfParticles(), loader.getBoxWidth()/2, loader.getBoxWidth()/4, loader.getBoxWidth()/8, tmpParticles);
+		nonunifRandomPointsOnElipsoid(loader.getNumberOfParticles(), loader.getBoxWidth()/2, loader.getBoxWidth()/4, loader.getBoxWidth()/8, tmpParticles);
 	}
 	else if(FParameters::existParameter(argc, argv, "-plummer")) {
 		//The M argument is not used in the algorithm of the plummer distribution
-		unifRandonPlummer(loader.getNumberOfParticles(), loader.getBoxWidth()/2, 0.0, tmpParticles) ;
+		unifRandomPlummer(loader.getNumberOfParticles(), loader.getBoxWidth()/2, tmpParticles) ;
 	}
 	else { //Uniform cube
-		unifRandonPointsOnCube(loader.getNumberOfParticles(), loader.getBoxWidth()/2, loader.getBoxWidth()/2, loader.getBoxWidth()/2, tmpParticles);
+		unifRandomPointsInCube(loader.getNumberOfParticles(), loader.getBoxWidth()/2, loader.getBoxWidth()/2, loader.getBoxWidth()/2, tmpParticles);
 	}
 #endif
 

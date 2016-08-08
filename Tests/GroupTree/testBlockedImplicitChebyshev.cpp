@@ -120,14 +120,14 @@ int main(int argc, char* argv[]){
 			setSeed(i+1);//Add +1 so the seed given is never 0 which correspond to random
 			FReal * tmpParticles = new FReal[4*NbParticlesPerNode];
 			if(FParameters::existParameter(argc, argv, "-ellipsoid")) {
-				nonunifRandonPointsOnElipsoid(NbParticlesPerNode, boxWidth/2, boxWidth/4, boxWidth/8, tmpParticles);
+				nonunifRandomPointsOnElipsoid(NbParticlesPerNode, boxWidth/2, boxWidth/4, boxWidth/8, tmpParticles);
 			}
 			else if(FParameters::existParameter(argc, argv, "-plummer")) {
 				//The M argument is not used in the algorithm of the plummer distribution
-				unifRandonPlummer(NbParticlesPerNode, boxWidth/2, 0.0, tmpParticles) ;
+				unifRandomPlummer(NbParticlesPerNode, boxWidth/2, tmpParticles) ;
 			}
 			else { //Uniform cube
-				unifRandonPointsOnCube(NbParticlesPerNode, boxWidth/2, boxWidth/2, boxWidth/2, tmpParticles);
+				unifRandomPointsInCube(NbParticlesPerNode, boxWidth/2, boxWidth/2, boxWidth/2, tmpParticles);
 			}
 			for(FSize j= 0 ; j < NbParticlesPerNode ; ++j){
 				allParticlesToSort[idxPart].setPosition(tmpParticles[j*4], tmpParticles[j*4+1], tmpParticles[j*4+2]);//Same with file or not

@@ -907,7 +907,7 @@ protected:
 
                         MortonIndex interactionsIndexes[26];
                         int interactionsPosition[26];
-                        FTreeCoordinate coord(mindex, tree->getHeight()-1);
+                        FTreeCoordinate coord(mindex);
                         int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
 
                         for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -995,7 +995,7 @@ protected:
 
                             MortonIndex interactionsIndexes[189];
                             int interactionsPosition[189];
-                            const FTreeCoordinate coord(mindex, idxLevel);
+                            const FTreeCoordinate coord(mindex);
                             int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
 
                             for(int idxInter = 0 ; idxInter < counter ; ++idxInter){

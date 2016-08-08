@@ -99,14 +99,14 @@ int main(int argc, char* argv[]){
     memset(allParticles,0,(unsigned int) (sizeof(TestParticle)* loader.getNumberOfParticles()));
 	memset(tmpParticles,0,(unsigned int) (sizeof(FReal)* loader.getNumberOfParticles() * 4));
 	if(FParameters::existParameter(argc, argv, "-ellipsoid")) {
-		nonunifRandonPointsOnElipsoid(loader.getNumberOfParticles(), boxWidth/2, boxWidth/4, boxWidth/8, tmpParticles);
+		nonunifRandomPointsOnElipsoid(loader.getNumberOfParticles(), boxWidth/2, boxWidth/4, boxWidth/8, tmpParticles);
 	}
 	else if(FParameters::existParameter(argc, argv, "-plummer")) {
 		//The M argument is not used in the algorithm of the plummer distribution
-		unifRandonPlummer(loader.getNumberOfParticles(), boxWidth/2, 0.0, tmpParticles) ;
+		unifRandomPlummer(loader.getNumberOfParticles(), boxWidth/2, tmpParticles) ;
 	}
 	else { //Uniform cube
-		unifRandonPointsOnCube(loader.getNumberOfParticles(), boxWidth/2, boxWidth/2, boxWidth/2, tmpParticles);
+		unifRandomPointsInCube(loader.getNumberOfParticles(), boxWidth/2, boxWidth/2, boxWidth/2, tmpParticles);
 	}
 
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
@@ -142,7 +142,7 @@ int main(int argc, char* argv[]){
                 loader.getBoxWidth(),
                 TreeHeight,
                 myParticles[myParticles.getSize()-1].position );
-    const MortonIndex myLeftLimite = host.getMortonIndex(TreeHeight-1);
+    const MortonIndex myLeftLimite = host.getMortonIndex();
     MortonIndex leftLimite = -1;
     if(mpiComm.global().processId() != 0){
         FMpi::Assert(MPI_Recv(&leftLimite, sizeof(leftLimite), MPI_BYTE,

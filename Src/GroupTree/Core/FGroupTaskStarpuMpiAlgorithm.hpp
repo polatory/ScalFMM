@@ -1679,19 +1679,14 @@ protected:
     /////////////////////////////////////////////////////////////////////////////////////
     /// Mpi Function overload
     /////////////////////////////////////////////////////////////////////////////////////
-#define LIMIT_SIZE_MPI 1000000//1Mo
 	void mpiPostISend(starpu_data_handle_t handle, const int dest, const int level, const MortonIndex startingIndex, const int idxBlock, const int mode)
 	{
-		size_t size = starpu_data_get_size(handle);
-		const size_t limitSize = LIMIT_SIZE_MPI;
 		starpu_mpi_isend_detached(handle, dest,
 				getTag(level,startingIndex,idxBlock, mode, dest),
 				comm.getComm(), 0/*callback*/, 0/*arg*/ );
 	}
 	void mpiPostIRecv(starpu_data_handle_t handle, const int dest, const int level, const MortonIndex startingIndex, const int idxBlock, const int mode)
 	{
-		size_t size = starpu_data_get_size(handle);
-		const size_t limitSize = LIMIT_SIZE_MPI;
 		starpu_mpi_irecv_detached(handle, dest,
 				getTag(level,startingIndex,idxBlock, mode, dest),
 				comm.getComm(), 0/*callback*/, 0/*arg*/ );
