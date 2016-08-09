@@ -53,6 +53,16 @@ public:
         symb->mortonIndex = inMortonIndex;
     }
 
+    /** To get the cell level */
+    int getLevel() const {
+        return symb->level;
+    }
+
+    /** To set the cell level */
+    void setLevel(const int level) {
+        symb->level = level;
+    }
+
     /** To get the position */
     FTreeCoordinate getCoordinate() const {
         return FTreeCoordinate(symb->coordinates[0],
@@ -109,4 +119,3 @@ public:
 
 
 #endif // FROTATIONCELLPOD_HPP
-

@@ -213,6 +213,7 @@ foreach(scotch_lib ${SCOTCH_libs_to_find})
     mark_as_advanced(SCOTCH_${scotch_lib}_LIBRARY)
 
 endforeach()
+list(REMOVE_DUPLICATES SCOTCH_LIBRARY_DIRS)
 
 # check a function to validate the find
 if(SCOTCH_LIBRARIES)

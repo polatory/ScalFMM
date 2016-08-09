@@ -99,6 +99,7 @@ public:
                     CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                     newNode.setMortonIndex(newNodeIndex);
                     newNode.setCoordinate(newNodeCoordinate);
+                    newNode.setLevel(idxLevel);
 
                     // Add leaf
                     nbParticlesOffsetBeforeLeaf = newParticleBlock->newLeaf(newNodeIndex, cellIdInBlock,
@@ -149,6 +150,7 @@ public:
                     CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                     newNode.setMortonIndex(newNodeIndex);
                     newNode.setCoordinate(newNodeCoordinate);
+                    newNode.setLevel(idxLevel);
 
                     cellIdInBlock += 1;
                     blockIteratorInOctree.moveRight();

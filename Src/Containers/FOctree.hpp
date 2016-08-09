@@ -784,7 +784,7 @@ public:
      */
     int getNeighborsNoBrothers(CellClass* inNeighbors[26], const MortonIndex inIndex, const int inLevel) const {
         FTreeCoordinate center;
-        center.setPositionFromMorton(inIndex, inLevel);
+        center.setPositionFromMorton(inIndex);
 
         const int boxLimite = FMath::pow2(inLevel);
 

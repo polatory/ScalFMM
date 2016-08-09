@@ -243,6 +243,7 @@ FReal plummerDist(FSize& cpt, const FReal &R) {
     }
 }
 
+
 /**
  * \brief Build N points following the Plummer distribution
  *
@@ -258,11 +259,17 @@ FReal plummerDist(FSize& cpt, const FReal &R) {
  */
 template <class FReal>
 void unifRandomPlummer(const FSize N, const FReal R, FReal * points) {
+    constexpr const FReal rand_max = 0.8;
+    constexpr const FReal r_max = std::sqrt(1.0/(std::pow(rand_max, -2.0/3.0) - 1.0));
+
     unifRandomPointsOnSphere<FReal>(N, 1, points);
     FReal mc = 1.0/static_cast<FReal>(N);
     for (FSize i = 0, j = 0 ; i< N ; ++i, j+=4)  {
-    	FReal m = getRandom<FReal>();
-    	FReal r = FMath::Sqrt( 1.0/(FMath::pow(m, -2.0/3.0) - 1.0)) ;
+        FReal m = getRandom<FReal>();
+        while(m > rand_max) {
+            m = getRandom<FReal>();
+        }
+        FReal r = FMath::Sqrt(1.0/(FMath::pow(m, -2.0/3.0) - 1.0)) / r_max * R;
         points[j]    *= r;
         points[j+1]  *= r;
         points[j+2]  *= r;

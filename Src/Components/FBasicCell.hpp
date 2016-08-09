@@ -4,13 +4,13 @@
 // This software is a computer program whose purpose is to compute the FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 #ifndef FBASICCELL_HPP
@@ -35,8 +35,9 @@
 *
 */
 class FBasicCell : public FAbstractSerializable {
-    MortonIndex mortonIndex;    //< Morton index (need by most elements)
-    FTreeCoordinate coordinate; //< The position
+    MortonIndex mortonIndex;    ///< Morton index (need by most elements)
+    FTreeCoordinate coordinate; ///< The position
+    std::size_t level;          ///< Level in tree
 
 public:
     /** Default constructor */
@@ -45,7 +46,15 @@ public:
 
     /** Default destructor */
     virtual ~FBasicCell(){
-    }    
+    }
+
+    std::size_t getLevel() const {
+        return this->level;
+    }
+
+    void setLevel(std::size_t inLevel) {
+        this->level = inLevel;
+    }
 
     /** To get the morton index */
     MortonIndex getMortonIndex() const {
@@ -98,5 +107,3 @@ public:
 
 
 #endif //FBASICCELL_HPP
-
-

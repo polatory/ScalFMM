@@ -124,6 +124,7 @@ if (BLAS_FOUND)
         # this can be the case with libs such as MKL, ACML
         include(CheckFunctionExists)
         set(CMAKE_REQUIRED_LIBRARIES "${BLAS_LINKER_FLAGS};${BLAS_LIBRARIES}")
+        set(CMAKE_REQUIRED_FLAGS "${BLAS_COMPILER_FLAGS}")
         unset(CBLAS_WORKS CACHE)
         check_function_exists(cblas_dscal CBLAS_WORKS)
         mark_as_advanced(CBLAS_WORKS)

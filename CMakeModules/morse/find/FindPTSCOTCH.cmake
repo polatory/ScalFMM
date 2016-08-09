@@ -230,6 +230,7 @@ foreach(ptscotch_lib ${PTSCOTCH_libs_to_find})
     mark_as_advanced(PTSCOTCH_${ptscotch_lib}_LIBRARY)
 
 endforeach()
+list(REMOVE_DUPLICATES PTSCOTCH_LIBRARY_DIRS)
 
 # check a function to validate the find
 if(PTSCOTCH_LIBRARIES)

@@ -130,6 +130,10 @@ std::vector<distribution> subparse_file(const std::vector<std::string>& args, st
         ++i;
     }
 
+    if(i < args.size() && args[i] == "--file") {
+        --i;
+    }
+
     if(gx > 1 || gy > 1 || gz > 1) {
 
         // Compute offset of lowest left grid offset

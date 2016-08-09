@@ -9,7 +9,7 @@
 struct alignas(FStarPUDefaultAlign::StructAlign) FBasicCellPOD {
     MortonIndex mortonIndex;
     int coordinates[3];
+    int level;
 };
 
 #endif // FBASICCELLPOD_HPP
-
