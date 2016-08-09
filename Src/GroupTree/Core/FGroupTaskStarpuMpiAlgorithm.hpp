@@ -73,16 +73,15 @@ protected:
 #endif
     > ThisClass;
 
-    int getTag(const int inLevel, const MortonIndex mindex, const int idxBloc, const int mode, const int otherProc, const int idxBlockMpi = 0) const{
+    int getTag(const int inLevel, const MortonIndex mindex, const int idxBloc, const int mode, const int otherProc) const{
         int shift = 0, s_mindex = 0;
         int height = tree->getHeight();
 		int h_mindex = idxBloc;
         while(height) { shift += 1; height >>= 1; }
         while(h_mindex) { s_mindex += 1; h_mindex >>= 1; }
 
-		FAssertLF((s_mindex + shift + 12) <= 32, "Tag overflow !!");
-		FAssertLF(idxBlockMpi < 32, "Too much block mpi, tag overflow possible");
-		const int tag = int((((((idxBloc<<shift) + inLevel) << 3) + mode) << 5) + idxBlockMpi);
+		FAssertLF((s_mindex + shift + 8) <= 32, "Tag overflow !!");
+		const int tag = int(((((idxBloc<<shift) + inLevel) << 3) + mode) << 5);
 		int *tag_ub = 0; 
         int ok = 0; 
         MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &tag_ub, &ok);
@@ -93,14 +92,13 @@ protected:
 				MortonIndex mindex;
 				int idxBloc;
 				int mode;
-				int idxBlockMpi;
 				bool operator==(TagInfo const& a) const
 				{
-					return (a.idxBloc == idxBloc && a.level == level && a.mindex == mindex && a.mode == mode && a.idxBlockMpi == idxBlockMpi);
+					return (a.idxBloc == idxBloc && a.level == level && a.mindex == mindex && a.mode == mode);
 				}
 			 };   
 			static std::unordered_map<int, TagInfo> previousTag;
-			const TagInfo currentInfo = {inLevel, mindex, idxBloc, mode, idxBlockMpi};
+			const TagInfo currentInfo = {inLevel, mindex, idxBloc, mode};
 			auto found = previousTag.find(tag);
 			if(found != previousTag.end()){
 				const TagInfo prev = found->second;
