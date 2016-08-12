@@ -38,6 +38,7 @@ gen_group_size_plot_comm <- function(d, model_wanted)
 	ggsave(output, g, width=29.7, height=21, units=c("cm"), device=cairo_pdf)
 	}
 }
+
 gen_group_size_plot_speed <- function(d, model_wanted)
 {
 	if (is.character(model_wanted))
@@ -79,9 +80,10 @@ gen_group_size <- function(dbfile)
 {
     data <- get_data_subset(dbfile, 0L, 0L, "False", 0L)
 
-	data <- subset(data, algo != get_one_node_reference_algorithm() & algo != "simple-mpi" & algo != "implicit-variable-bsize")
-	all_nnode <- unique(subset(data, bsize != get_bsize_reference())$nnode)
-	data <- subset(data, nnode %in% all_nnode)
+	data <- subset(data, algo == "explicit" | algo == "implicit")
+	tmp <- subset(data, bsize != get_bsize_reference())
+	tmp <- unique(tmp[c("nnode", "npart")])
+	data <- subset(data, data[c("nnode","npart")] %IN% tmp)
 
 	all_model <- unique(data$model)
 	for (i in 1:length(all_model))

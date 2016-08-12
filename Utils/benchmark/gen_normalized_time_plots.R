@@ -63,7 +63,7 @@ gen_normalized_time_plot <- function(db, d_breaks, model_wanted)
 
 		# Set X/Y labels.
 		g <- g + xlab("Number of nodes")
-		g <- g + ylab("Normalized time")
+		g <- g + ylab("Normalized efficiency")
 		g <- g + get_theme()
 
 

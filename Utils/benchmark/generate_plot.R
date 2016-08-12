@@ -44,7 +44,9 @@ output <- "output/bsize-speed.pdf"
 all_algo <- list("implicit", "explicit")
 d1 <- subset(data_all, algo %in% all_algo)
 all_nnode <- unique(subset(d1, bsize != get_bsize_reference())$nnode)
-d1 <- subset(d1, nnode %in% all_nnode)
+tmp <- subset(d1, bsize != get_bsize_reference())
+tmp <- unique(tmp[c("nnode", "npart")])
+d1 <- subset(d1, d1[c("nnode","npart")] %IN% tmp)
 gen_group_size_plot_speed(d1, 0L)
 
 # plot comm group size : implicit
@@ -52,6 +54,8 @@ output <- "output/bsize-volume.pdf"
 all_algo <- list("implicit")
 d1 <- subset(data_all, algo %in% all_algo)
 all_nnode <- unique(subset(d1, bsize != get_bsize_reference())$nnode)
-d1 <- subset(d1, nnode %in% all_nnode)
+tmp <- subset(d1, bsize != get_bsize_reference())
+tmp <- unique(tmp[c("nnode", "npart")])
+d1 <- subset(d1, d1[c("nnode","npart")] %IN% tmp)
 gen_group_size_plot_comm(d1, 0L)
 

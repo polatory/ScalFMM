@@ -1,3 +1,5 @@
+"%IN%" <- function(x, y) interaction(x) %in% interaction(y)
+
 get_data_subset <- function(f, n, h, p, b)
 {
     d <- read.csv(file=f,comment.char = "#", sep=",", quote = "\"", head=TRUE,
