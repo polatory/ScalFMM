@@ -163,9 +163,9 @@ endif()
 # STARPU may depend on BLAS, try to find it
 if (NOT BLAS_FOUND AND STARPU_LOOK_FOR_BLAS)
     if (STARPU_FIND_REQUIRED AND STARPU_FIND_REQUIRED_BLAS)
-        find_package(BLAS REQUIRED)
+        find_package(BLASEXT REQUIRED)
     else()
-        find_package(BLAS)
+        find_package(BLASEXT)
     endif()
 endif()
 

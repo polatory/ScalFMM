@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2016 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -17,11 +17,6 @@
 #
 #  CBLAS depends on the following libraries:
 #   - BLAS
-#
-#  COMPONENTS are optional libraries LAPACKE could be linked with,
-#  Use it to drive detection of a specific compilation chain
-#  COMPONENTS can be some of the following:
-#   - BLASEXT: to activate detection of BLAS with BLASEXT cmake module
 #
 # This module finds headers and cblas library.
 # Results are reported in variables:
@@ -67,7 +62,7 @@
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2016 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -88,30 +83,12 @@ if (NOT CBLAS_FOUND)
 endif()
 
 
-# CBLAS may depend on BLASEXT
-# try to find it specified as COMPONENTS during the call
-if (CBLAS_FIND_COMPONENTS)
-    foreach( component ${CBLAS_FIND_COMPONENTS} )
-        if(CBLAS_FIND_REQUIRED_${component})
-            find_package(${component} REQUIRED)
-        else()
-            find_package(${component})
-        endif()
-        if(${component}_FOUND)
-            set(CBLAS_${component}_FOUND TRUE)
-        else()
-            set(CBLAS_${component}_FOUND FALSE)
-        endif()
-    endforeach()
-endif ()
-
-
 # CBLAS depends on BLAS anyway, try to find it
 if (NOT BLAS_FOUND)
     if(CBLAS_FIND_REQUIRED)
-        find_package(BLAS REQUIRED)
+        find_package(BLASEXT REQUIRED)
     else()
-        find_package(BLAS)
+        find_package(BLASEXT)
     endif()
 endif()
 

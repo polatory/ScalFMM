@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2016 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -13,8 +13,8 @@
 # This module allows to find BLAS libraries by calling the official FindBLAS module
 # and handles the creation of different library lists whether the user wishes to link
 # with a sequential BLAS or a multihreaded (BLAS_SEQ_LIBRARIES and BLAS_PAR_LIBRARIES).
-# BLAS is detected with a FindBLAS call then if the BLAS vendor is Intel10_64lp or ACML
-# then the module tries to find the corresponding multithreaded libraries.
+# BLAS is detected with a FindBLAS call then if the BLAS vendor is Intel10_64lp, ACML
+# or IBMESSLMT then the module attempts to find the corresponding multithreaded libraries.
 #
 # The following variables have been added to manage links with sequential or multithreaded
 # versions:
@@ -28,7 +28,7 @@
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2016 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -132,6 +132,10 @@ if(BLA_VENDOR MATCHES "Intel*")
     endif()
     list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
     list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
+    set(ENV_MKLROOT "$ENV{MKLROOT}")
+    if (ENV_MKLROOT)
+        list(APPEND _inc_env "${ENV_MKLROOT}/include")
+    endif()
     list(REMOVE_DUPLICATES _inc_env)
 
     # find mkl.h inside known include paths

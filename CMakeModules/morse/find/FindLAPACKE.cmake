@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2016 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -17,11 +17,6 @@
 #
 #  LAPACKE depends on the following libraries:
 #   - LAPACK
-#
-#  COMPONENTS are optional libraries LAPACKE could be linked with,
-#  Use it to drive detection of a specific compilation chain
-#  COMPONENTS available:
-#   - LAPACKEXT: to activate detection of LAPACK with LAPACKEXT cmake module
 #
 # This module finds headers and lapacke library.
 # Results are reported in variables:
@@ -54,7 +49,7 @@
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2016 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -73,29 +68,12 @@ if (NOT LAPACKE_FOUND)
     endif()
 endif()
 
-# LAPACKE depends on LAPACKEXT
-# try to find it specified as COMPONENTS during the call
-if (LAPACKE_FIND_COMPONENTS)
-    foreach( component ${LAPACKE_FIND_COMPONENTS} )
-        if(LAPACKE_FIND_REQUIRED_${component})
-            find_package(${component} REQUIRED)
-        else()
-            find_package(${component})
-        endif()
-        if(${component}_FOUND)
-            set(LAPACKE_${component}_FOUND TRUE)
-        else()
-            set(LAPACKE_${component}_FOUND FALSE)
-        endif()
-    endforeach()
-endif ()
-
 # LAPACKE depends on LAPACK anyway, try to find it
 if (NOT LAPACK_FOUND)
     if(LAPACKE_FIND_REQUIRED)
-        find_package(LAPACK REQUIRED)
+        find_package(LAPACKEXT REQUIRED)
     else()
-        find_package(LAPACK)
+        find_package(LAPACKEXT)
     endif()
 endif()
 
