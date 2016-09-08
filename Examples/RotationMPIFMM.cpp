@@ -164,6 +164,8 @@ int main(int argc, char* argv[])
                                                                     tree.getBoxWidth(),
                                                                     tree.getHeight(), &finalParticles,&balancer);
 
+        std::cout << "Local nb particles after sort "
+                  << finalParticles.getSize() << std::endl;
         for(FSize idx = 0 ; idx < finalParticles.getSize(); ++idx){
             tree.insert(finalParticles[idx].position,finalParticles[idx].indexInFile,finalParticles[idx].physicalValue);
         }

@@ -81,7 +81,10 @@ public:
             pack.elementTo   = Min(allObjectives[idxProc].second , myCurrentInterval.second) - myCurrentInterval.first;
             // Next time give from the previous end
             currentElement   = pack.elementTo;
-            packToSend.push_back(pack);
+
+            if(pack.elementTo - pack.elementFrom != 0){
+                packToSend.push_back(pack);
+            }
             // Progress
             idxProc += 1;
         }

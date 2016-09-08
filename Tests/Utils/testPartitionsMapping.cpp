@@ -1,0 +1,149 @@
+// ===================================================================================
+// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas
+// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the FMM.
+//
+// This software is governed by the CeCILL-C and LGPL licenses and
+// abiding by the rules of distribution of free software.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public and CeCILL-C Licenses for more details.
+// "http://www.cecill.info".
+// "http://www.gnu.org/licenses".
+// ===================================================================================
+
+// ==== CMAKE =====
+// @FUSE_MPI
+// ================
+
+#include <iostream>
+
+#include <cstdio>
+#include <cstdlib>
+
+
+#include "../../Src/Kernels/Rotation/FRotationCell.hpp"
+#include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
+
+#include "../../Src/Components/FSimpleLeaf.hpp"
+#include "../../Src/Kernels/P2P/FP2PParticleContainerIndexed.hpp"
+
+#include "../../Src/Utils/FParameters.hpp"
+#include "../../Src/Utils/FMemUtils.hpp"
+#include "../../Src/BalanceTree/FPartitionsMapping.hpp"
+
+#include "../../Src/Containers/FOctree.hpp"
+#include "../../Src/Containers/FVector.hpp"
+
+#include "../../Src/Files/FRandomLoader.hpp"
+#include "../../Src/Files/FMpiTreeBuilder.hpp"
+
+#include "../../Src/Core/FFmmAlgorithm.hpp"
+#include "../../Src/Core/FFmmAlgorithmThread.hpp"
+#include "../../Src/Core/FFmmAlgorithmThreadProc.hpp"
+
+#include "../../Src/BalanceTree/FLeafBalance.hpp"
+
+#include "../../Src/Utils/FParameterNames.hpp"
+
+/**
+ * This program runs the FMM Algorithm Distributed with the Rotation kernel
+ */
+
+// Simply create particles and try the kernels
+int main(int argc, char* argv[])
+{
+    FHelpDescribeAndExit(argc, argv,
+                         "Test with MPI the chebyshev FMM and compare it to the direct computation for debugging purpose.",
+                         FParameterDefinitions::NbParticles, FParameterDefinitions::OctreeHeight,
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::NbThreads);
+
+    typedef double FReal;
+
+    FMpi app(argc,argv);
+
+    const FSize nbParticles       = FParameters::getValue(argc,argv, FParameterDefinitions::NbParticles.options, 10000000ULL);
+    const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
+    FTic time;
+
+    std::cout << ">> This executable has to be used to test Proc Rotation Algorithm. \n";
+
+    // init particles position and physical value
+    struct TestParticle{
+        FPoint<FReal> position;
+        const FPoint<FReal>& getPosition(){
+            return position;
+        }
+    };
+
+    // open particle file
+    std::cout << "Creating : " << nbParticles << "\n" << std::endl;
+    FRandomLoader<FReal> loader(nbParticles, 1.0, FPoint<FReal>(0,0,0), app.global().processId());
+
+    time.tic();
+    std::unique_ptr<TestParticle[]> particles(new TestParticle[loader.getNumberOfParticles()]);
+    for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+        loader.fillParticle(&particles[idxPart].position);
+    }
+
+    FPartitionsMapping<FReal> map(app.global());
+
+    FVector<FPartitionsMapping<double>::TestParticle<0> > finalParticles = map.distributeParticles<0>(loader.getNumberOfParticles(),
+                                                                   loader.getCenterOfBox(),
+                                                                   loader.getBoxWidth(), TreeHeight,
+                                                                   [&](const int idx, FPoint<FReal>* position, std::array<FReal, 0>* /*val*/){
+        position->setPosition(particles[idx].position.getX(),
+                              particles[idx].position.getY(),
+                              particles[idx].position.getZ());
+    });
+
+    // Test every particles exist
+    {
+        std::unique_ptr<int[]> count(new int[app.global().processCount() * nbParticles]);
+        memset(count.get(), 0, sizeof(int) * app.global().processCount() * nbParticles);
+        for(FSize part = 0 ; part < finalParticles.getSize() ; ++part){
+            const FSize idx = finalParticles[part].initialProcOwner*nbParticles + finalParticles[part].localIndex;
+            FAssertLF(count[idx] == 0)
+            count[idx] = 1;
+        }
+
+        FMpi::Assert( MPI_Allreduce(MPI_IN_PLACE, count.get(), app.global().processCount()*nbParticles, MPI_INT, MPI_SUM,
+                      app.global().getComm()), __LINE__);
+
+        for(FSize part = 0 ; part < app.global().processCount()*nbParticles ; ++part){
+            FAssertLF(count[part] == 1);
+        }
+    }
+
+    // Test to send data
+    {
+        std::unique_ptr<std::array<FReal, 2>[]> toDistr(new std::array<FReal, 2>[nbParticles]);
+        for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+            toDistr[idxPart][0] = app.global().processId();
+            toDistr[idxPart][1] = FReal(idxPart);
+        }
+
+        std::unique_ptr<std::array<FReal, 2>[]> res = map.distributeData<2>(toDistr.get());
+
+        for(FSize part = 0 ; part < finalParticles.getSize() ; ++part){
+            if(int(res[part][0]) != finalParticles[part].initialProcOwner)
+                    std::cout << "[" << app.global().processId() << "]Res proc is " << res[part][0] << " should be " << finalParticles[part].initialProcOwner << std::endl;
+            if(int(res[part][1]) != finalParticles[part].localIndex)
+                    std::cout << "[" << app.global().processId() << "]Res localidx is " << res[part][1] << " should be " << finalParticles[part].localIndex << std::endl;
+        }
+
+        std::unique_ptr<std::array<FReal, 2>[]> resBack = map.getResultingData<2>(res.get());
+
+        for(FSize part = 0 ; part < loader.getNumberOfParticles() ; ++part){
+            if(int(resBack[part][0]) != app.global().processId())
+                    std::cout << "[" << app.global().processId() << "]ResBack proc is " << resBack[part][0] << " should be " << app.global().processId() << std::endl;
+            if(int(resBack[part][1]) != part)
+                    std::cout << "[" << app.global().processId() << "]ResBack localidx is " << resBack[part][1] << " should be " << part << std::endl;
+        }
+    }
+
+    return 0;
+}
+

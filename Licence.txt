@@ -4,6 +4,9 @@ the more restrictive has to be used.
 ScalFmm est régi par la licence CeCILL-C & LGPL, en cas de conflit
 la plus restrictive prime.
 
+Folders under Addons might have separate Licence, in such case
+one can find a dedicated Licence file where appropriate.
+
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 

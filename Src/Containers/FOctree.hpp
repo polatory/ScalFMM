@@ -1685,6 +1685,10 @@ public:
      * @param function
      */
     void forEachLeaf(std::function<void(LeafClass*)> function){
+        if(isEmpty()){
+            return;
+        }
+
         Iterator octreeIterator(this);
         octreeIterator.gotoBottomLeft();
 
@@ -1698,6 +1702,10 @@ public:
      * @param function
      */
     void forEachCell(std::function<void(CellClass*)> function){
+        if(isEmpty()){
+            return;
+        }
+
         Iterator octreeIterator(this);
         octreeIterator.gotoBottomLeft();
 
@@ -1717,6 +1725,10 @@ public:
      * @param function
      */
     void forEachCellWithLevel(std::function<void(CellClass*,const int)> function){
+        if(isEmpty()){
+            return;
+        }
+
         Iterator octreeIterator(this);
         octreeIterator.gotoBottomLeft();
 
@@ -1736,6 +1748,10 @@ public:
      * @param function
      */
     void forEachCellLeaf(std::function<void(CellClass*,LeafClass*)> function){
+        if(isEmpty()){
+            return;
+        }
+
         Iterator octreeIterator(this);
         octreeIterator.gotoBottomLeft();
 

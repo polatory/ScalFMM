@@ -93,14 +93,18 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
         {
             // Get the number of elements each proc should recv
             IndexType totalRemainingElements = totalElements;
+            IndexType totalAvailableElements = totalElementToProceed;
+
 
             for(int idxProc = firstProcToRecv; idxProc < lastProcToRecv ; ++idxProc){
                 const IndexType nbElementsAlreadyOwned = (inFromRightToLeft ? globalElementBalance[idxProc].lowerPart : globalElementBalance[idxProc].greaterPart);
                 const IndexType averageNbElementForRemainingProc = (totalRemainingElements)/(lastProcToRecv-idxProc);
                 totalRemainingElements -= nbElementsAlreadyOwned;
                 FAssertLF(totalRemainingElements >= 0);
-                if(nbElementsAlreadyOwned < averageNbElementForRemainingProc){
-                    nbElementsToRecvPerProc[idxProc - firstProcToRecv] = (averageNbElementForRemainingProc - nbElementsAlreadyOwned);
+                if(nbElementsAlreadyOwned < averageNbElementForRemainingProc && totalAvailableElements){
+                    nbElementsToRecvPerProc[idxProc - firstProcToRecv] = FMath::Min(totalAvailableElements,
+                                                                                    averageNbElementForRemainingProc - nbElementsAlreadyOwned);
+                    totalAvailableElements -= nbElementsToRecvPerProc[idxProc - firstProcToRecv];
                     totalRemainingElements -= nbElementsToRecvPerProc[idxProc - firstProcToRecv];
                 }
                 else{
@@ -308,6 +312,10 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
                     counterValuesInPivot += 1;
                 }
             }
+            if(counterValuesInPivot <= 1){
+                (*shouldStop) = true;
+                return globalPivot;
+            }
             (*shouldStop) = false;
             return globalPivot/counterValuesInPivot;
         }
@@ -336,7 +344,7 @@ public:
                 break;
             }
 
-            FLOG(if(VerboseLog)  FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] globalPivot = " << globalPivot << "\n" );
+            FLOG(if(VerboseLog)  FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] globalPivot = " << globalPivot << " for " << currentComm.processCount() << "\n" );
             FLOG(if(VerboseLog)  FLog::Controller.flush());
 
             // Split the array in two parts lower equal to pivot and greater than pivot

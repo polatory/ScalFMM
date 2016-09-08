@@ -107,7 +107,7 @@ public:
      * This class is used to gather the usual methods related to identifying an
      * MPI communicator.
      */
-    class FComm : public FNoCopyable {
+    class FComm {
         int rank;   ///< rank related to the comm
         int nbProc; ///< nb proc in this group
 
@@ -128,6 +128,26 @@ public:
             FMpi::Assert( MPI_Comm_group(communicator, &group),  __LINE__ , "comm group");
 
             reset();
+        }
+
+        /// Constructor : duplicates the given communicator
+        FComm(const FComm& inCommunicator ) {
+            FMpi::Assert( MPI_Comm_dup(inCommunicator.communicator, &communicator),  __LINE__ , "comm dup");
+            FMpi::Assert( MPI_Comm_group(communicator, &group),  __LINE__ , "comm group");
+
+            reset();
+        }
+
+        FComm& operator=(const FComm& inCommunicator ) {
+            FMpi::Assert( MPI_Comm_free(&communicator),  __LINE__ );
+            FMpi::Assert( MPI_Group_free(&group),  __LINE__ );
+
+            FMpi::Assert( MPI_Comm_dup(inCommunicator.communicator, &communicator),  __LINE__ , "comm dup");
+            FMpi::Assert( MPI_Comm_group(communicator, &group),  __LINE__ , "comm group");
+
+            reset();
+
+            return *this;
         }
 
         /// Frees communicator and group
@@ -245,6 +265,35 @@ public:
             MPI_Group_free(&previousGroup);
 
             reset();
+            delete[]  procsIdArray ;
+        }
+
+        /** Change the group, create one groupd where processInGroup[i] != 0
+          * and another where processInGroup[i] == 0
+          */
+        void groupReduce(const int processInGroup[]){
+            int * procsIdArray = new int [nbProc];
+            int counterNewGroup = 0;
+            for(int idxProc = 0 ;idxProc < nbProc ; ++idxProc){
+                if(processInGroup[rank] && processInGroup[idxProc]){
+                    procsIdArray[counterNewGroup++] = idxProc;
+                }
+                else if(!processInGroup[rank] && !processInGroup[idxProc]){
+                    procsIdArray[counterNewGroup++] = idxProc;
+                }
+            }
+
+            MPI_Group previousGroup = group;
+            FMpi::Assert( MPI_Group_incl(previousGroup, counterNewGroup , procsIdArray, &group),  __LINE__ );
+
+            MPI_Comm previousComm = communicator;
+            FMpi::Assert( MPI_Comm_create(previousComm, group, &communicator),  __LINE__ );
+
+            MPI_Comm_free(&previousComm);
+            MPI_Group_free(&previousGroup);
+
+            reset();
+            FAssertLF(nbProc == counterNewGroup);
             delete[]  procsIdArray ;
         }
 
