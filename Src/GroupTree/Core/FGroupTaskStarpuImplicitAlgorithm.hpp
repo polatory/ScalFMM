@@ -182,6 +182,29 @@ protected:
     starpu_codelet p2p_extract;
     starpu_codelet p2p_insert;
 
+    struct CellExtractedHandles{
+        starpu_data_handle_t all;
+        size_t size;
+        std::unique_ptr<unsigned char[]> data;
+        std::vector<int> cellsToExtract;
+    };
+
+    std::list<CellExtractedHandles> extractedCellBuffer;
+
+    struct DuplicatedCellHandle{
+        starpu_data_handle_t symb;
+        size_t sizeSymb;
+        unsigned char* dataSymb; // Never delete it, we reuse already allocate memory here
+        starpu_data_handle_t other;
+        size_t sizeOther;
+        unsigned char* dataOther; // Never delete it, we reuse already allocate memory here
+    };
+
+    std::list<DuplicatedCellHandle> duplicatedCellBuffer;
+
+    starpu_codelet cell_extract_up;
+    starpu_codelet cell_insert_up;
+
 public:
     FGroupTaskStarPUImplicitAlgorithm(OctreeClass*const inTree, KernelClass* inKernels, std::vector<MortonIndex>& distributedMortonIndex)
         : tree(inTree), originalCpuKernel(inKernels),
@@ -804,6 +827,7 @@ protected:
 #endif
 
         memset(&p2p_extract, 0, sizeof(p2p_extract));
+        p2p_extract.nbuffers = 2;
         p2p_extract.modes[0] = STARPU_R;
         p2p_extract.modes[1] = STARPU_RW;
         p2p_extract.name = "p2p_extract";
@@ -811,11 +835,29 @@ protected:
         p2p_extract.where |= STARPU_CPU;
 
         memset(&p2p_insert, 0, sizeof(p2p_insert));
+        p2p_insert.nbuffers = 2;
         p2p_insert.modes[0] = STARPU_R;
         p2p_insert.modes[1] = STARPU_RW;
         p2p_insert.name = "p2p_insert";
         p2p_insert.cpu_funcs[0] = ThisClass::InsertP2P;
         p2p_insert.where |= STARPU_CPU;
+
+        memset(&cell_extract_up, 0, sizeof(cell_extract_up));
+        cell_extract_up.nbuffers = 3;
+        cell_extract_up.modes[0] = STARPU_R;
+        cell_extract_up.modes[1] = STARPU_R;
+        cell_extract_up.modes[2] = STARPU_RW;
+        cell_extract_up.name = "cell_extract_up";
+        cell_extract_up.cpu_funcs[0] = ThisClass::ExtractCellUp;
+        cell_extract_up.where |= STARPU_CPU;
+
+        memset(&cell_insert_up, 0, sizeof(cell_insert_up));
+        cell_extract_up.nbuffers = 3;
+        cell_insert_up.modes[0] = STARPU_R;
+        cell_insert_up.modes[1] = STARPU_RW;
+        cell_insert_up.name = "cell_insert_up";
+        cell_insert_up.cpu_funcs[0] = ThisClass::InsertCellUp;
+        cell_insert_up.where |= STARPU_CPU;
     }
 
     static void InsertP2P(void *buffers[], void *cl_arg){
@@ -846,6 +888,34 @@ protected:
         starpu_codelet_unpack_args(cl_arg, &interactionBufferPtr);
 
         containers.extractData(interactionBufferPtr->leavesToExtract, inBuffer1, size1);
+    }
+
+    static void InsertCellUp(void *buffers[], void *cl_arg){
+        CellContainerClass currentCells((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]),
+                                        STARPU_VECTOR_GET_NX(buffers[1]),
+                                        nullptr,
+                                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]));
+        unsigned char* inBuffer = (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]);
+        size_t size = STARPU_VECTOR_GET_NX(buffers[0]);
+
+        CellExtractedHandles* interactionBufferPtr;
+        starpu_codelet_unpack_args(cl_arg, &interactionBufferPtr);
+
+        currentCells.restoreDataUp(interactionBufferPtr->cellsToExtract, inBuffer, size);
+    }
+
+    static void ExtractCellUp(void *buffers[], void *cl_arg){
+        CellContainerClass currentCells((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
+                                        STARPU_VECTOR_GET_NX(buffers[0]),
+                                        nullptr,
+                                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]));
+        unsigned char* inBuffer = (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]);
+        size_t size = STARPU_VECTOR_GET_NX(buffers[2]);
+
+        CellExtractedHandles* interactionBufferPtr;
+        starpu_codelet_unpack_args(cl_arg, &interactionBufferPtr);
+
+        currentCells.extractDataUp(interactionBufferPtr->cellsToExtract, inBuffer, size);
     }
 
     void initCodeletMpi(){
@@ -1382,77 +1452,279 @@ protected:
                         const int interactionid = externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].otherBlockId;
                         const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].interactions;
 
-                        int mode = 1;
-                        starpu_mpi_insert_task(MPI_COMM_WORLD,
-                                               &m2l_cl_inout,
-                                               STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                                               STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                                               STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                                               STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-                                               STARPU_VALUE, &mode, sizeof(int),
-                       #ifdef SCALFMM_STARPU_USE_PRIO
-                                               STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
-                       #endif
-                                               STARPU_R, cellHandles[idxLevel][idxGroup].symb,
-                                               (STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
-                                               STARPU_R, cellHandles[idxLevel][interactionid].symb,
-                                               STARPU_R, cellHandles[idxLevel][interactionid].up,
-                       #ifdef STARPU_USE_TASK_NAME
-                       #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
-                                               STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
-                       #else
-                                               //"M2L_out-l_nb_i_nb_i_s
-                                               STARPU_NAME, taskNames->print("M2L_out", "%d, %d, %lld, %d, %lld, %d, %lld, %lld, %lld, %lld, %d\n",
-                                                                             idxLevel,
-                                                                             tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
-                                                                             tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
-                                                                             tree->getCellGroup(idxLevel,interactionid)->getNumberOfCellsInBlock(),
-                                                                             tree->getCellGroup(idxLevel,interactionid)->getSizeOfInterval(),
-                                                                             outsideInteractions->size(),
-                                                                             tree->getCellGroup(idxLevel, idxGroup)->getStartingIndex(),
-                                                                             tree->getCellGroup(idxLevel, idxGroup)->getEndingIndex(),
-                                                                             tree->getCellGroup(idxLevel, interactionid)->getStartingIndex(),
-                                                                             tree->getCellGroup(idxLevel, interactionid)->getEndingIndex(),
-                                                                             starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].down)),
-                       #endif
-                       #endif
-                                               0);
+                        // On the same node -- do as usual
+                        if(starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].symb) == starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].symb)){
+                            int mode = 1;
+                            starpu_mpi_insert_task(MPI_COMM_WORLD,
+                                                   &m2l_cl_inout,
+                                                   STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                                   STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                                   STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                                   STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                                   STARPU_VALUE, &mode, sizeof(int),
+                           #ifdef SCALFMM_STARPU_USE_PRIO
+                                                   STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
+                           #endif
+                                                   STARPU_R, cellHandles[idxLevel][idxGroup].symb,
+                                                   (STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
+                                                   STARPU_R, cellHandles[idxLevel][interactionid].symb,
+                                                   STARPU_R, cellHandles[idxLevel][interactionid].up,
+                           #ifdef STARPU_USE_TASK_NAME
+                           #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                                                   STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
+                           #else
+                                                   //"M2L_out-l_nb_i_nb_i_s
+                                                   STARPU_NAME, taskNames->print("M2L_out", "%d, %d, %lld, %d, %lld, %d, %lld, %lld, %lld, %lld, %d\n",
+                                                                                 idxLevel,
+                                                                                 tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
+                                                                                 tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
+                                                                                 tree->getCellGroup(idxLevel,interactionid)->getNumberOfCellsInBlock(),
+                                                                                 tree->getCellGroup(idxLevel,interactionid)->getSizeOfInterval(),
+                                                                                 outsideInteractions->size(),
+                                                                                 tree->getCellGroup(idxLevel, idxGroup)->getStartingIndex(),
+                                                                                 tree->getCellGroup(idxLevel, idxGroup)->getEndingIndex(),
+                                                                                 tree->getCellGroup(idxLevel, interactionid)->getStartingIndex(),
+                                                                                 tree->getCellGroup(idxLevel, interactionid)->getEndingIndex(),
+                                                                                 starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].down)),
+                           #endif
+                           #endif
+                                                   0);
 
-                        mode = 2;
-                        starpu_mpi_insert_task(MPI_COMM_WORLD,
-                                               &m2l_cl_inout,
-                                               STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
-                                               STARPU_VALUE, &idxLevel, sizeof(idxLevel),
-                                               STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
-                                               STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
-                                               STARPU_VALUE, &mode, sizeof(int),
-                       #ifdef SCALFMM_STARPU_USE_PRIO
-                                               STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
-                       #endif
-                                               STARPU_R, cellHandles[idxLevel][interactionid].symb,
-                                               (STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
-                                               STARPU_R, cellHandles[idxLevel][idxGroup].symb,
-                                               STARPU_R, cellHandles[idxLevel][idxGroup].up,
-                       #ifdef STARPU_USE_TASK_NAME
-                       #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
-                                               STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
-                       #else
-                                               //"M2L_out-l_nb_i_nb_i_s"
-                                               STARPU_NAME, taskNames->print("M2L_out", "%d, %d, %lld, %d, %lld, %d, %lld, %lld, %lld, %lld, %d\n",
-                                                                             idxLevel,
-                                                                             tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
-                                                                             tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
-                                                                             tree->getCellGroup(idxLevel,interactionid)->getNumberOfCellsInBlock(),
-                                                                             tree->getCellGroup(idxLevel,interactionid)->getSizeOfInterval(),
-                                                                             outsideInteractions->size(),
-                                                                             tree->getCellGroup(idxLevel, interactionid)->getStartingIndex(),
-                                                                             tree->getCellGroup(idxLevel, interactionid)->getEndingIndex(),
-                                                                             tree->getCellGroup(idxLevel, idxGroup)->getStartingIndex(),
-                                                                             tree->getCellGroup(idxLevel, idxGroup)->getEndingIndex(),
-                                                                             starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].down)),
-                       #endif
-                       #endif
-                                               0);
+                            mode = 2;
+                            starpu_mpi_insert_task(MPI_COMM_WORLD,
+                                                   &m2l_cl_inout,
+                                                   STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                                   STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                                   STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                                   STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                                   STARPU_VALUE, &mode, sizeof(int),
+                           #ifdef SCALFMM_STARPU_USE_PRIO
+                                                   STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
+                           #endif
+                                                   STARPU_R, cellHandles[idxLevel][interactionid].symb,
+                                                   (STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
+                                                   STARPU_R, cellHandles[idxLevel][idxGroup].symb,
+                                                   STARPU_R, cellHandles[idxLevel][idxGroup].up,
+                           #ifdef STARPU_USE_TASK_NAME
+                           #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                                                   STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
+                           #else
+                                                   //"M2L_out-l_nb_i_nb_i_s"
+                                                   STARPU_NAME, taskNames->print("M2L_out", "%d, %d, %lld, %d, %lld, %d, %lld, %lld, %lld, %lld, %d\n",
+                                                                                 idxLevel,
+                                                                                 tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
+                                                                                 tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
+                                                                                 tree->getCellGroup(idxLevel,interactionid)->getNumberOfCellsInBlock(),
+                                                                                 tree->getCellGroup(idxLevel,interactionid)->getSizeOfInterval(),
+                                                                                 outsideInteractions->size(),
+                                                                                 tree->getCellGroup(idxLevel, interactionid)->getStartingIndex(),
+                                                                                 tree->getCellGroup(idxLevel, interactionid)->getEndingIndex(),
+                                                                                 tree->getCellGroup(idxLevel, idxGroup)->getStartingIndex(),
+                                                                                 tree->getCellGroup(idxLevel, idxGroup)->getEndingIndex(),
+                                                                                 starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].down)),
+                           #endif
+                           #endif
+                                                   0);
+                        }
+                        else{
+                                {
+                                    // Extract data from second group for the first one
+                                    // That is copy B to B'
+                                    extractedCellBuffer.emplace_back();
+                                    CellExtractedHandles& interactionBuffer = extractedCellBuffer.back();
+                                    interactionBuffer.cellsToExtract.reserve(outsideInteractions->size());
+                                    for(size_t idx = 0 ;
+                                        idx < outsideInteractions->size() ; ++idx){
+                                        interactionBuffer.cellsToExtract.push_back((*outsideInteractions)[idx].outsideIdxInBlock);
+                                    }
+                                    interactionBuffer.size = tree->getCellGroup(idxLevel,interactionid)->extractGetSizeSymbUp(interactionBuffer.cellsToExtract);
+                                    // I allocate only if I will use it to extract
+                                    if(starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].symb)){
+                                        interactionBuffer.data.reset(new unsigned char[interactionBuffer.size]);
+                                    }
+                                    else{
+                                        interactionBuffer.data.reset(nullptr);
+                                    }
+                                    starpu_variable_data_register(&interactionBuffer.all, starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].symb),
+                                                                  (uintptr_t)interactionBuffer.data.get(), interactionBuffer.size);
+
+                                    CellExtractedHandles* interactionBufferPtr = &interactionBuffer;
+                                    starpu_mpi_insert_task(MPI_COMM_WORLD,
+                                                           &cell_extract_up,
+                                                           STARPU_VALUE, &interactionBufferPtr, sizeof(CellExtractedHandles*),
+                                   #ifdef SCALFMM_STARPU_USE_PRIO
+                                                           STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
+                                   #endif
+                                                           STARPU_R, cellHandles[idxLevel][interactionid].symb,
+                                                           STARPU_R, cellHandles[idxLevel][interactionid].up,
+                                                           STARPU_RW, interactionBuffer.all);
+
+                                    // Move to a new memory block that is on the same node as A
+                                    // B' to B'''
+                                    duplicatedCellBuffer.emplace_back();
+                                    DuplicatedCellHandle& duplicateB = duplicatedCellBuffer.back();
+                                    duplicateB.sizeSymb = tree->getCellGroup(idxLevel,interactionid)->getBufferSizeInByte();
+                                    duplicateB.sizeOther = tree->getCellGroup(idxLevel,interactionid)->getMultipoleBufferSizeInByte();
+                                    if(starpu_mpi_data_get_rank(particleHandles[idxGroup].down) == mpi_rank){
+                                        // Reuse block but just to perform the send
+                                        duplicateB.dataSymb = const_cast<unsigned char*>(tree->getCellGroup(idxLevel,interactionid)->getRawBuffer());
+                                        duplicateB.dataOther = reinterpret_cast<unsigned char*>(tree->getCellGroup(idxLevel,interactionid)->getRawMultipoleBuffer());
+                                    }
+                                    else{
+                                        duplicateB.dataSymb = nullptr;
+                                        duplicateB.dataOther = nullptr;
+                                    }
+                                    starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(particleHandles[idxGroup].down),
+                                                                  (uintptr_t)duplicateB.dataSymb, duplicateB.sizeSymb);
+                                    starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(particleHandles[idxGroup].down),
+                                                                  (uintptr_t)duplicateB.dataOther, duplicateB.sizeOther);
+
+                                    starpu_mpi_insert_task(MPI_COMM_WORLD,
+                                                           &cell_insert_up,
+                                                           STARPU_VALUE, &interactionBufferPtr, sizeof(CellExtractedHandles*),
+                                   #ifdef SCALFMM_STARPU_USE_PRIO
+                                                           STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
+                                   #endif
+                                                           STARPU_R, interactionBuffer.all,
+                                                           STARPU_RW, duplicateB.symb,
+                                                           STARPU_RW, duplicateB.other);
+
+
+                                int mode = 1;
+                                starpu_mpi_insert_task(MPI_COMM_WORLD,
+                                                       &m2l_cl_inout,
+                                                       STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                                       STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                                       STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                                       STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                                       STARPU_VALUE, &mode, sizeof(int),
+                               #ifdef SCALFMM_STARPU_USE_PRIO
+                                                       STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
+                               #endif
+                                                       STARPU_R, cellHandles[idxLevel][idxGroup].symb,
+                                                       (STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][idxGroup].down,
+                                                       STARPU_R, duplicateB.symb,
+                                                       STARPU_R, duplicateB.other,
+                               #ifdef STARPU_USE_TASK_NAME
+                               #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                                                       STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
+                               #else
+                                                       //"M2L_out-l_nb_i_nb_i_s
+                                                       STARPU_NAME, taskNames->print("M2L_out", "%d, %d, %lld, %d, %lld, %d, %lld, %lld, %lld, %lld, %d\n",
+                                                                                     idxLevel,
+                                                                                     tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
+                                                                                     tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
+                                                                                     tree->getCellGroup(idxLevel,interactionid)->getNumberOfCellsInBlock(),
+                                                                                     tree->getCellGroup(idxLevel,interactionid)->getSizeOfInterval(),
+                                                                                     outsideInteractions->size(),
+                                                                                     tree->getCellGroup(idxLevel, idxGroup)->getStartingIndex(),
+                                                                                     tree->getCellGroup(idxLevel, idxGroup)->getEndingIndex(),
+                                                                                     tree->getCellGroup(idxLevel, interactionid)->getStartingIndex(),
+                                                                                     tree->getCellGroup(idxLevel, interactionid)->getEndingIndex(),
+                                                                                     starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].down)),
+                               #endif
+                               #endif
+                                                       0);
+                            }
+                            {
+                                // Extract data from second group for the first one
+                                // That is copy A to A'
+                                extractedCellBuffer.emplace_back();
+                                CellExtractedHandles& interactionBuffer = extractedCellBuffer.back();
+                                interactionBuffer.cellsToExtract.reserve(outsideInteractions->size());
+                                for(size_t idx = 0 ;
+                                    idx < outsideInteractions->size() ; ++idx){
+                                    interactionBuffer.cellsToExtract.push_back((*outsideInteractions)[idx].insideIdxInBlock);
+                                }
+                                interactionBuffer.size = tree->getCellGroup(idxLevel,idxGroup)->extractGetSizeSymbUp(interactionBuffer.cellsToExtract);
+                                // I allocate only if I will use it to extract
+                                if(starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].symb)){
+                                    interactionBuffer.data.reset(new unsigned char[interactionBuffer.size]);
+                                }
+                                else{
+                                    interactionBuffer.data.reset(nullptr);
+                                }
+                                starpu_variable_data_register(&interactionBuffer.all, starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].symb),
+                                                              (uintptr_t)interactionBuffer.data.get(), interactionBuffer.size);
+
+                                CellExtractedHandles* interactionBufferPtr = &interactionBuffer;
+                                starpu_mpi_insert_task(MPI_COMM_WORLD,
+                                                       &cell_extract_up,
+                                                       STARPU_VALUE, &interactionBufferPtr, sizeof(CellExtractedHandles*),
+                               #ifdef SCALFMM_STARPU_USE_PRIO
+                                                       STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
+                               #endif
+                                                       STARPU_R, cellHandles[idxLevel][idxGroup].symb,
+                                                       STARPU_R, cellHandles[idxLevel][idxGroup].up,
+                                                       STARPU_RW, interactionBuffer.all);
+
+                                // Move to a new memory block that is on the same node as A
+                                // B' to B'''
+                                duplicatedCellBuffer.emplace_back();
+                                DuplicatedCellHandle& duplicateB = duplicatedCellBuffer.back();
+                                duplicateB.sizeSymb = tree->getCellGroup(idxLevel,idxGroup)->getBufferSizeInByte();
+                                duplicateB.sizeOther = tree->getCellGroup(idxLevel,idxGroup)->getMultipoleBufferSizeInByte();
+                                if(starpu_mpi_data_get_rank(particleHandles[interactionid].down) == mpi_rank){
+                                    // Reuse block but just to perform the send
+                                    duplicateB.dataSymb = const_cast<unsigned char*>(tree->getCellGroup(idxLevel,idxGroup)->getRawBuffer());
+                                    duplicateB.dataOther = reinterpret_cast<unsigned char*>(tree->getCellGroup(idxLevel,idxGroup)->getRawMultipoleBuffer());
+                                }
+                                else{
+                                    duplicateB.dataSymb = nullptr;
+                                    duplicateB.dataOther = nullptr;
+                                }
+                                starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(particleHandles[interactionid].down),
+                                                              (uintptr_t)duplicateB.dataSymb, duplicateB.sizeSymb);
+                                starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(particleHandles[interactionid].down),
+                                                              (uintptr_t)duplicateB.dataOther, duplicateB.sizeOther);
+
+                                starpu_mpi_insert_task(MPI_COMM_WORLD,
+                                                       &cell_insert_up,
+                                                       STARPU_VALUE, &interactionBufferPtr, sizeof(CellExtractedHandles*),
+                               #ifdef SCALFMM_STARPU_USE_PRIO
+                                                       STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
+                               #endif
+                                                       STARPU_R, interactionBuffer.all,
+                                                       STARPU_RW, duplicateB.symb,
+                                                       STARPU_RW, duplicateB.other);
+
+                                int mode = 2;
+                                starpu_mpi_insert_task(MPI_COMM_WORLD,
+                                                       &m2l_cl_inout,
+                                                       STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
+                                                       STARPU_VALUE, &idxLevel, sizeof(idxLevel),
+                                                       STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
+                                                       STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+                                                       STARPU_VALUE, &mode, sizeof(int),
+                               #ifdef SCALFMM_STARPU_USE_PRIO
+                                                       STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
+                               #endif
+                                                       STARPU_R, cellHandles[idxLevel][interactionid].symb,
+                                                       (STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
+                                                       STARPU_RW, duplicateB.symb,
+                                                       STARPU_RW, duplicateB.other,
+                               #ifdef STARPU_USE_TASK_NAME
+                               #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
+                                                       STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
+                               #else
+                                                       //"M2L_out-l_nb_i_nb_i_s"
+                                                       STARPU_NAME, taskNames->print("M2L_out", "%d, %d, %lld, %d, %lld, %d, %lld, %lld, %lld, %lld, %d\n",
+                                                                                     idxLevel,
+                                                                                     tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock(),
+                                                                                     tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval(),
+                                                                                     tree->getCellGroup(idxLevel,interactionid)->getNumberOfCellsInBlock(),
+                                                                                     tree->getCellGroup(idxLevel,interactionid)->getSizeOfInterval(),
+                                                                                     outsideInteractions->size(),
+                                                                                     tree->getCellGroup(idxLevel, interactionid)->getStartingIndex(),
+                                                                                     tree->getCellGroup(idxLevel, interactionid)->getEndingIndex(),
+                                                                                     tree->getCellGroup(idxLevel, idxGroup)->getStartingIndex(),
+                                                                                     tree->getCellGroup(idxLevel, idxGroup)->getEndingIndex(),
+                                                                                     starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].down)),
+                               #endif
+                               #endif
+                                                       0);
+                            }
+                        }
                     }
                 }
                 FLOG( timerOutBlock.tac() );
