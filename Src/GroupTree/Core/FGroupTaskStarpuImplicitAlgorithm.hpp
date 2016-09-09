@@ -1565,7 +1565,7 @@ protected:
                                     DuplicatedCellHandle& duplicateB = duplicatedCellBuffer.back();
                                     duplicateB.sizeSymb = tree->getCellGroup(idxLevel,interactionid)->getBufferSizeInByte();
                                     duplicateB.sizeOther = tree->getCellGroup(idxLevel,interactionid)->getMultipoleBufferSizeInByte();
-                                    if(starpu_mpi_data_get_rank(particleHandles[idxGroup].down) == mpi_rank){
+                                    if(starpu_mpi_data_get_rank(cellHandles[idxLeve][idxGroup].down) == mpi_rank){
                                         // Reuse block but just to perform the send
                                         duplicateB.dataSymb = const_cast<unsigned char*>(tree->getCellGroup(idxLevel,interactionid)->getRawBuffer());
                                         duplicateB.dataOther = reinterpret_cast<unsigned char*>(tree->getCellGroup(idxLevel,interactionid)->getRawMultipoleBuffer());
@@ -1574,9 +1574,9 @@ protected:
                                         duplicateB.dataSymb = nullptr;
                                         duplicateB.dataOther = nullptr;
                                     }
-                                    starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(particleHandles[idxGroup].down),
+                                    starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(cellHandles[idxLeve][idxGroup].down),
                                                                   (uintptr_t)duplicateB.dataSymb, duplicateB.sizeSymb);
-                                    starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(particleHandles[idxGroup].down),
+                                    starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(cellHandles[idxLeve][idxGroup].down),
                                                                   (uintptr_t)duplicateB.dataOther, duplicateB.sizeOther);
 
                                     starpu_mpi_insert_task(MPI_COMM_WORLD,
@@ -1664,7 +1664,7 @@ protected:
                                 DuplicatedCellHandle& duplicateB = duplicatedCellBuffer.back();
                                 duplicateB.sizeSymb = tree->getCellGroup(idxLevel,idxGroup)->getBufferSizeInByte();
                                 duplicateB.sizeOther = tree->getCellGroup(idxLevel,idxGroup)->getMultipoleBufferSizeInByte();
-                                if(starpu_mpi_data_get_rank(particleHandles[interactionid].down) == mpi_rank){
+                                if(starpu_mpi_data_get_rank(cellHandles[idxLeve][interactionid].down) == mpi_rank){
                                     // Reuse block but just to perform the send
                                     duplicateB.dataSymb = const_cast<unsigned char*>(tree->getCellGroup(idxLevel,idxGroup)->getRawBuffer());
                                     duplicateB.dataOther = reinterpret_cast<unsigned char*>(tree->getCellGroup(idxLevel,idxGroup)->getRawMultipoleBuffer());
@@ -1673,9 +1673,9 @@ protected:
                                     duplicateB.dataSymb = nullptr;
                                     duplicateB.dataOther = nullptr;
                                 }
-                                starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(particleHandles[interactionid].down),
+                                starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(cellHandles[idxLeve][interactionid].down),
                                                               (uintptr_t)duplicateB.dataSymb, duplicateB.sizeSymb);
-                                starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(particleHandles[interactionid].down),
+                                starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(cellHandles[idxLeve][interactionid].down),
                                                               (uintptr_t)duplicateB.dataOther, duplicateB.sizeOther);
 
                                 starpu_mpi_insert_task(MPI_COMM_WORLD,
