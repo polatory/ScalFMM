@@ -501,20 +501,20 @@ protected:
 
         if( operationsToProceed & FFmmP2P ) directPass();
 
-        if(operationsToProceed & FFmmP2M && !directOnly) bottomPass();
+//        if(operationsToProceed & FFmmP2M && !directOnly) bottomPass();
 
-        if(operationsToProceed & FFmmM2M && !directOnly) upwardPass();
+//        if(operationsToProceed & FFmmM2M && !directOnly) upwardPass();
 
-        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::upperWorkingLevel, FAbstractAlgorithm::lowerWorkingLevel-1 , true, true);
+//        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::upperWorkingLevel, FAbstractAlgorithm::lowerWorkingLevel-1 , true, true);
 
-        if(operationsToProceed & FFmmL2L && !directOnly) downardPass();
+//        if(operationsToProceed & FFmmL2L && !directOnly) downardPass();
 
-        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, true, true);
+//        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, true, true);
 
-        if( operationsToProceed & FFmmL2P && !directOnly) mergePass();
-#ifdef STARPU_USE_REDUX
-        if( operationsToProceed & FFmmL2P && !directOnly) readParticle();
-#endif
+//        if( operationsToProceed & FFmmL2P && !directOnly) mergePass();
+//#ifdef STARPU_USE_REDUX
+//        if( operationsToProceed & FFmmL2P && !directOnly) readParticle();
+//#endif
 
         FLOG( FLog::Controller << "\t\t Submitting the tasks took " << timerSoumission.tacAndElapsed() << "s\n" );
 
@@ -861,33 +861,29 @@ protected:
     }
 
     static void InsertP2P(void *buffers[], void *cl_arg){
-        unsigned char* inBuffer0 = (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]);
-        size_t size0 = STARPU_VECTOR_GET_NX(buffers[1]);
-        ParticleGroupClass containers(inBuffer0,
-                                      size0,
+        ParticleGroupClass containers((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]),
+                                      STARPU_VECTOR_GET_NX(buffers[1]),
                                       nullptr);
-        unsigned char* inBuffer1 = (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]);
-        size_t size1 = STARPU_VECTOR_GET_NX(buffers[0]);
 
         ParticleExtractedHandles* interactionBufferPtr;
         starpu_codelet_unpack_args(cl_arg, &interactionBufferPtr);
 
-        containers.restoreData(interactionBufferPtr->leavesToExtract, inBuffer1, size1);
+        containers.restoreData(interactionBufferPtr->leavesToExtract,
+                               (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
+                                STARPU_VECTOR_GET_NX(buffers[0]));
     }
 
     static void ExtractP2P(void *buffers[], void *cl_arg){
-        unsigned char* inBuffer0 = (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]);
-        size_t size0 = STARPU_VECTOR_GET_NX(buffers[0]);
-        ParticleGroupClass containers(inBuffer0,
-                                      size0,
+        ParticleGroupClass containers((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
+                                      STARPU_VECTOR_GET_NX(buffers[0]),
                                       nullptr);
-        unsigned char* inBuffer1 = (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]);
-        size_t size1 = STARPU_VECTOR_GET_NX(buffers[1]);
 
         ParticleExtractedHandles* interactionBufferPtr;
         starpu_codelet_unpack_args(cl_arg, &interactionBufferPtr);
 
-        containers.extractData(interactionBufferPtr->leavesToExtract, inBuffer1, size1);
+        containers.extractData(interactionBufferPtr->leavesToExtract,
+                               (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]),
+                               STARPU_VECTOR_GET_NX(buffers[1]));
     }
 
     static void InsertCellUp(void *buffers[], void *cl_arg){
@@ -994,14 +990,28 @@ protected:
             }
             particleHandles.clear();
         }
+        for(auto& iter : extractedParticlesBuffer){
+            starpu_data_unregister(iter.symb);
+        }
+        for(auto& iter : duplicatedParticlesBuffer){
+            starpu_data_unregister(iter.symb);
+        }
+        for(auto& iter : extractedCellBuffer){
+            starpu_data_unregister(iter.all);
+        }
+        for(auto& iter : duplicatedCellBuffer){
+            starpu_data_unregister(iter.symb);
+        }
     }
 
     /** Reset the handles array and create new ones to define
      * in a starpu way each block of data
      */
+    int tag;
     void buildHandles(){
         cleanHandle();
-        int where, tag = 0;
+        tag = 0;
+        int where;
         for(int idxLevel = 2 ; idxLevel < tree->getHeight() ; ++idxLevel){
             cellHandles[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
             for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
@@ -1975,7 +1985,8 @@ protected:
                         // That is copy B to B'
                         extractedParticlesBuffer.emplace_back();
                         ParticleExtractedHandles& interactionBuffer = extractedParticlesBuffer.back();
-                        const std::vector<OutOfBlockInteraction>& interactionList = externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions;
+                        const std::vector<OutOfBlockInteraction>& interactionList
+                                = externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions;
                         interactionBuffer.leavesToExtract.reserve(interactionList.size());
                         for(size_t idx = 0 ;
                             idx < interactionList.size() ; ++idx){
@@ -1989,8 +2000,12 @@ protected:
                         else{
                             interactionBuffer.data.reset(nullptr);
                         }
-                        starpu_variable_data_register(&interactionBuffer.symb, starpu_mpi_data_get_rank(particleHandles[interactionid].down),
+
+                        int registeringNode = starpu_mpi_data_get_rank(particleHandles[interactionid].down);
+                        int where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
+                        starpu_variable_data_register(&interactionBuffer.symb, where,
                                                       (uintptr_t)interactionBuffer.data.get(), interactionBuffer.size);
+                        starpu_mpi_data_register(interactionBuffer.symb, tag++, registeringNode);
 
                         ParticleExtractedHandles* interactionBufferPtr = &interactionBuffer;
                         starpu_mpi_insert_task(MPI_COMM_WORLD,
@@ -2000,7 +2015,7 @@ protected:
                                                STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2PExtern(),
                        #endif
                                                STARPU_R, particleHandles[interactionid].symb,
-                                               STARPU_RW, interactionBuffer.symb);
+                                               STARPU_RW, interactionBuffer.symb, 0);
 
                         // Move to a new memory block that is on the same node as A
                         // B' to B'''
@@ -2014,8 +2029,11 @@ protected:
                         else{
                             duplicateB.data = nullptr;
                         }
-                        starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(particleHandles[idxGroup].down),
+                        registeringNode = starpu_mpi_data_get_rank(particleHandles[idxGroup].down);
+                        where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
+                        starpu_variable_data_register(&duplicateB.symb, where,
                                                       (uintptr_t)duplicateB.data, duplicateB.size);
+                        starpu_mpi_data_register(duplicateB.symb, tag++, registeringNode);
 
                         starpu_mpi_insert_task(MPI_COMM_WORLD,
                                                &p2p_insert,
@@ -2024,7 +2042,8 @@ protected:
                                                STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2PExtern(),
                        #endif
                                                STARPU_R, interactionBuffer.symb,
-                                               STARPU_RW, duplicateB.symb);
+                                               STARPU_RW, duplicateB.symb,
+                                               0);
 
                         starpu_mpi_insert_task(MPI_COMM_WORLD,
                                                &p2p_cl_inout_mpi,
@@ -2060,7 +2079,8 @@ protected:
                                                0);
                     }
                     {
-                        std::vector<OutOfBlockInteraction>* outsideInteractionsOpposite = new std::vector<OutOfBlockInteraction>(externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions);
+                        std::vector<OutOfBlockInteraction>* outsideInteractionsOpposite
+                                = new std::vector<OutOfBlockInteraction>(externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions);
                         for(unsigned int i = 0; i < outsideInteractionsOpposite->size(); ++i)
                         {
                             MortonIndex tmp = outsideInteractionsOpposite->at(i).outIndex;
@@ -2091,8 +2111,12 @@ protected:
                         else{
                             interactionBuffer.data.reset(nullptr);
                         }
-                        starpu_variable_data_register(&interactionBuffer.symb, starpu_mpi_data_get_rank(particleHandles[idxGroup].down),
+
+                        int registeringNode = starpu_mpi_data_get_rank(particleHandles[idxGroup].down);
+                        int where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
+                        starpu_variable_data_register(&interactionBuffer.symb, where,
                                                       (uintptr_t)interactionBuffer.data.get(), interactionBuffer.size);
+                        starpu_mpi_data_register(interactionBuffer.symb, tag++, registeringNode);
 
                         ParticleExtractedHandles* interactionBufferPtr = &interactionBuffer;
                         starpu_mpi_insert_task(MPI_COMM_WORLD,
@@ -2102,22 +2126,25 @@ protected:
                                                STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2PExtern(),
                        #endif
                                                STARPU_R, particleHandles[idxGroup].symb,
-                                               STARPU_RW, interactionBuffer.symb);
+                                               STARPU_RW, interactionBuffer.symb, 0);
 
                         // Move to a new memory block that is on the same node as A
                         // B' to B'''
                         duplicatedParticlesBuffer.emplace_back();
                         DuplicatedParticlesHandle& duplicateA = duplicatedParticlesBuffer.back();
                         duplicateA.size = tree->getParticleGroup(idxGroup)->getBufferSizeInByte();
-                        if(starpu_mpi_data_get_rank(particleHandles[idxGroup].down) == mpi_rank){
+                        if(starpu_mpi_data_get_rank(particleHandles[interactionid].down) == mpi_rank){
                             // Reuse block but just to perform the send
                             duplicateA.data = const_cast<unsigned char*>(tree->getParticleGroup(idxGroup)->getRawBuffer());
                         }
                         else{
                             duplicateA.data = nullptr;
                         }
-                        starpu_variable_data_register(&duplicateA.symb, starpu_mpi_data_get_rank(particleHandles[interactionid].down),
+                        registeringNode = starpu_mpi_data_get_rank(particleHandles[interactionid].down);
+                        where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
+                        starpu_variable_data_register(&duplicateA.symb, where,
                                                       (uintptr_t)duplicateA.data, duplicateA.size);
+                        starpu_mpi_data_register(duplicateA.symb, tag++, registeringNode);
 
                         starpu_mpi_insert_task(MPI_COMM_WORLD,
                                                &p2p_insert,
@@ -2126,7 +2153,7 @@ protected:
                                                STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2PExtern(),
                        #endif
                                                STARPU_R, interactionBuffer.symb,
-                                               STARPU_RW, duplicateA.symb);
+                                               STARPU_RW, duplicateA.symb, 0);
 
 
                         starpu_mpi_insert_task(MPI_COMM_WORLD,
