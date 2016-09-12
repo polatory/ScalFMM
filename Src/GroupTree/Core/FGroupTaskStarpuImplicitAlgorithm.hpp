@@ -501,20 +501,20 @@ protected:
 
         if( operationsToProceed & FFmmP2P ) directPass();
 
-//        if(operationsToProceed & FFmmP2M && !directOnly) bottomPass();
+        if(operationsToProceed & FFmmP2M && !directOnly) bottomPass();
 
-//        if(operationsToProceed & FFmmM2M && !directOnly) upwardPass();
+        if(operationsToProceed & FFmmM2M && !directOnly) upwardPass();
 
-//        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::upperWorkingLevel, FAbstractAlgorithm::lowerWorkingLevel-1 , true, true);
+        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::upperWorkingLevel, FAbstractAlgorithm::lowerWorkingLevel-1 , true, true);
 
-//        if(operationsToProceed & FFmmL2L && !directOnly) downardPass();
+        if(operationsToProceed & FFmmL2L && !directOnly) downardPass();
 
-//        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, true, true);
+        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, true, true);
 
-//        if( operationsToProceed & FFmmL2P && !directOnly) mergePass();
-//#ifdef STARPU_USE_REDUX
-//        if( operationsToProceed & FFmmL2P && !directOnly) readParticle();
-//#endif
+        if( operationsToProceed & FFmmL2P && !directOnly) mergePass();
+#ifdef STARPU_USE_REDUX
+        if( operationsToProceed & FFmmL2P && !directOnly) readParticle();
+#endif
 
         FLOG( FLog::Controller << "\t\t Submitting the tasks took " << timerSoumission.tacAndElapsed() << "s\n" );
 
@@ -1555,8 +1555,11 @@ protected:
                                     else{
                                         interactionBuffer.data.reset(nullptr);
                                     }
-                                    starpu_variable_data_register(&interactionBuffer.all, starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].symb),
+                                    int registeringNode = starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].symb);
+                                    int where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
+                                    starpu_variable_data_register(&interactionBuffer.all, where,
                                                                   (uintptr_t)interactionBuffer.data.get(), interactionBuffer.size);
+                                    starpu_mpi_data_register(interactionBuffer.all, tag++, registeringNode);
 
                                     CellExtractedHandles* interactionBufferPtr = &interactionBuffer;
                                     starpu_mpi_insert_task(MPI_COMM_WORLD,
@@ -1567,7 +1570,7 @@ protected:
                                    #endif
                                                            STARPU_R, cellHandles[idxLevel][interactionid].symb,
                                                            STARPU_R, cellHandles[idxLevel][interactionid].up,
-                                                           STARPU_RW, interactionBuffer.all);
+                                                           STARPU_RW, interactionBuffer.all, 0);
 
                                     // Move to a new memory block that is on the same node as A
                                     // B' to B'''
@@ -1584,10 +1587,14 @@ protected:
                                         duplicateB.dataSymb = nullptr;
                                         duplicateB.dataOther = nullptr;
                                     }
-                                    starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].down),
+                                    registeringNode = starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].down);
+                                    where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
+                                    starpu_variable_data_register(&duplicateB.symb, where,
                                                                   (uintptr_t)duplicateB.dataSymb, duplicateB.sizeSymb);
-                                    starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].down),
+                                    starpu_mpi_data_register(duplicateB.symb, tag++, registeringNode);
+                                    starpu_variable_data_register(&duplicateB.other, where,
                                                                   (uintptr_t)duplicateB.dataOther, duplicateB.sizeOther);
+                                    starpu_mpi_data_register(duplicateB.other, tag++, registeringNode);
 
                                     starpu_mpi_insert_task(MPI_COMM_WORLD,
                                                            &cell_insert_up,
@@ -1597,7 +1604,7 @@ protected:
                                    #endif
                                                            STARPU_R, interactionBuffer.all,
                                                            STARPU_RW, duplicateB.symb,
-                                                           STARPU_RW, duplicateB.other);
+                                                           STARPU_RW, duplicateB.other, 0);
 
 
                                 int mode = 1;
@@ -1654,8 +1661,11 @@ protected:
                                 else{
                                     interactionBuffer.data.reset(nullptr);
                                 }
-                                starpu_variable_data_register(&interactionBuffer.all, starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].symb),
+                                int registeringNode = starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].symb);
+                                int where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
+                                starpu_variable_data_register(&interactionBuffer.all, where,
                                                               (uintptr_t)interactionBuffer.data.get(), interactionBuffer.size);
+                                starpu_mpi_data_register(interactionBuffer.all, tag++, registeringNode);
 
                                 CellExtractedHandles* interactionBufferPtr = &interactionBuffer;
                                 starpu_mpi_insert_task(MPI_COMM_WORLD,
@@ -1666,7 +1676,7 @@ protected:
                                #endif
                                                        STARPU_R, cellHandles[idxLevel][idxGroup].symb,
                                                        STARPU_R, cellHandles[idxLevel][idxGroup].up,
-                                                       STARPU_RW, interactionBuffer.all);
+                                                       STARPU_RW, interactionBuffer.all, 0);
 
                                 // Move to a new memory block that is on the same node as A
                                 // B' to B'''
@@ -1683,10 +1693,14 @@ protected:
                                     duplicateB.dataSymb = nullptr;
                                     duplicateB.dataOther = nullptr;
                                 }
-                                starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].down),
+                                registeringNode = starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].down);
+                                where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
+                                starpu_variable_data_register(&duplicateB.symb, where,
                                                               (uintptr_t)duplicateB.dataSymb, duplicateB.sizeSymb);
-                                starpu_variable_data_register(&duplicateB.symb, starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].down),
+                                starpu_mpi_data_register(duplicateB.symb, tag++, registeringNode);
+                                starpu_variable_data_register(&duplicateB.other, where,
                                                               (uintptr_t)duplicateB.dataOther, duplicateB.sizeOther);
+                                starpu_mpi_data_register(duplicateB.other, tag++, registeringNode);
 
                                 starpu_mpi_insert_task(MPI_COMM_WORLD,
                                                        &cell_insert_up,
@@ -1696,7 +1710,7 @@ protected:
                                #endif
                                                        STARPU_R, interactionBuffer.all,
                                                        STARPU_RW, duplicateB.symb,
-                                                       STARPU_RW, duplicateB.other);
+                                                       STARPU_RW, duplicateB.other, 0);
 
                                 int mode = 2;
                                 starpu_mpi_insert_task(MPI_COMM_WORLD,
