@@ -406,23 +406,27 @@ public:
 
 
     size_t extractGetSizeSymbUp(const std::vector<int>& cellsToExtract) const {
-        return cellsToExtract.size() * sizeof(SymboleCellClass) * sizeof(PoleCellClass);
+        return cellsToExtract.size() * (sizeof(SymboleCellClass) + sizeof(PoleCellClass));
     }
 
 
     void extractDataUp(const std::vector<int>& cellsToExtract,
                      unsigned char* outputBuffer, const size_t outputBufferSize) const {
+        FAssertLF(outputBuffer || outputBufferSize == 0);
         size_t idxValue = 0;
         for(size_t idxEx = 0 ; idxEx < cellsToExtract.size() ; ++idxEx){
             const int idCell = cellsToExtract[idxEx];
+            FAssertLF(idCell < blockHeader->numberOfCellsInBlock);
             memcpy(&outputBuffer[idxValue],
                    &blockCells[idCell],
                    sizeof(SymboleCellClass));
             idxValue += sizeof(SymboleCellClass);
+            FAssertLF(idxValue <= outputBufferSize);
             memcpy(&outputBuffer[idxValue],
                    &cellMultipoles[idCell],
                    sizeof(PoleCellClass));
             idxValue += sizeof(PoleCellClass);
+            FAssertLF(idxValue <= outputBufferSize);
         }
         FAssertLF(idxValue == outputBufferSize);
     }
@@ -445,7 +449,7 @@ public:
     }
 
     size_t extractGetSizeSymbDown(const std::vector<int>& cellsToExtract) const {
-        return cellsToExtract.size() * sizeof(SymboleCellClass) * sizeof(LocalCellClass);
+        return cellsToExtract.size() * (sizeof(SymboleCellClass) + sizeof(LocalCellClass));
     }
 
     void extractDataDown(const std::vector<int>& cellsToExtract,

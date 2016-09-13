@@ -852,9 +852,10 @@ protected:
         cell_extract_up.where |= STARPU_CPU;
 
         memset(&cell_insert_up, 0, sizeof(cell_insert_up));
-        cell_extract_up.nbuffers = 3;
+        cell_insert_up.nbuffers = 3;
         cell_insert_up.modes[0] = STARPU_R;
         cell_insert_up.modes[1] = STARPU_RW;
+        cell_insert_up.modes[2] = STARPU_RW;
         cell_insert_up.name = "cell_insert_up";
         cell_insert_up.cpu_funcs[0] = ThisClass::InsertCellUp;
         cell_insert_up.where |= STARPU_CPU;
@@ -889,29 +890,29 @@ protected:
     static void InsertCellUp(void *buffers[], void *cl_arg){
         CellContainerClass currentCells((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]),
                                         STARPU_VECTOR_GET_NX(buffers[1]),
-                                        nullptr,
-                                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]));
-        unsigned char* inBuffer = (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]);
-        size_t size = STARPU_VECTOR_GET_NX(buffers[0]);
+                                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]),
+                                        nullptr);
 
         CellExtractedHandles* interactionBufferPtr;
         starpu_codelet_unpack_args(cl_arg, &interactionBufferPtr);
 
-        currentCells.restoreDataUp(interactionBufferPtr->cellsToExtract, inBuffer, size);
+        currentCells.restoreDataUp(interactionBufferPtr->cellsToExtract,
+                                   (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
+                                   STARPU_VECTOR_GET_NX(buffers[0]));
     }
 
     static void ExtractCellUp(void *buffers[], void *cl_arg){
         CellContainerClass currentCells((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
                                         STARPU_VECTOR_GET_NX(buffers[0]),
-                                        nullptr,
-                                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]));
-        unsigned char* inBuffer = (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]);
-        size_t size = STARPU_VECTOR_GET_NX(buffers[2]);
+                                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]),
+                                        nullptr);
 
         CellExtractedHandles* interactionBufferPtr;
         starpu_codelet_unpack_args(cl_arg, &interactionBufferPtr);
 
-        currentCells.extractDataUp(interactionBufferPtr->cellsToExtract, inBuffer, size);
+        currentCells.extractDataUp(interactionBufferPtr->cellsToExtract,
+                                   (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]),
+                                   STARPU_VECTOR_GET_NX(buffers[2]));
     }
 
     void initCodeletMpi(){
@@ -1549,8 +1550,9 @@ protected:
                                     }
                                     interactionBuffer.size = tree->getCellGroup(idxLevel,interactionid)->extractGetSizeSymbUp(interactionBuffer.cellsToExtract);
                                     // I allocate only if I will use it to extract
-                                    if(starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].symb)){
+                                    if(starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].symb) == mpi_rank){
                                         interactionBuffer.data.reset(new unsigned char[interactionBuffer.size]);
+                                        FAssertLF(interactionBuffer.data);
                                     }
                                     else{
                                         interactionBuffer.data.reset(nullptr);
@@ -1655,7 +1657,7 @@ protected:
                                 }
                                 interactionBuffer.size = tree->getCellGroup(idxLevel,idxGroup)->extractGetSizeSymbUp(interactionBuffer.cellsToExtract);
                                 // I allocate only if I will use it to extract
-                                if(starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].symb)){
+                                if(starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].symb) == mpi_rank){
                                     interactionBuffer.data.reset(new unsigned char[interactionBuffer.size]);
                                 }
                                 else{
@@ -1725,8 +1727,8 @@ protected:
                                #endif
                                                        STARPU_R, cellHandles[idxLevel][interactionid].symb,
                                                        (STARPU_RW | STARPU_COMMUTE_IF_SUPPORTED), cellHandles[idxLevel][interactionid].down,
-                                                       STARPU_RW, duplicateB.symb,
-                                                       STARPU_RW, duplicateB.other,
+                                                       STARPU_R, duplicateB.symb,
+                                                       STARPU_R, duplicateB.other,
                                #ifdef STARPU_USE_TASK_NAME
                                #ifndef SCALFMM_SIMGRID_TASKNAMEPARAMS
                                                        STARPU_NAME, m2lOuterTaskNames[idxLevel].get(),
