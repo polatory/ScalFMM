@@ -62,7 +62,7 @@ using namespace std;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
     typedef FGroupTaskStarPUImplicitAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
 
-#define LOAD_FILE
+//#define LOAD_FILE
 #ifndef LOAD_FILE
 	typedef FRandomLoader<FReal> LoaderClass;
 #else
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]){
 	GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles, sizeForEachGroup, true);
 
     // Run the algorithm
-	int operationsToProceed = FFmmP2P; // | FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P;
+    int operationsToProceed = FFmmNearAndFarFields;//FFmmP2P; // | FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P;
     const MatrixKernelClass MatrixKernel;
     GroupKernelClass groupkernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel, distributedMortonIndex);
@@ -266,6 +266,7 @@ int main(int argc, char* argv[]){
 
         //std::cout << "Comparing is over" << std::endl;
     }
+    std::cout << "Done" << std::endl;
     return 0;
 }
 void timeAverage(int mpi_rank, int nproc, double elapsedTime)
