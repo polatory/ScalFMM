@@ -67,8 +67,13 @@ public:
     {}
 
     /**
-    * Copy constructor
-    */
+     * \brief Allow build from an FPoint object
+     */
+    using point_t::point_t;
+
+    /**
+     * Copy constructor
+     */
     FTreeCoordinate(const FTreeCoordinate&) = default;
 
     /** Copy and increment constructor
