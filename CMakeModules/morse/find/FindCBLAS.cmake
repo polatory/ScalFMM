@@ -28,6 +28,7 @@
 #  CBLAS_INCLUDE_DIRS_DEP - cblas + dependencies include directories
 #  CBLAS_LIBRARY_DIRS_DEP - cblas + dependencies link directories
 #  CBLAS_LIBRARIES_DEP    - cblas libraries + dependencies
+#  CBLAS_HAS_ZGEMM3M      - True if cblas contains zgemm3m fast complex mat-mat product
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DCBLAS_DIR=path/to/cblas):
@@ -104,10 +105,18 @@ if (BLAS_FOUND)
         set(CMAKE_REQUIRED_FLAGS "${BLAS_COMPILER_FLAGS}")
         unset(CBLAS_WORKS CACHE)
         check_function_exists(cblas_dscal CBLAS_WORKS)
+        check_function_exists(cblas_zgemm3m CBLAS_ZGEMM3M_FOUND)
         mark_as_advanced(CBLAS_WORKS)
         set(CMAKE_REQUIRED_LIBRARIES)
 
         if(CBLAS_WORKS)
+
+            # Check for faster complex GEMM routine
+            # (only C/Z, no S/D version)
+            if ( CBLAS_ZGEMM3M_FOUND )
+                add_definitions(-DCBLAS_HAS_ZGEMM3M -DCBLAS_HAS_CGEMM3M)
+            endif()
+
             if(NOT CBLAS_FIND_QUIETLY)
                 message(STATUS "Looking for cblas: test with blas succeeds")
             endif()
@@ -318,6 +327,14 @@ if (BLAS_FOUND)
             mark_as_advanced(CBLAS_WORKS)
 
             if(CBLAS_WORKS)
+
+                # Check for faster complex GEMM routine
+                # (only C/Z, no S/D version)
+                check_function_exists(cblas_zgemm3m CBLAS_ZGEMM3M_FOUND)
+                if ( CBLAS_ZGEMM3M_FOUND )
+                    add_definitions(-DCBLAS_HAS_ZGEMM3M -DCBLAS_HAS_CGEMM3M)
+                endif()
+
                 # save link with dependencies
                 set(CBLAS_LIBRARIES_DEP "${REQUIRED_LIBS}")
                 set(CBLAS_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")

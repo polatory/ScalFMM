@@ -76,9 +76,9 @@ if(PKG_CONFIG_EXECUTABLE AND NOT FXT_GIVEN_BY_USER)
             #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
             #endif()
         else()
-            message("${Magenta}Looking for FXT - not found using PkgConfig."
-                "Perhaps you should add the directory containing fxt.pc to the"
-                "PKG_CONFIG_PATH environment variable.${ColourReset}")
+            message(STATUS "${Magenta}Looking for FXT - not found using PkgConfig."
+                "\n   Perhaps you should add the directory containing fxt.pc to the"
+                "\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
         endif()
     endif()
 

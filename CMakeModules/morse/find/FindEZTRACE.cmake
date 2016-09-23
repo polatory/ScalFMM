@@ -80,9 +80,9 @@ if( PKG_CONFIG_EXECUTABLE AND NOT EZTRACE_GIVEN_BY_USER )
             #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
             #endif()
         else()
-            message("${Magenta}Looking for EZTRACE - not found using PkgConfig."
-                "Perhaps you should add the directory containing eztrace.pc to"
-                "the PKG_CONFIG_PATH environment variable.${ColourReset}")
+            message(STATUS "${Magenta}Looking for EZTRACE - not found using PkgConfig."
+                    "\n   Perhaps you should add the directory containing eztrace.pc to"
+                    "\n   the PKG_CONFIG_PATH environment variable.${ColourReset}")
         endif()
     endif()
 

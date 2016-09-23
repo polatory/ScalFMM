@@ -53,14 +53,14 @@ set(BLA_VENDOR "" CACHE STRING "list of possible BLAS vendor:
 if(NOT BLASEXT_FIND_QUIETLY)
     message(STATUS "In FindBLASEXT")
     message(STATUS "If you want to force the use of one specific library, "
-        "please specify the BLAS vendor by setting -DBLA_VENDOR=blas_vendor_name"
-        "at cmake configure.")
+        "\n   please specify the BLAS vendor by setting -DBLA_VENDOR=blas_vendor_name"
+        "\n   at cmake configure.")
     message(STATUS "List of possible BLAS vendor: Goto, ATLAS PhiPACK, CXML, "
-        "DXML, SunPerf, SCSL, SGIMATH, IBMESSL, IBMESSLMT, Intel10_32 (intel mkl v10 32 bit),"
-        "Intel10_64lp (intel mkl v10 64 bit, lp thread model, lp64 model),"
-        "Intel10_64lp_seq (intel mkl v10 64 bit, sequential code, lp64 model),"
-        "Intel( older versions of mkl 32 and 64 bit),"
-        "ACML, ACML_MP, ACML_GPU, Apple, NAS, Generic")
+        "\n   DXML, SunPerf, SCSL, SGIMATH, IBMESSL, IBMESSLMT, Intel10_32 (intel mkl v10 32 bit),"
+        "\n   Intel10_64lp (intel mkl v10 64 bit, lp thread model, lp64 model),"
+        "\n   Intel10_64lp_seq (intel mkl v10 64 bit, sequential code, lp64 model),"
+        "\n   Intel( older versions of mkl 32 and 64 bit),"
+        "\n   ACML, ACML_MP, ACML_GPU, Apple, NAS, Generic")
 endif()
 
 if (NOT BLAS_FOUND)
@@ -87,24 +87,24 @@ if(BLA_VENDOR STREQUAL "All" AND
     endif()
     if(NOT BLASEXT_FIND_QUIETLY)
         message(STATUS "A BLAS library has been found (${BLAS_LIBRARIES}) but we"
-            "have also potentially detected some multithreaded BLAS libraries from the MKL."
-            "We try to find both libraries lists (Sequential/Multithreaded).")
+            "\n   have also potentially detected some multithreaded BLAS libraries from the MKL."
+            "\n   We try to find both libraries lists (Sequential/Multithreaded).")
     endif()
     set(BLAS_FOUND "")
 elseif(BLA_VENDOR STREQUAL "All" AND BLAS_acml_LIBRARY)
     set(BLA_VENDOR "ACML")
     if(NOT BLASEXT_FIND_QUIETLY)
         message(STATUS "A BLAS library has been found (${BLAS_LIBRARIES}) but we"
-            "have also potentially detected some multithreaded BLAS libraries from the ACML."
-            "We try to find both libraries lists (Sequential/Multithreaded).")
+            "\n   have also potentially detected some multithreaded BLAS libraries from the ACML."
+            "\n   We try to find both libraries lists (Sequential/Multithreaded).")
     endif()
     set(BLAS_FOUND "")
 elseif(BLA_VENDOR STREQUAL "All" AND BLAS_essl_LIBRARY)
     set(BLA_VENDOR "IBMESSL")
     if(NOT BLASEXT_FIND_QUIETLY)
         message(STATUS "A BLAS library has been found (${BLAS_LIBRARIES}) but we"
-            "have also potentially detected some multithreaded BLAS libraries from the ESSL."
-            "We try to find both libraries lists (Sequential/Multithreaded).")
+            "\n   have also potentially detected some multithreaded BLAS libraries from the ESSL."
+            "\n   We try to find both libraries lists (Sequential/Multithreaded).")
     endif()
     set(BLAS_FOUND "")
 endif()
@@ -321,8 +321,8 @@ if(BLA_VENDOR MATCHES "Intel*")
     if(BLA_VENDOR MATCHES "Intel10_64lp*")
         if(NOT BLASEXT_FIND_QUIETLY)
             message(STATUS "BLAS found is Intel MKL:"
-                           "we manage two lists of libs,"
-                           " one sequential and one parallel if found (see BLAS_SEQ_LIBRARIES and BLAS_PAR_LIBRARIES)")
+                           "\n   we manage two lists of libs, one sequential and one parallel if found"
+                           "\n   (see BLAS_SEQ_LIBRARIES and BLAS_PAR_LIBRARIES)")
             message(STATUS "BLAS sequential libraries stored in BLAS_SEQ_LIBRARIES")
         endif()
         find_package_handle_standard_args(BLAS DEFAULT_MSG
@@ -348,8 +348,8 @@ if(BLA_VENDOR MATCHES "Intel*")
 elseif(BLA_VENDOR MATCHES "ACML*")
     if(NOT BLASEXT_FIND_QUIETLY)
         message(STATUS "BLAS found is ACML:"
-                        "we manage two lists of libs,"
-                        " one sequential and one parallel if found (see BLAS_SEQ_LIBRARIES and BLAS_PAR_LIBRARIES)")
+                       "\n   we manage two lists of libs, one sequential and one parallel if found"
+                       "\n   (see BLAS_SEQ_LIBRARIES and BLAS_PAR_LIBRARIES)")
         message(STATUS "BLAS sequential libraries stored in BLAS_SEQ_LIBRARIES")
     endif()
     find_package_handle_standard_args(BLAS DEFAULT_MSG
@@ -365,8 +365,8 @@ elseif(BLA_VENDOR MATCHES "ACML*")
 elseif(BLA_VENDOR MATCHES "IBMESSL*")
     if(NOT BLASEXT_FIND_QUIETLY)
         message(STATUS "BLAS found is ESSL:"
-                        "we manage two lists of libs,"
-                        " one sequential and one parallel if found (see BLAS_SEQ_LIBRARIES and BLAS_PAR_LIBRARIES)")
+                       "\n   we manage two lists of libs, one sequential and one parallel if found"
+                       "\n   (see BLAS_SEQ_LIBRARIES and BLAS_PAR_LIBRARIES)")
         message(STATUS "BLAS sequential libraries stored in BLAS_SEQ_LIBRARIES")
     endif()
     find_package_handle_standard_args(BLAS DEFAULT_MSG

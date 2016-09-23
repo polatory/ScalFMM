@@ -230,15 +230,15 @@ if(PKG_CONFIG_EXECUTABLE AND NOT STARPU_GIVEN_BY_USER)
             list(GET STARPU_VERSION_STRING_LIST 0 STARPU_VERSION_MAJOR)
             list(GET STARPU_VERSION_STRING_LIST 1 STARPU_VERSION_MINOR)
         else()
-            message("${Magenta}Looking for STARPU - not found using PkgConfig."
-                "Perhaps you should add the directory containing libstarpu.pc"
-                "to the PKG_CONFIG_PATH environment variable.${ColourReset}")
+            message(STATUS "${Magenta}Looking for STARPU - not found using PkgConfig."
+                "\n   Perhaps you should add the directory containing libstarpu.pc"
+                "\n   to the PKG_CONFIG_PATH environment variable.${ColourReset}")
         endif()
         if (STARPU_LOOK_FOR_MPI)
             if (STARPU_MPI_FOUND AND STARPU_MPI_LIBRARIES)
                 message(STATUS "Looking for STARPU MPI - found using PkgConfig")
             else()
-                message("${Magenta}Looking for STARPU MPI - not found using PkgConfig."
+                message(STATUS "${Magenta}Looking for STARPU MPI - not found using PkgConfig."
                     "Perhaps you should add the directory containing libstarpumpi.pc to"
                     "the PKG_CONFIG_PATH environment variable.${ColourReset}")
             endif()
