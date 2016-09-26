@@ -230,7 +230,7 @@ private:
                 std::cerr << "File "<< filename<<" not opened! Error: " << strerror(errno) <<std::endl;
                 std::exit( EXIT_FAILURE);
             }
-            FLOG(FLog::Controller << "Opened file "<< filename << std::endl);
+            FLOG(FLog::Controller << "Opened file "<< filename << "\n");
     }
 
 public:
@@ -507,24 +507,24 @@ private:
         }
 
         FLOG(FLog::Controller << "   nbParticles: " <<this->nbParticles << std::endl
-                  << "   Box width:   " <<this->boxWidth << std::endl
-                  << "   Center:        " << this->centerOfBox << std::endl);
+                  << "   Box width:   " <<this->boxWidth << "\n"
+                  << "   Center:        " << this->centerOfBox << "\n");
     }
     void readAscciHeader() {
-        FLOG(FLog::Controller << " File open in ASCII mode "<< std::endl);
+        FLOG(FLog::Controller << " File open in ASCII mode\n");
         FReal x,y,z;
         (*this->file) >> typeData[0]>> typeData[1];
-        FLOG(FLog::Controller << "   Datatype "<< typeData[0] << " "<< typeData[1] << std::endl);
+        FLOG(FLog::Controller << "   Datatype "<< typeData[0] << " "<< typeData[1] << "\n");
         (*this->file) >> this->nbParticles >> this->boxWidth >> x >> y >> z;
         this->centerOfBox.setPosition(x,y,z);
         this->boxWidth *= 2;
         otherDataToRead = typeData[1] -  (unsigned int)(4);
     };
     void readBinaryHeader(){
-        FLOG(FLog::Controller << " File open in binary mode "<< std::endl);
+        FLOG(FLog::Controller << " File open in binary mode\n");
         file->seekg (std::ios::beg);
         file->read((char*)&typeData,2*sizeof(unsigned int));
-        FLOG(FLog::Controller << "   Datatype "<< typeData[0] << " "<< typeData[1] << std::endl);
+        FLOG(FLog::Controller << "   Datatype "<< typeData[0] << " "<< typeData[1] << "\n");
         if(typeData[0] != sizeof(FReal)){
             std::cerr << "Size of elements in part file " << typeData[0] << " is different from size of FReal " << sizeof(FReal)<<std::endl;
             std::exit( EXIT_FAILURE);
