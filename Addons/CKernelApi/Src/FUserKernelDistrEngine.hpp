@@ -637,6 +637,24 @@ public:
             });
     }
 
+    void apply_on_cell(Callback_apply_on_cell function){
+        double boxwidth = octreeDist->getBoxWidth();
+        //apply user function reset on each user's cell
+        octreeDist->forEachCellWithLevel([&](CoreCell * currCell,const int currLevel){
+                if(currCell->getContainer()){
+                    FTreeCoordinate currCoord = currCell->getCoordinate();
+                    int arrayCoord[3] = {currCoord.getX(),currCoord.getY(),currCoord.getZ()};
+                    MortonIndex    currMorton = currCoord.getMortonIndex(currLevel);
+                    double position[3];
+                    FPoint<FReal> boxC = this->getBoxCorner();
+                    position[0] = boxC.getX() + currCoord.getX()*boxwidth/double(1<<currLevel);
+                    position[1] = boxC.getY() + currCoord.getY()*boxwidth/double(1<<currLevel);
+                    position[2] = boxC.getZ() + currCoord.getZ()*boxwidth/double(1<<currLevel);
+                    function(currLevel,currMorton,arrayCoord,position,currCell->getContainer(),kernel->getUserKernelDatas());
+                }
+            });
+    }
+
     void apply_on_each_leaf(Callback_apply_on_leaf function){
         if(octreeDist){
             FUserKernelEngine<FReal,LeafClass>::template generic_apply_on_each_leaf<ContainerClass,CoreCellDist>(octreeDist,kernel->getUserKernelDatas(),function);

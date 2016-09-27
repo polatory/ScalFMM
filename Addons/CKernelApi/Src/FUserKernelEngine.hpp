@@ -361,7 +361,7 @@ public:
         this->octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint<FReal>(BoxCenter));
     }
 
-    void apply_on_cell(Callback_apply_on_cell function){
+    virtual void apply_on_cell(Callback_apply_on_cell function){
         double boxwidth = octree->getBoxWidth();
         //apply user function reset on each user's cell
         octree->forEachCellWithLevel([&](CoreCell * currCell,const int currLevel){
