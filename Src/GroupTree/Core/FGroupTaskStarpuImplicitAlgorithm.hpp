@@ -212,6 +212,7 @@ protected:
 
     starpu_codelet cell_extract_up;
     starpu_codelet cell_insert_up;
+    starpu_codelet cell_insert_up_bis;
 
 public:
     FGroupTaskStarPUImplicitAlgorithm(OctreeClass*const inTree, KernelClass* inKernels, std::vector<MortonIndex>& distributedMortonIndex)
@@ -867,6 +868,16 @@ protected:
         cell_insert_up.name = "cell_insert_up";
         cell_insert_up.cpu_funcs[0] = ThisClass::InsertCellUp;
         cell_insert_up.where |= STARPU_CPU;
+
+
+        memset(&cell_insert_up_bis, 0, sizeof(cell_insert_up_bis));
+        cell_insert_up_bis.nbuffers = 3;
+        cell_insert_up_bis.modes[0] = STARPU_R;
+        cell_insert_up_bis.modes[1] = STARPU_RW;
+        cell_insert_up_bis.modes[2] = STARPU_RW;
+        cell_insert_up_bis.name = "cell_insert_up_bis";
+        cell_insert_up_bis.cpu_funcs[0] = ThisClass::InsertCellUpBis;
+        cell_insert_up_bis.where |= STARPU_CPU;
     }
 
     static void InsertP2P(void *buffers[], void *cl_arg){
@@ -903,6 +914,28 @@ protected:
 
         CellExtractedHandles* interactionBufferPtr;
         starpu_codelet_unpack_args(cl_arg, &interactionBufferPtr);
+
+        currentCells.restoreDataUp(interactionBufferPtr->cellsToExtract,
+                                   (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
+                                   STARPU_VECTOR_GET_NX(buffers[0]));
+    }
+
+    static void InsertCellUpBis(void *buffers[], void *cl_arg){
+        unsigned char* ptr1;
+        size_t size1;
+        unsigned char* ptr2;
+        size_t size2;
+        CellExtractedHandles* interactionBufferPtr;
+        starpu_codelet_unpack_args(cl_arg, &interactionBufferPtr, &ptr1, &size1, &ptr2, &size2);
+
+        memcpy((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]), ptr1, size1);
+        memcpy((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]), ptr2, size2);
+
+        CellContainerClass currentCells((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]),
+                                        STARPU_VECTOR_GET_NX(buffers[1]),
+                                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]),
+                                        nullptr);
+
 
         currentCells.restoreDataUp(interactionBufferPtr->cellsToExtract,
                                    (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
@@ -1740,9 +1773,9 @@ protected:
                                 if(starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].symb) == mpi_rank){
                                     // Reuse block but just to perform the send
                                     duplicateB.dataSymbPtr.reset(new unsigned char[duplicateB.sizeSymb]);//const_cast<unsigned char*>(tree->getCellGroup(idxLevel,idxGroup)->getRawBuffer());
-                                    memcpy(duplicateB.dataSymbPtr.get(), tree->getCellGroup(idxLevel,idxGroup)->getRawBuffer(), duplicateB.sizeSymb);
+                                    //memcpy(duplicateB.dataSymbPtr.get(), tree->getCellGroup(idxLevel,idxGroup)->getRawBuffer(), duplicateB.sizeSymb);
                                     duplicateB.dataOtherPtr.reset(new unsigned char[duplicateB.sizeOther]);//reinterpret_cast<unsigned char*>(tree->getCellGroup(idxLevel,idxGroup)->getRawMultipoleBuffer());
-                                    memcpy(duplicateB.dataOtherPtr.get(), tree->getCellGroup(idxLevel,idxGroup)->getRawMultipoleBuffer(), duplicateB.sizeOther);
+                                    //memcpy(duplicateB.dataOtherPtr.get(), tree->getCellGroup(idxLevel,idxGroup)->getRawMultipoleBuffer(), duplicateB.sizeOther);
                                 }
                                 duplicateB.dataSymb = nullptr;
                                 duplicateB.dataOther = nullptr;
@@ -1756,9 +1789,17 @@ protected:
                                                               (uintptr_t)duplicateB.dataOtherPtr.get(), duplicateB.sizeOther);
                                 starpu_mpi_data_register(duplicateB.other, tag++, registeringNode);
 
+                                const unsigned char* ptr1 = const_cast<unsigned char*>(tree->getCellGroup(idxLevel,idxGroup)->getRawBuffer());
+                                size_t size1 = duplicateB.sizeSymb;
+                                const unsigned char* ptr2 = reinterpret_cast<unsigned char*>(tree->getCellGroup(idxLevel,idxGroup)->getRawMultipoleBuffer());
+                                size_t size2 = duplicateB.sizeOther;
                                 starpu_mpi_insert_task(MPI_COMM_WORLD,
-                                                       &cell_insert_up,
+                                                       &cell_insert_up_bis,
                                                        STARPU_VALUE, &interactionBufferPtr, sizeof(CellExtractedHandles*),
+                                                       STARPU_VALUE, &ptr1, sizeof(ptr1),
+                                                       STARPU_VALUE, &size1, sizeof(size1),
+                                                       STARPU_VALUE, &ptr2, sizeof(ptr2),
+                                                       STARPU_VALUE, &size2, sizeof(size2),
                                #ifdef SCALFMM_STARPU_USE_PRIO
                                                        STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
                                #endif
