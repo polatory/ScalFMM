@@ -203,6 +203,9 @@ protected:
         starpu_data_handle_t other;
         size_t sizeOther;
         unsigned char* dataOther; // Never delete it, we reuse already allocate memory here
+
+        std::unique_ptr<unsigned char[]> dataSymbPtr;
+        std::unique_ptr<unsigned char[]> dataOtherPtr;
     };
 
     std::list<DuplicatedCellHandle> duplicatedCellBuffer;
@@ -240,7 +243,7 @@ public:
         MPI_Comm_rank(MPI_COMM_WORLD,&mpi_rank);
         MPI_Comm_size(MPI_COMM_WORLD,&nproc);
 #ifdef STARPU_USE_TASK_NAME
-#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS 
+#ifdef SCALFMM_SIMGRID_TASKNAMEPARAMS
         taskNames = new FStarPUTaskNameParams(mpi_rank, nproc);
 #endif
 #endif
@@ -1632,7 +1635,7 @@ protected:
                                     DuplicatedCellHandle& duplicateB = duplicatedCellBuffer.back();
                                     duplicateB.sizeSymb = tree->getCellGroup(idxLevel,interactionid)->getBufferSizeInByte();
                                     duplicateB.sizeOther = tree->getCellGroup(idxLevel,interactionid)->getMultipoleBufferSizeInByte();
-                                    if(starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].down) == mpi_rank){
+                                    if(starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].symb) == mpi_rank){
                                         // Reuse block but just to perform the send
                                         duplicateB.dataSymb = const_cast<unsigned char*>(tree->getCellGroup(idxLevel,interactionid)->getRawBuffer());
                                         duplicateB.dataOther = reinterpret_cast<unsigned char*>(tree->getCellGroup(idxLevel,interactionid)->getRawMultipoleBuffer());
@@ -1641,7 +1644,7 @@ protected:
                                         duplicateB.dataSymb = nullptr;
                                         duplicateB.dataOther = nullptr;
                                     }
-                                    registeringNode = starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].down);
+                                    registeringNode = starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].symb);
                                     where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
                                     starpu_variable_data_register(&duplicateB.symb, where,
                                                                   (uintptr_t)duplicateB.dataSymb, duplicateB.sizeSymb);
@@ -1734,22 +1737,23 @@ protected:
                                 DuplicatedCellHandle& duplicateB = duplicatedCellBuffer.back();
                                 duplicateB.sizeSymb = tree->getCellGroup(idxLevel,idxGroup)->getBufferSizeInByte();
                                 duplicateB.sizeOther = tree->getCellGroup(idxLevel,idxGroup)->getMultipoleBufferSizeInByte();
-                                if(starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].down) == mpi_rank){
+                                if(starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].symb) == mpi_rank){
                                     // Reuse block but just to perform the send
-                                    duplicateB.dataSymb = const_cast<unsigned char*>(tree->getCellGroup(idxLevel,idxGroup)->getRawBuffer());
-                                    duplicateB.dataOther = reinterpret_cast<unsigned char*>(tree->getCellGroup(idxLevel,idxGroup)->getRawMultipoleBuffer());
+                                    duplicateB.dataSymbPtr.reset(new unsigned char[duplicateB.sizeSymb]);//const_cast<unsigned char*>(tree->getCellGroup(idxLevel,idxGroup)->getRawBuffer());
+                                    memcpy(duplicateB.dataSymbPtr.get(), tree->getCellGroup(idxLevel,idxGroup)->getRawBuffer(), duplicateB.sizeSymb);
+                                    duplicateB.dataOtherPtr.reset(new unsigned char[duplicateB.sizeOther]);//reinterpret_cast<unsigned char*>(tree->getCellGroup(idxLevel,idxGroup)->getRawMultipoleBuffer());
+                                    memcpy(duplicateB.dataOtherPtr.get(), tree->getCellGroup(idxLevel,idxGroup)->getRawMultipoleBuffer(), duplicateB.sizeOther);
                                 }
-                                else{
-                                    duplicateB.dataSymb = nullptr;
-                                    duplicateB.dataOther = nullptr;
-                                }
-                                registeringNode = starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].down);
+                                duplicateB.dataSymb = nullptr;
+                                duplicateB.dataOther = nullptr;
+
+                                registeringNode = starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].symb);
                                 where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
                                 starpu_variable_data_register(&duplicateB.symb, where,
-                                                              (uintptr_t)duplicateB.dataSymb, duplicateB.sizeSymb);
+                                                              (uintptr_t)duplicateB.dataSymbPtr.get(), duplicateB.sizeSymb);
                                 starpu_mpi_data_register(duplicateB.symb, tag++, registeringNode);
                                 starpu_variable_data_register(&duplicateB.other, where,
-                                                              (uintptr_t)duplicateB.dataOther, duplicateB.sizeOther);
+                                                              (uintptr_t)duplicateB.dataOtherPtr.get(), duplicateB.sizeOther);
                                 starpu_mpi_data_register(duplicateB.other, tag++, registeringNode);
 
                                 starpu_mpi_insert_task(MPI_COMM_WORLD,
