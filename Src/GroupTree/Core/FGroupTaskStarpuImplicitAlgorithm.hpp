@@ -186,6 +186,7 @@ protected:
 
     starpu_codelet p2p_extract;
     starpu_codelet p2p_insert;
+    starpu_codelet p2p_insert_bis;
 
     struct CellExtractedHandles{
         starpu_data_handle_t all;
@@ -851,6 +852,14 @@ protected:
         p2p_insert.cpu_funcs[0] = ThisClass::InsertP2P;
         p2p_insert.where |= STARPU_CPU;
 
+        memset(&p2p_insert_bis, 0, sizeof(p2p_insert_bis));
+        p2p_insert_bis.nbuffers = 2;
+        p2p_insert_bis.modes[0] = STARPU_R;
+        p2p_insert_bis.modes[1] = STARPU_RW;
+        p2p_insert_bis.name = "p2p_insert_bis";
+        p2p_insert_bis.cpu_funcs[0] = ThisClass::InsertP2PBis;
+        p2p_insert_bis.where |= STARPU_CPU;
+
         memset(&cell_extract_up, 0, sizeof(cell_extract_up));
         cell_extract_up.nbuffers = 3;
         cell_extract_up.modes[0] = STARPU_R;
@@ -887,6 +896,24 @@ protected:
 
         ParticleExtractedHandles* interactionBufferPtr;
         starpu_codelet_unpack_args(cl_arg, &interactionBufferPtr);
+
+        containers.restoreData(interactionBufferPtr->leavesToExtract,
+                               (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
+                                STARPU_VECTOR_GET_NX(buffers[0]));
+    }
+
+    static void InsertP2PBis(void *buffers[], void *cl_arg){
+        ParticleExtractedHandles* interactionBufferPtr;
+        const unsigned char* dataPtr;
+        size_t datasize;
+        starpu_codelet_unpack_args(cl_arg, &interactionBufferPtr, &dataPtr, &datasize);
+
+        memcpy((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]), dataPtr, datasize);
+
+        ParticleGroupClass containers((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]),
+                                      STARPU_VECTOR_GET_NX(buffers[1]),
+                                      nullptr);
+
 
         containers.restoreData(interactionBufferPtr->leavesToExtract,
                                (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
@@ -1670,25 +1697,33 @@ protected:
                                     duplicateB.sizeOther = tree->getCellGroup(idxLevel,interactionid)->getMultipoleBufferSizeInByte();
                                     if(starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].symb) == mpi_rank){
                                         // Reuse block but just to perform the send
-                                        duplicateB.dataSymb = const_cast<unsigned char*>(tree->getCellGroup(idxLevel,interactionid)->getRawBuffer());
-                                        duplicateB.dataOther = reinterpret_cast<unsigned char*>(tree->getCellGroup(idxLevel,interactionid)->getRawMultipoleBuffer());
+                                        duplicateB.dataSymbPtr.reset(new unsigned char[duplicateB.sizeSymb]);// = const_cast<unsigned char*>(tree->getCellGroup(idxLevel,interactionid)->getRawBuffer());
+                                        duplicateB.dataOtherPtr.reset(new unsigned char[duplicateB.sizeOther]);// = reinterpret_cast<unsigned char*>(tree->getCellGroup(idxLevel,interactionid)->getRawMultipoleBuffer());
                                     }
-                                    else{
-                                        duplicateB.dataSymb = nullptr;
-                                        duplicateB.dataOther = nullptr;
-                                    }
+                                    duplicateB.dataSymb = nullptr;
+                                    duplicateB.dataOther = nullptr;
+
                                     registeringNode = starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].symb);
                                     where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
                                     starpu_variable_data_register(&duplicateB.symb, where,
-                                                                  (uintptr_t)duplicateB.dataSymb, duplicateB.sizeSymb);
+                                                                  (uintptr_t)duplicateB.dataSymbPtr.get(), duplicateB.sizeSymb);
                                     starpu_mpi_data_register(duplicateB.symb, tag++, registeringNode);
                                     starpu_variable_data_register(&duplicateB.other, where,
-                                                                  (uintptr_t)duplicateB.dataOther, duplicateB.sizeOther);
+                                                                  (uintptr_t)duplicateB.dataOtherPtr.get(), duplicateB.sizeOther);
                                     starpu_mpi_data_register(duplicateB.other, tag++, registeringNode);
 
+                                    const unsigned char* ptr1 = const_cast<unsigned char*>(tree->getCellGroup(idxLevel,interactionid)->getRawBuffer());
+                                    size_t size1 = duplicateB.sizeSymb;
+                                    const unsigned char* ptr2 = reinterpret_cast<unsigned char*>(tree->getCellGroup(idxLevel,interactionid)->getRawMultipoleBuffer());
+                                    size_t size2 = duplicateB.sizeOther;
+
                                     starpu_mpi_insert_task(MPI_COMM_WORLD,
-                                                           &cell_insert_up,
+                                                           &cell_insert_up_bis,
                                                            STARPU_VALUE, &interactionBufferPtr, sizeof(CellExtractedHandles*),
+                                                           STARPU_VALUE, &ptr1, sizeof(ptr1),
+                                                           STARPU_VALUE, &size1, sizeof(size1),
+                                                           STARPU_VALUE, &ptr2, sizeof(ptr2),
+                                                           STARPU_VALUE, &size2, sizeof(size2),
                                    #ifdef SCALFMM_STARPU_USE_PRIO
                                                            STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
                                    #endif
@@ -2101,14 +2136,14 @@ protected:
 
                         interactionBuffer.size = tree->getParticleGroup(interactionid)->getExtractBufferSize(interactionBuffer.leavesToExtract);
                         // I allocate only if I will use it to extract
-                        if(starpu_mpi_data_get_rank(particleHandles[interactionid].down) == mpi_rank){
+                        if(starpu_mpi_data_get_rank(particleHandles[interactionid].symb) == mpi_rank){
                             interactionBuffer.data.reset(new unsigned char[interactionBuffer.size]);
                         }
                         else{
                             interactionBuffer.data.reset(nullptr);
                         }
 
-                        int registeringNode = starpu_mpi_data_get_rank(particleHandles[interactionid].down);
+                        int registeringNode = starpu_mpi_data_get_rank(particleHandles[interactionid].symb);
                         int where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
                         starpu_variable_data_register(&interactionBuffer.symb, where,
                                                       (uintptr_t)interactionBuffer.data.get(), interactionBuffer.size);
@@ -2129,22 +2164,28 @@ protected:
                         duplicatedParticlesBuffer.emplace_back();
                         DuplicatedParticlesHandle& duplicateB = duplicatedParticlesBuffer.back();
                         duplicateB.size = tree->getParticleGroup(interactionid)->getBufferSizeInByte();
-                        if(starpu_mpi_data_get_rank(particleHandles[idxGroup].down) == mpi_rank){
+                        if(starpu_mpi_data_get_rank(particleHandles[idxGroup].symb) == mpi_rank){
                             // Reuse block but just to perform the send
-                            duplicateB.data = const_cast<unsigned char*>(tree->getParticleGroup(interactionid)->getRawBuffer());
+                            duplicateB.data = (unsigned char*) FAlignedMemory::AllocateBytes<64>(duplicateB.size);// = const_cast<unsigned char*>(tree->getParticleGroup(interactionid)->getRawBuffer());
                         }
                         else{
                             duplicateB.data = nullptr;
                         }
-                        registeringNode = starpu_mpi_data_get_rank(particleHandles[idxGroup].down);
+
+                        registeringNode = starpu_mpi_data_get_rank(particleHandles[idxGroup].symb);
                         where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
                         starpu_variable_data_register(&duplicateB.symb, where,
                                                       (uintptr_t)duplicateB.data, duplicateB.size);
                         starpu_mpi_data_register(duplicateB.symb, tag++, registeringNode);
 
+                        const unsigned char* dataPtr = const_cast<unsigned char*>(tree->getParticleGroup(interactionid)->getRawBuffer());
+                        size_t sizeData = duplicateB.size;
+
                         starpu_mpi_insert_task(MPI_COMM_WORLD,
-                                               &p2p_insert,
+                                               &p2p_insert_bis,
                                                STARPU_VALUE, &interactionBufferPtr, sizeof(ParticleExtractedHandles*),
+                                               STARPU_VALUE, &dataPtr, sizeof(dataPtr),
+                                               STARPU_VALUE, &sizeData, sizeof(sizeData),
                        #ifdef SCALFMM_STARPU_USE_PRIO
                                                STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2PExtern(),
                        #endif
@@ -2238,20 +2279,26 @@ protected:
                         duplicateA.size = tree->getParticleGroup(idxGroup)->getBufferSizeInByte();
                         if(starpu_mpi_data_get_rank(particleHandles[interactionid].down) == mpi_rank){
                             // Reuse block but just to perform the send
-                            duplicateA.data = const_cast<unsigned char*>(tree->getParticleGroup(idxGroup)->getRawBuffer());
+                            duplicateA.data = (unsigned char*) FAlignedMemory::AllocateBytes<64>(duplicateA.size);// = const_cast<unsigned char*>(tree->getParticleGroup(idxGroup)->getRawBuffer());
                         }
-                        else{
-                            duplicateA.data = nullptr;
-                        }
+						else{
+	                        duplicateA.data = nullptr;
+						}
+
                         registeringNode = starpu_mpi_data_get_rank(particleHandles[interactionid].down);
                         where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;
                         starpu_variable_data_register(&duplicateA.symb, where,
                                                       (uintptr_t)duplicateA.data, duplicateA.size);
                         starpu_mpi_data_register(duplicateA.symb, tag++, registeringNode);
 
+                        const unsigned char* dataPtr = const_cast<unsigned char*>(tree->getParticleGroup(idxGroup)->getRawBuffer());
+                        size_t sizeData = duplicateA.size;
+
                         starpu_mpi_insert_task(MPI_COMM_WORLD,
-                                               &p2p_insert,
+                                               &p2p_insert_bis,
                                                STARPU_VALUE, &interactionBufferPtr, sizeof(ParticleExtractedHandles*),
+                                               STARPU_VALUE, &dataPtr, sizeof(dataPtr),
+                                               STARPU_VALUE, &sizeData, sizeof(sizeData),
                        #ifdef SCALFMM_STARPU_USE_PRIO
                                                STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2PExtern(),
                        #endif
