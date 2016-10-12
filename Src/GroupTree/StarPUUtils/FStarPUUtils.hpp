@@ -27,6 +27,10 @@
 #warning StarPU Arbiter is not supported
 #endif
 
+#if (STARPU_MAJOR_VERSION >= 1) && (STARPU_MINOR_VERSION >= 2) && !defined(SCALFMM_STARPU_USE_PRIO)
+#warning Priorities is not supported
+#endif
+
 #if (STARPU_MAJOR_VERSION >= 1) && (STARPU_MINOR_VERSION >= 2) && defined(SCALFMM_STARPU_USE_PRIO) && !defined(SCALFMM_STARPU_FORCE_NO_SCHEDULER)
 #define STARPU_SUPPORT_SCHEDULER
 #else
