@@ -1402,9 +1402,12 @@ protected:
             for(int idxHandle = 0 ; idxHandle < int(remoteCellGroups[idxLevel].size()) ; ++idxHandle){
                 if(remoteCellGroups[idxLevel][idxHandle].ptrSymb){
                     starpu_data_unregister(remoteCellGroups[idxLevel][idxHandle].handleSymb);
-                    starpu_data_unregister(remoteCellGroups[idxLevel][idxHandle].handleUp);
                     FAlignedMemory::DeallocBytes(remoteCellGroups[idxLevel][idxHandle].ptrSymb);
-                    FAlignedMemory::DeallocBytes(remoteCellGroups[idxLevel][idxHandle].ptrUp);
+
+                    if(remoteCellGroups[idxLevel][idxHandle].ptrUp){
+                        starpu_data_unregister(remoteCellGroups[idxLevel][idxHandle].handleUp);
+                        FAlignedMemory::DeallocBytes(remoteCellGroups[idxLevel][idxHandle].ptrUp);
+                    }
 
                     if(remoteCellGroups[idxLevel][idxHandle].ptrDown){
                         starpu_data_unregister(remoteCellGroups[idxLevel][idxHandle].handleDown);
