@@ -57,12 +57,14 @@ int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
     const FParameterNames LocalOptionEllipsoid = {{"-ellipsoid"} , " non uniform distribution on  an ellipsoid of aspect ratio given by a=0.5 b=0.25 c=0.125"};
+    const FParameterNames LocalOptionEllipsoidv2 = {{"-ellipsoidv2"} , " non uniform distribution on  an ellipsoid of aspect ratio given by a=0.5 b=0.25 c=0.125"};
     const FParameterNames LocalOptionPlummer = {{"-plummer"} , " (Highly non uniform) plummer distribution (astrophysics)"};
-    const FParameterNames LocalOptionCube = {{"-cube"} , " uniform distribution on cube (default)"};
+    const FParameterNames LocalOptionCube = {{"-cube", "-uniform"} , " uniform distribution on cube (default)"};
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight,FParameterDefinitions::InputFile,
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::NbParticles,
-                         LocalOptionBlocSize, LocalOptionNoValidate, LocalOptionEllipsoid, LocalOptionPlummer, LocalOptionCube);
+                         LocalOptionBlocSize, LocalOptionNoValidate, LocalOptionEllipsoid, LocalOptionPlummer, LocalOptionCube,
+                         LocalOptionEllipsoidv2);
 
     typedef double FReal;
     // Initialize the types
@@ -113,6 +115,7 @@ int main(int argc, char* argv[]){
 
 //#define LOAD_FILE
 #ifndef LOAD_FILE
+    srand48(0);
 	FReal boxWidth = 1.0;
     FRandomLoader<FReal> loader(NbParticles, boxWidth, FPoint<FReal>(0,0,0), mpiComm.global().processId());
     FAssertLF(loader.isOpen());
@@ -122,15 +125,23 @@ int main(int argc, char* argv[]){
 	FReal * tmpParticles = new FReal[4*loader.getNumberOfParticles()];
     memset(allParticles,0,(unsigned int) (sizeof(TestParticle)* loader.getNumberOfParticles()));
 	memset(tmpParticles,0,(unsigned int) (sizeof(FReal)* loader.getNumberOfParticles() * 4));
-	if(FParameters::existParameter(argc, argv, "-ellipsoid")) {
-		nonunifRandomPointsOnElipsoid(loader.getNumberOfParticles(), boxWidth/2, boxWidth/4, boxWidth/8, tmpParticles);
-	}
-	else if(FParameters::existParameter(argc, argv, "-plummer")) {
-		unifRandomPlummer(loader.getNumberOfParticles(), boxWidth/2, tmpParticles) ;
-	}
-	else { //Uniform cube
-		unifRandomPointsInCube(loader.getNumberOfParticles(), boxWidth/2, boxWidth/2, boxWidth/2, tmpParticles);
-	}
+    if(FParameters::existParameter(argc, argv, "-ellipsoid")) {
+                std::cout << "ellipsoid\n";
+        nonunifRandomPointsOnElipsoid(loader.getNumberOfParticles(), boxWidth/2, boxWidth/4, boxWidth/8, tmpParticles);
+    }
+    else if(FParameters::existParameter(argc, argv, LocalOptionEllipsoidv2.options)) {
+        std::cout << "ellipsoidv2\n";
+        unifRandomPointsOnProlate(loader.getNumberOfParticles(), boxWidth/2, boxWidth/8, tmpParticles);
+    }
+    else if(FParameters::existParameter(argc, argv, "-plummer")) {
+        //The M argument is not used in the algorithm of the plummer distribution
+                std::cout << "plummer\n";
+        unifRandomPlummer(loader.getNumberOfParticles(), boxWidth/2, tmpParticles) ;
+    }
+    else { //Uniform cube
+                std::cout << "cube\n";
+        unifRandomPointsInCube(loader.getNumberOfParticles(), boxWidth/2, boxWidth/2, boxWidth/2, tmpParticles);
+    }
 
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
 		allParticles[idxPart].position.setPosition(tmpParticles[idxPart*4], tmpParticles[idxPart*4+1], tmpParticles[idxPart*4+2]);
@@ -332,23 +343,27 @@ int main(int argc, char* argv[]){
 
 void timeAverage(int mpi_rank, int nproc, double elapsedTime)
 {
-	if(mpi_rank == 0)
-	{
-		double sumElapsedTime = elapsedTime;
-		for(int i = 1; i < nproc; ++i)
-		{
-			double tmp;
-			MPI_Recv(&tmp, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, 0);
-			if(tmp > sumElapsedTime)
-				sumElapsedTime = tmp;
-		}
-		std::cout << "Average time per node (implicit Cheby) : " << sumElapsedTime << "s" << std::endl;
-	}
-	else
-	{
-		MPI_Send(&elapsedTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
-	}
-	MPI_Barrier(MPI_COMM_WORLD);
+    if(mpi_rank == 0)
+    {
+                double sumElapsedTimeMin = elapsedTime;
+                double sumElapsedTimeMax = elapsedTime;
+        for(int i = 1; i < nproc; ++i)
+                {
+            double tmp;
+                        MPI_Recv(&tmp, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                        if(tmp < sumElapsedTimeMin)
+                                sumElapsedTimeMin = tmp;
+                        if(tmp > sumElapsedTimeMax)
+                                sumElapsedTimeMax = tmp;
+        }
+                std::cout << "Min time per node (MPI)  : " << sumElapsedTimeMin << "s" << std::endl;
+                std::cout << "Max time per node (MPI)  : " << sumElapsedTimeMax << "s" << std::endl;
+    }
+    else
+    {
+        MPI_Send(&elapsedTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
 }
 FSize getNbParticlesPerNode(FSize mpi_count, FSize mpi_rank, FSize total){
 	if(mpi_rank < (total%mpi_count))
