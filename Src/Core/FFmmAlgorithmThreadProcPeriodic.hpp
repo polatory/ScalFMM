@@ -384,17 +384,16 @@ protected:
                                             workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, comm.getComm()),  __LINE__ );
         }
 
-        std::cout << "Pre transferPass " << int(operationsToProceed) << " " << int(operationsToProceed & FFmmM2L) << std::endl;// TODO
         // run;
         Timers[P2MTimer].tic();
         if(operationsToProceed & FFmmP2M) bottomPass();
         Timers[P2MTimer].tac();
 
-        std::cout << "Pre transferPass " << int(operationsToProceed) << " " << int(operationsToProceed & FFmmM2L) << std::endl;// TODO
+
         Timers[M2MTimer].tic();
         if(operationsToProceed & FFmmM2M) upwardPass();
         Timers[M2MTimer].tac();
-std::cout << "Pre transferPass " << int(operationsToProceed) << " " << int(operationsToProceed & FFmmM2L) << std::endl;// TODO
+
         Timers[M2LTimer].tic();
         if(operationsToProceed & FFmmM2L) transferPass();
         Timers[M2LTimer].tac();
