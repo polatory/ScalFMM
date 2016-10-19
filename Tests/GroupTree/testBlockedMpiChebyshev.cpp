@@ -127,7 +127,7 @@ int main(int argc, char* argv[]){
 	memset(tmpParticles,0,(unsigned int) (sizeof(FReal)* loader.getNumberOfParticles() * 4));
     if(FParameters::existParameter(argc, argv, "-ellipsoid")) {
                 std::cout << "ellipsoid\n";
-        nonunifRandomPointsOnElipsoid(loader.getNumberOfParticles(), boxWidth/2, boxWidth/4, boxWidth/8, tmpParticles);
+        nonunifRandomPointsOnElipsoid(loader.getNumberOfParticles(), 0.5, 0.1, tmpParticles);
     }
     else if(FParameters::existParameter(argc, argv, LocalOptionEllipsoidv2.options)) {
         std::cout << "ellipsoidv2\n";

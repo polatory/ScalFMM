@@ -124,7 +124,7 @@ int main(int argc, char* argv[]){
 			FReal * tmpParticles = new FReal[4*NbParticlesPerNode];
             if(FParameters::existParameter(argc, argv, "-ellipsoid")) {
                 std::cout << "ellipsoid\n";
-                nonunifRandomPointsOnElipsoid(NbParticlesPerNode, boxWidth/2, boxWidth/4, boxWidth/8, tmpParticles);
+                nonunifRandomPointsOnElipsoid(NbParticlesPerNode, 0.5, 0.1, tmpParticles);
             }
             else if(FParameters::existParameter(argc, argv, LocalOptionEllipsoidv2.options)) {
                 std::cout << "ellipsoidv2\n";
