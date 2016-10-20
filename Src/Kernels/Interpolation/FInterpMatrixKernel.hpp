@@ -89,7 +89,7 @@ struct FInterpMatrixKernelR : FInterpAbstractMatrixKernel<FReal>
     // returns coefficient of mutual interaction
     // 1 for symmetric kernels
     // -1 for antisymmetric kernels
-    // somethings else if other property of symmetry
+    // Something else if other property of symmetry
     FReal getMutualCoefficient() const{ return FReal(1.); }
 
     // evaluate interaction
@@ -200,7 +200,7 @@ struct FInterpMatrixKernelRH :FInterpMatrixKernelR<FReal>{
     // returns coefficient of mutual interaction
     // 1 for symmetric kernels
     // -1 for antisymmetric kernels
-    // somethings else if other property of symmetry
+    // Something else if other property of symmetry
     FReal getMutualCoefficient() const{ return FReal(1.); }
 
     template <class ValueClass>
@@ -284,7 +284,7 @@ struct FInterpMatrixKernelRR : FInterpAbstractMatrixKernel<FReal>
     // returns coefficient of mutual interaction
     // 1 for symmetric kernels
     // -1 for antisymmetric kernels
-    // somethings else if other property of symmetry
+    // Something else if other property of symmetry
     FReal getMutualCoefficient() const{ return FReal(1.); }
 
     // evaluate interaction
@@ -493,7 +493,7 @@ struct FInterpMatrixKernelAPLUSRR : FInterpAbstractMatrixKernel<FReal>
     // returns coefficient of mutual interaction
     // 1 for symmetric kernels
     // -1 for antisymmetric kernels
-    // somethings else if other property of symmetry
+    // something else if other property of symmetry
     FReal getMutualCoefficient() const{ return FReal(1.); }
 
     // evaluate interaction
