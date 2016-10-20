@@ -1,8 +1,6 @@
-ScalFmm is governed by the CeCILL-C and LGPL, in case of conflict
-the more restrictive has to be used.
+ScalFmm is governed by the Mozilla Public License Version 2.0 (MPL 2.0).
 
-ScalFmm est régi par la licence CeCILL-C & LGPL, en cas de conflit
-la plus restrictive prime.
+ScalFmm est régi par la licence Mozilla Public License Version 2.0 (MPL 2.0).
 
 Folders under Addons might have separate Licence, in such case
 one can find a dedicated Licence file where appropriate.
@@ -10,743 +8,200 @@ one can find a dedicated Licence file where appropriate.
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
+Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas,
+Matthias Messner, 
 olivier.coulaud@inria.fr, berenger.bramas@inria.fr
 This software is a computer program whose purpose is to compute the FMM.
 
-This software is governed by the CeCILL-C license under French law and
-abiding by the rules of distribution of free software.  You can  use, 
-modify and/ or redistribute the software under the terms of the CeCILL-C
-license as circulated by CEA, CNRS and INRIA at the following URL
-"http://www.cecill.info". 
-
-As a counterpart to the access to the source code and  rights to copy,
-modify and redistribute granted by the license, users are provided only
-with a limited warranty  and the software's author,  the holder of the
-economic rights,  and the successive licensors  have only  limited
-liability. 
-
-In this respect, the user's attention is drawn to the risks associated
-with loading,  using,  modifying and/or developing or reproducing the
-software by the user in light of its specific status of free software,
-that may mean  that it is complicated to manipulate,  and  that  also
-therefore means  that it is reserved for developers  and  experienced
-professionals having in-depth computer knowledge. Users are therefore
-encouraged to load and test the software's suitability as regards their
-requirements in conditions enabling the security of their systems and/or 
-data to be ensured and,  more generally, to use and operate it in the 
-same conditions as regards security. 
+This software is governed by the Mozilla Public License Version 2.0 (MPL 2.0)
+See : https://www.mozilla.org/en-US/MPL/2.0/
 
 The fact that you are presently reading this means that you have had
-knowledge of the CeCILL-C license and that you accept its terms.
+knowledge of the Mozilla Public License Version 2.0 (MPL 2.0)
+and that you accept its terms.
+
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 
-Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
-olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+Mozilla Public License
+Version 2.0
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published by
-the Free Software Foundation.
+1. Definitions
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+1.1. “Contributor”
+means each individual or legal entity that creates, contributes to the creation of, or owns Covered Software.
 
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <http://www.gnu.org/licenses/>.
+1.2. “Contributor Version”
+means the combination of the Contributions of others (if any) used by a Contributor and that particular Contributor’s Contribution.
 
-//////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////
+1.3. “Contribution”
+means Covered Software of a particular Contributor.
 
-                   GNU LESSER GENERAL PUBLIC LICENSE
-                       Version 3, 29 June 2007
+1.4. “Covered Software”
+means Source Code Form to which the initial Contributor has attached the notice in Exhibit A, the Executable Form of such Source Code Form, and Modifications of such Source Code Form, in each case including portions thereof.
 
- Copyright (C) 2007 Free Software Foundation, Inc. <http://fsf.org/>
- Everyone is permitted to copy and distribute verbatim copies
- of this license document, but changing it is not allowed.
+1.5. “Incompatible With Secondary Licenses”
+means
 
+that the initial Contributor has attached the notice described in Exhibit B to the Covered Software; or
 
-  This version of the GNU Lesser General Public License incorporates
-the terms and conditions of version 3 of the GNU General Public
-License, supplemented by the additional permissions listed below.
+that the Covered Software was made available under the terms of version 1.1 or earlier of the License, but not also under the terms of a Secondary License.
 
-  0. Additional Definitions.
+1.6. “Executable Form”
+means any form of the work other than Source Code Form.
 
-  As used herein, "this License" refers to version 3 of the GNU Lesser
-General Public License, and the "GNU GPL" refers to version 3 of the GNU
-General Public License.
+1.7. “Larger Work”
+means a work that combines Covered Software with other material, in a separate file or files, that is not Covered Software.
 
-  "The Library" refers to a covered work governed by this License,
-other than an Application or a Combined Work as defined below.
-
-  An "Application" is any work that makes use of an interface provided
-by the Library, but which is not otherwise based on the Library.
-Defining a subclass of a class defined by the Library is deemed a mode
-of using an interface provided by the Library.
-
-  A "Combined Work" is a work produced by combining or linking an
-Application with the Library.  The particular version of the Library
-with which the Combined Work was made is also called the "Linked
-Version".
-
-  The "Minimal Corresponding Source" for a Combined Work means the
-Corresponding Source for the Combined Work, excluding any source code
-for portions of the Combined Work that, considered in isolation, are
-based on the Application, and not on the Linked Version.
-
-  The "Corresponding Application Code" for a Combined Work means the
-object code and/or source code for the Application, including any data
-and utility programs needed for reproducing the Combined Work from the
-Application, but excluding the System Libraries of the Combined Work.
-
-  1. Exception to Section 3 of the GNU GPL.
-
-  You may convey a covered work under sections 3 and 4 of this License
-without being bound by section 3 of the GNU GPL.
-
-  2. Conveying Modified Versions.
-
-  If you modify a copy of the Library, and, in your modifications, a
-facility refers to a function or data to be supplied by an Application
-that uses the facility (other than as an argument passed when the
-facility is invoked), then you may convey a copy of the modified
-version:
-
-   a) under this License, provided that you make a good faith effort to
-   ensure that, in the event an Application does not supply the
-   function or data, the facility still operates, and performs
-   whatever part of its purpose remains meaningful, or
-
-   b) under the GNU GPL, with none of the additional permissions of
-   this License applicable to that copy.
-
-  3. Object Code Incorporating Material from Library Header Files.
-
-  The object code form of an Application may incorporate material from
-a header file that is part of the Library.  You may convey such object
-code under terms of your choice, provided that, if the incorporated
-material is not limited to numerical parameters, data structure
-layouts and accessors, or small macros, inline functions and templates
-(ten or fewer lines in length), you do both of the following:
-
-   a) Give prominent notice with each copy of the object code that the
-   Library is used in it and that the Library and its use are
-   covered by this License.
+1.8. “License”
+means this document.
 
-   b) Accompany the object code with a copy of the GNU GPL and this license
-   document.
+1.9. “Licensable”
+means having the right to grant, to the maximum extent possible, whether at the time of the initial grant or subsequently, any and all of the rights conveyed by this License.
 
-  4. Combined Works.
+1.10. “Modifications”
+means any of the following:
 
-  You may convey a Combined Work under terms of your choice that,
-taken together, effectively do not restrict modification of the
-portions of the Library contained in the Combined Work and reverse
-engineering for debugging such modifications, if you also do each of
-the following:
-
-   a) Give prominent notice with each copy of the Combined Work that
-   the Library is used in it and that the Library and its use are
-   covered by this License.
-
-   b) Accompany the Combined Work with a copy of the GNU GPL and this license
-   document.
-
-   c) For a Combined Work that displays copyright notices during
-   execution, include the copyright notice for the Library among
-   these notices, as well as a reference directing the user to the
-   copies of the GNU GPL and this license document.
-
-   d) Do one of the following:
-
-       0) Convey the Minimal Corresponding Source under the terms of this
-       License, and the Corresponding Application Code in a form
-       suitable for, and under terms that permit, the user to
-       recombine or relink the Application with a modified version of
-       the Linked Version to produce a modified Combined Work, in the
-       manner specified by section 6 of the GNU GPL for conveying
-       Corresponding Source.
-
-       1) Use a suitable shared library mechanism for linking with the
-       Library.  A suitable mechanism is one that (a) uses at run time
-       a copy of the Library already present on the user's computer
-       system, and (b) will operate properly with a modified version
-       of the Library that is interface-compatible with the Linked
-       Version.
-
-   e) Provide Installation Information, but only if you would otherwise
-   be required to provide such information under section 6 of the
-   GNU GPL, and only to the extent that such information is
-   necessary to install and execute a modified version of the
-   Combined Work produced by recombining or relinking the
-   Application with a modified version of the Linked Version. (If
-   you use option 4d0, the Installation Information must accompany
-   the Minimal Corresponding Source and Corresponding Application
-   Code. If you use option 4d1, you must provide the Installation
-   Information in the manner specified by section 6 of the GNU GPL
-   for conveying Corresponding Source.)
-
-  5. Combined Libraries.
-
-  You may place library facilities that are a work based on the
-Library side by side in a single library together with other library
-facilities that are not Applications and are not covered by this
-License, and convey such a combined library under terms of your
-choice, if you do both of the following:
-
-   a) Accompany the combined library with a copy of the same work based
-   on the Library, uncombined with any other library facilities,
-   conveyed under the terms of this License.
-
-   b) Give prominent notice with the combined library that part of it
-   is a work based on the Library, and explaining where to find the
-   accompanying uncombined form of the same work.
-
-  6. Revised Versions of the GNU Lesser General Public License.
-
-  The Free Software Foundation may publish revised and/or new versions
-of the GNU Lesser General Public License from time to time. Such new
-versions will be similar in spirit to the present version, but may
-differ in detail to address new problems or concerns.
-
-  Each version is given a distinguishing version number. If the
-Library as you received it specifies that a certain numbered version
-of the GNU Lesser General Public License "or any later version"
-applies to it, you have the option of following the terms and
-conditions either of that published version or of any later version
-published by the Free Software Foundation. If the Library as you
-received it does not specify a version number of the GNU Lesser
-General Public License, you may choose any version of the GNU Lesser
-General Public License ever published by the Free Software Foundation.
-
-  If the Library as you received it specifies that a proxy can decide
-whether future versions of the GNU Lesser General Public License shall
-apply, that proxy's public statement of acceptance of any version is
-permanent authorization for you to choose that version for the
-Library.
+any file in Source Code Form that results from an addition to, deletion from, or modification of the contents of Covered Software; or
 
+any new file in Source Code Form that contains any Covered Software.
 
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
+1.11. “Patent Claims” of a Contributor
+means any patent claim(s), including without limitation, method, process, and apparatus claims, in any patent Licensable by such Contributor that would be infringed, but for the grant of the License, by the making, using, selling, offering for sale, having made, import, or transfer of either its Contributions or its Contributor Version.
 
+1.12. “Secondary License”
+means either the GNU General Public License, Version 2.0, the GNU Lesser General Public License, Version 2.1, the GNU Affero General Public License, Version 3.0, or any later versions of those licenses.
 
+1.13. “Source Code Form”
+means the form of the work preferred for making modifications.
 
-CeCILL-C FREE SOFTWARE LICENSE AGREEMENT
+1.14. “You” (or “Your”)
+means an individual or a legal entity exercising rights under this License. For legal entities, “You” includes any entity that controls, is controlled by, or is under common control with You. For purposes of this definition, “control” means (a) the power, direct or indirect, to cause the direction or management of such entity, whether by contract or otherwise, or (b) ownership of more than fifty percent (50%) of the outstanding shares or beneficial ownership of such entity.
 
+2. License Grants and Conditions
 
-    Notice
+2.1. Grants
 
-This Agreement is a Free Software license agreement that is the result
-of discussions between its authors in order to ensure compliance with
-the two main principles guiding its drafting:
+Each Contributor hereby grants You a world-wide, royalty-free, non-exclusive license:
 
-    * firstly, compliance with the principles governing the distribution
-      of Free Software: access to source code, broad rights granted to
-      users,
-    * secondly, the election of a governing law, French law, with which
-      it is conformant, both as regards the law of torts and
-      intellectual property law, and the protection that it offers to
-      both authors and holders of the economic rights over software.
+under intellectual property rights (other than patent or trademark) Licensable by such Contributor to use, reproduce, make available, modify, display, perform, distribute, and otherwise exploit its Contributions, either on an unmodified basis, with Modifications, or as part of a Larger Work; and
 
-The authors of the CeCILL-C (for Ce[a] C[nrs] I[nria] L[ogiciel] L[ibre])
-license are:
+under Patent Claims of such Contributor to make, use, sell, offer for sale, have made, import, and otherwise transfer either its Contributions or its Contributor Version.
 
-Commissariat à l'Energie Atomique - CEA, a public scientific, technical
-and industrial research establishment, having its principal place of
-business at 25 rue Leblanc, immeuble Le Ponant D, 75015 Paris, France.
+2.2. Effective Date
 
-Centre National de la Recherche Scientifique - CNRS, a public scientific
-and technological establishment, having its principal place of business
-at 3 rue Michel-Ange, 75794 Paris cedex 16, France.
+The licenses granted in Section 2.1 with respect to any Contribution become effective for each Contribution on the date the Contributor first distributes such Contribution.
 
-Institut National de Recherche en Informatique et en Automatique -
-INRIA, a public scientific and technological establishment, having its
-principal place of business at Domaine de Voluceau, Rocquencourt, BP
-105, 78153 Le Chesnay cedex, France.
+2.3. Limitations on Grant Scope
 
+The licenses granted in this Section 2 are the only rights granted under this License. No additional rights or licenses will be implied from the distribution or licensing of Covered Software under this License. Notwithstanding Section 2.1(b) above, no patent license is granted by a Contributor:
 
-    Preamble
+for any code that a Contributor has removed from Covered Software; or
 
-The purpose of this Free Software license agreement is to grant users
-the right to modify and re-use the software governed by this license.
+for infringements caused by: (i) Your and any other third party’s modifications of Covered Software, or (ii) the combination of its Contributions with other software (except as part of its Contributor Version); or
 
-The exercising of this right is conditional upon the obligation to make
-available to the community the modifications made to the source code of
-the software so as to contribute to its evolution.
+under Patent Claims infringed by Covered Software in the absence of its Contributions.
 
-In consideration of access to the source code and the rights to copy,
-modify and redistribute granted by the license, users are provided only
-with a limited warranty and the software's author, the holder of the
-economic rights, and the successive licensors only have limited liability.
+This License does not grant any rights in the trademarks, service marks, or logos of any Contributor (except as may be necessary to comply with the notice requirements in Section 3.4).
 
-In this respect, the risks associated with loading, using, modifying
-and/or developing or reproducing the software by the user are brought to
-the user's attention, given its Free Software status, which may make it
-complicated to use, with the result that its use is reserved for
-developers and experienced professionals having in-depth computer
-knowledge. Users are therefore encouraged to load and test the
-suitability of the software as regards their requirements in conditions
-enabling the security of their systems and/or data to be ensured and,
-more generally, to use and operate it in the same conditions of
-security. This Agreement may be freely reproduced and published,
-provided it is not altered, and that no provisions are either added or
-removed herefrom.
+2.4. Subsequent Licenses
 
-This Agreement may apply to any or all software for which the holder of
-the economic rights decides to submit the use thereof to its provisions.
+No Contributor makes additional grants as a result of Your choice to distribute the Covered Software under a subsequent version of this License (see Section 10.2) or under the terms of a Secondary License (if permitted under the terms of Section 3.3).
 
+2.5. Representation
 
-    Article 1 - DEFINITIONS
+Each Contributor represents that the Contributor believes its Contributions are its original creation(s) or it has sufficient rights to grant the rights to its Contributions conveyed by this License.
 
-For the purpose of this Agreement, when the following expressions
-commence with a capital letter, they shall have the following meaning:
+2.6. Fair Use
 
-Agreement: means this license agreement, and its possible subsequent
-versions and annexes.
+This License is not intended to limit any rights You have under applicable copyright doctrines of fair use, fair dealing, or other equivalents.
 
-Software: means the software in its Object Code and/or Source Code form
-and, where applicable, its documentation, "as is" when the Licensee
-accepts the Agreement.
+2.7. Conditions
 
-Initial Software: means the Software in its Source Code and possibly its
-Object Code form and, where applicable, its documentation, "as is" when
-it is first distributed under the terms and conditions of the Agreement.
+Sections 3.1, 3.2, 3.3, and 3.4 are conditions of the licenses granted in Section 2.1.
 
-Modified Software: means the Software modified by at least one
-Integrated Contribution.
+3. Responsibilities
 
-Source Code: means all the Software's instructions and program lines to
-which access is required so as to modify the Software.
+3.1. Distribution of Source Form
 
-Object Code: means the binary files originating from the compilation of
-the Source Code.
+All distribution of Covered Software in Source Code Form, including any Modifications that You create or to which You contribute, must be under the terms of this License. You must inform recipients that the Source Code Form of the Covered Software is governed by the terms of this License, and how they can obtain a copy of this License. You may not attempt to alter or restrict the recipients’ rights in the Source Code Form.
 
-Holder: means the holder(s) of the economic rights over the Initial
-Software.
+3.2. Distribution of Executable Form
 
-Licensee: means the Software user(s) having accepted the Agreement.
+If You distribute Covered Software in Executable Form then:
 
-Contributor: means a Licensee having made at least one Integrated
-Contribution.
+such Covered Software must also be made available in Source Code Form, as described in Section 3.1, and You must inform recipients of the Executable Form how they can obtain a copy of such Source Code Form by reasonable means in a timely manner, at a charge no more than the cost of distribution to the recipient; and
 
-Licensor: means the Holder, or any other individual or legal entity, who
-distributes the Software under the Agreement.
+You may distribute such Executable Form under the terms of this License, or sublicense it under different terms, provided that the license for the Executable Form does not attempt to limit or alter the recipients’ rights in the Source Code Form under this License.
 
-Integrated Contribution: means any or all modifications, corrections,
-translations, adaptations and/or new functions integrated into the
-Source Code by any or all Contributors.
+3.3. Distribution of a Larger Work
 
-Related Module: means a set of sources files including their
-documentation that, without modification to the Source Code, enables
-supplementary functions or services in addition to those offered by the
-Software.
+You may create and distribute a Larger Work under terms of Your choice, provided that You also comply with the requirements of this License for the Covered Software. If the Larger Work is a combination of Covered Software with a work governed by one or more Secondary Licenses, and the Covered Software is not Incompatible With Secondary Licenses, this License permits You to additionally distribute such Covered Software under the terms of such Secondary License(s), so that the recipient of the Larger Work may, at their option, further distribute the Covered Software under the terms of either this License or such Secondary License(s).
 
-Derivative Software: means any combination of the Software, modified or
-not, and of a Related Module.
+3.4. Notices
 
-Parties: mean both the Licensee and the Licensor.
+You may not remove or alter the substance of any license notices (including copyright notices, patent notices, disclaimers of warranty, or limitations of liability) contained within the Source Code Form of the Covered Software, except that You may alter any license notices to the extent required to remedy known factual inaccuracies.
 
-These expressions may be used both in singular and plural form.
+3.5. Application of Additional Terms
 
+You may choose to offer, and to charge a fee for, warranty, support, indemnity or liability obligations to one or more recipients of Covered Software. However, You may do so only on Your own behalf, and not on behalf of any Contributor. You must make it absolutely clear that any such warranty, support, indemnity, or liability obligation is offered by You alone, and You hereby agree to indemnify every Contributor for any liability incurred by such Contributor as a result of warranty, support, indemnity or liability terms You offer. You may include additional disclaimers of warranty and limitations of liability specific to any jurisdiction.
 
-    Article 2 - PURPOSE
+4. Inability to Comply Due to Statute or Regulation
 
-The purpose of the Agreement is the grant by the Licensor to the
-Licensee of a non-exclusive, transferable and worldwide license for the
-Software as set forth in Article 5 hereinafter for the whole term of the
-protection granted by the rights over said Software. 
+If it is impossible for You to comply with any of the terms of this License with respect to some or all of the Covered Software due to statute, judicial order, or regulation then You must: (a) comply with the terms of this License to the maximum extent possible; and (b) describe the limitations and the code they affect. Such description must be placed in a text file included with all distributions of the Covered Software under this License. Except to the extent prohibited by statute or regulation, such description must be sufficiently detailed for a recipient of ordinary skill to be able to understand it.
 
+5. Termination
 
-    Article 3 - ACCEPTANCE
+5.1. The rights granted under this License will terminate automatically if You fail to comply with any of its terms. However, if You become compliant, then the rights granted under this License from a particular Contributor are reinstated (a) provisionally, unless and until such Contributor explicitly and finally terminates Your grants, and (b) on an ongoing basis, if such Contributor fails to notify You of the non-compliance by some reasonable means prior to 60 days after You have come back into compliance. Moreover, Your grants from a particular Contributor are reinstated on an ongoing basis if such Contributor notifies You of the non-compliance by some reasonable means, this is the first time You have received notice of non-compliance with this License from such Contributor, and You become compliant prior to 30 days after Your receipt of the notice.
 
-3.1 The Licensee shall be deemed as having accepted the terms and
-conditions of this Agreement upon the occurrence of the first of the
-following events:
+5.2. If You initiate litigation against any entity by asserting a patent infringement claim (excluding declaratory judgment actions, counter-claims, and cross-claims) alleging that a Contributor Version directly or indirectly infringes any patent, then the rights granted to You by any and all Contributors for the Covered Software under Section 2.1 of this License shall terminate.
 
-    * (i) loading the Software by any or all means, notably, by
-      downloading from a remote server, or by loading from a physical
-      medium;
-    * (ii) the first time the Licensee exercises any of the rights
-      granted hereunder.
+5.3. In the event of termination under Sections 5.1 or 5.2 above, all end user license agreements (excluding distributors and resellers) which have been validly granted by You or Your distributors under this License prior to termination shall survive termination.
 
-3.2 One copy of the Agreement, containing a notice relating to the
-characteristics of the Software, to the limited warranty, and to the
-fact that its use is restricted to experienced users has been provided
-to the Licensee prior to its acceptance as set forth in Article 3.1
-hereinabove, and the Licensee hereby acknowledges that it has read and
-understood it.
+6. Disclaimer of Warranty
 
+Covered Software is provided under this License on an “as is” basis, without warranty of any kind, either expressed, implied, or statutory, including, without limitation, warranties that the Covered Software is free of defects, merchantable, fit for a particular purpose or non-infringing. The entire risk as to the quality and performance of the Covered Software is with You. Should any Covered Software prove defective in any respect, You (not any Contributor) assume the cost of any necessary servicing, repair, or correction. This disclaimer of warranty constitutes an essential part of this License. No use of any Covered Software is authorized under this License except under this disclaimer.
 
-    Article 4 - EFFECTIVE DATE AND TERM
+7. Limitation of Liability
 
+Under no circumstances and under no legal theory, whether tort (including negligence), contract, or otherwise, shall any Contributor, or anyone who distributes Covered Software as permitted above, be liable to You for any direct, indirect, special, incidental, or consequential damages of any character including, without limitation, damages for lost profits, loss of goodwill, work stoppage, computer failure or malfunction, or any and all other commercial damages or losses, even if such party shall have been informed of the possibility of such damages. This limitation of liability shall not apply to liability for death or personal injury resulting from such party’s negligence to the extent applicable law prohibits such limitation. Some jurisdictions do not allow the exclusion or limitation of incidental or consequential damages, so this exclusion and limitation may not apply to You.
 
-      4.1 EFFECTIVE DATE
+8. Litigation
 
-The Agreement shall become effective on the date when it is accepted by
-the Licensee as set forth in Article 3.1.
+Any litigation relating to this License may be brought only in the courts of a jurisdiction where the defendant maintains its principal place of business and such litigation shall be governed by laws of that jurisdiction, without reference to its conflict-of-law provisions. Nothing in this Section shall prevent a party’s ability to bring cross-claims or counter-claims.
 
+9. Miscellaneous
 
-      4.2 TERM
+This License represents the complete agreement concerning the subject matter hereof. If any provision of this License is held to be unenforceable, such provision shall be reformed only to the extent necessary to make it enforceable. Any law or regulation which provides that the language of a contract shall be construed against the drafter shall not be used to construe this License against a Contributor.
 
-The Agreement shall remain in force for the entire legal term of
-protection of the economic rights over the Software.
+10. Versions of the License
 
+10.1. New Versions
 
-    Article 5 - SCOPE OF RIGHTS GRANTED
+Mozilla Foundation is the license steward. Except as provided in Section 10.3, no one other than the license steward has the right to modify or publish new versions of this License. Each version will be given a distinguishing version number.
 
-The Licensor hereby grants to the Licensee, who accepts, the following
-rights over the Software for any or all use, and for the term of the
-Agreement, on the basis of the terms and conditions set forth hereinafter.
+10.2. Effect of New Versions
 
-Besides, if the Licensor owns or comes to own one or more patents
-protecting all or part of the functions of the Software or of its
-components, the Licensor undertakes not to enforce the rights granted by
-these patents against successive Licensees using, exploiting or
-modifying the Software. If these patents are transferred, the Licensor
-undertakes to have the transferees subscribe to the obligations set
-forth in this paragraph.
+You may distribute the Covered Software under the terms of the version of the License under which You originally received the Covered Software, or under the terms of any subsequent version published by the license steward.
 
+10.3. Modified Versions
 
-      5.1 RIGHT OF USE
+If you create software not governed by this License, and you want to create a new license for such software, you may create and use a modified version of this License if you rename the license and remove any references to the name of the license steward (except to note that such modified license differs from this License).
 
-The Licensee is authorized to use the Software, without any limitation
-as to its fields of application, with it being hereinafter specified
-that this comprises:
+10.4. Distributing Source Code Form that is Incompatible With Secondary Licenses
 
-   1. permanent or temporary reproduction of all or part of the Software
-      by any or all means and in any or all form.
+If You choose to distribute Source Code Form that is Incompatible With Secondary Licenses under the terms of this version of the License, the notice described in Exhibit B of this License must be attached.
 
-   2. loading, displaying, running, or storing the Software on any or
-      all medium.
+Exhibit A - Source Code Form License Notice
 
-   3. entitlement to observe, study or test its operation so as to
-      determine the ideas and principles behind any or all constituent
-      elements of said Software. This shall apply when the Licensee
-      carries out any or all loading, displaying, running, transmission
-      or storage operation as regards the Software, that it is entitled
-      to carry out hereunder.
+This Source Code Form is subject to the terms of the Mozilla Public License, v. 2.0. If a copy of the MPL was not distributed with this file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+If it is not possible or desirable to put the notice in a particular file, then You may include the notice in a location (such as a LICENSE file in a relevant directory) where a recipient would be likely to look for such a notice.
 
-      5.2 RIGHT OF MODIFICATION
+You may add additional accurate notices of copyright ownership.
 
-The right of modification includes the right to translate, adapt,
-arrange, or make any or all modifications to the Software, and the right
-to reproduce the resulting software. It includes, in particular, the
-right to create a Derivative Software.
+Exhibit B - “Incompatible With Secondary Licenses” Notice
 
-The Licensee is authorized to make any or all modification to the
-Software provided that it includes an explicit notice that it is the
-author of said modification and indicates the date of the creation thereof.
-
-
-      5.3 RIGHT OF DISTRIBUTION
-
-In particular, the right of distribution includes the right to publish,
-transmit and communicate the Software to the general public on any or
-all medium, and by any or all means, and the right to market, either in
-consideration of a fee, or free of charge, one or more copies of the
-Software by any means.
-
-The Licensee is further authorized to distribute copies of the modified
-or unmodified Software to third parties according to the terms and
-conditions set forth hereinafter.
-
-
-        5.3.1 DISTRIBUTION OF SOFTWARE WITHOUT MODIFICATION
-
-The Licensee is authorized to distribute true copies of the Software in
-Source Code or Object Code form, provided that said distribution
-complies with all the provisions of the Agreement and is accompanied by:
-
-   1. a copy of the Agreement,
-
-   2. a notice relating to the limitation of both the Licensor's
-      warranty and liability as set forth in Articles 8 and 9,
-
-and that, in the event that only the Object Code of the Software is
-redistributed, the Licensee allows effective access to the full Source
-Code of the Software at a minimum during the entire period of its
-distribution of the Software, it being understood that the additional
-cost of acquiring the Source Code shall not exceed the cost of
-transferring the data.
-
-
-        5.3.2 DISTRIBUTION OF MODIFIED SOFTWARE
-
-When the Licensee makes an Integrated Contribution to the Software, the
-terms and conditions for the distribution of the resulting Modified
-Software become subject to all the provisions of this Agreement.
-
-The Licensee is authorized to distribute the Modified Software, in
-source code or object code form, provided that said distribution
-complies with all the provisions of the Agreement and is accompanied by:
-
-   1. a copy of the Agreement,
-
-   2. a notice relating to the limitation of both the Licensor's
-      warranty and liability as set forth in Articles 8 and 9,
-
-and that, in the event that only the object code of the Modified
-Software is redistributed, the Licensee allows effective access to the
-full source code of the Modified Software at a minimum during the entire
-period of its distribution of the Modified Software, it being understood
-that the additional cost of acquiring the source code shall not exceed
-the cost of transferring the data.
-
-
-        5.3.3 DISTRIBUTION OF DERIVATIVE SOFTWARE
-
-When the Licensee creates Derivative Software, this Derivative Software
-may be distributed under a license agreement other than this Agreement,
-subject to compliance with the requirement to include a notice
-concerning the rights over the Software as defined in Article 6.4.
-In the event the creation of the Derivative Software required modification 
-of the Source Code, the Licensee undertakes that:
-
-   1. the resulting Modified Software will be governed by this Agreement,
-   2. the Integrated Contributions in the resulting Modified Software
-      will be clearly identified and documented,
-   3. the Licensee will allow effective access to the source code of the
-      Modified Software, at a minimum during the entire period of
-      distribution of the Derivative Software, such that such
-      modifications may be carried over in a subsequent version of the
-      Software; it being understood that the additional cost of
-      purchasing the source code of the Modified Software shall not
-      exceed the cost of transferring the data.
-
-
-        5.3.4 COMPATIBILITY WITH THE CeCILL LICENSE
-
-When a Modified Software contains an Integrated Contribution subject to
-the CeCILL license agreement, or when a Derivative Software contains a
-Related Module subject to the CeCILL license agreement, the provisions
-set forth in the third item of Article 6.4 are optional.
-
-
-    Article 6 - INTELLECTUAL PROPERTY
-
-
-      6.1 OVER THE INITIAL SOFTWARE
-
-The Holder owns the economic rights over the Initial Software. Any or
-all use of the Initial Software is subject to compliance with the terms
-and conditions under which the Holder has elected to distribute its work
-and no one shall be entitled to modify the terms and conditions for the
-distribution of said Initial Software.
-
-The Holder undertakes that the Initial Software will remain ruled at
-least by this Agreement, for the duration set forth in Article 4.2.
-
-
-      6.2 OVER THE INTEGRATED CONTRIBUTIONS
-
-The Licensee who develops an Integrated Contribution is the owner of the
-intellectual property rights over this Contribution as defined by
-applicable law.
-
-
-      6.3 OVER THE RELATED MODULES
-
-The Licensee who develops a Related Module is the owner of the
-intellectual property rights over this Related Module as defined by
-applicable law and is free to choose the type of agreement that shall
-govern its distribution under the conditions defined in Article 5.3.3.
-
-
-      6.4 NOTICE OF RIGHTS
-
-The Licensee expressly undertakes:
-
-   1. not to remove, or modify, in any manner, the intellectual property
-      notices attached to the Software;
-
-   2. to reproduce said notices, in an identical manner, in the copies
-      of the Software modified or not;
-
-   3. to ensure that use of the Software, its intellectual property
-      notices and the fact that it is governed by the Agreement is
-      indicated in a text that is easily accessible, specifically from
-      the interface of any Derivative Software.
-
-The Licensee undertakes not to directly or indirectly infringe the
-intellectual property rights of the Holder and/or Contributors on the
-Software and to take, where applicable, vis-à-vis its staff, any and all
-measures required to ensure respect of said intellectual property rights
-of the Holder and/or Contributors.
-
-
-    Article 7 - RELATED SERVICES
-
-7.1 Under no circumstances shall the Agreement oblige the Licensor to
-provide technical assistance or maintenance services for the Software.
-
-However, the Licensor is entitled to offer this type of services. The
-terms and conditions of such technical assistance, and/or such
-maintenance, shall be set forth in a separate instrument. Only the
-Licensor offering said maintenance and/or technical assistance services
-shall incur liability therefor.
-
-7.2 Similarly, any Licensor is entitled to offer to its licensees, under
-its sole responsibility, a warranty, that shall only be binding upon
-itself, for the redistribution of the Software and/or the Modified
-Software, under terms and conditions that it is free to decide. Said
-warranty, and the financial terms and conditions of its application,
-shall be subject of a separate instrument executed between the Licensor
-and the Licensee.
-
-
-    Article 8 - LIABILITY
-
-8.1 Subject to the provisions of Article 8.2, the Licensee shall be
-entitled to claim compensation for any direct loss it may have suffered
-from the Software as a result of a fault on the part of the relevant
-Licensor, subject to providing evidence thereof.
-
-8.2 The Licensor's liability is limited to the commitments made under
-this Agreement and shall not be incurred as a result of in particular:
-(i) loss due the Licensee's total or partial failure to fulfill its
-obligations, (ii) direct or consequential loss that is suffered by the
-Licensee due to the use or performance of the Software, and (iii) more
-generally, any consequential loss. In particular the Parties expressly
-agree that any or all pecuniary or business loss (i.e. loss of data,
-loss of profits, operating loss, loss of customers or orders,
-opportunity cost, any disturbance to business activities) or any or all
-legal proceedings instituted against the Licensee by a third party,
-shall constitute consequential loss and shall not provide entitlement to
-any or all compensation from the Licensor.
-
-
-    Article 9 - WARRANTY
-
-9.1 The Licensee acknowledges that the scientific and technical
-state-of-the-art when the Software was distributed did not enable all
-possible uses to be tested and verified, nor for the presence of
-possible defects to be detected. In this respect, the Licensee's
-attention has been drawn to the risks associated with loading, using,
-modifying and/or developing and reproducing the Software which are
-reserved for experienced users.
-
-The Licensee shall be responsible for verifying, by any or all means,
-the suitability of the product for its requirements, its good working
-order, and for ensuring that it shall not cause damage to either persons
-or properties.
-
-9.2 The Licensor hereby represents, in good faith, that it is entitled
-to grant all the rights over the Software (including in particular the
-rights set forth in Article 5).
-
-9.3 The Licensee acknowledges that the Software is supplied "as is" by
-the Licensor without any other express or tacit warranty, other than
-that provided for in Article 9.2 and, in particular, without any warranty
-as to its commercial value, its secured, safe, innovative or relevant
-nature.
-
-Specifically, the Licensor does not warrant that the Software is free
-from any error, that it will operate without interruption, that it will
-be compatible with the Licensee's own equipment and software
-configuration, nor that it will meet the Licensee's requirements.
-
-9.4 The Licensor does not either expressly or tacitly warrant that the
-Software does not infringe any third party intellectual property right
-relating to a patent, software or any other property right. Therefore,
-the Licensor disclaims any and all liability towards the Licensee
-arising out of any or all proceedings for infringement that may be
-instituted in respect of the use, modification and redistribution of the
-Software. Nevertheless, should such proceedings be instituted against
-the Licensee, the Licensor shall provide it with technical and legal
-assistance for its defense. Such technical and legal assistance shall be
-decided on a case-by-case basis between the relevant Licensor and the
-Licensee pursuant to a memorandum of understanding. The Licensor
-disclaims any and all liability as regards the Licensee's use of the
-name of the Software. No warranty is given as regards the existence of
-prior rights over the name of the Software or as regards the existence
-of a trademark.
-
-
-    Article 10 - TERMINATION
-
-10.1 In the event of a breach by the Licensee of its obligations
-hereunder, the Licensor may automatically terminate this Agreement
-thirty (30) days after notice has been sent to the Licensee and has
-remained ineffective.
-
-10.2 A Licensee whose Agreement is terminated shall no longer be
-authorized to use, modify or distribute the Software. However, any
-licenses that it may have granted prior to termination of the Agreement
-shall remain valid subject to their having been granted in compliance
-with the terms and conditions hereof.
-
-
-    Article 11 - MISCELLANEOUS
-
-
-      11.1 EXCUSABLE EVENTS
-
-Neither Party shall be liable for any or all delay, or failure to
-perform the Agreement, that may be attributable to an event of force
-majeure, an act of God or an outside cause, such as defective
-functioning or interruptions of the electricity or telecommunications
-networks, network paralysis following a virus attack, intervention by
-government authorities, natural disasters, water damage, earthquakes,
-fire, explosions, strikes and labor unrest, war, etc.
-
-11.2 Any failure by either Party, on one or more occasions, to invoke
-one or more of the provisions hereof, shall under no circumstances be
-interpreted as being a waiver by the interested Party of its right to
-invoke said provision(s) subsequently.
-
-11.3 The Agreement cancels and replaces any or all previous agreements,
-whether written or oral, between the Parties and having the same
-purpose, and constitutes the entirety of the agreement between said
-Parties concerning said purpose. No supplement or modification to the
-terms and conditions hereof shall be effective as between the Parties
-unless it is made in writing and signed by their duly authorized
-representatives.
-
-11.4 In the event that one or more of the provisions hereof were to
-conflict with a current or future applicable act or legislative text,
-said act or legislative text shall prevail, and the Parties shall make
-the necessary amendments so as to comply with said act or legislative
-text. All other provisions shall remain effective. Similarly, invalidity
-of a provision of the Agreement, for any reason whatsoever, shall not
-cause the Agreement as a whole to be invalid.
-
-
-      11.5 LANGUAGE
-
-The Agreement is drafted in both French and English and both versions
-are deemed authentic.
-
-
-    Article 12 - NEW VERSIONS OF THE AGREEMENT
-
-12.1 Any person is authorized to duplicate and distribute copies of this
-Agreement.
-
-12.2 So as to ensure coherence, the wording of this Agreement is
-protected and may only be modified by the authors of the License, who
-reserve the right to periodically publish updates or new versions of the
-Agreement, each with a separate number. These subsequent versions may
-address new issues encountered by Free Software.
-
-12.3 Any Software distributed under a given version of the Agreement may
-only be subsequently distributed under the same version of the Agreement
-or a subsequent version.
-
-
-    Article 13 - GOVERNING LAW AND JURISDICTION
-
-13.1 The Agreement is governed by French law. The Parties agree to
-endeavor to seek an amicable solution to any disagreements or disputes
-that may arise during the performance of the Agreement.
-
-13.2 Failing an amicable solution within two (2) months as from their
-occurrence, and unless emergency proceedings are necessary, the
-disagreements or disputes shall be referred to the Paris Courts having
-jurisdiction, by the more diligent Party.
-
-
-Version 1.0 dated 2006-09-05.
+This Source Code Form is “Incompatible With Secondary Licenses”, as defined by the Mozilla Public License, v. 2.0.
 
