@@ -83,7 +83,8 @@ public:
         FScalFMMEngine<FReal>::Algorithm = algo;
     }
 
-    void build_tree(int TreeHeight, FReal BoxWidth , FReal * BoxCenter,User_Scalfmm_Cell_Descriptor notUsedHere){
+    virtual void build_tree(int TreeHeight, FReal BoxWidth , FReal * BoxCenter,
+                            User_Scalfmm_Cell_Descriptor notUsedHere, Scalfmm_Leaf_Descriptor notUsedHereToo){
         octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint<FReal>(BoxCenter));
         this->matrix = new MatrixKernelClass();
         this->kernel = new InterKernel(TreeHeight,BoxWidth,FPoint<FReal>(BoxCenter),matrix);

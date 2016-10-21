@@ -95,7 +95,9 @@ public:
     //by specific Engine
 
     //Function about the tree
-    virtual void build_tree(int TreeHeight,FReal BoxWidth,FReal* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
+    virtual void build_tree(int TreeHeight,FReal BoxWidth,FReal* BoxCenter,
+                            Scalfmm_Cell_Descriptor user_cell_descriptor,
+                            Scalfmm_Leaf_Descriptor user_leaf_descriptor){
         FAssertLF(0,"Nothing has been done yet, exiting");
     }
 
@@ -833,8 +835,11 @@ struct ScalFmmCoreHandle {
 
 
 
-extern "C" void scalfmm_build_tree(scalfmm_handle Handle,int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
-    ((ScalFmmCoreHandle<double> *) Handle)->engine->build_tree(TreeHeight,BoxWidth, BoxCenter, user_cell_descriptor);
+extern "C" void scalfmm_build_tree(scalfmm_handle Handle,int TreeHeight,double BoxWidth,
+                                   double* BoxCenter,
+                                   Scalfmm_Cell_Descriptor user_cell_descriptor,
+                                   Scalfmm_Leaf_Descriptor user_leaf_descriptor){
+    ((ScalFmmCoreHandle<double> *) Handle)->engine->build_tree(TreeHeight,BoxWidth, BoxCenter, user_cell_descriptor, user_leaf_descriptor);
 }
 
 extern "C" void scalfmm_tree_insert_particles(scalfmm_handle Handle, int NbPositions, double * arrayX, double * arrayY, double * arrayZ,
