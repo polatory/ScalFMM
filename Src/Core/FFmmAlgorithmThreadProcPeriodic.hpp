@@ -1701,17 +1701,16 @@ protected:
                                             myThreadkernels->P2PRemote(currentIter.coord,currentIter.targets,
                                                                        currentIter.sources, periodicNeighbors, periodicNeighborPositions, periodicNeighborsCounter);
 
-                                            for(int idxNeig = 0 ; idxNeig < counter ; ++idxNeig){
-                                                if( periodicNeighbors[idxNeig] ){
-                                                    FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
-                                                    FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
-                                                    FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
+                                            for(int idxNeig = 0 ; idxNeig < periodicNeighborsCounter ; ++idxNeig){
+                                                FAssertLF( periodicNeighbors[idxNeig] );
+                                                FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
+                                                FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
+                                                FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
 
-                                                    for(FSize idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
-                                                        positionsX[idxPart] -= boxWidth * FReal(offsets[idxNeig].getX());
-                                                        positionsY[idxPart] -= boxWidth * FReal(offsets[idxNeig].getY());
-                                                        positionsZ[idxPart] -= boxWidth * FReal(offsets[idxNeig].getZ());
-                                                    }
+                                                for(FSize idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
+                                                    positionsX[idxPart] -= boxWidth * FReal(offsets[idxNeig].getX());
+                                                    positionsY[idxPart] -= boxWidth * FReal(offsets[idxNeig].getY());
+                                                    positionsZ[idxPart] -= boxWidth * FReal(offsets[idxNeig].getZ());
                                                 }
                                             }
                                         }
