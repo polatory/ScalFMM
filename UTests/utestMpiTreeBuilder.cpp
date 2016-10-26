@@ -267,7 +267,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
         FSize * leavesIndices = nullptr;
         FSize leaveSize = 0;
 
-        FMpiTreeBuilder<FReal,TestParticle<FReal>>::MergeSplitedLeaves(app.global(),outputArray,&outputSize,&leavesIndices,&leavesArray,&leaveSize);
+        FMpiTreeBuilder<FReal,TestParticle<FReal>>::MergeSplitedLeaves(app.global(),&outputArray,&outputSize,&leavesIndices,&leavesArray,&leaveSize);
 
         //Compare again the results with the output of std::qsort
 
