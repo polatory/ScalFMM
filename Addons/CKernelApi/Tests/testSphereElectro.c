@@ -162,10 +162,18 @@ int main(int argc, char ** av){
         struct User_Scalfmm_Cell_Descriptor user_descr;
         user_descr.user_init_cell = NULL;
         user_descr.user_free_cell = NULL;
+        struct User_Scalfmm_Leaf_Descriptor user_descr_leaf;
+        user_descr_leaf.user_init_leaf = NULL;
+        user_descr_leaf.user_free_leaf = NULL;
+        user_descr_leaf.user_get_size = NULL;
+        user_descr_leaf.user_copy_leaf = NULL;
+        user_descr_leaf.user_restore_leaf = NULL;
+
         //Set algorithm to source target
         scalfmm_algorithm_config(handle,source_target);
         //Build the tree
-        scalfmm_build_tree(handle,treeHeight, boxWidth, boxCenter, user_descr);
+        scalfmm_build_tree(handle,treeHeight, boxWidth, boxCenter,
+                           user_descr, user_descr_leaf);
 
         //Insert Sources and targets
         scalfmm_tree_insert_particles_xyz(handle,nbPartSource,sourceXYZ,SOURCE);

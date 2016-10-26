@@ -32,8 +32,14 @@ int main(int argc, char ** av){
     struct User_Scalfmm_Cell_Descriptor user_descr;
     user_descr.user_init_cell = NULL;
     user_descr.user_free_cell = NULL;
+    struct User_Scalfmm_Leaf_Descriptor user_descr_leaf;
+    user_descr_leaf.user_init_leaf = NULL;
+    user_descr_leaf.user_free_leaf = NULL;
+    user_descr_leaf.user_get_size = NULL;
+    user_descr_leaf.user_copy_leaf = NULL;
+    user_descr_leaf.user_restore_leaf = NULL;
 
-    scalfmm_build_tree(handle,TreeHeight,boxWidth,boxCenter,user_descr);
+    scalfmm_build_tree(handle,TreeHeight,boxWidth,boxCenter,user_descr,user_descr_leaf);
     scalfmm_algorithm_config(handle,periodic);
     //Creation of an array of particles
     int nb_of_parts = 2;

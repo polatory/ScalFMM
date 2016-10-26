@@ -282,10 +282,17 @@ int main(int argc, char ** argv){
     struct User_Scalfmm_Cell_Descriptor cellDescriptor;
     cellDescriptor.user_init_cell = my_Callback_init_cell;
     cellDescriptor.user_free_cell = my_Callback_free_cell;
+    struct User_Scalfmm_Leaf_Descriptor user_descr_leaf;
+    user_descr_leaf.user_init_leaf = NULL;
+    user_descr_leaf.user_free_leaf = NULL;
+    user_descr_leaf.user_get_size = NULL;
+    user_descr_leaf.user_copy_leaf = NULL;
+    user_descr_leaf.user_restore_leaf = NULL;
+
     // Init tree and cell
     printf("Building the tree and Initizalizing the cells:\n");
 
-    scalfmm_build_tree(handle,treeHeight, boxWidth, boxCenter, cellDescriptor);
+    scalfmm_build_tree(handle,treeHeight, boxWidth, boxCenter, cellDescriptor, user_descr_leaf);
     // Insert particles
     printf("Inserting particles...\n");
     scalfmm_tree_insert_particles_xyz(handle, nbParticles, particleXYZ,BOTH);
@@ -303,6 +310,7 @@ int main(int argc, char ** argv){
     kernel.p2pinner = my_Callback_P2PInner;
     kernel.p2p = my_Callback_P2P;
     kernel.p2p_full = NULL;
+    kernel.p2p_sym = NULL;
 
     // Init the data to pass to all our callbacks
     struct MyData my_data;

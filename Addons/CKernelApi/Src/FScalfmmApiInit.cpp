@@ -6,6 +6,15 @@ extern "C" {
 #include "FInterEngine.hpp"
 #include "FUserKernelEngine.hpp"
 
+
+/**
+ * Define here static member
+ */
+Scalfmm_Cell_Descriptor CoreCell::user_cell_descriptor;
+template<class FReal>
+Scalfmm_Leaf_Descriptor FUserLeafContainer<FReal>::user_leaf_descriptor;
+
+
 extern "C" scalfmm_handle scalfmm_init(/*int TreeHeight,double BoxWidth,
                                          double* BoxCenter, */
                                        scalfmm_kernel_type KernelType,
@@ -154,6 +163,55 @@ typedef struct FChebCell_struct{
     FChebCell<double,7> * cell;
 }ChebCellStruct;
 
+typedef struct FChebLeaf_struct{
+    //Store a P2PParticleContainer
+    FP2PParticleContainerIndexed<double>* container;
+}ChebLeafStruct;
+
+
+//Initialize leaves
+extern "C" ChebLeafStruct * ChebLeafStruct_create(FSize nbPart){
+    FP2PParticleContainerIndexed<double>* newCont = new FP2PParticleContainerIndexed<double>();
+    newCont->reserve(nbPart);
+    ChebLeafStruct * newLeaf = new ChebLeafStruct();
+    newLeaf->container = newCont;
+    return newLeaf;
+}
+
+//Delete leaves
+extern "C" void ChebLeafStruct_free(void * leafData){
+    ChebLeafStruct * leaf = reinterpret_cast<ChebLeafStruct *>(leafData);
+    delete leaf->container;
+    delete leaf;
+}
+
+//Fill leaves once partitionning is done
+extern "C" void ChebLeafStruct_fill(FSize nbPart, const FSize * idxPart,
+                                    long long morton_index, void * leafData,
+                                    void * userData){
+    UserData * userDataKernel = reinterpret_cast<UserData *>(userData);
+    ChebLeafStruct * leaf = reinterpret_cast<ChebLeafStruct *>(leafData);
+    FP2PParticleContainerIndexed<double>* container = leaf->container;
+
+    for(int i=0 ; i<nbPart; ++i){
+        FPoint<double> pos{userDataKernel->insertedPositions[idxPart[i]*3 + 0],
+                userDataKernel->insertedPositions[idxPart[i]*3 + 1],
+                userDataKernel->insertedPositions[idxPart[i]*3 + 2]};
+        double phi = userDataKernel->myPhyValues[idxPart[i]];
+        container->push(pos,idxPart[i],phi);
+    }
+}
+
+
+extern "C" void ChebLeafStruct_get_back_results(void * leafData,
+                                                double ** forceXptr,  double ** forceYptr,  double ** forceZptr,
+                                                double ** potentialsptr){
+    ChebLeafStruct * leaf = reinterpret_cast<ChebLeafStruct *>(leafData);
+    *forceXptr = leaf->container->getForcesX();
+    *forceYptr = leaf->container->getForcesY();
+    *forceZptr = leaf->container->getForcesZ();
+    *potentialsptr = leaf->container->getPotentials();
+}
 
 //How to create/destroy cells
 extern "C" ChebCellStruct * ChebCellStruct_create(long long int inIndex,int * position){
@@ -178,6 +236,8 @@ typedef struct FChebKernel_struct{
     FChebSymKernel<double,FChebCell<double,7>,FP2PParticleContainerIndexed<double>,FInterpMatrixKernelR<double>,7> ** kernel;
     FInterpMatrixKernelR<double> * matrix;
 } ChebKernelStruct;
+
+
 
 //Kernel functions
 extern "C" ChebKernelStruct * ChebKernelStruct_create(int inTreeHeight,
@@ -210,8 +270,30 @@ extern "C" void ChebKernelStruct_free(void *inKernel){
     delete reinterpret_cast<ChebKernelStruct *>(inKernel);
 }
 
+/**
+* New one, intended to work with internal FP2PParticleContainer instead of filling a new one
+*/
+extern "C" void ChebKernel_P2M(void * leafCell, void * leafData, FSize nbParticles,
+                               const FSize *particleIndexes, void * inKernel){
+    //get the real leaf
+    ChebLeafStruct * leaf = reinterpret_cast<ChebLeafStruct *>(leafData);
 
-extern "C" void ChebKernel_P2M(void * leafCell, FSize nbParticles, const FSize *particleIndexes, void * inKernel){
+    //get the real cell struct
+    ChebCellStruct * realCellStruct = reinterpret_cast<ChebCellStruct *>(leafCell);
+    FChebCell<double,7> * realCell = realCellStruct->cell;
+
+    //Identify thread number
+    int id_thread = omp_get_thread_num();
+
+    //get the real chebyshev struct
+    UserData * userDataKernel = reinterpret_cast<UserData *>(inKernel);
+    ChebKernelStruct * realKernel = userDataKernel->kernelStruct;
+
+    realKernel->kernel[id_thread]->P2M(realCell, leaf->container);
+}
+
+extern "C" void ChebKernel_P2M_old(void * leafCell, void * leafData, FSize nbParticles,
+                                   const FSize *particleIndexes, void * inKernel){
     //make temporary array of parts
     FP2PParticleContainerIndexed<double>* tempContainer = new FP2PParticleContainerIndexed<double>();
     tempContainer->reserve(nbParticles);
@@ -238,6 +320,7 @@ extern "C" void ChebKernel_P2M(void * leafCell, FSize nbParticles, const FSize *
     realKernel->kernel[id_thread]->P2M(realCell, tempContainer);
     delete tempContainer;
 }
+
 
 extern "C" void  ChebKernel_M2M(int level, void* parentCell, int childPosition, void *childCell, void *inKernel){
     //Get our structures
@@ -297,7 +380,28 @@ extern "C" void ChebKernel_L2L(int level, void* parentCell, int childPosition, v
                                                                         childChebCell->getLocal(0));
 }
 
-extern "C" void ChebKernel_L2P(void* leafCell, FSize nbParticles, const FSize* particleIndexes, void* inKernel){
+extern "C" void ChebKernel_L2P(void* leafCell, void * leafData, FSize nbParticles,
+                               const FSize* particleIndexes, void* inKernel){
+    //get the real leaf
+    ChebLeafStruct * leaf = reinterpret_cast<ChebLeafStruct *>(leafData);
+
+    //get the real cell struct
+    ChebCellStruct * realCellStruct = reinterpret_cast<ChebCellStruct *>(leafCell);
+    FChebCell<double,7> * realCell = realCellStruct->cell;
+
+    //Identify thread number
+    int id_thread = omp_get_thread_num();
+
+    //get the real chebyshev struct
+    UserData * userDataKernel = reinterpret_cast<UserData *>(inKernel);
+    ChebKernelStruct * realKernel = userDataKernel->kernelStruct;
+
+    realKernel->kernel[id_thread]->L2P(realCell,leaf->container);
+}
+
+
+extern "C" void ChebKernel_L2P_old(void* leafCell, void * leafData,FSize nbParticles,
+                                   const FSize* particleIndexes, void* inKernel){
     //Create temporary FSimpleLeaf
     FP2PParticleContainerIndexed<double>* tempContainer = new FP2PParticleContainerIndexed<double>();
     tempContainer->reserve(nbParticles);
@@ -338,9 +442,43 @@ extern "C" void ChebKernel_L2P(void* leafCell, FSize nbParticles, const FSize* p
     tempContainer=nullptr;
 }
 
-
-void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes, const FSize ** sourceParticleIndexes,FSize* sourceNbPart,
+void ChebKernel_P2P(void * targetleaf, FSize nbParticles, const FSize* particleIndexes, void ** sourceLeaves,
+                    const FSize ** sourceParticleIndexes, FSize* sourceNbPart,
                     const int * sourcePosition,const int size, void* inKernel){
+    //First step, convert the target leaf in a P2P Particle container
+    ChebLeafStruct * tgtLeaf = reinterpret_cast<ChebLeafStruct *>(targetleaf);
+
+    //Same with the sources leaves
+    std::vector<FP2PParticleContainerIndexed<double> *> arraySrcLeaves;
+    arraySrcLeaves.reserve(size);
+    for(int i=0 ; i<size ; ++i){
+        if(sourceNbPart[i] != 0){
+            arraySrcLeaves.push_back(reinterpret_cast<ChebLeafStruct *>(sourceLeaves[i])->container);
+        }else{
+            arraySrcLeaves.push_back(nullptr);
+        }
+    }
+
+    //Then call P2P ?
+    //Identify thread number
+    int id_thread = omp_get_thread_num();
+
+    //Get the kernel
+    ChebKernelStruct * inKernelStruct = reinterpret_cast<UserData*>(inKernel)->kernelStruct;
+
+    //Empty tree coordinate
+    int coord[3] = {0,0,0};
+
+    inKernelStruct->kernel[id_thread]->P2P(FTreeCoordinate(coord),tgtLeaf->container,tgtLeaf->container,
+                                           arraySrcLeaves.data(),sourcePosition,size);
+
+}
+
+
+void ChebKernel_P2P_old(void * targetLeaf, FSize nbParticles, const FSize* particleIndexes,
+                        void ** sourceLeaves,
+                        const FSize ** sourceParticleIndexes,FSize* sourceNbPart,
+                        const int * sourcePosition,const int size, void* inKernel){
 
     //Create temporary FSimpleLeaf for target
     FP2PParticleContainerIndexed<double>* tempContTarget = new FP2PParticleContainerIndexed<double>();
@@ -421,13 +559,48 @@ void ChebKernel_P2P(FSize nbParticles, const FSize* particleIndexes, const FSize
     delete [] tempContSources;
 }
 
+
+void ChebKernel_P2PRemote(void * targetLeaf,FSize nbParticles, const FSize* particleIndexes,
+                          void ** sourceLeaves,
+                          const FSize ** sourceParticleIndexes,FSize * sourceNbPart,
+                          const int * sourcePosition, const int size, void* inKernel){
+    //First step, convert the target leaf in a P2P Particle container
+    ChebLeafStruct * tgtLeaf = reinterpret_cast<ChebLeafStruct *>(targetLeaf);
+
+    //Same with the sources leaves
+    std::vector<FP2PParticleContainerIndexed<double> *> arraySrcLeaves;
+    arraySrcLeaves.reserve(size);
+    for(int i=0 ; i<size ; ++i){
+        if(sourceNbPart[i] != 0){
+            arraySrcLeaves.push_back(reinterpret_cast<ChebLeafStruct *>(sourceLeaves[i])->container);
+        }else{
+            arraySrcLeaves.push_back(nullptr);
+        }
+    }
+
+    //Then call P2P ?
+    //Identify thread number
+    int id_thread = omp_get_thread_num();
+
+    //Get the kernel
+    ChebKernelStruct * inKernelStruct = reinterpret_cast<UserData*>(inKernel)->kernelStruct;
+
+    //Empty tree coordinate
+    int coord[3] = {0,0,0};
+
+    inKernelStruct->kernel[id_thread]->P2PRemote(FTreeCoordinate(coord),tgtLeaf->container,tgtLeaf->container,
+                                                 arraySrcLeaves.data(),sourcePosition,size);
+
+}
+
+
 void ChebCell_reset(int level, long long morton_index, int* tree_position, double* spatial_position, void * userCell,void * inKernel){
     ChebCellStruct *  cellStruct = reinterpret_cast<ChebCellStruct *>(userCell);
     FChebCell<double,7>* chebCell = cellStruct->cell;
     chebCell->resetToInitialState();
 }
 
-FSize ChebCell_getSize(int level,void * userData, long long morton_index){
+FSize ChebCell_getSize(int level, long long morton_index){
     //Create fake one and ask for its size
     FChebCell<double,7>* chebCell = new FChebCell<double,7>();
     //then return what size is needed to store a cell
@@ -499,6 +672,96 @@ void* ChebCell_restore(int level, void * arrayTobeRead){
 
     //Yeah, can return, finally !!
     return cellStruct;
+}
+
+/**
+ * @brief Those fucntion implements the copy,restore and get_size
+ * functions for leaves
+ */
+FSize ChebLeaf_getSize(FSize nbPart){
+    //Test where we do not use leafData
+    FP2PParticleContainerIndexed<double>* newCont = new FP2PParticleContainerIndexed<double>();
+    newCont->reserve(nbPart);
+    //fake push empty parts
+    for(int i=0 ; i<nbPart ; ++i){
+        FPoint<double> pos{0,0,0};
+        newCont->push(pos,0,0,0,0,0);
+    }
+
+    FSize res = newCont->getSavedSize();
+    delete newCont;
+
+    return res;
+}
+
+/**
+ * Copy Order : Positions XYZ, then attributes
+ */
+void ChebLeaf_copy(FSize nbPart,void * userLeaf, void * memAllocated){
+    ChebLeafStruct * tgtLeaf = reinterpret_cast<ChebLeafStruct *>(userLeaf);
+    FP2PParticleContainerIndexed<double>* container = tgtLeaf->container;
+
+    char * toWrite = reinterpret_cast<char*>(memAllocated);
+
+    FSize cursor = 0;
+    //Loop over dimensions
+    for(int i=0 ; i<3 ; ++i){
+        memcpy(&toWrite[cursor],container->getPositions()[i],nbPart*sizeof(double));
+        cursor += nbPart*sizeof(double);
+    }
+
+    //Then store attributes
+    //First physical values
+    memcpy(&toWrite[cursor],container->getPhysicalValuesArray(),sizeof(double)*nbPart);
+    cursor += sizeof(double)*nbPart;
+    //Then fx
+    memcpy(&toWrite[cursor],container->getForcesXArray(),sizeof(double)*nbPart);
+    cursor += sizeof(double)*nbPart;
+    //Then fy
+    memcpy(&toWrite[cursor],container->getForcesYArray(),sizeof(double)*nbPart);
+    cursor += sizeof(double)*nbPart;
+    //Then fz
+    memcpy(&toWrite[cursor],container->getForcesZArray(),sizeof(double)*nbPart);
+    cursor += sizeof(double)*nbPart;
+
+    //Finally potentials
+    memcpy(&toWrite[cursor],container->getPotentialsArray(),sizeof(double)*nbPart);
+    cursor += sizeof(double)*nbPart;
+}
+
+void * ChebLeaf_restore(FSize nbPart,void * memToRead){
+    ChebLeafStruct * tgtLeaf = ChebLeafStruct_create(nbPart);
+    FP2PParticleContainerIndexed<double>* container = tgtLeaf->container;
+
+    char * toRead = reinterpret_cast<char*>(memToRead);
+
+    FSize cursor = 0;
+
+    //Loop over dimensions
+    for(int i=0 ; i<3 ; ++i){
+        memcpy(container->getWPositions()[i],&toRead[cursor],nbPart*sizeof(double));
+        cursor += nbPart*sizeof(double);
+    }
+
+    //Then store attributes
+    //First physical values
+    memcpy(container->getPhysicalValuesArray(),&toRead[cursor],sizeof(double)*nbPart);
+    cursor += sizeof(double)*nbPart;
+    //Then fx
+    memcpy(container->getForcesXArray(),&toRead[cursor],sizeof(double)*nbPart);
+    cursor += sizeof(double)*nbPart;
+    //Then fy
+    memcpy(container->getForcesYArray(),&toRead[cursor],sizeof(double)*nbPart);
+    cursor += sizeof(double)*nbPart;
+    //Then fz
+    memcpy(container->getForcesZArray(),&toRead[cursor],sizeof(double)*nbPart);
+    cursor += sizeof(double)*nbPart;
+
+    //Finally potentials
+    memcpy(container->getPotentialsArray(),&toRead[cursor],sizeof(double)*nbPart);
+    cursor += sizeof(double)*nbPart;
+
+    return tgtLeaf;
 }
 
 #endif
