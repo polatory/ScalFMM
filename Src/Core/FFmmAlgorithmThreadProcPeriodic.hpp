@@ -1672,25 +1672,26 @@ protected:
                                         int periodicNeighborsCounter = 0;
 
                                         if(hasPeriodicLeaves){
-                                            ContainerClass* periodicNeighbors[27];
+                                            ContainerClass* periodicNeighbors[26];
                                             int periodicNeighborPositions[26];
 
                                             for(int idxNeig = 0 ; idxNeig < counter ; ++idxNeig){
                                                 if( !offsets[idxNeig].equals(0,0,0) ){
                                                     // Put periodic neighbors into other array
-                                                    periodicNeighbors[periodicNeighborsCounter] = neighbors[idxNeig];
-                                                    periodicNeighborPositions[periodicNeighborsCounter] = neighborPositions[idxNeig];
-                                                    ++periodicNeighborsCounter;
+                                                    FReal*const positionsX = neighbors[idxNeig]->getWPositions()[0];
+                                                    FReal*const positionsY = neighbors[idxNeig]->getWPositions()[1];
+                                                    FReal*const positionsZ = neighbors[idxNeig]->getWPositions()[2];
 
-                                                    FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
-                                                    FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
-                                                    FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
-
-                                                    for(FSize idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
+                                                    for(FSize idxPart = 0; idxPart < neighbors[idxNeig]->getNbParticles() ; ++idxPart){
                                                         positionsX[idxPart] += boxWidth * FReal(offsets[idxNeig].getX());
                                                         positionsY[idxPart] += boxWidth * FReal(offsets[idxNeig].getY());
                                                         positionsZ[idxPart] += boxWidth * FReal(offsets[idxNeig].getZ());
                                                     }
+
+                                                    offsets[periodicNeighborsCounter] = offsets[idxNeig];
+                                                    periodicNeighbors[periodicNeighborsCounter] = neighbors[idxNeig];
+                                                    periodicNeighborPositions[periodicNeighborsCounter] = neighborPositions[idxNeig];
+                                                    ++periodicNeighborsCounter;
                                                 }
                                                 else{
                                                     neighbors[idxNeig-periodicNeighborsCounter] = neighbors[idxNeig];
