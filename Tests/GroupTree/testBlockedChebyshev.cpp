@@ -69,7 +69,6 @@ int main(int argc, char* argv[]){
     typedef FChebCellPODLocal<FReal,ORDER> GroupCellDownClass;
     typedef FChebCellPOD<FReal,ORDER>      GroupCellClass;
 
-
     typedef FP2PGroupParticleContainer<FReal>          GroupContainerClass;
     typedef FGroupTree< FReal, GroupCellClass, GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupContainerClass, 1, 4, FReal>  GroupOctreeClass;
 #ifdef SCALFMM_USE_STARPU
@@ -103,7 +102,7 @@ int main(int argc, char* argv[]){
 	setSeed(1);
 	FReal * tmpParticles = new FReal[4*loader.getNumberOfParticles()];
 	if(FParameters::existParameter(argc, argv, "-ellipsoid")) {
-		nonunifRandomPointsOnElipsoid(loader.getNumberOfParticles(), loader.getBoxWidth()/2, loader.getBoxWidth()/4, loader.getBoxWidth()/8, tmpParticles);
+		nonunifRandomPointsOnElipsoid(loader.getNumberOfParticles(), loader.getBoxWidth()/2, loader.getBoxWidth()/4, tmpParticles);
 	}
 	else if(FParameters::existParameter(argc, argv, "-plummer")) {
 		//The M argument is not used in the algorithm of the plummer distribution
