@@ -64,6 +64,10 @@
 #include <sys/resource.h>
 #endif
 
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+#include <starpu.h>
+#endif
+
 #define RANDOM_PARTICLES
 
 const FParameterNames LocalOrder { {"-order"}, "Order of the kernel"};
