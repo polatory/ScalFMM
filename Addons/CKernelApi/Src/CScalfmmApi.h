@@ -750,6 +750,14 @@ void scalfmm_user_kernel_config(scalfmm_handle Handle, Scalfmm_Kernel_Descriptor
 void scalfmm_execute_fmm(scalfmm_handle Handle);
 
 /**
+ * @brief This function launch the fmm on the parameters given, but
+ * only the far field will be evaluated
+ * @param Handle scalfmm_handle provided by scalfmm_init
+ */
+void scalfmm_execute_fmm_far_field(scalfmm_handle Handle);
+
+
+/**
  * @brief This function apply the call back on each leaf. Should be
  * called after insert_parts.
  * @param

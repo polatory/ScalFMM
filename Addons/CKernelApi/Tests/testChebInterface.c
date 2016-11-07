@@ -74,6 +74,7 @@ void cheb_p2pFull(void * targetLeaf, FSize nbParticles, const FSize* particleInd
                   void ** sourceLeaves,
                   const FSize ** sourceParticleIndexes, FSize* sourceNbPart,const int * sourcePosition,
                   const int size, void* userData) {
+    printf("NOPE\n");
     ChebKernel_P2P(targetLeaf,nbParticles, particleIndexes, sourceLeaves, sourceParticleIndexes, sourceNbPart,sourcePosition,size,
                    userData);
 }
@@ -285,7 +286,7 @@ int main(int argc, char ** av){
         scalfmm_apply_on_leaf(handle,fill_leaf_container);
 
         tic(&interface_timer);
-        scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
+        scalfmm_execute_fmm_far_field(handle/*, kernel, &my_data*/);
         tac(&interface_timer);
 
         { //Temporary
@@ -320,7 +321,7 @@ int main(int argc, char ** av){
         print_elapsed(&interface_timer);
 
         tic(&ref_timer);
-        scalfmm_execute_fmm(handle_ref/*, kernel, &my_data*/);
+        scalfmm_execute_fmm_far_field(handle_ref/*, kernel, &my_data*/);
         tac(&ref_timer);
 
         /* { //Temporary */

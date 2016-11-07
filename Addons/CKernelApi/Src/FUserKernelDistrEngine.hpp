@@ -697,6 +697,25 @@ public:
         }
     }
 
+    void execute_fmm_far_field(){
+        FAssertLF(octreeDist,
+                  "No Tree set, please use scalfmm_user_kernel_config before calling the execute routine ... Exiting \n");
+        //Only one config shall work , so let's use it
+        switch(FScalFMMEngine<FReal>::Algorithm){
+        case 5:
+            {
+                typedef FFmmAlgorithmThreadProc<OctreeClass,CoreCellDist,ContainerClass,CoreKernelClass,LeafClass> AlgoProcClass;
+                AlgoProcClass * algoProc = new AlgoProcClass(*comm,octreeDist,kernel);
+                FScalFMMEngine<FReal>::algoTimer = algoProc;
+                algoProc->execute(FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P);
+                break;
+            }
+        default:
+            break;
+        }
+    }
+
+
     void free_cell(Callback_free_cell user_cell_deallocator){
         octreeDist->forEachCell([&](CoreCellDist * currCell){
                 if(currCell->getContainer()){

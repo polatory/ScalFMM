@@ -714,6 +714,69 @@ public:
         }
     }
 
+        virtual void execute_fmm_far_field(){
+        FAssertLF(kernel,"No kernel set, please use scalfmm_user_kernel_config before calling the execute routine ... Exiting \n");
+        switch(FScalFMMEngine<FReal>::Algorithm){
+        case 0:
+            {
+                typedef FFmmAlgorithm<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassSeq;
+                AlgoClassSeq * algoSeq = new AlgoClassSeq(octree,kernel);
+                FScalFMMEngine<FReal>::algoTimer = algoSeq;
+                FScalFMMEngine<FReal>::abstrct = algoSeq;
+                //algoSeq->execute(); will be done later
+                break;
+            }
+        case 1:
+            {
+                typedef FFmmAlgorithmThread<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassThread;
+                AlgoClassThread*  algoThread = new AlgoClassThread(octree,kernel);
+                FScalFMMEngine<FReal>::algoTimer = algoThread;
+                FScalFMMEngine<FReal>::abstrct = algoThread;
+                //algoThread->execute(); will be done later
+                break;
+            }
+        case 2:
+            {
+                typedef FFmmAlgorithmPeriodic<FReal,OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassPeriodic;
+                AlgoClassPeriodic algoPeriod(octree,2);
+                algoPeriod.setKernel(kernel);
+                algoPeriod.execute();
+                break;
+            }
+        case 3:
+            {
+                typedef FFmmAlgorithmThreadTsm<OctreeClass,CoreCell,ContainerClass,CoreKernelClass,LeafClass> AlgoClassTargetSource;
+                AlgoClassTargetSource* algoTS = new AlgoClassTargetSource(octree,kernel);
+                FScalFMMEngine<FReal>::algoTimer = algoTS;
+                FScalFMMEngine<FReal>::abstrct = algoTS;
+                //algoTS->execute(); will be done later
+                break;
+            }
+        default :
+            std::cout<< "No algorithm found (probably for strange reasons) : "<< FScalFMMEngine<FReal>::Algorithm <<" exiting" << std::endl;
+        }
+
+        if (FScalFMMEngine<FReal>::Algorithm != 2){
+            if(upperLimit != 2){
+                (FScalFMMEngine<FReal>::abstrct)->execute(FFmmP2M | FFmmM2M | FFmmM2L, upperLimit, treeHeight);
+                printf("\tUpPass finished\n");
+                internal_M2L();
+                printf("\tStrange M2L finished\n");
+                (FScalFMMEngine<FReal>::abstrct)->execute(FFmmL2L | FFmmL2P, upperLimit, treeHeight);
+                printf("\tDownPass finished\n");
+            }
+            else{
+                if(octree->getHeight() == 2){
+                    //(FScalFMMEngine<FReal>::abstrct)->execute(FFmmP2P);
+                    std::cout<<"Nothing to be done\n";
+                }else{
+                    (FScalFMMEngine<FReal>::abstrct)->execute(FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P);
+                }
+            }
+        }
+    }
+
+
     virtual void intern_dealloc_handle(Callback_free_cell userDeallocator){
         free_cell(userDeallocator, ContainerClass::GetFreeLeaf());
     }

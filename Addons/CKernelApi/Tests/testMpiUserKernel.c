@@ -353,7 +353,7 @@ int main(int argc, char ** argv){
 
 
     //Execution !!
-    scalfmm_execute_fmm(Handle);
+    scalfmm_execute_fmm_far_field(Handle);
 
     scalfmm_apply_on_leaf(Handle,on_leaf);
 

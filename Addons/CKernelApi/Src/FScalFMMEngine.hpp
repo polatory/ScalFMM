@@ -777,6 +777,9 @@ public:
     virtual void execute_fmm(){
         FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
     }
+    virtual void execute_fmm_far_field(){
+        FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
+    }
 
     virtual void intern_dealloc_handle(Callback_free_cell userDeallocator){
         FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
@@ -993,6 +996,12 @@ extern "C" void scalfmm_algorithm_config(scalfmm_handle Handle, scalfmm_algorith
 extern "C" void scalfmm_execute_fmm(scalfmm_handle Handle){
     ((ScalFmmCoreHandle<double> * ) Handle)->engine->execute_fmm();
 }
+
+//Executing FMM
+extern "C" void scalfmm_execute_fmm_far_field(scalfmm_handle Handle){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->execute_fmm_far_field();
+}
+
 
 extern "C" void scalfmm_user_kernel_config(scalfmm_handle Handle, Scalfmm_Kernel_Descriptor userKernel, void * userDatas){
     ((ScalFmmCoreHandle<double> * ) Handle)->engine->user_kernel_config(userKernel,userDatas);
