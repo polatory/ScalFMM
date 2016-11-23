@@ -1,10 +1,14 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the FMM.
+// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
+// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the
+// FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
 // abiding by the rules of distribution of free software.
+// An extension to the license is given to allow static linking of scalfmm
+// inside a proprietary application (no matter its license).
+// See the main license file for more details.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -25,15 +29,15 @@
 #include "../Components/FAbstractSerializable.hpp"
 
 /**
-* @author Berenger Bramas (berenger.bramas@inria.fr)
-* @class FTreeCoordinate
-* Please read the license
-*
-* This class represents tree coordinate. It is used to save
-* the position in "box unit" (not system/space unit!).
-* It is directly related to morton index, as interleaves
-* bits from this coordinate make the morton index
-*/
+ * @author Berenger Bramas (berenger.bramas@inria.fr)
+ * @class FTreeCoordinate
+ * Please read the license
+ *
+ * This class represents tree coordinate. It is used to save
+ * the position in "box unit" (not system/space unit!).
+ * It is directly related to morton index, as interleaves
+ * bits from this coordinate make the morton index
+ */
 class FTreeCoordinate : public FAbstractSerializable, public FPoint<int, 3> {
 private:
     using point_t = FPoint<int, 3>;
@@ -67,8 +71,13 @@ public:
     {}
 
     /**
-    * Copy constructor
-    */
+     * \brief Allow build from an FPoint object
+     */
+    using point_t::point_t;
+
+    /**
+     * Copy constructor
+     */
     FTreeCoordinate(const FTreeCoordinate&) = default;
 
     /** Copy and increment constructor
@@ -79,10 +88,10 @@ public:
     {}
 
     /**
-    * Copy assignment
-    * @param other the source class to copy
-    * @return this a reference to the current object
-    */
+     * Copy assignment
+     * @param other the source class to copy
+     * @return this a reference to the current object
+     */
     FTreeCoordinate& operator=(const FTreeCoordinate& other) = default;
 
     [[gnu::deprecated]]
@@ -92,11 +101,11 @@ public:
 
 
     /**
-    * To get the morton index of the current position
-    * @complexity inLevel
-    * @param inLevel the level of the component
-    * @return morton index
-    */
+     * To get the morton index of the current position
+     * @complexity inLevel
+     * @param inLevel the level of the component
+     * @return morton index
+     */
     MortonIndex getMortonIndex() const{
         MortonIndex index = 0x0LL;
         MortonIndex mask = 0x1LL;
@@ -152,9 +161,9 @@ public:
 
 
     /** Test equal operator
-          * @param other the coordinate to compare
-          * @return true if other & current object have same position
-          */
+     * @param other the coordinate to compare
+     * @return true if other & current object have same position
+     */
     bool equals(const int inX, const int inY, const int inZ) const {
         return point_t::data()[0] == inX
             && point_t::data()[1] == inY

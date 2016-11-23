@@ -34,6 +34,8 @@ enum RegistersNum {
 // we would like to have the same name for not windows
 #define cpuid    __cpuid
 
+#elif  _ARCH_PPC
+#error("PPC") 
 #else
 
 // Else we have to ask the CPU directly by executin cpuid.
@@ -75,7 +77,7 @@ void cpuid(int CPUInfo[4],int InfoType){
 
 #endif
 
-
+#ifndef  _ARCH_PPC
 bool CPUInfoGetEAX(const int CPUInfo[4], const int position){
     return (CPUInfo[EaxRegister] & ((int)1 << position)) != 0;
 }
@@ -309,6 +311,9 @@ std::list<CpuProperty> getProperties(){
 
     return properties;
 }
+#else
+// POWER (IBM)
+#endif
 
 
 ///////////////////////////////////////////////////////////////////////////

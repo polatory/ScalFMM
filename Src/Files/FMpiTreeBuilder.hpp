@@ -1,10 +1,14 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the FMM.
+// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
+// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the
+// FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
 // abiding by the rules of distribution of free software.
+// An extension to the license is given to allow static linking of scalfmm
+// inside a proprietary application (no matter its license).
+// See the main license file for more details.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -162,7 +166,7 @@ public:
     // To merge the leaves
     //////////////////////////////////////////////////////////////////////////
 
-    static void MergeSplitedLeaves(const FMpi::FComm& communicator, IndexedParticle* workingArray, FSize* workingSize,
+    static void MergeSplitedLeaves(const FMpi::FComm& communicator, IndexedParticle** workingArray, FSize* workingSize,
                                    FSize ** leavesOffsetInParticles, ParticleClass** particlesArrayInLeafOrder, FSize* const leavesSize){
         const int myRank = communicator.processId();
         const int nbProcs = communicator.processCount();
@@ -171,13 +175,13 @@ public:
         { // Get the information of the leaves
             leavesInfo.clear();
             if((*workingSize)){
-                leavesInfo.push({workingArray[0].index, 1, 0});
+                leavesInfo.push({(*workingArray)[0].index, 1, 0});
                 for(FSize idxPart = 1 ; idxPart < (*workingSize) ; ++idxPart){
-                    if(leavesInfo.data()[leavesInfo.getSize()-1].mindex == workingArray[idxPart].index){
+                    if(leavesInfo.data()[leavesInfo.getSize()-1].mindex == (*workingArray)[idxPart].index){
                         leavesInfo.data()[leavesInfo.getSize()-1].nbParts += 1;
                     }
                     else{
-                        leavesInfo.push({workingArray[idxPart].index, 1, idxPart});
+                        leavesInfo.push({(*workingArray)[idxPart].index, 1, idxPart});
                     }
                 }
             }
@@ -209,12 +213,16 @@ public:
                 while(0 < idProcToSendTo &&
                       (allProcFirstLeafStates[(idProcToSendTo-1)*2 + 1].mindex == borderLeavesState[0].mindex
                        || allProcFirstLeafStates[(idProcToSendTo-1)*2 + 1].mindex == noDataFlag)){
+                    FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] idProcToSendTo "
+                         << idProcToSendTo << " allProcFirstLeafStates[(idProcToSendTo-1)*2 + 1].mindex " <<
+                         allProcFirstLeafStates[(idProcToSendTo-1)*2 + 1].mindex << " borderLeavesState[0].mindex " <<
+                         borderLeavesState[0].mindex << "\n"; FLog::Controller.flush(); );
                     idProcToSendTo -= 1;
                 }
                 // We found someone
                 if(idProcToSendTo != myRank && allProcFirstLeafStates[(idProcToSendTo)*2 + 1].mindex == borderLeavesState[0].mindex){
                     // Post and send message for the first leaf
-                    FMpi::ISendSplit(&workingArray[0], borderLeavesState[0].nbParts, idProcToSendTo,
+                    FMpi::ISendSplit(&(*workingArray)[0], borderLeavesState[0].nbParts, idProcToSendTo,
                             FMpi::TagExchangeIndexs, communicator, &requests);
                     FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] send " << borderLeavesState[0].nbParts << " to " << idProcToSendTo << "\n"; FLog::Controller.flush(); );
                     hasSentFirstLeaf = true;
@@ -228,11 +236,18 @@ public:
                 // Count all the particle of our first leaf on other procs
                 FSize totalNbParticlesToRecv = 0;
                 int idProcToRecvFrom = myRank;
-                while(idProcToRecvFrom+1 < nbProcs &&
-                      (borderLeavesState[1].mindex == allProcFirstLeafStates[(idProcToRecvFrom+1)*2].mindex
-                       || allProcFirstLeafStates[(idProcToRecvFrom+1)*2].mindex == noDataFlag)){
-                    idProcToRecvFrom += 1;
-                    totalNbParticlesToRecv += allProcFirstLeafStates[(idProcToRecvFrom)*2].nbParts;
+                if(!hasSentFirstLeaf || borderLeavesState[0].mindex != borderLeavesState[1].mindex){
+                    while(idProcToRecvFrom+1 < nbProcs &&
+                          (borderLeavesState[1].mindex == allProcFirstLeafStates[(idProcToRecvFrom+1)*2].mindex
+                           || allProcFirstLeafStates[(idProcToRecvFrom+1)*2].mindex == noDataFlag)){
+                        FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] idProcToRecvFrom "
+                             << idProcToRecvFrom << " allProcFirstLeafStates[(idProcToRecvFrom+1)*2].mindex " <<
+                             allProcFirstLeafStates[(idProcToRecvFrom+1)*2].mindex << " borderLeavesState[1].mindex " <<
+                             borderLeavesState[1].mindex << "\n"; FLog::Controller.flush(); );
+
+                        idProcToRecvFrom += 1;
+                        totalNbParticlesToRecv += allProcFirstLeafStates[(idProcToRecvFrom)*2].nbParts;
+                    }
                 }
                 // If there are some
                 if(totalNbParticlesToRecv){
@@ -262,7 +277,7 @@ public:
                 const FSize offsetParticles = borderLeavesState[0].nbParts;
                 // Move all the particles
                 for(FSize idxPart = offsetParticles ; idxPart < (*workingSize) ; ++idxPart){
-                    workingArray[idxPart - offsetParticles] = workingArray[idxPart];
+                    (*workingArray)[idxPart - offsetParticles] = (*workingArray)[idxPart];
                 }
                 // Move all the leaf
                 for(int idxLeaf = 1 ; idxLeaf < leavesInfo.getSize() ; ++idxLeaf){
@@ -276,14 +291,16 @@ public:
             if(hasExtendLastLeaf){
                 // Allocate array
                 const FSize finalParticlesNumber = (*workingSize) + receivedParticles.size();
+                FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Create array "
+                     << finalParticlesNumber << " particles\n"; FLog::Controller.flush(); );
                 IndexedParticle* particlesWithExtension = new IndexedParticle[finalParticlesNumber];
                 // Copy old data
-                memcpy(particlesWithExtension, workingArray, (*workingSize)*sizeof(IndexedParticle));
+                memcpy(particlesWithExtension, (*workingArray), (*workingSize)*sizeof(IndexedParticle));
                 // Copy received data
                 memcpy(particlesWithExtension + (*workingSize), receivedParticles.data(), receivedParticles.size()*sizeof(IndexedParticle));
                 // Move ptr
-                delete[] workingArray;
-                workingArray   = particlesWithExtension;
+                delete[] (*workingArray);
+                (*workingArray)   = particlesWithExtension;
                 (*workingSize) = finalParticlesNumber;
                 leavesInfo[leavesInfo.getSize()-1].nbParts += receivedParticles.size();
             }
@@ -298,7 +315,7 @@ public:
                 //Copy all the particles
                 (*particlesArrayInLeafOrder) = new ParticleClass[(*workingSize)];
                 for(FSize idxPart = 0 ; idxPart < (*workingSize) ; ++idxPart){
-                    memcpy(&(*particlesArrayInLeafOrder)[idxPart],&workingArray[idxPart].particle,sizeof(ParticleClass));
+                    memcpy(&(*particlesArrayInLeafOrder)[idxPart],&(*workingArray)[idxPart].particle,sizeof(ParticleClass));
                 }
                 // Assign the number of leaf
                 (*leavesSize) = leavesInfo.getSize();
@@ -363,8 +380,9 @@ public:
             const std::vector<FEqualize::Package> packsToSend = FEqualize::GetPackToSend(myCurrentInter, allObjectives);
 
             FAssertLF((currentNbLeaves == 0 && packsToSend.size() == 0) ||
-                      (packsToSend.size() && FSize(packsToSend[packsToSend.size()-1].elementTo) == currentNbLeaves));
+                      (currentNbLeaves != 0 && packsToSend.size() && FSize(packsToSend[packsToSend.size()-1].elementTo) == currentNbLeaves));
 
+            FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Previous currentNbLeaves (" << currentNbLeaves << ")\n"; FLog::Controller.flush(); );
             FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Get my interval (" << packsToSend.size() << ")\n"; FLog::Controller.flush(); );
             FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Send data\n"; FLog::Controller.flush(); );
 
@@ -379,6 +397,8 @@ public:
                 const FEqualize::Package& pack = packsToSend[idxPack];
 
                 if(idxPack != 0) FAssertLF(packsToSend[idxPack].elementFrom == packsToSend[idxPack-1].elementTo);
+                FAssertLF(FSize(pack.elementTo) <= FSize(currentNbParts));
+                FAssertLF(pack.elementFrom <= pack.elementTo);
                 const long long int nbPartsPerPackToSend = leavesOffsetInParticles[pack.elementTo]-leavesOffsetInParticles[pack.elementFrom];
                 totalSend += nbPartsPerPackToSend;
 
@@ -388,7 +408,7 @@ public:
                          << " from " << pack.elementFrom << " to " << pack.elementTo << " \n"; FLog::Controller.flush(); );
                     // Send the size of the data
                     requestsNbParts.emplace_back();
-                    FMpi::MpiAssert(MPI_Isend(&nbPartsPerPackToSend,1,MPI_LONG_LONG_INT,pack.idProc,
+                    FMpi::MpiAssert(MPI_Isend(const_cast<long long int*>(&nbPartsPerPackToSend),1,MPI_LONG_LONG_INT,pack.idProc,
                                               FMpi::TagExchangeIndexs, communicator.getComm(), &requestsNbParts.back()),__LINE__);
 
                 }
@@ -552,7 +572,9 @@ public:
         // From ParticleClass get array of IndexedParticle sorted
         GetSortedParticlesFromArray(communicator, originalParticlesArray, originalNbParticles, sortingType, boxCenter, boxWidth, treeHeight,
                                     &sortedParticlesArray, &nbParticlesInArray);
-        FLOG( FLog::Controller << "["  << communicator.processId() << "] Particles Distribution: "  << "\t GetSortedParticlesFromArray is over (" << timer.tacAndElapsed() << "s)\n"; FLog::Controller.flush(); );
+        FLOG( FLog::Controller << "["  << communicator.processId() << "] Particles Distribution: "
+              << "\t GetSortedParticlesFromArray is over (" << timer.tacAndElapsed() << "s) "
+              << nbParticlesInArray << " particles\n"; FLog::Controller.flush(); );
         FLOG( timer.tic() );
 
 //        for(int idx = 0 ; idx < nbParticlesInArray ; ++idx){
@@ -563,7 +585,7 @@ public:
         FSize * leavesOffsetInParticles = nullptr;
         FSize nbLeaves = 0;
         // Merge the leaves
-        MergeSplitedLeaves(communicator, sortedParticlesArray, &nbParticlesInArray, &leavesOffsetInParticles, &particlesArrayInLeafOrder, &nbLeaves);
+        MergeSplitedLeaves(communicator, &sortedParticlesArray, &nbParticlesInArray, &leavesOffsetInParticles, &particlesArrayInLeafOrder, &nbLeaves);
         delete[] sortedParticlesArray;
 
 //        for(int idx = 0 ; idx < nbParticlesInArray ; ++idx){

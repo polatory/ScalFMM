@@ -57,7 +57,7 @@
  * particles in a unit cube and store the particle in a file with the FMA  format:
 
  \code{.cpp}
- * ./Exemple/Release/generateDistributions -N 2000000  -unitcube -filename my2kkpartfile.fma 
+ * ./Examples/Release/generateDistributions -N 2000000 -unitcube -fout my2kkpartfile.fma 
  \endcode
 
  Which create a file called my2kkpartfile.fma. 

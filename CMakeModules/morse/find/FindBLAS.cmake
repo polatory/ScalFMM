@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2016 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -40,6 +40,7 @@
 # are not given as cmake variable: BLAS_DIR, BLAS_INCDIR, BLAS_LIBDIR
 # For MKL case and if no paths are given as hints, we will try to use the MKLROOT
 # environment variable
+#  BLAS_VERBOSE Print some additional information during BLAS libraries detection
 ##########
 ### List of vendors (BLA_VENDOR) valid in this module
 ########## List of vendors (BLA_VENDOR) valid in this module
@@ -76,28 +77,6 @@
 #=============================================================================
 # (To distribute this file outside of CMake, substitute the full
 #  License text for the above reference.)
-
-
-# Set some colors
-#if(NOT WIN32)
-#    string(ASCII 27 Esc)
-#    set(ColourReset "${Esc}[m")
-#    set(ColourBold  "${Esc}[1m")
-#    set(Red         "${Esc}[31m")
-#    set(Green       "${Esc}[32m")
-#    set(Yellow      "${Esc}[33m")
-#    set(Blue        "${Esc}[34m")
-#    set(Magenta     "${Esc}[35m")
-#    set(Cyan        "${Esc}[36m")
-#    set(White       "${Esc}[37m")
-#    set(BoldRed     "${Esc}[1;31m")
-#    set(BoldGreen   "${Esc}[1;32m")
-#    set(BoldYellow  "${Esc}[1;33m")
-#    set(BoldBlue    "${Esc}[1;34m")
-#    set(BoldMagenta "${Esc}[1;35m")
-#    set(BoldCyan    "${Esc}[1;36m")
-#    set(BoldWhite   "${Esc}[1;37m")
-#endif()
 
 ## Some macros to print status when search for headers and libs
 # This macro informs why the _lib_to_find file has not been found
@@ -1252,7 +1231,7 @@ endif (BLA_VENDOR STREQUAL "NAS" OR BLA_VENDOR STREQUAL "All")
 # Generic BLAS library?
 if (BLA_VENDOR STREQUAL "Generic" OR BLA_VENDOR STREQUAL "All")
 
-    set(BLAS_SEARCH_LIBS "blas;blas_LINUX;blas_MAC;blas_WINDOWS")
+    set(BLAS_SEARCH_LIBS "blas;blas_LINUX;blas_MAC;blas_WINDOWS;refblas")
     foreach (SEARCH_LIB ${BLAS_SEARCH_LIBS})
         if (BLAS_LIBRARIES)
         else ()

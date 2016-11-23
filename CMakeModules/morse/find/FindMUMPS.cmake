@@ -112,33 +112,6 @@ if (NOT MUMPS_FIND_QUIETLY)
     message(STATUS "Looking for MUMPS - PkgConfig not used")
 endif()
 
-# Dependencies detection
-# ----------------------
-
-# Add system library paths to search lib
-# --------------------------------------
-unset(_lib_env)
-set(ENV_MUMPS_LIBDIR "$ENV{MUMPS_LIBDIR}")
-if(ENV_MUMPS_LIBDIR)
-    list(APPEND _lib_env "${ENV_MUMPS_LIBDIR}")
-elseif(ENV_MUMPS_DIR)
-    list(APPEND _lib_env "${ENV_MUMPS_DIR}")
-    list(APPEND _lib_env "${ENV_MUMPS_DIR}/lib")
-else()
-    if(WIN32)
-        string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
-    else()
-        if(APPLE)
-            string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
-        else()
-            string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
-        endif()
-        list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
-        list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-    endif()
-endif()
-list(REMOVE_DUPLICATES _lib_env)
-
 # Required dependencies
 # ---------------------
 
@@ -212,14 +185,14 @@ endif (NOT SCALAPACK_FOUND AND MUMPS_LOOK_FOR_MPI)
 
 # MUMPS may depends on SCOTCH
 #----------------------------
-if (NOT SCOTCH_FOUND AND MUMPS_LOOK_FOR_SCOTCH)
+if (MUMPS_LOOK_FOR_SCOTCH)
     if (NOT MUMPS_FIND_QUIETLY)
-        message(STATUS "Looking for MUMPS - Try to detect SCOTCH")
+        message(STATUS "Looking for MUMPS - Try to detect SCOTCH with esmumps")
     endif()
     if (MUMPS_FIND_REQUIRED AND MUMPS_FIND_REQUIRED_SCOTCH)
-        find_package(SCOTCH REQUIRED)
+        find_package(SCOTCH REQUIRED COMPONENTS ESMUMPS)
     else()
-        find_package(SCOTCH)
+        find_package(SCOTCH COMPONENTS ESMUMPS)
     endif()
 endif()
 
@@ -240,44 +213,92 @@ endif()
 # Looking for MUMPS
 # -----------------
 
+# Add system include paths to search include
+# ------------------------------------------
+unset(_inc_env)
+set(ENV_MUMPS_DIR "$ENV{MUMPS_DIR}")
+set(ENV_MUMPS_INCDIR "$ENV{MUMPS_INCDIR}")
+if(ENV_MUMPS_INCDIR)
+    list(APPEND _inc_env "${ENV_MUMPS_INCDIR}")
+elseif(ENV_MUMPS_DIR)
+    list(APPEND _inc_env "${ENV_MUMPS_DIR}")
+    list(APPEND _inc_env "${ENV_MUMPS_DIR}/include")
+    list(APPEND _inc_env "${ENV_MUMPS_DIR}/include/mumps")
+else()
+    if(WIN32)
+        string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
+    else()
+        string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+        list(APPEND _inc_env "${_path_env}")
+        string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+        list(APPEND _inc_env "${_path_env}")
+        string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+        list(APPEND _inc_env "${_path_env}")
+        string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+        list(APPEND _inc_env "${_path_env}")
+    endif()
+endif()
+list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
+list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
+list(REMOVE_DUPLICATES _inc_env)
+
+# Add system library paths to search lib
+# --------------------------------------
+unset(_lib_env)
+set(ENV_MUMPS_LIBDIR "$ENV{MUMPS_LIBDIR}")
+if(ENV_MUMPS_LIBDIR)
+    list(APPEND _lib_env "${ENV_MUMPS_LIBDIR}")
+elseif(ENV_MUMPS_DIR)
+    list(APPEND _lib_env "${ENV_MUMPS_DIR}")
+    list(APPEND _lib_env "${ENV_MUMPS_DIR}/lib")
+else()
+    if(WIN32)
+        string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+    else()
+        if(APPLE)
+            string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+        else()
+            string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+        endif()
+        list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+        list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
+    endif()
+endif()
+list(REMOVE_DUPLICATES _lib_env)
+
 # Looking for include
 # -------------------
 
 # Try to find the mumps header in the given path
 # ----------------------------------------------
+
+# create list of headers to find
+list(APPEND MUMPS_hdrs_to_find "smumps_c.h;dmumps_c.h;cmumps_c.h;zmumps_c.h")
+
 # call cmake macro to find the header path
-if(MUMPS_DIR)
-    set(MUMPS_smumps_c.h_DIRS "MUMPS_smumps_c.h_DIRS-NOTFOUND")
-    find_path(MUMPS_smumps_c.h_DIRS
-      NAMES smumps_c.h
-      HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
-      PATH_SUFFIXES "include")
-    set(MUMPS_dmumps_c.h_DIRS "MUMPS_dmumps_c.h_DIRS-NOTFOUND")
-    find_path(MUMPS_dmumps_c.h_DIRS
-      NAMES dmumps_c.h
-      HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
-      PATH_SUFFIXES "include")
-    set(MUMPS_cmumps_c.h_DIRS "MUMPS_cmumps_c.h_DIRS-NOTFOUND")
-    find_path(MUMPS_cmumps_c.h_DIRS
-      NAMES cmumps_c.h
-      HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
-      PATH_SUFFIXES "include")
-    set(MUMPS_zmumps_c.h_DIRS "MUMPS_zmumps_c.h_DIRS-NOTFOUND")
-    find_path(MUMPS_zmumps_c.h_DIRS
-      NAMES zmumps_c.h
-      HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
-      PATH_SUFFIXES "include")
+if(MUMPS_INCDIR)
+    foreach(mumps_hdr ${MUMPS_hdrs_to_find})
+        set(MUMPS_${mumps_hdr}_DIRS "MUMPS_${mumps_hdr}_INCLUDE_DIRS-NOTFOUND")
+        find_path(MUMPS_${mumps_hdr}_DIRS
+                  NAMES ${mumps_hdr}
+                  HINTS ${MUMPS_INCDIR})
+    endforeach()
 else()
-    if (MUMPS_FIND_REQUIRED)
-        message(FATAL_ERROR "Looking for mumps -- MUMPS_DIR is not set, to find"
-        " MUMPS please set MUMPS_DIR, the path to MUMPS installation where"
-        " sub-directories include/ and lib/ are located")
+    if(MUMPS_DIR)
+        set(MUMPS_${mumps_hdr}_DIRS "MUMPS_${mumps_hdr}_INCLUDE_DIRS-NOTFOUND")
+        foreach(mumps_hdr ${MUMPS_hdrs_to_find})
+            find_path(MUMPS_${mumps_hdr}_DIRS
+                      NAMES ${mumps_hdr}
+                      HINTS ${MUMPS_DIR}
+                      PATH_SUFFIXES "include")
+        endforeach()
     else()
-        if(NOT MUMPS_FIND_QUIETLY)
-            message(STATUS "Looking for mumps -- MUMPS_DIR is not set, to find"
-            " MUMPS please set MUMPS_DIR, the path to MUMPS installation where"
-            " sub-directories include/ and lib/ are located")
-        endif()
+        foreach(mumps_hdr ${MUMPS_hdrs_to_find})
+            set(MUMPS_${mumps_hdr}_DIRS "MUMPS_${mumps_hdr}_INCLUDE_DIRS-NOTFOUND")
+            find_path(MUMPS_${mumps_hdr}_DIRS
+                      NAMES ${mumps_hdr}
+                      HINTS ${_inc_env})
+        endforeach()
     endif()
 endif()
 
@@ -329,57 +350,48 @@ endif()
 # Looking for lib
 # ---------------
 
-# Try to find the mumps lib in the given paths
-# --------------------------------------------
+# create list of libs to find
+set(MUMPS_libs_to_find "mumps_common;pord")
+if (MUMPS_LOOK_FOR_SEQ)
+    list(APPEND MUMPS_libs_to_find "mpiseq")
+endif()
+if(MUMPS_PREC_S)
+    list(APPEND MUMPS_libs_to_find "smumps")
+endif()
+if(MUMPS_PREC_D)
+    list(APPEND MUMPS_libs_to_find "dmumps")
+endif()
+if(MUMPS_PREC_C)
+    list(APPEND MUMPS_libs_to_find "cmumps")
+endif()
+if(MUMPS_PREC_Z)
+    list(APPEND MUMPS_libs_to_find "zmumps")
+endif()
 
 # call cmake macro to find the lib path
-if(MUMPS_DIR)
-    set(MUMPS_smumps_LIBRARY "MUMPS_smumps_LIBRARY-NOTFOUND")
-    find_library(MUMPS_smumps_LIBRARY
-                 NAMES smumps
-                 HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
-                 PATH_SUFFIXES lib)
-    set(MUMPS_dmumps_LIBRARY "MUMPS_dmumps_LIBRARY-NOTFOUND")
-    find_library(MUMPS_dmumps_LIBRARY
-                 NAMES dmumps
-                 HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
-                 PATH_SUFFIXES lib)
-    set(MUMPS_cmumps_LIBRARY "MUMPS_cmumps_LIBRARY-NOTFOUND")
-    find_library(MUMPS_cmumps_LIBRARY
-                 NAMES cmumps
-                 HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
-                 PATH_SUFFIXES lib)
-    set(MUMPS_zmumps_LIBRARY "MUMPS_zmumps_LIBRARY-NOTFOUND")
-    find_library(MUMPS_zmumps_LIBRARY
-                 NAMES zmumps
-                 HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
-                 PATH_SUFFIXES lib)
-    set(MUMPS_mumps_common_LIBRARY "MUMPS_mumps_common_LIBRARY-NOTFOUND")
-    find_library(MUMPS_mumps_common_LIBRARY
-                 NAMES mumps_common
-                 HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
-                 PATH_SUFFIXES lib)
-    set(MUMPS_mpiseq_LIBRARY "MUMPS_mpiseq_LIBRARY-NOTFOUND")
-    find_library(MUMPS_mpiseq_LIBRARY
-                 NAMES mpiseq
-                 HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
-                 PATH_SUFFIXES libseq)
-    set(MUMPS_pord_LIBRARY "MUMPS_pord_LIBRARY-NOTFOUND")
-    find_library(MUMPS_pord_LIBRARY
-                 NAMES pord
-                 HINTS "${MUMPS_DIR}" "$ENV{MUMPS_DIR}"
-                 PATH_SUFFIXES lib)
+if(MUMPS_LIBDIR)
+    foreach(mumps_lib ${MUMPS_libs_to_find})
+        set(MUMPS_${mumps_lib}_LIBRARY "MUMPS_${mumps_lib}_LIBRARY-NOTFOUND")
+        find_library(MUMPS_${mumps_lib}_LIBRARY
+                     NAMES ${mumps_lib}
+                     HINTS ${MUMPS_LIBDIR})
+    endforeach()
 else()
-    if (MUMPS_FIND_REQUIRED)
-        message(FATAL_ERROR "Looking for mumps -- MUMPS_DIR is not set, to find"
-        " MUMPS please set MUMPS_DIR, the path to MUMPS installation where"
-        " sub-directories include/ and lib/ are located")
+    if(MUMPS_DIR)
+        foreach(mumps_lib ${MUMPS_libs_to_find})
+            set(MUMPS_${mumps_lib}_LIBRARY "MUMPS_${mumps_lib}_LIBRARY-NOTFOUND")
+            find_library(MUMPS_${mumps_lib}_LIBRARY
+                         NAMES ${mumps_lib}
+                         HINTS ${MUMPS_DIR}
+                         PATH_SUFFIXES lib lib32 lib64)
+        endforeach()
     else()
-        if(NOT MUMPS_FIND_QUIETLY)
-            message(STATUS "Looking for mumps -- MUMPS_DIR is not set, to find"
-            " MUMPS please set MUMPS_DIR, the path to MUMPS installation where"
-            " sub-directories include/ and lib/ are located")
-        endif()
+        foreach(mumps_lib ${MUMPS_libs_to_find})
+            set(MUMPS_${mumps_lib}_LIBRARY "MUMPS_${mumps_lib}_LIBRARY-NOTFOUND")
+            find_library(MUMPS_${mumps_lib}_LIBRARY
+                         NAMES ${mumps_lib}
+                         HINTS ${_lib_env})
+        endforeach()
     endif()
 endif()
 

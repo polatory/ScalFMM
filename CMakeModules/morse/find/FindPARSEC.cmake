@@ -230,9 +230,9 @@ if(PKG_CONFIG_EXECUTABLE AND NOT PARSEC_GIVEN_BY_USER)
             #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
             #endif()
         else()
-            message("${Magenta}Looking for PARSEC - not found using PkgConfig."
-                "Perhaps you should add the directory containing libparsec.pc"
-                "to the PKG_CONFIG_PATH environment variable.${ColourReset}")
+            message(STATUS "${Magenta}Looking for PARSEC - not found using PkgConfig."
+                "\n   Perhaps you should add the directory containing libparsec.pc"
+                "\n   to the PKG_CONFIG_PATH environment variable.${ColourReset}")
         endif()
     endif()
 

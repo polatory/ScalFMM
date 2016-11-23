@@ -145,10 +145,9 @@ typedef void (*Callback_free_cell)(void*);
 /**
  * @brief Callback used to know the size of userData.
  * @param level current level of current cell
- * @param userData Datas that will be serialize
  * @param morton_index of the current cell
  */
-typedef FSize (*Callback_get_cell_size)(int level, void * userDatas, long long morton_index);
+typedef FSize (*Callback_get_cell_size)(int level, long long morton_index);
 
 /**
  * @brief Callback used to serialize userdata inside an array of size
@@ -159,6 +158,39 @@ typedef FSize (*Callback_get_cell_size)(int level, void * userDatas, long long m
  */
 typedef void (*Callback_copy_cell)(void * userDatas, FSize size, void * memoryAllocated);
 
+/**
+ * @brief Callback used by scalfmm to know the size needed by the user
+ * to store its local datas linked to a leaf.
+ *
+ * @param nbParts : number of point inside current Leaf
+ * @return Size (in bytes) needed to serialize the user datas
+ */
+typedef FSize (*Callback_get_leaf_size)(FSize nbParts);
+
+/**
+ * @brief Callback used by scalfmm to serialize the leaf user data.
+ *
+ * @param Morton MortonIndex of current Leaf
+ * @param nbParts : number of point inside current Leaf
+ * @param userdata : leaf User data
+ * @param memAllocated : Ptr to an array of size =
+ * Callback_get_leaf_size(...), to be filled by the user.
+ */
+typedef void (*Callback_copy_leaf)(FSize nbParts, void * userDatas, void * memAllocated);
+
+
+/**
+ * @brief Callback used by scalfmm to retreive leaf data from an array
+ * (previously filled by the user through Callback_copy_leaf)
+ *
+ * @param Morton MortonIndex of current Leaf
+ * @param nbParts : number of point inside current Leaf
+ * @param memAllocated : Ptr to an array of size =
+ * Callback_get_leaf_size(...), to be read by the user in order to
+ * re-build its leaf.
+ * @return new userdata local to the leaf
+ */
+typedef void * (*Callback_restore_leaf)(FSize nbParts, void * memAllocated);
 
 /**
  * @brief Callback called if scalfmm_finalize_cell is called.
@@ -214,10 +246,18 @@ typedef struct User_Scalfmm_Cell_Descriptor{
     Callback_get_cell_size user_get_size;
     Callback_copy_cell user_copy_cell;
     Callback_restore_cell user_restore_cell;
-    Callback_init_leaf user_init_leaf;
-    Callback_free_leaf user_free_leaf;
 }Scalfmm_Cell_Descriptor;
 
+/**
+ * @brief This struct contains all the callback affecting leaves
+ */
+typedef struct User_Scalfmm_Leaf_Descriptor{
+    Callback_init_leaf user_init_leaf;
+    Callback_free_leaf user_free_leaf;
+    Callback_get_leaf_size user_get_size;
+    Callback_copy_leaf user_copy_leaf;
+    Callback_restore_leaf user_restore_leaf;
+}Scalfmm_Leaf_Descriptor;
 
 /**
  * @brief This function build the tree. If scalfmm_init has been
@@ -228,7 +268,10 @@ typedef struct User_Scalfmm_Cell_Descriptor{
  * @param BoxWidth Width of the entire simulation box.
  * @param BoxCenter Coordinate of the center of the box (ie array)
  */
-void scalfmm_build_tree(scalfmm_handle handle,int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor);
+void scalfmm_build_tree(scalfmm_handle handle,int TreeHeight,double BoxWidth,
+                        double* BoxCenter,
+                        Scalfmm_Cell_Descriptor user_cell_descriptor,
+                        Scalfmm_Leaf_Descriptor user_leaf_descriptor);
 
 
 /**
@@ -617,6 +660,29 @@ typedef void (*Callback_P2PInner)(void * targetLeaf,FSize nbParticles, const FSi
 typedef void (*Callback_P2PSym)(void * targetLeaf, FSize nbParticles, const FSize* particleIndexes,
                                 void * sourceLeaf, FSize nbSourceParticles, const FSize* sourceParticleIndexes, void* userData);
 
+
+/**
+ * @brief Function to be filled by user's P2P Remote, the sources will
+ * be erased after the call, so no need to modify them
+ * @param targetLeaf ptr to user target leaf
+ * @param nbParticles number of particle in current leaf
+ * @param particleIndexes indexes of particles currently computed
+ * @praram sourceLeaves array of user source target
+ * @param sourceParticleIndexes array of indexes for each source
+ * @param sourceNbPart : array containing the number of part for each source
+ * @param size Number of direct neighbors
+ * @param userData datas specific to the user's kernel
+
+ * @attention This function will be called in distributed scalfmm
+ * only, between leaves belonging to diffenrent MPI processus. On ly
+ * the target leaf should be modified, since we don't send back the
+ * sources.
+ */
+typedef void (*Callback_P2PRemote)(void * targetLeaf,FSize nbParticles, const FSize* particleIndexes,
+                                   void ** sourceLeaves,
+                                   const FSize ** sourceParticleIndexes,FSize * sourceNbPart,
+                                   const int * sourcePosition, const int size, void* userData);
+
 /**
  * @brief Function to be filled by user's method to reset a user's cell
  * @param level  level of the cell.
@@ -647,6 +713,7 @@ typedef struct User_Scalfmm_Kernel_Descriptor {
     Callback_P2PFull p2p_full;
     Callback_P2PInner p2pinner;
     Callback_P2PSym p2p_sym;
+    Callback_P2PRemote p2p_remote;
 }Scalfmm_Kernel_Descriptor;
 
 
@@ -681,6 +748,14 @@ void scalfmm_user_kernel_config(scalfmm_handle Handle, Scalfmm_Kernel_Descriptor
  * @param Handle scalfmm_handle provided by scalfmm_init
  */
 void scalfmm_execute_fmm(scalfmm_handle Handle);
+
+/**
+ * @brief This function launch the fmm on the parameters given, but
+ * only the far field will be evaluated
+ * @param Handle scalfmm_handle provided by scalfmm_init
+ */
+void scalfmm_execute_fmm_far_field(scalfmm_handle Handle);
+
 
 /**
  * @brief This function apply the call back on each leaf. Should be
@@ -778,8 +853,7 @@ scalfmm_handle scalfmm_init_distributed( scalfmm_kernel_type KernelType,scalfmm_
  * once the partitionning done. Can be inserted with no changes.
  * @param indexesFilled Array that store the global index of each part
  * in the localArrayFilled.
- * @param stride stride between two attributes inside attr.
- * @param attr array of attribute to be distributed alongside the positions.
+ * @param outputNbPoint number of points dedicated to this proc
  */
 void scalfmm_create_local_partition(scalfmm_handle handle, int nbPoints, double * particleXYZ, double ** localArrayFilled,
                                     FSize ** indexesFilled, FSize * outputNbPoint);

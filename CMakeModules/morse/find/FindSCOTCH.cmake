@@ -54,6 +54,18 @@ if (NOT SCOTCH_FOUND)
     endif()
 endif()
 
+# Set the version to find
+set(SCOTCH_LOOK_FOR_ESMUMPS OFF)
+
+if( SCOTCH_FIND_COMPONENTS )
+    foreach( component ${SCOTCH_FIND_COMPONENTS} )
+        if (${component} STREQUAL "ESMUMPS")
+            # means we look for esmumps library
+            set(SCOTCH_LOOK_FOR_ESMUMPS ON)
+        endif()
+    endforeach()
+endif()
+
 # SCOTCH may depend on Threads, try to find it
 if (NOT THREADS_FOUND)
     if (SCOTCH_FIND_REQUIRED)
@@ -164,6 +176,9 @@ list(REMOVE_DUPLICATES _lib_env)
 # ----------------------------------------------
 
 set(SCOTCH_libs_to_find "scotch;scotcherrexit")
+if (SCOTCH_LOOK_FOR_ESMUMPS)
+  list(INSERT SCOTCH_libs_to_find 0 "esmumps")
+endif()
 
 # call cmake macro to find the lib path
 if(SCOTCH_LIBDIR)

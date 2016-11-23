@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2016 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -18,11 +18,6 @@
 #  CBLAS depends on the following libraries:
 #   - BLAS
 #
-#  COMPONENTS are optional libraries LAPACKE could be linked with,
-#  Use it to drive detection of a specific compilation chain
-#  COMPONENTS can be some of the following:
-#   - BLASEXT: to activate detection of BLAS with BLASEXT cmake module
-#
 # This module finds headers and cblas library.
 # Results are reported in variables:
 #  CBLAS_FOUND            - True if headers and requested libraries were found
@@ -33,6 +28,7 @@
 #  CBLAS_INCLUDE_DIRS_DEP - cblas + dependencies include directories
 #  CBLAS_LIBRARY_DIRS_DEP - cblas + dependencies link directories
 #  CBLAS_LIBRARIES_DEP    - cblas libraries + dependencies
+#  CBLAS_HAS_ZGEMM3M      - True if cblas contains zgemm3m fast complex mat-mat product
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DCBLAS_DIR=path/to/cblas):
@@ -67,7 +63,7 @@
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2016 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -88,30 +84,12 @@ if (NOT CBLAS_FOUND)
 endif()
 
 
-# CBLAS may depend on BLASEXT
-# try to find it specified as COMPONENTS during the call
-if (CBLAS_FIND_COMPONENTS)
-    foreach( component ${CBLAS_FIND_COMPONENTS} )
-        if(CBLAS_FIND_REQUIRED_${component})
-            find_package(${component} REQUIRED)
-        else()
-            find_package(${component})
-        endif()
-        if(${component}_FOUND)
-            set(CBLAS_${component}_FOUND TRUE)
-        else()
-            set(CBLAS_${component}_FOUND FALSE)
-        endif()
-    endforeach()
-endif ()
-
-
 # CBLAS depends on BLAS anyway, try to find it
 if (NOT BLAS_FOUND)
     if(CBLAS_FIND_REQUIRED)
-        find_package(BLAS REQUIRED)
+        find_package(BLASEXT REQUIRED)
     else()
-        find_package(BLAS)
+        find_package(BLASEXT)
     endif()
 endif()
 
@@ -127,10 +105,18 @@ if (BLAS_FOUND)
         set(CMAKE_REQUIRED_FLAGS "${BLAS_COMPILER_FLAGS}")
         unset(CBLAS_WORKS CACHE)
         check_function_exists(cblas_dscal CBLAS_WORKS)
+        check_function_exists(cblas_zgemm3m CBLAS_ZGEMM3M_FOUND)
         mark_as_advanced(CBLAS_WORKS)
         set(CMAKE_REQUIRED_LIBRARIES)
 
         if(CBLAS_WORKS)
+
+            # Check for faster complex GEMM routine
+            # (only C/Z, no S/D version)
+            if ( CBLAS_ZGEMM3M_FOUND )
+                add_definitions(-DCBLAS_HAS_ZGEMM3M -DCBLAS_HAS_CGEMM3M)
+            endif()
+
             if(NOT CBLAS_FIND_QUIETLY)
                 message(STATUS "Looking for cblas: test with blas succeeds")
             endif()
@@ -341,6 +327,14 @@ if (BLAS_FOUND)
             mark_as_advanced(CBLAS_WORKS)
 
             if(CBLAS_WORKS)
+
+                # Check for faster complex GEMM routine
+                # (only C/Z, no S/D version)
+                check_function_exists(cblas_zgemm3m CBLAS_ZGEMM3M_FOUND)
+                if ( CBLAS_ZGEMM3M_FOUND )
+                    add_definitions(-DCBLAS_HAS_ZGEMM3M -DCBLAS_HAS_CGEMM3M)
+                endif()
+
                 # save link with dependencies
                 set(CBLAS_LIBRARIES_DEP "${REQUIRED_LIBS}")
                 set(CBLAS_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")

@@ -1,16 +1,20 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the FMM.
+// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
+// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the
+// FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+// An extension to the license is given to allow static linking of scalfmm
+// inside a proprietary application (no matter its license).
+// See the main license file for more details.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 #ifndef FQUICKSORTMPI_HPP
@@ -93,14 +97,18 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
         {
             // Get the number of elements each proc should recv
             IndexType totalRemainingElements = totalElements;
+            IndexType totalAvailableElements = totalElementToProceed;
+
 
             for(int idxProc = firstProcToRecv; idxProc < lastProcToRecv ; ++idxProc){
                 const IndexType nbElementsAlreadyOwned = (inFromRightToLeft ? globalElementBalance[idxProc].lowerPart : globalElementBalance[idxProc].greaterPart);
                 const IndexType averageNbElementForRemainingProc = (totalRemainingElements)/(lastProcToRecv-idxProc);
                 totalRemainingElements -= nbElementsAlreadyOwned;
                 FAssertLF(totalRemainingElements >= 0);
-                if(nbElementsAlreadyOwned < averageNbElementForRemainingProc){
-                    nbElementsToRecvPerProc[idxProc - firstProcToRecv] = (averageNbElementForRemainingProc - nbElementsAlreadyOwned);
+                if(nbElementsAlreadyOwned < averageNbElementForRemainingProc && totalAvailableElements){
+                    nbElementsToRecvPerProc[idxProc - firstProcToRecv] = FMath::Min(totalAvailableElements,
+                                                                                    averageNbElementForRemainingProc - nbElementsAlreadyOwned);
+                    totalAvailableElements -= nbElementsToRecvPerProc[idxProc - firstProcToRecv];
                     totalRemainingElements -= nbElementsToRecvPerProc[idxProc - firstProcToRecv];
                 }
                 else{
@@ -308,6 +316,10 @@ class FQuickSortMpi : public FQuickSort< SortType, IndexType> {
                     counterValuesInPivot += 1;
                 }
             }
+            if(counterValuesInPivot <= 1){
+                (*shouldStop) = true;
+                return globalPivot;
+            }
             (*shouldStop) = false;
             return globalPivot/counterValuesInPivot;
         }
@@ -336,7 +348,7 @@ public:
                 break;
             }
 
-            FLOG(if(VerboseLog)  FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] globalPivot = " << globalPivot << "\n" );
+            FLOG(if(VerboseLog)  FLog::Controller << "SCALFMM-DEBUG ["  << currentComm.processId() << "] globalPivot = " << globalPivot << " for " << currentComm.processCount() << "\n" );
             FLOG(if(VerboseLog)  FLog::Controller.flush());
 
             // Split the array in two parts lower equal to pivot and greater than pivot

@@ -95,7 +95,9 @@ public:
     //by specific Engine
 
     //Function about the tree
-    virtual void build_tree(int TreeHeight,FReal BoxWidth,FReal* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
+    virtual void build_tree(int TreeHeight,FReal BoxWidth,FReal* BoxCenter,
+                            Scalfmm_Cell_Descriptor user_cell_descriptor,
+                            Scalfmm_Leaf_Descriptor user_leaf_descriptor){
         FAssertLF(0,"Nothing has been done yet, exiting");
     }
 
@@ -775,6 +777,9 @@ public:
     virtual void execute_fmm(){
         FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
     }
+    virtual void execute_fmm_far_field(){
+        FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
+    }
 
     virtual void intern_dealloc_handle(Callback_free_cell userDeallocator){
         FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
@@ -833,8 +838,11 @@ struct ScalFmmCoreHandle {
 
 
 
-extern "C" void scalfmm_build_tree(scalfmm_handle Handle,int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
-    ((ScalFmmCoreHandle<double> *) Handle)->engine->build_tree(TreeHeight,BoxWidth, BoxCenter, user_cell_descriptor);
+extern "C" void scalfmm_build_tree(scalfmm_handle Handle,int TreeHeight,double BoxWidth,
+                                   double* BoxCenter,
+                                   Scalfmm_Cell_Descriptor user_cell_descriptor,
+                                   Scalfmm_Leaf_Descriptor user_leaf_descriptor){
+    ((ScalFmmCoreHandle<double> *) Handle)->engine->build_tree(TreeHeight,BoxWidth, BoxCenter, user_cell_descriptor, user_leaf_descriptor);
 }
 
 extern "C" void scalfmm_tree_insert_particles(scalfmm_handle Handle, int NbPositions, double * arrayX, double * arrayY, double * arrayZ,
@@ -988,6 +996,12 @@ extern "C" void scalfmm_algorithm_config(scalfmm_handle Handle, scalfmm_algorith
 extern "C" void scalfmm_execute_fmm(scalfmm_handle Handle){
     ((ScalFmmCoreHandle<double> * ) Handle)->engine->execute_fmm();
 }
+
+//Executing FMM
+extern "C" void scalfmm_execute_fmm_far_field(scalfmm_handle Handle){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->execute_fmm_far_field();
+}
+
 
 extern "C" void scalfmm_user_kernel_config(scalfmm_handle Handle, Scalfmm_Kernel_Descriptor userKernel, void * userDatas){
     ((ScalFmmCoreHandle<double> * ) Handle)->engine->user_kernel_config(userKernel,userDatas);

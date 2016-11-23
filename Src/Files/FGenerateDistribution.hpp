@@ -1,10 +1,14 @@
 // ===================================================================================
-// Copyright ScalFmm 2014 INRIA
-//
-// This software is a computer program whose purpose is to compute the FMM.
+// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
+// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the
+// FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
 // abiding by the rules of distribution of free software.
+// An extension to the license is given to allow static linking of scalfmm
+// inside a proprietary application (no matter its license).
+// See the main license file for more details.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -236,7 +240,7 @@ FReal plummerDist(FSize& cpt, const FReal &R) {
     while(true) {
         u = FMath::pow(getRandom<FReal>(), 2.0/3.0);
         radius = FMath::Sqrt(u/(1.0-u));
-        cpt++;
+        ++cpt;
         if(radius <= R) {
             return static_cast<FReal>(radius);
         }
@@ -259,12 +263,17 @@ FReal plummerDist(FSize& cpt, const FReal &R) {
  */
 template <class FReal>
 void unifRandomPlummer(const FSize N, const FReal R, FReal * points) {
+  //Pb of large box
+    constexpr const FReal rand_max = 0.8;
+    const FReal r_max = std::sqrt(1.0/(std::pow(rand_max, -2.0/3.0) - 1.0));
+    //
     unifRandomPointsOnSphere<FReal>(N, 1, points);
     FReal mc = 1.0/static_cast<FReal>(N);
     for (FSize i = 0, j = 0 ; i< N ; ++i, j+=4)  {
     	FReal m = getRandom<FReal>();
-    	FReal r = FMath::Sqrt( 1.0/(FMath::pow(m, -2.0/3.0) - 1.0)) ;
-        points[j]    *= r;
+	//    	FReal r = FMath::Sqrt( 1.0/(FMath::pow(m, -2.0/3.0) - 1.0)) ;
+	FReal r = FMath::Sqrt(1.0/(FMath::pow(m, -2.0/3.0) - 1.0)) / r_max * R;
+	points[j]    *= r;
         points[j+1]  *= r;
         points[j+2]  *= r;
         points[j+3]   = mc;  // the mass
@@ -305,11 +314,11 @@ template <class FReal>
 void unifRandomPlummerLike(const FSize N, const FReal R, FReal * points) {
 	FReal a = 1.0 ;
     unifRandomPointsOnSphere<FReal>(N, 1, points);
-    FReal r, rm = 0.0;
+    FReal r;
     FSize cpt = 0;
     for (FSize i = 0, j = 0 ; i< N ; ++i, j+=4)  {
         r = plummerDist(cpt,R);
-        rm = std::max(rm, r);
+	//        rm = std::max(rm, r);
         points[j]    *= r;
         points[j+1]  *= r;
         points[j+2]  *= r;

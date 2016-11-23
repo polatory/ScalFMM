@@ -6,8 +6,21 @@
 *
 * \section download Download ScalFMM
 *
-* To download ScalFmm go on https://gforge.inria.fr/frs/?group_id=4479 .
-*
+*  YOu can download two versions of scalfmm either the lastest release or the current development distribution.
+* The current release is available at
+* <ul>
+  * <li>      https://gforge.inria.fr/frs/?group_id=4479 .
+   * </ul>
+ *   if you are interested by the the current development distribution  you can clone the public release 
+* <ul>
+  * <li> git clone https://scm.gforge.inria.fr/anonscm/git/scalfmm-public/scalfmm-public.git 
+  * </ul>
+* or use spack to install ScalFMM and all its dependencies (fftw, hwloc,openmpi, )
+* <ul>
+   * <li> git clone https://github.com/fpruvost/spack.git
+  * <li> cd spack
+  *  <li> bin/spack install scalfmm
+    * </ul>
 * You can stay in touch of the updates and new version by registering
 * to the users mailing list
 * (scalfmm-public-users@lists.gforge.inria.fr) which has a very low
@@ -18,9 +31,9 @@
 *
 * <ul>
   * <li> CMake for compiling, ccmake for configuring the build. Version 2.8.12.1 or later </li>
-  * <li> Open MP </li>
-  * <li> MPI, if you want to use distributed version of the algorithm (Optional) </li>
   * <li> A compiler supporting C++ 2011 </li>
+  * <li> OpenMP compiler</li>
+  * <li> MPI, if you want to use distributed version of the algorithm (Optional) </li>
   * <li> BLAS, FFTW, ... (Optionals) </li>
   * </ul>
 *

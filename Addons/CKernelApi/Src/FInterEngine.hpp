@@ -83,7 +83,8 @@ public:
         FScalFMMEngine<FReal>::Algorithm = algo;
     }
 
-    void build_tree(int TreeHeight, FReal BoxWidth , FReal * BoxCenter,User_Scalfmm_Cell_Descriptor notUsedHere){
+    virtual void build_tree(int TreeHeight, FReal BoxWidth , FReal * BoxCenter,
+                            User_Scalfmm_Cell_Descriptor notUsedHere, Scalfmm_Leaf_Descriptor notUsedHereToo){
         octree = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint<FReal>(BoxCenter));
         this->matrix = new MatrixKernelClass();
         this->kernel = new InterKernel(TreeHeight,BoxWidth,FPoint<FReal>(BoxCenter),matrix);
@@ -738,6 +739,47 @@ public:
     //     }
     // }
 
+    void execute_fmm_far_field(){
+        switch(FScalFMMEngine<FReal>::Algorithm){
+        case 0:
+            {
+                typedef FFmmAlgorithm<OctreeClass,InterCell,ContainerClass,InterKernel,LeafClass> AlgoClassSeq;
+                AlgoClassSeq* algoSeq = new AlgoClassSeq(octree,kernel);
+                algoSeq->execute(FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P);
+                FScalFMMEngine<FReal>::algoTimer = algoSeq;
+                FScalFMMEngine<FReal>::abstrct = algoSeq;
+                break;
+            }
+        case 1:
+            {
+                typedef FFmmAlgorithmThread<OctreeClass,InterCell,ContainerClass,InterKernel,LeafClass> AlgoClassThread;
+                AlgoClassThread* algoThread = new AlgoClassThread(octree,kernel);
+                algoThread->execute(FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P);
+                FScalFMMEngine<FReal>::algoTimer = algoThread;
+                FScalFMMEngine<FReal>::abstrct = algoThread;
+                break;
+            }
+        case 2:
+            {
+                typedef FFmmAlgorithmPeriodic<FReal,OctreeClass,InterCell,ContainerClass,InterKernel,LeafClass> AlgoClassPeriodic;
+                AlgoClassPeriodic algoPeriod(octree,2);
+                algoPeriod.setKernel(kernel);
+                algoPeriod.execute(FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P);
+                break;
+            }
+        case 3:
+            {
+                typedef FFmmAlgorithmThreadTsm<OctreeClass,InterCell,ContainerClass,InterKernel,LeafClass> AlgoClassTargetSource;
+                AlgoClassTargetSource* algoTS = new AlgoClassTargetSource(octree,kernel);
+                algoTS->execute(FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P);
+                FScalFMMEngine<FReal>::algoTimer = algoTS;
+                FScalFMMEngine<FReal>::abstrct = algoTS;
+                break;
+            }
+        default :
+            std::cout<< "No algorithm found (probably for strange reasons) : "<< FScalFMMEngine<FReal>::Algorithm <<" exiting" << std::endl;
+        }
+    }
 
     void execute_fmm(){
         switch(FScalFMMEngine<FReal>::Algorithm){

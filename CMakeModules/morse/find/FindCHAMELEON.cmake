@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2016 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -56,7 +56,7 @@
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2016 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -139,9 +139,9 @@ if(PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_GIVEN_BY_USER)
             #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
             #endif()
         else()
-            message("${Magenta}Looking for CHAMELEON - not found using PkgConfig."
-                "Perhaps you should add the directory containing chameleon.pc"
-                "to the PKG_CONFIG_PATH environment variable.${ColourReset}")
+            message(STATUS "${Magenta}Looking for CHAMELEON - not found using PkgConfig."
+                    "\n   Perhaps you should add the directory containing chameleon.pc"
+                    "\n   to the PKG_CONFIG_PATH environment variable.${ColourReset}")
         endif()
     endif()
 
@@ -245,9 +245,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUN
         message(STATUS "Looking for CHAMELEON - Try to detect CBLAS (depends on BLAS)")
     endif()
     if (CHAMELEON_FIND_REQUIRED)
-        find_package(CBLAS REQUIRED COMPONENTS BLASEXT)
+        find_package(CBLAS REQUIRED)
     else()
-        find_package(CBLAS COMPONENTS BLASEXT)
+        find_package(CBLAS)
     endif()
 
     # CHAMELEON depends on LAPACKE
@@ -261,9 +261,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_FOUN
         message(STATUS "Looking for CHAMELEON - Try to detect LAPACKE (depends on LAPACK)")
     endif()
     if (CHAMELEON_FIND_REQUIRED)
-        find_package(LAPACKE REQUIRED COMPONENTS LAPACKEXT)
+        find_package(LAPACKE REQUIRED)
     else()
-        find_package(LAPACKE COMPONENTS LAPACKEXT)
+        find_package(LAPACKE)
     endif()
 
     # CHAMELEON depends on TMG

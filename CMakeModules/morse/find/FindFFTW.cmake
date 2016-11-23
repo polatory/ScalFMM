@@ -251,8 +251,8 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
       else(FFTW3F_FOUND)
         if (NOT FFTW_FIND_QUIETLY)
           message(STATUS "Looking for FFTW3F - not found using PkgConfig."
-          "Perhaps you should add the directory containing fftw3f.pc to"
-          "the PKG_CONFIG_PATH environment variable.")
+          "\n   Perhaps you should add the directory containing fftw3f.pc to"
+          "\n   the PKG_CONFIG_PATH environment variable.")
         endif()
       endif(FFTW3F_FOUND)
     elseif(FFTW_LOOK_FOR_FFTW_LONG)
@@ -280,8 +280,8 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
       else(FFTW3L_FOUND)
         if (NOT FFTW_FIND_QUIETLY)
           message(STATUS "Looking for FFTW3L - not found using PkgConfig."
-          "Perhaps you should add the directory containing fftw3l.pc to"
-          "the PKG_CONFIG_PATH environment variable.")
+          "\n   Perhaps you should add the directory containing fftw3l.pc to"
+          "\n   the PKG_CONFIG_PATH environment variable.")
         endif()
       endif(FFTW3L_FOUND)
     elseif(FFTW_LOOK_FOR_FFTW_QUAD)
@@ -309,8 +309,8 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
       else(FFTW3Q_FOUND)
         if (NOT FFTW_FIND_QUIETLY)
           message(STATUS "Looking for FFTW3Q - not found using PkgConfig."
-          "Perhaps you should add the directory containing fftw3q.pc to"
-          "the PKG_CONFIG_PATH environment variable.")
+          "\n   Perhaps you should add the directory containing fftw3q.pc to"
+          "\n   the PKG_CONFIG_PATH environment variable.")
         endif()
       endif(FFTW3Q_FOUND)
     else()
@@ -338,8 +338,8 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
     else(FFTW3_FOUND)
       if (NOT FFTW_FIND_QUIETLY)
         message(STATUS "Looking for FFTW3 - not found using PkgConfig."
-        "Perhaps you should add the directory containing fftw3.pc to"
-        "the PKG_CONFIG_PATH environment variable.")
+        "\n   Perhaps you should add the directory containing fftw3.pc to"
+        "\n   the PKG_CONFIG_PATH environment variable.")
       endif()
     endif(FFTW3_FOUND)
 

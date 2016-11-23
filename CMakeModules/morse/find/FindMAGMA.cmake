@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2016 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -48,7 +48,7 @@
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2016 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -86,9 +86,9 @@ endif()
 # MAGMA depends on LAPACK anyway, try to find it
 if (NOT LAPACK_FOUND)
     if(MAGMA_FIND_REQUIRED)
-        find_package(LAPACK REQUIRED)
+        find_package(LAPACKEXT REQUIRED)
     else()
-        find_package(LAPACK)
+        find_package(LAPACKEXT)
     endif()
 endif()
 # MAGMA depends on CBLAS anyway, try to find it
@@ -124,9 +124,9 @@ if(PKG_CONFIG_EXECUTABLE AND NOT MAGMA_GIVEN_BY_USER)
             #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
             #endif()
         else()
-            message("${Magenta}Looking for MAGMA - not found using PkgConfig. "
-                "Perhaps you should add the directory containing magma.pc "
-                "to the PKG_CONFIG_PATH environment variable.${ColourReset}")
+            message(STATUS "${Magenta}Looking for MAGMA - not found using PkgConfig. "
+                "\n   Perhaps you should add the directory containing magma.pc "
+                "\n   to the PKG_CONFIG_PATH environment variable.${ColourReset}")
         endif()
     endif()
 

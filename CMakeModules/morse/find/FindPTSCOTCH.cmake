@@ -62,7 +62,19 @@ if (NOT PTSCOTCH_FOUND)
     endif()
 endif()
 
-# PTSCOTCH may depend on Threads, try to find it
+# Set the version to find
+set(PTSCOTCH_LOOK_FOR_ESMUMPS OFF)
+
+if( PTSCOTCH_FIND_COMPONENTS )
+    foreach( component ${PTSCOTCH_FIND_COMPONENTS} )
+        if (${component} STREQUAL "ESMUMPS")
+            # means we look for esmumps library
+            set(PTSCOTCH_LOOK_FOR_ESMUMPS ON)
+        endif()
+    endforeach()
+endif()
+
+# PTSCOTCH depends on Threads, try to find it
 if (NOT THREADS_FOUND)
     if (PTSCOTCH_FIND_REQUIRED)
         find_package(Threads REQUIRED)
@@ -71,7 +83,7 @@ if (NOT THREADS_FOUND)
     endif()
 endif()
 
-# PTSCOTCH may depend on MPI, try to find it
+# PTSCOTCH depends on MPI, try to find it
 if (NOT MPI_FOUND)
     if (PTSCOTCH_FIND_REQUIRED)
         find_package(MPI REQUIRED)
@@ -180,7 +192,12 @@ list(REMOVE_DUPLICATES _lib_env)
 # Try to find the ptscotch lib in the given paths
 # ----------------------------------------------
 
-set(PTSCOTCH_libs_to_find "ptscotch;scotch;scotcherrexit")
+set(PTSCOTCH_libs_to_find "ptscotch;ptscotcherr")
+if (PTSCOTCH_LOOK_FOR_ESMUMPS)
+  list(INSERT PTSCOTCH_libs_to_find 0 "ptesmumps")
+  list(APPEND PTSCOTCH_libs_to_find   "esmumps"  )
+endif()
+list(APPEND PTSCOTCH_libs_to_find "scotch;scotcherr")
 
 # call cmake macro to find the lib path
 if(PTSCOTCH_LIBDIR)
