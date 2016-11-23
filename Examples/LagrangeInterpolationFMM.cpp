@@ -122,8 +122,8 @@ int main(int argc, char* argv[])
   typedef FUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
   //
 #ifdef _OPENMP
-  //  typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-  typedef FFmmAlgorithmSectionTask<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+   //typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+   typedef FFmmAlgorithmSectionTask<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 #else
   typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 #endif
