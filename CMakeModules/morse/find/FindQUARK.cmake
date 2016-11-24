@@ -314,6 +314,8 @@ if (QUARK_LIBRARIES)
         set(QUARK_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of QUARK library" FORCE)
     endif()
 endif()
+mark_as_advanced(QUARK_DIR)
+mark_as_advanced(QUARK_DIR_FOUND)
 
 # check that QUARK has been found
 # ---------------------------------

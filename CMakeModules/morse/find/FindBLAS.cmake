@@ -142,6 +142,7 @@ if (NOT BLAS_FOUND)
 endif()
 
 option(BLAS_VERBOSE "Print some additional information during BLAS libraries detection" OFF)
+mark_as_advanced(BLAS_VERBOSE)
 
 include(CheckFunctionExists)
 include(CheckFortranFunctionExists)
@@ -447,6 +448,7 @@ if (BLA_VENDOR MATCHES "Intel*" OR BLA_VENDOR STREQUAL "All")
             find_library(M_LIBRARY
                 NAMES m
                 HINTS ${_libdir})
+            mark_as_advanced(M_LIBRARY)
             if(M_LIBRARY)
                 set(LM "-lm")
             else()
@@ -1342,4 +1344,5 @@ if (BLAS_FOUND)
         set(BLAS_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of BLAS library" FORCE)
     endif()
 endif()
-
+mark_as_advanced(BLAS_DIR)
+mark_as_advanced(BLAS_DIR_FOUND)

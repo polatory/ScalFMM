@@ -207,6 +207,7 @@ if(METIS_LIBRARIES)
     set(REQUIRED_LIBS "${METIS_LIBRARIES}")
     # m
     find_library(M_LIBRARY NAMES m)
+    mark_as_advanced(M_LIBRARY)
     if(M_LIBRARY)
         list(APPEND REQUIRED_LIBS "-lm")
     endif()
@@ -249,6 +250,8 @@ if (METIS_LIBRARIES)
         set(METIS_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of METIS library" FORCE)
     endif()
 endif()
+mark_as_advanced(METIS_DIR)
+mark_as_advanced(METIS_DIR_FOUND)
 
 # check that METIS has been found
 # ---------------------------------

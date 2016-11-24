@@ -105,6 +105,7 @@ endif (NOT LAPACK_FOUND)
 
 option(LAPACK_VERBOSE "Print some additional information during LAPACK
 libraries detection" OFF)
+mark_as_advanced(LAPACK_VERBOSE)
 if (BLAS_VERBOSE)
     set(LAPACK_VERBOSE ON)
 endif ()
@@ -317,6 +318,7 @@ if(BLAS_FOUND)
 if (UNIX AND NOT WIN32)
   # m
   find_library(M_LIBRARY NAMES m)
+  mark_as_advanced(M_LIBRARY)
   if(M_LIBRARY)
     set(LM "-lm")
   else()
@@ -430,6 +432,28 @@ if (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
  endif()
  endif(NOT LAPACK_LIBRARIES)
 endif (BLA_VENDOR STREQUAL "Goto" OR BLA_VENDOR STREQUAL "All")
+
+#open lapack
+if (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
+ if(NOT LAPACK_LIBRARIES)
+  check_lapack_libraries(
+  LAPACK_LIBRARIES
+  LAPACK
+  cheev
+  ""
+  "openblas"
+  "${BLAS_LIBRARIES}"
+  ""
+  )
+ if(NOT LAPACK_FIND_QUIETLY)
+     if(LAPACK_LIBRARIES)
+         message(STATUS "Looking for Open LAPACK: found")
+     else()
+         message(STATUS "Looking for Open LAPACK: not found")
+     endif()
+ endif()
+ endif(NOT LAPACK_LIBRARIES)
+endif (BLA_VENDOR STREQUAL "Open" OR BLA_VENDOR STREQUAL "All")
 
 # LAPACK in IBM ESSL library (requires generic lapack lib, too)
 if (BLA_VENDOR STREQUAL "IBMESSL" OR BLA_VENDOR STREQUAL "All")
@@ -640,3 +664,5 @@ if (LAPACK_FOUND)
         set(LAPACK_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of LAPACK library" FORCE)
     endif()
 endif()
+mark_as_advanced(LAPACK_DIR)
+mark_as_advanced(LAPACK_DIR_FOUND)

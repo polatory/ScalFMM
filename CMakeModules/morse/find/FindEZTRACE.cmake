@@ -339,6 +339,8 @@ if (EZTRACE_LIBRARIES)
         set(EZTRACE_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of EZTRACE library" FORCE)
     endif()
 endif()
+mark_as_advanced(EZTRACE_DIR)
+mark_as_advanced(EZTRACE_DIR_FOUND)
 
 # check that EZTRACE has been found
 # -------------------------------

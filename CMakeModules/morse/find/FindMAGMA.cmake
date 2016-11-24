@@ -422,6 +422,8 @@ if (MAGMA_LIBRARIES)
         set(MAGMA_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of MAGMA library" FORCE)
     endif()
 endif()
+mark_as_advanced(MAGMA_DIR)
+mark_as_advanced(MAGMA_DIR_FOUND)
 
 # check that MAGMA has been found
 # -------------------------------

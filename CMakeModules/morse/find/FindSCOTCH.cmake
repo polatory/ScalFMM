@@ -12,7 +12,11 @@
 # Use this module by invoking find_package with the form:
 #  find_package(SCOTCH
 #               [REQUIRED]             # Fail with error if scotch is not found
+#               [COMPONENTS <comp1> <comp2> ...] # dependencies
 #              )
+#
+#  COMPONENTS can be some of the following:
+#   - ESMUMPS: to activate detection of Scotch with the esmumps interface
 #
 # This module finds headers and scotch library.
 # Results are reported in variables:
@@ -251,16 +255,19 @@ if(SCOTCH_LIBRARIES)
     endif()
     set(Z_LIBRARY "Z_LIBRARY-NOTFOUND")
     find_library(Z_LIBRARY NAMES z)
+    mark_as_advanced(Z_LIBRARY)
     if(Z_LIBRARY)
         list(APPEND REQUIRED_LIBS "-lz")
     endif()
     set(M_LIBRARY "M_LIBRARY-NOTFOUND")
     find_library(M_LIBRARY NAMES m)
+    mark_as_advanced(M_LIBRARY)
     if(M_LIBRARY)
         list(APPEND REQUIRED_LIBS "-lm")
     endif()
     set(RT_LIBRARY "RT_LIBRARY-NOTFOUND")
     find_library(RT_LIBRARY NAMES rt)
+    mark_as_advanced(RT_LIBRARY)
     if(RT_LIBRARY)
         list(APPEND REQUIRED_LIBS "-lrt")
     endif()
@@ -306,6 +313,8 @@ if (SCOTCH_LIBRARIES)
         set(SCOTCH_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of SCOTCH library" FORCE)
     endif()
 endif()
+mark_as_advanced(SCOTCH_DIR)
+mark_as_advanced(SCOTCH_DIR_FOUND)
 
 # Check the size of SCOTCH_Num
 # ---------------------------------

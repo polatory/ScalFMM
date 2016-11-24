@@ -908,6 +908,8 @@ if (STARPU_LIBRARIES)
         set(STARPU_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of STARPU library" FORCE)
     endif()
 endif()
+mark_as_advanced(STARPU_DIR)
+mark_as_advanced(STARPU_DIR_FOUND)
 
 # check that STARPU has been found
 # --------------------------------

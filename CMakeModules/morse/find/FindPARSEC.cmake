@@ -634,6 +634,8 @@ if (PARSEC_LIBRARIES)
         set(PARSEC_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of PARSEC library" FORCE)
     endif()
 endif()
+mark_as_advanced(PARSEC_DIR)
+mark_as_advanced(PARSEC_DIR_FOUND)
 
 # check that PARSEC has been found
 # --------------------------------

@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2016 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -12,11 +12,15 @@
 # Use this module by invoking find_package with the form:
 #  find_package(PTSCOTCH
 #               [REQUIRED]             # Fail with error if ptscotch is not found
+#               [COMPONENTS <comp1> <comp2> ...] # dependencies
 #              )
 #
 #  PTSCOTCH depends on the following libraries:
 #   - Threads
 #   - MPI
+#
+#  COMPONENTS can be some of the following:
+#   - ESMUMPS: to activate detection of PT-Scotch with the esmumps interface
 #
 # This module finds headers and ptscotch library.
 # Results are reported in variables:
@@ -43,7 +47,7 @@
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2016 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -127,39 +131,52 @@ list(REMOVE_DUPLICATES _inc_env)
 
 # Try to find the ptscotch header in the given paths
 # -------------------------------------------------
+
+set(PTSCOTCH_hdrs_to_find "ptscotch.h;scotch.h")
+
 # call cmake macro to find the header path
 if(PTSCOTCH_INCDIR)
-    set(PTSCOTCH_ptscotch.h_DIRS "PTSCOTCH_ptscotch.h_DIRS-NOTFOUND")
-    find_path(PTSCOTCH_ptscotch.h_DIRS
-      NAMES ptscotch.h
-      HINTS ${PTSCOTCH_INCDIR})
+    foreach(ptscotch_hdr ${PTSCOTCH_hdrs_to_find})
+        set(PTSCOTCH_${ptscotch_hdr}_DIRS "PTSCOTCH_${ptscotch_hdr}_DIRS-NOTFOUND")
+        find_path(PTSCOTCH_${ptscotch_hdr}_DIRS
+          NAMES ${ptscotch_hdr}
+          HINTS ${PTSCOTCH_INCDIR})
+        mark_as_advanced(PTSCOTCH_${ptscotch_hdr}_DIRS)
+    endforeach()
 else()
     if(PTSCOTCH_DIR)
-        set(PTSCOTCH_ptscotch.h_DIRS "PTSCOTCH_ptscotch.h_DIRS-NOTFOUND")
-        find_path(PTSCOTCH_ptscotch.h_DIRS
-          NAMES ptscotch.h
-          HINTS ${PTSCOTCH_DIR}
-          PATH_SUFFIXES "include" "include/ptscotch")
+        foreach(ptscotch_hdr ${PTSCOTCH_hdrs_to_find})
+            set(PTSCOTCH_${ptscotch_hdr}_DIRS "PTSCOTCH_${ptscotch_hdr}_DIRS-NOTFOUND")
+            find_path(PTSCOTCH_${ptscotch_hdr}_DIRS
+              NAMES ${ptscotch_hdr}
+              HINTS ${PTSCOTCH_DIR}
+              PATH_SUFFIXES "include" "include/scotch")
+            mark_as_advanced(PTSCOTCH_${ptscotch_hdr}_DIRS)
+        endforeach()
     else()
-        set(PTSCOTCH_ptscotch.h_DIRS "PTSCOTCH_ptscotch.h_DIRS-NOTFOUND")
-        find_path(PTSCOTCH_ptscotch.h_DIRS
-          NAMES ptscotch.h
-          HINTS ${_inc_env}
-          PATH_SUFFIXES "scotch")
+        foreach(ptscotch_hdr ${PTSCOTCH_hdrs_to_find})
+            set(PTSCOTCH_${ptscotch_hdr}_DIRS "PTSCOTCH_${ptscotch_hdr}_DIRS-NOTFOUND")
+            find_path(PTSCOTCH_${ptscotch_hdr}_DIRS
+              NAMES ${ptscotch_hdr}
+              HINTS ${_inc_env}
+              PATH_SUFFIXES "scotch")
+            mark_as_advanced(PTSCOTCH_${ptscotch_hdr}_DIRS)
+        endforeach()
     endif()
 endif()
-mark_as_advanced(PTSCOTCH_ptscotch.h_DIRS)
 
 # If found, add path to cmake variable
 # ------------------------------------
-if (PTSCOTCH_ptscotch.h_DIRS)
-    set(PTSCOTCH_INCLUDE_DIRS "${PTSCOTCH_ptscotch.h_DIRS}")
-else ()
-    set(PTSCOTCH_INCLUDE_DIRS "PTSCOTCH_INCLUDE_DIRS-NOTFOUND")
-    if (NOT PTSCOTCH_FIND_QUIETLY)
-        message(STATUS "Looking for ptscotch -- ptscotch.h not found")
+foreach(ptscotch_hdr ${PTSCOTCH_hdrs_to_find})
+    if (PTSCOTCH_${ptscotch_hdr}_DIRS)
+        list(APPEND PTSCOTCH_INCLUDE_DIRS "${PTSCOTCH_${ptscotch_hdr}_DIRS}")
+    else ()
+        set(PTSCOTCH_INCLUDE_DIRS "PTSCOTCH_INCLUDE_DIRS-NOTFOUND")
+        if (NOT PTSCOTCH_FIND_QUIETLY)
+            message(STATUS "Looking for ptscotch -- ${ptscotch_hdr} not found")
+        endif()
     endif()
-endif()
+endforeach()
 
 
 # Looking for lib
@@ -284,16 +301,19 @@ if(PTSCOTCH_LIBRARIES)
     endif()
     set(Z_LIBRARY "Z_LIBRARY-NOTFOUND")
     find_library(Z_LIBRARY NAMES z)
+    mark_as_advanced(Z_LIBRARY)
     if(Z_LIBRARY)
         list(APPEND REQUIRED_LIBS "-lz")
     endif()
     set(M_LIBRARY "M_LIBRARY-NOTFOUND")
     find_library(M_LIBRARY NAMES m)
+    mark_as_advanced(M_LIBRARY)
     if(M_LIBRARY)
         list(APPEND REQUIRED_LIBS "-lm")
     endif()
     set(RT_LIBRARY "RT_LIBRARY-NOTFOUND")
     find_library(RT_LIBRARY NAMES rt)
+    mark_as_advanced(RT_LIBRARY)
     if(RT_LIBRARY)
         list(APPEND REQUIRED_LIBS "-lrt")
     endif()
@@ -347,6 +367,8 @@ if (PTSCOTCH_LIBRARIES)
         set(PTSCOTCH_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of PTSCOTCH library" FORCE)
     endif()
 endif()
+mark_as_advanced(PTSCOTCH_DIR)
+mark_as_advanced(PTSCOTCH_DIR_FOUND)
 
 # Check the size of SCOTCH_Num
 # ---------------------------------

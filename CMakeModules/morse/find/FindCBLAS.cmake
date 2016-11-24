@@ -377,6 +377,8 @@ if (CBLAS_LIBRARIES)
         set(CBLAS_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of CBLAS library" FORCE)
     endif()
 endif()
+mark_as_advanced(CBLAS_DIR)
+mark_as_advanced(CBLAS_DIR_FOUND)
 
 # check that CBLAS has been found
 # -------------------------------

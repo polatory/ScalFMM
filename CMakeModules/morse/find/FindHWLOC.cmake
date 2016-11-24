@@ -300,6 +300,8 @@ if (HWLOC_LIBRARIES)
         set(HWLOC_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of HWLOC library" FORCE)
     endif()
 endif()
+mark_as_advanced(HWLOC_DIR)
+mark_as_advanced(HWLOC_DIR_FOUND)
 
 # check that HWLOC has been found
 # -------------------------------

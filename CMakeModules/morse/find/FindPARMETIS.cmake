@@ -207,6 +207,7 @@ if(PARMETIS_LIBRARIES)
     set(REQUIRED_LIBS "${PARMETIS_LIBRARIES}")
     # m
     find_library(M_LIBRARY NAMES m)
+    mark_as_advanced(M_LIBRARY)
     if(M_LIBRARY)
         list(APPEND REQUIRED_LIBS "-lm")
     endif()
@@ -249,6 +250,8 @@ if (PARMETIS_LIBRARIES)
         set(PARMETIS_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of PARMETIS library" FORCE)
     endif()
 endif()
+mark_as_advanced(PARMETIS_DIR)
+mark_as_advanced(PARMETIS_DIR_FOUND)
 
 # check that PARMETIS has been found
 # ----------------------------------

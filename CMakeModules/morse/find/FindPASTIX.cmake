@@ -693,6 +693,8 @@ if (PASTIX_LIBRARIES)
         set(PASTIX_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of PASTIX library" FORCE)
     endif()
 endif()
+mark_as_advanced(PASTIX_DIR)
+mark_as_advanced(PASTIX_DIR_FOUND)
 
 # check that PASTIX has been found
 # ---------------------------------

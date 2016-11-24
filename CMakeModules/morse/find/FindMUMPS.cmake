@@ -27,7 +27,9 @@
 #   - SEQ: to activate detection of sequential version (exclude MPI version)
 #        it looks for Threads and BLAS libraries
 #   - SCOTCH: to activate detection of MUMPS linked with SCOTCH
+#   - PTSCOTCH: to activate detection of MUMPS linked with PTSCOTCH
 #   - METIS: to activate detection of MUMPS linked with METIS
+#   - PARMETIS: to activate detection of MUMPS linked with PARMETIS
 #
 # This module finds headers and mumps library.
 # Results are reported in variables:
@@ -75,7 +77,9 @@ endif()
 set(MUMPS_LOOK_FOR_MPI ON)
 set(MUMPS_LOOK_FOR_SEQ OFF)
 set(MUMPS_LOOK_FOR_SCOTCH OFF)
+set(MUMPS_LOOK_FOR_PTSCOTCH OFF)
 set(MUMPS_LOOK_FOR_METIS OFF)
+set(MUMPS_LOOK_FOR_PARMETIS OFF)
 
 if( MUMPS_FIND_COMPONENTS )
     foreach( component ${MUMPS_FIND_COMPONENTS} )
@@ -92,8 +96,14 @@ if( MUMPS_FIND_COMPONENTS )
         if (${component} STREQUAL "SCOTCH")
             set(MUMPS_LOOK_FOR_SCOTCH ON)
         endif()
+        if (${component} STREQUAL "PTSCOTCH")
+            set(MUMPS_LOOK_FOR_PTSCOTCH ON)
+        endif()
         if (${component} STREQUAL "METIS")
             set(MUMPS_LOOK_FOR_METIS ON)
+        endif()
+        if (${component} STREQUAL "PARMETIS")
+            set(MUMPS_LOOK_FOR_PARMETIS ON)
         endif()
     endforeach()
 endif()
@@ -196,6 +206,19 @@ if (MUMPS_LOOK_FOR_SCOTCH)
     endif()
 endif()
 
+# MUMPS may depends on PTSCOTCH
+#------------------------------
+if (MUMPS_LOOK_FOR_PTSCOTCH)
+    if (NOT MUMPS_FIND_QUIETLY)
+        message(STATUS "Looking for MUMPS - Try to detect PTSCOTCH with esmumps")
+    endif()
+    if (MUMPS_FIND_REQUIRED AND MUMPS_FIND_REQUIRED_PTSCOTCH)
+        find_package(PTSCOTCH REQUIRED COMPONENTS ESMUMPS)
+    else()
+        find_package(PTSCOTCH COMPONENTS ESMUMPS)
+    endif()
+endif()
+
 # MUMPS may depends on METIS
 #---------------------------
 if (NOT METIS_FOUND AND MUMPS_LOOK_FOR_METIS)
@@ -209,6 +232,18 @@ if (NOT METIS_FOUND AND MUMPS_LOOK_FOR_METIS)
     endif()
 endif()
 
+# MUMPS may depends on PARMETIS
+#------------------------------
+if (NOT PARMETIS_FOUND AND MUMPS_LOOK_FOR_PARMETIS)
+    if (NOT MUMPS_FIND_QUIETLY)
+        message(STATUS "Looking for MUMPS - Try to detect PARMETIS")
+    endif()
+    if (MUMPS_FIND_REQUIRED AND MUMPS_FIND_REQUIRED_PARMETIS)
+        find_package(PARMETIS REQUIRED)
+    else()
+        find_package(PARMETIS)
+    endif()
+endif()
 
 # Looking for MUMPS
 # -----------------
@@ -581,6 +616,18 @@ if(MUMPS_LIBRARIES)
         endforeach()
         list(APPEND REQUIRED_LIBS "${SCOTCH_LIBRARIES}")
     endif()
+    # PTSCOTCH
+    if (MUMPS_LOOK_FOR_PTSCOTCH AND PTSCOTCH_FOUND)
+        if (PTSCOTCH_INCLUDE_DIRS)
+            list(APPEND REQUIRED_INCDIRS "${PTSCOTCH_INCLUDE_DIRS}")
+        endif()
+        foreach(libdir ${PTSCOTCH_LIBRARY_DIRS})
+            if (libdir)
+                list(APPEND REQUIRED_LIBDIRS "${libdir}")
+            endif()
+        endforeach()
+        list(APPEND REQUIRED_LIBS "${PTSCOTCH_LIBRARIES}")
+    endif()
     # METIS
     if (MUMPS_LOOK_FOR_METIS AND METIS_FOUND)
         if (METIS_INCLUDE_DIRS)
@@ -592,6 +639,18 @@ if(MUMPS_LIBRARIES)
             endif()
         endforeach()
         list(APPEND REQUIRED_LIBS "${METIS_LIBRARIES}")
+    endif()
+    # PARMETIS
+    if (MUMPS_LOOK_FOR_PARMETIS AND PARMETIS_FOUND)
+        if (PARMETIS_INCLUDE_DIRS)
+            list(APPEND REQUIRED_INCDIRS "${PARMETIS_INCLUDE_DIRS}")
+        endif()
+        foreach(libdir ${PARMETIS_LIBRARY_DIRS})
+            if (libdir)
+                list(APPEND REQUIRED_LIBDIRS "${libdir}")
+            endif()
+        endforeach()
+        list(APPEND REQUIRED_LIBS "${PARMETIS_LIBRARIES}")
     endif()
     # Fortran
     if (CMAKE_C_COMPILER_ID MATCHES "GNU")
@@ -664,7 +723,7 @@ if(MUMPS_LIBRARIES)
             message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
             message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
             message(STATUS "Maybe MUMPS is linked with specific libraries. "
-            "Have you tried with COMPONENTS (MPI/SEQ, SCOTCH, METIS)? "
+            "Have you tried with COMPONENTS (MPI/SEQ, SCOTCH, PTSCOTCH, METIS, PARMETIS)? "
             "See the explanation in FindMUMPS.cmake.")
         endif()
     endif()
@@ -683,6 +742,8 @@ if (MUMPS_LIBRARIES)
         set(MUMPS_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of MUMPS library" FORCE)
     endif()
 endif()
+mark_as_advanced(MUMPS_DIR)
+mark_as_advanced(MUMPS_DIR_FOUND)
 
 # check that MUMPS has been found
 # -------------------------------

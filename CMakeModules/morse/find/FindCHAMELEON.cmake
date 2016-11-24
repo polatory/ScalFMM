@@ -784,6 +784,8 @@ if (CHAMELEON_LIBRARIES)
         set(CHAMELEON_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of CHAMELEON library" FORCE)
     endif()
 endif()
+mark_as_advanced(CHAMELEON_DIR)
+mark_as_advanced(CHAMELEON_DIR_FOUND)
 
 # check that CHAMELEON has been found
 # ---------------------------------

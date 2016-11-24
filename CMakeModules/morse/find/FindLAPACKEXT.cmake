@@ -40,19 +40,45 @@
 # (To distribute this file outside of Morse, substitute the full
 #  License text for the above reference.)
 
+# macro to factorize this call
+macro(find_package_lapack)
+    if(LAPACKEXT_FIND_REQUIRED)
+        if(LAPACKEXT_FIND_QUIETLY)
+            find_package(LAPACK REQUIRED QUIET)
+        else()
+            find_package(LAPACK REQUIRED)
+        endif()
+    else()
+        if(LAPACKEXT_FIND_QUIETLY)
+            find_package(LAPACK QUIET)
+        else()
+            find_package(LAPACK)
+        endif()
+    endif()    
+endmacro()
 
 # LAPACKEXT depends on BLASEXT
 # call our extended module for BLAS
 #----------------------------------
 if (NOT BLAS_FOUND)
     if(LAPACKEXT_FIND_REQUIRED)
-        find_package(BLASEXT REQUIRED)
+        if(LAPACKEXT_FIND_QUIETLY)
+            find_package(BLAS REQUIRED QUIET)
+        else()
+            find_package(BLAS REQUIRED)
+        endif()
     else()
-        find_package(BLASEXT)
+        if(LAPACKEXT_FIND_QUIETLY)
+            find_package(BLAS QUIET)
+        else()
+            find_package(BLAS)
+        endif()
     endif()
 endif ()
 
-message(STATUS "In FindLAPACKEXT")
+if(NOT LAPACKEXT_FIND_QUIETLY)
+    message(STATUS "In FindLAPACKEXT")
+endif()
 
 if(BLA_VENDOR MATCHES "Intel*")
 
@@ -125,12 +151,7 @@ if(BLA_VENDOR MATCHES "Intel*")
         ## look for the sequential version
         set(BLA_VENDOR "Intel10_64lp_seq")
     endif()
-
-    if(LAPACKEXT_FIND_REQUIRED)
-        find_package(LAPACK REQUIRED)
-    else()
-        find_package(LAPACK)
-    endif()
+    find_package_lapack()
 
     if (LAPACK_FOUND)
         if(BLAS_SEQ_LIBRARIES)
@@ -152,12 +173,7 @@ elseif(BLA_VENDOR MATCHES "IBMESSL*")
 
     ## look for the sequential version
     set(BLA_VENDOR "IBMESSL")
-
-    if(LAPACKEXT_FIND_REQUIRED)
-        find_package(LAPACK REQUIRED)
-    else()
-        find_package(LAPACK)
-    endif()
+    find_package_lapack()
 
     if (LAPACK_FOUND)
         if(LAPACK_LIBRARIES)
@@ -169,12 +185,7 @@ elseif(BLA_VENDOR MATCHES "IBMESSL*")
 
     ## look for the multithreaded version
     set(BLA_VENDOR "IBMESSLMT")
-
-    if(LAPACKEXT_FIND_REQUIRED)
-        find_package(LAPACK REQUIRED)
-    else()
-        find_package(LAPACK)
-    endif()
+    find_package_lapack()
 
     if (LAPACK_FOUND)
         if(LAPACK_LIBRARIES)
@@ -189,11 +200,7 @@ elseif(BLA_VENDOR MATCHES "ACML*")
     ###
     # look for libs
     ###
-    if(LAPACKEXT_FIND_REQUIRED)
-        find_package(LAPACK REQUIRED)
-    else()
-        find_package(LAPACK)
-    endif()
+    find_package_lapack()
 
     if (LAPACK_FOUND)
         if(BLAS_SEQ_LIBRARIES)
@@ -228,11 +235,7 @@ else()
     #     all the possibilities
     #  BLA_F95     if set on tries to find the f95 interfaces for LAPACK/LAPACK
     # Remark: it looks only into paths contained in the system environment variables
-    if(LAPACKEXT_FIND_REQUIRED)
-        find_package(LAPACK REQUIRED)
-    else()
-        find_package(LAPACK)
-    endif()
+    find_package_lapack()
 
     if(LAPACK_FOUND)
         set(LAPACK_SEQ_LIBRARIES "${LAPACK_LIBRARIES}")

@@ -294,6 +294,8 @@ if (FXT_LIBRARIES)
         set(FXT_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of FXT library" FORCE)
     endif()
 endif()
+mark_as_advanced(FXT_DIR)
+mark_as_advanced(FXT_DIR_FOUND)
 
 # check that FXT has been found
 # -------------------------------

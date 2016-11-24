@@ -295,6 +295,8 @@ if (TMG_LIBRARIES)
         set(TMG_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of TMG library" FORCE)
     endif()
 endif()
+mark_as_advanced(TMG_DIR)
+mark_as_advanced(TMG_DIR_FOUND)
 
 # check that TMG has been found
 # -------------------------------

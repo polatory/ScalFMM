@@ -304,6 +304,7 @@ if (LAPACK_FOUND)
             endif()
             # m
             find_library(M_LIBRARY NAMES m HINTS ${_lib_env})
+            mark_as_advanced(M_LIBRARY)
             if(M_LIBRARY)
                 list(APPEND REQUIRED_LIBS "-lm")
             endif()
@@ -366,6 +367,8 @@ if (LAPACKE_LIBRARIES)
         set(LAPACKE_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of LAPACKE library" FORCE)
     endif()
 endif()
+mark_as_advanced(LAPACKE_DIR)
+mark_as_advanced(LAPACKE_DIR_FOUND)
 
 # check that LAPACKE has been found
 # ---------------------------------

@@ -719,6 +719,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
     endif()
     # m
     find_library(M_LIBRARY NAMES m)
+    mark_as_advanced(M_LIBRARY)
     if(M_LIBRARY)
       list(APPEND REQUIRED_LIBS "-lm")
     endif()
@@ -787,6 +788,8 @@ if (FFTW_LIBRARIES)
     set(FFTW_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of FFTW library" FORCE)
   endif()
 endif()
+mark_as_advanced(FFTW_DIR)
+mark_as_advanced(FFTW_DIR_FOUND)
 
 # check that FFTW has been found
 # -------------------------------
