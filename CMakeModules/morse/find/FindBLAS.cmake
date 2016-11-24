@@ -969,7 +969,7 @@ endif ()
 # BLAS in IBM ESSL library (requires generic BLAS lib, too)
 if (BLA_VENDOR STREQUAL "IBMESSL" OR BLA_VENDOR STREQUAL "All")
 
-    if(NOT BLAS_LIBRARIES OR BLA_VENDOR STREQUAL "IBMESSL")
+    if(NOT BLAS_LIBRARIES)
         check_fortran_libraries(
         BLAS_LIBRARIES
         BLAS
@@ -992,7 +992,7 @@ endif ()
 # BLAS in IBM ESSL_MT library (requires generic BLAS lib, too)
 if (BLA_VENDOR STREQUAL "IBMESSLMT" OR BLA_VENDOR STREQUAL "All")
 
-    if(NOT BLAS_LIBRARIES OR BLA_VENDOR STREQUAL "IBMESSLMT")
+    if(NOT BLAS_LIBRARIES)
         check_fortran_libraries(
         BLAS_LIBRARIES
         BLAS
