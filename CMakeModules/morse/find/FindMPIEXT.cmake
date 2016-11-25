@@ -23,11 +23,11 @@
 
 # add a cache variable to let the user specify the BLAS vendor
 if (NOT MPI_FOUND)
-    if(MPIEXT_FIND_REQUIRED)
-        find_package(MPI REQUIRED)
-    else()
-        find_package(MPI)
-    endif()
+  if(MPIEXT_FIND_REQUIRED)
+    find_package(MPI REQUIRED)
+  else()
+    find_package(MPI)
+  endif()
 endif ()
 
 if (MPI_FOUND)
@@ -103,9 +103,9 @@ int main(int argc, char **argv) {
     if(NOT SERIALIZED_TEST_RUNS)
       check_c_source_runs("${MPI_C_TEST_FUNNELED_SOURCE}" FUNNELED_TEST_RUNS)
       if(NOT FUNNELED_TEST_RUNS)
-        set(MPI_THREAD_SUPPORTED_LEVEL "MPI_THREAD_SINGLE")
+	set(MPI_THREAD_SUPPORTED_LEVEL "MPI_THREAD_SINGLE")
       else(NOT FUNNELED_TEST_RUNS)
-        set(MPI_THREAD_SUPPORTED_LEVEL "MPI_THREAD_FUNNELED")
+	set(MPI_THREAD_SUPPORTED_LEVEL "MPI_THREAD_FUNNELED")
       endif(NOT FUNNELED_TEST_RUNS)
     else(NOT SERIALIZED_TEST_RUNS)
       set(MPI_THREAD_SUPPORTED_LEVEL "MPI_THREAD_SERIALIZED")

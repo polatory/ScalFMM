@@ -113,38 +113,38 @@ if( FFTW_FIND_COMPONENTS )
       # means we look for the Intel MKL version of FFTW
       set(FFTW_LOOK_FOR_MKL ON)
       if (FFTW_LOOK_FOR_FFTW_LONG)
-        if (NOT FFTW_FIND_QUIETLY)
-          message(WARNING "Looking for FFTW -- long precision functions do not exist in MKL FFTW")
-        endif()
-        set(FFTW_LOOK_FOR_FFTW_LONG OFF)
+	if (NOT FFTW_FIND_QUIETLY)
+	  message(WARNING "Looking for FFTW -- long precision functions do not exist in MKL FFTW")
+	endif()
+	set(FFTW_LOOK_FOR_FFTW_LONG OFF)
       endif()
       if (FFTW_LOOK_FOR_FFTW_QUAD)
-        if (NOT FFTW_FIND_QUIETLY)
-          message(WARNING "Looking for FFTW -- quadruple functions do not exist in MKL FFTW")
-        endif()
-        set(FFTW_LOOK_FOR_FFTW_QUAD OFF)
+	if (NOT FFTW_FIND_QUIETLY)
+	  message(WARNING "Looking for FFTW -- quadruple functions do not exist in MKL FFTW")
+	endif()
+	set(FFTW_LOOK_FOR_FFTW_QUAD OFF)
       endif()
     endif()
     if (${component} STREQUAL "ESSL")
       # means we look for the Intel MKL version of FFTW
       set(FFTW_LOOK_FOR_ESSL ON)
       if (FFTW_LOOK_FOR_FFTW_LONG)
-        if (NOT FFTW_FIND_QUIETLY)
-          message(WARNING "Looking for FFTW -- long precision functions do not exist in FFTW_ESSL")
-        endif()
-        set(FFTW_LOOK_FOR_FFTW_LONG OFF)
+	if (NOT FFTW_FIND_QUIETLY)
+	  message(WARNING "Looking for FFTW -- long precision functions do not exist in FFTW_ESSL")
+	endif()
+	set(FFTW_LOOK_FOR_FFTW_LONG OFF)
       endif()
       if (FFTW_LOOK_FOR_FFTW_QUAD)
-        if (NOT FFTW_FIND_QUIETLY)
-          message(WARNING "Looking for FFTW -- quadruple functions do not exist in FFTW_ESSL")
-        endif()
-        set(FFTW_LOOK_FOR_FFTW_QUAD OFF)
+	if (NOT FFTW_FIND_QUIETLY)
+	  message(WARNING "Looking for FFTW -- quadruple functions do not exist in FFTW_ESSL")
+	endif()
+	set(FFTW_LOOK_FOR_FFTW_QUAD OFF)
       endif()
       if (FFTW_LOOK_FOR_OMP)
-        if (NOT FFTW_FIND_QUIETLY)
-          message(WARNING "Looking for FFTW -- FFTW_ESSL does not use OpenMP")
-        endif()
-        set(FFTW_LOOK_FOR_OMP OFF)
+	if (NOT FFTW_FIND_QUIETLY)
+	  message(WARNING "Looking for FFTW -- FFTW_ESSL does not use OpenMP")
+	endif()
+	set(FFTW_LOOK_FOR_OMP OFF)
       endif()
     endif()
   endforeach()
@@ -230,116 +230,116 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
       pkg_search_module(FFTW3F fftw3f)
       pkg_search_module(FFTW3 fftw3)
       if (FFTW3F_FOUND)
-        if (NOT FFTW_FIND_QUIETLY)
-          message(STATUS "Looking for FFTW3F - found using PkgConfig")
-        endif()
-        if (FFTW3F_LIBRARIES)
-          list(APPEND FFTW_LIBRARIES "${FFTW3F_LIBRARIES}")
-        endif()
-        if(FFTW3F_INCLUDE_DIRS)
-          list(APPEND FFTW_INCLUDE_DIRS "${FFTW3F_INCLUDE_DIRS}")
-        else()
-          if (NOT FFTW_FIND_QUIETLY)
-            message(WARNING "FFTW3F_INCLUDE_DIRS is empty using PkgConfig."
-            "Perhaps the path to fftw3f headers is already present in your"
-            "CPATH/C(PLUS)_INCLUDE_PATH environment variables.")
-          endif()
-        endif()
-        if(FFTW3F_LIBRARY_DIRS)
-          list(APPEND FFTW_LIBRARY_DIRS "${FFTW3F_LIBRARY_DIRS}")
-        endif()
+	if (NOT FFTW_FIND_QUIETLY)
+	  message(STATUS "Looking for FFTW3F - found using PkgConfig")
+	endif()
+	if (FFTW3F_LIBRARIES)
+	  list(APPEND FFTW_LIBRARIES "${FFTW3F_LIBRARIES}")
+	endif()
+	if(FFTW3F_INCLUDE_DIRS)
+	  list(APPEND FFTW_INCLUDE_DIRS "${FFTW3F_INCLUDE_DIRS}")
+	else()
+	  if (NOT FFTW_FIND_QUIETLY)
+	    message(WARNING "FFTW3F_INCLUDE_DIRS is empty using PkgConfig."
+	      "Perhaps the path to fftw3f headers is already present in your"
+	      "CPATH/C(PLUS)_INCLUDE_PATH environment variables.")
+	  endif()
+	endif()
+	if(FFTW3F_LIBRARY_DIRS)
+	  list(APPEND FFTW_LIBRARY_DIRS "${FFTW3F_LIBRARY_DIRS}")
+	endif()
       else(FFTW3F_FOUND)
-        if (NOT FFTW_FIND_QUIETLY)
-          message(STATUS "Looking for FFTW3F - not found using PkgConfig."
-          "\n   Perhaps you should add the directory containing fftw3f.pc to"
-          "\n   the PKG_CONFIG_PATH environment variable.")
-        endif()
+	if (NOT FFTW_FIND_QUIETLY)
+	  message(STATUS "Looking for FFTW3F - not found using PkgConfig."
+	    "\n   Perhaps you should add the directory containing fftw3f.pc to"
+	    "\n   the PKG_CONFIG_PATH environment variable.")
+	endif()
       endif(FFTW3F_FOUND)
     elseif(FFTW_LOOK_FOR_FFTW_LONG)
       pkg_search_module(FFTW3L fftw3l)
       pkg_search_module(FFTW3 fftw3)
       if (FFTW3L_FOUND)
-        if (NOT FFTW_FIND_QUIETLY)
-          message(STATUS "Looking for FFTW3L - found using PkgConfig")
-        endif()
-        if (FFTW3L_LIBRARIES)
-          list(APPEND FFTW_LIBRARIES "${FFTW3L_LIBRARIES}")
-        endif()
-        if(FFTW3L_INCLUDE_DIRS)
-          list(APPEND FFTW_INCLUDE_DIRS "${FFTW3L_INCLUDE_DIRS}")
-        else()
-          if (NOT FFTW_FIND_QUIETLY)
-            message(WARNING "FFTW3L_INCLUDE_DIRS is empty using PkgConfig."
-            "Perhaps the path to fftw3l headers is already present in your"
-            "CPATH/C(PLUS)_INCLUDE_PATH environment variables.")
-          endif()
-        endif()
-        if(FFTW3L_LIBRARY_DIRS)
-          list(APPEND FFTW_LIBRARY_DIRS "${FFTW3L_LIBRARY_DIRS}")
-        endif()
+	if (NOT FFTW_FIND_QUIETLY)
+	  message(STATUS "Looking for FFTW3L - found using PkgConfig")
+	endif()
+	if (FFTW3L_LIBRARIES)
+	  list(APPEND FFTW_LIBRARIES "${FFTW3L_LIBRARIES}")
+	endif()
+	if(FFTW3L_INCLUDE_DIRS)
+	  list(APPEND FFTW_INCLUDE_DIRS "${FFTW3L_INCLUDE_DIRS}")
+	else()
+	  if (NOT FFTW_FIND_QUIETLY)
+	    message(WARNING "FFTW3L_INCLUDE_DIRS is empty using PkgConfig."
+	      "Perhaps the path to fftw3l headers is already present in your"
+	      "CPATH/C(PLUS)_INCLUDE_PATH environment variables.")
+	  endif()
+	endif()
+	if(FFTW3L_LIBRARY_DIRS)
+	  list(APPEND FFTW_LIBRARY_DIRS "${FFTW3L_LIBRARY_DIRS}")
+	endif()
       else(FFTW3L_FOUND)
-        if (NOT FFTW_FIND_QUIETLY)
-          message(STATUS "Looking for FFTW3L - not found using PkgConfig."
-          "\n   Perhaps you should add the directory containing fftw3l.pc to"
-          "\n   the PKG_CONFIG_PATH environment variable.")
-        endif()
+	if (NOT FFTW_FIND_QUIETLY)
+	  message(STATUS "Looking for FFTW3L - not found using PkgConfig."
+	    "\n   Perhaps you should add the directory containing fftw3l.pc to"
+	    "\n   the PKG_CONFIG_PATH environment variable.")
+	endif()
       endif(FFTW3L_FOUND)
     elseif(FFTW_LOOK_FOR_FFTW_QUAD)
       pkg_search_module(FFTW3Q fftw3q)
       pkg_search_module(FFTW3 fftw3)
       if (FFTW3Q_FOUND)
-        if (NOT FFTW_FIND_QUIETLY)
-          message(STATUS "Looking for FFTW3Q - found using PkgConfig")
-        endif()
-        if (FFTW3Q_LIBRARIES)
-          list(APPEND FFTW_LIBRARIES "${FFTW3Q_LIBRARIES}")
-        endif()
-        if(FFTW3Q_INCLUDE_DIRS)
-          list(APPEND FFTW_INCLUDE_DIRS "${FFTW3Q_INCLUDE_DIRS}")
-        else()
-          if (NOT FFTW_FIND_QUIETLY)
-            message(WARNING "FFTW3Q_INCLUDE_DIRS is empty using PkgConfig."
-            "Perhaps the path to fftw3q headers is already present in your"
-            "CPATH/C(PLUS)_INCLUDE_PATH environment variables.")
-          endif()
-        endif()
-        if(FFTW3Q_LIBRARY_DIRS)
-          list(APPEND FFTW_LIBRARY_DIRS "${FFTW3Q_LIBRARY_DIRS}")
-        endif()
+	if (NOT FFTW_FIND_QUIETLY)
+	  message(STATUS "Looking for FFTW3Q - found using PkgConfig")
+	endif()
+	if (FFTW3Q_LIBRARIES)
+	  list(APPEND FFTW_LIBRARIES "${FFTW3Q_LIBRARIES}")
+	endif()
+	if(FFTW3Q_INCLUDE_DIRS)
+	  list(APPEND FFTW_INCLUDE_DIRS "${FFTW3Q_INCLUDE_DIRS}")
+	else()
+	  if (NOT FFTW_FIND_QUIETLY)
+	    message(WARNING "FFTW3Q_INCLUDE_DIRS is empty using PkgConfig."
+	      "Perhaps the path to fftw3q headers is already present in your"
+	      "CPATH/C(PLUS)_INCLUDE_PATH environment variables.")
+	  endif()
+	endif()
+	if(FFTW3Q_LIBRARY_DIRS)
+	  list(APPEND FFTW_LIBRARY_DIRS "${FFTW3Q_LIBRARY_DIRS}")
+	endif()
       else(FFTW3Q_FOUND)
-        if (NOT FFTW_FIND_QUIETLY)
-          message(STATUS "Looking for FFTW3Q - not found using PkgConfig."
-          "\n   Perhaps you should add the directory containing fftw3q.pc to"
-          "\n   the PKG_CONFIG_PATH environment variable.")
-        endif()
+	if (NOT FFTW_FIND_QUIETLY)
+	  message(STATUS "Looking for FFTW3Q - not found using PkgConfig."
+	    "\n   Perhaps you should add the directory containing fftw3q.pc to"
+	    "\n   the PKG_CONFIG_PATH environment variable.")
+	endif()
       endif(FFTW3Q_FOUND)
     else()
       pkg_search_module(FFTW3 fftw3)
     endif()
     if (FFTW3_FOUND)
       if (NOT FFTW_FIND_QUIETLY)
-        message(STATUS "Looking for FFTW3 - found using PkgConfig")
+	message(STATUS "Looking for FFTW3 - found using PkgConfig")
       endif()
       if (FFTW3_LIBRARIES)
-        list(APPEND FFTW_LIBRARIES "${FFTW3_LIBRARIES}")
+	list(APPEND FFTW_LIBRARIES "${FFTW3_LIBRARIES}")
       endif()
       if(FFTW3_INCLUDE_DIRS)
-        list(APPEND FFTW_INCLUDE_DIRS "${FFTW3_INCLUDE_DIRS}")
+	list(APPEND FFTW_INCLUDE_DIRS "${FFTW3_INCLUDE_DIRS}")
       else()
-        if (NOT FFTW_FIND_QUIETLY)
-          message(WARNING "FFTW3_INCLUDE_DIRS is empty using PkgConfig."
-          "Perhaps the path to fftw3 headers is already present in your"
-          "CPATH/C(PLUS)_INCLUDE_PATH environment variables.")
-        endif()
+	if (NOT FFTW_FIND_QUIETLY)
+	  message(WARNING "FFTW3_INCLUDE_DIRS is empty using PkgConfig."
+	    "Perhaps the path to fftw3 headers is already present in your"
+	    "CPATH/C(PLUS)_INCLUDE_PATH environment variables.")
+	endif()
       endif()
       if(FFTW3_LIBRARY_DIRS)
-        list(APPEND FFTW_LIBRARY_DIRS "${FFTW3_LIBRARY_DIRS}")
+	list(APPEND FFTW_LIBRARY_DIRS "${FFTW3_LIBRARY_DIRS}")
       endif()
     else(FFTW3_FOUND)
       if (NOT FFTW_FIND_QUIETLY)
-        message(STATUS "Looking for FFTW3 - not found using PkgConfig."
-        "\n   Perhaps you should add the directory containing fftw3.pc to"
-        "\n   the PKG_CONFIG_PATH environment variable.")
+	message(STATUS "Looking for FFTW3 - not found using PkgConfig."
+	  "\n   Perhaps you should add the directory containing fftw3.pc to"
+	  "\n   the PKG_CONFIG_PATH environment variable.")
       endif()
     endif(FFTW3_FOUND)
 
@@ -356,11 +356,11 @@ if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
 endif(NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
 
 if( (NOT PKG_CONFIG_EXECUTABLE) OR
-       (PKG_CONFIG_EXECUTABLE AND NOT FFTW_FOUND) OR
-       FFTW_GIVEN_BY_USER OR
-       FFTW_LOOK_FOR_MKL  OR
-       FFTW_LOOK_FOR_ESSL
-  )
+    (PKG_CONFIG_EXECUTABLE AND NOT FFTW_FOUND) OR
+    FFTW_GIVEN_BY_USER OR
+    FFTW_LOOK_FOR_MKL  OR
+    FFTW_LOOK_FOR_ESSL
+    )
 
   # Looking for include
   # -------------------
@@ -522,7 +522,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
     endif()
     if (FFTW_LOOK_FOR_FFTW_QUAD)
       if (NOT FFTW_LOOK_FOR_MKL AND NOT FFTW_LOOK_FOR_ESSL)
-        list(APPEND FFTW_libs_to_find "quadmath")
+	list(APPEND FFTW_libs_to_find "quadmath")
       endif()
     endif()
 
@@ -536,27 +536,27 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
     # call cmake macro to find the lib path
     if(FFTW_LIBDIR)
       foreach(fftw_lib ${FFTW_libs_to_find})
-        set(FFTW_${fftw_lib}_LIBRARY "FFTW_${fftw_lib}_LIBRARY-NOTFOUND")
-          find_library(FFTW_${fftw_lib}_LIBRARY
-          NAMES ${fftw_lib}
-          HINTS ${FFTW_LIBDIR})
+	set(FFTW_${fftw_lib}_LIBRARY "FFTW_${fftw_lib}_LIBRARY-NOTFOUND")
+	find_library(FFTW_${fftw_lib}_LIBRARY
+	  NAMES ${fftw_lib}
+	  HINTS ${FFTW_LIBDIR})
       endforeach()
     else()
       if(FFTW_DIR)
-        foreach(fftw_lib ${FFTW_libs_to_find})
-          set(FFTW_${fftw_lib}_LIBRARY "FFTW_${fftw_lib}_LIBRARY-NOTFOUND")
-          find_library(FFTW_${fftw_lib}_LIBRARY
-          NAMES ${fftw_lib}
-          HINTS ${FFTW_DIR}
-          PATH_SUFFIXES lib lib32 lib64)
-        endforeach()
+	foreach(fftw_lib ${FFTW_libs_to_find})
+	  set(FFTW_${fftw_lib}_LIBRARY "FFTW_${fftw_lib}_LIBRARY-NOTFOUND")
+	  find_library(FFTW_${fftw_lib}_LIBRARY
+	    NAMES ${fftw_lib}
+	    HINTS ${FFTW_DIR}
+	    PATH_SUFFIXES lib lib32 lib64)
+	endforeach()
       else()
-        foreach(fftw_lib ${FFTW_libs_to_find})
-          set(FFTW_${fftw_lib}_LIBRARY "FFTW_${fftw_lib}_LIBRARY-NOTFOUND")
-          find_library(FFTW_${fftw_lib}_LIBRARY
-          NAMES ${fftw_lib}
-          HINTS ${PATH_TO_LOOK_FOR})
-        endforeach()
+	foreach(fftw_lib ${FFTW_libs_to_find})
+	  set(FFTW_${fftw_lib}_LIBRARY "FFTW_${fftw_lib}_LIBRARY-NOTFOUND")
+	  find_library(FFTW_${fftw_lib}_LIBRARY
+	    NAMES ${fftw_lib}
+	    HINTS ${PATH_TO_LOOK_FOR})
+	endforeach()
       endif()
     endif()
 
@@ -565,15 +565,15 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
     foreach(fftw_lib ${FFTW_libs_to_find})
 
       if (FFTW_${fftw_lib}_LIBRARY)
-        get_filename_component(${fftw_lib}_lib_path "${FFTW_${fftw_lib}_LIBRARY}" PATH)
-        # set cmake variables
-        list(APPEND FFTW_LIBRARIES "${FFTW_${fftw_lib}_LIBRARY}")
-        list(APPEND FFTW_LIBRARY_DIRS "${${fftw_lib}_lib_path}")
+	get_filename_component(${fftw_lib}_lib_path "${FFTW_${fftw_lib}_LIBRARY}" PATH)
+	# set cmake variables
+	list(APPEND FFTW_LIBRARIES "${FFTW_${fftw_lib}_LIBRARY}")
+	list(APPEND FFTW_LIBRARY_DIRS "${${fftw_lib}_lib_path}")
       else ()
-        list(APPEND FFTW_LIBRARIES "${FFTW_${fftw_lib}_LIBRARY}")
-        if (NOT FFTW_FIND_QUIETLY)
-          message(STATUS "Looking for FFTW -- lib ${fftw_lib} not found")
-        endif()
+	list(APPEND FFTW_LIBRARIES "${FFTW_${fftw_lib}_LIBRARY}")
+	if (NOT FFTW_FIND_QUIETLY)
+	  message(STATUS "Looking for FFTW -- lib ${fftw_lib} not found")
+	endif()
       endif ()
       mark_as_advanced(FFTW_${fftw_lib}_LIBRARY)
 
@@ -581,9 +581,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
 
     # check if one lib is NOTFOUND
     foreach(lib ${FFTW_LIBRARIES})
-        if (NOT lib)
-            set(FFTW_LIBRARIES "FFTW_LIBRARIES-NOTFOUND")
-        endif()
+      if (NOT lib)
+	set(FFTW_LIBRARIES "FFTW_LIBRARIES-NOTFOUND")
+      endif()
     endforeach()
 
   endif(NOT FFTW_LOOK_FOR_MKL)
@@ -593,67 +593,67 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
     # FFTW relies on blas libs
     if (FFTW_LOOK_FOR_THREADS)
       if (FFTW_LOOK_FOR_MKL)
-        if (BLAS_PAR_LIBRARIES)
-          list(APPEND FFTW_LIBRARIES "${BLAS_PAR_LIBRARIES}")
-          if (NOT FFTW_FIND_QUIETLY)
-            message(STATUS "Multithreaded FFTW has been found: ${FFTW_LIBRARIES}")
-          endif()
-        else()
-          if (NOT FFTW_FIND_QUIETLY)
-            if (FFTW_FIND_REQUIRED AND FFTW_FIND_REQUIRED_MKL)
-              message(FATAL_ERROR "FFTW is required but not found.")
-            else()
-              message(STATUS "Multithreaded FFTW not found.")
-            endif()
-          endif()
-        endif(BLAS_PAR_LIBRARIES)
+	if (BLAS_PAR_LIBRARIES)
+	  list(APPEND FFTW_LIBRARIES "${BLAS_PAR_LIBRARIES}")
+	  if (NOT FFTW_FIND_QUIETLY)
+	    message(STATUS "Multithreaded FFTW has been found: ${FFTW_LIBRARIES}")
+	  endif()
+	else()
+	  if (NOT FFTW_FIND_QUIETLY)
+	    if (FFTW_FIND_REQUIRED AND FFTW_FIND_REQUIRED_MKL)
+	      message(FATAL_ERROR "FFTW is required but not found.")
+	    else()
+	      message(STATUS "Multithreaded FFTW not found.")
+	    endif()
+	  endif()
+	endif(BLAS_PAR_LIBRARIES)
       elseif (FFTW_LOOK_FOR_ESSL)
-        if (FFTW_LIBRARIES AND BLAS_PAR_LIBRARIES)
-          list(APPEND FFTW_LIBRARIES "${BLAS_PAR_LIBRARIES}")
-          if (NOT FFTW_FIND_QUIETLY)
-            message(STATUS "Multithreaded FFTW has been found: ${FFTW_LIBRARIES}")
-          endif()
-        else()
-          if (NOT FFTW_FIND_QUIETLY)
-            if (FFTW_FIND_REQUIRED AND FFTW_FIND_REQUIRED_MKL)
-              message(FATAL_ERROR "FFTW is required but not found.")
-            else()
-              message(STATUS "Multithreaded FFTW not found.")
-            endif()
-          endif()
-        endif(FFTW_LIBRARIES AND BLAS_PAR_LIBRARIES)
+	if (FFTW_LIBRARIES AND BLAS_PAR_LIBRARIES)
+	  list(APPEND FFTW_LIBRARIES "${BLAS_PAR_LIBRARIES}")
+	  if (NOT FFTW_FIND_QUIETLY)
+	    message(STATUS "Multithreaded FFTW has been found: ${FFTW_LIBRARIES}")
+	  endif()
+	else()
+	  if (NOT FFTW_FIND_QUIETLY)
+	    if (FFTW_FIND_REQUIRED AND FFTW_FIND_REQUIRED_MKL)
+	      message(FATAL_ERROR "FFTW is required but not found.")
+	    else()
+	      message(STATUS "Multithreaded FFTW not found.")
+	    endif()
+	  endif()
+	endif(FFTW_LIBRARIES AND BLAS_PAR_LIBRARIES)
       endif()
     else(FFTW_LOOK_FOR_THREADS)
       if (FFTW_LOOK_FOR_MKL)
-        if (BLAS_SEQ_LIBRARIES)
-          list(APPEND FFTW_LIBRARIES "${BLAS_SEQ_LIBRARIES}")
-          if (NOT FFTW_FIND_QUIETLY)
-            message(STATUS "FFTW has been found: ${FFTW_LIBRARIES}")
-          endif()
-        else()
-          if (NOT FFTW_FIND_QUIETLY)
-           if (FFTW_FIND_REQUIRED AND FFTW_FIND_REQUIRED_MKL)
-             message(FATAL_ERROR "FFTW is required but not found.")
-           else()
-             message(STATUS "FFTW not found.")
-           endif()
-          endif()
-        endif(BLAS_SEQ_LIBRARIES)
+	if (BLAS_SEQ_LIBRARIES)
+	  list(APPEND FFTW_LIBRARIES "${BLAS_SEQ_LIBRARIES}")
+	  if (NOT FFTW_FIND_QUIETLY)
+	    message(STATUS "FFTW has been found: ${FFTW_LIBRARIES}")
+	  endif()
+	else()
+	  if (NOT FFTW_FIND_QUIETLY)
+	    if (FFTW_FIND_REQUIRED AND FFTW_FIND_REQUIRED_MKL)
+	      message(FATAL_ERROR "FFTW is required but not found.")
+	    else()
+	      message(STATUS "FFTW not found.")
+	    endif()
+	  endif()
+	endif(BLAS_SEQ_LIBRARIES)
       elseif (FFTW_LOOK_FOR_ESSL)
-        if (FFTW_LIBRARIES AND BLAS_SEQ_LIBRARIES)
-          list(APPEND FFTW_LIBRARIES "${BLAS_SEQ_LIBRARIES}")
-          if (NOT FFTW_FIND_QUIETLY)
-            message(STATUS "FFTW has been found: ${FFTW_LIBRARIES}")
-          endif()
-        else()
-          if (NOT FFTW_FIND_QUIETLY)
-           if (FFTW_FIND_REQUIRED AND FFTW_FIND_REQUIRED_MKL)
-             message(FATAL_ERROR "FFTW is required but not found.")
-           else()
-             message(STATUS "FFTW not found.")
-           endif()
-          endif()
-        endif(FFTW_LIBRARIES AND BLAS_SEQ_LIBRARIES)
+	if (FFTW_LIBRARIES AND BLAS_SEQ_LIBRARIES)
+	  list(APPEND FFTW_LIBRARIES "${BLAS_SEQ_LIBRARIES}")
+	  if (NOT FFTW_FIND_QUIETLY)
+	    message(STATUS "FFTW has been found: ${FFTW_LIBRARIES}")
+	  endif()
+	else()
+	  if (NOT FFTW_FIND_QUIETLY)
+	    if (FFTW_FIND_REQUIRED AND FFTW_FIND_REQUIRED_MKL)
+	      message(FATAL_ERROR "FFTW is required but not found.")
+	    else()
+	      message(STATUS "FFTW not found.")
+	    endif()
+	  endif()
+	endif(FFTW_LIBRARIES AND BLAS_SEQ_LIBRARIES)
       endif()
     endif(FFTW_LOOK_FOR_THREADS)
 
@@ -661,7 +661,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
       list(APPEND FFTW_LIBRARY_DIRS "${BLAS_LIBRARY_DIRS}")
     else()
       if (NOT FFTW_FIND_QUIETLY)
-        message(WARNING "FFTW_LIBRARY_DIRS may not be complete because BLAS_LIBRARY_DIRS is empty.")
+	message(WARNING "FFTW_LIBRARY_DIRS may not be complete because BLAS_LIBRARY_DIRS is empty.")
       endif()
     endif()
 
@@ -672,9 +672,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
 
   # check if one lib is NOTFOUND
   foreach(lib ${FFTW_LIBRARIES})
-      if (NOT lib)
-          set(FFTW_LIBRARIES "FFTW_LIBRARIES-NOTFOUND")
-      endif()
+    if (NOT lib)
+      set(FFTW_LIBRARIES "FFTW_LIBRARIES-NOTFOUND")
+    endif()
   endforeach()
 
   # check a function to validate the find
@@ -714,7 +714,7 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
     if(FFTW_LOOK_FOR_MKL)
       list(APPEND REQUIRED_LIBS "${CMAKE_THREAD_LIBS_INIT}")
       if (CMAKE_C_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        list(APPEND REQUIRED_LDFLAGS "-Wl,--no-as-needed")
+	list(APPEND REQUIRED_LDFLAGS "-Wl,--no-as-needed")
       endif()
     endif()
     # m
@@ -772,11 +772,11 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR
   endif(FFTW_LIBRARIES)
 
 endif( (NOT PKG_CONFIG_EXECUTABLE) OR
-       (PKG_CONFIG_EXECUTABLE AND NOT FFTW_FOUND) OR
-       FFTW_GIVEN_BY_USER OR
-       FFTW_LOOK_FOR_MKL  OR
-       FFTW_LOOK_FOR_ESSL
-     )
+  (PKG_CONFIG_EXECUTABLE AND NOT FFTW_FOUND) OR
+  FFTW_GIVEN_BY_USER OR
+  FFTW_LOOK_FOR_MKL  OR
+  FFTW_LOOK_FOR_ESSL
+  )
 
 if (FFTW_LIBRARIES)
   list(GET FFTW_LIBRARIES 0 first_lib)
@@ -795,12 +795,12 @@ mark_as_advanced(FFTW_DIR_FOUND)
 # -------------------------------
 include(FindPackageHandleStandardArgs)
 if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FFTW_FOUND) OR (FFTW_GIVEN_BY_USER) )
-find_package_handle_standard_args(FFTW DEFAULT_MSG
-  FFTW_LIBRARIES
-  FFTW_INCLUDE_DIRS
-  FFTW_WORKS)
+  find_package_handle_standard_args(FFTW DEFAULT_MSG
+    FFTW_LIBRARIES
+    FFTW_INCLUDE_DIRS
+    FFTW_WORKS)
 else()
-find_package_handle_standard_args(FFTW DEFAULT_MSG
-  FFTW_LIBRARIES
-  FFTW_WORKS)
+  find_package_handle_standard_args(FFTW DEFAULT_MSG
+    FFTW_LIBRARIES
+    FFTW_WORKS)
 endif()

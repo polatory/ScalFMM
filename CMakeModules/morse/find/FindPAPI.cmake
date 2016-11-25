@@ -46,10 +46,10 @@
 #  License text for the above reference.)
 
 if (NOT PAPI_FOUND)
-    set(PAPI_DIR "" CACHE PATH "Installation directory of PAPI library")
-    if (NOT PAPI_FIND_QUIETLY)
-        message(STATUS "A cache variable, namely PAPI_DIR, has been set to specify the install directory of PAPI")
-    endif()
+  set(PAPI_DIR "" CACHE PATH "Installation directory of PAPI library")
+  if (NOT PAPI_FIND_QUIETLY)
+    message(STATUS "A cache variable, namely PAPI_DIR, has been set to specify the install directory of PAPI")
+  endif()
 endif()
 
 set(ENV_PAPI_DIR "$ENV{PAPI_DIR}")
@@ -57,7 +57,7 @@ set(ENV_PAPI_INCDIR "$ENV{PAPI_INCDIR}")
 set(ENV_PAPI_LIBDIR "$ENV{PAPI_LIBDIR}")
 set(PAPI_GIVEN_BY_USER "FALSE")
 if ( PAPI_DIR OR ( PAPI_INCDIR AND PAPI_LIBDIR) OR ENV_PAPI_DIR OR (ENV_PAPI_INCDIR AND ENV_PAPI_LIBDIR) )
-    set(PAPI_GIVEN_BY_USER "TRUE")
+  set(PAPI_GIVEN_BY_USER "TRUE")
 endif()
 
 # Optionally use pkg-config to detect include/library dirs (if pkg-config is available)
@@ -66,233 +66,233 @@ include(FindPkgConfig)
 find_package(PkgConfig QUIET)
 if(PKG_CONFIG_EXECUTABLE AND NOT PAPI_GIVEN_BY_USER)
 
-    pkg_search_module(PAPI papi)
-    if (NOT PAPI_FIND_QUIETLY)
-        if (PAPI_FOUND AND PAPI_LIBRARIES)
-            message(STATUS "Looking for PAPI - found using PkgConfig")
-            #if(NOT PAPI_INCLUDE_DIRS)
-            #    message("${Magenta}PAPI_INCLUDE_DIRS is empty using PkgConfig."
-            #        "Perhaps the path to papi headers is already present in your"
-            #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
-            #endif()
-        else()
-            message(STATUS "${Magenta}Looking for PAPI - not found using PkgConfig."
-                "\n   Perhaps you should add the directory containing papi.pc to the"
-                "\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
-        endif()
+  pkg_search_module(PAPI papi)
+  if (NOT PAPI_FIND_QUIETLY)
+    if (PAPI_FOUND AND PAPI_LIBRARIES)
+      message(STATUS "Looking for PAPI - found using PkgConfig")
+      #if(NOT PAPI_INCLUDE_DIRS)
+      #    message("${Magenta}PAPI_INCLUDE_DIRS is empty using PkgConfig."
+      #        "Perhaps the path to papi headers is already present in your"
+      #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
+      #endif()
+    else()
+      message(STATUS "${Magenta}Looking for PAPI - not found using PkgConfig."
+	"\n   Perhaps you should add the directory containing papi.pc to the"
+	"\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
+  endif()
 
 endif(PKG_CONFIG_EXECUTABLE AND NOT PAPI_GIVEN_BY_USER)
 
 if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PAPI_FOUND) OR (PAPI_GIVEN_BY_USER) )
 
-    if (NOT PAPI_FIND_QUIETLY)
-        message(STATUS "Looking for PAPI - PkgConfig not used")
-    endif()
+  if (NOT PAPI_FIND_QUIETLY)
+    message(STATUS "Looking for PAPI - PkgConfig not used")
+  endif()
 
-    # Looking for include
-    # -------------------
+  # Looking for include
+  # -------------------
 
-    # Add system include paths to search include
-    # ------------------------------------------
-    unset(_inc_env)
-    set(ENV_PAPI_DIR "$ENV{PAPI_DIR}")
-    set(ENV_PAPI_INCDIR "$ENV{PAPI_INCDIR}")
-    if(ENV_PAPI_INCDIR)
-        list(APPEND _inc_env "${ENV_PAPI_INCDIR}")
-    elseif(ENV_PAPI_DIR)
-        list(APPEND _inc_env "${ENV_PAPI_DIR}")
-        list(APPEND _inc_env "${ENV_PAPI_DIR}/include")
-        list(APPEND _inc_env "${ENV_PAPI_DIR}/include/papi")
+  # Add system include paths to search include
+  # ------------------------------------------
+  unset(_inc_env)
+  set(ENV_PAPI_DIR "$ENV{PAPI_DIR}")
+  set(ENV_PAPI_INCDIR "$ENV{PAPI_INCDIR}")
+  if(ENV_PAPI_INCDIR)
+    list(APPEND _inc_env "${ENV_PAPI_INCDIR}")
+  elseif(ENV_PAPI_DIR)
+    list(APPEND _inc_env "${ENV_PAPI_DIR}")
+    list(APPEND _inc_env "${ENV_PAPI_DIR}/include")
+    list(APPEND _inc_env "${ENV_PAPI_DIR}/include/papi")
+  else()
+    if(WIN32)
+      string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
     else()
-        if(WIN32)
-            string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
-        else()
-            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-            list(APPEND _inc_env "${_path_env}")
-            string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-            list(APPEND _inc_env "${_path_env}")
-            string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-            list(APPEND _inc_env "${_path_env}")
-            string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-            list(APPEND _inc_env "${_path_env}")
-        endif()
+      string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+      list(APPEND _inc_env "${_path_env}")
+      string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+      list(APPEND _inc_env "${_path_env}")
+      string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+      list(APPEND _inc_env "${_path_env}")
+      string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+      list(APPEND _inc_env "${_path_env}")
     endif()
-    list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
-    list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
-    list(REMOVE_DUPLICATES _inc_env)
+  endif()
+  list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
+  list(APPEND _inc_env "${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES}")
+  list(REMOVE_DUPLICATES _inc_env)
 
-    # Try to find the papi header in the given paths
-    # -------------------------------------------------
-    # call cmake macro to find the header path
-    if(PAPI_INCDIR)
-        set(PAPI_papi.h_DIRS "PAPI_papi.h_DIRS-NOTFOUND")
-        find_path(PAPI_papi.h_DIRS
-          NAMES papi.h
-          HINTS ${PAPI_INCDIR})
+  # Try to find the papi header in the given paths
+  # -------------------------------------------------
+  # call cmake macro to find the header path
+  if(PAPI_INCDIR)
+    set(PAPI_papi.h_DIRS "PAPI_papi.h_DIRS-NOTFOUND")
+    find_path(PAPI_papi.h_DIRS
+      NAMES papi.h
+      HINTS ${PAPI_INCDIR})
+  else()
+    if(PAPI_DIR)
+      set(PAPI_papi.h_DIRS "PAPI_papi.h_DIRS-NOTFOUND")
+      find_path(PAPI_papi.h_DIRS
+	NAMES papi.h
+	HINTS ${PAPI_DIR}
+	PATH_SUFFIXES "include" "include/papi")
     else()
-        if(PAPI_DIR)
-            set(PAPI_papi.h_DIRS "PAPI_papi.h_DIRS-NOTFOUND")
-            find_path(PAPI_papi.h_DIRS
-              NAMES papi.h
-              HINTS ${PAPI_DIR}
-              PATH_SUFFIXES "include" "include/papi")
-        else()
-            set(PAPI_papi.h_DIRS "PAPI_papi.h_DIRS-NOTFOUND")
-            find_path(PAPI_papi.h_DIRS
-                      NAMES papi.h
-                      HINTS ${_inc_env}
-                      PATH_SUFFIXES "papi")
-        endif()
+      set(PAPI_papi.h_DIRS "PAPI_papi.h_DIRS-NOTFOUND")
+      find_path(PAPI_papi.h_DIRS
+	NAMES papi.h
+	HINTS ${_inc_env}
+	PATH_SUFFIXES "papi")
     endif()
-    mark_as_advanced(PAPI_papi.h_DIRS)
+  endif()
+  mark_as_advanced(PAPI_papi.h_DIRS)
 
-    # Add path to cmake variable
-    # ------------------------------------
-    if (PAPI_papi.h_DIRS)
-        set(PAPI_INCLUDE_DIRS "${PAPI_papi.h_DIRS}")
-    else ()
-        set(PAPI_INCLUDE_DIRS "PAPI_INCLUDE_DIRS-NOTFOUND")
-        if(NOT PAPI_FIND_QUIETLY)
-            message(STATUS "Looking for papi -- papi.h not found")
-        endif()
-    endif ()
+  # Add path to cmake variable
+  # ------------------------------------
+  if (PAPI_papi.h_DIRS)
+    set(PAPI_INCLUDE_DIRS "${PAPI_papi.h_DIRS}")
+  else ()
+    set(PAPI_INCLUDE_DIRS "PAPI_INCLUDE_DIRS-NOTFOUND")
+    if(NOT PAPI_FIND_QUIETLY)
+      message(STATUS "Looking for papi -- papi.h not found")
+    endif()
+  endif ()
 
+  if (PAPI_INCLUDE_DIRS)
+    list(REMOVE_DUPLICATES PAPI_INCLUDE_DIRS)
+  endif ()
+
+
+  # Looking for lib
+  # ---------------
+
+  # Add system library paths to search lib
+  # --------------------------------------
+  unset(_lib_env)
+  set(ENV_PAPI_LIBDIR "$ENV{PAPI_LIBDIR}")
+  if(ENV_PAPI_LIBDIR)
+    list(APPEND _lib_env "${ENV_PAPI_LIBDIR}")
+  elseif(ENV_PAPI_DIR)
+    list(APPEND _lib_env "${ENV_PAPI_DIR}")
+    list(APPEND _lib_env "${ENV_PAPI_DIR}/lib")
+  else()
+    if(WIN32)
+      string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+    else()
+      if(APPLE)
+	string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+      else()
+	string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+      endif()
+      list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+      list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
+    endif()
+  endif()
+  list(REMOVE_DUPLICATES _lib_env)
+
+  # Try to find the papi lib in the given paths
+  # ----------------------------------------------
+
+  # call cmake macro to find the lib path
+  if(PAPI_LIBDIR)
+    set(PAPI_papi_LIBRARY "PAPI_papi_LIBRARY-NOTFOUND")
+    find_library(PAPI_papi_LIBRARY
+      NAMES papi
+      HINTS ${PAPI_LIBDIR})
+  else()
+    if(PAPI_DIR)
+      set(PAPI_papi_LIBRARY "PAPI_papi_LIBRARY-NOTFOUND")
+      find_library(PAPI_papi_LIBRARY
+	NAMES papi
+	HINTS ${PAPI_DIR}
+	PATH_SUFFIXES lib lib32 lib64)
+    else()
+      set(PAPI_papi_LIBRARY "PAPI_papi_LIBRARY-NOTFOUND")
+      find_library(PAPI_papi_LIBRARY
+	NAMES papi
+	HINTS ${_lib_env})
+    endif()
+  endif()
+  mark_as_advanced(PAPI_papi_LIBRARY)
+
+  # If found, add path to cmake variable
+  # ------------------------------------
+  if (PAPI_papi_LIBRARY)
+    get_filename_component(papi_lib_path ${PAPI_papi_LIBRARY} PATH)
+    # set cmake variables (respects naming convention)
+    set(PAPI_LIBRARIES    "${PAPI_papi_LIBRARY}")
+    set(PAPI_LIBRARY_DIRS "${papi_lib_path}")
+  else ()
+    set(PAPI_LIBRARIES    "PAPI_LIBRARIES-NOTFOUND")
+    set(PAPI_LIBRARY_DIRS "PAPI_LIBRARY_DIRS-NOTFOUND")
+    if(NOT PAPI_FIND_QUIETLY)
+      message(STATUS "Looking for papi -- lib papi not found")
+    endif()
+  endif ()
+
+  if (PAPI_LIBRARY_DIRS)
+    list(REMOVE_DUPLICATES PAPI_LIBRARY_DIRS)
+  endif ()
+
+  # check a function to validate the find
+  if(PAPI_LIBRARIES)
+
+    set(REQUIRED_INCDIRS)
+    set(REQUIRED_LIBDIRS)
+    set(REQUIRED_LIBS)
+
+    # PAPI
     if (PAPI_INCLUDE_DIRS)
-        list(REMOVE_DUPLICATES PAPI_INCLUDE_DIRS)
-    endif ()
-
-
-    # Looking for lib
-    # ---------------
-
-    # Add system library paths to search lib
-    # --------------------------------------
-    unset(_lib_env)
-    set(ENV_PAPI_LIBDIR "$ENV{PAPI_LIBDIR}")
-    if(ENV_PAPI_LIBDIR)
-        list(APPEND _lib_env "${ENV_PAPI_LIBDIR}")
-    elseif(ENV_PAPI_DIR)
-        list(APPEND _lib_env "${ENV_PAPI_DIR}")
-        list(APPEND _lib_env "${ENV_PAPI_DIR}/lib")
-    else()
-        if(WIN32)
-            string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
-        else()
-            if(APPLE)
-                string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
-            else()
-                string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
-            endif()
-            list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
-            list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
-        endif()
+      set(REQUIRED_INCDIRS "${PAPI_INCLUDE_DIRS}")
     endif()
-    list(REMOVE_DUPLICATES _lib_env)
-
-    # Try to find the papi lib in the given paths
-    # ----------------------------------------------
-
-    # call cmake macro to find the lib path
-    if(PAPI_LIBDIR)
-        set(PAPI_papi_LIBRARY "PAPI_papi_LIBRARY-NOTFOUND")
-        find_library(PAPI_papi_LIBRARY
-            NAMES papi
-            HINTS ${PAPI_LIBDIR})
-    else()
-        if(PAPI_DIR)
-            set(PAPI_papi_LIBRARY "PAPI_papi_LIBRARY-NOTFOUND")
-            find_library(PAPI_papi_LIBRARY
-                NAMES papi
-                HINTS ${PAPI_DIR}
-                PATH_SUFFIXES lib lib32 lib64)
-        else()
-            set(PAPI_papi_LIBRARY "PAPI_papi_LIBRARY-NOTFOUND")
-            find_library(PAPI_papi_LIBRARY
-                        NAMES papi
-                        HINTS ${_lib_env})
-        endif()
-    endif()
-    mark_as_advanced(PAPI_papi_LIBRARY)
-
-    # If found, add path to cmake variable
-    # ------------------------------------
-    if (PAPI_papi_LIBRARY)
-        get_filename_component(papi_lib_path ${PAPI_papi_LIBRARY} PATH)
-        # set cmake variables (respects naming convention)
-        set(PAPI_LIBRARIES    "${PAPI_papi_LIBRARY}")
-        set(PAPI_LIBRARY_DIRS "${papi_lib_path}")
-    else ()
-        set(PAPI_LIBRARIES    "PAPI_LIBRARIES-NOTFOUND")
-        set(PAPI_LIBRARY_DIRS "PAPI_LIBRARY_DIRS-NOTFOUND")
-        if(NOT PAPI_FIND_QUIETLY)
-            message(STATUS "Looking for papi -- lib papi not found")
-        endif()
-    endif ()
-
     if (PAPI_LIBRARY_DIRS)
-        list(REMOVE_DUPLICATES PAPI_LIBRARY_DIRS)
-    endif ()
+      set(REQUIRED_LIBDIRS "${PAPI_LIBRARY_DIRS}")
+    endif()
+    set(REQUIRED_LIBS "${PAPI_LIBRARIES}")
 
-    # check a function to validate the find
-    if(PAPI_LIBRARIES)
+    # set required libraries for link
+    set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
+    set(CMAKE_REQUIRED_LIBRARIES)
+    foreach(lib_dir ${REQUIRED_LIBDIRS})
+      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
+    endforeach()
+    list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
+    string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
-        set(REQUIRED_INCDIRS)
-        set(REQUIRED_LIBDIRS)
-        set(REQUIRED_LIBS)
+    # test link
+    unset(PAPI_WORKS CACHE)
+    include(CheckFunctionExists)
+    check_function_exists(PAPI_start PAPI_WORKS)
+    mark_as_advanced(PAPI_WORKS)
 
-        # PAPI
-        if (PAPI_INCLUDE_DIRS)
-            set(REQUIRED_INCDIRS "${PAPI_INCLUDE_DIRS}")
-        endif()
-        if (PAPI_LIBRARY_DIRS)
-            set(REQUIRED_LIBDIRS "${PAPI_LIBRARY_DIRS}")
-        endif()
-        set(REQUIRED_LIBS "${PAPI_LIBRARIES}")
-
-        # set required libraries for link
-        set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
-        set(CMAKE_REQUIRED_LIBRARIES)
-        foreach(lib_dir ${REQUIRED_LIBDIRS})
-            list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
-        endforeach()
-        list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
-        string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
-
-        # test link
-        unset(PAPI_WORKS CACHE)
-        include(CheckFunctionExists)
-        check_function_exists(PAPI_start PAPI_WORKS)
-        mark_as_advanced(PAPI_WORKS)
-
-        if(NOT PAPI_WORKS)
-            if(NOT PAPI_FIND_QUIETLY)
-                message(STATUS "Looking for papi : test of PAPI_start with papi library fails")
-                message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-                message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-                message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
-            endif()
-        endif()
-        set(CMAKE_REQUIRED_INCLUDES)
-        set(CMAKE_REQUIRED_FLAGS)
-        set(CMAKE_REQUIRED_LIBRARIES)
-    endif(PAPI_LIBRARIES)
+    if(NOT PAPI_WORKS)
+      if(NOT PAPI_FIND_QUIETLY)
+	message(STATUS "Looking for papi : test of PAPI_start with papi library fails")
+	message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+	message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+	message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+      endif()
+    endif()
+    set(CMAKE_REQUIRED_INCLUDES)
+    set(CMAKE_REQUIRED_FLAGS)
+    set(CMAKE_REQUIRED_LIBRARIES)
+  endif(PAPI_LIBRARIES)
 
 endif( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT PAPI_FOUND) OR (PAPI_GIVEN_BY_USER) )
 
 if (PAPI_LIBRARIES)
-    if (PAPI_LIBRARY_DIRS)
-        list(GET PAPI_LIBRARY_DIRS 0 first_lib_path)
-    else()
-        list(GET PAPI_LIBRARIES 0 first_lib)
-        get_filename_component(first_lib_path "${first_lib}" PATH)
-    endif()
-    if (${first_lib_path} MATCHES "/lib(32|64)?$")
-        string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
-        set(PAPI_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of PAPI library" FORCE)
-    else()
-        set(PAPI_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of PAPI library" FORCE)
-    endif()
+  if (PAPI_LIBRARY_DIRS)
+    list(GET PAPI_LIBRARY_DIRS 0 first_lib_path)
+  else()
+    list(GET PAPI_LIBRARIES 0 first_lib)
+    get_filename_component(first_lib_path "${first_lib}" PATH)
+  endif()
+  if (${first_lib_path} MATCHES "/lib(32|64)?$")
+    string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
+    set(PAPI_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of PAPI library" FORCE)
+  else()
+    set(PAPI_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of PAPI library" FORCE)
+  endif()
 endif()
 mark_as_advanced(PAPI_DIR)
 mark_as_advanced(PAPI_DIR_FOUND)
@@ -301,10 +301,10 @@ mark_as_advanced(PAPI_DIR_FOUND)
 # -------------------------------
 include(FindPackageHandleStandardArgs)
 if (PKG_CONFIG_EXECUTABLE AND PAPI_FOUND)
-    find_package_handle_standard_args(PAPI DEFAULT_MSG
-                                      PAPI_LIBRARIES)
+  find_package_handle_standard_args(PAPI DEFAULT_MSG
+    PAPI_LIBRARIES)
 else()
-    find_package_handle_standard_args(PAPI DEFAULT_MSG
-                                      PAPI_LIBRARIES
-                                      PAPI_WORKS)
+  find_package_handle_standard_args(PAPI DEFAULT_MSG
+    PAPI_LIBRARIES
+    PAPI_WORKS)
 endif()
