@@ -47,7 +47,7 @@
 
 #include "../../Src/Components/FBasicKernels.hpp"
 
-#include "../../Src/BalanceTree/FLeafBalance.hpp"
+#include "../../Src/Utils/FLeafBalance.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
@@ -475,6 +475,3 @@ int main(int argc, char ** argv){
 
     return 0;
 }
-
-
-

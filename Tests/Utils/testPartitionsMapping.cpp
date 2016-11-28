@@ -36,7 +36,7 @@
 
 #include "../../Src/Utils/FParameters.hpp"
 #include "../../Src/Utils/FMemUtils.hpp"
-#include "../../Src/BalanceTree/FPartitionsMapping.hpp"
+#include "../../Src/Utils/FPartitionsMapping.hpp"
 
 #include "../../Src/Containers/FOctree.hpp"
 #include "../../Src/Containers/FVector.hpp"
@@ -48,7 +48,7 @@
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
 #include "../../Src/Core/FFmmAlgorithmThreadProc.hpp"
 
-#include "../../Src/BalanceTree/FLeafBalance.hpp"
+#include "../../Src/Utils/FLeafBalance.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
@@ -150,4 +150,3 @@ int main(int argc, char* argv[])
 
     return 0;
 }
-

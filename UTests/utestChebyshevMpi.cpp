@@ -34,7 +34,7 @@
 #include "Files/FMpiTreeBuilder.hpp"
 
 #include "Core/FFmmAlgorithmThreadProc.hpp"
-#include "BalanceTree/FLeafBalance.hpp"
+#include "Utils/FLeafBalance.hpp"
 
 #include "FUTester.hpp"
 
@@ -79,7 +79,7 @@ class TestChebyshevMpiDirect : public FUTesterMpi<TestChebyshevMpiDirect>{
         struct TestParticle : public FmaRWParticle<FReal, 8,8>{
             FSize index;
             // const FPoint<FReal>& getPosition(){
-            // 	return position;
+            //  return position;
             // }
         };
 
@@ -101,9 +101,9 @@ class TestChebyshevMpiDirect : public FUTesterMpi<TestChebyshevMpiDirect>{
         FLeafBalance balancer;
         OctreeClass tree(nbLevels,sizeOfSubLevel,loader.getBoxWidth(),loader.getCenterOfBox());
         // FMpiTreeBuilder< FReal,TestParticle >::ArrayToTree(app.global(), particles, loader.getMyNumberOfParticles(),
-        // 						 tree.getBoxCenter(),
-        // 						 tree.getBoxWidth(),
-        // 						 tree.getHeight(), &finalParticles,&balancer);
+        //                                               tree.getBoxCenter(),
+        //                                               tree.getBoxWidth(),
+        //                                               tree.getHeight(), &finalParticles,&balancer);
         FMpiTreeBuilder< FReal,TestParticle >::DistributeArrayToContainer(app.global(),particles,
                                                                     loader.getMyNumberOfParticles(),
                                                                     tree.getBoxCenter(),

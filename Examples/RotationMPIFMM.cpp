@@ -37,7 +37,7 @@
 #include "Files/FMpiFmaGenericLoader.hpp"
 #include "Files/FMpiTreeBuilder.hpp"
 
-#include "BalanceTree/FLeafBalance.hpp"
+#include "Utils/FLeafBalance.hpp"
 
 #include "Kernels/Rotation/FRotationKernel.hpp"
 #include "Kernels/Rotation/FRotationCell.hpp"
@@ -93,9 +93,9 @@ int main(int argc, char* argv[])
     std::cout << "\n>> Sequential version.\n" << std::endl;
 #endif
     //
-    std::cout <<	 "Parameters  "<< std::endl
+    std::cout <<         "Parameters  "<< std::endl
                   <<     "      Octree Depth      "<< TreeHeight <<std::endl
-                      <<	 "      SubOctree depth "<< SubTreeHeight <<std::endl
+                      <<         "      SubOctree depth "<< SubTreeHeight <<std::endl
                           <<     "      Input file  name: " <<filename <<std::endl
                               <<     "      Thread number:  " << NbThreads <<std::endl
                                   <<std::endl;
@@ -152,7 +152,7 @@ int main(int argc, char* argv[])
 
         //idx (in file) of the first part that will be used by this proc.
         FSize idxStart = loader->getStart();
-        
+
         for(FSize idxPart = 0 ; idxPart < loader->getMyNumberOfParticles() ; ++idxPart){
             //Storage of the index (in the original file) of each part.
             particles[idxPart].indexInFile = idxPart + idxStart;

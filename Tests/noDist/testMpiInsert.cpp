@@ -47,7 +47,7 @@
 #include "../../Src/Kernels/Rotation/FRotationKernel.hpp"
 #include "../../Src/Kernels/Rotation/FRotationCell.hpp"
 
-#include "../Src/BalanceTree/FLeafBalance.hpp"
+#include "../Src/Utils/FLeafBalance.hpp"
 #include "../Src/Containers/FTreeCoordinate.hpp"
 #include "../../Src/Files/FMpiFmaGenericLoader.hpp"
 #include "../../Src/Files/FMpiTreeBuilder.hpp"

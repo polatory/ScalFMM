@@ -36,7 +36,7 @@
 
 #include "Files/FFmaGenericLoader.hpp"
 #include "Files/FMpiFmaGenericLoader.hpp"
-#include "BalanceTree/FLeafBalance.hpp"
+#include "Utils/FLeafBalance.hpp"
 #include "Containers/FTreeCoordinate.hpp"
 #include "Containers/FCoordinateComputer.hpp"
 

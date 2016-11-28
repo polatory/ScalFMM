@@ -38,7 +38,7 @@
 #include "Files/FMpiSplitFmaLoader.hpp"
 #include "Files/FMpiTreeBuilder.hpp"
 
-#include "BalanceTree/FLeafBalance.hpp"
+#include "Utils/FLeafBalance.hpp"
 
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "Kernels/Chebyshev/FChebSymKernel.hpp"
@@ -158,7 +158,7 @@ int main(int argc, char* argv[])
         double minTime,maxTime;
         std::cout << "Proc:" << app.global().processId()
                   << " "     << loader.getMyNumberOfParticles()
-                  << "particles have been inserted in the tree. (@Reading and Inserting Particles = " 
+                  << "particles have been inserted in the tree. (@Reading and Inserting Particles = "
                   << time.elapsed() << " s)."
                   << std::endl;
 
@@ -191,7 +191,7 @@ int main(int argc, char* argv[])
         MPI_Reduce(&timeUsed,&maxTime,1,MPI_DOUBLE,MPI_MAX,0,app.global().getComm());
         if(app.global().processId() == 0){
             std::cout << "exec-time-min:" << minTime
-                      << " exec-time-max:" << maxTime 
+                      << " exec-time-max:" << maxTime
                       << std::endl;
         }
 

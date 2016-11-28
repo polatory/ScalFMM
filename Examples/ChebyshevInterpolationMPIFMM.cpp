@@ -38,7 +38,7 @@
 #include "Files/FMpiFmaGenericLoader.hpp"
 #include "Files/FMpiTreeBuilder.hpp"
 
-#include "BalanceTree/FLeafBalance.hpp"
+#include "Utils/FLeafBalance.hpp"
 
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "Kernels/Chebyshev/FChebSymKernel.hpp"
@@ -99,7 +99,7 @@ int main(int argc, char* argv[])
     FMpi app(argc,argv);
 #ifdef SCALFMM_USE_EZTRACE
    eztrace_pause();
-#endif  
+#endif
     //
     // Initialize timer
     FTic time;

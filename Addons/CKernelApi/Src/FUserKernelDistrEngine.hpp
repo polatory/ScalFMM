@@ -11,17 +11,21 @@
 
 #include "Utils/FMpi.hpp"
 #include "FUserKernelEngine.hpp"
-#include "BalanceTree/FLeafBalance.hpp"
+#include "Utils/FLeafBalance.hpp"
 #include "Files/FMpiTreeBuilder.hpp"
 #include "Containers/FVector.hpp"
 #include "Core/FFmmAlgorithmThreadProc.hpp"
 
 class CoreCellDist : public CoreCell, public FAbstractSendable{
     int level;
-
+    void * userKernelData;
 public:
-    CoreCellDist() : level(-1){
+    CoreCellDist() : level(-1),userKernelData(nullptr){
 
+    }
+
+    void init_UserKernelData(void * in){
+        this->userKernelData = in;
     }
 
     /**
@@ -32,7 +36,7 @@ public:
         FBasicCell::save<BufferWriterClass>(buffer);
         buffer << level;
         if(user_cell_descriptor.user_get_size){
-            FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex());
+            FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex(),userKernelData);
             char * temp = new char[sizeToSave];
             user_cell_descriptor.user_copy_cell(CoreCell::getContainer(),sizeToSave,(void *) temp);
             buffer.write(temp,sizeToSave);
@@ -48,7 +52,7 @@ public:
         FBasicCell::restore<BufferReaderClass>(buffer);
         buffer >> level;
         if(user_cell_descriptor.user_restore_cell){
-            FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex());
+            FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex(),userKernelData);
             char * temp = new char[sizeToSave];
             buffer.fillArray(temp,sizeToSave);
             CoreCell::setContainer(user_cell_descriptor.user_restore_cell(level,temp));
@@ -61,7 +65,7 @@ public:
      */
     template <class BufferWriterClass>
     void serializeUp(BufferWriterClass& buffer) const {
-        FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex());
+        FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex(),userKernelData);
         char * temp = new char[sizeToSave];
         user_cell_descriptor.user_copy_cell(CoreCell::getContainer(),sizeToSave,(void *) temp);
         buffer.write(temp,sizeToSave);
@@ -69,7 +73,7 @@ public:
     }
     template <class BufferWriterClass>
     void serializeDown(BufferWriterClass& buffer) const {
-        FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex());
+        FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex(),userKernelData);
         char * temp = new char[sizeToSave];
         user_cell_descriptor.user_copy_cell(CoreCell::getContainer(),sizeToSave,(void *) temp);
         buffer.write(temp,sizeToSave);
@@ -77,7 +81,7 @@ public:
     }
     template <class BufferReaderClass>
     void deserializeUp(BufferReaderClass& buffer) const {
-        FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex());
+        FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex(),userKernelData);
         char * temp = new char[sizeToSave];
         buffer.fillArray(temp,sizeToSave);
         CoreCell::setContainer(user_cell_descriptor.user_restore_cell(level,temp));
@@ -86,7 +90,7 @@ public:
     }
     template <class BufferReaderClass>
     void deserializeDown(BufferReaderClass& buffer) const {
-        FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex());
+        FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex(),userKernelData);
         char * temp = new char[sizeToSave];
         buffer.fillArray(temp,sizeToSave);
         CoreCell::setContainer(user_cell_descriptor.user_restore_cell(level,temp));
@@ -99,7 +103,8 @@ public:
      */
     FSize getSavedSize() const {
         FSize toReturn = user_cell_descriptor.user_get_size(level,
-                                                            getMortonIndex())
+                                                            getMortonIndex(),
+                                                            userKernelData)
             + FBasicCell::getSavedSize() //Size of storage needed for Basic Cell
             + sizeof(int)                //Size of storage needed for this class
             + sizeof(nullptr);           //Size of storage needed for the parent class
@@ -107,12 +112,14 @@ public:
     }
     FSize getSavedSizeUp() const{
         FSize toReturn = user_cell_descriptor.user_get_size(level,
-                                                            getMortonIndex());
+                                                            getMortonIndex(),
+                                                            userKernelData);
         return toReturn;
     }
     FSize getSavedSizeDown() const{
         FSize toReturn = user_cell_descriptor.user_get_size(level,
-                                                            getMortonIndex());
+                                                            getMortonIndex(),
+                                                            userKernelData);
         return toReturn;
     }
 };
@@ -451,6 +458,10 @@ public:
         Parent::boxWidthAtLeafLevel = BoxWidth/(2<<TreeHeight);
         printf("Tree Height : %d \n",TreeHeight);
         octreeDist = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint<FReal>(BoxCenter));
+        //There : for each cell, set a ptr to UserkernelData
+        octreeDist->forEachCell([&](CoreCellDist * currCell){
+                currCell->init_UserKernelData(Parent::getKernelPtr()->getUserKernelDatas());
+            });
     }
 
     void user_kernel_config( Scalfmm_Kernel_Descriptor userKernel, void * userDatas){
