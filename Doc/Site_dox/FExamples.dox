@@ -1,14 +1,31 @@
-/*! \page mainexamples Main Examples
+/*! \page mainexamples Main Example	
 
  * \tableofcontents
+ * \section The repositories structure
 
- * In the scalfmm directory, you can locate several folders. The
- * sources folder called Src, the examples/tests folder Tests, the
- * unit tests folders UTests, the Addons folder which contains one
- * sub-folder per addon, the doc directory where you can find some
- * documentation and the data folder which contains particles files or
- * any other data needed per the simulation examples.
-
+ * In the scalfmm directory, you can locate several folders and the directory structure is as follows:
+ <ul>
+ <li> Src       sources folder </li>
+  <ul>
+  <li>Arranger: ??</li>
+  <li>Components: Basic components.</li>
+  <li>Containers: The containers used in ScalFMM</li>
+  <li>Core: The different kind of parallel algorithms: Threads means OpenMP (fork-join, task, ...) while Proc is for MPI.</li>
+  <li>Extensions:  ??</li>
+  <li>Files: our different loaders/wrtiters for particule (csvn vtk, FMA, ...)</li>
+  <li>GroupTree: A grouped octreed used with runtime system to improve the granularity.</li>
+  <li>Kernels: The different kernels available ins ScalFMM. One forlder per kernel. </li>
+  <li>Utils: All classes used inside the Library that are not specific to the FFM method.</li>
+  </ul>
+  
+ <li> Examples  Main drivers: distribution generation, FMM drivers (Rotation (1/r), Interpolation (Uniform and Chebyschev)</li>
+  <li> Tests. Other examples (prototpes) to understand how you can use the different features of ScalFMM.</li>
+  <li> UTests  unit tests (CTEST)</li> 
+  <li> Addons  folder that contains one sub-folder per addon</li>
+  <li> Doc the documentation directory use Doxygen to generate it)</li> 
+ <li> Data folder which contains particles files or any other data needed per the simulation examples.</li>
+  </ul>
+ *
  * Here we focus mainly on the Tests and UTests folders, and we
  * encourage users to look directly in the code file to see how things
  * are made.

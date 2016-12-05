@@ -36,9 +36,9 @@ class FTreeCoordinate;
  * @author Matthias Messner(matthias.messner@inria.fr)
  * @class FChebSymKernel
  * @brief
- * Please read the license
+ * @brief  Chebyshev interpolation based FMM operators for symmetric  non oscillatory kernels..
  *
- * This kernels implement the Chebyshev interpolation based FMM operators
+ * This class implements the Chebyshev interpolation based FMM operators
  * exploiting the symmetries in the far-field. It implements all interfaces
  * (P2P, P2M, M2M, M2L, L2L, L2P) which are required by the FFmmAlgorithm and
  * FFmmAlgorithmThread.
@@ -47,6 +47,13 @@ class FTreeCoordinate;
  * @tparam ContainerClass Type of container to store particles
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Chebyshev interpolation order
+ *
+ * The ORDER sets the accuracy of the Chebyshev FMM while the EPSILON parameter introduces extra error but optimize the M2L step.
+ *  In fact, in the Chebyshev FMM we perform compression on the M2L operators using various low rank approximation techniques
+ *  (see https://arxiv.org/abs/1210.7292 for further details). Therefore we use a second accuracy criterion, namely EPSILON,
+ *  in order to set the accuracy of these methods. For most kernels that we tested and in particular for 1/r, setting EPSILON=10^-ORDER d
+ *  oes not introduce extra error in the FMM and captures the rank efficiently. If you think that for your kernel you need a better
+ *  approximation of the M2L operators, then you can try to set EPSILON to 10 ^- (ORDER+{1,2,...}).
  */
 template < class FReal, class CellClass, class ContainerClass,   class MatrixKernelClass, int ORDER, int NVALS = 1>
 class FChebSymKernel
@@ -103,9 +110,15 @@ class FChebSymKernel
 
 public:
     /**
-     * The constructor initializes all constant attributes and it reads the
+     * \brief The constructor initializes all constant attributes and it reads the
      * precomputed and compressed M2L operators from a binary file (an
      * runtime_error is thrown if the required file is not valid).
+     *
+     * @param[in] epsilon  The compression parameter for M2L operator.
+     *
+     * The M2L optimized Chebyshev FMM implemented in ScalFMM are kernel dependent, but keeping EPSILON=10^-ORDER is usually fine.
+     *  On the other hand you can short-circuit this feature by setting EPSILON to the machine accuracy,
+     *  but this will significantly slow down the computations.
      */
     FChebSymKernel(const int inTreeHeight,
                    const FReal inBoxWidth,
@@ -129,6 +142,9 @@ public:
      * The constructor initializes all constant attributes and it reads the
      * precomputed and compressed M2L operators from a binary file (an
      * runtime_error is thrown if the required file is not valid).
+     *
+     *  In the constructor  the accuracy of The M2L optimized use the threshod rely -on the approximation order EPSILON=10^-ORDER.
+
      */
     FChebSymKernel(const int inTreeHeight,
                    const FReal inBoxWidth,

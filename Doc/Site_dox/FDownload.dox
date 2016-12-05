@@ -21,6 +21,9 @@
   * <li> cd spack
   *  <li> bin/spack install scalfmm
     * </ul>
+ * more documentation on spack and scalfmm is available at
+ * http://morse.gforge.inria.fr/spack/spack.html#sec-2-6
+ *
 * You can stay in touch of the updates and new version by registering
 * to the users mailing list
 * (scalfmm-public-users@lists.gforge.inria.fr) which has a very low
