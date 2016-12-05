@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2016 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -31,7 +31,7 @@
 include(CheckFunctionExists)
 
 # To colorize messages
-include(ColorizeMessage)
+#include(ColorizeMessage)
 
 # To find headers and libs
 include(FindHeadersAndLibs)
@@ -49,9 +49,11 @@ include(Ressources)
 # Add the path where we handle our FindFOO.cmake to seek for liraries
 list(APPEND CMAKE_MODULE_PATH ${MORSE_CMAKE_MODULE_PATH}/find)
 
-option(MORSE_VERBOSE_FIND_PACKAGE "Add additional messages concerning no found packages" OFF)
-#message("-- ${BoldGreen}MORSE_VERBOSE_FIND_PACKAGE is set to OFF, turn it ON to get"
-#        "information about packages not found${ColourReset}")
+option(MORSE_ENABLE_WARNING       "Enable warning messages" OFF)
+option(MORSE_ENABLE_COVERAGE      "Enable flags for coverage test" OFF)
+#option(MORSE_VERBOSE_FIND_PACKAGE "Add additional messages concerning packages not found" OFF)
+#message(STATUS "MORSE_VERBOSE_FIND_PACKAGE is set to OFF, turn it ON to get"
+#        "   information about packages not found")
 
 ##
 ## @end file MorseInit.cmake

@@ -48,7 +48,7 @@
 
 #include "Components/FBasicKernels.hpp"
 
-#include "BalanceTree/FLeafBalance.hpp"
+#include "Utils/FLeafBalance.hpp"
 
 #include <iostream>
 #include <cstdio>
@@ -308,5 +308,3 @@ public:
 
 // You must do this
 TestClassMpi(TestFmmAlgoProc)
-
-

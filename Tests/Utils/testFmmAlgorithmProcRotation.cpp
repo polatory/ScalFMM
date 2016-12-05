@@ -45,7 +45,7 @@
 #include "../../Src/Files/FMpiFmaGenericLoader.hpp"
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
 
-#include "BalanceTree/FLeafBalance.hpp"
+#include "Utils/FLeafBalance.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 

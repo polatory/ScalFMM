@@ -30,8 +30,8 @@
 
 #include "../Containers/FVector.hpp"
 
-#include "../BalanceTree/FLeafBalance.hpp"
-#include "../BalanceTree/FEqualize.hpp"
+#include "../Utils/FLeafBalance.hpp"
+#include "../Utils/FEqualize.hpp"
 
 #include "../Containers/FCoordinateComputer.hpp"
 
@@ -432,7 +432,7 @@ public:
             // Ask the packs to receive to fill my objective
             FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] Get my receive interval \n"; FLog::Controller.flush(); );
             std::pair<size_t, size_t> myObjective = allObjectives[myRank];
-            const std::vector<FEqualize::Package> packsToRecv = FEqualize::GetPackToRecv(myObjective, allCurrentIntervals);            
+            const std::vector<FEqualize::Package> packsToRecv = FEqualize::GetPackToRecv(myObjective, allCurrentIntervals);
 
             FLOG(if(VerboseLog) FLog::Controller << "SCALFMM-DEBUG ["  << communicator.processId() << "] recv nb particles \n"; FLog::Controller.flush(); );
             // Count the number of parts to receive

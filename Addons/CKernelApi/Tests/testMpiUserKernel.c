@@ -105,7 +105,7 @@ void cheb_resetCell(int level, long long morton_index, int* tree_position,
  * @brief Following functions are defined in order to serialize the
  * cells
  */
-FSize cheb_get_size(int level, long long morton_index){
+FSize cheb_get_size(int level, long long morton_index, void * userData){
     return ChebCell_getSize(level,morton_index);
 }
 

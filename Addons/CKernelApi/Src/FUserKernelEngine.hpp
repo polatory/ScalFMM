@@ -324,9 +324,6 @@ protected:
     OctreeClass* getTree() const {
         return octree;
     }
-    CoreKernelClass * getKernelPtr() const {
-        return kernel;
-    }
 
 
 public:
@@ -351,6 +348,10 @@ public:
             delete kernel;
             kernel=nullptr;
         }
+    }
+
+    CoreKernelClass * getKernelPtr() {
+        return kernel;
     }
 
     virtual void user_kernel_config( Scalfmm_Kernel_Descriptor userKernel, void * userDatas){

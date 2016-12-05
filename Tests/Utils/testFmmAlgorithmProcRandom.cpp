@@ -1,4 +1,3 @@
-
 // ===================================================================================
 // Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
 // Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
@@ -48,7 +47,7 @@
 
 #include "../../Src/Components/FBasicKernels.hpp"
 
-#include "../../Src/BalanceTree/FLeafBalance.hpp"
+#include "../../Src/Utils/FLeafBalance.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
@@ -209,6 +208,3 @@ int main(int argc, char ** argv){
 
     return 0;
 }
-
-
-

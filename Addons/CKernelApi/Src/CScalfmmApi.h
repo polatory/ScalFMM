@@ -146,8 +146,9 @@ typedef void (*Callback_free_cell)(void*);
  * @brief Callback used to know the size of userData.
  * @param level current level of current cell
  * @param morton_index of the current cell
+ * @param userData : ptr to user's kernel
  */
-typedef FSize (*Callback_get_cell_size)(int level, long long morton_index);
+typedef FSize (*Callback_get_cell_size)(int level, long long morton_index, void * userData);
 
 /**
  * @brief Callback used to serialize userdata inside an array of size

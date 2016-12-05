@@ -44,7 +44,7 @@
 
 #include "../../Src/Components/FBasicParticleContainer.hpp"
 
-#include "../../Src/BalanceTree/FLeafBalance.hpp"
+#include "../../Src/Utils/FLeafBalance.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
@@ -136,8 +136,8 @@ int main(int argc, char ** argv){
         FVector<TestParticle<FReal>> finalParticles;
         FLeafBalance balancer;
         // FMpiTreeBuilder< FReal,TestParticle<FReal> >::ArrayToTree(app.global(), particles, NbPart,
-        // 					     FPoint<FReal>(BoxCenter,BoxCenter,BoxCenter),
-        // 					     BoxWidth, tree.getHeight(), &finalParticles,&balancer);
+        //                                           FPoint<FReal>(BoxCenter,BoxCenter,BoxCenter),
+        //                                           BoxWidth, tree.getHeight(), &finalParticles,&balancer);
         FMpiTreeBuilder< FReal,TestParticle<FReal> >::DistributeArrayToContainer(app.global(),particles,
                                                                                  NbPart,
                                                                                  FPoint<FReal>(BoxCenter,BoxCenter,BoxCenter),
@@ -278,6 +278,3 @@ int main(int argc, char ** argv){
 
     return 0;
 }
-
-
-

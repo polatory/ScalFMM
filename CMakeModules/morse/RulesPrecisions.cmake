@@ -70,25 +70,25 @@ set( _prec_C  OFF )
 set( _prec_Z  OFF )
 set( _prec_ZC OFF )
 foreach(_prec ${RP_${CMAKE_PROJECT_NAME}_PRECISIONS})
-  if ( ${_prec} STREQUAL "zc" )
+  if ( ${_prec} STREQUAL zc )
     set( _prec_S  ON )
     set( _prec_D  ON )
     set( _prec_C  ON )
     set( _prec_Z  ON )
     set( _prec_ZC ON )
-  elseif( ${_prec} STREQUAL "z" )
+  elseif( ${_prec} STREQUAL z )
     set( _prec_D  ON )
     set( _prec_Z  ON )
-  elseif( ${_prec} STREQUAL "c" )
+  elseif( ${_prec} STREQUAL c )
     set( _prec_S  ON )
     set( _prec_C  ON )
-  elseif( ${_prec} STREQUAL "ds" )
+  elseif( ${_prec} STREQUAL ds )
     set( _prec_S  ON )
     set( _prec_D  ON )
     set( _prec_DS ON )
-  elseif( ${_prec} STREQUAL "d" )
+  elseif( ${_prec} STREQUAL d )
     set( _prec_S  ON )
-  elseif( ${_prec} STREQUAL "s" )
+  elseif( ${_prec} STREQUAL s )
     set( _prec_S  ON )
   endif()
 endforeach()
@@ -223,27 +223,27 @@ MACRO(precisions_rules_py)
       # Force the copy of the original files in the binary_dir
       # for VPATH compilation
       if( NOT ${CMAKE_PROJECT_NAME}_COMPILE_INPLACE )
-        set(generate_out 1)
+	set(generate_out 1)
       else( NOT ${CMAKE_PROJECT_NAME}_COMPILE_INPLACE )
-        string(COMPARE NOTEQUAL "${_dependency_OUTPUT}" "${_dependency_INPUT}" generate_out )
+	string(COMPARE NOTEQUAL "${_dependency_OUTPUT}" "${_dependency_INPUT}" generate_out )
       endif()
 
       # We generate a dependency only if a file will be generated
       if( got_file )
-        if( generate_out )
-          # the custom command is executed in CMAKE_CURRENT_BINARY_DIR
-          ADD_CUSTOM_COMMAND(
-            OUTPUT ${_dependency_OUTPUT}
-            COMMAND ${CMAKE_COMMAND} -E remove -f ${_dependency_OUTPUT} && ${pythoncmd} && chmod a-w ${_dependency_OUTPUT}
-            DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${_dependency_INPUT} ${RP_CODEGEN} ${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY})
+	if( generate_out )
+	  # the custom command is executed in CMAKE_CURRENT_BINARY_DIR
+	  ADD_CUSTOM_COMMAND(
+	    OUTPUT ${_dependency_OUTPUT}
+	    COMMAND ${CMAKE_COMMAND} -E remove -f ${_dependency_OUTPUT} && ${pythoncmd} && chmod a-w ${_dependency_OUTPUT}
+	    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${_dependency_INPUT} ${RP_CODEGEN} ${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY})
 
-          set_SOURCE_FILES_PROPERTIES(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS "-DPRECISION_${_dependency_PREC}" GENERATED 1 IS_IN_BINARY_DIR 1 )
+	  set_SOURCE_FILES_PROPERTIES(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS "-DPRECISION_${_dependency_PREC}" GENERATED 1 IS_IN_BINARY_DIR 1 )
 
-        else( generate_out )
-           set_SOURCE_FILES_PROPERTIES(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS "-DPRECISION_${_dependency_PREC}" GENERATED 0 )
-        endif( generate_out )
+	else( generate_out )
+	  set_SOURCE_FILES_PROPERTIES(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS "-DPRECISION_${_dependency_PREC}" GENERATED 0 )
+	endif( generate_out )
 
-        list(APPEND ${OUTPUTLIST} ${_dependency_OUTPUT})
+	list(APPEND ${OUTPUTLIST} ${_dependency_OUTPUT})
       endif( got_file )
     endif()
   endforeach()

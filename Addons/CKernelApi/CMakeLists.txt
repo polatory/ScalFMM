@@ -35,7 +35,7 @@ if(SCALFMM_ADDON_CKERNELAPI)
     )
 
         # Install lib
-        install( TARGETS scalfmmckernelapi ARCHIVE DESTINATION lib )
+        install( TARGETS scalfmmckernelapi ARCHIVE DESTINATION lib LIBRARY DESTINATION lib)
 
         # Install header
         SET(my_include_dirs "Src")

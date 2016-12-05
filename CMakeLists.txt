@@ -171,7 +171,9 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       set(SSE_FLAGS  "-axSSE4.2  -march=native")
     endif(APPLE)
     #-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
-  else()
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "XL")
+    set(SCALFMM_CXX_FLAGS  "${SCALFMM_CXX_FLAGS} -mcpu=power8 -mtune=power8")
+  else() #if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # NOT      INTEL
     if(NOT SCALFMM_USE_MPI)
       include(CheckCCompilerFlag)
