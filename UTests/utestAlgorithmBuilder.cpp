@@ -31,8 +31,11 @@
 
 
 /** This class test the core algorithm builder */
+#ifndef SCALFMM_USE_MPI
 class TestBuilder : public FUTester<TestBuilder> {
-
+#else
+class TestBuilder : public FUTesterMpi<TestBuilder> {
+#endif
     void Test(){
         typedef double FReal;
         typedef FTestCell                   CellClass;
@@ -56,7 +59,13 @@ class TestBuilder : public FUTester<TestBuilder> {
             uassert(properties.dimOfBox == dim);
             uassert(properties.height == height);
 
-            FAbstractAlgorithm*const algo = FAlgorithmBuilder<FReal>::BuildAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(&tree, &kernel, 0, false);
+            FAbstractAlgorithm*const algo = FAlgorithmBuilder<FReal>::BuildAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(&tree, &kernel,
+#ifndef SCALFMM_USE_MPI
+                                                                                                                                                     0,
+#else
+                                                                                                                                                     MPI_COMM_WORLD,
+#endif
+                                                                                                                                                     false);
 #ifndef SCALFMM_USE_MPI
             uassert(dynamic_cast<FFmmAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>*>(algo) != nullptr ||
                     dynamic_cast<FFmmAlgorithmThread<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>*>(algo) != nullptr);
@@ -70,7 +79,13 @@ class TestBuilder : public FUTester<TestBuilder> {
             uassert(properties.dimOfBox != dim);
             uassert(properties.height      != height);
 
-            FAbstractAlgorithm*const algo = FAlgorithmBuilder<FReal>::BuildAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(&tree, &kernel, 0, true);
+            FAbstractAlgorithm*const algo = FAlgorithmBuilder<FReal>::BuildAlgorithm<OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>(&tree, &kernel,
+ #ifndef SCALFMM_USE_MPI
+                                                                                                                                                      0,
+ #else
+                                                                                                                                                      MPI_COMM_WORLD,
+ #endif
+                                                                                                                                                      true);
 #ifndef SCALFMM_USE_MPI
             uassert(dynamic_cast<FFmmAlgorithmPeriodic<FReal,OctreeClass, CellClass, ContainerClass, KernelClass, LeafClass>*>(algo) != nullptr );
 #else
@@ -86,10 +101,19 @@ class TestBuilder : public FUTester<TestBuilder> {
     void SetTests(){
         AddTest(&TestBuilder::Test,"Test Algo Creation");
     }
+
+#ifdef SCALFMM_USE_MPI
+public:
+    TestBuilder(int argc,char ** argv) : FUTesterMpi(argc,argv){
+    }
+#endif
 };
 
 // You must do this
+#ifndef SCALFMM_USE_MPI
 TestClass(TestBuilder)
-
+#else
+TestClassMpi(TestBuilder)
+#endif
 
 
