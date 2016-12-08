@@ -809,38 +809,38 @@ public:
      * Fwriter.writeDistributionOfParticlesFromOctree(&tree, nbParticles);
      * \endcode
      */
-template <class Toctree>
-  void writeDistributionOfParticlesFromOctree( Toctree *tree, const FSize N){
-//
+    template <class Toctree>
+    void writeDistributionOfParticlesFromOctree( Toctree *tree, const FSize N){
+        //
 	this->writeHeader(tree->getBoxCenter(),tree->getBoxWidth(), N, sizeof(FReal), 4 );
 
-	FReal * particles ;
-	FSize nbMaxParticlesInLeaf = 0 ;
-    tree->forEachLeaf([&]( typename Toctree::LeafClassType* leaf){
-           //
-           // Input
-           const FReal*const posX = leaf->getTargets()->getPositions()[0];
-           const FReal*const posY = leaf->getTargets()->getPositions()[1];
-           const FReal*const posZ = leaf->getTargets()->getPositions()[2];
-           const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
-           //
-           const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
-           if (nbParticlesInLeaf > nbMaxParticlesInLeaf ) {
-        	   	   nbMaxParticlesInLeaf	 = nbParticlesInLeaf ;
-        	       particles = new FReal[4*nbMaxParticlesInLeaf] ;
-           }
-           //
-           for(FSize idxPart = 0 , j = 0; idxPart < nbParticlesInLeaf ; ++idxPart, j+=4){
-               particles[j]      = posX[idxPart] ;
-               particles[j+1]  = posY[idxPart] ;
-               particles[j+2]  = posZ[idxPart] ;
-               particles[j+3]  = physicalValues[idxPart] ;
-           }
-           this-> writeArrayOfReal(particles, 4, nbParticlesInLeaf) ;
+        tree->forEachLeaf([this]( typename Toctree::LeafClassType* leaf){
+                FReal * particles = nullptr;
+                FSize nbMaxParticlesInLeaf = 0 ;
+                //
+                // Input
+                const FReal*const posX = leaf->getTargets()->getPositions()[0];
+                const FReal*const posY = leaf->getTargets()->getPositions()[1];
+                const FReal*const posZ = leaf->getTargets()->getPositions()[2];
+                const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
+                //
+                const FSize nbParticlesInLeaf = leaf->getTargets()->getNbParticles();
+                if (nbParticlesInLeaf > nbMaxParticlesInLeaf ) {
+                    nbMaxParticlesInLeaf	 = nbParticlesInLeaf ;
+                    particles = new FReal[4*nbMaxParticlesInLeaf] ;
+                }
+                //
+                for(FSize idxPart = 0 , j = 0; idxPart < nbParticlesInLeaf ; ++idxPart, j+=4){
+                    particles[j]      = posX[idxPart] ;
+                    particles[j+1]  = posY[idxPart] ;
+                    particles[j+2]  = posZ[idxPart] ;
+                    particles[j+3]  = physicalValues[idxPart] ;
+                }
+                this->writeArrayOfReal(particles, 4, nbParticlesInLeaf) ;
 
-       });
-    delete [] particles ;
-}
+                delete [] particles ;
+            });
+    }
 
 
 private:
