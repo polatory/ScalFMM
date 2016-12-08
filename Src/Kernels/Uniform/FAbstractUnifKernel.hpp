@@ -22,16 +22,16 @@
 #ifndef FABSTRACTUNIFKERNEL_HPP
 #define FABSTRACTUNIFKERNEL_HPP
 
-#include "../../Utils/FGlobal.hpp"
+#include "Utils/FGlobal.hpp"
 
-#include "../../Utils/FSmartPointer.hpp"
+#include "Utils/FSmartPointer.hpp"
 
-#include "../../Components/FAbstractKernels.hpp"
+#include "Components/FAbstractKernels.hpp"
 
 #include "../Interpolation/FInterpP2PKernels.hpp"
 #include "./FUnifInterpolator.hpp"
 
-#include "../../Containers/FTreeCoordinate.hpp"
+#include "Containers/FTreeCoordinate.hpp"
 
 /**
  * @author Pierre Blanchard (pierre.blanchard@inria.fr)

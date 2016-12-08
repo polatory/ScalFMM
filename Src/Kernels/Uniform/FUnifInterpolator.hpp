@@ -215,11 +215,12 @@ public:
   ~FUnifInterpolator()
   {
     for ( int l=0; l<TreeHeight; ++l) {
-      for (unsigned int child=0; child<8; ++child)
-        if(ChildParentInterpolator[l][child] != nullptr)
+      for (unsigned int child=0; child<8; ++child){
+        if(ChildParentInterpolator[l][child] != nullptr){
           delete [] ChildParentInterpolator[l][child];
+	}
         delete [] ChildParentInterpolator[l];
-	
+      }
     }
     delete [] ChildParentInterpolator;
   }
