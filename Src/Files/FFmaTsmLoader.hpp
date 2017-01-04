@@ -36,7 +36,7 @@
 *
 * Load a file with a format like :
 * NB_particles Box_width Box_X Box_Y Box_Z // init
-* X Y Z // one particle by line
+* X Y Z PhysicalValue  type // one particle by line
 * ....
 * @code
 *    FFmaTsmLoader<FBasicParticle> loader("../Adir/Tests/particles.basic.txt"); <br>
@@ -136,7 +136,7 @@ public:
         inParticlePositions->setPosition(x,y,z);
         *inPhysicalValue = data;
         if(isTarget) (*particleType) = FParticleType::FParticleTypeTarget;
-        else (*particleType) = FParticleType::FParticleTypeSource;
+        else         (*particleType) = FParticleType::FParticleTypeSource;
     }
 
 };

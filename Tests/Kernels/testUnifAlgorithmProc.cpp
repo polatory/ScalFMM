@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
     // init particles position and physical value
     struct TestParticle{
         FPoint<FReal> position;
-        FReal physicalValue;
+        FReal         physicalValue;
         const FPoint<FReal>& getPosition(){
             return position;
         }
