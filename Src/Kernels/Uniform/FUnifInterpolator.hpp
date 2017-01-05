@@ -57,7 +57,7 @@ class FUnifInterpolator : FNoCopyable
 
   unsigned int node_ids[nnodes][3];
 
-  // 8 Non-leaf (i.e. M2M/L2L) interpolators 
+  // 8 Non-leaf (i.e. M2M/L2L) interpolators
   // x1 per level if box is extended
   // only 1 is required for all levels if extension is 0
   FReal*** ChildParentInterpolator;
@@ -120,7 +120,7 @@ class FUnifInterpolator : FNoCopyable
     FPoint<FReal> ChildCenter;
 
     // Ratio of extended cell widths (definition: child ext / parent ext)
-    const FReal ExtendedCellRatio = 
+    const FReal ExtendedCellRatio =
       FReal(FReal(ParentWidth)/FReal(2.) + CellWidthExtension) / FReal(ParentWidth + CellWidthExtension);
 
     // Child cell width
@@ -164,13 +164,13 @@ public:
      *
      * PB: Input parameters ONLY affect the computation of the M2M/L2L ops.
      * These parameters are ONLY required in the context of extended bbox.
-     * If no M2M/L2L is required then the interpolator can be built with 
+     * If no M2M/L2L is required then the interpolator can be built with
      * the default ctor.
    */
   explicit FUnifInterpolator(const int inTreeHeight=3,
-                             const FReal inRootCellWidth=FReal(1.), 
+                             const FReal inRootCellWidth=FReal(1.),
                              const FReal inCellWidthExtension=FReal(0.))
-  : TreeHeight(inTreeHeight), 
+  : TreeHeight(inTreeHeight),
     RootCellWidth(inRootCellWidth),
     CellWidthExtension(inCellWidthExtension)
   {
@@ -184,27 +184,27 @@ public:
     for ( int l=0; l<TreeHeight; ++l){
       ChildParentInterpolator[l] = new FReal*[8];
       for (unsigned int c=0; c<8; ++c)
-        ChildParentInterpolator[l][c]=nullptr;        
+        ChildParentInterpolator[l][c]=nullptr;
     }
 
     // Set number of non-leaf ios that actually need to be computed
     unsigned int reducedTreeHeight; // = 2 + nb of computed nl ios
     if(CellWidthExtension==0.) // if no cell extension, then ...
-      reducedTreeHeight = 3; // cmp only 1 non-leaf io
-    else 
+        reducedTreeHeight = std::min(3, TreeHeight); // cmp only 1 non-leaf io
+    else
       reducedTreeHeight = TreeHeight; // cmp 1 non-leaf io per level
 
     // Init non-leaf interpolators
     FReal CellWidth = RootCellWidth / FReal(2.); // at level 1
     CellWidth /= FReal(2.);                      // at level 2
-        
+
     for (unsigned int l=2; l<reducedTreeHeight; ++l) {
-          
+
       //this -> initM2MandL2L(l,CellWidth);     // non tensor-product interpolation
       this -> initTensorM2MandL2L(l,CellWidth); // tensor-product interpolation
 
       // update cell width
-      CellWidth /= FReal(2.);                    // at level l+1 
+      CellWidth /= FReal(2.);                    // at level l+1
     }
   }
 
@@ -219,8 +219,8 @@ public:
         if(ChildParentInterpolator[l][child] != nullptr){
           delete [] ChildParentInterpolator[l][child];
 	}
-        delete [] ChildParentInterpolator[l];
       }
+      delete [] ChildParentInterpolator[l];
     }
     delete [] ChildParentInterpolator;
   }
@@ -464,7 +464,7 @@ inline void FUnifInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyP2M(co
       for (unsigned int i=0; i<ORDER; ++i) {
         for (unsigned int j=0; j<ORDER; ++j) {
           for (unsigned int k=0; k<ORDER; ++k) {
-            const unsigned int idx = idxRhs*nVals*nnodes + k*ORDER*ORDER + j*ORDER + i;              
+            const unsigned int idx = idxRhs*nVals*nnodes + k*ORDER*ORDER + j*ORDER + i;
             const FReal S = L_of_x[i][0] * L_of_x[j][1] * L_of_x[k][2];
 
             for(int idxVals = 0 ; idxVals < nVals ; ++idxVals)
@@ -517,10 +517,10 @@ inline void FUnifInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyL2P(co
     for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
       // distribution over potential components:
       // We sum the multidim contribution of PhysValue
-      // This was originally done at M2L step but moved here 
+      // This was originally done at M2L step but moved here
       // because their storage is required by the force computation.
       // In fact : f_{ik}(x)=w_j(x) \nabla_{x_i} K_{ij}(x,y)w_j(y))
-      const unsigned int idxPot = idxLhs / nPV; 
+      const unsigned int idxPot = idxLhs / nPV;
 
 
 
@@ -595,7 +595,7 @@ inline void FUnifInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyL2PGra
 
     // evaluate Lagrange polynomials of source particle
     for (unsigned int o=0; o<ORDER; ++o) {
-      L_of_x[o][0] = BasisType::L(o, localPosition.getX()); // 3 * ORDER*(ORDER-1) flops 
+      L_of_x[o][0] = BasisType::L(o, localPosition.getX()); // 3 * ORDER*(ORDER-1) flops
       L_of_x[o][1] = BasisType::L(o, localPosition.getY()); // 3 * ORDER*(ORDER-1) flops
       L_of_x[o][2] = BasisType::L(o, localPosition.getZ()); // 3 * ORDER*(ORDER-1) flops
       dL_of_x[o][0] = BasisType::dL(o, localPosition.getX()); // TODO verify 3 * ORDER*(ORDER-1) flops
@@ -604,13 +604,13 @@ inline void FUnifInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyL2PGra
     }
 
     for(int idxLhs = 0 ; idxLhs < nLhs ; ++idxLhs){
-      const unsigned int idxPot = idxLhs / nPV; 
-      const unsigned int idxPV  = idxLhs % nPV; 
+      const unsigned int idxPot = idxLhs / nPV;
+      const unsigned int idxPV  = idxLhs % nPV;
 
       // interpolate and increment forces value
       FReal forces[nVals][3];
       for(int idxVals = 0 ; idxVals < nVals ; ++idxVals)
-        forces[idxVals][0]=forces[idxVals][1]=forces[idxVals][2]=FReal(0.);   
+        forces[idxVals][0]=forces[idxVals][1]=forces[idxVals][2]=FReal(0.);
 
       {
         for (unsigned int l=0; l<ORDER; ++l) {
@@ -627,7 +627,7 @@ inline void FUnifInterpolator<FReal, ORDER,MatrixKernelClass,NVALS>::applyL2PGra
                 forces[idxVals][0] += PX * localExpansion[idxVals*nnodes + idx];
                 forces[idxVals][1] += PY * localExpansion[idxVals*nnodes + idx];
                 forces[idxVals][2] += PZ * localExpansion[idxVals*nnodes + idx];
-                
+
               } // NVALS
             } // ORDER * 4 flops
           } // ORDER * ORDER * 4 flops
