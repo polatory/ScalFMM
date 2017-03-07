@@ -50,9 +50,9 @@ enum CORRELATION_SUPPORT_EXTENSION{INFINITE,FINITE};
 // hole effect correlation (nonstrictly decreasing)
 // Whittle model? (slow decay => important constraint on size of grid / length)
 template <class FReal>
-struct AbstractCorrelationKernel : FNoCopyable
+struct FAbstractCorrelationKernel : FNoCopyable
 { 
-  virtual ~AbstractCorrelationKernel(){}
+  virtual ~FAbstractCorrelationKernel(){}
   virtual FReal evaluate(const FReal*, const FReal*) const = 0;
 
 };
@@ -80,7 +80,7 @@ struct AbstractCorrelationKernel : FNoCopyable
 /// Generic Gaussian correlation function
 /// Special case of Matern function with $\nu \rightarrow \infty$ 
 template<class FReal>
-struct CK_Gauss : AbstractCorrelationKernel<FReal>
+struct FInterpMatrixKernelGauss : FAbstractCorrelationKernel<FReal>
 {
   static const KERNEL_FUNCTION_TYPE Type = NON_HOMOGENEOUS;
   static const CORRELATION_SUPPORT_EXTENSION Extension = INFINITE;
@@ -91,23 +91,29 @@ struct CK_Gauss : AbstractCorrelationKernel<FReal>
   static const unsigned int NLHS = 1; //< dim of loc exp
   FReal lengthScale_;
 
-  CK_Gauss(const FReal lengthScale = FReal(1.))
+  FInterpMatrixKernelGauss(const FReal lengthScale = FReal(1.))
   : lengthScale_(lengthScale)
-  {
-
-    std::cout<< "Gaussian " << 3 <<"D"
-             << ", i.e. r(x)=exp(-0.5*(x_i/l*x_i/l)) with l="
-             << lengthScale_ << "." ;
-
-  }
+  {}
 
   // copy ctor
-  CK_Gauss(const CK_Gauss& other)
+  FInterpMatrixKernelGauss(const FInterpMatrixKernelGauss& other)
   : lengthScale_(other.lengthScale_)
   {}
 
   // ID accessor
   static const char* getID() { return "GAUSS"; }
+
+  static void printInfo() { std::cout << "K(x,y)=exp(-0.5*(r_i/l*r_i/l)) with r=|x-y|" << std::endl; }
+  
+  // returns position in reduced storage
+  int getPosition(const unsigned int) const
+  {return 0;}
+  
+  // returns coefficient of mutual interaction
+  // 1 for symmetric kernels
+  // -1 for antisymmetric kernels
+  // somethings else if other property of symmetry
+  FReal getMutualCoefficient() const{ return FReal(1.); }
 
   /*
    * r(x)=exp(-(|x|/l)^2)
@@ -158,10 +164,9 @@ struct CK_Gauss : AbstractCorrelationKernel<FReal>
                                   ValueClass block[1], ValueClass blockDerivative[3]) const
   {
     block[0]=this->evaluate(x1,y1,z1,x2,y2,z2);
-    // derivative not needed
-    blockDerivative[0] = FMath::Zero<ValueClass>();
-    blockDerivative[1] = FMath::Zero<ValueClass>();
-    blockDerivative[2] = FMath::Zero<ValueClass>();
+    blockDerivative[0] = -block[0]*(x1-x2)/(lengthScale_*lengthScale_);
+    blockDerivative[1] = -block[0]*(y1-y2)/(lengthScale_*lengthScale_);
+    blockDerivative[2] = -block[0]*(z1-z2)/(lengthScale_*lengthScale_);
   }
 
   /*
@@ -178,10 +183,6 @@ struct CK_Gauss : AbstractCorrelationKernel<FReal>
     // return 1 because non homogeneous kernel functions cannot be scaled!!!
     return FReal(1.);
   }
-
-  // returns position in reduced storage
-  int getPosition(const unsigned int) const
-  {return 0;} 
 
   FReal evaluate(const FPoint<FReal>& p1, const FPoint<FReal>& p2) const{
     return evaluate<FReal>(p1.getX(), p1.getY(), p1.getZ(), p2.getX(), p2.getY(), p2.getZ());

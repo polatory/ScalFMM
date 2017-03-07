@@ -440,7 +440,7 @@ public:
         FReal CellWidth = RootCellWidth / FReal(2.); // at level 1
         CellWidth /= FReal(2.);                      // at level 2
         for (unsigned int l=2; l<TreeHeight; ++l) {
-            precompute<ORDER>(MatrixKernel, CellWidth, Epsilon, K[l], LowRank[l]);
+            precompute<FReal,ORDER>(MatrixKernel, CellWidth, Epsilon, K[l], LowRank[l]);
             CellWidth /= FReal(2.);                    // at level l+1 
         }
     }

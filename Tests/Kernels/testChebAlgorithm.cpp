@@ -31,6 +31,7 @@
 
 #include "Kernels/Chebyshev/FChebCell.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel_Covariance.hpp"
 #include "Kernels/Chebyshev/FChebKernel.hpp"
 #include "Kernels/Chebyshev/FChebSymKernel.hpp"
 
@@ -63,10 +64,10 @@ int main(int argc, char* argv[])
                          FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::NbThreads);
 
     typedef double FReal;
-    const char* const filename             = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
-    const unsigned int TreeHeight       = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
-    const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
-    const unsigned int NbThreads        = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, 1);
+    const char* const filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
+    const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 4);
+    const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
+    const unsigned int NbThreads     = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, 1);
     FTic time;
 
 #ifdef _OPENMP
@@ -77,9 +78,10 @@ int main(int argc, char* argv[])
 #endif
 
     // interaction kernel evaluator
-    //typedef FInterpMatrixKernelLJ MatrixKernelClass;
     typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
     const MatrixKernelClass MatrixKernel;
+    //typedef FInterpMatrixKernelGauss<FReal> MatrixKernelClass;
+    //const MatrixKernelClass MatrixKernel(.5);
 
     // init particles position and physical value
     struct TestParticle{
@@ -118,11 +120,11 @@ int main(int argc, char* argv[])
                     FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                           particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
                                           &particles[idxTarget].forces[0], &particles[idxTarget].forces[1],
-                            &particles[idxTarget].forces[2], &particles[idxTarget].potential,
-                            particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                            particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
-                            &particles[idxOther].forces[0], &particles[idxOther].forces[1],
-                            &particles[idxOther].forces[2], &particles[idxOther].potential,&MatrixKernel);
+                                          &particles[idxTarget].forces[2], &particles[idxTarget].potential,
+                                          particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                          particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
+                                          &particles[idxOther].forces[0], &particles[idxOther].forces[1],
+                                          &particles[idxOther].forces[2], &particles[idxOther].potential,&MatrixKernel);
                 }
             }
         }
@@ -134,13 +136,17 @@ int main(int argc, char* argv[])
     ////////////////////////////////////////////////////////////////////
 
     {	// begin Chebyshev kernel
-        const unsigned int ORDER = 7;
+
+        // accuracy
+        const unsigned int ORDER = 7 ;
+
+        // typedefs
         typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
         typedef FSimpleLeaf<FReal, ContainerClass >  LeafClass;
         typedef FChebCell<FReal,ORDER> CellClass;
         typedef FOctree<FReal,CellClass,ContainerClass,LeafClass> OctreeClass;
-        //typedef FChebKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
-        typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        typedef FChebKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+        //typedef FChebSymKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
 #ifdef _OPENMP
         typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
 #else
@@ -170,7 +176,7 @@ int main(int argc, char* argv[])
         { // -----------------------------------------------------
             std::cout << "\nChebyshev FMM (ORDER="<< ORDER << "... " << std::endl;
             time.tic();
-            KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
+            KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel,FReal(1.e-15));
             FmmClass algorithm(&tree, &kernels);
             algorithm.execute();
             time.tac();
@@ -211,6 +217,9 @@ int main(int argc, char* argv[])
 
     } // end Chebyshev kernel
 
+    std::cout << "Memory used at the end " << FMemStats::controler.getCurrentAllocated() << " Bytes (" << FMemStats::controler.getCurrentAllocatedMB() << "MB)\n";
+    std::cout << "Max memory used " << FMemStats::controler.getMaxAllocated() << " Bytes (" << FMemStats::controler.getMaxAllocatedMB() << "MB)\n";
+    std::cout << "Total memory used " << FMemStats::controler.getTotalAllocated() << " Bytes (" << FMemStats::controler.getTotalAllocatedMB() << "MB)\n";
 
     return 0;
 }
