@@ -163,6 +163,5 @@ const std::string SCALFMMCompileLibs("@SCALFMM_COMPILE_LIBS@");
 ///////////////////////////////////////////////////////
 
 #cmakedefine SCALFMM_SIMGRID_NODATA
-#cmakedefine SCALFMM_SIMGRID_TASKNAMEPARAMS
 
 #endif // CONFIG_H
