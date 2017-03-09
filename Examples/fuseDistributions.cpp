@@ -205,7 +205,7 @@ void rotate(Particle& p, const distribution& dist) {
     }
     // Rotate around z axis
     if(dist.rot[2] > 1e-5 || dist.rot[2] < -1e-5) {
-        FReal alpha = dist.rot[1];
+        FReal alpha = dist.rot[2];
         p.pos[0] = p.pos[0] * cos(alpha) - p.pos[1] * sin(alpha);
         p.pos[1] = p.pos[0] * sin(alpha) + p.pos[1] * cos(alpha);
     }
