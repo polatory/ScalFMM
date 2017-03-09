@@ -18,7 +18,13 @@
 
 #include "Files/FFmaGenericLoader.hpp"
 
-
+/**
+ * \brief Print programe usage
+ *
+ * \param progname The name of the program.
+ *
+ * \note Use `argv[0]` as progname.
+ */
 void usage(const std::string& progname) {
     std::size_t start = progname.find_last_of('/');
     std::string name = progname.substr(start+1);
@@ -64,12 +70,19 @@ void usage(const std::string& progname) {
 
 using FReal = double;
 
+/**
+ * \brief Particle object
+ */
 struct Particle {
-    FPoint<FReal> pos;
-    FReal val;
+    FPoint<FReal> pos; ///< Particle position in space
+    FReal val;         ///< Particle physical value
 };
 
-/// Distribution options
+/**
+ * \brief Distribution options
+ *
+ * Holds the tranformations that must be applied to a particle distribution.
+ */
 struct distribution {
     /// Distribution filename
     std::string filename = "";
@@ -81,14 +94,26 @@ struct distribution {
     FReal scale = 1;
 };
 
-
-
+/**
+ * \brief Main program parameters
+ */
 struct parameters {
+    /// Output distribution file
     std::string output_filename;
+    /// Particles distributions to combine
     std::vector<distribution> distributions;
+    /// Length to add to the output distribution box
     FReal extra_length;
 };
 
+/**
+ * \brief Helper method to parse the arguments that apply to one distribution.
+ *
+ * \param args A vector holding the command line arguments
+ * \param i    Index of the current argument in args
+ *
+ * \return A vector of distribution objects
+ */
 std::vector<distribution> subparse_file(const std::vector<std::string>& args, std::size_t& i) {
     std::stringstream sstr;
     // Grid layout
@@ -100,22 +125,26 @@ std::vector<distribution> subparse_file(const std::vector<std::string>& args, st
 
     while(i < args.size() && args[i] != "--file") {
         sstr.clear();
-        if(false) {
+        if(false) {// false for alignment of the other cases
         } else if(args[i] == "-s") {
+            // Parse scale argument
             ++i;
             sstr.str(args.at(i));
             sstr >> dist.scale;
         } else if (args[i] == "-c") {
+            // Parse offset from center argument
             ++i;
             char c; // Used to discard the ':' from argument format
             sstr.str(args.at(i));
             sstr >> dist.offset[0] >> c >> dist.offset[1] >> c >> dist.offset[2];
         } else if(args[i] == "-g") {
+            // Parse grid layout
             ++i;
             char c; // Used to discard the ':' from argument format
             sstr.str(args.at(i));
             sstr >> gx >> c >> gy >> c >> gz;
         } else if(args[i] == "-r") {
+            // Parse rotation angle
             ++i;
             char c; // Used to discard the ':' from argument format
             sstr.str(args.at(i));
@@ -134,8 +163,9 @@ std::vector<distribution> subparse_file(const std::vector<std::string>& args, st
         --i;
     }
 
+    // If a grid layout was specified, duplicate the distribution for each cell
+    // in the grid
     if(gx > 1 || gy > 1 || gz > 1) {
-
         // Compute offset of lowest left grid offset
         FFmaGenericLoader<FReal> loader(dist.filename);
         FReal box_width = loader.getBoxWidth() * dist.scale;
@@ -162,24 +192,31 @@ std::vector<distribution> subparse_file(const std::vector<std::string>& args, st
     return distributions;
 }
 
-
+/**
+ * \brief Main argument parse function
+ *
+ * \param args A vector holding the command line arguments
+ */
 parameters parse(const std::vector<std::string>& args) {
     parameters params;
-    std::stringstream sstr;
+    std::stringstream sstr; // Use to convert strings to numbers
     for(std::size_t i = 1; i < args.size(); ++i) {
         if(args[i] == "--help") {
             usage(args[0]);
             exit(0);
         } else if(args[i] == "--file") {
+            // Parse a new distribution specification
             ++i;
             auto ds = subparse_file(args, i);
             params.distributions.insert(params.distributions.end(),
                                         ds.begin(), ds.end());
         } else if(args[i] == "--extra-length") {
+            // Parse extra length parameter
             ++i;
             sstr.str(args.at(i));
             sstr >> params.extra_length;
         } else if(args[i] == "-fout") {
+            // Parse output file name
             ++i;
             params.output_filename = args.at(i);
         } else {
@@ -189,7 +226,12 @@ parameters parse(const std::vector<std::string>& args) {
     return params;
 }
 
-
+/**
+ * \brief Rotate a particle around the origin
+ *
+ * \param p    particle to rotate
+ * \param dist distribution transformation specification
+ */
 void rotate(Particle& p, const distribution& dist) {
     // Rotate around x axis
     if(dist.rot[0] > 1e-5 || dist.rot[0] < -1e-5) {
@@ -213,9 +255,6 @@ void rotate(Particle& p, const distribution& dist) {
 
 
 
-
-
-
 int main(int argc, char** argv) {
     auto params = parse({argv,argv+argc});
 
@@ -235,7 +274,7 @@ int main(int argc, char** argv) {
 
         FPoint<FReal> center = loader.getBoxCenter();
 
-        // Temp particle
+        // Load each particle and apply the distribution transformations
         Particle p;
         for(std::size_t i = 0; i < count; ++i) {
             loader.fillParticle(&p.pos, &p.val);
@@ -257,8 +296,8 @@ int main(int argc, char** argv) {
         }
     }
 
-
     // Write final distribution
+
     FPoint<FReal> center(0,0,0);
     // Compute final box width
     FReal box_width = 2 * (axis_max + params.extra_length);
