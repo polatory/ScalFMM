@@ -479,7 +479,7 @@ class TestChebyshevDirect : public FUTester<TestChebyshevDirect> {
 
             iter.gotoBottomLeft();
 
-            const int diffLevel = algo.extendedTreeHeightBoundary()-NbLevels;
+	    //            const int diffLevel = algo.extendedTreeHeightBoundary()-NbLevels;
             const int idxLevel = NbLevels-1;
             const int offsetAtLevel = (PeriodicDeep == -1? 1<<idxLevel : (3 << idxLevel));
             do {

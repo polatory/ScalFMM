@@ -244,7 +244,7 @@ int main(int argc, char ** argv){
 
   const FInterpMatrixKernelR<FReal> MatrixKernel;
 
-	FTreeCoordinate min, max;
+  FTreeCoordinate min{} , max{};
 
 	if( FParameters::existParameter(argc, argv, "-noper") ){
 #ifndef  SCALFMM_USE_BLAS

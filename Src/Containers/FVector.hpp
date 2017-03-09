@@ -181,6 +181,7 @@ public:
 
     /** Resize the vector (and change the capacity if needed) */
     template <typename... Args>
+ //  [[gnu::deprecated]]
     void resize(const FSize newSize, Args... args){
         if(index < newSize){
             if(capacity < newSize){
@@ -188,6 +189,7 @@ public:
             }
             while(index != newSize){
                 new((void*)&array[index]) ObjectType(args...);
+                ++index ;
             }
         }
         else{

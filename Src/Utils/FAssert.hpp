@@ -79,7 +79,7 @@ public:
 #define FErrorAssertExit(TEST, args...) \
     if( !(TEST) ){ \
         FError::Print( args ); \
-        throw std::exception(); \
+	std::exit(EXIT_FAILURE) ; /*throw std::exception();*/	\
     }
 
 

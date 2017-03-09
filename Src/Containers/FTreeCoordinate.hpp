@@ -40,7 +40,7 @@
  */
 class FTreeCoordinate : public FAbstractSerializable, public FPoint<int, 3> {
 private:
-    using point_t = FPoint<int, 3>;
+  using point_t = FPoint<int, 3>;
     enum {Dim = point_t::Dim};
 
 public:
