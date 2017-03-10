@@ -21,7 +21,9 @@
 #include <omp.h>
 
 #include <starpu.h>
+#ifdef STARPU_SIMGRID_MLR_MODELS
 #include "starpu_codelet_parameters.h"
+#endif
 #include "../StarPUUtils/FStarPUUtils.hpp"
 #include "../StarPUUtils/FStarPUFmmPriorities.hpp"
 #include "../StarPUUtils/FStarPUFmmPrioritiesV2.hpp"
@@ -453,8 +455,7 @@ protected:
         p2m_cl.modes[1] = STARPU_RW;
         p2m_cl.modes[2] = STARPU_R;
         p2m_cl.name = "p2m_cl";
-/* ################################################ */
-/* Supported by MLR models */
+#ifdef STARPU_SIMGRID_MLR_MODELS
 	p2m_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
 	p2m_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
 	p2m_cl.model->symbol = p2m_cl.name;
@@ -463,7 +464,7 @@ protected:
 	p2m_cl.model->parameters_names = p2m_cl_parameters_names;
 	p2m_cl.model->ncombinations = 1;
 	p2m_cl.model->combinations = p2m_cl_combinations;
-/* ############################################ */
+#endif
         memset(&m2m_cl, 0, sizeof(m2m_cl));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportM2M(FSTARPU_CPU_IDX)){
@@ -490,8 +491,7 @@ protected:
         m2m_cl.name = "m2m_cl";
         m2m_cl.dyn_modes[2] = STARPU_R;
         m2m_cl.dyn_modes[3] = STARPU_R;
-/* ################################################ */
-/* Supported by MLR models */
+#ifdef STARPU_SIMGRID_MLR_MODELS
 	m2m_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
 	m2m_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
 	m2m_cl.model->symbol = m2m_cl.name;
@@ -500,7 +500,7 @@ protected:
 	m2m_cl.model->parameters_names = m2m_cl_parameters_names;
 	m2m_cl.model->ncombinations = 2;
 	m2m_cl.model->combinations = m2m_cl_combinations;
-/* ############################################ */
+#endif
         memset(&l2l_cl, 0, sizeof(l2l_cl));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportL2L(FSTARPU_CPU_IDX)){
@@ -527,8 +527,7 @@ protected:
         l2l_cl.name = "l2l_cl";
         l2l_cl.dyn_modes[2] = STARPU_R;
         l2l_cl.dyn_modes[3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
-/* ############################################ */
-/* Supported by MLR models */
+#ifdef STARPU_SIMGRID_MLR_MODELS
 	l2l_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
 	l2l_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
 	l2l_cl.model->symbol = l2l_cl.name;
@@ -537,7 +536,7 @@ protected:
 	l2l_cl.model->parameters_names = l2l_cl_parameters_names;
 	l2l_cl.model->ncombinations = 1;
 	l2l_cl.model->combinations = l2l_cl_combinations;
-/* ############################################ */
+#endif
         memset(&l2l_cl_nocommute, 0, sizeof(l2l_cl_nocommute));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportL2L(FSTARPU_CPU_IDX)){
@@ -564,8 +563,7 @@ protected:
         l2l_cl_nocommute.name = "l2l_cl_nocommute";
         l2l_cl_nocommute.dyn_modes[2] = STARPU_R;
         l2l_cl_nocommute.dyn_modes[3] = STARPU_RW;
-/* ############################################ */
-/* Supported by MLR models */
+#ifdef STARPU_SIMGRID_MLR_MODELS
 	l2l_cl_nocommute.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
 	l2l_cl_nocommute.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
 	l2l_cl_nocommute.model->symbol = l2l_cl_nocommute.name;
@@ -574,7 +572,7 @@ protected:
 	l2l_cl_nocommute.model->parameters_names = l2l_cl_nocommute_parameters_names;
 	l2l_cl_nocommute.model->ncombinations = 1;
 	l2l_cl_nocommute.model->combinations = l2l_cl_nocommute_combinations;
-/* ############################################ */
+#endif
         memset(&l2p_cl, 0, sizeof(l2p_cl));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportL2P(FSTARPU_CPU_IDX)){
@@ -604,8 +602,7 @@ protected:
         l2p_cl.modes[3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
 #endif
         l2p_cl.name = "l2p_cl";
-/* ############################################ */
-/* Supported by MLR models */
+#ifdef STARPU_SIMGRID_MLR_MODELS
 	l2p_cl.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
 	l2p_cl.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
 	l2p_cl.model->symbol = l2p_cl.name;
@@ -614,7 +611,7 @@ protected:
 	l2p_cl.model->parameters_names = l2p_cl_parameters_names;
 	l2p_cl.model->ncombinations = 1;
 	l2p_cl.model->combinations = l2p_cl_combinations;
-/* ############################################ */
+#endif
         memset(&p2p_cl_in, 0, sizeof(p2p_cl_in));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportP2P(FSTARPU_CPU_IDX)){
@@ -642,8 +639,7 @@ protected:
         p2p_cl_in.modes[1] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
 #endif
         p2p_cl_in.name = "p2p_cl_in";
-/* ################################################ */
-/* Supported by MLR models */
+#ifdef STARPU_SIMGRID_MLR_MODELS
 	p2p_cl_in.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
 	p2p_cl_in.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
         p2p_cl_in.model->symbol = p2p_cl_in.name;
@@ -652,7 +648,7 @@ protected:
 	p2p_cl_in.model->parameters_names = p2p_cl_in_parameters_names;
 	p2p_cl_in.model->ncombinations = 2;
 	p2p_cl_in.model->combinations = p2p_cl_in_combinations;
-/* ############################################ */
+#endif
         memset(&p2p_cl_inout, 0, sizeof(p2p_cl_inout));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportP2PExtern(FSTARPU_CPU_IDX)){
@@ -686,8 +682,7 @@ protected:
         p2p_cl_inout.modes[3] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
 #endif
         p2p_cl_inout.name = "p2p_cl_inout";
-/* ################################################ */
-/* Supported by MLR models */
+#ifdef STARPU_SIMGRID_MLR_MODELS
 	p2p_cl_inout.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
 	p2p_cl_inout.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
 	p2p_cl_inout.model->symbol = p2p_cl_inout.name;
@@ -696,7 +691,7 @@ protected:
 	p2p_cl_inout.model->parameters_names = p2p_cl_inout_parameters_names;
 	p2p_cl_inout.model->ncombinations = 7;
 	p2p_cl_inout.model->combinations = p2p_cl_inout_combinations;
-/* ############################################ */
+#endif
         memset(&m2l_cl_in, 0, sizeof(m2l_cl_in));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportM2L(FSTARPU_CPU_IDX)){
@@ -721,8 +716,7 @@ protected:
         m2l_cl_in.modes[1] = STARPU_R;
         m2l_cl_in.modes[2] = starpu_data_access_mode(STARPU_RW|STARPU_COMMUTE_IF_SUPPORTED);
         m2l_cl_in.name = "m2l_cl_in";
-/* ############################################ */
-/* Supported by MLR models */
+#ifdef STARPU_SIMGRID_MLR_MODELS
 	m2l_cl_in.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
 	m2l_cl_in.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
 	m2l_cl_in.model->symbol = m2l_cl_in.name;
@@ -731,7 +725,7 @@ protected:
 	m2l_cl_in.model->parameters_names = m2l_cl_in_parameters_names;
 	m2l_cl_in.model->ncombinations = 1;
 	m2l_cl_in.model->combinations = m2l_cl_in_combinations;
-/* ############################################ */
+#endif
         memset(&m2l_cl_inout, 0, sizeof(m2l_cl_inout));
 #ifdef STARPU_USE_CPU
         if(originalCpuKernel->supportM2LExtern(FSTARPU_CPU_IDX)){
@@ -757,8 +751,7 @@ protected:
         m2l_cl_inout.modes[2] = STARPU_R;
         m2l_cl_inout.modes[3] = STARPU_R;
         m2l_cl_inout.name = "m2l_cl_inout";
-/* ############################################ */
-/* Supported by MLR models */
+#ifdef STARPU_SIMGRID_MLR_MODELS
 	m2l_cl_inout.model = (starpu_perfmodel*)calloc(1,sizeof(starpu_perfmodel));
 	m2l_cl_inout.model->type = STARPU_MULTIPLE_REGRESSION_BASED;
 	m2l_cl_inout.model->symbol = m2l_cl_inout.name;
@@ -767,7 +760,7 @@ protected:
 	m2l_cl_inout.model->parameters_names = m2l_cl_inout_parameters_names;
 	m2l_cl_inout.model->ncombinations = 2;
 	m2l_cl_inout.model->combinations = m2l_cl_inout_combinations;
-/* ############################################ */
+#endif
 #ifdef STARPU_USE_REDUX
         memset(&p2p_redux_init, 0, sizeof(p2p_redux_init));
 #ifdef STARPU_USE_CPU
@@ -1088,17 +1081,21 @@ protected:
 
         FAssertLF(cellHandles[tree->getHeight()-1].size() == particleHandles.size());
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
+#ifdef STARPU_SIMGRID_MLR_MODELS
 	        double *parameters = (double*) calloc(1,p2m_cl.model->nparameters*sizeof(double));
 		parameters[0] = (double) tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock();
                 parameters[1] = (double) tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval();
                 parameters[2] = (double) tree->getParticleGroup(idxGroup)->getNbParticlesInGroup();
+#endif
 	  
             starpu_insert_task(&p2m_cl,
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
+#ifdef STARPU_SIMGRID_MLR_MODELS
 			       STARPU_VALUE, &parameters[0], sizeof(double),
 			       STARPU_VALUE, &parameters[1], sizeof(double),								   
    								   STARPU_VALUE, &parameters[2], sizeof(double),
+#endif
 #ifdef SCALFMM_STARPU_USE_PRIO
                     STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2M(),
 #endif
@@ -1175,6 +1172,7 @@ protected:
                         }
                     }
 		    
+#ifdef STARPU_SIMGRID_MLR_MODELS
       	        double *parameters = (double*) calloc(1,m2m_cl.model->nparameters*sizeof(double));
                 parameters[0] = (double) idxLevel;
                 parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
@@ -1184,11 +1182,13 @@ protected:
                 parameters[5] = (double) FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
                         FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3);
                 parameters[6] = (double) nbChildParent;
+#endif
 
                     starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
                                              STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                              STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                              STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+#ifdef STARPU_SIMGRID_MLR_MODELS
 											 STARPU_VALUE, &parameters[0], sizeof(double),
 											 STARPU_VALUE, &parameters[1], sizeof(double),
 											 STARPU_VALUE, &parameters[2], sizeof(double),
@@ -1196,6 +1196,7 @@ protected:
 											 STARPU_VALUE, &parameters[4], sizeof(double),
 											 STARPU_VALUE, &parameters[5], sizeof(double),
 											 STARPU_VALUE, &parameters[6], sizeof(double),
+#endif
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;                   
@@ -1253,6 +1254,7 @@ protected:
                             idxParentCell += 1;
                         }
                     }
+#ifdef STARPU_SIMGRID_MLR_MODELS
           	        double *parameters = (double*) calloc(1,m2m_cl.model->nparameters*sizeof(double));
                     parameters[0] = (double) idxLevel;
                     parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
@@ -1262,11 +1264,13 @@ protected:
                     parameters[5] = (double) FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
                             FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3);
                     parameters[6] = (double) nbChildParent;
+#endif
 
                     starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
                                              STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                              STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                              STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+#ifdef STARPU_SIMGRID_MLR_MODELS
 											 STARPU_VALUE, &parameters[0], sizeof(double),
 											 STARPU_VALUE, &parameters[1], sizeof(double),
 											 STARPU_VALUE, &parameters[2], sizeof(double),
@@ -1274,6 +1278,7 @@ protected:
 											 STARPU_VALUE, &parameters[4], sizeof(double),
 											 STARPU_VALUE, &parameters[5], sizeof(double),
 											 STARPU_VALUE, &parameters[6], sizeof(double),
+#endif
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
@@ -1327,21 +1332,24 @@ protected:
                             }
                         }
                     }
-
+#ifdef STARPU_SIMGRID_MLR_MODELS
                     double *parameters = (double*) calloc(1,m2l_cl_in.model->nparameters*sizeof(double));
                     parameters[0] = (double) idxLevel;
                     parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
                     parameters[2] = (double) tree->getCellGroup(idxLevel,idxGroup)->getSizeOfInterval();
                     parameters[3] = (double) nbM2LInteractions;
+#endif
 	  
                     starpu_insert_task(&m2l_cl_in,
                                        STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                        STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                        STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+#ifdef STARPU_SIMGRID_MLR_MODELS
 									   STARPU_VALUE, &parameters[0], sizeof(double),
 									   STARPU_VALUE, &parameters[1], sizeof(double),
 									   STARPU_VALUE, &parameters[2], sizeof(double),
 									   STARPU_VALUE, &parameters[3], sizeof(double),
+#endif
                    #ifdef SCALFMM_STARPU_USE_PRIO
                                        STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2L(idxLevel),
                                        STARPU_TAG_ONLY, (starpu_tag_t) PrioClass::Controller().getInsertionPosM2L(idxLevel),
@@ -1381,6 +1389,7 @@ protected:
                             }
                         }
                         int mode = 1;
+#ifdef STARPU_SIMGRID_MLR_MODELS
 				        double *parameters = (double*) calloc(1,m2l_cl_inout.model->nparameters*sizeof(double));
 				        parameters[0] = (double) idxLevel;
 				        parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
@@ -1390,6 +1399,7 @@ protected:
 				        parameters[5] = (double) outsideInteractions->size();
 				        parameters[6] = (double) nbDiff0;
 				        parameters[7] = (double) nbDiff1;
+#endif
           
                         starpu_insert_task(&m2l_cl_inout,
                                            STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
@@ -1397,6 +1407,7 @@ protected:
                                            STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                            STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                            STARPU_VALUE, &mode, sizeof(int),
+#ifdef STARPU_SIMGRID_MLR_MODELS
 										   STARPU_VALUE, &parameters[0], sizeof(double),
 										   STARPU_VALUE, &parameters[1], sizeof(double),
 										   STARPU_VALUE, &parameters[2], sizeof(double),
@@ -1405,6 +1416,7 @@ protected:
 										   STARPU_VALUE, &parameters[5], sizeof(double),
 										   STARPU_VALUE, &parameters[6], sizeof(double),
 										   STARPU_VALUE, &parameters[7], sizeof(double),
+#endif
                    #ifdef SCALFMM_STARPU_USE_PRIO
                                            STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
                                            STARPU_TAG_ONLY, (starpu_tag_t) PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
@@ -1425,6 +1437,7 @@ protected:
                                            STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                            STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
                                            STARPU_VALUE, &mode, sizeof(int),
+#ifdef STARPU_SIMGRID_MLR_MODELS
 										   STARPU_VALUE, &parameters[0], sizeof(double),
 										   STARPU_VALUE, &parameters[1], sizeof(double),
 										   STARPU_VALUE, &parameters[2], sizeof(double),
@@ -1433,6 +1446,7 @@ protected:
 										   STARPU_VALUE, &parameters[5], sizeof(double),
 										   STARPU_VALUE, &parameters[6], sizeof(double),
 										   STARPU_VALUE, &parameters[7], sizeof(double),
+#endif
                    #ifdef SCALFMM_STARPU_USE_PRIO
                                            STARPU_PRIORITY, PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
 					   STARPU_TAG_ONLY, (starpu_tag_t) PrioClass::Controller().getInsertionPosM2LExtern(idxLevel),
@@ -1519,6 +1533,7 @@ protected:
                              idxParentCell += 1;
                          }
                      }
+#ifdef STARPU_SIMGRID_MLR_MODELS
                     double *parameters = (double*) calloc(1,l2l_cl.model->nparameters*sizeof(double));
                     parameters[0] = (double) idxLevel;
                     parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
@@ -1528,11 +1543,13 @@ protected:
                     parameters[5] = (double) FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
                             FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3);
                     parameters[6] = (double) nbChildParent;
+#endif
 		    
                     starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
                                              STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                              STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                              STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+#ifdef STARPU_SIMGRID_MLR_MODELS
 											 STARPU_VALUE, &parameters[0], sizeof(double),
 											 STARPU_VALUE, &parameters[1], sizeof(double),
 											 STARPU_VALUE, &parameters[2], sizeof(double),
@@ -1540,6 +1557,7 @@ protected:
 											 STARPU_VALUE, &parameters[4], sizeof(double),
 											 STARPU_VALUE, &parameters[5], sizeof(double),
 											 STARPU_VALUE, &parameters[6], sizeof(double),
+#endif
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
@@ -1600,6 +1618,7 @@ protected:
                                idxParentCell += 1;
                            }
                        }
+#ifdef STARPU_SIMGRID_MLR_MODELS
                       double *parameters = (double*) calloc(1,l2l_cl.model->nparameters*sizeof(double));
                       parameters[0] = (double) idxLevel;
                       parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
@@ -1609,11 +1628,13 @@ protected:
                       parameters[5] = (double) FMath::Min(tree->getCellGroup(idxLevel,idxGroup)->getEndingIndex()-1, (tree->getCellGroup(idxLevel+1,idxSubGroup)->getEndingIndex()-1)>>3)-
                               FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3);
                       parameters[6] = (double) nbChildParent;
+#endif
 
                     starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
                                              STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                              STARPU_VALUE, &idxLevel, sizeof(idxLevel),
                                              STARPU_VALUE, &cellHandles[idxLevel][idxGroup].intervalSize, sizeof(int),
+#ifdef STARPU_SIMGRID_MLR_MODELS
 											 STARPU_VALUE, &parameters[0], sizeof(double),
 											 STARPU_VALUE, &parameters[1], sizeof(double),
 											 STARPU_VALUE, &parameters[2], sizeof(double),
@@ -1621,6 +1642,7 @@ protected:
 											 STARPU_VALUE, &parameters[4], sizeof(double),
 											 STARPU_VALUE, &parameters[5], sizeof(double),
 											 STARPU_VALUE, &parameters[6], sizeof(double),
+#endif
                                              0);
                     task->cl_arg = arg_buffer;
                     task->cl_arg_size = arg_buffer_size;
@@ -1674,6 +1696,7 @@ protected:
                         }
                     }
                 }
+#ifdef STARPU_SIMGRID_MLR_MODELS
                 double *parameters = (double*) calloc(1,p2p_cl_inout.model->nparameters*sizeof(double));
                 parameters[0] = (double) tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock();
                 parameters[1] = (double) tree->getParticleGroup(idxGroup)->getSizeOfInterval();
@@ -1685,11 +1708,13 @@ protected:
 		parameters[7] = (double) nbDiff0;
 		parameters[8] = (double) nbDiff1;
 		parameters[9] = (double) nbInteractions;
+#endif
 
                 starpu_insert_task(&p2p_cl_inout,
                                    STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                    STARPU_VALUE, &outsideInteractions, sizeof(outsideInteractions),
                                    STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
+#ifdef STARPU_SIMGRID_MLR_MODELS
 								   STARPU_VALUE, &parameters[0], sizeof(double),
    								   STARPU_VALUE, &parameters[1], sizeof(double),								   
 								   STARPU_VALUE, &parameters[2], sizeof(double),
@@ -1700,7 +1725,7 @@ protected:
    								   STARPU_VALUE, &parameters[7], sizeof(double),
    								   STARPU_VALUE, &parameters[8], sizeof(double),
    								   STARPU_VALUE, &parameters[9], sizeof(double),
-
+#endif
                    #ifdef SCALFMM_STARPU_USE_PRIO
                                    STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2PExtern(),
                    #endif
@@ -1753,20 +1778,23 @@ protected:
                     }
                 }
             }
-
+#ifdef STARPU_SIMGRID_MLR_MODELS
 	        double *parameters = (double*) calloc(1,p2p_cl_in.model->nparameters*sizeof(double));
                 parameters[0] = (double) tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock();
                 parameters[1] = (double) tree->getParticleGroup(idxGroup)->getSizeOfInterval();
                 parameters[2] = (double) tree->getParticleGroup(idxGroup)->getNbParticlesInGroup();
                 parameters[3] = (double) nbInteractions;
+#endif
                 
             starpu_insert_task(&p2p_cl_in,
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                STARPU_VALUE, &particleHandles[idxGroup].intervalSize, sizeof(int),
+#ifdef STARPU_SIMGRID_MLR_MODELS
 			       STARPU_VALUE, &parameters[0], sizeof(double),
 			       STARPU_VALUE, &parameters[1], sizeof(double),								   
 								   STARPU_VALUE, &parameters[2], sizeof(double),
    								   STARPU_VALUE, &parameters[3], sizeof(double),
+#endif
                    #ifdef SCALFMM_STARPU_USE_PRIO
                                STARPU_PRIORITY, PrioClass::Controller().getInsertionPosP2P(),
                    #endif
@@ -1797,16 +1825,20 @@ protected:
         FAssertLF(cellHandles[tree->getHeight()-1].size() == particleHandles.size());
 
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
+#ifdef STARPU_SIMGRID_MLR_MODELS
         	double *parameters = (double*) calloc(1,p2m_cl.model->nparameters*sizeof(double));
         	parameters[0] = (double) tree->getCellGroup(tree->getHeight()-1,idxGroup)->getNumberOfCellsInBlock();
         	parameters[1] = (double) tree->getCellGroup(tree->getHeight()-1,idxGroup)->getSizeOfInterval();
         	parameters[2] = (double) tree->getParticleGroup(idxGroup)->getNbParticlesInGroup();
+#endif
             starpu_insert_task(&l2p_cl,
                                STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                STARPU_VALUE, &cellHandles[tree->getHeight()-1][idxGroup].intervalSize, sizeof(int),
+#ifdef STARPU_SIMGRID_MLR_MODELS
 							   STARPU_VALUE, &parameters[0], sizeof(double),
 							   STARPU_VALUE, &parameters[1], sizeof(double),
    							   STARPU_VALUE, &parameters[2], sizeof(double),
+#endif
         #ifdef SCALFMM_STARPU_USE_PRIO
                     STARPU_PRIORITY, PrioClass::Controller().getInsertionPosL2P(),
         #endif
