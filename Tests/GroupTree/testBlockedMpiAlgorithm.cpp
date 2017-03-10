@@ -32,7 +32,7 @@
 
 #include "../../Src/GroupTree/TestKernel/FTestCellPOD.hpp"
 
-#include "../../Src/BalanceTree/FLeafBalance.hpp"
+#include "../../Src/Utils/FLeafBalance.hpp"
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
