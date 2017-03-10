@@ -204,7 +204,7 @@ protected:
 
                             MortonIndex interactionsIndexes[26];
                             int interactionsPosition[26];
-                            FTreeCoordinate coord(mindex, tree->getHeight()-1);
+                            FTreeCoordinate coord(mindex);
                             int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
 
                             for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -291,7 +291,7 @@ protected:
 
                                 MortonIndex interactionsIndexes[189];
                                 int interactionsPosition[189];
-                                const FTreeCoordinate coord(mindex, idxLevel);
+                                const FTreeCoordinate coord(mindex);
                                 int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
 
                                 for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -777,11 +777,11 @@ protected:
                             FAssertLF(containers->getLeafMortonIndex((*outsideInteractions)[outInterIdx].insideIdxInBlock) == (*outsideInteractions)[outInterIdx].insideIndex);
 
                             ParticleContainerClass* ptrLeaf = &interParticles;
-                            kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].insideIndex, tree->getHeight()-1),
+                            kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].insideIndex),
                                                 &particles , &ptrLeaf, &(*outsideInteractions)[outInterIdx].relativeOutPosition, 1);
                             const int otherPosition = getOppositeNeighIndex((*outsideInteractions)[outInterIdx].relativeOutPosition);
                             ptrLeaf = &particles;
-                            kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].outIndex, tree->getHeight()-1),
+                            kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].outIndex),
                                                 &interParticles , &ptrLeaf, &otherPosition, 1);
                         }
                     }
@@ -816,7 +816,7 @@ protected:
 
                         MortonIndex interactionsIndexes[26];
                         int interactionsPosition[26];
-                        FTreeCoordinate coord(mindex, tree->getHeight()-1);
+                        FTreeCoordinate coord(mindex);
                         int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
 
                         ParticleContainerClass interactionsObjects[26];

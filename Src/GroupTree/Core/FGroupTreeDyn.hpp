@@ -243,7 +243,7 @@ public:
                     const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPositionAndCorner<FReal>(this->boxCorner, this->boxWidth,
                                                                                                                 treeHeight,
                                                                                                                 inParticlesContainer[idxPart].pos);
-                    const MortonIndex particleIndex = host.getMortonIndex(treeHeight-1);
+                    const MortonIndex particleIndex = host.getMortonIndex();
                     inParticlesContainer[idxPart].mindex = particleIndex;
                     inParticlesContainer[idxPart].originalIndex = idxPart;
                 }
@@ -296,7 +296,7 @@ public:
                         CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                         newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
                         FTreeCoordinate coord;
-                        coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock], idxLevel);
+                        coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock]);
                         newNode.setCoordinate(coord);
                     }
                 }
@@ -397,7 +397,7 @@ public:
                         CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                         newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
                         FTreeCoordinate coord;
-                        coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock], idxLevel);
+                        coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock]);
                         newNode.setCoordinate(coord);
                     }
 
@@ -458,7 +458,7 @@ public:
                     const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPositionAndCorner<FReal>(this->boxCorner, this->boxWidth,
                                                                                                                 treeHeight,
                                                                                                                 inParticlesContainer[idxPart].pos);
-                    const MortonIndex particleIndex = host.getMortonIndex(treeHeight-1);
+                    const MortonIndex particleIndex = host.getMortonIndex();
                     inParticlesContainer[idxPart].mindex = particleIndex;
                     inParticlesContainer[idxPart].originalIndex = idxPart;
                 }
@@ -513,7 +513,7 @@ public:
                         CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                         newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
                         FTreeCoordinate coord;
-                        coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock], idxLevel);
+                        coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock]);
                         newNode.setCoordinate(coord);
                     }
                 }
@@ -615,7 +615,7 @@ public:
                             CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                             newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
                             FTreeCoordinate coord;
-                            coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock], idxLevel);
+                            coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock]);
                             newNode.setCoordinate(coord);
                         }
 
@@ -671,7 +671,7 @@ public:
                             CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                             newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
                             FTreeCoordinate coord;
-                            coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock], idxLevel);
+                            coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock]);
                             newNode.setCoordinate(coord);
                         }
 
@@ -881,4 +881,3 @@ public:
 };
 
 #endif // FGROUPTREEDYN_HPP
-

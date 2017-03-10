@@ -8,22 +8,22 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=24
 #
-source $HOME/Config/bashrc.bash
+#source $HOME/Config/bashrc.bash
 project_dir=/projets/scalfmm/scalfmm-tests ;
 project_dir=$HOME/Dev/src/ScalFMM/scalfmm ;
 
 #
 # PlaFRIM environment
 #
-module add compiler/gcc/5.1.0 compiler/intel/64/2016_beta; module li
+module add compiler/gcc/6.1.0 compiler/intel/64/20176_beta; module li
 #
-EXEC="Examples/Release/ChebyshevInterpolationFMM"
-FILEPERF="RES_Chebyshev-openmp"
-#EXEC="Examples/Release/LagrangeInterpolationFMM"
-#FILEPERF="RES_Lagrange-openmp"
-FILE="unitcube_2M.bfma"
+#EXEC="Examples/Release/ChebyshevInterpolationFMM"
+#FILEPERF="RES_Chebyshev-openmp"
+EXEC="Examples/Release/LagrangeInterpolationFMM"
+FILEPERF="RES_Lagrange-openmp"
+FILE="/projets/scalfmm/data/tests/unitCube20M.bfma"
 #
-cd $project_dir/BuildIntel2016
+cd $project_dir/BuildIntel
 #
 #
 PER_SIZE=`cat /proc/cpuinfo |grep processor |wc -l`

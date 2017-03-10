@@ -11,17 +11,21 @@
 
 #include "Utils/FMpi.hpp"
 #include "FUserKernelEngine.hpp"
-#include "BalanceTree/FLeafBalance.hpp"
+#include "Utils/FLeafBalance.hpp"
 #include "Files/FMpiTreeBuilder.hpp"
 #include "Containers/FVector.hpp"
 #include "Core/FFmmAlgorithmThreadProc.hpp"
 
 class CoreCellDist : public CoreCell, public FAbstractSendable{
     int level;
-
+    void * userKernelData;
 public:
-    CoreCellDist() : level(-1){
+    CoreCellDist() : level(-1),userKernelData(nullptr){
 
+    }
+
+    void init_UserKernelData(void * in){
+        this->userKernelData = in;
     }
 
     /**
@@ -29,10 +33,10 @@ public:
      */
     template <class BufferWriterClass>
     void save(BufferWriterClass& buffer) const{
-        FBasicCell::save<BufferWriterClass>();
+        FBasicCell::save<BufferWriterClass>(buffer);
         buffer << level;
         if(user_cell_descriptor.user_get_size){
-            FSize sizeToSave = user_cell_descriptor.user_get_size(level,CoreCell::getContainer(),getMortonIndex());
+            FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex(),userKernelData);
             char * temp = new char[sizeToSave];
             user_cell_descriptor.user_copy_cell(CoreCell::getContainer(),sizeToSave,(void *) temp);
             buffer.write(temp,sizeToSave);
@@ -45,10 +49,10 @@ public:
      */
     template <class BufferReaderClass>
     void restore(BufferReaderClass& buffer){
-        FBasicCell::restore<BufferReaderClass>();
+        FBasicCell::restore<BufferReaderClass>(buffer);
         buffer >> level;
         if(user_cell_descriptor.user_restore_cell){
-            FSize sizeToSave = user_cell_descriptor.user_get_size(level,CoreCell::getContainer(),getMortonIndex());
+            FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex(),userKernelData);
             char * temp = new char[sizeToSave];
             buffer.fillArray(temp,sizeToSave);
             CoreCell::setContainer(user_cell_descriptor.user_restore_cell(level,temp));
@@ -61,7 +65,7 @@ public:
      */
     template <class BufferWriterClass>
     void serializeUp(BufferWriterClass& buffer) const {
-        FSize sizeToSave = user_cell_descriptor.user_get_size(level,CoreCell::getContainer(),getMortonIndex());
+        FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex(),userKernelData);
         char * temp = new char[sizeToSave];
         user_cell_descriptor.user_copy_cell(CoreCell::getContainer(),sizeToSave,(void *) temp);
         buffer.write(temp,sizeToSave);
@@ -69,7 +73,7 @@ public:
     }
     template <class BufferWriterClass>
     void serializeDown(BufferWriterClass& buffer) const {
-        FSize sizeToSave = user_cell_descriptor.user_get_size(level,CoreCell::getContainer(),getMortonIndex());
+        FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex(),userKernelData);
         char * temp = new char[sizeToSave];
         user_cell_descriptor.user_copy_cell(CoreCell::getContainer(),sizeToSave,(void *) temp);
         buffer.write(temp,sizeToSave);
@@ -77,7 +81,7 @@ public:
     }
     template <class BufferReaderClass>
     void deserializeUp(BufferReaderClass& buffer) const {
-        FSize sizeToSave = user_cell_descriptor.user_get_size(level,CoreCell::getContainer(),getMortonIndex());
+        FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex(),userKernelData);
         char * temp = new char[sizeToSave];
         buffer.fillArray(temp,sizeToSave);
         CoreCell::setContainer(user_cell_descriptor.user_restore_cell(level,temp));
@@ -86,7 +90,7 @@ public:
     }
     template <class BufferReaderClass>
     void deserializeDown(BufferReaderClass& buffer) const {
-        FSize sizeToSave = user_cell_descriptor.user_get_size(level,CoreCell::getContainer(),getMortonIndex());
+        FSize sizeToSave = user_cell_descriptor.user_get_size(level,getMortonIndex(),userKernelData);
         char * temp = new char[sizeToSave];
         buffer.fillArray(temp,sizeToSave);
         CoreCell::setContainer(user_cell_descriptor.user_restore_cell(level,temp));
@@ -99,8 +103,8 @@ public:
      */
     FSize getSavedSize() const {
         FSize toReturn = user_cell_descriptor.user_get_size(level,
-                                                            CoreCell::getContainer(),
-                                                            getMortonIndex())
+                                                            getMortonIndex(),
+                                                            userKernelData)
             + FBasicCell::getSavedSize() //Size of storage needed for Basic Cell
             + sizeof(int)                //Size of storage needed for this class
             + sizeof(nullptr);           //Size of storage needed for the parent class
@@ -108,14 +112,14 @@ public:
     }
     FSize getSavedSizeUp() const{
         FSize toReturn = user_cell_descriptor.user_get_size(level,
-                                                            CoreCell::getContainer(),
-                                                            getMortonIndex());
+                                                            getMortonIndex(),
+                                                            userKernelData);
         return toReturn;
     }
     FSize getSavedSizeDown() const{
         FSize toReturn = user_cell_descriptor.user_get_size(level,
-                                                            CoreCell::getContainer(),
-                                                            getMortonIndex());
+                                                            getMortonIndex(),
+                                                            userKernelData);
         return toReturn;
     }
 };
@@ -232,13 +236,13 @@ private:
         }
 
         void setNbPartPerProc(FSize nbPart, const FMpi::FComm * comm){
-            if(partPerProc.size() < comm->processCount()){
+            if(partPerProc.size() < (unsigned) comm->processCount()){
                 setNbProc(comm->processCount());
             }
             MPI_Allgather(&nbPart, 1, MPI_LONG_LONG, partPerProc.data() , 1, MPI_LONG_LONG, comm->getComm());
         }
         void setOriNbPartPerProc(FSize nbPart, const FMpi::FComm * comm){
-            if(oriPartPerProc.size() < comm->processCount()){
+            if(oriPartPerProc.size() < (unsigned) comm->processCount()){
                 setNbProc(comm->processCount());
             }
             MPI_Allgather(&nbPart, 1, MPI_LONG_LONG, oriPartPerProc.data(), 1, MPI_LONG_LONG, comm->getComm());
@@ -440,8 +444,11 @@ public:
         this->init_cell();
     }
 
-    void build_tree(int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
+    void build_tree(int TreeHeight,double BoxWidth,double* BoxCenter,
+                    Scalfmm_Cell_Descriptor user_cell_descriptor,
+                    Scalfmm_Leaf_Descriptor user_leaf_descriptor){
         CoreCell::Init(user_cell_descriptor);
+        ContainerClass::Init(user_leaf_descriptor);
         Parent::treeHeight = TreeHeight;
         Parent::boxCenter = FPoint<FReal>(BoxCenter[0],BoxCenter[1],BoxCenter[2]);
         Parent::boxWidth = BoxWidth;
@@ -451,6 +458,10 @@ public:
         Parent::boxWidthAtLeafLevel = BoxWidth/(2<<TreeHeight);
         printf("Tree Height : %d \n",TreeHeight);
         octreeDist = new OctreeClass(TreeHeight,FMath::Min(3,TreeHeight-1),BoxWidth,FPoint<FReal>(BoxCenter));
+        //There : for each cell, set a ptr to UserkernelData
+        octreeDist->forEachCell([&](CoreCellDist * currCell){
+                currCell->init_UserKernelData(Parent::getKernelPtr()->getUserKernelDatas());
+            });
     }
 
     void user_kernel_config( Scalfmm_Kernel_Descriptor userKernel, void * userDatas){
@@ -481,11 +492,11 @@ public:
             //Evaluate Morton Index
             host.setX(FCoordinateComputer::GetTreeCoordinate<FReal>(particleXYZ[id*3+0] - this->getBoxCorner().getX(),this->getBoxWidth(),this->getBoxWidthAtLeafLevel(),
                                                                     this->getTreeHeight()));
-            host.setX(FCoordinateComputer::GetTreeCoordinate<FReal>(particleXYZ[id*3+1] - this->getBoxCorner().getX(),this->getBoxWidth(),this->getBoxWidthAtLeafLevel(),
+            host.setX(FCoordinateComputer::GetTreeCoordinate<FReal>(particleXYZ[id*3+1] - this->getBoxCorner().getY(),this->getBoxWidth(),this->getBoxWidthAtLeafLevel(),
                                                                     this->getTreeHeight()));
-            host.setX(FCoordinateComputer::GetTreeCoordinate<FReal>(particleXYZ[id*3+2] - this->getBoxCorner().getX(),this->getBoxWidth(),this->getBoxWidthAtLeafLevel(),
+            host.setX(FCoordinateComputer::GetTreeCoordinate<FReal>(particleXYZ[id*3+2] - this->getBoxCorner().getZ(),this->getBoxWidth(),this->getBoxWidthAtLeafLevel(),
                                                                     this->getTreeHeight()));
-            arrayToBeSorted[id].index = host.getMortonIndex(this->getTreeHeight());
+            arrayToBeSorted[id].index = host.getMortonIndex();
         }
         // This is the array that will contains our particles.
         FVector<struct PartToSort> particles;
@@ -528,7 +539,6 @@ public:
         particles.clear();
         //Set the bool to true
         this->alreadyPartionned = true;
-
     }
 
     void generic_partition(FSize nbThings, size_t stride, void * arrayOfThing, void ** newArray){
@@ -626,13 +636,47 @@ public:
                 if(!(currCell->getContainer())){
                     FTreeCoordinate currCoord = currCell->getCoordinate();
                     int arrayCoord[3] = {currCoord.getX(),currCoord.getY(),currCoord.getZ()};
-                    MortonIndex    currMorton = currCoord.getMortonIndex(currLevel);
+                    MortonIndex    currMorton = currCoord.getMortonIndex();
                     double position[3];
                     FPoint<FReal> boxC = this->getBoxCorner();
                     position[0] = boxC.getX() + currCoord.getX()*boxwidth/double(1<<currLevel);
                     position[1] = boxC.getY() + currCoord.getY()*boxwidth/double(1<<currLevel);
                     position[2] = boxC.getZ() + currCoord.getZ()*boxwidth/double(1<<currLevel);
                     currCell->setContainer(CoreCell::GetInit()(currLevel,currMorton,arrayCoord,position,generic_ptr));
+                }
+            });
+        if(ContainerClass::GetInitLeaf()){
+            octreeDist->forEachCellLeaf([&](CoreCell * currCell, LeafClass * leaf){
+                    FTreeCoordinate currCoord = currCell->getCoordinate();
+                    int currLevel = octreeDist->getHeight()-1;
+                    MortonIndex    currMorton = currCoord.getMortonIndex();
+                    double position[3];
+                    FPoint<FReal> boxC = this->getBoxCorner();
+                    position[0] = boxC.getX() + currCoord.getX()*boxwidth/double(1<<currLevel);
+                    position[1] = boxC.getY() + currCoord.getY()*boxwidth/double(1<<currLevel);
+                    position[2] = boxC.getZ() + currCoord.getZ()*boxwidth/double(1<<currLevel);
+                    leaf->getSrc()->setContainer(ContainerClass::GetInitLeaf()(currLevel,
+                                                                               leaf->getSrc()->getNbParticles(),
+                                                                               leaf->getSrc()->getIndexes().data(), currMorton,
+                                                                               position, currCell->getContainer(), this->kernel->getUserKernelDatas()));
+                });
+        }
+    }
+
+    void apply_on_cell(Callback_apply_on_cell function){
+        double boxwidth = octreeDist->getBoxWidth();
+        //apply user function reset on each user's cell
+        octreeDist->forEachCellWithLevel([&](CoreCell * currCell,const int currLevel){
+                if(currCell->getContainer()){
+                    FTreeCoordinate currCoord = currCell->getCoordinate();
+                    int arrayCoord[3] = {currCoord.getX(),currCoord.getY(),currCoord.getZ()};
+                    MortonIndex    currMorton = currCoord.getMortonIndex();
+                    double position[3];
+                    FPoint<FReal> boxC = this->getBoxCorner();
+                    position[0] = boxC.getX() + currCoord.getX()*boxwidth/double(1<<currLevel);
+                    position[1] = boxC.getY() + currCoord.getY()*boxwidth/double(1<<currLevel);
+                    position[2] = boxC.getZ() + currCoord.getZ()*boxwidth/double(1<<currLevel);
+                    function(currLevel,currMorton,arrayCoord,position,currCell->getContainer(),kernel->getUserKernelDatas());
                 }
             });
     }
@@ -656,13 +700,32 @@ public:
                 typedef FFmmAlgorithmThreadProc<OctreeClass,CoreCellDist,ContainerClass,CoreKernelClass,LeafClass> AlgoProcClass;
                 AlgoProcClass * algoProc = new AlgoProcClass(*comm,octreeDist,kernel);
                 FScalFMMEngine<FReal>::algoTimer = algoProc;
-                algoProc->execute();
+                algoProc->execute(FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P | FFmmP2P);
                 break;
             }
         default:
             break;
         }
     }
+
+    void execute_fmm_far_field(){
+        FAssertLF(octreeDist,
+                  "No Tree set, please use scalfmm_user_kernel_config before calling the execute routine ... Exiting \n");
+        //Only one config shall work , so let's use it
+        switch(FScalFMMEngine<FReal>::Algorithm){
+        case 5:
+            {
+                typedef FFmmAlgorithmThreadProc<OctreeClass,CoreCellDist,ContainerClass,CoreKernelClass,LeafClass> AlgoProcClass;
+                AlgoProcClass * algoProc = new AlgoProcClass(*comm,octreeDist,kernel);
+                FScalFMMEngine<FReal>::algoTimer = algoProc;
+                algoProc->execute(FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P);
+                break;
+            }
+        default:
+            break;
+        }
+    }
+
 
     void free_cell(Callback_free_cell user_cell_deallocator){
         octreeDist->forEachCell([&](CoreCellDist * currCell){

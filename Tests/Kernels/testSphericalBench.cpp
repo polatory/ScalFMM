@@ -1,16 +1,20 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the FMM.
+// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
+// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the
+// FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+// An extension to the license is given to allow static linking of scalfmm
+// inside a proprietary application (no matter its license).
+// See the main license file for more details.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
@@ -102,9 +106,9 @@ void doATest(const FSize NbParticles, const int minP, const int maxP, const int 
                                           particles[idxTarget].position.getZ(),particles[idxTarget].physicalValue,
                                           &particles[idxTarget].forces[0],&particles[idxTarget].forces[1],
                                           &particles[idxTarget].forces[2],&particles[idxTarget].potential,
-                                    particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                                    particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
-                                    &particles[idxOther].forces[0],&particles[idxOther].forces[1],
+                                          particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                          particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
+                                          &particles[idxOther].forces[0],&particles[idxOther].forces[1],
                                           &particles[idxOther].forces[2],&particles[idxOther].potential);
                 }
             }
@@ -311,9 +315,9 @@ int main(int argc, char ** argv){
                                       centeredParticle.position.getZ(),centeredParticle.physicalValue,
                                       &centeredParticle.forces[0],&centeredParticle.forces[1],
                                       &centeredParticle.forces[2],&centeredParticle.potential,
-                                otherParticle.position.getX(), otherParticle.position.getY(),
-                                otherParticle.position.getZ(),otherParticle.physicalValue,
-                                &otherParticle.forces[0],&otherParticle.forces[1],
+                                      otherParticle.position.getX(), otherParticle.position.getY(),
+                                      otherParticle.position.getZ(),otherParticle.physicalValue,
+                                      &otherParticle.forces[0],&otherParticle.forces[1],
                                       &otherParticle.forces[2],&otherParticle.potential);
 
                 { // Check that each particle has been summed with all other

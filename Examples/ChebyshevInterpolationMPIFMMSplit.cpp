@@ -1,10 +1,14 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the FMM.
+// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
+// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the
+// FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
 // abiding by the rules of distribution of free software.
+// An extension to the license is given to allow static linking of scalfmm
+// inside a proprietary application (no matter its license).
+// See the main license file for more details.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -34,7 +38,7 @@
 #include "Files/FMpiSplitFmaLoader.hpp"
 #include "Files/FMpiTreeBuilder.hpp"
 
-#include "BalanceTree/FLeafBalance.hpp"
+#include "Utils/FLeafBalance.hpp"
 
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "Kernels/Chebyshev/FChebSymKernel.hpp"
@@ -154,7 +158,7 @@ int main(int argc, char* argv[])
         double minTime,maxTime;
         std::cout << "Proc:" << app.global().processId()
                   << " "     << loader.getMyNumberOfParticles()
-                  << "particles have been inserted in the tree. (@Reading and Inserting Particles = " 
+                  << "particles have been inserted in the tree. (@Reading and Inserting Particles = "
                   << time.elapsed() << " s)."
                   << std::endl;
 
@@ -187,7 +191,7 @@ int main(int argc, char* argv[])
         MPI_Reduce(&timeUsed,&maxTime,1,MPI_DOUBLE,MPI_MAX,0,app.global().getComm());
         if(app.global().processId() == 0){
             std::cout << "exec-time-min:" << minTime
-                      << " exec-time-max:" << maxTime 
+                      << " exec-time-max:" << maxTime
                       << std::endl;
         }
 

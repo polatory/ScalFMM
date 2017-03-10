@@ -1,5 +1,3 @@
-// @SCALFMM_PRIVATE
-
 #include "FCudaDeviceWrapper.hpp"
 #include "FCudaTreeCoordinate.hpp"
 #include "FCudaStructParams.hpp"

@@ -1,10 +1,14 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the FMM.
+// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
+// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the
+// FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
 // abiding by the rules of distribution of free software.
+// An extension to the license is given to allow static linking of scalfmm
+// inside a proprietary application (no matter its license).
+// See the main license file for more details.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -33,7 +37,7 @@
 #include "Files/FMpiFmaGenericLoader.hpp"
 #include "Files/FMpiTreeBuilder.hpp"
 
-#include "BalanceTree/FLeafBalance.hpp"
+#include "Utils/FLeafBalance.hpp"
 
 #include "Kernels/Rotation/FRotationKernel.hpp"
 #include "Kernels/Rotation/FRotationCell.hpp"
@@ -89,9 +93,9 @@ int main(int argc, char* argv[])
     std::cout << "\n>> Sequential version.\n" << std::endl;
 #endif
     //
-    std::cout <<	 "Parameters  "<< std::endl
+    std::cout <<         "Parameters  "<< std::endl
                   <<     "      Octree Depth      "<< TreeHeight <<std::endl
-                      <<	 "      SubOctree depth "<< SubTreeHeight <<std::endl
+                      <<         "      SubOctree depth "<< SubTreeHeight <<std::endl
                           <<     "      Input file  name: " <<filename <<std::endl
                               <<     "      Thread number:  " << NbThreads <<std::endl
                                   <<std::endl;
@@ -148,7 +152,7 @@ int main(int argc, char* argv[])
 
         //idx (in file) of the first part that will be used by this proc.
         FSize idxStart = loader->getStart();
-        
+
         for(FSize idxPart = 0 ; idxPart < loader->getMyNumberOfParticles() ; ++idxPart){
             //Storage of the index (in the original file) of each part.
             particles[idxPart].indexInFile = idxPart + idxStart;
@@ -164,6 +168,8 @@ int main(int argc, char* argv[])
                                                                     tree.getBoxWidth(),
                                                                     tree.getHeight(), &finalParticles,&balancer);
 
+        std::cout << "Local nb particles after sort "
+                  << finalParticles.getSize() << std::endl;
         for(FSize idx = 0 ; idx < finalParticles.getSize(); ++idx){
             tree.insert(finalParticles[idx].position,finalParticles[idx].indexInFile,finalParticles[idx].physicalValue);
         }

@@ -32,7 +32,7 @@
 
 #include "../../Src/GroupTree/TestKernel/FTestCellPOD.hpp"
 
-#include "../../Src/BalanceTree/FLeafBalance.hpp"
+#include "../../Src/Utils/FLeafBalance.hpp"
 #include "../../Src/Files/FMpiTreeBuilder.hpp"
 
 #include "../../Src/Core/FFmmAlgorithm.hpp"
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]){
                 loader.getBoxWidth(),
                 NbLevels,
                 myParticles[myParticles.getSize()-1].position );
-    const MortonIndex myLeftLimite = host.getMortonIndex(NbLevels-1);
+    const MortonIndex myLeftLimite = host.getMortonIndex();
     MortonIndex leftLimite = -1;
     if(mpiComm.global().processId() != 0){
         FMpi::Assert(MPI_Recv(&leftLimite, sizeof(leftLimite), MPI_BYTE,

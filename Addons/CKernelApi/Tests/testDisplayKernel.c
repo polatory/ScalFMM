@@ -172,7 +172,6 @@ int main(int argc, char ** av){
     double* particleXYZ = malloc(sizeof(double)*3*nbPart);
     double* physicalValues = malloc(sizeof(double)*nbPart);
 
-
     {
         printf("Creating Particles:\n");
         FSize idxPart;
@@ -207,12 +206,17 @@ int main(int argc, char ** av){
     struct User_Scalfmm_Cell_Descriptor cellDescriptor;
     cellDescriptor.user_init_cell = displ_init_cell;
     cellDescriptor.user_free_cell = displ_free_cell;
-
+    struct User_Scalfmm_Leaf_Descriptor user_descr_leaf;
+    user_descr_leaf.user_init_leaf = NULL;
+    user_descr_leaf.user_free_leaf = NULL;
+    user_descr_leaf.user_get_size = NULL;
+    user_descr_leaf.user_copy_leaf = NULL;
+    user_descr_leaf.user_restore_leaf = NULL;
 
     // Init tree and cell
     printf("Building the tree and Initizalizing the cells:\n");
 
-    scalfmm_build_tree(handle,treeHeight, boxWidth, boxCenter, cellDescriptor);
+    scalfmm_build_tree(handle,treeHeight, boxWidth, boxCenter, cellDescriptor, user_descr_leaf);
 
     //Once is the tree built, one must set the kernel before inserting particles
 
@@ -220,12 +224,15 @@ int main(int argc, char ** av){
     struct User_Scalfmm_Kernel_Descriptor kernel;
     kernel.p2m = displ_p2m;
     kernel.m2m = displ_m2m;
+    kernel.m2m_full = NULL;
     //init the other to NULL
     kernel.m2l = NULL;
     kernel.m2l_full = displ_m2l_full;
     kernel.l2l = displ_l2l;
+    kernel.l2l_full = NULL;
     kernel.l2p = displ_l2p;
     kernel.p2p_full = displ_p2pFull;
+    kernel.p2p_sym = NULL;
     kernel.p2pinner = NULL;
     kernel.p2p = NULL;
 
@@ -277,6 +284,7 @@ int main(int argc, char ** av){
     scalfmm_dealloc_handle(handle,displ_free_cell);
 
     free(particleXYZ);
+    free(physicalValues);
 
     return EXIT_SUCCESS;
 }

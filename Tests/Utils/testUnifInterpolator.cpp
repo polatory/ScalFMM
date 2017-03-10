@@ -117,7 +117,7 @@ int main(int argc, char ** argv){
 
     ////////////////////////////////////////////////////////////////////
     // approximative computation
-    const unsigned int ORDER = 4;
+    const unsigned int ORDER = 2;
     const unsigned int nnodes = TensorTraits<ORDER>::nnodes;
     typedef FUnifInterpolator<FReal,ORDER,MatrixKernelClass> InterpolatorClass;
     InterpolatorClass S;
@@ -185,25 +185,35 @@ int main(int argc, char ** argv){
     TensorType::setNodeIds(node_ids);
     unsigned int node_ids_pairs[rc][2];
     TensorType::setNodeIdsPairs(node_ids_pairs);
+    unsigned int permC[rc];
+    TensorType::setStoragePermutation(permC);
 
     //  std::cout << "2*order-1=" << 2*ORDER-1 << std::endl;
     unsigned int ido=0;
-    for(unsigned int l=0; l<2*ORDER-1; ++l)
-        for(unsigned int m=0; m<2*ORDER-1; ++m)
+    for(unsigned int l=0; l<2*ORDER-1; ++l){
+        for(unsigned int m=0; m<2*ORDER-1; ++m){
             for(unsigned int n=0; n<2*ORDER-1; ++n){
+                std::cout<< permC[ido] << ", ";
 
-                C[ido]
-                        = MatrixKernel.evaluate(rootsX[node_ids_pairs[ido][0]],
-                        rootsY[node_ids_pairs[ido][1]]);
+                C[permC[ido]] = MatrixKernel.evaluate(rootsX[node_ids_pairs[ido][0]], rootsY[node_ids_pairs[ido][1]]);
                 ido++;
             }
-
-    //  // Display C (gathers every values of K that need to be stored,
-    //  // corresponds to the first line of the padded matrix (reverse order?))
-    //  std::cout<<"C="<<std::endl;
-    //  for (unsigned int n=0; n<rankpad; ++n)
-    //    std::cout<< C[ido] << ", ";
-    //  std::cout<<std::endl;
+        }
+    }
+      // Display C (gathers every values of K that need to be stored,
+      // corresponds to the first line of the padded matrix (reverse order?))
+      std::cout<<"C="<<std::endl;
+    ido=0;
+    for(unsigned int l=0; l<2*ORDER-1; ++l){
+        for(unsigned int m=0; m<2*ORDER-1; ++m){   
+            for(unsigned int n=0; n<2*ORDER-1; ++n){
+     
+                std::cout<< C[ido] << ", ";
+                ido++;
+            }
+        }
+    }
+    std::cout<<std::endl;
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////
     // K is a block Toeplitz matrix
@@ -217,14 +227,14 @@ int main(int argc, char ** argv){
     // In order to actually embed K into a circulant matrix C one just
     // needs to insert (ORDER-1) extra lines/columns (to each block).
 
-    //  std::cout<< "K=" <<std::endl;
-    //  for (unsigned int i=0; i<nnodes; ++i){
-    //    for (unsigned int j=0; j<nnodes; ++j){
-    //      std::cout<< K[i*nnodes+j]<<", ";
-    //    }
-    //    std::cout<<std::endl;
-    //  }
-    //  std::cout<<std::endl;
+      std::cout<< "K=" <<std::endl;
+      for (unsigned int i=0; i<nnodes; ++i){
+        for (unsigned int j=0; j<ORDER*ORDER*ORDER/*nnodes*/; ++j){
+          std::cout<< K[i*nnodes+j]<<", ";
+        }
+        std::cout<<std::endl;
+      }
+      std::cout<<std::endl;
 
     if(ORDER<4){// display some extra results for low orders
 

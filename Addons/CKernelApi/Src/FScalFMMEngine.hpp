@@ -95,7 +95,9 @@ public:
     //by specific Engine
 
     //Function about the tree
-    virtual void build_tree(int TreeHeight,FReal BoxWidth,FReal* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
+    virtual void build_tree(int TreeHeight,FReal BoxWidth,FReal* BoxCenter,
+                            Scalfmm_Cell_Descriptor user_cell_descriptor,
+                            Scalfmm_Leaf_Descriptor user_leaf_descriptor){
         FAssertLF(0,"Nothing has been done yet, exiting");
     }
 
@@ -178,37 +180,6 @@ public:
     }
 
 
-    /** Test ... */
-    struct RunContainer{
-        template< int nbAttributeToInsert,class ContainerClass,class LeafClass, class CellClass>
-        static void Run(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
-                        int NbPartToInsert,int * strideForEachAtt,
-                        FReal* rawDatas){
-            generic_tree_abstract_insert<ContainerClass,LeafClass,CellClass,nbAttributeToInsert>(octree,
-                                                                                                 NbPartToInsert,strideForEachAtt,rawDatas);
-        }
-    };
-
-    template<class ContainerClass,class LeafClass, class CellClass, int nbAttributeToInsert>
-    void generic_tree_abstract_insert(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
-                                      int NbPartToInsert,int * strideForEachAtt,
-                                      FReal* rawDatas){
-        for(FSize idxPart = 0; idxPart<NbPartToInsert ; ++idxPart){
-            FPoint<FReal> pos = FPoint<FReal>(rawDatas[0],rawDatas[1],rawDatas[2]);
-            MortonIndex index = octree->getMortonFromPosition(pos);
-            //Insert with how many attributes ???
-            octree->insert(pos,idxPart);
-            //Get again the container
-            ContainerClass * containerToFill = octree->getLeafSrc(index);//cannot be nullptr
-            std::array<FReal,nbAttributeToInsert> arrayOfAttribute;
-            for(int idxAtt = 0; idxAtt<nbAttributeToInsert ; ++idxAtt){
-                arrayOfAttribute[idxAtt] = rawDatas[3+ strideForEachAtt[idxAtt]];
-            }
-            int idxToRemove = containerToFill->getNbParticles();
-            containerToFill->remove(&idxToRemove,1);
-            containerToFill->push(pos,idxPart,arrayOfAttribute);
-        }
-    }
 
     template<class ContainerClass,class LeafClass,class CellClass>
     void generic_get_forces_xyz(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
@@ -806,6 +777,9 @@ public:
     virtual void execute_fmm(){
         FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
     }
+    virtual void execute_fmm_far_field(){
+        FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
+    }
 
     virtual void intern_dealloc_handle(Callback_free_cell userDeallocator){
         FAssertLF(0,"No kernel set, cannot execute anything, exiting ...\n");
@@ -820,15 +794,17 @@ public:
      * get the time spent in each operator.
      */
     virtual void get_timers(FReal * Timers){
-        const FTic * timers = algoTimer->getAllTimers();
-        int nbTimers = algoTimer->getNbOfTimerRecorded();
-        for(int idTimer = 0; idTimer<nbTimers ; ++idTimer){
-            Timers[idTimer] = timers[idTimer].elapsed();
-        }
+        Timers[0] = algoTimer->Timers["P2M"].elapsed();
+        Timers[1] = algoTimer->Timers["M2M"].elapsed();
+        Timers[2] = algoTimer->Timers["M2L"].elapsed();
+        Timers[3] = algoTimer->Timers["L2L"].elapsed();
+        Timers[4] = algoTimer->Timers["L2P"].elapsed();
+        Timers[5] = algoTimer->Timers["P2P"].elapsed();
+        Timers[6] = algoTimer->Timers["NearField"].elapsed();
     }
 
     virtual int get_nb_timers(){
-        return algoTimer->getNbOfTimerRecorded();
+        return FAlgorithmTimers::nbTimers;
     }
 
     virtual void set_upper_limit(int upperLimit){
@@ -862,8 +838,11 @@ struct ScalFmmCoreHandle {
 
 
 
-extern "C" void scalfmm_build_tree(scalfmm_handle Handle,int TreeHeight,double BoxWidth,double* BoxCenter,Scalfmm_Cell_Descriptor user_cell_descriptor){
-    ((ScalFmmCoreHandle<double> *) Handle)->engine->build_tree(TreeHeight,BoxWidth, BoxCenter, user_cell_descriptor);
+extern "C" void scalfmm_build_tree(scalfmm_handle Handle,int TreeHeight,double BoxWidth,
+                                   double* BoxCenter,
+                                   Scalfmm_Cell_Descriptor user_cell_descriptor,
+                                   Scalfmm_Leaf_Descriptor user_leaf_descriptor){
+    ((ScalFmmCoreHandle<double> *) Handle)->engine->build_tree(TreeHeight,BoxWidth, BoxCenter, user_cell_descriptor, user_leaf_descriptor);
 }
 
 extern "C" void scalfmm_tree_insert_particles(scalfmm_handle Handle, int NbPositions, double * arrayX, double * arrayY, double * arrayZ,
@@ -1017,6 +996,12 @@ extern "C" void scalfmm_algorithm_config(scalfmm_handle Handle, scalfmm_algorith
 extern "C" void scalfmm_execute_fmm(scalfmm_handle Handle){
     ((ScalFmmCoreHandle<double> * ) Handle)->engine->execute_fmm();
 }
+
+//Executing FMM
+extern "C" void scalfmm_execute_fmm_far_field(scalfmm_handle Handle){
+    ((ScalFmmCoreHandle<double> * ) Handle)->engine->execute_fmm_far_field();
+}
+
 
 extern "C" void scalfmm_user_kernel_config(scalfmm_handle Handle, Scalfmm_Kernel_Descriptor userKernel, void * userDatas){
     ((ScalFmmCoreHandle<double> * ) Handle)->engine->user_kernel_config(userKernel,userDatas);

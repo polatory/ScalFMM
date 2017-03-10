@@ -29,28 +29,28 @@
 
 
 if(NOT DEFINED PROCESSOR_COUNT)
-    # Unknown:
-    set(NUMBER_OF_CPU 0)
+  # Unknown:
+  set(NUMBER_OF_CPU 0)
 
-    # Linux:
-    set(cpuinfo_file "/proc/cpuinfo")
-    if(EXISTS "${cpuinfo_file}")
-        file(STRINGS "${cpuinfo_file}" procs REGEX "^processor.: [0-9]+$")
-        list(LENGTH procs NUMBER_OF_CPU)
+  # Linux:
+  set(cpuinfo_file "/proc/cpuinfo")
+  if(EXISTS "${cpuinfo_file}")
+    file(STRINGS "${cpuinfo_file}" procs REGEX "^processor.: [0-9]+$")
+    list(LENGTH procs NUMBER_OF_CPU)
+  endif()
+
+  # Mac:
+  if(APPLE)
+    find_program(cmd_sys_pro "system_profiler")
+    if(cmd_sys_pro)
+      execute_process(COMMAND ${cmd_sys_pro} SPHardwareDataType OUTPUT_VARIABLE info)
+      string(REGEX REPLACE "^.*Total Number of Cores: ([0-9]+).*$" "\\1"
+	NUMBER_OF_CPU "${info}")
     endif()
+  endif()
 
-    # Mac:
-    if(APPLE)
-        find_program(cmd_sys_pro "system_profiler")
-        if(cmd_sys_pro)
-          execute_process(COMMAND ${cmd_sys_pro} SPHardwareDataType OUTPUT_VARIABLE info)
-            string(REGEX REPLACE "^.*Total Number of Cores: ([0-9]+).*$" "\\1"
-              NUMBER_OF_CPU "${info}")
-        endif()
-    endif()
-
-    # Windows:
-    if(WIN32)
+  # Windows:
+  if(WIN32)
     set(NUMBER_OF_CPU "$ENV{NUMBER_OF_PROCESSORS}")
-    endif()
+  endif()
 endif()

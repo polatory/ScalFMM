@@ -34,7 +34,7 @@ GetCpuInfos()
 
 # SCALFMM version number.  An even minor number corresponds to releases.
 set(SCALFMM_MAJOR_VERSION 1)
-set(SCALFMM_MINOR_VERSION 4)
+set(SCALFMM_MINOR_VERSION 5)
 set(SCALFMM_PATCH_VERSION 0)
 set(SCALFMM_VERSION  "${SCALFMM_MAJOR_VERSION}.${SCALFMM_MINOR_VERSION}.${SCALFMM_PATCH_VERSION}" )
 
@@ -53,6 +53,20 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
     set(MORSE_CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse )
   endif()
   include(MorseInit)
+  # Set the RPATH config
+  # --------------------
+  # use, i.e. don't skip the full RPATH for the build tree
+  set(CMAKE_SKIP_BUILD_RPATH  FALSE)
+  # when building, don't use the install RPATH already
+  # (but later on when installing)
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+  # the RPATH to be used when installing
+  set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
+  # Build ScalFmm as static or dynamic lib
+  # --------------------------------------
+  option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
+
   #
   # Options
   #
@@ -72,14 +86,14 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   option( SCALFMM_USE_SIGNALS          "Set to ON to catch various signal an print backtrace"  OFF )
   option( SCALFMM_USE_ASSERT           "Set to ON to enable safe tests during execution" ON  )
   option( SCALFMM_USE_MIC_NATIVE       "Set to ON to compile in native mode for MIC" OFF  )
-  option( SCALFMM_ONLY_DEVEL           "Set to ON to compile Development tools (only scalfmm team)" ON )
+  option( SCALFMM_ONLY_DEVEL           "Set to ON to compile Development tools (only scalfmm team)" OFF )
   option( SCALFMM_USE_EZTRACE          "Set to ON to compile with eztrace framwork" OFF )
   option( SCALFMM_USE_STARPU           "Set to ON to build SCALFMM with StarPU"     OFF )
   option( SCALFMM_BUILD_UTILS          "Set to ON to build utils Tests"             OFF )
 
-#
-#  VECTORISATION
-#
+  #
+  #  VECTORISATION
+  #
   if( APPLE ) # to fix problem with  GCC and avx
     CMAKE_DEPENDENT_OPTION( SCALFMM_USE_SSE              "Set to ON to compile with SSE support (and use intrinsec SSE P2P)" ON "CPUOPTION_SSE3;NOT CPUOPTION_AVX2" OFF  )
     CMAKE_DEPENDENT_OPTION( SCALFMM_USE_AVX              "Set to ON to compile with AVX support (and use intrinsec AVX P2P)" OFF "CPUOPTION_AVX; NOT CPUOPTION_AVX2" OFF  )
@@ -90,11 +104,15 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   CMAKE_DEPENDENT_OPTION( SCALFMM_USE_AVX2             "Set to ON to compile with AVX support (and use intrinsec AVX2 P2P)" ON "CPUOPTION_AVX2" OFF )
 
   if( SCALFMM_ONLY_DEVEL )
-# OPENMP 4/5 support 
+    # OPENMP 4/5 support 
     option( OPENMP_SUPPORT_COMMUTE   "Set to ON to let tasks commute (KSTAR/StarPU compiler only)" OFF )
     option( OPENMP_SUPPORT_PRIORITY  "Set to ON to enable tasks priority (KSTAR/StarPU compiler only)" OFF )
     option( OPENMP_SUPPORT_TASK_NAME "Set to ON to enable a taskname clause for tasks (KSTAR/StarPU compiler only)" OFF )
-    option( SCALFMM_DISABLE_NATIVE_OMP4 "Set to ON to disable the gcc/intel omp4"    OFF )
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+      option( SCALFMM_DISABLE_NATIVE_OMP4 "Set to ON to disable the gcc/intel omp4"    OFF )
+    else()
+      option( SCALFMM_DISABLE_NATIVE_OMP4 "Set to ON to disable the gcc/intel omp4"    ON )
+    endif()
     option( SCALFMM_TIME_OMPTASKS "Set to ON to time omp4 tasks and generate output file"    OFF )
 # SIMGRID and peformance models options
     option( SCALFMM_SIMGRID_NODATA "Set to ON to avoid the allocation of numerical parts in the group tree" OFF )
@@ -106,9 +124,9 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
     CMAKE_DEPENDENT_OPTION(SCALFMM_STARPU_FORCE_NO_SCHEDULER  "Set to ON to disable heteroprio even if supported" OFF "SCALFMM_USE_STARPU" OFF)
   endif()
   message(STATUS "AVANT  ${CMAKE_CXX_COMPILER_ID}" )
-#
-#  MPI
-#
+  #
+  #  MPI
+  #
   if( SCALFMM_USE_MPI )
     try_compile(COMPILE_INTEL ${CMAKE_CURRENT_BINARY_DIR}
       ${SCALFMM_CMAKE_MODULE_PATH}/compileTestIntel.cpp
@@ -158,7 +176,9 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       set(SSE_FLAGS  "-axSSE4.2  -march=native")
     endif(APPLE)
     #-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
-  else()
+  elseif(CMAKE_CXX_COMPILER_ID STREQUAL "XL")
+    set(SCALFMM_CXX_FLAGS  "${SCALFMM_CXX_FLAGS} -mcpu=power8 -mtune=power8")
+  else() #if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     # NOT      INTEL
     if(NOT SCALFMM_USE_MPI)
       include(CheckCCompilerFlag)
@@ -244,8 +264,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
         #set(SCALFMM_FLAGS_OPTI_RELEASE "-fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize"
         set(SCALFMM_FLAGS_OPTI_RELEASE "-funroll-loops -ftree-vectorize"
           CACHE STRING "Set your optimization flags for release mode.")
-  # set(SCALFMM_FLAGS_OPTI_RELEASE "-funroll-loops -ftree-vectorize" CACHE STRING
-  #   "Set your optimization flags for release mode.")
+	# set(SCALFMM_FLAGS_OPTI_RELEASE "-funroll-loops -ftree-vectorize" CACHE STRING
+	#   "Set your optimization flags for release mode.")
       else()
         set(SCALFMM_FLAGS_OPTI_RELEASE "-ffast-math -funroll-loops -ftree-vectorize" CACHE STRING
           "Set your optimization flags for release mode.")
@@ -308,24 +328,37 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   ##############################################################################
   #
   if( SCALFMM_USE_BLAS )
+    #   include(FortranCInterface)
+    #    # Define a Fortran interface file (FCMangle.hpp)
+    #   FortranCInterface_HEADER( ${CMAKE_CURRENT_SOURCE_DIR}/Src/FCMangle.hpp
+    #                            MACRO_NAMESPACE "PM_"
+    #                           SYMBOL_NAMESPACE "PM_"
+    #                           SYMBOLS init testPPM:init)
     message(STATUS "CMAKE_CXX_COMPILER_ID STREQUAL  ${CMAKE_CXX_COMPILER_ID}")
 
-    option( SCALFMM_USE_MKL_AS_BLAS "Set to ON to use MKL CBLAS" OFF )
+    option( SCALFMM_USE_MKL_AS_BLAS  "Set to ON to use MKL BLAS/LAPACK" OFF )
+    option( SCALFMM_USE_ESSL_AS_BLAS "Set to ON to use ESSL BLAS/LAPACK" OFF )
 
     if( SCALFMM_USE_MKL_AS_BLAS )
       set(BLA_VENDOR "Intel10_64lp_seq")
       find_package(BLASEXT QUIET) # not REQUIRED
-
-      if(BLAS_LIBRARY_DIRS)
-        # the RPATH to be used when installing
-        list(APPEND CMAKE_INSTALL_RPATH "${BLAS_LIBRARY_DIRS}")
-      endif()
       unset(LAPACK_LIBRARIES)
       if (BLAS_LIBRARIES)
         set(BLASLAPACK_LIBRARIES ${BLAS_LIBRARIES})
       endif()
+    elseif(SCALFMM_USE_ESSL_AS_BLAS)
+      set(BLA_VENDOR "IBMESSL")
+      find_package(BLASEXT   QUIET) # not REQUIRED
+      find_package(LAPACKEXT QUIET) # not REQUIRED
+      if (LAPACK_LIBRARIES)
+        set(BLASLAPACK_LIBRARIES "${LAPACK_LIBRARIES}")
+      endif()
+      if (BLAS_LIBRARIES)
+        list(APPEND BLASLAPACK_LIBRARIES ${BLAS_LIBRARIES})
+      endif()
     elseif(SCALFMM_USE_EXTERNAL_BLAS)
       message(STATUS "BLAS SET BY EXTERNAL PROGRAM = ${BLAS_LIBRARIES}")
+      list(APPEND BLASLAPACK_LIBRARIES "${BLAS_LIBRARIES}")
     else()
       find_package(BLASEXT)  # not REQUIRED
       find_package(LAPACKEXT)  # not REQUIRED
@@ -340,7 +373,62 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
 
     if(BLAS_FOUND)
       set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${BLASLAPACK_LIBRARIES}")
-      #message(STATUS "SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
+      if(BLAS_LIBRARY_DIRS)
+        # the RPATH to be used when installing
+        list(APPEND CMAKE_INSTALL_RPATH "${BLAS_LIBRARY_DIRS}")
+      endif()
+      if(LAPACK_FOUND AND LAPACK_LIBRARY_DIRS)
+        # the RPATH to be used when installing
+        list(APPEND CMAKE_INSTALL_RPATH "${LAPACK_LIBRARY_DIRS}")
+      endif()
+      message (STATUS "check BLAS Fortran mangling")
+      # add options to let the user be able to force a behavior
+      option( SCALFMM_BLAS_ADD_     "Set to ON to force calls to BLAS Fortran symbols with _ (ex: dgemm_)"        OFF )
+      option( SCALFMM_BLAS_UPCASE   "Set to ON to force calls to BLAS Fortran symbols in capital (ex: DGEMM)"     OFF )
+      option( SCALFMM_BLAS_NOCHANGE "Set to ON to force calls to BLAS Fortran symbols with no change (ex: dgemm)" OFF )
+      # if options not changed by user then auto-detection
+      if (NOT SCALFMM_BLAS_ADD_ AND NOT SCALFMM_BLAS_UPCASE AND NOT SCALFMM_BLAS_NOCHANGE)
+        # give blas libraries and check dgemm symbol
+        set(CMAKE_REQUIRED_LIBRARIES "${BLAS_LIBRARIES}")
+        check_function_exists(dgemv_ DGEMV_ADD_)
+        check_function_exists(DGEMV  DGEMV_UPCASE)
+        check_function_exists(dgemv  DGEMV_NOCHANGE)
+        # here we consider that the first kind of symbol found will be the one used
+        # current order is: ADD_, UPCASE, NOCHANGE
+        if (DGEMV_ADD_)
+          set (SCALFMM_BLAS_ADD_     ON)
+          set (SCALFMM_BLAS_UPCASE   OFF)
+          set (SCALFMM_BLAS_NOCHANGE OFF)
+          message (STATUS "BLAS dgemv_ symbol found, SCALFMM_BLAS_ADD_ is ON")
+        else (DGEMV_ADD_)
+          if (DGEMV_UPCASE)
+            set (SCALFMM_BLAS_ADD_     OFF)
+            set (SCALFMM_BLAS_UPCASE   ON)
+            set (SCALFMM_BLAS_NOCHANGE OFF)
+            message (STATUS "BLAS DGEMV symbol found, SCALFMM_BLAS_UPCASE is ON")
+          else (DGEMV_UPCASE)
+            if (DGEMV_NOCHANGE)
+              set (SCALFMM_BLAS_ADD_     OFF)
+              set (SCALFMM_BLAS_UPCASE   OFF)
+              set (SCALFMM_BLAS_NOCHANGE ON)
+              message (STATUS "BLAS dgemv symbol found, SCALFMM_BLAS_NOCHANGE is ON")
+            endif (DGEMV_NOCHANGE)
+          endif (DGEMV_UPCASE)
+        endif (DGEMV_ADD_)
+        if ( (NOT DGEMV_ADD_) AND (NOT DGEMV_UPCASE) AND (NOT DGEMV_NOCHANGE) )
+          message(FATAL_ERROR "BLAS Fortran mangling is not properly detected - please check your BLAS libraries")
+        endif ()
+      else  (NOT SCALFMM_BLAS_ADD_ AND NOT SCALFMM_BLAS_UPCASE AND NOT SCALFMM_BLAS_NOCHANGE)
+        if (SCALFMM_BLAS_ADD_)
+          message (STATUS "SCALFMM_BLAS_ADD_ is set to ON")
+        endif()
+        if (SCALFMM_BLAS_UPCASE)
+          message (STATUS "SCALFMM_BLAS_UPCASE is set to ON")
+        endif()
+        if (SCALFMM_BLAS_NOCHANGE)
+          message (STATUS "SCALFMM_BLAS_NOCHANGE is set to ON")
+        endif()
+      endif (NOT SCALFMM_BLAS_ADD_ AND NOT SCALFMM_BLAS_UPCASE AND NOT SCALFMM_BLAS_NOCHANGE)
     else()
       message(WARNING "BLAS has not been found, SCALFMM will continue to compile but some applications will be disabled.")
       message(WARNING "If you have BLAS set BLAS_LIBDIR, BLAS_INCDIR or BLAS_DIR (CMake variables using -D or environment variables).")        
@@ -352,84 +440,63 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   #
   # FFT option
   #
-  CMAKE_DEPENDENT_OPTION(SCALFMM_USE_MKL_AS_FFTW "Set to ON to use MKL FFTW" ON  "SCALFMM_USE_FFT;SCALFMM_USE_MKL_AS_BLAS" OFF )
+  CMAKE_DEPENDENT_OPTION(SCALFMM_USE_MKL_AS_FFTW  "Set to ON to use MKL FFTW" ON  "SCALFMM_USE_FFT;SCALFMM_USE_MKL_AS_BLAS" OFF )
+  CMAKE_DEPENDENT_OPTION(SCALFMM_USE_ESSL_AS_FFTW "Set to ON to use ESSL FFTW" ON  "SCALFMM_USE_FFT;SCALFMM_USE_ESSL_AS_BLAS" OFF )
   if( SCALFMM_USE_FFT )
     message(STATUS "SCALFMM USE FFT Configure:")
 
+    # The package find_package(FFTW) can be used with the following COMPONENTS:
+    # MKL, ESSL, THREADS|OMP and/or SIMPLE|LONG|QUAD
+    # Default will find the real double precision fftw library version without THREADS|OMP
     if( SCALFMM_USE_MKL_AS_FFTW )
+      message(STATUS "         SCALFMM USE FFT from MKL")
+      find_package(FFTW COMPONENTS MKL)
+    elseif (SCALFMM_USE_ESSL_AS_FFTW)
+      message(STATUS "         SCALFMM USE FFT from ESSL ")
+      find_package(FFTW COMPONENTS ESSL)
+      add_definitions(-DSCALFMM_USE_ESSL_AS_FFTW)
+    else()
+      message(STATUS "         SCALFMM USE FFTW")
+      find_package(FFTW COMPONENTS SIMPLE)
+    endif()
 
-      message(STATUS "         SCALFMM USE MKL ")
+    if (FFTW_LIBRARY_DIRS_DEP)
+      set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your MKL flags")
+    endif()
+    if (FFTW_LIBRARIES_DEP)
+      foreach (fft_lib ${FFTW_LIBRARIES_DEP})
+        set(FFT_LIBRARIES "${FFT_LIBRARIES};${fft_lib};")
+      endforeach()
+    endif()
 
-      if( SCALFMM_USE_MKL_AS_BLAS )
+    set(FFT_INCLUDES "${FFTW_INCLUDE_DIRS_DEP}" )
+    if (FFT_LIBRARIES)
+      set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${FFT_LIBRARIES}")
+    endif()
 
-        unset(FFT_LIBRARIES CACHE)
-        message(STATUS "         SCALFMM USE MKL already defined")
-        set(FFT_INCLUDES "$ENV{MKLROOT}/include/fftw" CACHE STRING "Set your MKL flags")
-        if (BLAS_FOUND)
-          set(FFTW_FOUND ON)
-        endif()
-
-      else(SCALFMM_USE_MKL_AS_BLAS)
-
-        # The package can be used with the following COMPONENTS:
-        # MKL, THREADS|OMP and/or SIMPLE|DOUBLE|LONG|QUAD
-        # Default is DOUBLE and without THREADS|OMP
-        find_package(FFTW  COMPONENTS MKL) # not REQUIRED
-        if (FFTW_LIBRARY_DIRS_DEP)
-          set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your MKL flags")
-        endif()
-        if (FFTW_LIBRARIES_DEP)
-          foreach (fft_lib ${FFTW_LIBRARIES_DEP})
-            set(FFT_LIBRARIES "${FFT_LIBRARIES};${fft_lib};")
-          endforeach()
-        endif()
-        set(FFT_INCLUDES "${FFTW_INCLUDE_DIRS_DEP}" )
-        if (FFT_LIBRARIES)
-          set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${FFT_LIBRARIES}")
-        endif()
-
-      endif(SCALFMM_USE_MKL_AS_BLAS)
-
-    else(SCALFMM_USE_MKL_AS_FFTW)
-
-      message(STATUS "         SCALFMM USE FFTW ")
-      # The package can be used with the following COMPONENTS:
-      # MKL, THREADS|OMP and/or SIMPLE|DOUBLE|LONG|QUAD
-      # Default is DOUBLE and without THREADS|OMP
-      find_package(FFTW COMPONENTS SIMPLE) # not REQUIRED
-      if (FFTW_LIBRARY_DIRS_DEP)
-        set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your FFTW path")
-      endif()
-      if (FFTW_LIBRARIES_DEP)
-        foreach (fft_lib ${FFTW_LIBRARIES_DEP})
-          set(FFT_LIBRARIES "${FFT_LIBRARIES};${fft_lib};")
-        endforeach()
-      endif()
-      set(FFT_INCLUDES "${FFTW_INCLUDE_DIRS_DEP}" )
-      if (FFT_LIBRARIES)
-        set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${FFT_LIBRARIES}")
-      endif()
-
-    endif(SCALFMM_USE_MKL_AS_FFTW)
-
+    if(FFTW_LIBRARY_DIRS)
+      # the RPATH to be used when installing
+      list(APPEND CMAKE_INSTALL_RPATH "${FFTW_LIBRARY_DIRS}")
+    endif()
     if (FFT_INCLUDES)
       set(SCALFMM_INCLUDES "${SCALFMM_INCLUDES}; ${FFT_INCLUDES}")
     endif()
 
-    if(FFTW_FOUND)
-      message(STATUS "         SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
-      message(STATUS "         SCALFMM_INCLUDES          = ${SCALFMM_INCLUDES}")
-    else()
+    if(NOT FFTW_FOUND)
       message(WARNING "FFTW has not been found, SCALFMM will continue to compile but some applications will be disabled.")
       message(WARNING "If you have FFTW set FFTW_LIBDIR, FFTW_INCDIR or FFTW_DIR (CMake variables using -D or environment variables).")        
       set(SCALFMM_USE_FFT OFF)
     endif()
+
   endif(SCALFMM_USE_FFT)
   list(APPEND FUSE_LIST "FFT")
-  message(STATUS "         SCALFMM_LIBRARIES          = ${SCALFMM_LIBRARIES}")
-  message(STATUS "         SCALFMM_INCLUDES          = ${SCALFMM_INCLUDES}")
-  
   message(STATUS "SCALFMM_USE_FFT       =  ${SCALFMM_USE_FFT}")
+  if (SCALFMM_INCLUDES)
+    list(REMOVE_DUPLICATES SCALFMM_INCLUDES)
+  endif()
+  if (SCALFMM_LIBRARIES)
+    list(REMOVE_DUPLICATES SCALFMM_LIBRARIES)
+  endif()
 
   #
   # C++ 2011
@@ -473,7 +540,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       if (CUDA_LIBRARIES)
         set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${CUDA_LIBRARIES}")
       endif()
-      
+
       set(CUDA_NEEDED_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/Src)
     endif()
 
@@ -490,6 +557,19 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
 
     find_package(STARPU ${SCALFMM_STARPU_VERSION} REQUIRED
       COMPONENTS ${STARPU_COMPONENT_LIST})
+
+    if(HWLOC_FOUND AND HWLOC_LIBRARY_DIRS)
+      # the RPATH to be used when installing
+      list(APPEND CMAKE_INSTALL_RPATH "${HWLOC_LIBRARY_DIRS}")
+    endif()
+    if(FXT_FOUND AND FXT_LIBRARY_DIRS)
+      # the RPATH to be used when installing
+      list(APPEND CMAKE_INSTALL_RPATH "${FXT_LIBRARY_DIRS}")
+    endif()
+    if(STARPU_FOUND AND STARPU_LIBRARY_DIRS)
+      # the RPATH to be used when installing
+      list(APPEND CMAKE_INSTALL_RPATH "${STARPU_LIBRARY_DIRS}")
+    endif()
 
     # Append list of libraries and include dirs
     include_directories(${STARPU_INCLUDE_DIRS_DEP})
@@ -583,7 +663,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       OUTPUT_VARIABLE COMPILE_AVX_OUTPUT)
     if(${COMPILE_AVX})
       message(STATUS "%%%%%%%%%%%% COMPILE_AVX               = ${COMPILE_AVX}  %%%%<    ${AVX_FLAGS}")
-      
+
       set(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS}   ${AVX_FLAGS}")
       message(STATUS "%%%%%%%%%%%% SCALFMM_CXX_FLAGS               = ${SCALFMM_CXX_FLAGS}")
       #set( SCALFMM_USE_SSE   OFF   FORCE) # ne marche pas
@@ -671,20 +751,24 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       if(EZTrace_FOUND)
         link_directories(${EZTrace_LIBRARY_DIRS})
         link_libraries( ${EZTrace_LIBRARIES})
+        if (EZTrace_LIBRARY_DIRS)
+          # the RPATH to be used when installing
+          list(APPEND CMAKE_INSTALL_RPATH "${EZTrace_LIBRARY_DIRS}")
+        endif()
         IF( SCALFMM_USE_MPI )
           link_libraries(-leztrace-autostart-mpi)
-  ENDIF(SCALFMM_USE_MPI)     
-  include_directories(${EZTrace_INCLUDE_DIRS})
-  MESSAGE(STATUS "EZTRACE:  ${EZTrace_INCLUDE_DIRS}   ${EZTrace_LIBRARY_DIRS}  ${EZTrace_LIBRARIES}")
-  CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_ALGO "Set to ON to trace the full algorithm (all operators)" ON  "SCALFMM_USE_EZTRACE" OFF )
-  CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_P2M   "Set to ON to trace P2M operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
-  CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2M   "Set to ON to trace M2M operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
-  CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2L   "Set to ON to trace M2L operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
-  CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_L2L   "Set to ON to trace L2L operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
-  CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_P2P   "Set to ON to trace P2P operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+	ENDIF(SCALFMM_USE_MPI)     
+	include_directories(${EZTrace_INCLUDE_DIRS})
+	MESSAGE(STATUS "EZTRACE:  ${EZTrace_INCLUDE_DIRS}   ${EZTrace_LIBRARY_DIRS}  ${EZTrace_LIBRARIES}")
+	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_ALGO "Set to ON to trace the full algorithm (all operators)" ON  "SCALFMM_USE_EZTRACE" OFF )
+	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_P2M   "Set to ON to trace P2M operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2M   "Set to ON to trace M2M operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2L   "Set to ON to trace M2L operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_L2L   "Set to ON to trace L2L operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_P2P   "Set to ON to trace P2P operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
       else(EZTrace_FOUND)
-  MESSAGE(WARNING "Eztrace not found - EZTRACE Is set to OFF")
-  set(SCALFMM_USE_EZTRACE OFF)  
+	MESSAGE(WARNING "Eztrace not found - EZTRACE Is set to OFF")
+	set(SCALFMM_USE_EZTRACE OFF)  
       endif(EZTrace_FOUND)
     else(PKG_CONFIG_FOUND)
       MESSAGE(WARNING "PKG-CONFIG not found - EZTRACE Is set to OFF")
@@ -692,21 +776,20 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
     endif(PKG_CONFIG_FOUND)
 
   endif(SCALFMM_USE_EZTRACE)
-  
+
   ##################################################################
   #
   #   To catch signals
   #
   ##################################################################  
-    if((WIN32 OR (${CMAKE_SYSTEM_NAME} MATCHES "Windows")) AND SCALFMM_USE_SIGNALS)
-      # We are on Windows and we cannot catch signals
-      message( FATAL_ERROR "Catching the signals requieres an UNIX system." )
-    else()
-        IF( NOT APPLE)
-        SET(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS} -rdynamic")
-        ENDIF()
-        
-    endif()
+  if((WIN32 OR (${CMAKE_SYSTEM_NAME} MATCHES "Windows")) AND SCALFMM_USE_SIGNALS)
+    # We are on Windows and we cannot catch signals
+    message( FATAL_ERROR "Catching the signals requieres an UNIX system." )
+  else()
+    IF( NOT APPLE)
+      SET(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS} -rdynamic")
+    ENDIF()
+  endif()
   ##################################################################
   #                                                                #
   #                     END SETTING VARIABLES                      #
@@ -721,7 +804,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   set(SCALFMM_COMPILE_LIBS   "")
   foreach(lib_var ${SCALFMM_LIBRARIES})
     string(STRIP ${lib_var} lib_var)
-    LIST(APPEND SCALFMM_COMPILE_LIBS   ${lib_var})        
+    LIST(APPEND SCALFMM_COMPILE_LIBS   ${lib_var})
   endforeach()
   configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/Src/ScalFmmConfig.h  )
@@ -737,7 +820,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   ##################################################################
   #            Remove compilation  of the drivers                  #
   ##################################################################
-   message(STATUS "SCALFMM_BUILD_EXAMPLES  =  ${SCALFMM_BUILD_EXAMPLES}" ) 
+  message(STATUS "SCALFMM_BUILD_EXAMPLES  =  ${SCALFMM_BUILD_EXAMPLES}" ) 
   if( SCALFMM_BUILD_EXAMPLES )
     # Build - Examples and drivers
     add_subdirectory(Examples)
@@ -769,13 +852,16 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
     enable_testing()
     add_subdirectory(UTests)
   endif()
-
+  #
   ##################################################################
   #                           Add - doc                            #
   ##################################################################
+  #
+  message(STATUS "SCALFMM_BUILD_DOC           =  ${SCALFMM_BUILD_DOC}" ) 
   if(SCALFMM_BUILD_DOC)
     add_subdirectory(Doc)
   endif()
+  #
   ##################################################################
   #                       Build - Addons                           #
   ##################################################################
@@ -816,7 +902,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   if( SCALFMM_INSTALL_DATA )
     install(FILES  ${SCALFMM_SOURCE_DIR}/Data/test20k.fma  DESTINATION Data/   )
   endif()
-
+  #
   ##################################################################
   #                                                                #
   #              build a CPack driven installer package            #
@@ -841,10 +927,10 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   set(PACK_PACKAGE_VERSION "${SCALFMM_MAJOR_VERSION}.${SCALFMM_MINOR_VERSION}-${CPACK_PACKAGE_VERSION_PATCH}")
   set(CPACK_SOURCE_GENERATOR "TGZ")
   set(CPACK_SOURCE_PACKAGE_FILE_NAME  "SCALFMM-${SCALFMM_MAJOR_VERSION}.${SCALFMM_MINOR_VERSION}-${CPACK_PACKAGE_VERSION_PATCH}")
-  set(CPACK_SOURCE_IGNORE_FILES "\\\\.git;.DS_Store;.*~;/*.aux;/*.idx;/*.log;/*.out;/*.toc;/*.ilg;scalfmm.pro*;org.eclipse.core.resources.prefs;.cproject;.project")
-  list(APPEND CPACK_SOURCE_IGNORE_FILES  "${CMAKE_CURRENT_BINARY_DIR};${CMAKE_CURRENT_SOURCE_DIR}/Utils/;Notes;Deprecated;/Build*;/noDist/;/Bench;ToRemove;Olivier;Addons/HMat")
+  set(CPACK_SOURCE_IGNORE_FILES "\\\\.git;.DS_Store;.*~;/*.aux;/*.idx;/*.log;/*.out;/*.toc;/*.ilg;scalfmm.pro*;org.eclipse.core.resources.prefs;.cproject;.project;/.settings/,/FmmApi/")
+  list(APPEND CPACK_SOURCE_IGNORE_FILES  "${CMAKE_CURRENT_BINARY_DIR};${CMAKE_CURRENT_SOURCE_DIR}/Utils/;Notes;Deprecated;/Build*;/noDist/;/Bench/;/Obsolete/;ToRemove;Olivier;Addons/HMat")
   # Uniform;GroupTree;Adaptive;testUnif*;/*Lagrange*")
-  #list(APPEND CPACK_SOURCE_IGNORE_FILES  "Stages;Uniform;Adaptive;testUnif*;*Lagrange*" )
+  #list(APPEND CPACK_SOURCE_IGNORE_FILES  "Stages;Uniform;O;testUnif*;*Lagrange*" )
   #
   include(CPack)
   #
@@ -854,30 +940,29 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   #                      PRINT messages                            #
   #                                                                #
   ##################################################################
-  message(STATUS "CPACK_SOURCE_IGNORE_FILES = ${CPACK_SOURCE_IGNORE_FILES}")
+  message(STATUS "CPACK_SOURCE_IGNORE_FILES      = ${CPACK_SOURCE_IGNORE_FILES}")
   message(STATUS "CPACK_SOURCE_PACKAGE_FILE_NAME = ${CPACK_SOURCE_PACKAGE_FILE_NAME}")
   #
   #                    Use Mem stats
-  message(STATUS "SCALFMM_USE_MEM_STATS        = ${SCALFMM_USE_MEM_STATS}" )
+  message(STATUS "SCALFMM_USE_MEM_STATS = ${SCALFMM_USE_MEM_STATS}" )
   #                    Use Log
-  message(STATUS "SCALFMM_USE_LOG              = ${SCALFMM_USE_LOG}" )
+  message(STATUS "SCALFMM_USE_LOG       = ${SCALFMM_USE_LOG}" )
   #                    Use Assert
-  message(STATUS "SCALFMM_USE_ASSERT           = ${SCALFMM_USE_ASSERT}" )
+  message(STATUS "SCALFMM_USE_ASSERT    = ${SCALFMM_USE_ASSERT}" )
   #
-  #message(STATUS "CMAKE_CXX_FLAGS   =  ${CMAKE_CXX_FLAGS}")
-  #set(CMAKE_CXX_FLAGS "${SCALFMM_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
-  message(STATUS "SCALFMM_USE_BLAS     =  ${SCALFMM_USE_BLAS}")
+  message(STATUS "SCALFMM_USE_BLAS      =  ${SCALFMM_USE_BLAS}")
   message(STATUS "SCALFMM_USE_FFT       =  ${SCALFMM_USE_FFT}")
-  message(STATUS "SCALFMM_USE_MKL      =   ${SCALFMM_USE_MKL}")
+  message(STATUS "SCALFMM_USE_MKL       =   ${SCALFMM_USE_MKL}")
   # 
-  message(STATUS "CMAKE_CXX_FLAGS     =  ${CMAKE_CXX_FLAGS}")
-  message(STATUS "SCALFMM_CXX_FLAGS   =  ${SCALFMM_CXX_FLAGS}")
-  message(STATUS "SCALFMM_LIBRARIES   =  ${SCALFMM_LIBRARIES}")
-  message(STATUS "SCALFMM_INCLUDES    =  ${SCALFMM_INCLUDES}")
+  message(STATUS "CMAKE_CXX_FLAGS       =  ${CMAKE_CXX_FLAGS}")
+  message(STATUS "SCALFMM_CXX_FLAGS     =  ${SCALFMM_CXX_FLAGS}")
+  message(STATUS "SCALFMM_LIBRARIES     =  ${SCALFMM_LIBRARIES}")
+  message(STATUS "SCALFMM_INCLUDES      =  ${SCALFMM_INCLUDES}")
+  #
   ##################################################################
   #                               END                              #
   ##################################################################
-
+  #
 else(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/")
 
   message(STATUS "MORSE_DISTRIB_DIR is not set")

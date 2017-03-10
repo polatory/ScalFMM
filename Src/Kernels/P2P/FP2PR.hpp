@@ -25,14 +25,13 @@
  */
 namespace FP2PR{
 template <class FReal>
-inline void MutualParticles(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue,
-                            FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential,
-                            const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
-                            FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential
-                            ){
-    FReal dx = sourceX - targetX;
-    FReal dy = sourceY - targetY;
-    FReal dz = sourceZ - targetZ;
+inline void MutualParticles(const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
+                            FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential,
+                            const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue,
+                            FReal* sourceForceX, FReal* sourceForceY, FReal* sourceForceZ, FReal* sourcePotential){
+    FReal dx = targetX - sourceX;
+    FReal dy = targetY - sourceY;
+    FReal dz = targetZ - sourceZ;
 
     FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
     FReal inv_distance = FMath::Sqrt(inv_square_distance);
@@ -40,9 +39,9 @@ inline void MutualParticles(const FReal sourceX,const FReal sourceY,const FReal 
     inv_square_distance *= inv_distance;
     inv_square_distance *= targetPhysicalValue * sourcePhysicalValue;
 
-    dx *= inv_square_distance;
-    dy *= inv_square_distance;
-    dz *= inv_square_distance;
+    dx *= - inv_square_distance;
+    dy *= - inv_square_distance;
+    dz *= - inv_square_distance;
 
     *targetForceX += dx;
     *targetForceY += dy;
@@ -56,12 +55,12 @@ inline void MutualParticles(const FReal sourceX,const FReal sourceY,const FReal 
 }
 
 template <class FReal>
-inline void NonMutualParticles(const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue,
-                               const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
-                               FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential){
-    FReal dx = sourceX - targetX;
-    FReal dy = sourceY - targetY;
-    FReal dz = sourceZ - targetZ;
+inline void NonMutualParticles(const FReal targetX,const FReal targetY,const FReal targetZ, const FReal targetPhysicalValue,
+                               FReal* targetForceX, FReal* targetForceY, FReal* targetForceZ, FReal* targetPotential, 
+                               const FReal sourceX,const FReal sourceY,const FReal sourceZ, const FReal sourcePhysicalValue){
+    FReal dx = targetX - sourceX;
+    FReal dy = targetY - sourceY;
+    FReal dz = targetZ - sourceZ;
 
     FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
     FReal inv_distance = FMath::Sqrt(inv_square_distance);
@@ -69,9 +68,10 @@ inline void NonMutualParticles(const FReal sourceX,const FReal sourceY,const FRe
     inv_square_distance *= inv_distance;
     inv_square_distance *= targetPhysicalValue * sourcePhysicalValue;
 
-    dx *= inv_square_distance;
-    dy *= inv_square_distance;
-    dz *= inv_square_distance;
+    // d/dx(1/|x-y|)=-(x-y)/r^3
+    dx *= - inv_square_distance;
+    dy *= - inv_square_distance;
+    dz *= - inv_square_distance;
 
     *targetForceX += dx;
     *targetForceY += dy;
@@ -119,9 +119,9 @@ static void GenericFullMutual(ContainerClass* const FRestrict inTargets, Contain
                 ComputeClass  tpo = FMath::Zero<ComputeClass>();
 
                 for(FSize idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
-                    ComputeClass dx = sourcesX[idxSource] - tx;
-                    ComputeClass dy = sourcesY[idxSource] - ty;
-                    ComputeClass dz = sourcesZ[idxSource] - tz;
+                    ComputeClass dx = tx - sourcesX[idxSource];
+                    ComputeClass dy = ty - sourcesY[idxSource];
+                    ComputeClass dz = tz - sourcesZ[idxSource];
 
                     ComputeClass inv_square_distance = mOne / (dx*dx + dy*dy + dz*dz);
                     const ComputeClass inv_distance = FMath::Sqrt(inv_square_distance);
@@ -129,9 +129,9 @@ static void GenericFullMutual(ContainerClass* const FRestrict inTargets, Contain
                     inv_square_distance *= inv_distance;
                     inv_square_distance *= tv * sourcesPhysicalValues[idxSource];
 
-                    dx *= inv_square_distance;
-                    dy *= inv_square_distance;
-                    dz *= inv_square_distance;
+                    dx *= - inv_square_distance;
+                    dy *= - inv_square_distance;
+                    dz *= - inv_square_distance;
 
                     tfx += dx;
                     tfy += dy;
@@ -193,18 +193,18 @@ static void GenericInner(ContainerClass* const FRestrict inTargets){
 
             for(FSize idxSource = (idxTarget+NbFRealInComputeClass)/NbFRealInComputeClass ; idxSource < nbParticlesSources ; ++idxSource){
 
-                ComputeClass dx = sourcesX[idxSource] - tx;
-                ComputeClass dy = sourcesY[idxSource] - ty;
-                ComputeClass dz = sourcesZ[idxSource] - tz;
+                ComputeClass dx = tx - sourcesX[idxSource];
+                ComputeClass dy = ty - sourcesY[idxSource];
+                ComputeClass dz = tz - sourcesZ[idxSource];
                 ComputeClass inv_square_distance = mOne / (dx*dx + dy*dy + dz*dz);
                 const ComputeClass inv_distance = FMath::Sqrt(inv_square_distance);
 
                 inv_square_distance *= inv_distance;
                 inv_square_distance *= tv * sourcesPhysicalValues[idxSource];
 
-                dx *= inv_square_distance;
-                dy *= inv_square_distance;
-                dz *= inv_square_distance;
+                dx *= - inv_square_distance;
+                dy *= - inv_square_distance;
+                dz *= - inv_square_distance;
 
                 tfx += dx;
                 tfy += dy;
@@ -228,9 +228,9 @@ static void GenericInner(ContainerClass* const FRestrict inTargets){
         const FSize limitForTarget = NbFRealInComputeClass-(idxTarget%NbFRealInComputeClass);
         for(FSize idxS = 1 ; idxS < limitForTarget ; ++idxS){
             const FSize idxSource = idxTarget + idxS;
-            FReal dx = targetsX[idxSource] - targetsX[idxTarget];
-            FReal dy = targetsY[idxSource] - targetsY[idxTarget];
-            FReal dz = targetsZ[idxSource] - targetsZ[idxTarget];
+            FReal dx = targetsX[idxTarget] - targetsX[idxSource];
+            FReal dy = targetsY[idxTarget] - targetsY[idxSource];
+            FReal dz = targetsZ[idxTarget] - targetsZ[idxSource];
 
             FReal inv_square_distance = FReal(1.0) / (dx*dx + dy*dy + dz*dz);
             const FReal inv_distance = FMath::Sqrt(inv_square_distance);
@@ -238,9 +238,9 @@ static void GenericInner(ContainerClass* const FRestrict inTargets){
             inv_square_distance *= inv_distance;
             inv_square_distance *= targetsPhysicalValues[idxTarget] * targetsPhysicalValues[idxSource];
 
-            dx *= inv_square_distance;
-            dy *= inv_square_distance;
-            dz *= inv_square_distance;
+            dx *= - inv_square_distance;
+            dy *= - inv_square_distance;
+            dz *= - inv_square_distance;
 
             targetsForcesX[idxTarget] += dx;
             targetsForcesY[idxTarget] += dy;
@@ -289,9 +289,9 @@ static void GenericFullRemote(ContainerClass* const FRestrict inTargets, const C
                 ComputeClass  tpo = FMath::Zero<ComputeClass>();
 
                 for(FSize idxSource = 0 ; idxSource < nbParticlesSources ; ++idxSource){
-                    ComputeClass dx = sourcesX[idxSource] - tx;
-                    ComputeClass dy = sourcesY[idxSource] - ty;
-                    ComputeClass dz = sourcesZ[idxSource] - tz;
+                    ComputeClass dx = tx - sourcesX[idxSource];
+                    ComputeClass dy = ty - sourcesY[idxSource];
+                    ComputeClass dz = tz - sourcesZ[idxSource];
 
                     ComputeClass inv_square_distance = mOne / (dx*dx + dy*dy + dz*dz);
                     const ComputeClass inv_distance = FMath::Sqrt(inv_square_distance);
@@ -299,9 +299,9 @@ static void GenericFullRemote(ContainerClass* const FRestrict inTargets, const C
                     inv_square_distance *= inv_distance;
                     inv_square_distance *= tv * sourcesPhysicalValues[idxSource];
 
-                    dx *= inv_square_distance;
-                    dy *= inv_square_distance;
-                    dz *= inv_square_distance;
+                    dx *= - inv_square_distance;
+                    dy *= - inv_square_distance;
+                    dz *= - inv_square_distance;
 
                     tfx += dx;
                     tfy += dy;

@@ -1,10 +1,14 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the FMM.
+// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
+// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the
+// FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
 // abiding by the rules of distribution of free software.
+// An extension to the license is given to allow static linking of scalfmm
+// inside a proprietary application (no matter its license).
+// See the main license file for more details.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -32,7 +36,7 @@
 
 #include "Files/FFmaGenericLoader.hpp"
 #include "Files/FMpiFmaGenericLoader.hpp"
-#include "BalanceTree/FLeafBalance.hpp"
+#include "Utils/FLeafBalance.hpp"
 #include "Containers/FTreeCoordinate.hpp"
 #include "Containers/FCoordinateComputer.hpp"
 
@@ -129,7 +133,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
             host.setZ( FCoordinateComputer::GetTreeCoordinate<FReal>( arrayOfParticles[idxParts].getPosition().getZ() - boxCorner.getZ(), boxWidth, boxWidthAtLeafLevel, TreeHeight ));
 
             //Set Morton index from Tree Coordinate
-            arrayOfParticles[idxParts].index = host.getMortonIndex(TreeHeight - 1);
+            arrayOfParticles[idxParts].index = host.getMortonIndex();
         }
         //Save the original array
         struct TestParticle<FReal> * originalArray   =  new TestParticle<FReal>[nbOfParticles];
@@ -263,7 +267,7 @@ class TestMpiTreeBuilder :  public FUTesterMpi< class TestMpiTreeBuilder> {
         FSize * leavesIndices = nullptr;
         FSize leaveSize = 0;
 
-        FMpiTreeBuilder<FReal,TestParticle<FReal>>::MergeSplitedLeaves(app.global(),outputArray,&outputSize,&leavesIndices,&leavesArray,&leaveSize);
+        FMpiTreeBuilder<FReal,TestParticle<FReal>>::MergeSplitedLeaves(app.global(),&outputArray,&outputSize,&leavesIndices,&leavesArray,&leaveSize);
 
         //Compare again the results with the output of std::qsort
 

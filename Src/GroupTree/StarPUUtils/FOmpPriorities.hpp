@@ -2,6 +2,7 @@
 #define FOMPPRIORITIES_HPP
 
 #include "../../Utils/FGlobal.hpp"
+#include "../../Utils/FEnv.hpp"
 
 class FOmpPriorities{
     int insertionPositionP2M;
@@ -22,12 +23,19 @@ class FOmpPriorities{
 
     int maxprio;
 
+    bool inversePriorities;
+
+    int scalePrio(const int inPrio) const{
+        return (inversePriorities? maxprio-1-inPrio : inPrio);
+    }
+
 public:
     FOmpPriorities(const int inTreeHeight) :
         insertionPositionP2M(0), insertionPositionM2M(0), insertionPositionP2MSend(0),
         insertionPositionM2MSend(0), insertionPositionM2L(0), insertionPositionM2LExtern(0),
         insertionPositionM2LLastLevel(0), insertionPositionL2L(0), insertionPositionL2P(0), insertionPositionP2P(0),
-        insertionPositionP2PExtern(0), treeHeight(inTreeHeight) , maxprio(0){
+        insertionPositionP2PExtern(0), treeHeight(inTreeHeight) , maxprio(0),
+        inversePriorities(FEnv::GetBool("SCALFMM_INVERSE_PRIO", false)){
         if(inTreeHeight > 2){
             int incPrio = 0;
 
@@ -92,6 +100,15 @@ public:
             assert(incPrio == 1);
             maxprio = incPrio;
         }
+
+        if(inversePriorities){
+            FLOG( FLog::Controller << "FOmpPriorities -- priorities are inversed\n" );
+            FLOG( FLog::Controller << "FOmpPriorities -- the higher the more prioritized\n" );
+        }
+        else{
+            FLOG( FLog::Controller << "FOmpPriorities -- priorities are made for heteroprio\n" );
+            FLOG( FLog::Controller << "FOmpPriorities -- can be seen as the lower the more prioritized\n" );
+        }
     }
 
     int getMaxPrio() const{
@@ -99,28 +116,28 @@ public:
     }
 
     int getInsertionPosP2M() const {
-        return insertionPositionP2M;
+        return scalePrio(insertionPositionP2M);
     }
     int getInsertionPosM2M(const int /*inLevel*/) const {
-        return insertionPositionM2M;
+        return scalePrio(insertionPositionM2M);
     }
     int getInsertionPosM2L(const int inLevel) const {
-        return (inLevel==treeHeight-1? insertionPositionM2LLastLevel : insertionPositionM2L + (inLevel - 2)*3);
+        return scalePrio(inLevel==treeHeight-1? insertionPositionM2LLastLevel : insertionPositionM2L + (inLevel - 2)*3);
     }
     int getInsertionPosM2LExtern(const int inLevel) const {
-        return (inLevel==treeHeight-1? insertionPositionM2LLastLevel : insertionPositionM2LExtern + (inLevel - 2)*3);
+        return scalePrio(inLevel==treeHeight-1? insertionPositionM2LLastLevel : insertionPositionM2LExtern + (inLevel - 2)*3);
     }
     int getInsertionPosL2L(const int inLevel) const {
-        return insertionPositionL2L + (inLevel - 2)*3;
+        return scalePrio(insertionPositionL2L + (inLevel - 2)*3);
     }
     int getInsertionPosL2P() const {
-        return insertionPositionL2P;
+        return scalePrio(insertionPositionL2P);
     }
     int getInsertionPosP2P() const {
-        return insertionPositionP2P;
+        return scalePrio(insertionPositionP2P);
     }
     int getInsertionPosP2PExtern() const {
-        return insertionPositionP2PExtern;
+        return scalePrio(insertionPositionP2PExtern);
     }
 };
 

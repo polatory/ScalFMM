@@ -227,6 +227,17 @@ subs = {
     # old python (2.4) requires this line to be list [] rather than tuple () to use index() function.
     ['s',              'd',              'c',              'z'               ],
 
+
+      # TODO clean; shouldn't be added this way
+    ('cblas_sscal',   ' cblas_dscal',    'cblas_csscal',   'cblas_zdscal'),
+    ('stsmqr_hetra1',  'dtsmqr_hetra1',  'ctsmqr_hetra1',  'ztsmqr_hetra1'),
+    ('stsmlq_hetra1',  'dtsmlq_hetra1',  'ctsmlq_hetra1',  'ztsmlq_hetra1'),
+    ('codelet_ssyrfb', 'codelet_dsyrfb', 'codelet_cherfb', 'codelet_zherfb'),
+    ('cl_ssyrfb',      'cl_dsyrfb',      'cl_cherfb',      'cl_zherfb'),
+    ('she2ge',         'dhe2ge',         'che2ge',         'zhe2ge'),
+    ('sgbcpy',         'dgbcpy',         'cgbcpy',         'zgbcpy'),
+
+
     # ----- Preprocessor
     ('#define PRECISION_s',  '#define PRECISION_d',   '#define PRECISION_c',             '#\s*define PRECISION_z'              ),
     ('#undef PRECISION_s',   '#undef PRECISION_d',    '#undef PRECISION_c',              '#undef PRECISION_z'               ),
@@ -310,6 +321,7 @@ subs = {
     ('CORE_s',         'CORE_d',         'CORE_s',         'CORE_d'          ),
     ('cpu_gpu_s',      'cpu_gpu_d',      'cpu_gpu_c',      'cpu_gpu_z'       ),
     ('cublasS',        'cublasD',        'cublasC',        'cublasZ'         ),
+    ('CUDA_S',         'CUDA_D',         'CUDA_C',         'CUDA_Z'          ),
     ('CUDA_s',         'CUDA_d',         'CUDA_c',         'CUDA_z'          ),
     ('example_s',      'example_d',      'example_c',      'example_z'       ),
     ('ipt_s',          'ipt_d',          'ipt_c',          'ipt_z'           ),
@@ -370,6 +382,9 @@ subs = {
     ('RUNTIME_S',      'RUNTIME_D',      'RUNTIME_C',      'RUNTIME_Z'       ),
     ('RUNTIME_s',      'RUNTIME_d',      'RUNTIME_c',      'RUNTIME_z'       ),
 
+    ('TASK_s',         'TASK_d',         'TASK_s',         'TASK_d'          ),
+    ('dataflush',      'dataflush',      'dataflush',      'sataflush'       ), # Correct previous line
+
     # ----- Complex numbers
     # \b regexp here avoids conjugate -> conjfugate,
     # assuming we always translate from z, not to z.
@@ -399,8 +414,8 @@ subs = {
     ('sgetmatrix',     'dgetmatrix',     'cgetmatrix',     'zgetmatrix'      ),
     ('sinplace',       'dinplace',       'cinplace',       'zinplace'        ),
     ('slocality',      'dlocality',      'clocality',      'zlocality'       ),
-    ('slapack',        'dlapack',        'clapack',        'zlapack'         ),    
-    ('SLAPACK',        'DLAPACK',        'CLAPACK',        'ZLAPACK'         ),    
+    ('slapack',        'dlapack',        'clapack',        'zlapack'         ),
+    ('SLAPACK',        'DLAPACK',        'CLAPACK',        'ZLAPACK'         ),
     ('smalloc',        'dmalloc',        'cmalloc',        'zmalloc'         ),
     ('smalloc',        'dmalloc',        'smalloc',        'dmalloc'         ),
     ('spanel_to_q',    'dpanel_to_q',    'cpanel_to_q',    'zpanel_to_q'     ),
@@ -414,7 +429,7 @@ subs = {
     ('SSIZE',          'DSIZE',          'CSIZE',          'ZSIZE'           ),
     ('ssplit',         'dsplit',         'csplit',         'zsplit'          ),
     ('stile',          'dtile',          'ctile',          'ztile'           ),
-    ('STILE',          'DTILE',          'CTILE',          'ZTILE'           ),    
+    ('STILE',          'DTILE',          'CTILE',          'ZTILE'           ),
     ('stranspose',     'dtranspose',     'ctranspose',     'ztranspose'      ),
     ('szero',          'dzero',          'czero',          'zzero'           ),
     ('sy2sb',          'sy2sb',          'he2hb',          'he2hb'           ),
@@ -433,10 +448,10 @@ subs = {
     ('isamax',         'idamax',         'isamax',         'idamax'          ),
     ('saxpy',          'daxpy',          'caxpy',          'zaxpy'           ),
     ('scopy',          'dcopy',          'ccopy',          'zcopy'           ),
+    ('sgeadd',         'dgeadd',         'cgeadd',         'zgeadd'          ),
     ('sgecfi',         'dgecfi',         'cgecfi',         'zgecfi'          ),
-    ('sgemm',          'dgemm',          'cgemm',          'zgemm'           ),
     ('sgemdm',         'dgemdm',         'cgemdm',         'zgemdm'          ),
-    ('SGEMDM',         'DGEMDM',         'CGEMDM',         'ZGEMDM'          ),
+    ('sgemm',          'dgemm',          'cgemm',          'zgemm'           ),
     ('sgemv',          'dgemv',          'cgemv',          'zgemv'           ),
     ('sscal',          'dscal',          'cscal',          'zscal'           ),
     ('sscal',          'dscal',          'csscal',         'zdscal'          ),
@@ -446,13 +461,13 @@ subs = {
     ('ssymv',          'dsymv',          'csymv',          'zsymv'           ),
     ('ssyr2k',         'dsyr2k',         'csyr2k',         'zsyr2k'          ),
     ('ssyrk',          'dsyrk',          'csyrk',          'zsyrk'           ),
+    ('stradd',         'dtradd',         'ctradd',         'ztradd'          ),
     ('strmm',          'dtrmm',          'ctrmm',          'ztrmm'           ),
     ('strmv',          'dtrmv',          'ctrmv',          'ztrmv'           ),
     ('strsm',          'dtrsm',          'ctrsm',          'ztrsm'           ),
     ('strsv',          'dtrsv',          'ctrsv',          'ztrsv'           ),
 
 # ADD FOR NEW VERSION OF CHAMELEON
-    ('sgeadd',         'dgeadd',         'cgeadd',         'zgeadd'          ),
     ('shbcpy',         'dhbcpy',         'chbcpy',         'zhbcpy'          ),
     ('ssyrbt',         'dsyrbt',         'cherbt',         'zherbt'          ),
     ('ssygv',          'dsygv',          'chegv',          'zhegv'           ),
@@ -482,8 +497,9 @@ subs = {
     ('sgeqrs',         'dgeqrs',         'cgeqrs',         'zgeqrs'          ),
     ('sgeqrt',         'dgeqrt',         'cgeqrt',         'zgeqrt'          ),
     ('sgessm',         'dgessm',         'cgessm',         'zgessm'          ),
-    ('sgessq',         'dgessq',         'cgessq',         'zgessq'          ),    
+    ('sgessq',         'dgessq',         'cgessq',         'zgessq'          ),
     ('sgesv',          'dgesv',          'cgesv',          'zgesv'           ),
+    ('sgesvd',         'dgesvd',         'cgesvd',         'zgesvd'          ),
     ('sgesv',          'sgesv',          'cgesv',          'cgesv'           ),
     ('sget22',         'dget22',         'cget22',         'zget22'          ),
     ('sgetf2',         'dgetf2',         'cgetf2',         'zgetf2'          ),
@@ -523,12 +539,13 @@ subs = {
     ('slascl',         'dlascl',         'clascl',         'zlascl'          ),
     ('slaset',         'dlaset',         'claset',         'zlaset'          ),
     ('slaswp',         'dlaswp',         'claswp',         'zlaswp'          ),
+    ('slatro',         'dlatro',         'clatro',         'zlatro'          ),
     ('slatrd',         'dlatrd',         'clatrd',         'zlatrd'          ),
     ('slauum',         'dlauum',         'clauum',         'zlauum'          ),
     ('spack',          'dpack',          'cpack',          'zpack'           ),
     ('splgsy',         'dplgsy',         'cplgsy',         'zplgsy'          ),
     ('splrnt',         'dplrnt',         'cplrnt',         'zplrnt'          ),
-    ('splssq',         'dplssq',         'cplssq',         'zplssq'          ),    
+    ('splssq',         'dplssq',         'cplssq',         'zplssq'          ),
     ('sposv',          'dposv',          'cposv',          'zposv'           ),
     ('ssysv',          'dsysv',          'csysv',          'zsysv'           ),
     ('sposv',          'sposv',          'cposv',          'cposv'           ),
@@ -562,7 +579,7 @@ subs = {
     ('stsmqr',         'dtsmqr',         'ctsmqr',         'ztsmqr'          ),
     ('stsmlq',         'dtsmlq',         'ctsmlq',         'ztsmlq'          ),
     ('stsqrt',         'dtsqrt',         'ctsqrt',         'ztsqrt'          ),
-    ('stslqt',         'dtslqt',         'ctslqt',         'ztslqt'          ),    
+    ('stslqt',         'dtslqt',         'ctslqt',         'ztslqt'          ),
     ('ststrf',         'dtstrf',         'ctstrf',         'ztstrf'          ),
     ('sttlqt',         'dttlqt',         'cttlqt',         'zttlqt'          ),
     ('sttmlq',         'dttmlq',         'cttmlq',         'zttmlq'          ),
@@ -571,6 +588,10 @@ subs = {
     ('sungesv',        'sungesv',        'cungesv',        'cungesv'         ),
     ('sstegr',         'dstegr',         'cstegr',         'zstegr'          ),
     ('ssyssq',         'dsyssq',         'csyssq',         'zsyssq'          ),
+
+    # ----- LAPACK Eigenvalues
+    ('slatms',         'dlatms',         'slatms',         'dlatms'          ),
+    ('slasrt',         'dlasrt',         'slasrt',         'dlasrt'          ),
 
     # ----- BLAS and LAPACK, where complex base name != real base name
     # BLAS, with precision
@@ -684,7 +705,6 @@ subs = {
     ('sytrf',          'sytrf',          'hetrf',          'hetrf'           ),
 
     # ----- For norms: compute result in Real or Double
-    ('sgeadd',         'dgeadd',         'sgeadd',         'dgeadd'          ),
     ('slange',         'dlange',         'slange',         'dlange'          ),
     ('slaset',         'dlaset',         'slaset',         'dlaset'          ),
     ('splssq',         'dplssq',         'splssq',         'dplssq'          ),
@@ -713,6 +733,10 @@ subs = {
     ('ISAMAX',         'IDAMAX',         'ISAMAX',         'IDAMAX'          ),
     ('SAXPY',          'DAXPY',          'CAXPY',          'ZAXPY'           ),
     ('SCOPY',          'DCOPY',          'CCOPY',          'ZCOPY'           ),
+    ('SGEADD',         'DGEADD',         'CGEADD',         'ZGEADD'          ),
+    ('SGECFI',         'DGECFI',         'CGECFI',         'ZGECFI'          ),
+    ('SGEMDM',         'DGEMDM',         'CGEMDM',         'ZGEMDM'          ),
+    ('SGEMM',          'DGEMM',          'CGEMM',          'ZGEMM'           ),
     ('SGEMV',          'DGEMV',          'CGEMV',          'ZGEMV'           ),
     ('SSCAL',          'DSCAL',          'CSCAL',          'ZSCAL'           ),
     ('SSCAL',          'DSCAL',          'CSSCAL',         'ZDSCAL'          ),
@@ -722,9 +746,11 @@ subs = {
     ('SSYMV',          'DSYMV',          'CSYMV',          'ZSYMV'           ),
     ('SSYR2K',         'DSYR2K',         'CSYR2K',         'ZSYR2K'          ),
     ('SSYRK',          'DSYRK',          'CSYRK',          'ZSYRK'           ),
+    ('STRADD',         'DTRADD',         'CTRADD',         'ZTRADD'          ),
     ('STRMM',          'DTRMM',          'CTRMM',          'ZTRMM'           ),
     ('STRMV',          'DTRMV',          'CTRMV',          'ZTRMV'           ),
     ('STRSM',          'DTRSM',          'CTRSM',          'ZTRSM'           ),
+    ('STRSMPL',        'DTRSMPL',        'CTRSMPL',        'ZTRSMPL'         ),
     ('STRSV',          'DTRSV',          'CTRSV',          'ZTRSV'           ),
 
     # LAPACK
@@ -742,7 +768,6 @@ subs = {
     ('SGELQF',         'DGELQF',         'CGELQF',         'ZGELQF'          ),
     ('SGELQS',         'DGELQS',         'CGELQS',         'ZGELQS'          ),
     ('SGELS',          'DGELS',          'CGELS',          'ZGELS'           ),
-    ('SGEMM',          'DGEMM',          'CGEMM',          'ZGEMM'           ),
     ('SGEQLF',         'DGEQLF',         'CGEQLF',         'ZGEQLF'          ),
     ('SGEQP3',         'DGEQP3',         'CGEQP3',         'ZGEQP3'          ),
     ('SGEQR2',         'DGEQR2',         'CGEQR2',         'ZGEQR2'          ),
@@ -811,7 +836,6 @@ subs = {
     ('SSTERM',         'DSTERM',         'CSTERM',         'ZSTERM'          ),
     ('SSTT21',         'DSTT21',         'CSTT21',         'ZSTT21'          ),
     ('STREVC',         'DTREVC',         'CTREVC',         'ZTREVC'          ),
-    ('STRSMPL',        'DTRSMPL',        'CTRSMPL',        'ZTRSMPL'         ),
     ('STRTRI',         'DTRTRI',         'CTRTRI',         'ZTRTRI'          ),
     ('STSQRT',         'DTSQRT',         'CTSQRT',         'ZTSQRT'          ),
     ('STSTRF',         'DTSTRF',         'CTSTRF',         'ZTSTRF'          ),
@@ -957,6 +981,9 @@ subs = {
     ('s_get_idparm',   'd_get_idparm',   's_get_idparm',   'd_get_idparm',   ),
     #('stesting',       'dtesting',       'ctesting',       'ztesting'        ),
     #('SAUXILIARY',     'DAUXILIARY',     'CAUXILIARY',     'ZAUXILIARY'      ),
+    # BUILD
+    ('sbuild',         'dbuild',         'cbuild',         'zbuild'          ),
+
   ],
 
   # ------------------------------------------------------------

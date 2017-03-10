@@ -1,15 +1,20 @@
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the FMM.
+// ===================================================================================
+// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
+// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the
+// FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+// An extension to the license is given to allow static linking of scalfmm
+// inside a proprietary application (no matter its license).
+// See the main license file for more details.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
@@ -239,7 +244,7 @@ int main(int argc, char ** argv){
 
   const FInterpMatrixKernelR<FReal> MatrixKernel;
 
-	FTreeCoordinate min, max;
+  FTreeCoordinate min{} , max{};
 
 	if( FParameters::existParameter(argc, argv, "-noper") ){
 #ifndef  SCALFMM_USE_BLAS
@@ -310,12 +315,13 @@ int main(int argc, char ** argv){
 			for(FSize idxOther = 0; idxOther < loader->getNumberOfParticles() ; ++idxOther){
 				if( idxOther != idxTarget ){
 					FP2P::NonMutualParticles(
-							particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-							particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
 							part.position.getX(), part.position.getY(),
-							part.position.getZ(),part.physicalValue,
-							&part.forces[0],&part.forces[1],
-							&part.forces[2],&part.potential,&MatrixKernel);
+                            part.position.getZ(),part.physicalValue,
+                            &part.forces[0],&part.forces[1],
+                            &part.forces[2],&part.potential,
+                            particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+							particles[idxOther].position.getZ(),particles[idxOther].physicalValue,
+                            &MatrixKernel);
 				}
 			}
 			//
@@ -341,10 +347,10 @@ int main(int argc, char ** argv){
 								source.position += offset;
 								//								std::cout << "Part "<<idxSource<< " " <<source.position.getX()<< " " << source.position.getY()<< " " <<source.position.getZ()<< " " <<source.physicalValue <<std::endl ;
 								FP2P::NonMutualParticles(
-										source.position.getX(), source.position.getY(),source.position.getZ(),source.physicalValue,
 										part.position.getX(), part.position.getY(),part.position.getZ(),part.physicalValue,
-										&part.forces[0],&part.forces[1],&part.forces[2],&part.potential,&MatrixKernel
-								);
+                                        &part.forces[0],&part.forces[1],&part.forces[2],&part.potential,
+                                        source.position.getX(), source.position.getY(),source.position.getZ(),source.physicalValue,
+										&MatrixKernel);
 							}
 							//						std::cout <<std::endl<<std::endl<<std::endl;
 						}

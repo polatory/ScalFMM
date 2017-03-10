@@ -34,18 +34,38 @@ void cheb_free_cell(void * inCell){
 }
 
 /**
+ * @brief Wrapper to init a Cheb Leaf
+ */
+void * cheb_init_leaf(int level, FSize nbParts, const FSize * idxParts,
+                      long long morton_index,double llc[3], void * cellDatas,
+                      void * userDatas){
+    //TODO
+    return ChebLeafStruct_create(nbParts);
+}
+/**
+ * @brief Wrapper to free a Cheb Leaf
+ */
+void cheb_free_leaf(void * cellDatas, FSize nbPart, const FSize * idxParts, void * leafData,
+                    void * userDatas){
+    //TODO
+    ChebLeafStruct_free(leafData);
+}
+
+/**
  * @brief Wrapper to FMM operators (refer to CScalfmmApi.h to get the
  * detailed descriptions)
  */
-void cheb_p2m(void* cellData,void * leafData, FSize nbParticlesInLeaf, const FSize* particleIndexes,
+void cheb_p2m(void* cellData,void * leafData, FSize nbParticlesInLeaf,
+              const FSize* particleIndexes,
               void* userData){
-    ChebKernel_P2M(cellData,nbParticlesInLeaf,particleIndexes,userData);
+    ChebKernel_P2M(cellData,leafData,nbParticlesInLeaf,particleIndexes,userData);
 }
 void cheb_m2m(int level, void* parentCell, int childPosition, void* childCell,
               void* userData){
     ChebKernel_M2M(level,parentCell,childPosition,childCell,userData);
 }
-void cheb_m2l_full(int level, void* targetCell,const int* neighborPosition, const int size, void** sourceCell,
+void cheb_m2l_full(int level, void* targetCell,const int* neighborPosition,
+                   const int size, void** sourceCell,
                    void* userData){
     ChebKernel_M2L(level, targetCell, neighborPosition, size, sourceCell, userData);
 }
@@ -53,16 +73,26 @@ void cheb_l2l(int level, void* parentCell, int childPosition, void* childCell,
               void* userData){
     ChebKernel_L2L( level, parentCell, childPosition, childCell,  userData);
 }
-void cheb_l2p(void* cellData, void* leafData, FSize nbParticles, const FSize* particleIndexes,
+void cheb_l2p(void* cellData, void* leafData, FSize nbParticles,
+              const FSize* particleIndexes,
               void* userData){
-    ChebKernel_L2P( cellData, nbParticles, particleIndexes, userData);
+    ChebKernel_L2P( cellData, leafData, nbParticles, particleIndexes, userData);
 }
 void cheb_p2pFull(void * targetLeaf, FSize nbParticles, const FSize* particleIndexes,
                   void ** sourceLeaves,
-                  const FSize ** sourceParticleIndexes, FSize* sourceNbPart,const int * sourcePosition,
+                  const FSize ** sourceParticleIndexes, FSize* sourceNbPart,
+                  const int * sourcePosition,
                   const int size, void* userData) {
-    ChebKernel_P2P(nbParticles, particleIndexes, sourceParticleIndexes, sourceNbPart,sourcePosition,size,
-                   userData);
+    ChebKernel_P2P(targetLeaf,nbParticles, particleIndexes, sourceLeaves,sourceParticleIndexes,
+                   sourceNbPart,sourcePosition,size, userData);
+}
+
+void cheb_p2p_remote(void * targetLeaf,FSize nbParticles, const FSize* particleIndexes,
+                     void ** sourceLeaves,
+                     const FSize ** sourceParticleIndexes,FSize * sourceNbPart,
+                     const int * sourcePosition, const int size, void* userData){
+    ChebKernel_P2PRemote(targetLeaf,nbParticles, particleIndexes, sourceLeaves,sourceParticleIndexes,
+                         sourceNbPart,sourcePosition,size, userData);
 }
 
 void cheb_resetCell(int level, long long morton_index, int* tree_position,
@@ -71,8 +101,12 @@ void cheb_resetCell(int level, long long morton_index, int* tree_position,
                    spatial_position,userCell,userData);
 }
 
-FSize cheb_get_size(int level,void * userData, long long morton_index){
-    return ChebCell_getSize(level,userData,morton_index);
+/**
+ * @brief Following functions are defined in order to serialize the
+ * cells
+ */
+FSize cheb_get_size(int level, long long morton_index, void * userData){
+    return ChebCell_getSize(level,morton_index);
 }
 
 void cheb_copy_cell(void * userDatas, FSize size, void * memoryAllocated){
@@ -83,22 +117,68 @@ void * cheb_restore_cell(int level, void * arrayTobeRead){
     return ChebCell_restore(level,arrayTobeRead);
 }
 
-void on_leaf(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
-             void * cellDatas,void * leafdata, void * userDatas){
+/**
+ * @brief Following functions are defined in order to serialize the
+ * leaves
+ */
+FSize cheb_get_leaf_size(FSize nbPart){
+    return ChebLeaf_getSize(nbPart);
+}
+void cheb_copy_leaf(FSize nbPart, void * userdata, void * memAllocated){
+    ChebLeaf_copy(nbPart,userdata,memAllocated);
+}
+void* cheb_restore_leaf(FSize nbPart, void * memToRead){
+    return ChebLeaf_restore(nbPart,memToRead);
+}
 
+/**
+ * @brief From this point, the scalfmm leaves own the indexes, and
+ * each proc have its part partitionned, so we just need to copy our
+ * physical values (Vin) inside each leaf.
+ */
+void fill_leaf_container(int level, FSize nbParts, const FSize * idxParts,
+                         long long morton_index, double center[3],
+                         void * cellDatas,void * leafData, void * userDatas){
+    ChebLeafStruct_fill(nbParts,idxParts,morton_index,leafData,userDatas);
+}
+
+
+/**
+ * @brief This function compute the total energy for each proc.
+ */
+void on_leaf(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
+             void * cellDatas,void * leafData, void * userDatas){
     UserData * ptrToUserData = (UserData*) userDatas;
     //Compute totalEnergy
     int nbThread = omp_get_max_threads();
     int i,j;
-    for( i=0 ; i<nbParts ; ++i){
-        double pot = 0.0;
-        //Small loop over the different arrays
-        for( j=0 ; j<nbThread ; ++j){
-            pot += ptrToUserData->potentials[j][idxParts[i]];
+    /* for( i=0 ; i<nbParts ; ++i){ */
+    /*     double pot = 0.0; */
+    /*     //Small loop over the different arrays */
+    /*     for( j=0 ; j<nbThread ; ++j){ */
+    /*         pot += ptrToUserData->potentials[j][idxParts[i]]; */
+    /*     } */
+    /*     ptrToUserData->totalEnergy += pot*(ptrToUserData->myPhyValues[idxParts[i]]); */
+    /* } */
+
+    if(leafData){
+        double * forceX = NULL;
+        double ** forceXPtr = &forceX;
+        double * forceY = NULL;
+        double ** forceYPtr = &forceY;
+        double * forceZ = NULL;
+        double ** forceZPtr = &forceZ;
+        double * potentials = NULL;
+        double ** potPtr = &potentials;
+
+        ChebLeafStruct_get_back_results(leafData,forceXPtr,forceYPtr,forceZPtr,potPtr);
+        double pot = 0;
+
+        for(int i=0 ; i<nbParts ; ++i){
+            pot += potentials[i];
         }
         ptrToUserData->totalEnergy += pot*(ptrToUserData->myPhyValues[idxParts[i]]);
     }
-
     /* printf("I'm leaf at %lld pos, of center [%e %e %e], containing %lld parts\n", */
     /*        morton_index,center[0],center[1],center[2],nbParts); */
 
@@ -177,19 +257,30 @@ int main(int argc, char ** argv){
     cellDescriptor.user_copy_cell = cheb_copy_cell;
     cellDescriptor.user_restore_cell = cheb_restore_cell;
 
+    struct User_Scalfmm_Leaf_Descriptor leafDecriptor;
+    leafDecriptor.user_init_leaf = cheb_init_leaf;
+    leafDecriptor.user_free_leaf = cheb_free_leaf;
+    leafDecriptor.user_get_size = cheb_get_leaf_size;
+    leafDecriptor.user_copy_leaf = cheb_copy_leaf;
+    leafDecriptor.user_restore_leaf = cheb_restore_leaf;
+
     //Set our callbacks
     struct User_Scalfmm_Kernel_Descriptor kernel;
     kernel.p2m = cheb_p2m;
     kernel.m2m = cheb_m2m;
+    kernel.m2m_full = NULL;
     //init the other to NULL
     kernel.m2l = NULL;
+    kernel.m2l_ext = NULL;
     kernel.m2l_full = cheb_m2l_full;
     kernel.l2l = cheb_l2l;
+    kernel.l2l_full = NULL;
     kernel.l2p = cheb_l2p;
     kernel.p2p_sym = NULL;
     kernel.p2p_full = cheb_p2pFull;
     kernel.p2pinner = NULL;
     kernel.p2p = NULL;
+    kernel.p2p_remote = cheb_p2p_remote;
 
     //Set my datas
     UserData userDatas;
@@ -197,7 +288,8 @@ int main(int argc, char ** argv){
     //Give ScalFMM the datas before calling fmm (this will set as well the kernel)
     scalfmm_user_kernel_config(Handle,kernel,&userDatas);
 
-    scalfmm_build_tree(Handle,treeHeight, boxWidth, boxCenter, cellDescriptor);
+    scalfmm_build_tree(Handle,treeHeight, boxWidth, boxCenter,
+                       cellDescriptor, leafDecriptor);
 
     printf("Tree built.\n");
     double *  outputArray;     //Will be allocated inside create_local_partition
@@ -250,14 +342,18 @@ int main(int argc, char ** argv){
 
     printf("Insertion done, I'm process %d, and have inserted %lld parts.\n",my_rank,outputNbPoint);
 
+    //Asking ScalFMM to partition physicalValues too
     scalfmm_generic_partition(Handle,nbPart,sizeof(physicalValues[0]),physicalValues,outputPhyValPtr);
-
     printf("[%d] Generic Partition Done ! \n",my_rank);
 
     userDatas.myPhyValues = outputPhyVal;
 
+    //There we used a for each leaf method to initialize our leaf containers.
+    scalfmm_apply_on_leaf(Handle,fill_leaf_container);
+
+
     //Execution !!
-    scalfmm_execute_fmm(Handle);
+    scalfmm_execute_fmm_far_field(Handle);
 
     scalfmm_apply_on_leaf(Handle,on_leaf);
 

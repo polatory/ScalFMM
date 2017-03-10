@@ -1,16 +1,20 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the FMM.
+// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
+// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the
+// FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.  
-// 
+// abiding by the rules of distribution of free software.
+// An extension to the license is given to allow static linking of scalfmm
+// inside a proprietary application (no matter its license).
+// See the main license file for more details.
+//
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info". 
+// "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 #ifndef FCHEBKERNEL_HPP
@@ -28,17 +32,23 @@ class FTreeCoordinate;
 /**
  * @author Matthias Messner(matthias.messner@inria.fr)
  * @class FChebKernel
- * @brief
- * Please read the license
+ * @brief  Chebyshev interpolation based FMM operators for general non oscillatory kernels..
  *
- * This kernels implement the Chebyshev interpolation based FMM operators. It
+ * This class implements the Chebyshev interpolation based FMM operators. It
  * implements all interfaces (P2P, P2M, M2M, M2L, L2L, L2P) which are required by
- * the FFmmAlgorithm and FFmmAlgorithmThread.
+ * the FFmmAlgorithm, FFmmAlgorithmThread ...
  *
  * @tparam CellClass Type of cell
  * @tparam ContainerClass Type of container to store particles
  * @tparam MatrixKernelClass Type of matrix kernel function
  * @tparam ORDER Chebyshev interpolation order
+ *
+ * The ORDER sets the accuracy of the Chebyshev FMM while the EPSILON parameter introduces extra error but optimize the M2L step.
+ *  In fact, in the Chebyshev FMM we perform compression on the M2L operators using various low rank approximation techniques
+ *  (see https://arxiv.org/abs/1210.7292 for further details). Therefore we use a second accuracy criterion, namely EPSILON,
+ *  in order to set the accuracy of these methods. For most kernels that we tested and in particular for 1/r, setting EPSILON=10^-ORDER d
+ *  oes not introduce extra error in the FMM and captures the rank efficiently. If you think that for your kernel you need a better
+ *  approximation of the M2L operators, then you can try to set EPSILON to 10 ^- (ORDER+{1,2,...}).
  */
 template < class FReal, class CellClass, class ContainerClass,   class MatrixKernelClass, int ORDER, int NVALS = 1>
 class FChebKernel
@@ -62,6 +72,13 @@ public:
      * The constructor initializes all constant attributes and it reads the
      * precomputed and compressed M2L operators from a binary file (an
      * runtime_error is thrown if the required file is not valid).
+     *
+     * @param[in] epsilon  The compression parameter for M2L operator.
+     *
+     * The M2L optimized Chebyshev FMM implemented in ScalFMM are kernel dependent, but keeping EPSILON=10^-ORDER is usually fine.
+     *  On the other hand you can short-circuit this feature by setting EPSILON to the machine accuracy,
+     *  but this will significantly slow down the computations.
+     *
      */
     FChebKernel(const int inTreeHeight,  const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter, const MatrixKernelClass *const inMatrixKernel,
                 const FReal Epsilon)
@@ -75,6 +92,12 @@ public:
         //M2LHandler->ReadFromBinaryFileAndSet();
         M2LHandler->ComputeAndCompressAndSet();
     }
+    /**
+     * The constructor initializes all constant attributes and it reads the
+     * precomputed and compressed M2L operators from a binary file (an
+     * runtime_error is thrown if the required file is not valid).
+     * Same as \see above constructor  but the epsilon is automatically set to EPSILON=10^-ORDER
+     */
 
     FChebKernel(const int inTreeHeight, const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter, const MatrixKernelClass *const inMatrixKernel)
         :   FChebKernel(inTreeHeight, inBoxWidth,inBoxCenter,inMatrixKernel,FMath::pow(10.0,static_cast<FReal>(-ORDER)))

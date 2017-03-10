@@ -1,10 +1,14 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the FMM.
+// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
+// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the
+// FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
 // abiding by the rules of distribution of free software.
+// An extension to the license is given to allow static linking of scalfmm
+// inside a proprietary application (no matter its license).
+// See the main license file for more details.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -18,16 +22,16 @@
 #ifndef FABSTRACTUNIFKERNEL_HPP
 #define FABSTRACTUNIFKERNEL_HPP
 
-#include "../../Utils/FGlobal.hpp"
+#include "Utils/FGlobal.hpp"
 
-#include "../../Utils/FSmartPointer.hpp"
+#include "Utils/FSmartPointer.hpp"
 
-#include "../../Components/FAbstractKernels.hpp"
+#include "Components/FAbstractKernels.hpp"
 
 #include "../Interpolation/FInterpP2PKernels.hpp"
 #include "./FUnifInterpolator.hpp"
 
-#include "../../Containers/FTreeCoordinate.hpp"
+#include "Containers/FTreeCoordinate.hpp"
 
 /**
  * @author Pierre Blanchard (pierre.blanchard@inria.fr)

@@ -1,8 +1,7 @@
 // This page contains the special doxygen pages and mainpage.
-
-/*!
+/*! \page   FAQ FAQ
  *
- * \section FAQ FAQ
+ * FAQ
  *
  * \subsection faq1 System/Compilers/Libraries Supported
  * From our tests ScalFMM works with almost all configurations, except on Mac OS with the CLang compiler (or Intel compiler over CLang).
@@ -20,6 +19,14 @@
  *
  * \subsection faq5 How to use MPI scalfmm?
  * You must turn the cmake option on to activate the mpi tests.
+ *
+ * \subsection faq6 Accuracy of the Chebyshev FMM
+ * The ORDER template parameter sets the accuracy of the Chebyshev FMM while the EPSILON parameter introduces extra error but optimize the M2L step.
+ *  In fact, in the Chebyshev FMM we perform compression on the M2L operators using various low rank approximation techniques 
+ *  (see https://arxiv.org/abs/1210.7292 for further details). Therefore we use a second accuracy criterion, namely EPSILON, 
+ *  in order to set the accuracy of these methods. For most kernels that we tested and in particular for 1/r, setting EPSILON=10^-ORDER d
+ *  oes not introduce extra error in the FMM and captures the rank efficiently. If you think that for your kernel you need a better 
+ *  approximation of the M2L operators, then you can try to set EPSILON to 10 ^- (ORDER+{1,2,...}).
  */
 
 

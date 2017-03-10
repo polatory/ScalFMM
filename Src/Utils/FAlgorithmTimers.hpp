@@ -17,6 +17,13 @@
 #ifndef FALGORITHMTIMERS_HPP
 #define FALGORITHMTIMERS_HPP
 
+#include <map>
+#include <string>
+
+#include "FTic.hpp"
+
+using FTimerMap = std::map<std::string, FTic>;
+
 /**
  * @brief Collection of timers for FMM operators.
  *
@@ -25,56 +32,43 @@
  */
 class FAlgorithmTimers{
 public:
-    /// The timer names
-    enum FTimers {
-        P2MTimer,
-        M2MTimer,
-        M2LTimer,
-        L2LTimer,
-        L2PTimer,
-        P2PTimer,
-        NearTimer,
-        nbTimers   ///< Timer count
-    };
+    static constexpr const char* P2MTimer = "P2M";
+    static constexpr const char* M2MTimer = "M2M";
+    static constexpr const char* M2LTimer = "M2L";
+    static constexpr const char* L2LTimer = "L2L";
+    static constexpr const char* L2PTimer = "L2P";
+    static constexpr const char* P2PTimer = "P2P";
+    static constexpr const char* M2PTimer = "M2P";
+    static constexpr const char* P2LTimer = "P2L";
+    static constexpr const char* NearTimer = "Near";
+    enum {nbTimers = 9};
 
-protected:
-    /// Timer array
-    FTic Timers[nbTimers];
+    /// Timers
+    FTimerMap Timers;
 
-public:
     /// Constructor: resets all timers
-    FAlgorithmTimers()
-    {
-        for(int i = 0; i < nbTimers ; ++i){
-            Timers[i].reset();
-        }
-    }
+    FAlgorithmTimers() = default;
 
     /// Default copy contructor
     FAlgorithmTimers(const FAlgorithmTimers&) = default;
     /// Default move contructor
     FAlgorithmTimers(FAlgorithmTimers&&) = default;
 
-    /// Returns the timer array
-    const FTic * getAllTimers() const {
-        return Timers;
-    }
-
-    /// Returns the timer count
-    int getNbOfTimerRecorded() const {
-        return nbTimers;
-    }
-
     /// Elapsed time between last FTic::tic() and FTic::tac() for given timer.
-    double getTime(FTimers OpeTimer) const{
-        //assert to verify size
-        return Timers[OpeTimer].elapsed();
+    double getTime(std::string TimerName) const{
+        double res = 0;
+        try {
+            res = Timers.at(TimerName).elapsed();
+        } catch(std::out_of_range) {
+            res = 0;
+        }
+        return res;
     }
 
     /// Cumulated time between all FTic::tic() and FTic::tac() for given timer.
-    double getCumulatedTime(FTimers OpeTimer) const{
+    double getCumulatedTime(std::string TimerName) const{
         //assert to verify size
-        return Timers[OpeTimer].cumulated();
+        return Timers.at(TimerName).cumulated();
     }
 
 };

@@ -1,10 +1,14 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Bérenger Bramas, Matthias Messner
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the FMM.
+// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
+// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the
+// FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
 // abiding by the rules of distribution of free software.
+// An extension to the license is given to allow static linking of scalfmm
+// inside a proprietary application (no matter its license).
+// See the main license file for more details.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -42,6 +46,8 @@
 #include "FCoreCommon.hpp"
 #include "FP2PExclusion.hpp"
 
+#include "Utils/FAlgorithmTimers.hpp"
+
 #include <memory>
 
 /**
@@ -65,7 +71,7 @@
  * ./Tests/testFmmAlgorithmProc ../Data/testLoaderSmall.fma.tmp
  */
 template<class FReal, class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass, class P2PExclusionClass = FP2PMiddleExclusion>
-class FFmmAlgorithmThreadProcPeriodic : public FAbstractAlgorithm {
+class FFmmAlgorithmThreadProcPeriodic : public FAbstractAlgorithm, public FAlgorithmTimers {
     OctreeClass* const tree;                 //< The octree to work on
     KernelClass** kernels;                   //< The kernels
 
@@ -75,17 +81,18 @@ class FFmmAlgorithmThreadProcPeriodic : public FAbstractAlgorithm {
     const int nbLevelsAboveRoot;    //< The nb of level the user ask to go above the tree (>= -1)
     const int offsetRealTree;       //< nbLevelsAboveRoot GetFackLevel
 
+    /// Used to store pointers to cells/leafs to work with
     typename OctreeClass::Iterator* iterArray;
-    typename OctreeClass::Iterator* iterArrayComm;  //Will be used to store pointers to cells/leafs to send/rcv
-    int numberOfLeafs;                          //< To store the size at the previous level
+    /// Used to store pointers to cells/leafs to send/rcv
+    typename OctreeClass::Iterator* iterArrayComm;
 
-    const int MaxThreads;               //< the max number of thread allowed by openmp
+    int numberOfLeafs;           ///< To store the size at the previous level
+    const int MaxThreads;        ///< Max number of thread allowed by openmp
+    const int nbProcess;         ///< Process count
+    const int idProcess;         ///< Current process id
+    const int OctreeHeight;      ///< Tree height
 
-    const int nbProcess;                //< Number of process
-    const int idProcess;                //< Id of current process
-
-    const int OctreeHeight;
-
+    const int userChunkSize;
     const int leafLevelSeparationCriteria;
 
 public:
@@ -94,24 +101,33 @@ public:
         MortonIndex rightIndex;
     };
 
-    Interval& getWorkingInterval(const int level, const int proc)const {
-        return workingIntervalsPerLevel[OctreeHeight * proc + level];
-    }
-private:
+    /// Current process interval
     Interval*const intervals;
+    /// All processes intervals
     Interval*const workingIntervalsPerLevel;
 
-    /** To know if a proc has work at a given level (if it hold cells and was responsible of them) */
+    /// Get an interval from a process id and tree level
+    Interval& getWorkingInterval( int level,  int proc){
+        return workingIntervalsPerLevel[OctreeHeight * proc + level];
+    }
+
+    /// Get an interval from a process id and tree level
+    const Interval& getWorkingInterval( int level,  int proc) const {
+        return workingIntervalsPerLevel[OctreeHeight * proc + level];
+    }
+
+    /// Does \a procIdx have work at given \a idxLevel
+    /** i.e. does it hold cells and is responsible of them ? */
     bool procHasWorkAtLevel(const int idxLevel , const int idxProc) const {
         return getWorkingInterval(idxLevel, idxProc).leftIndex <= getWorkingInterval(idxLevel, idxProc).rightIndex;
     }
 
-    /** Return true if the idxProc left cell at idxLevel+1 has the same parent as us for our right cell */
+    /** True if the \a idxProc left cell at \a idxLevel+1 has the same parent as us for our right cell */
     bool procCoversMyRightBorderCell(const int idxLevel , const int idxProc) const {
         return (getWorkingInterval((idxLevel+1) , idProcess).rightIndex>>3) == (getWorkingInterval((idxLevel+1) ,idxProc).leftIndex >>3);
     }
 
-    /** Return true if the idxProc right cell at idxLevel+1 has the same parent as us for our left cell */
+    /** True if the idxProc right cell at idxLevel+1 has the same parent as us for our left cell */
     bool procCoversMyLeftBorderCell(const int idxLevel , const int idxProc) const {
         return (getWorkingInterval((idxLevel+1) , idxProc).rightIndex >>3) == (getWorkingInterval((idxLevel+1) , idProcess).leftIndex>>3);
     }
@@ -134,21 +150,29 @@ public:
         return getWorkingInterval(level, idProcess);
     }
 
-    bool hasWorkAtLevel(const int level){
-        return idProcess == 0 || getWorkingInterval(level, idProcess - 1).rightIndex < getWorkingInterval(level, idProcess).rightIndex;
+    /// Does the current process has some work at this level ?
+    bool hasWorkAtLevel( int level){
+        return idProcess == 0 || (getWorkingInterval(level, idProcess - 1).rightIndex) < (getWorkingInterval(level, idProcess).rightIndex);
     }
 
     /** The constructor need the octree and the kernels used for computation
      * @param inTree the octree to work on
      * @param inKernels the kernels to call
+     *
      * An assert is launched if one of the arguments is null
      */
     FFmmAlgorithmThreadProcPeriodic(const FMpi::FComm& inComm, OctreeClass* const inTree,
-                                    const int inUpperLevel = 2, const int inLeafLevelSeperationCriteria = 1)
-        : tree(inTree) , kernels(nullptr), comm(inComm), nbLevelsAboveRoot(inUpperLevel), offsetRealTree(inUpperLevel + 2),
+                                    const int inUpperLevel = 2,
+                                    const int inUserChunkSize = 10, const int inLeafLevelSeperationCriteria = 1)
+        : tree(inTree) ,
+        kernels(nullptr), comm(inComm),
+        nbLevelsAboveRoot(inUpperLevel), offsetRealTree(inUpperLevel + 2),
           numberOfLeafs(0),
-          MaxThreads(FEnv::GetValue("SCALFMM_ALGO_NUM_THREADS",omp_get_max_threads())), nbProcess(inComm.processCount()), idProcess(inComm.processId()),
+          MaxThreads(FEnv::GetValue("SCALFMM_ALGO_NUM_THREADS",omp_get_max_threads())),
+        nbProcess(inComm.processCount()),
+        idProcess(inComm.processId()),
           OctreeHeight(tree->getHeight()),
+        userChunkSize(inUserChunkSize),
           leafLevelSeparationCriteria(inLeafLevelSeperationCriteria),
           intervals(new Interval[inComm.processCount()]),
           workingIntervalsPerLevel(new Interval[inComm.processCount() * tree->getHeight()]) {
@@ -161,6 +185,7 @@ public:
 
         FLOG(FLog::Controller << "FFmmAlgorithmThreadProcPeriodic\n");
         FLOG(FLog::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
+        FLOG(FLog::Controller << "Chunck Size = " << userChunkSize << "\n");
     }
 
     /** Default destructor */
@@ -182,8 +207,7 @@ public:
             // we know it is 3 (-1;+1)
             return 3;
         }
-        // Else we find the repetition in one dir and double it
-        return 6 * (1<<(nbLevelsAboveRoot));
+        return 6 * (1 << nbLevelsAboveRoot);
     }
 
 
@@ -203,38 +227,85 @@ public:
 
 
     FReal extendedBoxWidth() const {
-        // The simulation box is repeated is repeated 4 times if nbLevelsAboveRoot==-1
-        // And then it doubles by two
-        return tree->getBoxWidth() * FReal(1<<(nbLevelsAboveRoot+3));
+        if( nbLevelsAboveRoot == -1 ){
+            return tree->getBoxWidth()*2;
+        }
+        else{
+            return tree->getBoxWidth() * FReal(4<<(nbLevelsAboveRoot));
+        }
+    }
+
+    FReal extendedBoxWidthBoundary() const {
+        if( nbLevelsAboveRoot == -1 ){
+            return tree->getBoxWidth()*4;
+        }
+        else{
+            return tree->getBoxWidth() * FReal(8<<(nbLevelsAboveRoot));
+        }
     }
 
     /** This function has to be used to init the kernel with correct args
-     * it return the box cneter seen from a kernel point of view from the periodicity the user ask for
-     * this is computed using the originalBoxWidth and originalBoxCenter given in parameter
-     * @param originalBoxCenter the real system center
-     * @param originalBoxWidth the real system size
-     * @return the center the kernel should use
-     */
+      * it return the box cneter seen from a kernel point of view from the periodicity the user ask for
+      * this is computed using the originalBoxWidth and originalBoxCenter given in parameter
+      * @param originalBoxCenter the real system center
+      * @param originalBoxWidth the real system size
+      * @return the center the kernel should use
+      */
     FPoint<FReal> extendedBoxCenter() const {
-        const FReal originalBoxWidth     = tree->getBoxWidth();
-        const FReal originalBoxWidthDiv2 = originalBoxWidth/2.0;
-        const FPoint<FReal> originalBoxCenter   = tree->getBoxCenter();
+        if( nbLevelsAboveRoot == -1 ){
+            const FReal originalBoxWidth            = tree->getBoxWidth();
+            const FPoint<FReal> originalBoxCenter   = tree->getBoxCenter();
+            const FReal originalBoxWidthDiv2        = originalBoxWidth/2.0;
+            return FPoint<FReal>( originalBoxCenter.getX() + originalBoxWidthDiv2,
+                                         originalBoxCenter.getY() + originalBoxWidthDiv2,
+                                         originalBoxCenter.getZ() + originalBoxWidthDiv2);
+        }
+        else{
+            const FReal originalBoxWidth     = tree->getBoxWidth();
+            const FReal originalBoxWidthDiv2 = originalBoxWidth/2.0;
+            const FPoint<FReal> originalBoxCenter   = tree->getBoxCenter();
 
-        const FReal offset = extendedBoxWidth()/FReal(2.0);
-        return FPoint<FReal>( originalBoxCenter.getX() - originalBoxWidthDiv2 + offset,
+            const FReal offset = extendedBoxWidth()/FReal(2.0);
+            return FPoint<FReal>( originalBoxCenter.getX() - originalBoxWidthDiv2 + offset,
                        originalBoxCenter.getY() - originalBoxWidthDiv2 + offset,
                        originalBoxCenter.getZ() - originalBoxWidthDiv2 + offset);
+        }
+    }
+
+    FPoint<FReal> extendedBoxCenterBoundary() const {
+        if( nbLevelsAboveRoot == -1 ){
+            const FReal originalBoxWidth            = tree->getBoxWidth();
+            const FPoint<FReal> originalBoxCenter   = tree->getBoxCenter();
+            const FReal originalBoxWidthDiv2        = originalBoxWidth/2.0;
+            return FPoint<FReal>( originalBoxCenter.getX() + originalBoxWidthDiv2,
+                                         originalBoxCenter.getY() + originalBoxWidthDiv2,
+                                         originalBoxCenter.getZ() + originalBoxWidthDiv2);
+        }
+        else{
+            const FReal originalBoxWidth     = tree->getBoxWidth();
+            const FReal originalBoxWidthDiv2 = originalBoxWidth/2.0;
+            const FPoint<FReal> originalBoxCenter   = tree->getBoxCenter();
+
+            return FPoint<FReal>( originalBoxCenter.getX() + originalBoxWidthDiv2,
+                       originalBoxCenter.getY() + originalBoxWidthDiv2,
+                       originalBoxCenter.getZ() + originalBoxWidthDiv2);
+        }
     }
 
     /** This function has to be used to init the kernel with correct args
-     * it return the tree heigh seen from a kernel point of view from the periodicity the user ask for
-     * this is computed using the originalTreeHeight given in parameter
-     * @param originalTreeHeight the real tree heigh
-     * @return the heigh the kernel should use
-     */
+      * it return the tree heigh seen from a kernel point of view from the periodicity the user ask for
+      * this is computed using the originalTreeHeight given in parameter
+      * @param originalTreeHeight the real tree heigh
+      * @return the heigh the kernel should use
+      */
     int extendedTreeHeight() const {
         // The real height
         return OctreeHeight + offsetRealTree;
+    }
+
+    int extendedTreeHeightBoundary() const {
+        // The real height
+        return OctreeHeight + offsetRealTree + 1;
     }
 
 
@@ -318,21 +389,31 @@ protected:
         }
 
         // run;
+        Timers[P2MTimer].tic();
         if(operationsToProceed & FFmmP2M) bottomPass();
+        Timers[P2MTimer].tac();
 
+
+        Timers[M2MTimer].tic();
         if(operationsToProceed & FFmmM2M) upwardPass();
+        Timers[M2MTimer].tac();
 
+        Timers[M2LTimer].tic();
         if(operationsToProceed & FFmmM2L) transferPass();
+        Timers[M2LTimer].tac();
 
+        Timers[L2LTimer].tic();
         if(operationsToProceed & FFmmL2L) downardPass();
+        Timers[L2LTimer].tac();
 
+        Timers[NearTimer].tic();
         if((operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P)) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
-
+        Timers[NearTimer].tac();
 
         // delete array
         delete []     iterArray;
-        delete [] iterArrayComm;
-        iterArray     = nullptr;
+        delete []     iterArrayComm;
+        iterArray          = nullptr;
         iterArrayComm = nullptr;
     }
 
@@ -364,7 +445,7 @@ protected:
             // Each thread get its own kernel
             KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
             // Parallel iteration on the leaves
-#pragma omp for nowait
+#pragma omp for nowait schedule(dynamic, userChunkSize)
             for(int idxLeafs = 0 ; idxLeafs < leafs ; ++idxLeafs){
                 myThreadkernels->P2M( iterArray[idxLeafs].getCurrentCell() , iterArray[idxLeafs].getCurrentListSrc());
             }
@@ -372,6 +453,7 @@ protected:
         FLOG(computationCounter.tac());
         FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.tacAndElapsed() << " s)\n" );
         FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller.flush());
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -496,7 +578,7 @@ protected:
                             MPI_Isend(&bufferSize, 1, FMpi::GetType(bufferSize), currentProcIdToSendTo,
                                       FMpi::TagFmmM2MSize + idxLevel, comm.getComm(), &requestsSize[iterMpiRequestsSize++]);
                             FAssertLF(sendBuffer.getSize() < std::numeric_limits<int>::max());
-                            MPI_Isend(sendBuffer.data(), int(sendBuffer.getSize()), MPI_PACKED, currentProcIdToSendTo,
+                            MPI_Isend(sendBuffer.data(), int(sendBuffer.getSize()), MPI_BYTE, currentProcIdToSendTo,
                                       FMpi::TagFmmM2M + idxLevel, comm.getComm(), &requests[iterMpiRequests++]);
                         }
                     }
@@ -537,7 +619,7 @@ protected:
                             if(procHasWorkAtLevel(idxLevel+1, idProcSource) && procCoversMyRightBorderCell(idxLevel, idProcSource)){
                                 recvBuffer[nbProcThatSendToMe].cleanAndResize(recvBufferSize[nbProcThatSendToMe]);
                                 FAssertLF(recvBufferSize[nbProcThatSendToMe] < std::numeric_limits<int>::max());
-                                MPI_Irecv(recvBuffer[nbProcThatSendToMe].data(), int(recvBufferSize[nbProcThatSendToMe]), MPI_PACKED,
+                                MPI_Irecv(recvBuffer[nbProcThatSendToMe].data(), int(recvBufferSize[nbProcThatSendToMe]), MPI_BYTE,
                                         idProcSource, FMpi::TagFmmM2M + idxLevel, comm.getComm(), &requests[iterMpiRequests++]);
                                 nbProcThatSendToMe += 1;
                                 FAssertLF(nbProcThatSendToMe <= 7);
@@ -561,7 +643,7 @@ protected:
 
                         // Retreive data and merge my child and the child from others
                         for(int idxProc = 0 ; idxProc < nbProcThatSendToMe ; ++idxProc){
-                            int packageFlags = int(recvBuffer[idxProc].getValue<char>());
+                            unsigned packageFlags = unsigned(recvBuffer[idxProc].getValue<unsigned char>());
 
                             int position = 0;
                             int positionToInsert = 0;
@@ -593,7 +675,7 @@ protected:
                 }//End Of Single section
 
                 // All threads proceed the M2M
-                #pragma omp for nowait
+                #pragma omp for nowait schedule(dynamic, userChunkSize)
                 for( int idxCell = nbCellsToSkip ; idxCell < nbCellsForThreads ; ++idxCell){
                     myThreadkernels->M2M( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), fackLevel);
                 }
@@ -630,9 +712,6 @@ protected:
 
             int iterRequests = 0;
 
-            CellClass* currentChild[8];
-            memcpy(currentChild, octreeIterator.getCurrentBox(), 8 * sizeof(CellClass*));
-
             for(int idxProc = 1 ; idxProc < nbProcess ; ++idxProc ){
                 if( procHasWorkAtLevel(1,idxProc) ){
                     recvBuffer[iterRequests].cleanAndResize(recvBufferSize[iterRequests]);
@@ -646,27 +725,34 @@ protected:
 
             MPI_Waitall( iterRequests, requests, MPI_STATUSES_IGNORE);
 
+            CellClass* currentChild[8];
+            memcpy(currentChild, octreeIterator.getCurrentBox(), 8 * sizeof(CellClass*));
+
             // retreive data and merge my child and the child from others
             int counterProc = 0;
             for(int idxProc = 1 ; idxProc < nbProcess ; ++idxProc){
                 if( procHasWorkAtLevel(1,idxProc) ){
                     recvBuffer[counterProc].seek(0);
-                    int state = int(recvBuffer[counterProc].getValue<char>());
+                    unsigned state = unsigned(recvBuffer[counterProc].getValue<unsigned char>());
 
                     int position = 0;
+                    int positionToInsert = 0;
                     while( state && position < 8){
                         while(!(state & 0x1)){
                             state >>= 1;
                             ++position;
                         }
+                        FAssertLF(positionToInsert < 7);
+                        FAssertLF(position < 8);
                         FAssertLF(!currentChild[position], "Already has a cell here");
 
-                        recvBufferCells[position].deserializeUp(recvBuffer[counterProc]);
+                        recvBufferCells[positionToInsert].deserializeUp(recvBuffer[counterProc]);
 
-                        currentChild[position] = (CellClass*) &recvBufferCells[position];
+                        currentChild[position] = (CellClass*) &recvBufferCells[positionToInsert];
 
                         state >>= 1;
-                        ++position;
+                        position += 1;
+                        positionToInsert += 1;
                     }
 
                     FAssertLF(recvBuffer[counterProc].tell() == recvBufferSize[counterProc]);
@@ -696,7 +782,7 @@ protected:
                 }
                 sendBuffer.writeAt(0,state);
                 FSize sizeToSend = sendBuffer.getSize();
-                MPI_Send(&sizeToSend, 1, FMpi::GetType(sizeToSend), 0, FMpi::TagFmmM2MSize, comm.getComm());
+                MPI_Send(&sizeToSend, 1, MPI_LONG_LONG, 0, FMpi::TagFmmM2MSize, comm.getComm());
                 MPI_Send(sendBuffer.data(), int(sendBuffer.getSize()), MPI_BYTE, 0, FMpi::TagFmmM2M, comm.getComm());
             }
         }
@@ -848,9 +934,8 @@ protected:
                 FLOG(sendCounter.tic());
                 // Then they can send and receive (because they know what they will receive)
                 // To send in asynchrone way
-                MPI_Request*const requests = new MPI_Request[2 * nbProcess * OctreeHeight];
-                MPI_Status*const status = new MPI_Status[2 * nbProcess * OctreeHeight];
-                int iterRequest = 0;
+                std::vector<MPI_Request> requests;
+                requests.reserve(2 * nbProcess * OctreeHeight);
 
                 for(int idxLevel = 1 ; idxLevel < OctreeHeight ; ++idxLevel ){
                     for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
@@ -871,9 +956,9 @@ protected:
                             FAssertLF(sendBuffer[idxLevel * nbProcess + idxProc]->getSize() == toSendAtProcAtLevel);
 
                             FAssertLF(sendBuffer[idxLevel * nbProcess + idxProc]->getSize() < std::numeric_limits<int>::max());
-                            FMpi::MpiAssert( MPI_Isend( sendBuffer[idxLevel * nbProcess + idxProc]->data(),
-                                             int(sendBuffer[idxLevel * nbProcess + idxProc]->getSize()),MPI_PACKED, idxProc,
-                                    FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
+                            FMpi::ISendSplit(sendBuffer[idxLevel * nbProcess + idxProc]->data(),
+                                    sendBuffer[idxLevel * nbProcess + idxProc]->getSize(), idxProc,
+                                    FMpi::TagLast + idxLevel*100, comm, &requests);
                         }
 
                         const long long int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
@@ -881,9 +966,9 @@ protected:
                             recvBuffer[idxLevel * nbProcess + idxProc] = new FMpiBufferReader(toReceiveFromProcAtLevel);
 
                             FAssertLF(recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity() < std::numeric_limits<int>::max());
-                            FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxLevel * nbProcess + idxProc]->data(),
-                                             int(recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity()), MPI_PACKED,idxProc,
-                                    FMpi::TagLast + idxLevel, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
+                            FMpi::IRecvSplit(recvBuffer[idxLevel * nbProcess + idxProc]->data(),
+                                    recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity(), idxProc,
+                                    FMpi::TagLast + idxLevel*100, comm, &requests);
                         }
                     }
                 }
@@ -893,10 +978,7 @@ protected:
                 //////////////////////////////////////////////////////////////////
 
                 // Wait to receive every things (and send every things)
-                FMpi::MpiAssert(MPI_Waitall(iterRequest, requests, status), __LINE__);
-
-                delete[] requests;
-                delete[] status;
+                FMpi::MpiAssert(MPI_Waitall(int(requests.size()), requests.data(), MPI_STATUS_IGNORE), __LINE__);
 
                 FLOG(sendCounter.tac());
             }//End of Master region
@@ -937,7 +1019,7 @@ protected:
 
                     FLOG(computationCounter.tic());
                     {
-                        const int chunckSize = FMath::Max(1, numberOfCells/(omp_get_num_threads()*omp_get_num_threads()));
+                        const int chunckSize = userChunkSize;
                         for(int idxCell = 0 ; idxCell < numberOfCells ; idxCell += chunckSize){
                             #pragma omp task default(none) shared(numberOfCells,idxLevel) firstprivate(idxCell) //+ shared(chunckSize)
                             {
@@ -1048,7 +1130,7 @@ protected:
                     const CellClass* neighbors[342];
                     int neighborPositions[342];
 
-                    #pragma omp for schedule(static) nowait
+                    #pragma omp for  schedule(dynamic, userChunkSize) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         const int counterNeighbors = getPeriodicInteractionNeighbors(iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, neighborsIndex, neighborsPosition, AllDirs, separationCriteria);
                         int counter = 0;
@@ -1100,6 +1182,7 @@ protected:
         FLOG( FLog::Controller << "\t\t Receive : " << receiveCounter.cumulated() << " s\n" );
         FLOG( FLog::Controller << "\t\t Gather : " << gatherCounter.cumulated() << " s\n" );
         FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller.flush());
 
     }
 
@@ -1121,9 +1204,7 @@ protected:
 
         // Max 1 receive and 7 send (but 7 times the same data)
         MPI_Request*const requests = new MPI_Request[8];
-        MPI_Status*const status = new MPI_Status[8];
         MPI_Request*const requestsSize = new MPI_Request[8];
-        MPI_Status*const statusSize = new MPI_Status[8];
 
         FMpiBufferWriter sendBuffer;
         FMpiBufferReader recvBuffer;
@@ -1224,7 +1305,7 @@ protected:
                                 FMpi::MpiAssert( MPI_Isend(&sendBufferSize, 1, FMpi::GetType(sendBufferSize), idxProcSend,
                                                            FMpi::TagFmmL2LSize + idxLevel, comm.getComm(), &requestsSize[iterRequestsSize++]), __LINE__);
                                 FAssertLF(sendBuffer.getSize() < std::numeric_limits<int>::max());
-                                FMpi::MpiAssert( MPI_Isend(sendBuffer.data(), int(sendBuffer.getSize()), MPI_PACKED, idxProcSend,
+                                FMpi::MpiAssert( MPI_Isend(sendBuffer.data(), int(sendBuffer.getSize()), MPI_BYTE, idxProcSend,
                                                            FMpi::TagFmmL2L + idxLevel, comm.getComm(), &requests[iterRequests++]), __LINE__);
                                 // Inc and check the counter
                                 nbMessageSent += 1;
@@ -1239,22 +1320,22 @@ protected:
                     // Finalize the communication
                     if(iterRequestsSize){
                         FLOG(waitCounter.tic());
-                        FAssertLF(iterRequestsSize <= 8);
-                        FMpi::MpiAssert(MPI_Waitall( iterRequestsSize, requestsSize, statusSize), __LINE__);
+                        FAssertLF(iterRequestsSize < 8);
+                        FMpi::MpiAssert(MPI_Waitall( iterRequestsSize, requestsSize, MPI_STATUSES_IGNORE), __LINE__);
                         FLOG(waitCounter.tac());
                     }
 
                     if(hasToReceive){
                         recvBuffer.cleanAndResize(recvBufferSize);
                         FAssertLF(recvBuffer.getCapacity() < std::numeric_limits<int>::max());
-                        FMpi::MpiAssert( MPI_Irecv( recvBuffer.data(), int(recvBuffer.getCapacity()), MPI_PACKED, idxProcToReceive,
+                        FMpi::MpiAssert( MPI_Irecv( recvBuffer.data(), int(recvBuffer.getCapacity()), MPI_BYTE, idxProcToReceive,
                                                     FMpi::TagFmmL2L + idxLevel, comm.getComm(), &requests[iterRequests++]), __LINE__ );
                     }
 
                     if(iterRequests){
                         FLOG(waitCounter.tic());
-                        FAssertLF(iterRequests <= 8);
-                        FMpi::MpiAssert(MPI_Waitall( iterRequests, requests, status), __LINE__);
+                        FAssertLF(iterRequests < 8);
+                        FMpi::MpiAssert(MPI_Waitall( iterRequests, requests, MPI_STATUSES_IGNORE), __LINE__);
                         FLOG(waitCounter.tac());
                     }
 
@@ -1274,7 +1355,7 @@ protected:
                     FLOG(computationCounter.tic());
                 }
                 // Threads are working on all the cell of our working interval at that level
-                #pragma omp for nowait
+                #pragma omp for nowait  schedule(dynamic, userChunkSize)
                 for(int idxCell = nbCellsToSkip ; idxCell < totalNbCellsAtLevel ; ++idxCell){
                     myThreadkernels->L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), fackLevel);
                 }
@@ -1286,12 +1367,13 @@ protected:
         }
 
         delete[] requests;
-        delete[] status;
+        delete[] requestsSize;
 
         FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << " s)\n" );
         FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         FLOG( FLog::Controller << "\t\t Prepare : " << prepareCounter.cumulated() << " s\n" );
         FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.cumulated() << " s\n" );
+        FLOG( FLog::Controller.flush());
     }
 
 
@@ -1320,25 +1402,6 @@ protected:
         // Prepare data to send receive
         ///////////////////////////////////////////////////
         FLOG(prepareCounter.tic());
-
-        // To send in asynchrone way
-        MPI_Request requests[2 * nbProcess];
-        MPI_Status status[2 * nbProcess];
-        int iterRequest = 0;
-        int nbMessagesToRecv = 0;
-
-        FMpiBufferWriter**const sendBuffer = new FMpiBufferWriter*[nbProcess];
-        memset(sendBuffer, 0, sizeof(FMpiBufferWriter*) * nbProcess);
-
-        FMpiBufferReader**const recvBuffer = new FMpiBufferReader*[nbProcess];
-        memset(recvBuffer, 0, sizeof(FMpiBufferReader*) * nbProcess);
-
-        /* This a nbProcess x nbProcess matrix of integer
-     * let U and V be id of processes :
-     * globalReceiveMap[U*nbProcess + V] == size of information needed by V and own by U
-     */
-        FSize*const globalReceiveMap = new FSize[nbProcess * nbProcess];
-        memset(globalReceiveMap, 0, sizeof(FSize) * nbProcess * nbProcess);
 
         FBoolArray leafsNeedOther(this->numberOfLeafs);
         int countNeedOther = 0;
@@ -1431,24 +1494,39 @@ protected:
 
 #pragma omp master // nowait
             if(p2pEnabled){
+                /* This a nbProcess x nbProcess matrix of integer
+             * let U and V be id of processes :
+             * globalReceiveMap[U*nbProcess + V] == size of information needed by V and own by U
+             */
+                FSize*const globalReceiveMap = new FSize[nbProcess * nbProcess];
+                memset(globalReceiveMap, 0, sizeof(FSize) * nbProcess * nbProcess);
+
                 //Share to all processus globalReceiveMap
                 FLOG(gatherCounter.tic());
                 FMpi::MpiAssert( MPI_Allgather( partsToSend, nbProcess, FMpi::GetType(*partsToSend),
                                                 globalReceiveMap, nbProcess, FMpi::GetType(*partsToSend), comm.getComm()),  __LINE__ );
                 FLOG(gatherCounter.tac());
 
+                FMpiBufferReader**const recvBuffer = new FMpiBufferReader*[nbProcess];
+                memset(recvBuffer, 0, sizeof(FMpiBufferReader*) * nbProcess);
+
+                FMpiBufferWriter**const sendBuffer = new FMpiBufferWriter*[nbProcess];
+                memset(sendBuffer, 0, sizeof(FMpiBufferWriter*) * nbProcess);
+
+                // To send in asynchrone way
+                std::vector<MPI_Request> requests;
+                requests.reserve(2 * nbProcess);
                 //Prepare receive
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                     if(globalReceiveMap[idxProc * nbProcess + idProcess]){ //if idxProc has sth for me.
                         //allocate buffer of right size
                         recvBuffer[idxProc] = new FMpiBufferReader(globalReceiveMap[idxProc * nbProcess + idProcess]);
-                        FAssertLF(recvBuffer[idxProc]->getCapacity() < std::numeric_limits<int>::max());
-                        FMpi::MpiAssert( MPI_Irecv(recvBuffer[idxProc]->data(), int(recvBuffer[idxProc]->getCapacity()), MPI_PACKED,
-                                                   idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
+
+                        FMpi::IRecvSplit(recvBuffer[idxProc]->data(), recvBuffer[idxProc]->getCapacity(),
+                                         idxProc, FMpi::TagFmmP2P, comm, &requests);
                     }
                 }
 
-                nbMessagesToRecv = iterRequest;
                 // Prepare send
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                     if(toSend[idxProc].getSize() != 0){
@@ -1461,9 +1539,9 @@ protected:
                         }
 
                         FAssertLF(sendBuffer[idxProc]->getSize() == globalReceiveMap[idProcess*nbProcess+idxProc]);
-                        FAssertLF(sendBuffer[idxProc]->getSize() < std::numeric_limits<int>::max());
-                        FMpi::MpiAssert( MPI_Isend( sendBuffer[idxProc]->data(), int(sendBuffer[idxProc]->getSize()) , MPI_PACKED ,
-                                                    idxProc, FMpi::TagFmmP2P, comm.getComm(), &requests[iterRequest++]) , __LINE__ );
+
+                        FMpi::ISendSplit(sendBuffer[idxProc]->data(), sendBuffer[idxProc]->getSize(),
+                                         idxProc, FMpi::TagFmmP2P, comm, &requests);
 
                     }
                 }
@@ -1475,23 +1553,34 @@ protected:
                 // Waitsend receive
                 //////////////////////////////////////////////////////////
 
+                std::unique_ptr<MPI_Status[]> status(new MPI_Status[requests.size()]);
                 // Wait data
                 FLOG(waitCounter.tic());
-                MPI_Waitall(iterRequest, requests, status);
+                MPI_Waitall(int(requests.size()), requests.data(), status.get());
                 FLOG(waitCounter.tac());
 
-                for(int idxRcv = 0 ; idxRcv < nbMessagesToRecv ; ++idxRcv){
-                    const int idxProc = status[idxRcv].MPI_SOURCE;
-                    FSize nbLeaves;
-                    (*recvBuffer[idxProc]) >> nbLeaves;
-                    for(FSize idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
-                        MortonIndex leafIndex;
-                        (*recvBuffer[idxProc]) >> leafIndex;
-                        otherP2Ptree.createLeaf(leafIndex)->getSrc()->restore((*recvBuffer[idxProc]));
+                for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
+                    if(globalReceiveMap[idxProc * nbProcess + idProcess]){ //if idxProc has sth for me.
+                        FAssertLF(recvBuffer[idxProc]);
+                        FMpiBufferReader& currentBuffer = (*recvBuffer[idxProc]);
+                        FSize nbLeaves;
+                        currentBuffer >> nbLeaves;
+                        for(FSize idxLeaf = 0 ; idxLeaf < nbLeaves ; ++idxLeaf){
+                            MortonIndex leafIndex;
+                            currentBuffer >> leafIndex;
+                            otherP2Ptree.createLeaf(leafIndex)->getSrc()->restore(currentBuffer);
+                        }
+                        // Realease memory early
+                        delete recvBuffer[idxProc];
+                        recvBuffer[idxProc] = nullptr;
                     }
-                    delete recvBuffer[idxProc];
-                    recvBuffer[idxProc] = nullptr;
                 }
+
+                for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
+                    delete sendBuffer[idxProc];
+                    delete recvBuffer[idxProc];
+                }
+                delete[] globalReceiveMap;
             }
 
             ///////////////////////////////////////////////////
@@ -1558,7 +1647,7 @@ protected:
 
                     for(int idxShape = 0 ; idxShape < SizeShape ; ++idxShape){
                         const int endAtThisShape = shapeLeaf[idxShape] + previous;
-                        const int chunckSize = FMath::Max(1, (endAtThisShape-previous)/(omp_get_num_threads()*omp_get_num_threads()));
+                        const int chunckSize = userChunkSize;
 
                         for(int idxLeafs = previous ; idxLeafs < endAtThisShape ; idxLeafs += chunckSize){
                             const int nbLeavesInTask = FMath::Min(endAtThisShape-idxLeafs, chunckSize);
@@ -1583,25 +1672,26 @@ protected:
                                         int periodicNeighborsCounter = 0;
 
                                         if(hasPeriodicLeaves){
-                                            ContainerClass* periodicNeighbors[27];
+                                            ContainerClass* periodicNeighbors[26];
                                             int periodicNeighborPositions[26];
 
                                             for(int idxNeig = 0 ; idxNeig < counter ; ++idxNeig){
                                                 if( !offsets[idxNeig].equals(0,0,0) ){
                                                     // Put periodic neighbors into other array
-                                                    periodicNeighbors[periodicNeighborsCounter] = neighbors[idxNeig];
-                                                    periodicNeighborPositions[periodicNeighborsCounter] = neighborPositions[idxNeig];
-                                                    ++periodicNeighborsCounter;
+                                                    FReal*const positionsX = neighbors[idxNeig]->getWPositions()[0];
+                                                    FReal*const positionsY = neighbors[idxNeig]->getWPositions()[1];
+                                                    FReal*const positionsZ = neighbors[idxNeig]->getWPositions()[2];
 
-                                                    FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
-                                                    FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
-                                                    FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
-
-                                                    for(FSize idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
+                                                    for(FSize idxPart = 0; idxPart < neighbors[idxNeig]->getNbParticles() ; ++idxPart){
                                                         positionsX[idxPart] += boxWidth * FReal(offsets[idxNeig].getX());
                                                         positionsY[idxPart] += boxWidth * FReal(offsets[idxNeig].getY());
                                                         positionsZ[idxPart] += boxWidth * FReal(offsets[idxNeig].getZ());
                                                     }
+
+                                                    offsets[periodicNeighborsCounter] = offsets[idxNeig];
+                                                    periodicNeighbors[periodicNeighborsCounter] = neighbors[idxNeig];
+                                                    periodicNeighborPositions[periodicNeighborsCounter] = neighborPositions[idxNeig];
+                                                    ++periodicNeighborsCounter;
                                                 }
                                                 else{
                                                     neighbors[idxNeig-periodicNeighborsCounter] = neighbors[idxNeig];
@@ -1612,17 +1702,16 @@ protected:
                                             myThreadkernels->P2PRemote(currentIter.coord,currentIter.targets,
                                                                        currentIter.sources, periodicNeighbors, periodicNeighborPositions, periodicNeighborsCounter);
 
-                                            for(int idxNeig = 0 ; idxNeig < 27 ; ++idxNeig){
-                                                if( periodicNeighbors[idxNeig] ){
-                                                    FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
-                                                    FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
-                                                    FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
+                                            for(int idxNeig = 0 ; idxNeig < periodicNeighborsCounter ; ++idxNeig){
+                                                FAssertLF( periodicNeighbors[idxNeig] );
+                                                FReal*const positionsX = periodicNeighbors[idxNeig]->getWPositions()[0];
+                                                FReal*const positionsY = periodicNeighbors[idxNeig]->getWPositions()[1];
+                                                FReal*const positionsZ = periodicNeighbors[idxNeig]->getWPositions()[2];
 
-                                                    for(FSize idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
-                                                        positionsX[idxPart] -= boxWidth * FReal(offsets[idxNeig].getX());
-                                                        positionsY[idxPart] -= boxWidth * FReal(offsets[idxNeig].getY());
-                                                        positionsZ[idxPart] -= boxWidth * FReal(offsets[idxNeig].getZ());
-                                                    }
+                                                for(FSize idxPart = 0; idxPart < periodicNeighbors[idxNeig]->getNbParticles() ; ++idxPart){
+                                                    positionsX[idxPart] -= boxWidth * FReal(offsets[idxNeig].getX());
+                                                    positionsY[idxPart] -= boxWidth * FReal(offsets[idxNeig].getY());
+                                                    positionsZ[idxPart] -= boxWidth * FReal(offsets[idxNeig].getZ());
                                                 }
                                             }
                                         }
@@ -1665,7 +1754,7 @@ protected:
             FAssertLF(leafsNeedOtherData.getSize() < std::numeric_limits<int>::max());
             const int nbLeafToProceed = int(leafsNeedOtherData.getSize());
 
-#pragma omp for schedule(static)
+#pragma omp for  schedule(dynamic, userChunkSize)
             for(int idxLeafs = 0 ; idxLeafs < nbLeafToProceed ; ++idxLeafs){
                 LeafData currentIter = leafsNeedOtherData[idxLeafs];
 
@@ -1694,12 +1783,6 @@ protected:
 
         }
 
-
-        for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
-            delete sendBuffer[idxProc];
-            delete recvBuffer[idxProc];
-        }
-        delete[] globalReceiveMap;
         delete[] leafsDataArray;
 
         FLOG(computation2Counter.tac());
@@ -1711,6 +1794,7 @@ protected:
         FLOG( FLog::Controller << "\t\t Prepare P2P : " << prepareCounter.elapsed() << " s\n" );
         FLOG( FLog::Controller << "\t\t Gather P2P : " << gatherCounter.elapsed() << " s\n" );
         FLOG( FLog::Controller << "\t\t Wait : " << waitCounter.elapsed() << " s\n" );
+        FLOG( FLog::Controller.flush());
 
     }
 
@@ -1831,7 +1915,7 @@ protected:
                             otherParentInBox.setZ( otherParentInBox.getZ() - boxLimite );
                         }
 
-                        const MortonIndex mortonOtherParent = otherParentInBox.getMortonIndex(inLevel-1);
+                        const MortonIndex mortonOtherParent = otherParentInBox.getMortonIndex();
 
                         // For each child
                         for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
@@ -1871,7 +1955,7 @@ protected:
 
                         const FTreeCoordinate otherParent(parentCell.getX() + idxX,parentCell.getY() + idxY,parentCell.getZ() + idxZ);
 
-                        const MortonIndex mortonOtherParent = otherParent.getMortonIndex(inLevel-1);
+                        const MortonIndex mortonOtherParent = otherParent.getMortonIndex();
 
                         // For each child
                         for(int idxCousin = 0 ; idxCousin < 8 ; ++idxCousin){
@@ -1928,20 +2012,12 @@ protected:
             // we will use offsetRealTree-1 cells but for simplicity allocate offsetRealTree
             // upperCells[offsetRealTree-1] is root cell
             CellClass*const upperCells = new CellClass[offsetRealTree];
-//            {
-//                typename OctreeClass::Iterator octreeIterator(tree);
-//                octreeIterator.gotoLeft();
-//                kernels[0]->M2M( &upperCells[offsetRealTree-1], octreeIterator.getCurrentBox(), offsetRealTree);
-//            }
             {
-                CellClass* virtualChild[8];
-                const int idxLevel = offsetRealTree-1;
-                FMemUtils::setall(virtualChild,&rootCellFromProc,8);
-                kernels[0]->M2M( &upperCells[idxLevel-1], virtualChild, idxLevel);
+                upperCells[offsetRealTree-1] = rootCellFromProc;
             }
             {
                 CellClass* virtualChild[8];
-                for(int idxLevel = offsetRealTree-1-1 ; idxLevel > 1  ; --idxLevel){
+                for(int idxLevel = offsetRealTree-1 ; idxLevel > 1  ; --idxLevel){
                     FMemUtils::setall(virtualChild,&upperCells[idxLevel],8);
                     kernels[0]->M2M( &upperCells[idxLevel-1], virtualChild, idxLevel);
                 }
@@ -1954,9 +2030,9 @@ protected:
                 const CellClass* neighbors[342];
                 int neighborPositions[342];
                 int counter = 0;
-                for(int idxX = -2 ; idxX <= 1 ; ++idxX){
-                    for(int idxY = -2 ; idxY <= 1 ; ++idxY){
-                        for(int idxZ = -2 ; idxZ <= 1 ; ++idxZ){
+                for(int idxX = -3 ; idxX <= 2 ; ++idxX){
+                    for(int idxY = -3 ; idxY <= 2 ; ++idxY){
+                        for(int idxZ = -3 ; idxZ <= 2 ; ++idxZ){
                             if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
                                 neighbors[counter] = &upperCells[idxUpperLevel-1];
                                 neighborPositions[counter] = neighIndex(idxX,idxY,idxZ);
@@ -1969,7 +2045,7 @@ protected:
                 kernels[0]->M2L( &downerCells[idxUpperLevel-1] , neighbors, neighborPositions, counter, idxUpperLevel);
             }
 
-            for(int idxUpperLevel = 3 ; idxUpperLevel <= offsetRealTree-1 ; ++idxUpperLevel){
+            for(int idxUpperLevel = 3 ; idxUpperLevel <= offsetRealTree ; ++idxUpperLevel){
                 const CellClass* neighbors[342];
                 int neighborPositions[342];
                 int counter = 0;
@@ -1987,50 +2063,29 @@ protected:
 
                 // compute M2L
                 kernels[0]->M2L( &downerCells[idxUpperLevel-1] , neighbors, neighborPositions, counter, idxUpperLevel);
-            }
-            {
-                const int idxUpperLevel = offsetRealTree;
-                const CellClass* neighbors[342];
-                int neighborPositions[342];
-                int counter = 0;
-                for(int idxX = -2 ; idxX <= 3 ; ++idxX){
-                    for(int idxY = -2 ; idxY <= 3 ; ++idxY){
-                        for(int idxZ = -2 ; idxZ <= 3 ; ++idxZ){
-                            if( FMath::Abs(idxX) > 1 || FMath::Abs(idxY) > 1 || FMath::Abs(idxZ) > 1){
-                                neighbors[counter] = &rootCellFromProc;
-                                neighborPositions[counter] = neighIndex(idxX,idxY,idxZ);
-                                ++counter;
-                            }
-                        }
-                    }
-                }
-
-                // compute M2L
-                kernels[0]->M2L( &rootCellFromProc , neighbors, neighborPositions, counter, idxUpperLevel);
             }
 
             {
                 CellClass* virtualChild[8];
                 memset(virtualChild, 0, sizeof(CellClass*) * 8);
-                for(int idxLevel = 2 ; idxLevel <= offsetRealTree-1-1  ; ++idxLevel){
+                for(int idxLevel = 2 ; idxLevel < offsetRealTree-1  ; ++idxLevel){
                     virtualChild[0] = &downerCells[idxLevel];
                     kernels[0]->L2L( &downerCells[idxLevel-1], virtualChild, idxLevel);
                 }
             }
+
             {
                 CellClass* virtualChild[8];
                 memset(virtualChild, 0, sizeof(CellClass*) * 8);
                 const int idxLevel = offsetRealTree-1;
-                virtualChild[0] = &rootCellFromProc;
+                virtualChild[7] = &downerCells[idxLevel];
                 kernels[0]->L2L( &downerCells[idxLevel-1], virtualChild, idxLevel);
             }
 
             // L2L from 0 to level 1
-//            {
-//                typename OctreeClass::Iterator octreeIterator(tree);
-//                octreeIterator.gotoLeft();
-//                kernels[0]->L2L( &downerCells[offsetRealTree-1], octreeIterator.getCurrentBox(), offsetRealTree);
-//            }
+            {
+                rootCellFromProc = downerCells[offsetRealTree-1];
+            }
 
             delete[] upperCells;
             delete[] downerCells;

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <omp.h>
 
 //For timing monitoring
 #include "Timers.h"
@@ -35,17 +36,14 @@ void cheb_free_cell(void * inCell){
  */
 void * cheb_init_leaf(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
                       void * cellDatas, void * userDatas){
-    //Do nothing
-    int * A = malloc(sizeof(double) * nbParts);
-    return A;
+    return ChebLeafStruct_create(nbParts);
 }
 
 /**
  * No need for leaf function
  */
 void cheb_free_leaf(void * cellDatas, FSize nbParts, const FSize * idxParts, void * leafData, void * userDatas){
-    free(leafData);
-    //Do nothing
+    ChebLeafStruct_free(leafData);
 }
 
 /**
@@ -54,7 +52,7 @@ void cheb_free_leaf(void * cellDatas, FSize nbParts, const FSize * idxParts, voi
  */
 void cheb_p2m(void* cellData, void * leafData, FSize nbParticlesInLeaf, const FSize* particleIndexes,
               void* userData){
-    ChebKernel_P2M(cellData,nbParticlesInLeaf,particleIndexes,userData);
+    ChebKernel_P2M(cellData,leafData,nbParticlesInLeaf,particleIndexes,userData);
 }
 void cheb_m2m(int level, void* parentCell, int childPosition, void* childCell,
               void* userData){
@@ -70,13 +68,14 @@ void cheb_l2l(int level, void* parentCell, int childPosition, void* childCell,
 }
 void cheb_l2p(void* leafCell, void * leafData, FSize nbParticles, const FSize* particleIndexes,
               void* userData){
-    ChebKernel_L2P( leafCell, nbParticles, particleIndexes, userData);
+    ChebKernel_L2P( leafCell, leafData,nbParticles, particleIndexes, userData);
 }
 void cheb_p2pFull(void * targetLeaf, FSize nbParticles, const FSize* particleIndexes,
                   void ** sourceLeaves,
                   const FSize ** sourceParticleIndexes, FSize* sourceNbPart,const int * sourcePosition,
                   const int size, void* userData) {
-    ChebKernel_P2P(nbParticles, particleIndexes, sourceParticleIndexes, sourceNbPart,sourcePosition,size,
+    printf("NOPE\n");
+    ChebKernel_P2P(targetLeaf,nbParticles, particleIndexes, sourceLeaves, sourceParticleIndexes, sourceNbPart,sourcePosition,size,
                    userData);
 }
 
@@ -86,15 +85,46 @@ void cheb_resetCell(int level, long long morton_index, int* tree_position,
 }
 
 /**
- * This function is mainly a display of its args...
+ * @brief From this point, the scalfmm leaves own the indexes, and
+ * each proc have its part partitionned, so we just need to copy our
+ * physical values (Vin) inside each leaf.
  */
-void on_leaf(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
-             void * cellDatas, void * leafData, void * userDatas){
-    /* printf("I'm leaf at %lld pos, of center [%e %e %e], containing %lld parts\n", */
-    /*        morton_index,center[0],center[1],center[2],nbParts); */
+void fill_leaf_container(int level, FSize nbParts, const FSize * idxParts,
+                         long long morton_index, double center[3],
+                         void * cellDatas,void * leafData, void * userDatas){
+    ChebLeafStruct_fill(nbParts,idxParts,morton_index,leafData,userDatas);
 }
 
+/**
+ * @brief this function store the results gathered across the leaves
+ * to store it inside force computed arrays.
+ */
 
+void get_results_from_leaves(int level, FSize nbParts, const FSize * idxParts, long long morton_index, double center[3],
+                             void * cellDatas, void * leafData, void * userDatas){
+    UserData * ptrToUserData = (UserData*) userDatas;
+
+    double * forceX = NULL;
+    double ** forceXPtr = &forceX;
+    double * forceY = NULL;
+    double ** forceYPtr = &forceY;
+    double * forceZ = NULL;
+    double ** forceZPtr = &forceZ;
+    double * potentials = NULL;
+    double ** potPtr = &potentials;
+
+    ChebLeafStruct_get_back_results(leafData,forceXPtr,forceYPtr,forceZPtr,potPtr);
+
+    for(int i=0 ; i<nbParts ; ++i){
+        //index of the part
+        int idx = idxParts[i];
+        //force on X axis
+        ptrToUserData->forcesComputed[0][3*idx+0] = forceX[i];
+        ptrToUserData->forcesComputed[0][3*idx+1] = forceY[i];
+        ptrToUserData->forcesComputed[0][3*idx+2] = forceZ[i];
+        ptrToUserData->potentials[0][idx] = potentials[i];
+    }
+}
 
 /**
  * @brief Do everything
@@ -158,20 +188,24 @@ int main(int argc, char ** av){
     struct User_Scalfmm_Cell_Descriptor cellDescriptor;
     cellDescriptor.user_init_cell = cheb_init_cell;
     cellDescriptor.user_free_cell = cheb_free_cell;
-    cellDescriptor.user_init_leaf = cheb_init_leaf;
-    cellDescriptor.user_free_leaf = cheb_free_leaf;
+    struct User_Scalfmm_Leaf_Descriptor user_descr_leaf;
+    user_descr_leaf.user_init_leaf = cheb_init_leaf;
+    user_descr_leaf.user_free_leaf = cheb_free_leaf;
+    //should not be checked, but nullify just in case.
+    user_descr_leaf.user_get_size = NULL;
+    user_descr_leaf.user_copy_leaf = NULL;
+    user_descr_leaf.user_restore_leaf = NULL;
 
     //Struct for ref cheb kernel
     struct User_Scalfmm_Cell_Descriptor user_descr;
     user_descr.user_init_cell = NULL;
     user_descr.user_free_cell = NULL;
 
-
     // Init tree and cell
     printf("Building the tree and Initizalizing the cells:\n");
 
-    scalfmm_build_tree(handle,treeHeight, boxWidth, boxCenter, cellDescriptor);
-    scalfmm_build_tree(handle_ref,treeHeight, boxWidth, boxCenter, user_descr);
+    scalfmm_build_tree(handle_ref,treeHeight, boxWidth, boxCenter, user_descr , user_descr_leaf);
+    scalfmm_build_tree(handle,treeHeight, boxWidth, boxCenter, cellDescriptor,user_descr_leaf);
 
     //Once is the tree built, one must set the kernel before inserting particles
 
@@ -179,15 +213,17 @@ int main(int argc, char ** av){
     struct User_Scalfmm_Kernel_Descriptor kernel;
     kernel.p2m = cheb_p2m;
     kernel.m2m = cheb_m2m;
-    //init the other to NULL
-    kernel.m2l = NULL;
     kernel.m2l_full = cheb_m2l_full;
     kernel.l2l = cheb_l2l;
     kernel.l2p = cheb_l2p;
-    kernel.p2p_sym = NULL;
     kernel.p2p_full = cheb_p2pFull;
+    //init the other to NULL
+    kernel.m2l = NULL;
+    kernel.p2p_sym = NULL;
     kernel.p2pinner = NULL;
     kernel.p2p = NULL;
+    kernel.m2m_full = NULL;
+    kernel.l2l_full = NULL;
 
     //Set my datas
     UserData userDatas;
@@ -247,15 +283,16 @@ int main(int argc, char ** av){
     while(ite<max_ite){
         //Execute FMM
 
-        scalfmm_apply_on_leaf(handle,on_leaf);
+        scalfmm_apply_on_leaf(handle,fill_leaf_container);
 
         tic(&interface_timer);
-        scalfmm_execute_fmm(handle/*, kernel, &my_data*/);
+        scalfmm_execute_fmm_far_field(handle/*, kernel, &my_data*/);
         tac(&interface_timer);
 
         { //Temporary
             int nbTimers = scalfmm_get_nb_timers(handle);
             double * timersArray = malloc(sizeof(double)*nbTimers);
+            memset(timersArray,0,sizeof(double)*nbTimers);
             scalfmm_get_timers(handle,timersArray);
             int i;
             for(i=0; i<nbTimers ; ++i){
@@ -284,7 +321,7 @@ int main(int argc, char ** av){
         print_elapsed(&interface_timer);
 
         tic(&ref_timer);
-        scalfmm_execute_fmm(handle_ref/*, kernel, &my_data*/);
+        scalfmm_execute_fmm_far_field(handle_ref/*, kernel, &my_data*/);
         tac(&ref_timer);
 
         /* { //Temporary */
@@ -297,7 +334,6 @@ int main(int argc, char ** av){
         /*     } */
         /*     free(timersArray); */
         /* } */
-
 
         printf("Intern Chebyshev done\n");
         print_elapsed(&ref_timer);
@@ -315,6 +351,12 @@ int main(int argc, char ** av){
         scalfmm_get_forces_xyz(handle_ref,nbPart,forcesRef,BOTH);
         scalfmm_get_potentials(handle_ref,nbPart,potentialsRef,BOTH);
         //scalfmm_print_everything(handle_ref);
+
+        {
+            //Copy results from the leaves inside forcesToStore.
+            scalfmm_apply_on_leaf(handle,get_results_from_leaves);
+
+        }
 
         {//Comparison part
             FSize idxPart;

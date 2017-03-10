@@ -1,10 +1,14 @@
 // ===================================================================================
-// Copyright ScalFmm 2013 INRIA
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the FMM.
+// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
+// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the
+// FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
 // abiding by the rules of distribution of free software.
+// An extension to the license is given to allow static linking of scalfmm
+// inside a proprietary application (no matter its license).
+// See the main license file for more details.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -52,7 +56,7 @@
 #include "../../Src/Core/FFmmAlgorithmThread.hpp"
 #include "../../Src/Core/FFmmAlgorithmThreadProc.hpp"
 
-#include "../../Src/BalanceTree/FLeafBalance.hpp"
+#include "../../Src/Utils/FLeafBalance.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 
@@ -98,7 +102,7 @@ int main(int argc, char* argv[])
 #else
     std::cout << "\n>> Sequential version.\n" << std::endl;
 #endif
-    
+
     std::cout << "Opening : " <<filename << "\n" << std::endl;
     // init timer
     FTic time;
@@ -109,7 +113,7 @@ int main(int argc, char* argv[])
     // init particles position and physical value
     struct TestParticle{
         FPoint<FReal> position;
-        FReal physicalValue;
+        FReal         physicalValue;
         const FPoint<FReal>& getPosition(){
             return position;
         }

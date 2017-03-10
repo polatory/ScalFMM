@@ -99,6 +99,7 @@ public:
                     CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                     newNode.setMortonIndex(newNodeIndex);
                     newNode.setCoordinate(newNodeCoordinate);
+                    newNode.setLevel(idxLevel);
 
                     // Add leaf
                     nbParticlesOffsetBeforeLeaf = newParticleBlock->newLeaf(newNodeIndex, cellIdInBlock,
@@ -149,6 +150,7 @@ public:
                     CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                     newNode.setMortonIndex(newNodeIndex);
                     newNode.setCoordinate(newNodeCoordinate);
+                    newNode.setLevel(idxLevel);
 
                     cellIdInBlock += 1;
                     blockIteratorInOctree.moveRight();
@@ -203,7 +205,7 @@ public:
                     const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPositionAndCorner<FReal>(this->boxCorner, this->boxWidth,
                                                                                                        treeHeight,
                                                                                                        FPoint<FReal>(xpos[idxPart], ypos[idxPart], zpos[idxPart]) );
-                    const MortonIndex particleIndex = host.getMortonIndex(treeHeight-1);
+                    const MortonIndex particleIndex = host.getMortonIndex();
                     particlesToSort[idxPart].mindex = particleIndex;
                     particlesToSort[idxPart].originalIndex = idxPart;
                 }
@@ -260,7 +262,7 @@ public:
                     CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                     newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
                     FTreeCoordinate coord;
-                    coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock], idxLevel);
+                    coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock]);
                     newNode.setCoordinate(coord);
 
                     // Add leaf
@@ -344,7 +346,7 @@ public:
                         CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                         newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
                         FTreeCoordinate coord;
-                        coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock], idxLevel);
+                        coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock]);
                         newNode.setCoordinate(coord);
                     }
 
@@ -405,7 +407,7 @@ public:
                     const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPositionAndCorner<FReal>(this->boxCorner, this->boxWidth,
                                                                                                        treeHeight,
                                                                                                        FPoint<FReal>(xpos[idxPart], ypos[idxPart], zpos[idxPart]) );
-                    const MortonIndex particleIndex = host.getMortonIndex(treeHeight-1);
+                    const MortonIndex particleIndex = host.getMortonIndex();
                     particlesToSort[idxPart].mindex = particleIndex;
                     particlesToSort[idxPart].originalIndex = idxPart;
                 }
@@ -466,7 +468,7 @@ public:
                     CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                     newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
                     FTreeCoordinate coord;
-                    coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock], idxLevel);
+                    coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock]);
                     newNode.setCoordinate(coord);
 
                     // Add leaf
@@ -551,7 +553,7 @@ public:
                             CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                             newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
                             FTreeCoordinate coord;
-                            coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock], idxLevel);
+                            coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock]);
                             newNode.setCoordinate(coord);
                         }
 
@@ -606,7 +608,7 @@ public:
                             CompositeCellClass newNode = newBlock->getCompleteCell(cellIdInBlock);
                             newNode.setMortonIndex(currentBlockIndexes[cellIdInBlock]);
                             FTreeCoordinate coord;
-                            coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock], idxLevel);
+                            coord.setPositionFromMorton(currentBlockIndexes[cellIdInBlock]);
                             newNode.setCoordinate(coord);
                         }
 

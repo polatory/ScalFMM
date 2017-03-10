@@ -22,7 +22,7 @@ if(SCALFMM_ADDON_CKERNELAPI)
         file( GLOB_RECURSE source_lib_files Src/*.cpp )
 
         # Adding cpp files to project
-        add_library( scalfmmckernelapi STATIC ${source_lib_files} )
+        add_library( scalfmmckernelapi ${source_lib_files} )
 
         # Add blas library (even if it is set to off)
         target_link_libraries( scalfmmckernelapi scalfmm)
@@ -35,7 +35,7 @@ if(SCALFMM_ADDON_CKERNELAPI)
     )
 
         # Install lib
-        install( TARGETS scalfmmckernelapi ARCHIVE DESTINATION lib )
+        install( TARGETS scalfmmckernelapi ARCHIVE DESTINATION lib LIBRARY DESTINATION lib)
 
         # Install header
         SET(my_include_dirs "Src")

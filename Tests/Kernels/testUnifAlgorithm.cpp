@@ -1,10 +1,14 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the FMM.
+// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
+// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the
+// FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
 // abiding by the rules of distribution of free software.
+// An extension to the license is given to allow static linking of scalfmm
+// inside a proprietary application (no matter its license).
+// See the main license file for more details.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -35,6 +39,7 @@
 
 #include "Kernels/Uniform/FUnifCell.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
+#include "Kernels/Interpolation/FInterpMatrixKernel_Covariance.hpp"
 #include "Kernels/Uniform/FUnifKernel.hpp"
 
 #include "Components/FSimpleLeaf.hpp"
@@ -65,7 +70,7 @@ int main(int argc, char* argv[])
 
     typedef double FReal;
     const char* const filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
-    const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 3);
+    const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 4);
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
     const unsigned int NbThreads     = FParameters::getValue(argc, argv, FParameterDefinitions::NbThreads.options, 1);
 
@@ -82,6 +87,8 @@ int main(int argc, char* argv[])
     // interaction kernel evaluator
     typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
     const MatrixKernelClass MatrixKernel;
+    //typedef FInterpMatrixKernelGauss<FReal> MatrixKernelClass;
+    //const MatrixKernelClass MatrixKernel(.5);
 
     // init particles position and physical value
     struct TestParticle{
@@ -120,12 +127,12 @@ int main(int argc, char* argv[])
                     FP2P::MutualParticles(particles[idxTarget].position.getX(), particles[idxTarget].position.getY(),
                                           particles[idxTarget].position.getZ(), particles[idxTarget].physicalValue,
                                           &particles[idxTarget].forces[0], &particles[idxTarget].forces[1],
-                            &particles[idxTarget].forces[2], &particles[idxTarget].potential,
-                            particles[idxOther].position.getX(), particles[idxOther].position.getY(),
-                            particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
-                            &particles[idxOther].forces[0], &particles[idxOther].forces[1],
-                            &particles[idxOther].forces[2], &particles[idxOther].potential,
-                            &MatrixKernel);
+                                          &particles[idxTarget].forces[2], &particles[idxTarget].potential,
+                                          particles[idxOther].position.getX(), particles[idxOther].position.getY(),
+                                          particles[idxOther].position.getZ(), particles[idxOther].physicalValue,
+                                          &particles[idxOther].forces[0], &particles[idxOther].forces[1],
+                                          &particles[idxOther].forces[2], &particles[idxOther].potential,
+                                          &MatrixKernel);
                 }
             }
         }
@@ -140,7 +147,7 @@ int main(int argc, char* argv[])
     {	// begin Lagrange kernel
 
         // accuracy
-        const unsigned int ORDER = 5 ;
+        const unsigned int ORDER = 7 ;
 
         // typedefs
         typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
@@ -148,9 +155,11 @@ int main(int argc, char* argv[])
         typedef FUnifCell<FReal,ORDER> CellClass;
         typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
         typedef FUnifKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+#ifdef _OPENMP
+        typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+#else
         typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-        //  typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
-
+#endif
         // init oct-tree
         OctreeClass tree(TreeHeight, SubTreeHeight, loader.getBoxWidth(), loader.getCenterOfBox());
 
@@ -172,7 +181,7 @@ int main(int argc, char* argv[])
         } // -----------------------------------------------------
 
         { // -----------------------------------------------------
-            std::cout << "\nLagrange/Uniform grid FMM (ORDER="<< ORDER << ") ... " << std::endl;
+            std::cout << "\nUniform grid FMM (ORDER="<< ORDER << ") ... " << std::endl;
             time.tic();
             KernelClass* kernels = new KernelClass(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel);
             FmmClass algorithm(&tree, kernels);
@@ -187,8 +196,6 @@ int main(int argc, char* argv[])
             FMath::FAccurater<FReal> potentialDiff;
             FMath::FAccurater<FReal> fx, fy, fz;
 
-            FReal checkPotential[20000];
-
             { // Check that each particle has been summed with all other
 
                 tree.forEachLeaf([&](LeafClass* leaf){
@@ -201,8 +208,6 @@ int main(int argc, char* argv[])
 
                     for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
                         const FSize indexPartOrig = indexes[idxPart];
-                        //PB: store potential in nbParticles array
-                        checkPotential[indexPartOrig]=potentials[idxPart];
 
                         potentialDiff.add(particles[indexPartOrig].potential,potentials[idxPart]);
                         fx.add(particles[indexPartOrig].forces[0],forcesX[idxPart]);

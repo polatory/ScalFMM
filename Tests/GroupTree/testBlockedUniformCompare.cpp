@@ -64,6 +64,10 @@
 #include <sys/resource.h>
 #endif
 
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+#include <starpu.h>
+#endif
+
 #define RANDOM_PARTICLES
 
 const FParameterNames LocalOrder { {"-order"}, "Order of the kernel"};
@@ -496,27 +500,51 @@ struct RunContainer{
                         typedef FFmmAlgorithmThreadBalance<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
                         std::cout << "Using FFmmAlgorithmThreadBalance " << std::endl;
                         FmmClass algorithm(&tree, &kernels);
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                        // The taskname() clause is only supported by KSTAR. Make sure
+                        // to set it from CMake to enable tracing.
+                        starpu_fxt_start_profiling();
+#endif
                         time.tic();
                         algorithm.execute();
                         time.tac();
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                        starpu_fxt_stop_profiling();
+#endif
                         std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
                     }
                     else if(FParameters::existParameter(argc, argv, LocalOptionOmpTask.options)){
                         typedef FFmmAlgorithmTask<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
                         std::cout << "Using FFmmAlgorithmTask " << std::endl;
                         FmmClass algorithm(&tree, &kernels);
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                        // The taskname() clause is only supported by KSTAR. Make sure
+                        // to set it from CMake to enable tracing.
+                        starpu_fxt_start_profiling();
+#endif
                         time.tic();
                         algorithm.execute();
                         time.tac();
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                        starpu_fxt_stop_profiling();
+#endif
                         std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
                     }
                     else if(FParameters::existParameter(argc, argv, LocalOptionOmpSection.options)){
                         typedef FFmmAlgorithmSectionTask<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
                         std::cout << "Using FFmmAlgorithmSectionTask " << std::endl;
                         FmmClass algorithm(&tree, &kernels);
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                        // The taskname() clause is only supported by KSTAR. Make sure
+                        // to set it from CMake to enable tracing.
+                        starpu_fxt_start_profiling();
+#endif
                         time.tic();
                         algorithm.execute();
                         time.tac();
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                        starpu_fxt_stop_profiling();
+#endif
                         std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
                     }
     #ifdef SCALFMM_USE_OMP4
@@ -524,9 +552,17 @@ struct RunContainer{
                         typedef FFmmAlgorithmOmp4<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
                         std::cout << "Using FFmmAlgorithmOmp4 " << std::endl;
                         FmmClass algorithm(&tree, &kernels);
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                        // The taskname() clause is only supported by KSTAR. Make sure
+                        // to set it from CMake to enable tracing.
+                        starpu_fxt_start_profiling();
+#endif
                         time.tic();
                         algorithm.execute();
                         time.tac();
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                        starpu_fxt_stop_profiling();
+#endif
                         std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
                     }
     #endif
@@ -534,9 +570,17 @@ struct RunContainer{
                         typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
                         std::cout << "Using FFmmAlgorithmThread " << std::endl;
                         FmmClass algorithm(&tree, &kernels);
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                        // The taskname() clause is only supported by KSTAR. Make sure
+                        // to set it from CMake to enable tracing.
+                        starpu_fxt_start_profiling();
+#endif
                         time.tic();
                         algorithm.execute();
                         time.tac();
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                        starpu_fxt_stop_profiling();
+#endif
                         std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
                     }
                 } // -----------------------------------------------------
@@ -668,9 +712,18 @@ struct RunContainer{
                 FBinding::BindThreadToAnyProcs();
                 std::cout << "And now I am bind to " << (FBinding::GetThreadBinding()) << std::endl;
 
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                // The taskname() clause is only supported by KSTAR. Make sure
+                // to set it from CMake to enable tracing.
+                starpu_fxt_start_profiling();
+#endif
                 timer.tic();
                 groupalgo.execute();
-                std::cout << "Done  " << "(@Algorithm = " << timer.tacAndElapsed() << "s)." << std::endl;
+                timer.tac();
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                starpu_fxt_stop_profiling();
+#endif
+                std::cout << "Done  " << "(@Algorithm = " << timer.elapsed() << "s)." << std::endl;
            }
     #ifdef MEMORY_USAGE
             // Get the maximum resident set size (RSS) in kilobytes
@@ -839,9 +892,17 @@ struct RunContainer{
                     typedef FFmmAlgorithmThread<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
                     std::cout << "Using FFmmAlgorithmThread " << std::endl;
                     FmmClass algorithm(&tree, &kernels);
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                    // The taskname() clause is only supported by KSTAR. Make sure
+                    // to set it from CMake to enable tracing.
+                    starpu_fxt_start_profiling();
+#endif
                     time.tic();
                     algorithm.execute();
                     time.tac();
+#if defined(SCALFMM_USE_STARPU) || defined(OPENMP_SUPPORT_TASK_NAME)
+                    starpu_fxt_stop_profiling();
+#endif
                     std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
                 }
 

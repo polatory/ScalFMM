@@ -1,10 +1,14 @@
 // ===================================================================================
-// Copyright ScalFmm 2011 INRIA, Olivier Coulaud, Berenger Bramas, Matthias Messner
-// olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the FMM.
+// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
+// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
+// This software is a computer program whose purpose is to compute the
+// FMM.
 //
 // This software is governed by the CeCILL-C and LGPL licenses and
 // abiding by the rules of distribution of free software.
+// An extension to the license is given to allow static linking of scalfmm
+// inside a proprietary application (no matter its license).
+// See the main license file for more details.
 //
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -72,17 +76,20 @@ private:
     OctreeClass* const tree;     ///< The octree to work on
     KernelClass** kernels;       ///< The kernels
 
-    const FMpi::FComm& comm;     ///< MPI comm
+    const FMpi::FComm comm;      ///< MPI comm
+    FMpi::FComm fcomCompute;
 
     /// Used to store pointers to cells/leafs to work with
-    typename OctreeClass::Iterator* iterArray;  
+    typename OctreeClass::Iterator* iterArray;
     /// Used to store pointers to cells/leafs to send/rcv
     typename OctreeClass::Iterator* iterArrayComm;
 
     int numberOfLeafs;           ///< To store the size at the previous level
     const int MaxThreads;        ///< Max number of thread allowed by openmp
-    const int nbProcess;         ///< Process count
-    const int idProcess;         ///< Current process id
+    const int nbProcessOrig;         ///< Process count
+    const int idProcessOrig;         ///< Current process id
+    int nbProcess;        ///< Process count
+    int idProcess;        ///< Current process id
     const int OctreeHeight;      ///< Tree height
 
     const int userChunkSize;
@@ -149,12 +156,15 @@ public:
         tree(inTree),
         kernels(nullptr),
         comm(inComm),
+        fcomCompute(inComm),
         iterArray(nullptr),
         iterArrayComm(nullptr),
         numberOfLeafs(0),
         MaxThreads(FEnv::GetValue("SCALFMM_ALGO_NUM_THREADS",omp_get_max_threads())),
-        nbProcess(inComm.processCount()),
-        idProcess(inComm.processId()),
+        nbProcessOrig(inComm.processCount()),
+        idProcessOrig(inComm.processId()),
+        nbProcess(0),
+        idProcess(0),
         OctreeHeight(tree->getHeight()),
         userChunkSize(inUserChunkSize),
         leafLevelSeparationCriteria(inLeafLevelSeperationCriteria),
@@ -164,9 +174,9 @@ public:
         FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
 
         this->kernels = new KernelClass*[MaxThreads];
-        #pragma omp parallel num_threads(MaxThreads)
+#pragma omp parallel num_threads(MaxThreads)
         {
-            #pragma omp critical (InitFFmmAlgorithmThreadProc)
+#pragma omp critical (InitFFmmAlgorithmThreadProc)
             {
                 this->kernels[omp_get_thread_num()] = new KernelClass(*inKernels);
             }
@@ -175,7 +185,7 @@ public:
         FAbstractAlgorithm::setNbLevelsInTree(tree->getHeight());
 
         FLOG(FLog::Controller << "FFmmAlgorithmThreadProc\n");
-        FLOG(FLog::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
+        FLOG(FLog::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcessOrig << ", I am " << idProcessOrig << ".\n");
         FLOG(FLog::Controller << "Chunck Size = " << userChunkSize << "\n");
     }
 
@@ -196,136 +206,158 @@ protected:
      * Call this function to run the complete algorithm
      */
     void executeCore(const unsigned operationsToProceed) override {
-        // Count leaf
+        // We are not involve if the tree is empty
+        const int iHaveParticles = (!tree->isEmpty());
+
+        std::unique_ptr<int[]> hasParticles(new int[comm.processCount()]);
+        FMpi::Assert( MPI_Allgather(const_cast<int*>(&iHaveParticles), 1,MPI_INT,
+                                    hasParticles.get(), 1, MPI_INT,
+                                    comm.getComm()), __LINE__);
+
+        fcomCompute = FMpi::FComm(comm);
+        fcomCompute.groupReduce(hasParticles.get());
+
+        if(iHaveParticles){
+
+            nbProcess = fcomCompute.processCount();
+            idProcess = fcomCompute.processId();
+
+            FLOG(FLog::Controller << "Max threads = "  << MaxThreads << ", Procs = " << nbProcess << ", I am " << idProcess << ".\n");
+
+            // Count leaf
 #ifdef SCALFMM_TRACE_ALGO
-    	eztrace_resume();
+            eztrace_resume();
 #endif
-	this->numberOfLeafs = 0;
-        {
-            Interval myFullInterval;
-            {//Building the interval with the first and last leaves (and count the number of leaves)
-                typename OctreeClass::Iterator octreeIterator(tree);
-                octreeIterator.gotoBottomLeft();
-                myFullInterval.leftIndex = octreeIterator.getCurrentGlobalIndex();
-                do{
-                    ++this->numberOfLeafs;
-                } while(octreeIterator.moveRight());
-                myFullInterval.rightIndex = octreeIterator.getCurrentGlobalIndex();
-            }
-            // Allocate a number to store the pointer of the cells at a level
-            iterArray     = new typename OctreeClass::Iterator[numberOfLeafs];
-            iterArrayComm = new typename OctreeClass::Iterator[numberOfLeafs];
-            FAssertLF(iterArray,     "iterArray     bad alloc");
-            FAssertLF(iterArrayComm, "iterArrayComm bad alloc");
+            this->numberOfLeafs = 0;
+            {
+                Interval myFullInterval;
+                {//Building the interval with the first and last leaves (and count the number of leaves)
+                    typename OctreeClass::Iterator octreeIterator(tree);
+                    octreeIterator.gotoBottomLeft();
+                    myFullInterval.leftIndex = octreeIterator.getCurrentGlobalIndex();
+                    do{
+                        ++this->numberOfLeafs;
+                    } while(octreeIterator.moveRight());
+                    myFullInterval.rightIndex = octreeIterator.getCurrentGlobalIndex();
+                }
+                // Allocate a number to store the pointer of the cells at a level
+                iterArray     = new typename OctreeClass::Iterator[numberOfLeafs];
+                iterArrayComm = new typename OctreeClass::Iterator[numberOfLeafs];
+                FAssertLF(iterArray,     "iterArray     bad alloc");
+                FAssertLF(iterArrayComm, "iterArrayComm bad alloc");
 
-            // We get the leftIndex/rightIndex indexes from each procs
-            FMpi::MpiAssert( MPI_Allgather( &myFullInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, comm.getComm()),  __LINE__ );
+                // We get the leftIndex/rightIndex indexes from each procs
+                FMpi::MpiAssert( MPI_Allgather( &myFullInterval, sizeof(Interval), MPI_BYTE, intervals, sizeof(Interval), MPI_BYTE, fcomCompute.getComm()),  __LINE__ );
 
-            // Build my intervals for all levels
-            std::unique_ptr<Interval[]> myIntervals(new Interval[OctreeHeight]);
-            // At leaf level we know it is the full interval
-            myIntervals[OctreeHeight - 1] = myFullInterval;
+                // Build my intervals for all levels
+                std::unique_ptr<Interval[]> myIntervals(new Interval[OctreeHeight]);
+                // At leaf level we know it is the full interval
+                myIntervals[OctreeHeight - 1] = myFullInterval;
 
-            // We can estimate the interval for each level by using the parent/child relation
-            for(int idxLevel = OctreeHeight - 2 ; idxLevel >= 0 ; --idxLevel){
-                myIntervals[idxLevel].leftIndex = myIntervals[idxLevel+1].leftIndex >> 3;
-                myIntervals[idxLevel].rightIndex = myIntervals[idxLevel+1].rightIndex >> 3;
-            }
+                // We can estimate the interval for each level by using the parent/child relation
+                for(int idxLevel = OctreeHeight - 2 ; idxLevel >= 0 ; --idxLevel){
+                    myIntervals[idxLevel].leftIndex = myIntervals[idxLevel+1].leftIndex >> 3;
+                    myIntervals[idxLevel].rightIndex = myIntervals[idxLevel+1].rightIndex >> 3;
+                }
 
-            // Process 0 uses the estimates as real intervals, but other processes
-            // should remove cells that belong to others
-            if(idProcess != 0){
-                //We test for each level if process on left (idProcess-1) own cell I thought I owned
-                typename OctreeClass::Iterator octreeIterator(tree);
-                octreeIterator.gotoBottomLeft();
-                octreeIterator.moveUp();
+                // Process 0 uses the estimates as real intervals, but other processes
+                // should remove cells that belong to others
+                if(idProcess != 0){
+                    //We test for each level if process on left (idProcess-1) own cell I thought I owned
+                    typename OctreeClass::Iterator octreeIterator(tree);
+                    octreeIterator.gotoBottomLeft();
+                    octreeIterator.moveUp();
 
-                // At h-1 the working limit is the parent of the right cell of the proc on the left
-                MortonIndex workingLimitAtLevel = intervals[idProcess-1].rightIndex >> 3;
+                    // At h-1 the working limit is the parent of the right cell of the proc on the left
+                    MortonIndex workingLimitAtLevel = intervals[idProcess-1].rightIndex >> 3;
 
-                // We check if we have no more work to do
-                int nullIntervalFromLevel = 0;
+                    // We check if we have no more work to do
+                    int nullIntervalFromLevel = 0;
 
-                for(int idxLevel = OctreeHeight - 2 ; idxLevel >= 1 && nullIntervalFromLevel == 0 ; --idxLevel){
-                    while(octreeIterator.getCurrentGlobalIndex() <= workingLimitAtLevel){
-                        if( !octreeIterator.moveRight() ){
-                            // We cannot move right we are not owner of any more cell
-                            nullIntervalFromLevel = idxLevel;
-                            break;
+                    for(int idxLevel = OctreeHeight - 2 ; idxLevel >= 1 && nullIntervalFromLevel == 0 ; --idxLevel){
+                        while(octreeIterator.getCurrentGlobalIndex() <= workingLimitAtLevel){
+                            if( !octreeIterator.moveRight() ){
+                                // We cannot move right we are not owner of any more cell
+                                nullIntervalFromLevel = idxLevel;
+                                break;
+                            }
+                        }
+                        // If we are responsible for some cells at this level keep the first index
+                        if(nullIntervalFromLevel == 0){
+                            myIntervals[idxLevel].leftIndex = octreeIterator.getCurrentGlobalIndex();
+                            octreeIterator.moveUp();
+                            workingLimitAtLevel >>= 3;
                         }
                     }
-                    // If we are responsible for some cells at this level keep the first index
-                    if(nullIntervalFromLevel == 0){
-                        myIntervals[idxLevel].leftIndex = octreeIterator.getCurrentGlobalIndex();
-                        octreeIterator.moveUp();
-                        workingLimitAtLevel >>= 3;
+                    // In case we are not responsible for any cells we put the leftIndex = rightIndex+1
+                    for(int idxLevel = nullIntervalFromLevel ; idxLevel >= 1 ; --idxLevel){
+                        myIntervals[idxLevel].leftIndex = myIntervals[idxLevel].rightIndex + 1;
                     }
                 }
-                // In case we are not responsible for any cells we put the leftIndex = rightIndex+1
-                for(int idxLevel = nullIntervalFromLevel ; idxLevel >= 1 ; --idxLevel){
-                    myIntervals[idxLevel].leftIndex = myIntervals[idxLevel].rightIndex + 1;
-                }
-            }
 
-            // We get the leftIndex/rightIndex indexes from each procs
-            FMpi::MpiAssert( MPI_Allgather( myIntervals.get(), int(sizeof(Interval)) * OctreeHeight, MPI_BYTE,
-                                            workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, comm.getComm()),  __LINE__ );
-        }
+                // We get the leftIndex/rightIndex indexes from each procs
+                FMpi::MpiAssert( MPI_Allgather( myIntervals.get(), int(sizeof(Interval)) * OctreeHeight, MPI_BYTE,
+                                                workingIntervalsPerLevel, int(sizeof(Interval)) * OctreeHeight, MPI_BYTE, fcomCompute.getComm()),  __LINE__ );
+            }
 #ifdef SCALFMM_TRACE_ALGO
-	    eztrace_enter_event("P2M", EZTRACE_YELLOW);
+            eztrace_enter_event("P2M", EZTRACE_YELLOW);
 #endif
-        Timers[P2MTimer].tic();
-        if(operationsToProceed & FFmmP2M) bottomPass();
-        Timers[P2MTimer].tac();
+            Timers[P2MTimer].tic();
+            if(operationsToProceed & FFmmP2M) bottomPass();
+            Timers[P2MTimer].tac();
 
 #ifdef SSCALFMM_TRACE_ALGO
-	eztrace_leave_event();
-	eztrace_enter_event("M2M", EZTRACE_PINK);
+            eztrace_leave_event();
+            eztrace_enter_event("M2M", EZTRACE_PINK);
 #endif
 
-        Timers[M2MTimer].tic();
-	    if(operationsToProceed & FFmmM2M) upwardPass();
-      Timers[M2MTimer].tac();
+            Timers[M2MTimer].tic();
+            if(operationsToProceed & FFmmM2M) upwardPass();
+            Timers[M2MTimer].tac();
 
 #ifdef SCALFMM_TRACE_ALGO
-	     eztrace_leave_event();
-	    eztrace_enter_event("M2L", EZTRACE_GREEN);
+            eztrace_leave_event();
+            eztrace_enter_event("M2L", EZTRACE_GREEN);
 #endif
 
-		Timers[M2LTimer].tic();
-        if(operationsToProceed & FFmmM2L) transferPass();
-        Timers[M2LTimer].tac();
-
- #ifdef SCALFMM_TRACE_ALGO
-		eztrace_leave_event();
-	    eztrace_enter_event("L2L", EZTRACE_PINK);
-#endif
-
-	    Timers[L2LTimer].tic();
-        if(operationsToProceed & FFmmL2L) downardPass();
-        Timers[L2LTimer].tac();
+            Timers[M2LTimer].tic();
+            if(operationsToProceed & FFmmM2L) transferPass();
+            Timers[M2LTimer].tac();
 
 #ifdef SCALFMM_TRACE_ALGO
-		eztrace_leave_event();
-	    eztrace_enter_event("L2P+P2P", EZTRACE_BLUE);
+            eztrace_leave_event();
+            eztrace_enter_event("L2L", EZTRACE_PINK);
 #endif
 
-	    Timers[NearTimer].tic();
-        if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) ) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
-        Timers[NearTimer].tac();
+            Timers[L2LTimer].tic();
+            if(operationsToProceed & FFmmL2L) downardPass();
+            Timers[L2LTimer].tac();
 
 #ifdef SCALFMM_TRACE_ALGO
-		eztrace_leave_event();
-	    eztrace_stop();
+            eztrace_leave_event();
+            eztrace_enter_event("L2P+P2P", EZTRACE_BLUE);
 #endif
-        // delete array
-        delete []     iterArray;
-        delete []     iterArrayComm;
-        iterArray          = nullptr;
-        iterArrayComm = nullptr;
+
+            Timers[NearTimer].tic();
+            if( (operationsToProceed & FFmmP2P) || (operationsToProceed & FFmmL2P) ) directPass((operationsToProceed & FFmmP2P),(operationsToProceed & FFmmL2P));
+            Timers[NearTimer].tac();
+
 #ifdef SCALFMM_TRACE_ALGO
-	  eztrace_stop();
+            eztrace_leave_event();
+            eztrace_stop();
 #endif
+            // delete array
+            delete []     iterArray;
+            delete []     iterArrayComm;
+            iterArray          = nullptr;
+            iterArrayComm = nullptr;
+#ifdef SCALFMM_TRACE_ALGO
+            eztrace_stop();
+#endif
+        }
+        else{
+            FLOG( FLog::Controller << "\tProcess = " << comm.processId() << " has zero particles.\n" );
+        }
     }
 
     /////////////////////////////////////////////////////////////////////////////
@@ -455,11 +487,11 @@ protected:
             }
 
             FLOG(parallelCounter.tic());
-            #pragma omp parallel num_threads(MaxThreads)
+#pragma omp parallel num_threads(MaxThreads)
             {
                 KernelClass* myThreadkernels = (kernels[omp_get_thread_num()]);
                 //This single section post and receive the comms, and then do the M2M associated with it.
-                #pragma omp single nowait
+#pragma omp single nowait
                 {
                     FLOG(singleCounter.tic());
                     // Master proc never send
@@ -491,10 +523,10 @@ protected:
                             // Post the message
                             bufferSize = sendBuffer.getSize();
                             MPI_Isend(&bufferSize, 1, FMpi::GetType(bufferSize), currentProcIdToSendTo,
-                                      FMpi::TagFmmM2MSize + idxLevel, comm.getComm(), &requestsSize[iterMpiRequestsSize++]);
+                                      FMpi::TagFmmM2MSize + idxLevel, fcomCompute.getComm(), &requestsSize[iterMpiRequestsSize++]);
                             FAssertLF(sendBuffer.getSize() < std::numeric_limits<int>::max());
                             MPI_Isend(sendBuffer.data(), int(sendBuffer.getSize()), MPI_BYTE, currentProcIdToSendTo,
-                                      FMpi::TagFmmM2M + idxLevel, comm.getComm(), &requests[iterMpiRequests++]);
+                                      FMpi::TagFmmM2M + idxLevel, fcomCompute.getComm(), &requests[iterMpiRequests++]);
                         }
                     }
 
@@ -509,7 +541,7 @@ protected:
                                && ( !procHasWorkAtLevel(idxLevel+1, idProcSource) || procCoversMyRightBorderCell(idxLevel, idProcSource) )){
                             if(procHasWorkAtLevel(idxLevel+1, idProcSource) && procCoversMyRightBorderCell(idxLevel, idProcSource)){
                                 MPI_Irecv(&recvBufferSize[nbProcThatSendToMe], 1, FMpi::GetType(recvBufferSize[nbProcThatSendToMe]),
-                                        idProcSource, FMpi::TagFmmM2MSize + idxLevel, comm.getComm(), &requestsSize[iterMpiRequestsSize++]);
+                                          idProcSource, FMpi::TagFmmM2MSize + idxLevel, fcomCompute.getComm(), &requestsSize[iterMpiRequestsSize++]);
                                 nbProcThatSendToMe += 1;
                                 FAssertLF(nbProcThatSendToMe <= 7);
                             }
@@ -535,7 +567,7 @@ protected:
                                 recvBuffer[nbProcThatSendToMe].cleanAndResize(recvBufferSize[nbProcThatSendToMe]);
                                 FAssertLF(recvBufferSize[nbProcThatSendToMe] < std::numeric_limits<int>::max());
                                 MPI_Irecv(recvBuffer[nbProcThatSendToMe].data(), int(recvBufferSize[nbProcThatSendToMe]), MPI_BYTE,
-                                        idProcSource, FMpi::TagFmmM2M + idxLevel, comm.getComm(), &requests[iterMpiRequests++]);
+                                          idProcSource, FMpi::TagFmmM2M + idxLevel, fcomCompute.getComm(), &requests[iterMpiRequests++]);
                                 nbProcThatSendToMe += 1;
                                 FAssertLF(nbProcThatSendToMe <= 7);
                             }
@@ -557,11 +589,11 @@ protected:
                         memcpy(currentChild, iterArray[totalNbCellsAtLevel - 1].getCurrentChild(), 8 * sizeof(CellClass*));
 
                         // Retreive data and merge my child and the child from others
+                        int positionToInsert = 0;
                         for(int idxProc = 0 ; idxProc < nbProcThatSendToMe ; ++idxProc){
                             unsigned packageFlags = unsigned(recvBuffer[idxProc].getValue<unsigned char>());
 
                             int position = 0;
-                            int positionToInsert = 0;
                             while( packageFlags && position < 8){
                                 while(!(packageFlags & 0x1)){
                                     packageFlags >>= 1;
@@ -590,7 +622,7 @@ protected:
                 }//End Of Single section
 
                 // All threads proceed the M2M
-                #pragma omp for nowait schedule(dynamic, userChunkSize)
+#pragma omp for nowait schedule(dynamic, userChunkSize)
                 for( int idxCell = nbCellsToSkip ; idxCell < nbCellsForThreads ; ++idxCell){
                     myThreadkernels->M2M( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }
@@ -645,9 +677,9 @@ protected:
         FMpiBufferReader**const recvBuffer = new FMpiBufferReader*[nbProcess * OctreeHeight];
         memset(recvBuffer, 0, sizeof(FMpiBufferReader*) * nbProcess * OctreeHeight);
 
-        #pragma omp parallel num_threads(MaxThreads)
+#pragma omp parallel num_threads(MaxThreads)
         {
-            #pragma omp master
+#pragma omp master
             {
                 {
                     FLOG(prepareCounter.tic());
@@ -747,7 +779,7 @@ protected:
                 //////////////////////////////////////////////////////////////////
 
                 FLOG(gatherCounter.tic());
-                FMpi::MpiAssert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_LONG_LONG_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_LONG_LONG_INT, comm.getComm()),  __LINE__ );
+                FMpi::MpiAssert( MPI_Allgather( indexToSend, nbProcess * OctreeHeight, MPI_LONG_LONG_INT, globalReceiveMap, nbProcess * OctreeHeight, MPI_LONG_LONG_INT, fcomCompute.getComm()),  __LINE__ );
                 FLOG(gatherCounter.tac());
 
                 //////////////////////////////////////////////////////////////////
@@ -780,7 +812,7 @@ protected:
 
                             FMpi::ISendSplit(sendBuffer[idxLevel * nbProcess + idxProc]->data(),
                                     sendBuffer[idxLevel * nbProcess + idxProc]->getSize(), idxProc,
-                                    FMpi::TagLast + idxLevel*100, comm, &requests);
+                                    FMpi::TagLast + idxLevel*100, fcomCompute, &requests);
                         }
 
                         const long long int toReceiveFromProcAtLevel = globalReceiveMap[(idxProc * nbProcess * OctreeHeight) + idxLevel * nbProcess + idProcess];
@@ -789,7 +821,7 @@ protected:
 
                             FMpi::IRecvSplit(recvBuffer[idxLevel * nbProcess + idxProc]->data(),
                                     recvBuffer[idxLevel * nbProcess + idxProc]->getCapacity(), idxProc,
-                                    FMpi::TagLast + idxLevel*100, comm, &requests);
+                                    FMpi::TagLast + idxLevel*100, fcomCompute, &requests);
                         }
                     }
                 }
@@ -808,7 +840,7 @@ protected:
             // Do M2L
             //////////////////////////////////////////////////////////////////
 
-            #pragma omp single nowait
+#pragma omp single nowait
             {
                 typename OctreeClass::Iterator octreeIterator(tree);
                 octreeIterator.moveDown();
@@ -845,7 +877,7 @@ protected:
                     {
                         const int chunckSize = userChunkSize;
                         for(int idxCell = 0 ; idxCell < numberOfCells ; idxCell += chunckSize){
-                            #pragma omp task default(none) shared(numberOfCells,idxLevel) firstprivate(idxCell) //+ shared(chunckSize)
+#pragma omp task default(none) shared(numberOfCells,idxLevel) firstprivate(idxCell) //+ shared(chunckSize)
                             {
                                 KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                                 const CellClass* neighbors[342];
@@ -860,15 +892,15 @@ protected:
                         }
                     }//End of task spawning
 
-                    #pragma omp taskwait
+#pragma omp taskwait
 
                     for(int idxThread = 0 ; idxThread < omp_get_num_threads() ; ++idxThread){
-                        #pragma omp task  default(none) firstprivate(idxThread,idxLevel)
+#pragma omp task  default(none) firstprivate(idxThread,idxLevel)
                         {
                             kernels[idxThread]->finishedLevelM2L(idxLevel);
                         }
                     }
-                    #pragma omp taskwait
+#pragma omp taskwait
 
                     FLOG(computationCounter.tac());
                 }
@@ -945,7 +977,7 @@ protected:
 
                 // Compute this cells
                 FLOG(computationCounter.tic());
-                #pragma omp parallel num_threads(MaxThreads)
+#pragma omp parallel num_threads(MaxThreads)
                 {
                     KernelClass * const myThreadkernels = kernels[omp_get_thread_num()];
                     MortonIndex neighborsIndex[/*189+26+1*/216];
@@ -953,7 +985,7 @@ protected:
                     const CellClass* neighbors[342];
                     int neighborPositions[342];
 
-                    #pragma omp for  schedule(dynamic, userChunkSize) nowait
+#pragma omp for  schedule(dynamic, userChunkSize) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         // compute indexes
                         const int counterNeighbors = iterArray[idxCell].getCurrentGlobalCoordinate().getInteractionNeighbors(idxLevel, neighborsIndex, neighborsPosition, separationCriteria);
@@ -1079,10 +1111,10 @@ protected:
                 }
             }
 
-            #pragma omp parallel num_threads(MaxThreads)
+#pragma omp parallel num_threads(MaxThreads)
             {
                 KernelClass* myThreadkernels = (kernels[omp_get_thread_num()]);
-                #pragma omp single nowait
+#pragma omp single nowait
                 {
                     FLOG(prepareCounter.tic());
                     int iterRequests = 0;
@@ -1092,7 +1124,7 @@ protected:
                     // Post the receive
                     if(hasToReceive){
                         FMpi::MpiAssert( MPI_Irecv( &recvBufferSize, 1, FMpi::GetType(recvBufferSize), idxProcToReceive,
-                                                    FMpi::TagFmmL2LSize + idxLevel, comm.getComm(), &requestsSize[iterRequestsSize++]), __LINE__ );
+                                                    FMpi::TagFmmL2LSize + idxLevel, fcomCompute.getComm(), &requestsSize[iterRequestsSize++]), __LINE__ );
                     }
 
                     // We have to be sure that we are not sending if we have no work in the current level
@@ -1112,10 +1144,10 @@ protected:
                                 }
                                 // Post the send message
                                 FMpi::MpiAssert( MPI_Isend(&sendBufferSize, 1, FMpi::GetType(sendBufferSize), idxProcSend,
-                                                           FMpi::TagFmmL2LSize + idxLevel, comm.getComm(), &requestsSize[iterRequestsSize++]), __LINE__);
+                                                           FMpi::TagFmmL2LSize + idxLevel, fcomCompute.getComm(), &requestsSize[iterRequestsSize++]), __LINE__);
                                 FAssertLF(sendBuffer.getSize() < std::numeric_limits<int>::max());
                                 FMpi::MpiAssert( MPI_Isend(sendBuffer.data(), int(sendBuffer.getSize()), MPI_BYTE, idxProcSend,
-                                                           FMpi::TagFmmL2L + idxLevel, comm.getComm(), &requests[iterRequests++]), __LINE__);
+                                                           FMpi::TagFmmL2L + idxLevel, fcomCompute.getComm(), &requests[iterRequests++]), __LINE__);
                                 // Inc and check the counter
                                 nbMessageSent += 1;
                                 FAssertLF(nbMessageSent <= 7);
@@ -1129,7 +1161,7 @@ protected:
                     // Finalize the communication
                     if(iterRequestsSize){
                         FLOG(waitCounter.tic());
-                        FAssertLF(iterRequestsSize < 8);
+                        FAssertLF(iterRequestsSize <= 8);
                         FMpi::MpiAssert(MPI_Waitall( iterRequestsSize, requestsSize, MPI_STATUSES_IGNORE), __LINE__);
                         FLOG(waitCounter.tac());
                     }
@@ -1138,12 +1170,12 @@ protected:
                         recvBuffer.cleanAndResize(recvBufferSize);
                         FAssertLF(recvBuffer.getCapacity() < std::numeric_limits<int>::max());
                         FMpi::MpiAssert( MPI_Irecv( recvBuffer.data(), int(recvBuffer.getCapacity()), MPI_BYTE, idxProcToReceive,
-                                                    FMpi::TagFmmL2L + idxLevel, comm.getComm(), &requests[iterRequests++]), __LINE__ );
+                                                    FMpi::TagFmmL2L + idxLevel, fcomCompute.getComm(), &requests[iterRequests++]), __LINE__ );
                     }
 
                     if(iterRequests){
                         FLOG(waitCounter.tic());
-                        FAssertLF(iterRequests < 8);
+                        FAssertLF(iterRequests <= 8);
                         FMpi::MpiAssert(MPI_Waitall( iterRequests, requests, MPI_STATUSES_IGNORE), __LINE__);
                         FLOG(waitCounter.tac());
                     }
@@ -1159,12 +1191,12 @@ protected:
                     FLOG(prepareCounter.tac());
                 }
 
-                #pragma omp single nowait
+#pragma omp single nowait
                 {
                     FLOG(computationCounter.tic());
                 }
                 // Threads are working on all the cell of our working interval at that level
-                #pragma omp for nowait  schedule(dynamic, userChunkSize)
+#pragma omp for nowait  schedule(dynamic, userChunkSize)
                 for(int idxCell = nbCellsToSkip ; idxCell < totalNbCellsAtLevel ; ++idxCell){
                     myThreadkernels->L2L( iterArray[idxCell].getCurrentCell() , iterArray[idxCell].getCurrentChild(), idxLevel);
                 }
@@ -1310,7 +1342,7 @@ protected:
                 //Share to all processus globalReceiveMap
                 FLOG(gatherCounter.tic());
                 FMpi::MpiAssert( MPI_Allgather( partsToSend, nbProcess, FMpi::GetType(*partsToSend),
-                                                globalReceiveMap, nbProcess, FMpi::GetType(*partsToSend), comm.getComm()),  __LINE__ );
+                                                globalReceiveMap, nbProcess, FMpi::GetType(*partsToSend), fcomCompute.getComm()),  __LINE__ );
                 FLOG(gatherCounter.tac());
 
                 FMpiBufferReader**const recvBuffer = new FMpiBufferReader*[nbProcess];
@@ -1329,7 +1361,7 @@ protected:
                         recvBuffer[idxProc] = new FMpiBufferReader(globalReceiveMap[idxProc * nbProcess + idProcess]);
 
                         FMpi::IRecvSplit(recvBuffer[idxProc]->data(), recvBuffer[idxProc]->getCapacity(),
-                                         idxProc, FMpi::TagFmmP2P, comm, &requests);
+                                         idxProc, FMpi::TagFmmP2P, fcomCompute, &requests);
                     }
                 }
 
@@ -1347,7 +1379,7 @@ protected:
                         FAssertLF(sendBuffer[idxProc]->getSize() == globalReceiveMap[idProcess*nbProcess+idxProc]);
 
                         FMpi::ISendSplit(sendBuffer[idxProc]->data(), sendBuffer[idxProc]->getSize(),
-                                         idxProc, FMpi::TagFmmP2P, comm, &requests);
+                                         idxProc, FMpi::TagFmmP2P, fcomCompute, &requests);
 
                     }
                 }
@@ -1380,7 +1412,7 @@ protected:
                         delete recvBuffer[idxProc];
                         recvBuffer[idxProc] = nullptr;
                     }
-                }                
+                }
 
                 for(int idxProc = 0 ; idxProc < nbProcess ; ++idxProc){
                     delete sendBuffer[idxProc];
@@ -1472,7 +1504,7 @@ protected:
                                         // need the current particles and neighbors particles
                                         const int counter = tree->getLeafsNeighbors(neighbors, neighborPositions, currentIter.coord, OctreeHeight-1);
                                         myThreadkernels->P2P( currentIter.coord,currentIter.targets,
-                                                          currentIter.sources, neighbors, neighborPositions, counter);
+                                                              currentIter.sources, neighbors, neighborPositions, counter);
                                     }
                                 }
                             }
@@ -1528,7 +1560,7 @@ protected:
                     }
                     if(counter){
                         myThreadkernels.P2PRemote( currentIter.cell->getCoordinate(), currentIter.targets,
-                                               currentIter.sources, neighbors, neighborPositions, counter);
+                                                   currentIter.sources, neighbors, neighborPositions, counter);
                     }
 
                 }
