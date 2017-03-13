@@ -23,7 +23,7 @@
 // ================
 
 // Keep in private GIT
-// @SCALFMM_PRIVATE
+// 
 
 /**
  * @brief This executable execute the chebyshev interpolation for
