@@ -30,7 +30,6 @@
 // @FUSE_MPI
 // ================
 // Keep in private GIT
-// @SCALFMM_PRIVATE
 //
 //
 #ifndef FFMMALGORITHMTHREADPROC_HPP
