@@ -197,7 +197,7 @@ int main(int argc, char* argv[])
             std::cout << "\nUniform grid FMM (ORDER="<< ORDER << ") ... " << std::endl;
             time.tic();
             KernelClass* kernels = new KernelClass(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel, LeafLevelSeparationCriterion);
-            FmmClass algorithm(&tree, kernels, LeafLevelSeparationCriterion);
+            FmmClass algorithm(&tree, kernels, 10, LeafLevelSeparationCriterion);
             algorithm.execute();
             time.tac();
             std::cout << "Done  " << "(@Algorithm = " << time.elapsed() << "s)." << std::endl;
