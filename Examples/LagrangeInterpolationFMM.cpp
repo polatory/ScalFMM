@@ -22,7 +22,7 @@
 // @FUSE_FFT
 // @FUSE_BLAS
 //  ==== Git =====
-// @SCALFMM_PRIVATE
+
 // ================
 
 #include <iostream>
