@@ -144,8 +144,7 @@ struct FInterpMatrixKernelGauss : FAbstractCorrelationKernel<FReal>
       dist2 += distX*distX;
     }
 
-    // TODO AVX???
-    return FMath::Exp(-FReal(0.5)*dist2);
+    return FMath::Exp(FMath::ConvertTo<ValueClass,FReal>(-0.5)*dist2);
 
   }
 
@@ -164,9 +163,10 @@ struct FInterpMatrixKernelGauss : FAbstractCorrelationKernel<FReal>
                                   ValueClass block[1], ValueClass blockDerivative[3]) const
   {
     block[0]=this->evaluate(x1,y1,z1,x2,y2,z2);
-    blockDerivative[0] = -block[0]*(x1-x2)/(lengthScale_*lengthScale_);
-    blockDerivative[1] = -block[0]*(y1-y2)/(lengthScale_*lengthScale_);
-    blockDerivative[2] = -block[0]*(z1-z2)/(lengthScale_*lengthScale_);
+    const ValueClass lengthScaleOpt = FMath::ConvertTo<ValueClass,FReal>(-1/(lengthScale_*lengthScale_));
+    blockDerivative[0] = block[0]*(x1-x2) * lengthScaleOpt;
+    blockDerivative[1] = block[0]*(y1-y2) * lengthScaleOpt;
+    blockDerivative[2] = block[0]*(z1-z2) * lengthScaleOpt;
   }
 
   /*
