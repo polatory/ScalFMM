@@ -61,12 +61,12 @@ typedef long long int FSize;
  */
 typedef enum kernel_type {
     user_defined_kernel = 0,  /** Case if user provides a complete
-                                * kernel, ie all the needed function to
-                                * compute FMM */
+                               * kernel, ie all the needed function to
+                               * compute FMM */
     chebyshev = 1,            /** Case if user uses ScalFMM's implementation of
-                                *  Chebyshev Interpolation */
+                               *  Chebyshev Interpolation */
     lagrange = 2,             /** Case if user uses ScalFMM's implementation of
-                                *  Lagrange Interpolation*/
+                               *  Lagrange Interpolation*/
 } scalfmm_kernel_type;
 
 
@@ -299,14 +299,14 @@ typedef enum particule_type{
  *
  * Example :
  struct part{
-   double[3] position;
-   double charge;
-   double test; //not used
-   double coeff;
+ double[3] position;
+ double charge;
+ double test; //not used
+ double coeff;
  };
  Then nbAttributeToInsert will be 3+1+1
  and strideForEachAtt will be : [0,1,2,3,5]
- */
+*/
 void scalfmm_tree_abstract_insert(scalfmm_handle Handle, int NbPartToInsert, int nbAttributeToInsert, int * strideForEachAtt,
                                   double* rawDatas);
 
@@ -828,11 +828,26 @@ void scalfmm_get_timers(scalfmm_handle handle,double * Timers);
  */
 void scalfmm_set_upper_limit(scalfmm_handle handle, int upperLimit);
 
+
+/**
+ * @brief This function fill the childFullPosition[3] with [-1;1] to
+ * know the position of a child relatively to its position from its
+ * parent
+ */
+void scalfmm_utils_parentChildPosition(int childPosition, int* childFullPosition);
+
+/**
+ * @brief This function fill the childFullPosition[3] with [-3;3] to
+ * know the position of a interaction cell relatively to its position
+ * from the target
+ */
+void scalfmm_utils_interactionPosition(int interactionPosition, int* srcPosition);
+
 /////////////////////////////////////////////////////////////////////
 ///////////////        Distributed Version         //////////////////
 /////////////////////////////////////////////////////////////////////
 
-#ifdef SCALFMM_USE_MPI
+#ifdef MPI_VERSION //We check there if MPI is available
 #warning "IS_THAT_REALLY_WORKING"
 //YES
 
@@ -880,8 +895,7 @@ void scalfmm_generic_partition(scalfmm_handle handle, FSize nbThings, size_t siz
  */
 void scalfmm_call_delete(void * array);
 
-#endif
-
+#endif //MPI_VERSION
 
 
 #endif

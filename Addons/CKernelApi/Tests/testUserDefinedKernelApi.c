@@ -12,14 +12,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <omp.h>
 
 /**
-  * In this file we implement a example kernel which is simply printing information
-  * about the cells and particles.
-  * It is recommanded to compile and execute this code in order to understand the behavior
-  * of the application.
-  * We mark some part with "JUST-PUT-HERE:" to give instruction to user to create its own kernel.
-  **/
+ * In this file we implement a example kernel which is simply printing information
+ * about the cells and particles.
+ * It is recommanded to compile and execute this code in order to understand the behavior
+ * of the application.
+ * We mark some part with "JUST-PUT-HERE:" to give instruction to user to create its own kernel.
+ **/
 
 // Include the FMM API (should be in a different folder for you)
 #include "../Src/CScalfmmApi.h"
@@ -108,7 +109,7 @@ void my_Callback_P2M(void* cellData, void * leafData, FSize nbParticlesInLeaf, c
     for(idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
         double* position = &my_data->insertedPositions[particleIndexes[idxPart]*3];
         VerbosePrint("\t particle idx %lld position %e/%e%e\n", particleIndexes[idxPart],
-               position[0], position[1], position[2]);
+                     position[0], position[1], position[2]);
         // JUST-PUT-HERE:
         // Your real P2M computation
     }
@@ -127,8 +128,8 @@ void my_Callback_M2M(int level, void* cellData, int childPosition, void* childDa
     scalfmm_utils_parentChildPosition(childPosition, childFullPosition);
 
     VerbosePrint("Doing a M2M at level %d, between cells %lld and %lld (position %d/%d/%d)\n",
-           level, my_cell->mortonIndex, my_child->mortonIndex,
-           childFullPosition[0], childFullPosition[1], childFullPosition[2]);
+                 level, my_cell->mortonIndex, my_child->mortonIndex,
+                 childFullPosition[0], childFullPosition[1], childFullPosition[2]);
     // JUST-PUT-HERE: your real M2M computation
 }
 
@@ -145,8 +146,8 @@ void my_Callback_M2L(int level, void* cellData, int srcPosition, void* srcData, 
     scalfmm_utils_interactionPosition(srcPosition, interactionFullPosition);
 
     VerbosePrint("Doing a M2L at level %d, between cells %lld and %lld (position %d/%d/%d)\n",
-           level, my_cell->mortonIndex, my_src_cell->mortonIndex,
-           interactionFullPosition[0], interactionFullPosition[1], interactionFullPosition[2]);
+                 level, my_cell->mortonIndex, my_src_cell->mortonIndex,
+                 interactionFullPosition[0], interactionFullPosition[1], interactionFullPosition[2]);
     // JUST-PUT-HERE: Your M2L
 }
 
@@ -178,8 +179,8 @@ void my_Callback_L2L(int level, void* cellData, int childPosition, void* childDa
     scalfmm_utils_parentChildPosition(childPosition, childFullPosition);
 
     VerbosePrint("Doing a L2L at level %d, between cells %lld and %lld (position %d/%d/%d)\n",
-           level, my_cell->mortonIndex, my_child->mortonIndex,
-           childFullPosition[0], childFullPosition[1], childFullPosition[2]);
+                 level, my_cell->mortonIndex, my_child->mortonIndex,
+                 childFullPosition[0], childFullPosition[1], childFullPosition[2]);
     // JUST-PUT-HERE: Your L2L
 }
 
@@ -198,7 +199,7 @@ void my_Callback_L2P(void* cellData, void * leafData, FSize nbParticlesInLeaf, c
         //Store the number of cells that contribute to the far field of current cell.
         my_data->arrayOfInfluence[particleIndexes[idxPart]] += my_cell->dataDown;
         VerbosePrint("\t particle idx %lld position %e/%e%e\n", particleIndexes[idxPart],
-               position[0], position[1], position[2]);
+                     position[0], position[1], position[2]);
         // JUST-PUT-HERE: Your L2P
     }
 }
@@ -214,12 +215,12 @@ void my_Callback_P2P(void * targetLeaf, FSize nbParticlesInLeaf, const FSize* pa
         double* position = &my_data->insertedPositions[particleIndexes[idxPart]*3];
 
         VerbosePrint("\t Target >> particle idx %lld position %e/%e%e\n", particleIndexes[idxPart],
-               position[0], position[1], position[2]);
+                     position[0], position[1], position[2]);
     }
     for(idxPart = 0 ; idxPart < nbParticlesInSrc ; ++idxPart){
         double* position = &my_data->insertedPositions[particleIndexesSrc[idxPart]*3];
         VerbosePrint("\t Target >> Src idx %lld position %e/%e%e\n", particleIndexesSrc[idxPart],
-               position[0], position[1], position[2]);
+                     position[0], position[1], position[2]);
     }
 
     for(idxPart = 0; idxPart < nbParticlesInLeaf ; ++idxPart){
@@ -240,7 +241,7 @@ void my_Callback_P2PInner(void * targetLeaf, FSize nbParticlesInLeaf, const FSiz
         my_data->arrayOfInfluence[particleIndexes[idxPart]] += nbParticlesInLeaf-1;
         double* position = &my_data->insertedPositions[particleIndexes[idxPart]*3];
         VerbosePrint("\t particle idx %lld position %e/%e%e\n", particleIndexes[idxPart],
-               position[0], position[1], position[2]);
+                     position[0], position[1], position[2]);
         // JUST-PUT-HERE: another loop to have all particles interacting with
         // the other from the same leaf
     }
