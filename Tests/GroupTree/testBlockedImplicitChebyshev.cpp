@@ -1,4 +1,6 @@
-
+// @FUSE_BLAS
+//
+// @FUSE_STARPU
 // Keep in private GIT
 #include <iostream>
 #include <fstream>

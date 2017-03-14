@@ -2,6 +2,7 @@
 // ==== CMAKE =====
 // @FUSE_BLAS
 // @FUSE_FFT
+// @FUSE_STARPU
 // ================
 // Keep in private GIT
 

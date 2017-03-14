@@ -1,4 +1,6 @@
-
+// @FUSE_STARPU
+// @FUSE_MPI
+//
 // Keep in private GIT
 #include <iostream>
 #include <fstream>

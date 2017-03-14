@@ -1,3 +1,7 @@
+// @FUSE_BLAS
+// @FUSE_FFT
+// @FUSE_STARPU
+// @FUSE_MPI
 
 // Keep in private GIT
 #include <iostream>
