@@ -17,6 +17,7 @@
 #include "../../Src/Utils/FParameters.hpp"
 
 #include "../../Src/Files/FRandomLoader.hpp"
+#include "../../Src/Files/FFmaGenericLoader.hpp"
 
 #include "../../Src/GroupTree/Core/FGroupTaskStarpuMpiAlgorithm.hpp"
 
@@ -41,8 +42,12 @@
 #include "../../Src/GroupTree/StarPUUtils/FStarPUKernelCapacities.hpp"
 #include "../../Src/GroupTree/StarPUUtils/FStarPUCpuWrapper.hpp"
 
+#include <vector>
+#include <iostream>
+#include <fstream>
 
-
+void timeAverage(int mpi_rank, int nproc, double elapsedTime);
+FSize getNbParticlesPerNode(FSize mpi_count, FSize mpi_rank, FSize total);
 
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize {
@@ -71,10 +76,9 @@ int main(int argc, char* argv[]){
     FMpi mpiComm(argc, argv);
     // Get params
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
-    const FSize NbParticles   = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
-    const int groupSize      = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 250);
-    const FSize totalNbParticles = (NbParticles*mpiComm.global().processCount());
-
+    const int groupSize      = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 8);
+    const FSize totalNbParticles = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
+    const FSize NbParticles   = getNbParticlesPerNode(mpiComm.global().processCount(), mpiComm.global().processId(), totalNbParticles);
     // Load the particles
     FRandomLoader<FReal> loader(NbParticles, 1.0, FPoint<FReal>(0,0,0), mpiComm.global().processId());
     FAssertLF(loader.isOpen());
@@ -85,12 +89,21 @@ int main(int argc, char* argv[]){
         const FPoint<FReal>& getPosition(){
             return position;
         }
+		const unsigned int getWriteDataSize(void) const {
+			return sizeof(FReal);
+		}
+		const unsigned int getWriteDataNumber(void) const {
+			return 3;
+		}
+		const FReal* getPtrFirstData(void) const {
+			return position.data();
+		}
     };
-
     std::unique_ptr<TestParticle[]> particles(new TestParticle[loader.getNumberOfParticles()]);
     memset(particles.get(), 0, sizeof(TestParticle) * loader.getNumberOfParticles());
     for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
-        loader.fillParticle(&particles[idxPart].position);
+		//loader.fillParticleAtMortonIndex(&(particles[idxPart].position), mpiComm.global().processId()*NbParticles + idxPart,NbLevels);
+		loader.fillParticle(&(particles[idxPart].position));
     }
     // Sort in parallel
     FVector<TestParticle> myParticles;
@@ -127,22 +140,20 @@ int main(int argc, char* argv[]){
                               mpiComm.global().processId()+1, 0,
                               mpiComm.global().getComm()), __LINE__);
     }
-    FLOG(std::cout << "My last index is " << leftLimite << "\n");
-    FLOG(std::cout << "My left limite is " << myLeftLimite << "\n");
-
 
     // Put the data into the tree
     GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize,
                                  &allParticles, true, leftLimite);
-    groupedTree.printInfoBlocks();
 
     // Run the algorithm
     GroupKernelClass groupkernel;
     GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
+	mpiComm.global().barrier();
+	FTic timerExecute;
     groupalgo.execute();
-
-    std::cout << "Wait Others... " << std::endl;
     mpiComm.global().barrier();
+	double elapsedTime = timerExecute.tacAndElapsed();
+	timeAverage(mpiComm.global().processId(), mpiComm.global().processCount(), elapsedTime);
 
     groupedTree.forEachCellLeaf<GroupContainerClass>([&](GroupCellClass cell, GroupContainerClass* leaf){
         const FSize nbPartsInLeaf = leaf->getNbParticles();
@@ -155,6 +166,7 @@ int main(int argc, char* argv[]){
     });
 
 
+    mpiComm.global().barrier();
 
     typedef FTestCell                   CellClass;
     typedef FTestParticleContainer<FReal>      ContainerClass;
@@ -167,13 +179,14 @@ int main(int argc, char* argv[]){
         // Usual octree
         OctreeClass tree(NbLevels, 2, loader.getBoxWidth(), loader.getCenterOfBox());
         for(int idxProc = 0 ; idxProc < mpiComm.global().processCount() ; ++idxProc){
-            FRandomLoader<FReal> loaderAll(NbParticles, 1.0, FPoint<FReal>(0,0,0), idxProc);
+            FRandomLoader<FReal> loaderAll(getNbParticlesPerNode(mpiComm.global().processCount(), idxProc, totalNbParticles), 1.0, FPoint<FReal>(0,0,0), idxProc);
             for(FSize idxPart = 0 ; idxPart < loaderAll.getNumberOfParticles() ; ++idxPart){
                 FPoint<FReal> pos;
-                loaderAll.fillParticle(&pos);
+				loaderAll.fillParticle(&pos);
+				//loaderAll.fillParticleAtMortonIndex(&pos, idxProc*NbParticles + idxPart,NbLevels);
                 tree.insert(pos);
             }
-        }
+		}
         // Usual algorithm
         KernelClass kernels;            // FTestKernels FBasicKernels
         FmmClass algo(&tree,&kernels);  //FFmmAlgorithm FFmmAlgorithmThread
@@ -198,4 +211,28 @@ int main(int argc, char* argv[]){
 
     return 0;
 }
-
+void timeAverage(int mpi_rank, int nproc, double elapsedTime)
+{
+	if(mpi_rank == 0)
+	{
+		double sumElapsedTime = elapsedTime;
+		for(int i = 1; i < nproc; ++i)
+		{
+			double tmp;
+			MPI_Recv(&tmp, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, 0);
+			if(tmp > sumElapsedTime)
+				sumElapsedTime = tmp;
+		}
+		std::cout << "Average time per node (implicit Cheby) : " << sumElapsedTime << "s" << std::endl;
+	}
+	else
+	{
+		MPI_Send(&elapsedTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+}
+FSize getNbParticlesPerNode(FSize mpi_count, FSize mpi_rank, FSize total){
+	if(mpi_rank < (total%mpi_count))
+		return ((total - (total%mpi_count))/mpi_count)+1;
+	return ((total - (total%mpi_count))/mpi_count);
+}

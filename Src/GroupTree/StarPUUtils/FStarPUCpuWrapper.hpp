@@ -35,8 +35,6 @@
 #include "FStarPUUtils.hpp"
 
 #include "../../Utils/FTaskTimer.hpp"
-#include <iostream>
-using namespace std;
 
 template <class CellContainerClass, class CellClass, class KernelClass,
           class ParticleGroupClass, class ParticleContainerClass>
@@ -94,12 +92,12 @@ public:
     }
 
     static void bottomPassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass leafCells((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
-                            STARPU_VECTOR_GET_NX(buffers[0]),
-                            (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]),
+        CellContainerClass leafCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                            STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                            (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                             nullptr);
-        ParticleGroupClass containers((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]),
-                            STARPU_VECTOR_GET_NX(buffers[2]),
+        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                            STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
                             nullptr);
 
         FStarPUPtrInterface* worker = nullptr;
@@ -130,9 +128,9 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 
     static void upwardPassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass currentCells((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
-                                        STARPU_VECTOR_GET_NX(buffers[0]),
-                                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]),
+        CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
                                         nullptr);
 
         FStarPUPtrInterface* worker = nullptr;
@@ -145,9 +143,9 @@ public:
 #endif
 
         CellContainerClass subCellGroup(
-                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]),
-                        STARPU_VECTOR_GET_NX(buffers[2]),
-                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[3]),
+                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
+                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]),
                         nullptr);
 
         worker->get<ThisClass>(FSTARPU_CPU_IDX)->upwardPassPerform(&currentCells, &subCellGroup, idxLevel);
@@ -202,13 +200,13 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 #if defined(STARPU_USE_MPI) && defined(SCALFMM_USE_MPI)
     static void transferInoutPassCallbackMpi(void *buffers[], void *cl_arg){
-        CellContainerClass currentCells((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
-                                        STARPU_VECTOR_GET_NX(buffers[0]),
+        CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                                         nullptr,
-                                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]));
-        CellContainerClass externalCells((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]),
-                                        STARPU_VECTOR_GET_NX(buffers[2]),
-                                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[3]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        CellContainerClass externalCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]),
                                         nullptr);
 
         FStarPUPtrInterface* worker = nullptr;
@@ -245,10 +243,10 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 
     static void transferInPassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass currentCells((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
-                                        STARPU_VECTOR_GET_NX(buffers[0]),
-                                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]),
-                                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]));
+        CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]));
 
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
@@ -301,13 +299,13 @@ public:
     }
 
     static void transferInoutPassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass currentCells((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
-                                        STARPU_VECTOR_GET_NX(buffers[0]),
+        CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                                         nullptr,
-                                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]));
-        CellContainerClass externalCells((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]),
-                                        STARPU_VECTOR_GET_NX(buffers[2]),
-                                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[3]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        CellContainerClass externalCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]),
                                         nullptr);
 
         FStarPUPtrInterface* worker = nullptr;
@@ -363,10 +361,10 @@ public:
     /// Downard Pass
     /////////////////////////////////////////////////////////////////////////////////////
     static void downardPassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass currentCells((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
-                                        STARPU_VECTOR_GET_NX(buffers[0]),
+        CellContainerClass currentCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                                         nullptr,
-                                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]));
+                                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
 
         FStarPUPtrInterface* worker = nullptr;
         int idxLevel = 0;
@@ -378,10 +376,10 @@ public:
 #endif
 
         CellContainerClass subCellGroup(
-                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]),
-                        STARPU_VECTOR_GET_NX(buffers[2]),
+                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                        STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
                         nullptr,
-                        (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[3]));
+                        (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]));
 
         worker->get<ThisClass>(FSTARPU_CPU_IDX)->downardPassPerform(&currentCells, &subCellGroup, idxLevel);
     }
@@ -435,11 +433,11 @@ public:
 
 #if defined(STARPU_USE_MPI) && defined(SCALFMM_USE_MPI)
     static void directInoutPassCallbackMpi(void *buffers[], void *cl_arg){
-        ParticleGroupClass containers((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
-                                      STARPU_VECTOR_GET_NX(buffers[0]),
-                                      (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]));
-        ParticleGroupClass externalContainers((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]),
-                                      STARPU_VECTOR_GET_NX(buffers[2]),
+        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                                      (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        ParticleGroupClass externalContainers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
                                       nullptr);
 
         FStarPUPtrInterface* worker = nullptr;
@@ -453,11 +451,6 @@ public:
     void directInoutPassPerformMpi(ParticleGroupClass* containers, ParticleGroupClass* containersOther,
                                 const std::vector<OutOfBlockInteraction>* outsideInteractions){
         KernelClass*const kernel = kernels[GetWorkerId()];
-        //const MortonIndex blockStartIdx = containers->getStartingIndex();
-        //const MortonIndex blockEndIdx = containers->getEndingIndex();
-        //const MortonIndex blockStartIdxOther = containersOther->getStartingIndex();
-        //const MortonIndex blockEndIdxOther = containersOther->getEndingIndex();
-		//cerr << "DirectInoutMpi [" << blockStartIdx << "," << blockEndIdx << "] -  [" << blockStartIdxOther << "," << blockEndIdxOther << "]" << endl;
         for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
             const int leafPos = containersOther->getLeafIndex((*outsideInteractions)[outInterIdx].outIndex);
             if(leafPos != -1){
@@ -478,9 +471,9 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 
     static void directInPassCallback(void *buffers[], void *cl_arg){
-        ParticleGroupClass containers((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
-                                      STARPU_VECTOR_GET_NX(buffers[0]),
-                                      (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]));
+        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                                      (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
 
         FStarPUPtrInterface* worker = nullptr;
         int intervalSize;
@@ -494,9 +487,8 @@ public:
 
     void directInPassPerform(ParticleGroupClass* containers){
         FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(GetWorkerId(), &taskTimeRecorder, containers->getStartingIndex()*20*8 + 5, "P2P"));
-		const MortonIndex blockStartIdx = containers->getStartingIndex();
-		const MortonIndex blockEndIdx = containers->getEndingIndex();
-		//cerr << "DirectIn [" << blockStartIdx << "," << blockEndIdx << "]" << endl;
+        const MortonIndex blockStartIdx = containers->getStartingIndex();
+        const MortonIndex blockEndIdx = containers->getEndingIndex();
         KernelClass*const kernel = kernels[GetWorkerId()];
 
         for(int leafIdx = 0 ; leafIdx < containers->getNumberOfLeavesInBlock() ; ++leafIdx){
@@ -528,18 +520,12 @@ public:
     }
 
     static void directInoutPassCallback(void *buffers[], void *cl_arg){
-		unsigned char* inBuffer = (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]);
-		size_t size = STARPU_VECTOR_GET_NX(buffers[0]);
-		unsigned char* inAttribut = (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]);
-        ParticleGroupClass containers(inBuffer,
-                                      size,
-                                      inAttribut);
-		inBuffer = (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]);
-		size = STARPU_VECTOR_GET_NX(buffers[2]);
-		inAttribut = (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[3]);
-        ParticleGroupClass externalContainers(inBuffer,
-                                      size,
-                                      inAttribut);
+        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
+                                      (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        ParticleGroupClass externalContainers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                                      STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
+                                      (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]));
 
         FStarPUPtrInterface* worker = nullptr;
         const std::vector<OutOfBlockInteraction>* outsideInteractions = nullptr;
@@ -557,11 +543,6 @@ public:
                                 const std::vector<OutOfBlockInteraction>* outsideInteractions){
         FTIME_TASKS(FTaskTimer::ScopeEvent taskTime(GetWorkerId(), &taskTimeRecorder, ((containersOther->getStartingIndex()+1) * (containers->getStartingIndex()+1))*20*8 + 6, "P2P-ext"));
         KernelClass*const kernel = kernels[GetWorkerId()];
-        //const MortonIndex blockStartIdx = containers->getStartingIndex();
-        //const MortonIndex blockEndIdx = containers->getEndingIndex();
-        //const MortonIndex blockStartIdxOther = containersOther->getStartingIndex();
-        //const MortonIndex blockEndIdxOther = containersOther->getEndingIndex();
-		//cerr << "DirectInout [" << blockStartIdx << "," << blockEndIdx << "] -  [" << blockStartIdxOther << "," << blockEndIdxOther << "]" << endl;
         for(int outInterIdx = 0 ; outInterIdx < int(outsideInteractions->size()) ; ++outInterIdx){
             ParticleContainerClass interParticles = containersOther->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].outsideIdxInBlock);
             ParticleContainerClass particles = containers->template getLeaf<ParticleContainerClass>((*outsideInteractions)[outInterIdx].insideIdxInBlock);
@@ -569,13 +550,13 @@ public:
             FAssertLF(containersOther->getLeafMortonIndex((*outsideInteractions)[outInterIdx].outsideIdxInBlock) == (*outsideInteractions)[outInterIdx].outIndex);
             FAssertLF(containers->getLeafMortonIndex((*outsideInteractions)[outInterIdx].insideIdxInBlock) == (*outsideInteractions)[outInterIdx].insideIndex);
 
-			ParticleContainerClass* ptrLeaf = &interParticles;
-			kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].insideIndex, treeHeight-1),
-								&particles , &ptrLeaf, &(*outsideInteractions)[outInterIdx].relativeOutPosition, 1);
-			const int otherPosition = getOppositeNeighIndex((*outsideInteractions)[outInterIdx].relativeOutPosition);
-			ptrLeaf = &particles;
-			kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].outIndex, treeHeight-1),
-									&interParticles , &ptrLeaf, &otherPosition, 1);
+            ParticleContainerClass* ptrLeaf = &interParticles;
+            kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].insideIndex, treeHeight-1),
+                                &particles , &ptrLeaf, &(*outsideInteractions)[outInterIdx].relativeOutPosition, 1);
+            const int otherPosition = getOppositeNeighIndex((*outsideInteractions)[outInterIdx].relativeOutPosition);
+            ptrLeaf = &particles;
+            kernel->P2POuter( FTreeCoordinate((*outsideInteractions)[outInterIdx].outIndex, treeHeight-1),
+                                    &interParticles , &ptrLeaf, &otherPosition, 1);
         }
     }
 
@@ -584,13 +565,13 @@ public:
     /////////////////////////////////////////////////////////////////////////////////////
 
     static void mergePassCallback(void *buffers[], void *cl_arg){
-        CellContainerClass leafCells((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[0]),
-                                     STARPU_VECTOR_GET_NX(buffers[0]),
+        CellContainerClass leafCells((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[0]),
+                                     STARPU_VARIABLE_GET_ELEMSIZE(buffers[0]),
                                      nullptr,
-                                     (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]));
-        ParticleGroupClass containers((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]),
-                                     STARPU_VECTOR_GET_NX(buffers[2]),
-                                     (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[3]));
+                                     (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[1]));
+        ParticleGroupClass containers((unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[2]),
+                                     STARPU_VARIABLE_GET_ELEMSIZE(buffers[2]),
+                                     (unsigned char*)STARPU_VARIABLE_GET_PTR(buffers[3]));
 
         FStarPUPtrInterface* worker = nullptr;
         int intervalSize;

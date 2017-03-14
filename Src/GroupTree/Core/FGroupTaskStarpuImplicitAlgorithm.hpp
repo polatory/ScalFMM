@@ -15,13 +15,17 @@
 
 #include <vector>
 #include <memory>
+#ifdef SCALFMM_USE_STARPU_EXTRACT
 #include <list>
+#endif
 
 #include <omp.h>
 
 #include <starpu.h>
 #include <starpu_mpi.h>
+#ifdef SCALFMM_USE_STARPU_EXTRACT
 #include <algorithm>
+#endif
 #include "../StarPUUtils/FStarPUUtils.hpp"
 #include "../StarPUUtils/FStarPUFmmPriorities.hpp"
 #include "../StarPUUtils/FStarPUFmmPrioritiesV2.hpp"
@@ -94,11 +98,15 @@ protected:
     };
 
     std::vector< std::vector< std::vector<BlockInteractions<CellContainerClass>>>> externalInteractionsAllLevel;
+#ifdef SCALFMM_USE_STARPU_EXTRACT
     std::vector< std::vector< std::vector<std::vector<int>>>> externalInteractionsAllLevelInnerIndexes;
     std::vector< std::vector< std::vector<std::vector<int>>>> externalInteractionsAllLevelOuterIndexes;
+#endif
     std::vector< std::vector<BlockInteractions<ParticleGroupClass>>> externalInteractionsLeafLevel;
+#ifdef SCALFMM_USE_STARPU_EXTRACT
     std::vector< std::vector<std::vector<int>>> externalInteractionsLeafLevelOuter;
     std::vector< std::vector<std::vector<int>>> externalInteractionsLeafLevelInner;
+#endif
     std::list<const std::vector<OutOfBlockInteraction>*> externalInteractionsLeafLevelOpposite;
 
     OctreeClass*const tree;       //< The Tree
@@ -167,6 +175,7 @@ protected:
     int mpi_rank, nproc;
     std::vector<std::vector<std::vector<MortonIndex>>> nodeRepartition;
 
+#ifdef SCALFMM_USE_STARPU_EXTRACT
     struct ParticleExtractedHandles{
         starpu_data_handle_t symb;
         size_t size;
@@ -214,6 +223,7 @@ protected:
     starpu_codelet cell_extract_up;
     starpu_codelet cell_insert_up;
     starpu_codelet cell_insert_up_bis;
+#endif
 
 public:
     FGroupTaskStarPUImplicitAlgorithm(OctreeClass*const inTree, KernelClass* inKernels, std::vector<MortonIndex>& distributedMortonIndex)
@@ -836,6 +846,7 @@ protected:
         p2p_redux_read.name = "p2p_redux_read";
 #endif
 
+#ifdef SCALFMM_USE_STARPU_EXTRACT
         memset(&p2p_extract, 0, sizeof(p2p_extract));
         p2p_extract.nbuffers = 2;
         p2p_extract.modes[0] = STARPU_R;
@@ -887,8 +898,10 @@ protected:
         cell_insert_up_bis.name = "cell_insert_up_bis";
         cell_insert_up_bis.cpu_funcs[0] = ThisClass::InsertCellUpBis;
         cell_insert_up_bis.where |= STARPU_CPU;
+#endif
     }
 
+#ifdef SCALFMM_USE_STARPU_EXTRACT
     static void InsertP2P(void *buffers[], void *cl_arg){
         ParticleGroupClass containers((unsigned char*)STARPU_VECTOR_GET_PTR(buffers[1]),
                                       STARPU_VECTOR_GET_NX(buffers[1]),
@@ -982,6 +995,7 @@ protected:
                                    (unsigned char*)STARPU_VECTOR_GET_PTR(buffers[2]),
                                    STARPU_VECTOR_GET_NX(buffers[2]));
     }
+#endif
 
     void initCodeletMpi(){
         memset(&p2p_cl_inout_mpi, 0, sizeof(p2p_cl_inout_mpi));
@@ -1059,6 +1073,7 @@ protected:
             }
             particleHandles.clear();
         }
+#ifdef SCALFMM_USE_STARPU_EXTRACT
         for(auto& iter : extractedParticlesBuffer){
             starpu_data_unregister(iter.symb);
         }
@@ -1071,6 +1086,7 @@ protected:
         for(auto& iter : duplicatedCellBuffer){
             starpu_data_unregister(iter.symb);
         }
+#endif
     }
 
     /** Reset the handles array and create new ones to define
@@ -1148,32 +1164,46 @@ protected:
         FLOG( FTic timer; FTic leafTimer; FTic cellTimer; );
         // Reset interactions
         externalInteractionsAllLevel.clear();
+#ifdef SCALFMM_USE_STARPU_EXTRACT
         externalInteractionsAllLevelInnerIndexes.clear();
         externalInteractionsAllLevelOuterIndexes.clear();
+#endif
         externalInteractionsLeafLevel.clear();
+#ifdef SCALFMM_USE_STARPU_EXTRACT
         externalInteractionsLeafLevelOuter.clear();
         externalInteractionsLeafLevelInner.clear();
+#endif
         // One per level + leaf level
         externalInteractionsAllLevel.resize(tree->getHeight());
+#ifdef SCALFMM_USE_STARPU_EXTRACT
         externalInteractionsAllLevelInnerIndexes.resize(tree->getHeight());
         externalInteractionsAllLevelOuterIndexes.resize(tree->getHeight());
+#endif
 
         // First leaf level
         {
             // We create one big vector per block
             externalInteractionsLeafLevel.resize(tree->getNbParticleGroup());
+#ifdef SCALFMM_USE_STARPU_EXTRACT
             externalInteractionsLeafLevelOuter.resize(tree->getNbParticleGroup());
             externalInteractionsLeafLevelInner.resize(tree->getNbParticleGroup());
+#endif
 
             for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
                 // Create the vector
                 ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
 
                 std::vector<BlockInteractions<ParticleGroupClass>>* externalInteractions = &externalInteractionsLeafLevel[idxGroup];
+#ifdef SCALFMM_USE_STARPU_EXTRACT
                 std::vector<std::vector<int>>* externalInteractionsOuter = &externalInteractionsLeafLevelOuter[idxGroup];
                 std::vector<std::vector<int>>* externalInteractionsInner = &externalInteractionsLeafLevelInner[idxGroup];
+#endif
 
+#ifdef SCALFMM_USE_STARPU_EXTRACT
 #pragma omp task default(none) firstprivate(idxGroup, containers, externalInteractions, externalInteractionsOuter, externalInteractionsInner)
+#else
+                #pragma omp task default(none) firstprivate(idxGroup, containers, externalInteractions)
+#endif
                 { // Can be a task(inout:iterCells)
                     std::vector<OutOfBlockInteraction> outsideInteractions;
                     const MortonIndex blockStartIdx = containers->getStartingIndex();
@@ -1185,7 +1215,7 @@ protected:
 
                         MortonIndex interactionsIndexes[26];
                         int interactionsPosition[26];
-                        FTreeCoordinate coord(mindex, tree->getHeight()-1);
+                        FTreeCoordinate coord(mindex);
                         int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
 
                         for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -1245,6 +1275,7 @@ protected:
                                       outsideInteractions.begin() + copyExistingInteraction,
                                       interactions->interactions.begin());
 
+#ifdef SCALFMM_USE_STARPU_EXTRACT
                             externalInteractionsOuter->emplace_back();
                             externalInteractionsInner->emplace_back();
 
@@ -1260,6 +1291,7 @@ protected:
 
                             interactionsOuter->erase(std::unique(interactionsOuter->begin(), interactionsOuter->end()), interactionsOuter->end());
                             interactionsInner->erase(std::unique(interactionsInner->begin(), interactionsInner->end()), interactionsInner->end());
+#endif
                         }
 
                         currentOutInteraction = lastOutInteraction;
@@ -1272,17 +1304,24 @@ protected:
         {
             for(int idxLevel = tree->getHeight()-1 ; idxLevel >= 2 ; --idxLevel){
                 externalInteractionsAllLevel[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
+#ifdef SCALFMM_USE_STARPU_EXTRACT
                 externalInteractionsAllLevelInnerIndexes[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
                 externalInteractionsAllLevelOuterIndexes[idxLevel].resize(tree->getNbCellGroupAtLevel(idxLevel));
-
+#endif
                 for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
                     CellContainerClass* currentCells = tree->getCellGroup(idxLevel, idxGroup);
 
                     std::vector<BlockInteractions<CellContainerClass>>* externalInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup];
+#ifdef SCALFMM_USE_STARPU_EXTRACT
                     std::vector<std::vector<int>>* externalInteractionsInner = &externalInteractionsAllLevelInnerIndexes[idxLevel][idxGroup];
                     std::vector<std::vector<int>>* externalInteractionsOuter = &externalInteractionsAllLevelOuterIndexes[idxLevel][idxGroup];
+#endif
 
+#ifdef SCALFMM_USE_STARPU_EXTRACT
 #pragma omp task default(none) firstprivate(idxGroup, currentCells, idxLevel, externalInteractions, externalInteractionsInner, externalInteractionsOuter)
+#else
+                    #pragma omp task default(none) firstprivate(idxGroup, currentCells, idxLevel, externalInteractions)
+#endif
                     {
                         std::vector<OutOfBlockInteraction> outsideInteractions;
                         const MortonIndex blockStartIdx = currentCells->getStartingIndex();
@@ -1293,7 +1332,7 @@ protected:
 
                             MortonIndex interactionsIndexes[189];
                             int interactionsPosition[189];
-                            const FTreeCoordinate coord(mindex, idxLevel);
+                            const FTreeCoordinate coord(mindex);
                             int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
 
                             for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -1354,6 +1393,7 @@ protected:
                                           outsideInteractions.begin() + copyExistingInteraction,
                                           interactions->interactions.begin());
 
+#ifdef SCALFMM_USE_STARPU_EXTRACT
                                 externalInteractionsInner->emplace_back();
                                 std::vector<int>* interactionsInnerIndexes = &externalInteractionsInner->back();
                                 externalInteractionsOuter->emplace_back();
@@ -1370,6 +1410,7 @@ protected:
                                 FQuickSort<int, int>::QsSequential(interactionsInnerIndexes->data(),int(interactionsInnerIndexes->size()));
                                 interactionsInnerIndexes->erase(std::unique(interactionsInnerIndexes->begin(), interactionsInnerIndexes->end()),
                                                                 interactionsInnerIndexes->end());
+#endif
                             }
 
                             currentOutInteraction = lastOutInteraction;
@@ -1577,8 +1618,7 @@ protected:
                     for(int idxInteraction = 0; idxInteraction < int(externalInteractionsAllLevel[idxLevel][idxGroup].size()) ; ++idxInteraction){
                         const int interactionid = externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].otherBlockId;
                         const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].interactions;
-#define M2L_EXTRACT_MPI
-#ifdef M2L_EXTRACT_MPI
+#ifdef SCALFMM_USE_STARPU_EXTRACT
                         // On the same node -- do as usual
                         if(starpu_mpi_data_get_rank(cellHandles[idxLevel][idxGroup].symb) == starpu_mpi_data_get_rank(cellHandles[idxLevel][interactionid].symb)){
 #endif
@@ -1653,7 +1693,8 @@ protected:
                            #endif
                            #endif
                                                    0);
-#ifdef M2L_EXTRACT_MPI
+
+#ifdef SCALFMM_USE_STARPU_EXTRACT
                         }
                         else{
                                 {
@@ -2125,8 +2166,8 @@ protected:
                 }
                 else
                 {
-#define P2P_EXTRACT_MPI
-#ifdef P2P_EXTRACT_MPI
+
+#ifdef SCALFMM_USE_STARPU_EXTRACT
                     {
                         // Extract data from second group for the first one
                         // That is copy B to B'
@@ -2281,9 +2322,9 @@ protected:
                             // Reuse block but just to perform the send
                             duplicateA.data = (unsigned char*) FAlignedMemory::AllocateBytes<64>(duplicateA.size);// = const_cast<unsigned char*>(tree->getParticleGroup(idxGroup)->getRawBuffer());
                         }
-						else{
-	                        duplicateA.data = nullptr;
-						}
+                        else{
+                            duplicateA.data = nullptr;
+                        }
 
                         registeringNode = starpu_mpi_data_get_rank(particleHandles[interactionid].down);
                         where = (registeringNode == mpi_rank) ? STARPU_MAIN_RAM : -1;

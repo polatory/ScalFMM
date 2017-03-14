@@ -122,6 +122,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
     CMAKE_DEPENDENT_OPTION(SCALFMM_STARPU_USE_REDUX  "Set to ON to enable redux with StarPU"     OFF "SCALFMM_USE_STARPU" OFF)
     CMAKE_DEPENDENT_OPTION(SCALFMM_STARPU_USE_PRIO  "Set to ON to enable priority with StarPU"   ON  "SCALFMM_USE_STARPU" OFF)
     CMAKE_DEPENDENT_OPTION(SCALFMM_STARPU_FORCE_NO_SCHEDULER  "Set to ON to disable heteroprio even if supported" OFF "SCALFMM_USE_STARPU" OFF)
+    CMAKE_DEPENDENT_OPTION(SCALFMM_USE_STARPU_EXTRACT  "Set to ON to enable extract with StarPU mpi implicit" ON  "SCALFMM_USE_STARPU" OFF)
   endif()
   message(STATUS "AVANT  ${CMAKE_CXX_COMPILER_ID}" )
   #
@@ -460,63 +461,14 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       find_package(FFTW COMPONENTS SIMPLE)
     endif()
 
-      message(STATUS "         SCALFMM USE MKL ")
-
-      if( SCALFMM_USE_MKL_AS_BLAS )
-
-        unset(FFT_LIBRARIES CACHE)
-        message(STATUS "         SCALFMM USE MKL already defined")
-        set(FFT_INCLUDES "$ENV{MKLROOT}/include/fftw" CACHE STRING "Set your MKL flags")
-        if (BLAS_FOUND)
-          set(FFTW_FOUND ON)
-        endif()
-
-      else(SCALFMM_USE_MKL_AS_BLAS)
-
-        # The package can be used with the following COMPONENTS:
-        # MKL, THREADS|OMP and/or SIMPLE|DOUBLE|LONG|QUAD
-        # Default is DOUBLE and without THREADS|OMP
-        find_package(FFTW  COMPONENTS MKL) # not REQUIRED
-        if (FFTW_LIBRARY_DIRS_DEP)
-          set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your MKL flags")
-        endif()
-        if (FFTW_LIBRARIES_DEP)
-          foreach (fft_lib ${FFTW_LIBRARIES_DEP})
-            set(FFT_LIBRARIES "${FFT_LIBRARIES};${fft_lib};")
-          endforeach()
-        endif()
-        set(FFT_INCLUDES "${FFTW_INCLUDE_DIRS_DEP}" )
-        if (FFT_LIBRARIES)
-          set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${FFT_LIBRARIES}")
-        endif()
-
-      endif(SCALFMM_USE_MKL_AS_BLAS)
-
-    else(SCALFMM_USE_MKL_AS_FFTW)
-
-      message(STATUS "         SCALFMM USE FFTW ")
-      # The package can be used with the following COMPONENTS:
-      # MKL, THREADS|OMP and/or SIMPLE|DOUBLE|LONG|QUAD
-      # Default is DOUBLE and without THREADS|OMP
-      find_package(FFTW COMPONENTS SIMPLE) # not REQUIRED
-	  #message(FATAL_ERROR ${FFTW_FOUND} ${FFTW_LIBRARY_DIRS_DEP} ${FFTW_LIBRARIES_DEP})
-      if (FFTW_LIBRARY_DIRS_DEP)
-        set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your FFTW path")
-      endif()
-      if (FFTW_LIBRARIES_DEP)
-        foreach (fft_lib ${FFTW_LIBRARIES_DEP})
-          set(FFT_LIBRARIES "${FFT_LIBRARIES};${fft_lib};")
-        endforeach()
-      endif()
-	  #message(FATAL_ERROR ${FFTW_INCLUDE_DIRS_DEP})
-      set(FFT_INCLUDES "${FFTW_INCLUDE_DIRS_DEP}" )
-      if (FFT_LIBRARIES)
-        set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${FFT_LIBRARIES}")
-      endif()
-      if(FFTW_LIBRARY_DIRS)
-        # the RPATH to be used when installing
-        list(APPEND CMAKE_INSTALL_RPATH "${FFTW_LIBRARY_DIRS}")
-      endif()
+    if (FFTW_LIBRARY_DIRS_DEP)
+      set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your MKL flags")
+    endif()
+    if (FFTW_LIBRARIES_DEP)
+      foreach (fft_lib ${FFTW_LIBRARIES_DEP})
+        set(FFT_LIBRARIES "${FFT_LIBRARIES};${fft_lib};")
+      endforeach()
+    endif()
 
     set(FFT_INCLUDES "${FFTW_INCLUDE_DIRS_DEP}" )
     if (FFT_LIBRARIES)

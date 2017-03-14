@@ -43,20 +43,28 @@
 #include "../../Src/GroupTree/Core/FGroupTaskStarpuMpiAlgorithm.hpp"
 
 #include "../../Src/Files/FMpiFmaGenericLoader.hpp"
+#include "../../Src/Files/FGenerateDistribution.hpp"
 #include "../../Src/Containers/FCoordinateComputer.hpp"
 
 #include "../../Src/GroupTree/StarPUUtils/FStarPUKernelCapacities.hpp"
 
 #include <memory>
 
+void timeAverage(int mpi_rank, int nproc, double elapsedTime);
+FSize getNbParticlesPerNode(FSize mpi_count, FSize mpi_rank, FSize total);
 
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
+    const FParameterNames LocalOptionEllipsoid = {{"-ellipsoid"} , " non uniform distribution on  an ellipsoid of aspect ratio given by a=0.5 b=0.25 c=0.125"};
+    const FParameterNames LocalOptionEllipsoidv2 = {{"-ellipsoidv2"} , " non uniform distribution on  an ellipsoid of aspect ratio given by a=0.5 b=0.25 c=0.125"};
+    const FParameterNames LocalOptionPlummer = {{"-plummer"} , " (Highly non uniform) plummer distribution (astrophysics)"};
+    const FParameterNames LocalOptionCube = {{"-cube", "-uniform"} , " uniform distribution on cube (default)"};
     FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight,FParameterDefinitions::InputFile,
-                         FParameterDefinitions::OctreeSubHeight,
-                         LocalOptionBlocSize, LocalOptionNoValidate);
+                         FParameterDefinitions::OctreeSubHeight, FParameterDefinitions::NbParticles,
+                         LocalOptionBlocSize, LocalOptionNoValidate, LocalOptionEllipsoid, LocalOptionPlummer, LocalOptionCube,
+                         LocalOptionEllipsoidv2);
 
     typedef double FReal;
     // Initialize the types
@@ -82,9 +90,10 @@ int main(int argc, char* argv[]){
 
     FMpi mpiComm(argc,argv);
 
-    const char* const filename       = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     const unsigned int TreeHeight    = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
     const unsigned int SubTreeHeight = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
+    const FSize totalNbParticles = FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, FSize(20));
+    const FSize NbParticles   = getNbParticlesPerNode(mpiComm.global().processCount(), mpiComm.global().processId(), totalNbParticles);
 
     // init particles position and physical value
     struct TestParticle{
@@ -93,10 +102,55 @@ int main(int argc, char* argv[]){
         const FPoint<FReal>& getPosition(){
             return position;
         }
+		const unsigned int getWriteDataSize(void) const {
+			return sizeof(FReal);
+		}
+		const unsigned int getWriteDataNumber(void) const {
+			return 3;
+		}
+		const FReal* getPtrFirstData(void) const {
+			return position.data();
+		}
     };
 
+//#define LOAD_FILE
+#ifndef LOAD_FILE
+    srand48(0);
+	FReal boxWidth = 1.0;
+    FRandomLoader<FReal> loader(NbParticles, boxWidth, FPoint<FReal>(0,0,0), mpiComm.global().processId());
+    FAssertLF(loader.isOpen());
+
+	setSeed(mpiComm.global().processId()+1);
+    TestParticle* allParticles = new TestParticle[loader.getNumberOfParticles()];
+	FReal * tmpParticles = new FReal[4*loader.getNumberOfParticles()];
+    memset(allParticles,0,(unsigned int) (sizeof(TestParticle)* loader.getNumberOfParticles()));
+	memset(tmpParticles,0,(unsigned int) (sizeof(FReal)* loader.getNumberOfParticles() * 4));
+    if(FParameters::existParameter(argc, argv, "-ellipsoid")) {
+                std::cout << "ellipsoid\n";
+        nonunifRandomPointsOnElipsoid(loader.getNumberOfParticles(), 0.5, 0.1, tmpParticles);
+    }
+    else if(FParameters::existParameter(argc, argv, LocalOptionEllipsoidv2.options)) {
+        std::cout << "ellipsoidv2\n";
+        unifRandomPointsOnProlate(loader.getNumberOfParticles(), boxWidth/2, boxWidth/8, tmpParticles);
+    }
+    else if(FParameters::existParameter(argc, argv, "-plummer")) {
+        //The M argument is not used in the algorithm of the plummer distribution
+                std::cout << "plummer\n";
+        unifRandomPlummer(loader.getNumberOfParticles(), boxWidth/2, tmpParticles) ;
+    }
+    else { //Uniform cube
+                std::cout << "cube\n";
+        unifRandomPointsInCube(loader.getNumberOfParticles(), boxWidth/2, boxWidth/2, boxWidth/2, tmpParticles);
+    }
+
+    for(FSize idxPart = 0 ; idxPart < loader.getNumberOfParticles() ; ++idxPart){
+		allParticles[idxPart].position.setPosition(tmpParticles[idxPart*4], tmpParticles[idxPart*4+1], tmpParticles[idxPart*4+2]);
+		allParticles[idxPart].physicalValue = 0.1;
+    }
+	delete[] tmpParticles;
+#else
     // open particle file
-    std::cout << "Opening : " << filename << "\n" << std::endl;
+    const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     FMpiFmaGenericLoader<FReal> loader(filename,mpiComm.global());
     FAssertLF(loader.isOpen());
 
@@ -105,18 +159,17 @@ int main(int argc, char* argv[]){
     for(FSize idxPart = 0 ; idxPart < loader.getMyNumberOfParticles() ; ++idxPart){
         loader.fillParticle(&allParticles[idxPart].position,&allParticles[idxPart].physicalValue);
     }
+#endif
 
     FVector<TestParticle> myParticles;
     FLeafBalance balancer;
     FMpiTreeBuilder< FReal,TestParticle >::DistributeArrayToContainer(mpiComm.global(),allParticles,
-                                                                loader.getMyNumberOfParticles(),
+                                                                loader.getNumberOfParticles(),
                                                                 loader.getCenterOfBox(),
                                                                 loader.getBoxWidth(),TreeHeight,
                                                                 &myParticles, &balancer);
 
-    std::cout << "Creating & Inserting " << loader.getMyNumberOfParticles() << " particles ..." << std::endl;
-    std::cout << "For a total of " << loader.getNumberOfParticles() << " particles ..." << std::endl;
-    std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
+    //std::cout << "\tHeight : " << TreeHeight << " \t sub-height : " << SubTreeHeight << std::endl;
 
     // Each proc need to know the righest morton index
     const FTreeCoordinate host = FCoordinateComputer::GetCoordinateFromPosition<FReal>(
@@ -139,7 +192,6 @@ int main(int argc, char* argv[]){
     FLOG(std::cout << "My last index is " << leftLimite << "\n");
     FLOG(std::cout << "My left limite is " << myLeftLimite << "\n");
 
-
     // Put the data into the tree
     FP2PParticleContainer<FReal> myParticlesInContainer;
     for(FSize idxPart = 0 ; idxPart < myParticles.getSize() ; ++idxPart){
@@ -148,25 +200,28 @@ int main(int argc, char* argv[]){
     }
     GroupOctreeClass groupedTree(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize,
                                  &myParticlesInContainer, true, leftLimite);
-    groupedTree.printInfoBlocks();
-
+    
     timer.tac();
-    std::cout << "Done  " << "(@Creating and Inserting Particles = "
-              << timer.elapsed() << "s)." << std::endl;
+	std::cerr << "Done  " << "(@Creating and Inserting Particles = " << timer.elapsed() << "s)." << std::endl;
 
+	int operationsToProceed = FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P | FFmmP2P;
     { // -----------------------------------------------------
-        std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ") ... " << std::endl;
-        timer.tic();
+        //std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ") ... " << std::endl;
 
-        MatrixKernelClass MatrixKernel;
+        const MatrixKernelClass MatrixKernel;
         // Create Matrix Kernel
         GroupKernelClass groupkernel(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
         // Run the algorithm
         GroupAlgorithm groupalgo(mpiComm.global(), &groupedTree,&groupkernel);
-        groupalgo.execute();
-
+		mpiComm.global().barrier();
+        timer.tic();
+		starpu_fxt_start_profiling();
+        groupalgo.execute(operationsToProceed);
+		mpiComm.global().barrier();
+		starpu_fxt_stop_profiling();
         timer.tac();
-        std::cout << "Done  " << "(@Algorithm = " << timer.elapsed() << "s)." << std::endl;
+		timeAverage(mpiComm.global().processId(), mpiComm.global().processCount(), timer.elapsed());
+        //std::cout << "Done  " << "(@Algorithm = " << timer.elapsed() << "s)." << std::endl;
     } // -----------------------------------------------------
 
 
@@ -191,8 +246,13 @@ int main(int argc, char* argv[]){
         MatrixKernelClass MatrixKernel;
         KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
         FmmClass algorithm(mpiComm.global(),&treeCheck, &kernels);
-        algorithm.execute();
-        std::cout << "Algo is over" << std::endl;
+		mpiComm.global().barrier();
+        timer.tic();
+        algorithm.execute(operationsToProceed);
+		mpiComm.global().barrier();
+        timer.tac();
+		timeAverage(mpiComm.global().processId(), mpiComm.global().processCount(), timer.elapsed());
+        //std::cout << "Algo is over" << std::endl;
 
         groupedTree.forEachCellWithLevel([&](GroupCellClass gcell, const int level){
             const CellClass* cell = treeCheck.getCell(gcell.getMortonIndex(), level);
@@ -274,10 +334,39 @@ int main(int argc, char* argv[]){
             }
         });
 
-        std::cout << "Comparing is over" << std::endl;
+        //std::cout << "Comparing is over" << std::endl;
     }
 
     return 0;
 }
 
 
+void timeAverage(int mpi_rank, int nproc, double elapsedTime)
+{
+    if(mpi_rank == 0)
+    {
+                double sumElapsedTimeMin = elapsedTime;
+                double sumElapsedTimeMax = elapsedTime;
+        for(int i = 1; i < nproc; ++i)
+                {
+            double tmp;
+                        MPI_Recv(&tmp, 1, MPI_DOUBLE, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                        if(tmp < sumElapsedTimeMin)
+                                sumElapsedTimeMin = tmp;
+                        if(tmp > sumElapsedTimeMax)
+                                sumElapsedTimeMax = tmp;
+        }
+                std::cout << "Min time per node (MPI)  : " << sumElapsedTimeMin << "s" << std::endl;
+                std::cout << "Max time per node (MPI)  : " << sumElapsedTimeMax << "s" << std::endl;
+    }
+    else
+    {
+        MPI_Send(&elapsedTime, 1, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD);
+    }
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+FSize getNbParticlesPerNode(FSize mpi_count, FSize mpi_rank, FSize total){
+	if(mpi_rank < (total%mpi_count))
+		return ((total - (total%mpi_count))/mpi_count)+1;
+	return ((total - (total%mpi_count))/mpi_count);
+}
