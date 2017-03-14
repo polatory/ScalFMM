@@ -1143,9 +1143,7 @@ protected:
 
                     // put the right codelet
                     task->cl = &m2m_cl;
-                    // put args values
-                    char *arg_buffer;
-                    size_t arg_buffer_size;
+#ifdef STARPU_SIMGRID_MLR_MODELS
                     size_t nbChildParent = 0;
                     {
                         CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
@@ -1171,8 +1169,7 @@ protected:
                             idxParentCell += 1;
                         }
                     }
-		    
-#ifdef STARPU_SIMGRID_MLR_MODELS
+
       	        double *parameters = (double*) calloc(1,m2m_cl.model->nparameters*sizeof(double));
                 parameters[0] = (double) idxLevel;
                 parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
@@ -1184,6 +1181,9 @@ protected:
                 parameters[6] = (double) nbChildParent;
 #endif
 
+                // put args values
+                char *arg_buffer;
+                size_t arg_buffer_size;
                     starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
                                              STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                              STARPU_VALUE, &idxLevel, sizeof(idxLevel),
@@ -1225,9 +1225,7 @@ protected:
 
                     // put the right codelet
                     task->cl = &m2m_cl;
-                    // put args values
-                    char *arg_buffer;
-                    size_t arg_buffer_size;
+#ifdef STARPU_SIMGRID_MLR_MODELS
                     size_t nbChildParent = 0;
                     {
                         CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
@@ -1254,7 +1252,6 @@ protected:
                             idxParentCell += 1;
                         }
                     }
-#ifdef STARPU_SIMGRID_MLR_MODELS
           	        double *parameters = (double*) calloc(1,m2m_cl.model->nparameters*sizeof(double));
                     parameters[0] = (double) idxLevel;
                     parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
@@ -1265,6 +1262,9 @@ protected:
                             FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3);
                     parameters[6] = (double) nbChildParent;
 #endif
+                    // put args values
+                    char *arg_buffer;
+                    size_t arg_buffer_size;
 
                     starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
                                              STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
@@ -1309,6 +1309,7 @@ protected:
             if(inner){
                 FLOG( timerInBlock.tic() );
                 for(int idxGroup = 0 ; idxGroup < tree->getNbCellGroupAtLevel(idxLevel) ; ++idxGroup){
+#ifdef STARPU_SIMGRID_MLR_MODELS
                     size_t nbM2LInteractions = 0;
                     {
                         CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
@@ -1332,7 +1333,6 @@ protected:
                             }
                         }
                     }
-#ifdef STARPU_SIMGRID_MLR_MODELS
                     double *parameters = (double*) calloc(1,m2l_cl_in.model->nparameters*sizeof(double));
                     parameters[0] = (double) idxLevel;
                     parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
@@ -1371,6 +1371,7 @@ protected:
                     for(int idxInteraction = 0; idxInteraction < int(externalInteractionsAllLevel[idxLevel][idxGroup].size()) ; ++idxInteraction){
                         const int interactionid = externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].otherBlockId;
                         const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsAllLevel[idxLevel][idxGroup][idxInteraction].interactions;
+#ifdef STARPU_SIMGRID_MLR_MODELS
                         int nbDiff0 = 0;
                         int nbDiff1 = 0;
                         {
@@ -1388,8 +1389,6 @@ protected:
                                 }
                             }
                         }
-                        int mode = 1;
-#ifdef STARPU_SIMGRID_MLR_MODELS
 				        double *parameters = (double*) calloc(1,m2l_cl_inout.model->nparameters*sizeof(double));
 				        parameters[0] = (double) idxLevel;
 				        parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
@@ -1400,6 +1399,7 @@ protected:
 				        parameters[6] = (double) nbDiff0;
 				        parameters[7] = (double) nbDiff1;
 #endif
+                        int mode = 1;
           
                         starpu_insert_task(&m2l_cl_inout,
                                            STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
@@ -1505,9 +1505,7 @@ protected:
                     else{
                         task->cl = &l2l_cl;
                     }
-                    // put args values
-                    char *arg_buffer;
-                    size_t arg_buffer_size;
+#ifdef STARPU_SIMGRID_MLR_MODELS
                     size_t nbChildParent = 0;
                      {
                          CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
@@ -1533,7 +1531,6 @@ protected:
                              idxParentCell += 1;
                          }
                      }
-#ifdef STARPU_SIMGRID_MLR_MODELS
                     double *parameters = (double*) calloc(1,l2l_cl.model->nparameters*sizeof(double));
                     parameters[0] = (double) idxLevel;
                     parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
@@ -1544,7 +1541,10 @@ protected:
                             FMath::Max(tree->getCellGroup(idxLevel,idxGroup)->getStartingIndex(), tree->getCellGroup(idxLevel+1,idxSubGroup)->getStartingIndex()>>3);
                     parameters[6] = (double) nbChildParent;
 #endif
-		    
+
+                    // put args values
+                    char *arg_buffer;
+                    size_t arg_buffer_size;
                     starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
                                              STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                              STARPU_VALUE, &idxLevel, sizeof(idxLevel),
@@ -1590,9 +1590,7 @@ protected:
                     else{
                         task->cl = &l2l_cl;
                     }
-                    // put args values
-                    char *arg_buffer;
-                    size_t arg_buffer_size;
+#ifdef STARPU_SIMGRID_MLR_MODELS
                     size_t nbChildParent = 0;
                        {
                            CellContainerClass*const currentCells = tree->getCellGroup(idxLevel, idxGroup);
@@ -1618,7 +1616,6 @@ protected:
                                idxParentCell += 1;
                            }
                        }
-#ifdef STARPU_SIMGRID_MLR_MODELS
                       double *parameters = (double*) calloc(1,l2l_cl.model->nparameters*sizeof(double));
                       parameters[0] = (double) idxLevel;
                       parameters[1] = (double) tree->getCellGroup(idxLevel,idxGroup)->getNumberOfCellsInBlock();
@@ -1630,6 +1627,9 @@ protected:
                       parameters[6] = (double) nbChildParent;
 #endif
 
+                    // put args values
+                    char *arg_buffer;
+                    size_t arg_buffer_size;
                     starpu_codelet_pack_args((void**)&arg_buffer, &arg_buffer_size,
                                              STARPU_VALUE, &wrapperptr, sizeof(wrapperptr),
                                              STARPU_VALUE, &idxLevel, sizeof(idxLevel),
@@ -1673,6 +1673,7 @@ protected:
             for(int idxInteraction = 0; idxInteraction < int(externalInteractionsLeafLevel[idxGroup].size()) ; ++idxInteraction){
                 const int interactionid = externalInteractionsLeafLevel[idxGroup][idxInteraction].otherBlockId;
                 const std::vector<OutOfBlockInteraction>* outsideInteractions = &externalInteractionsLeafLevel[idxGroup][idxInteraction].interactions;
+#ifdef STARPU_SIMGRID_MLR_MODELS
                 int nbDiff0 = 0;
                 int nbDiff1 = 0;
                 size_t nbInteractions = 0;
@@ -1696,7 +1697,6 @@ protected:
                         }
                     }
                 }
-#ifdef STARPU_SIMGRID_MLR_MODELS
                 double *parameters = (double*) calloc(1,p2p_cl_inout.model->nparameters*sizeof(double));
                 parameters[0] = (double) tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock();
                 parameters[1] = (double) tree->getParticleGroup(idxGroup)->getSizeOfInterval();
@@ -1705,9 +1705,9 @@ protected:
                 parameters[4] = (double) tree->getParticleGroup(interactionid)->getSizeOfInterval();
                 parameters[5] = (double) tree->getParticleGroup(interactionid)->getNbParticlesInGroup();
                 parameters[6] = (double) outsideInteractions->size();
-		parameters[7] = (double) nbDiff0;
-		parameters[8] = (double) nbDiff1;
-		parameters[9] = (double) nbInteractions;
+                parameters[7] = (double) nbDiff0;
+                parameters[8] = (double) nbDiff1;
+                parameters[9] = (double) nbInteractions;
 #endif
 
                 starpu_insert_task(&p2p_cl_inout,
@@ -1750,6 +1750,7 @@ protected:
         FLOG( timerOutBlock.tac() );
         FLOG( timerInBlock.tic() );
         for(int idxGroup = 0 ; idxGroup < tree->getNbParticleGroup() ; ++idxGroup){
+#ifdef STARPU_SIMGRID_MLR_MODELS
             size_t nbInteractions = 0;
             {
                 ParticleGroupClass* containers = tree->getParticleGroup(idxGroup);
@@ -1778,7 +1779,6 @@ protected:
                     }
                 }
             }
-#ifdef STARPU_SIMGRID_MLR_MODELS
 	        double *parameters = (double*) calloc(1,p2p_cl_in.model->nparameters*sizeof(double));
                 parameters[0] = (double) tree->getParticleGroup(idxGroup)->getNumberOfLeavesInBlock();
                 parameters[1] = (double) tree->getParticleGroup(idxGroup)->getSizeOfInterval();
