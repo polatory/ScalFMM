@@ -28,7 +28,7 @@ using namespace std;
 #include "../../Src/GroupTree/Core/FP2PGroupParticleContainer.hpp"
 #include "../../Src/GroupTree/Core/FGroupTaskAlgorithm.hpp"
 
-#include "../../Src/BalanceTree/FLeafBalance.hpp"
+#include "../../Src/Utils/FLeafBalance.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 

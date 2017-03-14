@@ -124,8 +124,7 @@ void unifRandomPointsInBall(const FSize N, const FReal R, FReal* points) {
  * \param points array of size 4*N and stores data as follow x,y,z,0,x,y,z,0....
  */
 template <class FReal>
-void nonunifRandomPointsOnElipsoid(const FSize N, const FReal& a, const FReal& b,
-                                   const FReal& c, FReal* points)
+void nonunifRandomPointsOnElipsoid(const FSize N, const FReal& a, const FReal& b, const FReal& c, FReal* points)
 {
 #ifdef  SCALFMM_OLD_ELLIPSOID
     FReal u, v, cosu;
@@ -192,6 +191,11 @@ void nonunifRandomPointsOnElipsoid(const FSize N, const FReal& a, const FReal& b
 #endif
 }
 
+
+template <class FReal>
+void nonunifRandomPointsOnElipsoid(const FSize N, const FReal& a, const FReal& b, FReal* points){
+    nonunifRandomPointsOnElipsoid(N, a, b, FReal(1), points);
+}
 
 /**
  * \brief Generate N points uniformly distributed on the ellipsoid of aspect ratio a:a:c

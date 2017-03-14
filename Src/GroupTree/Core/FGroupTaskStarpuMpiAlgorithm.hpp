@@ -76,39 +76,39 @@ protected:
     int getTag(const int inLevel, const MortonIndex mindex, const int idxBloc, const int mode, const int otherProc) const{
         int shift = 0, s_mindex = 0;
         int height = tree->getHeight();
-		int h_mindex = idxBloc;
+        int h_mindex = idxBloc;
         while(height) { shift += 1; height >>= 1; }
         while(h_mindex) { s_mindex += 1; h_mindex >>= 1; }
 
-		FAssertLF((s_mindex + shift + 8) <= 32, "Tag overflow !!");
-		const int tag = int(((((idxBloc<<shift) + inLevel) << 3) + mode) << 5);
-		int *tag_ub = 0; 
-        int ok = 0; 
+        FAssertLF((s_mindex + shift + 8) <= 32, "Tag overflow !!");
+        const int tag = int(((((idxBloc<<shift) + inLevel) << 3) + mode) << 5);
+        int *tag_ub = 0;
+        int ok = 0;
         MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &tag_ub, &ok);
-		FAssertLF(tag < *tag_ub, "Tag overflow: Tag greater than MPI_TAG_UB");
-		{    
-			struct TagInfo{
-				int level;
-				MortonIndex mindex;
-				int idxBloc;
-				int mode;
-				bool operator==(TagInfo const& a) const
-				{
-					return (a.idxBloc == idxBloc && a.level == level && a.mindex == mindex && a.mode == mode);
-				}
-			 };   
-			static std::unordered_map<int, TagInfo> previousTag;
-			const TagInfo currentInfo = {inLevel, mindex, idxBloc, mode};
-			auto found = previousTag.find(tag);
-			if(found != previousTag.end()){
-				const TagInfo prev = found->second;
-				assert(currentInfo == prev);
-			}    
-			else{
-				previousTag[tag] = currentInfo;
-			}    
-		}    
-		return tag; 
+        FAssertLF(tag < *tag_ub, "Tag overflow: Tag greater than MPI_TAG_UB");
+        {
+            struct TagInfo{
+                int level;
+                MortonIndex mindex;
+                int idxBloc;
+                int mode;
+                bool operator==(TagInfo const& a) const
+                {
+                    return (a.idxBloc == idxBloc && a.level == level && a.mindex == mindex && a.mode == mode);
+                }
+             };
+            static std::unordered_map<int, TagInfo> previousTag;
+            const TagInfo currentInfo = {inLevel, mindex, idxBloc, mode};
+            auto found = previousTag.find(tag);
+            if(found != previousTag.end()){
+                const TagInfo prev = found->second;
+                assert(currentInfo == prev);
+            }
+            else{
+                previousTag[tag] = currentInfo;
+            }
+        }
+        return tag;
 
     }
 
@@ -1294,11 +1294,11 @@ protected:
 
                         starpu_mpi_irecv_detached( remoteCellGroups[idxLevel][idxHandle].handleSymb,
                                                    processesBlockInfos[idxLevel][idxHandle].owner,
-                                                   getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 0),
+                                                   getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, processesBlockInfos[idxLevel][idxHandle].globalIdx, 0, processesBlockInfos[idxLevel][idxHandle].owner),
                                                    comm.getComm(), 0, 0 );
                         starpu_mpi_irecv_detached( remoteCellGroups[idxLevel][idxHandle].handleUp,
                                                    processesBlockInfos[idxLevel][idxHandle].owner,
-                                                   getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, 1),
+                                                   getTag(idxLevel,processesBlockInfos[idxLevel][idxHandle].firstIndex, processesBlockInfos[idxLevel][idxHandle].globalIdx, 1, processesBlockInfos[idxLevel][idxHandle].owner),
                                                    comm.getComm(), 0, 0 );
                     }
                 }
@@ -1312,7 +1312,7 @@ protected:
 
                     starpu_mpi_irecv_detached( remoteParticleGroupss[idxHandle].handleSymb,
                                                processesBlockInfos[tree->getHeight()-1][idxHandle].owner,
-                            getTag(tree->getHeight(),processesBlockInfos[tree->getHeight()-1][idxHandle].firstIndex, 0),
+                            getTag(tree->getHeight(),processesBlockInfos[tree->getHeight()-1][idxHandle].firstIndex, processesBlockInfos[tree->getHeight()-1][idxHandle].globalIdx, 0, processesBlockInfos[tree->getHeight()-1][idxHandle].owner),
                             comm.getComm(), 0, 0 );
                 }
             }
@@ -1332,7 +1332,7 @@ protected:
                      " and dest is " << sd.dest << " tag " << getTag(tree->getHeight(), tree->getParticleGroup(localId)->getStartingIndex(), nbBlocksBeforeMinPerLevel[tree->getHeight()-1] + localId, 0, sd.dest) <<  "\n");
 
                 starpu_mpi_isend_detached( particleHandles[localId].symb, sd.dest,
-                                           getTag(tree->getHeight(),tree->getParticleGroup(localId)->getStartingIndex(), 0),
+                                           getTag(tree->getHeight(), tree->getParticleGroup(localId)->getStartingIndex(), nbBlocksBeforeMinPerLevel[tree->getHeight()-1] + localId, 0, sd.dest),
                                            comm.getComm(), 0/*callback*/, 0/*arg*/ );
             }
         }
@@ -1354,10 +1354,10 @@ protected:
                      " and dest is " << sd.dest << " tag " << getTag(sd.level, tree->getCellGroup(sd.level, localId)->getStartingIndex(), nbBlocksBeforeMinPerLevel[sd.level] + localId, 1, sd.dest) << "\n");
 
                 starpu_mpi_isend_detached( cellHandles[sd.level][localId].symb, sd.dest,
-                        getTag(sd.level,tree->getCellGroup(sd.level, localId)->getStartingIndex(), 0),
+                        getTag(sd.level, tree->getCellGroup(sd.level, localId)->getStartingIndex(), nbBlocksBeforeMinPerLevel[sd.level] + localId, 0, sd.dest),
                         comm.getComm(), 0/*callback*/, 0/*arg*/ );
                 starpu_mpi_isend_detached( cellHandles[sd.level][localId].up, sd.dest,
-                        getTag(sd.level,tree->getCellGroup(sd.level, localId)->getStartingIndex(), 1),
+                        getTag(sd.level, tree->getCellGroup(sd.level, localId)->getStartingIndex(), nbBlocksBeforeMinPerLevel[sd.level] + localId, 1, sd.dest),
                         comm.getComm(), 0/*callback*/, 0/*arg*/ );
             }
         }
@@ -1801,11 +1801,11 @@ protected:
 
                     starpu_mpi_irecv_detached ( remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handleSymb,
                             processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner,
-                            getTag(idxLevel,processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, 0),
+                            getTag(idxLevel, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].globalIdx, 0, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner),
                             comm.getComm(), 0/*callback*/, 0/*arg*/ );
                     starpu_mpi_irecv_detached ( remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handleUp,
                             processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner,
-                            getTag(idxLevel,processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, 1),
+                            getTag(idxLevel, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].globalIdx, 1, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner),
                             comm.getComm(), 0/*callback*/, 0/*arg*/ );
 
 
@@ -1873,10 +1873,10 @@ protected:
                         FLOG(FLog::Controller.flush());
 
                         starpu_mpi_isend_detached( cellHandles[idxLevel+1][lowerIdxToSend].symb, dest,
-                                getTag(idxLevel,tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex(), 0),
+                                getTag(idxLevel, tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex(), nbBlocksBeforeMinPerLevel[idxLevel+1] + lowerIdxToSend, 0, dest),
                                 comm.getComm(), 0/*callback*/, 0/*arg*/ );
                         starpu_mpi_isend_detached( cellHandles[idxLevel+1][lowerIdxToSend].up, dest,
-                                getTag(idxLevel,tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex(), 1),
+                                getTag(idxLevel, tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex(), nbBlocksBeforeMinPerLevel[idxLevel+1] + lowerIdxToSend, 1, dest),
                                 comm.getComm(), 0/*callback*/, 0/*arg*/ );
                         lowerIdxToSend += 1;
                     }
@@ -2045,11 +2045,11 @@ protected:
 
                         starpu_mpi_isend_detached( cellHandles[idxLevel][idxLastBlock].symb,
                                                    processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner,
-                                getTag(idxLevel,tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex(), 0),
+                                getTag(idxLevel, tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex(), nbBlocksBeforeMinPerLevel[idxLevel] + idxLastBlock, 0, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner),
                                 comm.getComm(), 0/*callback*/, 0/*arg*/ );
                         starpu_mpi_isend_detached( cellHandles[idxLevel][idxLastBlock].down,
                                                    processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner,
-                                getTag(idxLevel,tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex(), 2),
+                                getTag(idxLevel, tree->getCellGroup(idxLevel, idxLastBlock)->getStartingIndex(), nbBlocksBeforeMinPerLevel[idxLevel] + idxLastBlock, 2, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner),
                                 comm.getComm(), 0/*callback*/, 0/*arg*/ );
 
                         lastProcSend = processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToSend].owner;
@@ -2099,11 +2099,11 @@ protected:
 
                     starpu_mpi_irecv_detached ( remoteCellGroups[idxLevel][firstOtherBlock].handleSymb,
                                                 processesBlockInfos[idxLevel][firstOtherBlock].owner,
-                                                getTag(idxLevel,processesBlockInfos[idxLevel][firstOtherBlock].firstIndex, 0),
+                                                getTag(idxLevel, processesBlockInfos[idxLevel][firstOtherBlock].firstIndex, processesBlockInfos[idxLevel][firstOtherBlock].globalIdx, 0, processesBlockInfos[idxLevel][firstOtherBlock].owner),
                                                 comm.getComm(), 0/*callback*/, 0/*arg*/ );
                     starpu_mpi_irecv_detached ( remoteCellGroups[idxLevel][firstOtherBlock].handleDown,
                                                 processesBlockInfos[idxLevel][firstOtherBlock].owner,
-                                                getTag(idxLevel,processesBlockInfos[idxLevel][firstOtherBlock].firstIndex, 2),
+                                                getTag(idxLevel, processesBlockInfos[idxLevel][firstOtherBlock].firstIndex, processesBlockInfos[idxLevel][firstOtherBlock].globalIdx, 2, processesBlockInfos[idxLevel][firstOtherBlock].owner),
                                                 comm.getComm(), 0/*callback*/, 0/*arg*/ );
 
                     {

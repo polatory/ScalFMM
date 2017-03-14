@@ -34,7 +34,7 @@ using namespace std;
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp" //For validation
 #include "../../Src/Core/FFmmAlgorithm.hpp" //For validation
 
-#include "../../Src/BalanceTree/FLeafBalance.hpp"
+#include "../../Src/Utils/FLeafBalance.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 

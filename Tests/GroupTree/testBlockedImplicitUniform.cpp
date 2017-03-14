@@ -36,7 +36,7 @@ using namespace std;
 
 #include "../../Src/Core/FFmmAlgorithm.hpp" //For validation
 
-#include "../../Src/BalanceTree/FLeafBalance.hpp"
+#include "../../Src/Utils/FLeafBalance.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"
 

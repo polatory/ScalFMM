@@ -74,7 +74,7 @@ int main(int argc, char* argv[]){
 #ifdef SCALFMM_USE_STARPU
     typedef FStarPUAllCpuCapacities<FChebSymKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
-    typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
+    typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper, GroupContainerClass > GroupAlgorithm;
 #elif defined(SCALFMM_USE_OMP4)
     typedef FChebSymKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
     typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass,
@@ -101,10 +101,10 @@ int main(int argc, char* argv[]){
 #ifdef RANDOM_PARTICLES
 	setSeed(1);
 	FReal * tmpParticles = new FReal[4*loader.getNumberOfParticles()];
-	if(FParameters::existParameter(argc, argv, "-ellipsoid")) {
+        if(FParameters::existParameter(argc, argv, "-ellipsoid")) {
 		nonunifRandomPointsOnElipsoid(loader.getNumberOfParticles(), loader.getBoxWidth()/2, loader.getBoxWidth()/4, tmpParticles);
 	}
-	else if(FParameters::existParameter(argc, argv, "-plummer")) {
+        else if(FParameters::existParameter(argc, argv, "-plummer")) {
 		//The M argument is not used in the algorithm of the plummer distribution
 		unifRandomPlummer(loader.getNumberOfParticles(), loader.getBoxWidth()/2, tmpParticles) ;
 	}
