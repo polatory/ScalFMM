@@ -2,6 +2,7 @@
 // ==== CMAKE =====
 // @FUSE_BLAS
 // @FUSE_FFT
+// @FUSE_STARPU
 // ================
 // Keep in private GIT
 
@@ -73,7 +74,7 @@ int main(int argc, char* argv[]){
 #ifdef SCALFMM_USE_STARPU
     typedef FStarPUAllCpuCapacities<FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
-    typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
+    typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper, GroupContainerClass > GroupAlgorithm;
 #elif defined(SCALFMM_USE_OMP4)
     typedef FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
     // Set the number of threads
@@ -124,9 +125,13 @@ int main(int argc, char* argv[]){
     GroupKernelClass groupkernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
 
+    // Extended for Native vs SimGrid makespans comparison
     timer.tic();
+    double start_time = starpu_timing_now();
     groupalgo.execute();
+    double end_time = starpu_timing_now();
     std::cout << "Kernel executed in in " << timer.tacAndElapsed() << "s\n";
+    std::cout << (end_time - start_time)/1000 << "\n";
 
     // Validate the result
     if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){

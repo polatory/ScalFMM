@@ -213,11 +213,12 @@ protected:
                     CellClass* potentialChild[8];
                     CellClass** const realChild = iterArray[idxCell].getCurrentChild();
                     CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
+                    int nbChildWithSrc = 0;
                     for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
                         potentialChild[idxChild] = nullptr;
                         if(realChild[idxChild]){
                             if(realChild[idxChild]->hasSrcChild()){
-                                currentCell->setSrcChildTrue();
+                                nbChildWithSrc += 1;
                                 potentialChild[idxChild] = realChild[idxChild];
                             }
                             if(realChild[idxChild]->hasTargetsChild()){
@@ -225,7 +226,10 @@ protected:
                             }
                         }
                     }
-                    myThreadkernels->M2M( currentCell , potentialChild, idxLevel);
+                    if(nbChildWithSrc){
+                        currentCell->setSrcChildTrue();
+                        myThreadkernels->M2M( currentCell , potentialChild, idxLevel);
+                    }
                 }
             }
             FLOG(computationCounter.tac());

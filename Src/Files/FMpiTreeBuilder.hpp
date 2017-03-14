@@ -408,7 +408,7 @@ public:
                          << " from " << pack.elementFrom << " to " << pack.elementTo << " \n"; FLog::Controller.flush(); );
                     // Send the size of the data
                     requestsNbParts.emplace_back();
-                    FMpi::MpiAssert(MPI_Isend(const_cast<long long int*>(&nbPartsPerPackToSend),1,MPI_LONG_LONG_INT,pack.idProc,
+                    FMpi::MpiAssert(MPI_Isend((void*)&nbPartsPerPackToSend,1,MPI_LONG_LONG_INT,pack.idProc,
                                               FMpi::TagExchangeIndexs, communicator.getComm(), &requestsNbParts.back()),__LINE__);
 
                 }
@@ -580,7 +580,6 @@ public:
 //        for(int idx = 0 ; idx < nbParticlesInArray ; ++idx){
 //            particleSaver->push(sortedParticlesArray[idx].particle);
 //        }
-
         ParticleClass* particlesArrayInLeafOrder = nullptr;
         FSize * leavesOffsetInParticles = nullptr;
         FSize nbLeaves = 0;

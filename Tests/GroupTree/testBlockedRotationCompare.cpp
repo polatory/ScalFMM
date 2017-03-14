@@ -619,7 +619,7 @@ struct RunContainer{
             if(FParameters::existParameter(argc, argv, LocalOptionGroupStarPU.options)){
                 typedef FStarPUAllCpuCapacities<FRotationKernel<FReal,GroupCellClass,GroupContainerClass,ORDER>> GroupKernelClass;
                 typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
-                typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
+                typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper, GroupContainerClass > GroupAlgorithm;
                 std::cout << "Using FGroupTaskStarPUAlgorithm" << std::endl;
                 GroupKernelClass groupkernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox());
                 GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
