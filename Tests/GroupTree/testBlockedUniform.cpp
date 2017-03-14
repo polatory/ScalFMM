@@ -45,10 +45,282 @@
 
 #define RANDOM_PARTICLES
 
+template <class FReal>
+class FSphericalRandomLoader : public FAbstractLoader<FReal> {
+protected:
+    const int nbParticles;            //< the number of particles
+    const FReal boxWidth;             //< the box width
+    const FPoint<FReal> centerOfBox;    //< The center of box
+    const bool nu;
+    const bool snu;
+    const bool su;
+    const bool elu;
+    const bool ssnu;
+    const bool elsu;
+
+
+    FReal rotationMatrix[3][3];
+
+    void initRotationMatrix(){
+        const FReal alpha = FMath::FPi<FReal>()/8;
+        const FReal omega = FMath::FPi<FReal>()/4;
+
+        FReal yrotation[3][3];
+        yrotation[0][0] = FMath::Cos(alpha); yrotation[0][1] = 0.0; yrotation[0][2] = FMath::Sin(alpha);
+        yrotation[1][0] = 0.0;               yrotation[1][1] = 1.0; yrotation[1][2] = 0.0;
+        yrotation[2][0] = -FMath::Sin(alpha); yrotation[2][1] = 0.0;   yrotation[2][2] = FMath::Cos(alpha);
+
+        FReal zrotation[3][3];
+        zrotation[0][0] = FMath::Cos(omega); zrotation[0][1] = -FMath::Sin(omega); zrotation[0][2] = 0.0;
+        zrotation[1][0] = FMath::Sin(omega); zrotation[1][1] = FMath::Cos(omega); zrotation[1][2] = 0.0;
+        zrotation[2][0] = 0.0; zrotation[2][1] = 0.0;   zrotation[2][2] = 1.0;
+
+        for(int i = 0 ; i < 3 ; ++i){
+            for(int j = 0 ; j < 3 ; ++j){
+                FReal sum = 0.0;
+                for(int k = 0 ; k < 3 ; ++k){
+                    sum += zrotation[i][k] * yrotation[k][j];
+                }
+                rotationMatrix[i][j] = sum;
+            }
+        }
+    }
+
+public:
+    /**
+    * The constructor need the simulation data
+    */
+    FSphericalRandomLoader(const int inNbParticles, const bool inNu = false,
+                           const bool inSnu = false,
+                           const bool inSu = false,
+                           const bool inElu = false,
+                           const bool inSsnu = false,
+                           const bool inElsu = false)
+        : nbParticles(inNbParticles), boxWidth(1.0), centerOfBox(0,0,0), nu(inNu),
+          snu(inSnu), su(inSu), elu(inElu), ssnu(inSsnu), elsu(inElsu) {
+        srand48(static_cast<unsigned int>(0));
+        if( !nu && !snu && !su && !elu && !ssnu && !elsu ){
+            std::cout << "UNIFORM" << std::endl;
+        }
+        else if( snu ){
+            std::cout << "slightly NON UNIFORM" << std::endl;
+        }
+        else if( su ){
+            std::cout << "SPHERICAL UNIFORM" << std::endl;
+        }
+        else if( elu ){
+            std::cout << "ELLIPSE UNIFORM" << std::endl;
+        }
+        else if( elsu ){
+            std::cout << "ELLIPSE NON UNIFORM" << std::endl;
+            initRotationMatrix();
+        }
+        else if( ssnu ){
+            std::cout << "spherical Slightly non UNIFORM" << std::endl;
+        }
+        else{
+            std::cout << "NON UNIFORM" << std::endl;
+        }
+    }
+
+    /**
+    * Default destructor
+    */
+    virtual ~FSphericalRandomLoader(){
+    }
+
+    /**
+      * @return true
+      */
+    bool isOpen() const{
+        return true;
+    }
+
+    /**
+      * To get the number of particles from this loader
+      * @param the number of particles the loader can fill
+      */
+    FSize getNumberOfParticles() const{
+        return FSize(this->nbParticles);
+    }
+
+    /**
+      * The center of the box
+      * @return box center
+      */
+    FPoint<FReal> getCenterOfBox() const{
+        return this->centerOfBox;
+    }
+
+    /**
+      * The box width
+      * @return box width
+      */
+    FReal getBoxWidth() const{
+        return this->boxWidth;
+    }
+
+    /**
+      * Fill a particle
+      * @warning to work with the loader, particles has to expose a setPosition method
+      * @param the particle to fill
+      */
+    void fillParticle(FPoint<FReal>* partPtr){
+        FPoint<FReal>& inParticle = *partPtr;
+        if( !nu && !snu && !su && !elu && !ssnu && !elsu ){
+            inParticle.setPosition(
+                        (getRandom() * boxWidth) + centerOfBox.getX() - boxWidth/2,
+                        (getRandom() * boxWidth) + centerOfBox.getY() - boxWidth/2,
+                        (getRandom() * boxWidth) + centerOfBox.getZ() - boxWidth/2);
+        }
+        else if( snu ){
+            const FReal XCenter = centerOfBox.getX();
+            const FReal YCenter = centerOfBox.getY();
+            const FReal ZCenter = centerOfBox.getZ();
+
+            const FReal rayon = FReal(0.4);
+            const FReal thresh = FReal(0.15);
+            const FReal threshDiv2 = thresh/2;
+
+            // Generate particles
+            const FReal theta = getRandom() * FMath::FPi<FReal>();
+            const FReal omega = getRandom() * FMath::FPi<FReal>() * FReal(2);
+
+            const FReal px = rayon * FMath::Cos(omega) * FMath::Sin(theta) + XCenter + thresh * getRandom() - threshDiv2;
+            const FReal py = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter + thresh * getRandom() - threshDiv2;
+            const FReal pz = rayon * FMath::Cos(theta) + ZCenter + thresh * getRandom() - threshDiv2;
+
+            inParticle.setPosition(px,py,pz);
+        }
+        else if( su ){
+            //http://www.cs.cmu.edu/~mws/rpos.html
+            const FReal r = 0.4;
+
+            const FReal pz = getRandom()*2.0*r - r;
+            const FReal omega = getRandom() * FMath::FPi<FReal>() * FReal(2);
+
+            const FReal theta = FMath::ASin(pz/r);
+
+            const FReal px = r * cos(theta) * cos(omega);
+            const FReal py = r * cos(theta) * sin(omega);
+
+            inParticle.setPosition(px,py,pz);
+        }
+        else if( elu ){
+            const FReal a = 0.4;
+            const FReal b = 0.15;
+
+            const FReal maxPerimeter = 2.0 * FMath::FPi<FReal>() * a;
+
+            FReal px   = 0;
+            // rayon du cercle pour ce x
+            FReal subr = 0;
+
+            do {
+                px   = (getRandom() * a * 2) - a;
+                subr = FMath::Sqrt( (1.0 - ((px*px)/(a*a))) * (b*b) );
+            } while( (getRandom()*maxPerimeter) > subr );
+
+            // on genere un angle
+            const FReal omega = getRandom() * FMath::FPi<FReal>() * FReal(2);
+            // on recupere py et pz sur le cercle
+            const FReal py = FMath::Cos(omega) * subr;
+            const FReal pz = FMath::Sin(omega) * subr;
+
+            inParticle.setPosition(px,py,pz);
+        }
+        else if( elsu ){
+            const FReal a = 0.5;
+            const FReal b = 0.1;
+
+            const FReal MaxDensity = 10.0;
+            const FReal maxPerimeter = 2.0 * FMath::FPi<FReal>() * a ;
+
+            FReal px   = 0;
+            // rayon du cercle pour ce x
+            FReal subr = 0;
+            FReal coef = 1.0;
+
+            do {
+                //px   = ( ((getRandom()*8.0+getRandom())/9.0) * a * 2) - a;
+                px = (getRandom() * a * 2.0) - a;
+
+                coef = FMath::Abs(px) * MaxDensity/a + 1.0;
+
+                subr = FMath::Sqrt( (1.0 - ((px*px)/(a*a))) * (b*b) );
+
+            } while( (getRandom()*maxPerimeter) > subr * coef );
+
+            // on genere un angle
+            const FReal omega = getRandom() * FMath::FPi<FReal>() * FReal(2);
+            // on recupere py et pz sur le cercle
+            const FReal py = FMath::Cos(omega) * subr;
+            const FReal pz = FMath::Sin(omega) * subr;
+
+           // inParticle.setPosition(px,py,pz);
+            inParticle.setPosition(px * rotationMatrix[0][0] + py * rotationMatrix[0][1]+ pz * rotationMatrix[0][2],
+                                   px * rotationMatrix[1][0] + py * rotationMatrix[1][1]+ pz * rotationMatrix[1][2],
+                                   px * rotationMatrix[2][0] + py * rotationMatrix[2][1]+ pz * rotationMatrix[2][2]);
+
+        }
+        else if( ssnu ){
+            const FReal XCenter = centerOfBox.getX();
+            const FReal YCenter = centerOfBox.getY();
+            const FReal ZCenter = centerOfBox.getZ();
+
+            const FReal rayon = FReal(0.4);
+
+            // Generate particles
+            /*static const int NbAcc = 2;
+            FReal acc = 0;
+            for(int idx = 0 ; idx < NbAcc ; ++idx){
+                acc += getRandom()/FReal(NbAcc);
+            }*/
+            FReal acc = ((getRandom()*8)+getRandom())/9;
+
+            const FReal theta = acc * FMath::FPi<FReal>();
+            const FReal omega = getRandom() * FMath::FPi<FReal>() * FReal(2);
+
+            const FReal px = rayon * FMath::Cos(omega) * FMath::Sin(theta) + XCenter ;
+            const FReal py = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter ;
+            const FReal pz = rayon * FMath::Cos(theta) + ZCenter ;
+
+            inParticle.setPosition(px,py,pz);
+        }
+        else{
+            const FReal XCenter = centerOfBox.getX();
+            const FReal YCenter = centerOfBox.getY();
+            const FReal ZCenter = centerOfBox.getZ();
+
+            const FReal rayon = FReal(0.4);
+
+            const FReal theta = getRandom() * FMath::FPi<FReal>();
+            const FReal omega = getRandom() * FMath::FPi<FReal>() * FReal(2);
+
+            const FReal px = rayon * FMath::Cos(omega) * FMath::Sin(theta) + XCenter ;
+            const FReal py = rayon * FMath::Sin(omega) * FMath::Sin(theta) + YCenter ;
+            const FReal pz = rayon * FMath::Cos(theta) + ZCenter ;
+
+            inParticle.setPosition(px,py,pz);
+        }
+    }
+
+    /** Get a random number between 0 & 1 */
+    FReal getRandom() const{
+        return FReal(drand48());
+    }
+};
+
+extern "C" {
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
-    FHelpDescribeAndExit(argc, argv, "Perform Lagrange Kernel based simulation with StarPU",
+    const FParameterNames LocalOptionNonUnif { {"-nonunif"}, "To generate non uniform"};
+    const FParameterNames LocalOptionProlateNonUnif { {"-prolate-nonunif"}, "To generate prolate non unif distribution"};
+    const FParameterNames LocalOptionProlate { {"-prolate"}, "To generate prolate distribution"};
+    const FParameterNames LocalOptionSpherical { {"-spherical"}, "To generate spherical distribution"};
+    const FParameterNames LocalOptionSphericalNonUnif { {"-spherical-nonunif"}, "To generate spherical non unif distribution"};
+    FHelpDescribeAndExit(argc, argv, "Test the blocked tree by counting the particles.",
                          FParameterDefinitions::OctreeHeight,
 #ifdef RANDOM_PARTICLES
                          FParameterDefinitions::NbParticles,
@@ -56,6 +328,8 @@ int main(int argc, char* argv[]){
                          FParameterDefinitions::InputFile,
 #endif
                          FParameterDefinitions::NbThreads,
+                         LocalOptionProlateNonUnif, LocalOptionProlate,
+                         LocalOptionSpherical, LocalOptionSphericalNonUnif,LocalOptionNonUnif,
                          LocalOptionBlocSize, LocalOptionNoValidate);
 
     // Initialize the types
@@ -73,7 +347,7 @@ int main(int argc, char* argv[]){
 #ifdef SCALFMM_USE_STARPU
     typedef FStarPUAllCpuCapacities<FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER>> GroupKernelClass;
     typedef FStarPUCpuWrapper<typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass> GroupCpuWrapper;
-    typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper > GroupAlgorithm;
+    typedef FGroupTaskStarPUAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupCpuWrapper, GroupContainerClass > GroupAlgorithm;
 #elif defined(SCALFMM_USE_OMP4)
     typedef FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
     // Set the number of threads
@@ -91,7 +365,14 @@ int main(int argc, char* argv[]){
 
     // Load the particles
 #ifdef RANDOM_PARTICLES
-    FRandomLoader<FReal> loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000), 1.0, FPoint<FReal>(0,0,0), 0);
+    const bool prolate = FParameters::existParameter(argc,argv,LocalOptionProlate.options);
+    const bool prolatenonunif = FParameters::existParameter(argc,argv,LocalOptionProlateNonUnif.options);
+    const bool spherical = FParameters::existParameter(argc,argv,LocalOptionSpherical.options);
+    const bool sphericalnonunif = FParameters::existParameter(argc,argv,LocalOptionSphericalNonUnif.options);
+    const bool nonunif = FParameters::existParameter(argc,argv,LocalOptionNonUnif.options);
+    FSphericalRandomLoader<FReal> loader(FParameters::getValue(argc,argv,FParameterDefinitions::NbParticles.options, 2000),
+                                  nonunif, false, spherical, prolate, sphericalnonunif, prolatenonunif);
+
 #else
     const char* const filename = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, "../Data/test20k.fma");
     FFmaGenericLoader<FReal> loader(filename);
@@ -124,9 +405,13 @@ int main(int argc, char* argv[]){
     GroupKernelClass groupkernel(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel);
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
 
+    // Extended for Native vs SimGrid makespans comparison
     timer.tic();
+    double start_time = starpu_timing_now();
     groupalgo.execute();
+    double end_time = starpu_timing_now();
     std::cout << "Kernel executed in in " << timer.tacAndElapsed() << "s\n";
+    std::cout << (end_time - start_time)/1000 << "\n";
 
     // Validate the result
     if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
@@ -199,4 +484,4 @@ int main(int argc, char* argv[]){
 
     return 0;
 }
-
+}

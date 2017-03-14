@@ -114,9 +114,10 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       option( SCALFMM_DISABLE_NATIVE_OMP4 "Set to ON to disable the gcc/intel omp4"    ON )
     endif()
     option( SCALFMM_TIME_OMPTASKS "Set to ON to time omp4 tasks and generate output file"    OFF )
+# SIMGRID and peformance models options
     option( SCALFMM_SIMGRID_NODATA "Set to ON to avoid the allocation of numerical parts in the group tree" OFF )
-    option( SCALFMM_SIMGRID_TASKNAMEPARAMS "Set to ON to have verbose information in the task name" OFF )
-    # STARPU options
+    option( STARPU_SIMGRID_MLR_MODELS "Set to ON to enable MLR models need for calibration and simulation" OFF )
+# STARPU options
     CMAKE_DEPENDENT_OPTION(SCALFMM_STARPU_USE_COMMUTE  "Set to ON to enable commute with StarPU" ON  "SCALFMM_USE_STARPU" OFF)
     CMAKE_DEPENDENT_OPTION(SCALFMM_STARPU_USE_REDUX  "Set to ON to enable redux with StarPU"     OFF "SCALFMM_USE_STARPU" OFF)
     CMAKE_DEPENDENT_OPTION(SCALFMM_STARPU_USE_PRIO  "Set to ON to enable priority with StarPU"   ON  "SCALFMM_USE_STARPU" OFF)
@@ -598,6 +599,10 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       message(STATUS "         STARPU_INCLUDES           = ${STARPU_INCLUDE_DIRS}")
       set(SCALFMM_INCLUDES  "${SCALFMM_INCLUDES}; ${STARPU_INCLUDE_DIRS}")
     endif()
+
+    # Adding SimGrid includes
+    set(SCALFMM_INCLUDES "${SCALFMM_INCLUDES};$ENV{SIMGRID_INCLUDE}")
+    message(STATUS "         Adding SIMGRID           = $ENV{SIMGRID_INCLUDE}")
 
     # TODO: replace this by a component of find starpu
     OPTION( SCALFMM_USE_OPENCL      "Set to ON to use OPENCL with StarPU" OFF )

@@ -167,6 +167,6 @@ const std::string SCALFMMCompileLibs("@SCALFMM_COMPILE_LIBS@");
 ///////////////////////////////////////////////////////
 
 #cmakedefine SCALFMM_SIMGRID_NODATA
-#cmakedefine SCALFMM_SIMGRID_TASKNAMEPARAMS
+#cmakedefine STARPU_SIMGRID_MLR_MODELS
 
 #endif // CONFIG_H
