@@ -96,7 +96,7 @@ public:
         // Run FMM computation
         /////////////////////////////////////////////////////////////////////////////////////////////////
         Print("Fmm...");
-        std::unique_ptr<KernelClass> kernels(GetKernelFunc(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel));
+	std::unique_ptr<KernelClass> kernels(GetKernelFunc(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(),&MatrixKernel));
         FmmClass algo(&tree,kernels.get());
         algo.execute();
         //
@@ -118,12 +118,12 @@ public:
 
             tree.forEachLeaf([&](LeafClass* leaf){
                 const FReal*const potentials        = leaf->getTargets()->getPotentials();
-                const FReal*const physicalValues = leaf->getTargets()->getPhysicalValues();
-                const FReal*const forcesX            = leaf->getTargets()->getForcesX();
-                const FReal*const forcesY            = leaf->getTargets()->getForcesY();
-                const FReal*const forcesZ            = leaf->getTargets()->getForcesZ();
-                const FSize nbParticlesInLeaf           = leaf->getTargets()->getNbParticles();
-                const FVector<FSize>& indexes = leaf->getTargets()->getIndexes();
+                const FReal*const physicalValues    = leaf->getTargets()->getPhysicalValues();
+                const FReal*const forcesX           = leaf->getTargets()->getForcesX();
+                const FReal*const forcesY           = leaf->getTargets()->getForcesY();
+                const FReal*const forcesZ           = leaf->getTargets()->getForcesZ();
+                const FSize nbParticlesInLeaf       = leaf->getTargets()->getNbParticles();
+                const FVector<FSize>& indexes       = leaf->getTargets()->getIndexes();
 
                 for(FSize idxPart = 0 ; idxPart < nbParticlesInLeaf ; ++idxPart){
                     const FSize indexPartOrig = indexes[idxPart];

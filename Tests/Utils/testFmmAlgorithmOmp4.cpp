@@ -18,7 +18,7 @@
 // "http://www.gnu.org/licenses".
 // ===================================================================================
 
-// @SCALFMM_PRIVATE
+// @   SCALFMM_PRIVATE
 
 // @FUSE_OMP4
 

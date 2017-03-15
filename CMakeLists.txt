@@ -109,9 +109,9 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
     option( OPENMP_SUPPORT_PRIORITY  "Set to ON to enable tasks priority (KSTAR/StarPU compiler only)" OFF )
     option( OPENMP_SUPPORT_TASK_NAME "Set to ON to enable a taskname clause for tasks (KSTAR/StarPU compiler only)" OFF )
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
-      option( SCALFMM_DISABLE_NATIVE_OMP4 "Set to ON to disable the gcc/intel omp4"    OFF )
+      option( SCALFMM_USE_OMP4 "Set to ON to disable the gcc/intel omp4"    OFF )
     else()
-      option( SCALFMM_DISABLE_NATIVE_OMP4 "Set to ON to disable the gcc/intel omp4"    ON )
+      option( SCALFMM_USE_OMP4 "Set to ON to disable the gcc/intel omp4"    ON )
     endif()
     option( SCALFMM_TIME_OMPTASKS "Set to ON to time omp4 tasks and generate output file"    OFF )
 # SIMGRID and peformance models options
@@ -616,6 +616,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   list(APPEND FUSE_LIST "STARPU")
   list(APPEND FUSE_LIST "CUDA")
   list(APPEND FUSE_LIST "OPENCL")
+  list(APPEND FUSE_LIST "OMP4")
 
   ##################################################################
   #                         Use SSE                                #
@@ -959,6 +960,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   message(STATUS "SCALFMM_CXX_FLAGS     =  ${SCALFMM_CXX_FLAGS}")
   message(STATUS "SCALFMM_LIBRARIES     =  ${SCALFMM_LIBRARIES}")
   message(STATUS "SCALFMM_INCLUDES      =  ${SCALFMM_INCLUDES}")
+  message(STATUS "FUSE_LIST             =  ${FUSE_LIST}")
   #
   ##################################################################
   #                               END                              #
