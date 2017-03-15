@@ -929,10 +929,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   set(PACK_PACKAGE_VERSION "${SCALFMM_MAJOR_VERSION}.${SCALFMM_MINOR_VERSION}-${CPACK_PACKAGE_VERSION_PATCH}")
   set(CPACK_SOURCE_GENERATOR "TGZ")
   set(CPACK_SOURCE_PACKAGE_FILE_NAME  "SCALFMM-${SCALFMM_MAJOR_VERSION}.${SCALFMM_MINOR_VERSION}-${CPACK_PACKAGE_VERSION_PATCH}")
-  set(CPACK_SOURCE_IGNORE_FILES "\\\\.git;.DS_Store;.*~;/*.aux;/*.idx;/*.log;/*.out;/*.toc;/*.ilg;scalfmm.pro*;org.eclipse.core.resources.prefs;.cproject;.project;/.settings/,/FmmApi/")
-  list(APPEND CPACK_SOURCE_IGNORE_FILES  "${CMAKE_CURRENT_BINARY_DIR};${CMAKE_CURRENT_SOURCE_DIR}/Utils/;Notes;Deprecated;/Build*;/noDist/;/Bench/;/Obsolete/;ToRemove;Olivier;Addons/HMat")
-  # Uniform;GroupTree;Adaptive;testUnif*;/*Lagrange*")
-  #list(APPEND CPACK_SOURCE_IGNORE_FILES  "Stages;Uniform;O;testUnif*;*Lagrange*" )
+  set(CPACK_SOURCE_IGNORE_FILES "\\\\.git;.DS_Store;.*~;/*.aux;/*.idx;/*.log;/*.out;/*.toc;/*.ilg;CMakeLists.txt.user;/.settings/")
+  list(APPEND CPACK_SOURCE_IGNORE_FILES  "${CMAKE_CURRENT_BINARY_DIR};${CMAKE_CURRENT_SOURCE_DIR}/Utils/;/Build*;/Obsolete/")
   #
   include(CPack)
   #
