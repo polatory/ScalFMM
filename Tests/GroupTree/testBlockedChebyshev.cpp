@@ -121,7 +121,13 @@ int main(int argc, char* argv[]){
     GroupAlgorithm groupalgo(&groupedTree,&groupkernel);
 
     timer.tic();
+#ifdef SCALFMM_USE_STARPU
+    starpu_fxt_start_profiling();
+#endif
     groupalgo.execute();
+#ifdef SCALFMM_USE_STARPU
+    starpu_fxt_stop_profiling();
+#endif
     std::cout << "Kernel executed in in " << timer.tacAndElapsed() << "s\n";
 
     // Validate the result
@@ -195,4 +201,3 @@ int main(int argc, char* argv[]){
 
     return 0;
 }
-
