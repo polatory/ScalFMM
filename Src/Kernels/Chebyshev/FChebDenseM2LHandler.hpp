@@ -1,22 +1,5 @@
-// ===================================================================================
-// Copyright ScalFmm 2016 INRIA, Olivier Coulaud, Bérenger Bramas,
-// Matthias Messner olivier.coulaud@inria.fr, berenger.bramas@inria.fr
-// This software is a computer program whose purpose is to compute the
-// FMM.
-//
-// This software is governed by the CeCILL-C and LGPL licenses and
-// abiding by the rules of distribution of free software.
-// An extension to the license is given to allow static linking of scalfmm
-// inside a proprietary application (no matter its license).
-// See the main license file for more details.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public and CeCILL-C Licenses for more details.
-// "http://www.cecill.info".
-// "http://www.gnu.org/licenses".
-// ===================================================================================
+// See LICENCE file at project root
+
 #ifndef FCHEBDENSEM2LHANDLER_HPP
 #define FCHEBDENSEM2LHANDLER_HPP
 
@@ -45,13 +28,13 @@
  * approach.
  *
  * PB: FChebDenseM2LHandler does not seem to support non_homogeneous kernels!
- * In fact nothing appears to handle this here (i.e., adapt scaling and storage 
- * to MatrixKernelClass::Type). Given the relatively important cost of the 
- * Chebyshev variant, it is probably a choice not to have implemented this 
- * feature here but instead in the ChebyshevSym variant. But what if the 
- * kernel is non homogeneous and non symmetric (e.g. Dislocations)... 
- * 
- * TODO Specialize class (see UnifM2LHandler) OR prevent from using this 
+ * In fact nothing appears to handle this here (i.e., adapt scaling and storage
+ * to MatrixKernelClass::Type). Given the relatively important cost of the
+ * Chebyshev variant, it is probably a choice not to have implemented this
+ * feature here but instead in the ChebyshevSym variant. But what if the
+ * kernel is non homogeneous and non symmetric (e.g. Dislocations)...
+ *
+ * TODO Specialize class (see UnifM2LHandler) OR prevent from using this
  * class with non homogeneous kernels ?!
  *
  * @tparam ORDER interpolation order \f$\ell\f$
@@ -78,7 +61,7 @@ class FChebDenseM2LHandler : FNoCopyable
 		return stream.str();
 	}
 
-	
+
 public:
 	FChebDenseM2LHandler(const MatrixKernelClass *const inMatrixKernel, const FReal dummy)
 		: MatrixKernel(inMatrixKernel), C(nullptr), rank(0)
@@ -134,7 +117,7 @@ public:
 	 * Reads the matrices \f$C_t\f$ from the respective binary file
 	 */
 	void ReadFromBinaryFileAndSet();
-		
+
 
 	/**
 	 * @return rank of the M2L operators
@@ -225,7 +208,7 @@ FChebDenseM2LHandler<FReal, ORDER, MatrixKernelClass>::Compute(const MatrixKerne
 		}
 	}
 	if (counter != ninteractions)
-		throw std::runtime_error("Number of interactions must correspond to 316");	
+		throw std::runtime_error("Number of interactions must correspond to 316");
 
 	// svd compression of M2L
     const unsigned int rank	= nnodes;
@@ -244,7 +227,7 @@ FChebDenseM2LHandler<FReal, ORDER, MatrixKernelClass>::Compute(const MatrixKerne
 			}
 	if (counter != ninteractions)
 		throw std::runtime_error("Number of interactions must correspond to 316");
-	delete [] _C;	
+	delete [] _C;
 
 	// return low rank
 	return rank;
@@ -305,7 +288,7 @@ FChebDenseM2LHandler<FReal, ORDER, MatrixKernelClass>::ReadFromBinaryFileAndSet(
 							<< " does not yet exist. Compute it now ... " << std::endl;
 		this->ComputeAndStoreInBinaryFileAndReadFromFileAndSet();
 		return;
-	} 
+	}
 	if (stream.good()) {
 		stream.seekg(0);
 		// 1) read number of interpolation points (int)

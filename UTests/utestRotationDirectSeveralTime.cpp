@@ -1,6 +1,3 @@
-
-// ===================================================================================
-// Copyright ScalFmm 2011 INRIA
 #include "Utils/FGlobal.hpp"
 
 #include "Containers/FOctree.hpp"
@@ -224,6 +221,3 @@ class TestRotationDirectSeveralTime : public FUTester<TestRotationDirectSeveralT
 
 // You must do this
 TestClass(TestRotationDirectSeveralTime)
-
-
-

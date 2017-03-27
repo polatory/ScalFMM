@@ -1,3 +1,5 @@
+// See LICENCE file at project root
+
 #ifndef TIMERS_H
 #define TIMERS_H
 

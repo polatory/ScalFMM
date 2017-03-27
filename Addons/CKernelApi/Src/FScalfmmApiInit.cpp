@@ -1,3 +1,5 @@
+// See LICENCE file at project root
+
 /** It should be compiled with C export */
 extern "C" {
 #include "CScalfmmApi.h"

@@ -1,13 +1,5 @@
-// ===================================================================================
-// Logiciel initial: ScalFmm Version 0.5
-// Co-auteurs : Olivier Coulaud, Bérenger Bramas.
-// Propriétaires : INRIA.
-// Copyright © 2011-2012, diffusé sous les termes et conditions d’une licence propriétaire.
-// Initial software: ScalFmm Version 0.5
-// Co-authors: Olivier Coulaud, Bérenger Bramas.
-// Owners: INRIA.
-// Copyright © 2011-2012, spread under the terms and conditions of a proprietary license.
-// ===================================================================================
+// See LICENCE file at project root
+
 #include "FUTester.hpp"
 
 // compile by g++ utestTest.cpp -o utestTest.exe
@@ -23,24 +15,24 @@ class MyTest : public FUTester<MyTest> {
                 //or uassert(false); make an error
                 uassert(1 == 1);
 	}
-	
+
 	void TestTwo(){
 		equal(1 , 1);
                 different(1 , 2);
 	}
-	
+
 	void After(){
 		Print("After running the test");
 	}
-	
+
 	void PreTest(){
 		Print("Before each test");
 	}
-	
+
 	void PostTest(){
 		Print("After each test");
 	}
-	
+
 	// You must implement it
 	void SetTests(){
             AddTest(&MyTest::TestOne);
@@ -50,5 +42,3 @@ class MyTest : public FUTester<MyTest> {
 
 // You must do this
 TestClass(MyTest)
-
-

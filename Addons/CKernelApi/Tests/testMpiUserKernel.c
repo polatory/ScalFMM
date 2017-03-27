@@ -1,3 +1,5 @@
+// See LICENCE file at project root
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

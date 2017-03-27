@@ -1,3 +1,5 @@
+// See LICENCE file at project root
+
 #ifndef FUSERKERNELDISTRENGINE_HPP
 #define FUSERKERNELDISTRENGINE_HPP
 
