@@ -46,6 +46,10 @@
 
 #define RANDOM_PARTICLES
 
+#ifdef STARPU_SIMGRID_MLR_MODELS
+extern "C" {
+#endif
+
 int main(int argc, char* argv[]){
     const FParameterNames LocalOptionBlocSize { {"-bs"}, "The size of the block of the blocked tree"};
     const FParameterNames LocalOptionNoValidate { {"-no-validation"}, "To avoid comparing with direct computation"};
@@ -205,3 +209,6 @@ int main(int argc, char* argv[]){
     return 0;
 }
 
+#ifdef STARPU_SIMGRID_MLR_MODELS
+}
+#endif
