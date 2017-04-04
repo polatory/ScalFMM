@@ -172,10 +172,11 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
         set(SSE_FLAGS  "-msse3  -mfpmath=sse")   # -mtune=native -march=native
       ENDIF (CPUOPTION_SSE42)  
     else(APPLE)
-      set(AVX_FLAGS  "-march=native -axCORE-AVX2,CORE-AVX-I,AVX") #-mavx
-      set(AVX2_FLAGS  "-march=native  -axCORE-AVX2,CORE-AVX-I,AVX") #-march=core-avx2
+      set(AVX_FLAGS  "-fp-model source -march=native -axCORE-AVX2,CORE-AVX-I,AVX") #-mavx
+      set(AVX2_FLAGS "-march=native  -axCORE-AVX2,CORE-AVX-I,AVX") #-march=core-avx2
       set(SSE_FLAGS  "-axSSE4.2  -march=native")
     endif(APPLE)
+    set(SCALFMM_CXX_FLAGS  "${SCALFMM_CXX_FLAGS} -fma -align -finline-functions")
     #-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
   elseif(CMAKE_CXX_COMPILER_ID STREQUAL "XL")
     set(SCALFMM_CXX_FLAGS  "${SCALFMM_CXX_FLAGS} -mcpu=power8 -mtune=power8")
