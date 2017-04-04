@@ -139,7 +139,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   message(STATUS "CXX  ${CMAKE_CXX_COMPILER_ID}" )
   # Set scalfmm to default libraries
   set(SCALFMM_LIBRARIES "")
-  set(SCALFMM_CXX_FLAGS "-std=c++11 -fpic -Wall")
+  set(SCALFMM_CXX_FLAGS "-std=c++14 -fpic -Wall")
   #
   #
   # Test if openmp is here
@@ -173,7 +173,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       ENDIF (CPUOPTION_SSE42)  
     else(APPLE)
       set(AVX_FLAGS  "-march=native -axCORE-AVX2,CORE-AVX-I,AVX") #-mavx
-      set(AVX2_FLAGS  "-march=native  -axCORE-AVX2,CORE-AVX-I") #-march=core-avx2
+      set(AVX2_FLAGS  "-march=native  -axCORE-AVX2,CORE-AVX-I,AVX") #-march=core-avx2
       set(SSE_FLAGS  "-axSSE4.2  -march=native")
     endif(APPLE)
     #-Wshadow -Wpointer-arith -Wcast-qual -Wconversion  -Wall -Wnosign-conversion ")
@@ -800,7 +800,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   #
   # Generate  ScalFmmConfig.h
   #
-  set(SCALFMM_COMPILE_FLAGS "${SCALFMM_CXX_FLAGS} ${CMAKE_CXX_FLAGS_TYPE} ${CMAKE_CXX_FLAGS}")
+  set(SCALFMM_COMPILE_FLAGS "${SCALFMM_CXX_FLAGS} ${CMAKE_CXX_FLAGS}") 
   set(CMAKE_CXX_FLAGS "${SCALFMM_COMPILE_FLAGS}")
   # We need the libraries without spaces (inside the config file)
   set(SCALFMM_COMPILE_LIBS   "")
@@ -954,6 +954,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   message(STATUS "SCALFMM_USE_FFT       =  ${SCALFMM_USE_FFT}")
   message(STATUS "SCALFMM_USE_MKL       =   ${SCALFMM_USE_MKL}")
   # 
+  message(STATUS "CMAKE_CXX_FLAGS_TYPE  =  ${CMAKE_CXX_FLAGS_TYPE}")
   message(STATUS "CMAKE_CXX_FLAGS       =  ${CMAKE_CXX_FLAGS}")
   message(STATUS "SCALFMM_CXX_FLAGS     =  ${SCALFMM_CXX_FLAGS}")
   message(STATUS "SCALFMM_LIBRARIES     =  ${SCALFMM_LIBRARIES}")

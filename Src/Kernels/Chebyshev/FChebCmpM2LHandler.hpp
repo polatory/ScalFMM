@@ -17,8 +17,8 @@
 // "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#ifndef FCHEBM2LHANDLER_HPP
-#define FCHEBM2LHANDLER_HPP
+#ifndef FCHEBCMPM2LHANDLER_HPP
+#define FCHEBCMPM2LHANDLER_HPP
 
 #include <numeric>
 #include <stdexcept>

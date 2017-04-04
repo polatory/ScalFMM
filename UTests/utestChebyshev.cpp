@@ -29,6 +29,7 @@
 #include "Kernels/Chebyshev/FChebCell.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
 #include "Kernels/Chebyshev/FChebKernel.hpp"
+#include "Kernels/Chebyshev/FChebCmpKernel.hpp"
 #include "Kernels/Chebyshev/FChebSymKernel.hpp"
 
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
@@ -56,6 +57,23 @@ class TestChebyshevDirect : public FUKernelTester<TestChebyshevDirect> {
     typedef FChebCell<FReal,ORDER> CellClass;
     typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
     typedef FChebKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
+    typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
+    // run test
+    RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(
+													 [&](int NbLevels, FReal boxWidth, FPoint<FReal> centerOfBox, const MatrixKernelClass *const MatrixKernel){
+													   return std::unique_ptr<KernelClass>(new KernelClass(NbLevels, boxWidth, centerOfBox, MatrixKernel));
+													 });
+  }
+  /** TestChebKernel */
+  void TestChebKernelCmp(){
+    typedef double FReal;
+    const unsigned int ORDER = 6;
+    typedef FP2PParticleContainerIndexed<FReal> ContainerClass;
+    typedef FSimpleLeaf<FReal, ContainerClass> LeafClass;
+    typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
+    typedef FChebCell<FReal,ORDER> CellClass;
+    typedef FOctree<FReal, CellClass,ContainerClass,LeafClass> OctreeClass;
+    typedef FChebCmpKernel<FReal,CellClass,ContainerClass,MatrixKernelClass,ORDER> KernelClass;
     typedef FFmmAlgorithm<OctreeClass,CellClass,ContainerClass,KernelClass,LeafClass> FmmClass;
     // run test
     RunTest<FReal,CellClass,ContainerClass,KernelClass,MatrixKernelClass,LeafClass,OctreeClass,FmmClass>(
@@ -91,6 +109,7 @@ class TestChebyshevDirect : public FUKernelTester<TestChebyshevDirect> {
   /** set test */
   void SetTests(){
     AddTest(&TestChebyshevDirect::TestChebKernel,"Test Chebyshev Kernel with one big SVD");
+    AddTest(&TestChebyshevDirect::TestChebKernelCmp,"Test Chebyshev Kernel with 16 small SVDs");
     AddTest(&TestChebyshevDirect::TestChebSymKernel,"Test Chebyshev Kernel with 16 small SVDs and symmetries");
   }
 };

@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
                          FParameterDefinitions::NbThreads);
 
 
-    const std::string defaultFile(/*SCALFMMDataPath+*/"Data/unitCubeXYZQ100.bfma" );
+    const std::string defaultFile(SCALFMMDataPath+"unitCubeXYZQ100.bfma" );
     const std::string filename                = FParameters::getStr(argc,argv,FParameterDefinitions::InputFile.options, defaultFile.c_str());
     const unsigned int TreeHeight        = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeHeight.options, 5);
     const unsigned int SubTreeHeight  = FParameters::getValue(argc, argv, FParameterDefinitions::OctreeSubHeight.options, 2);
@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
         typedef FChebCell<FReal,ORDER>                                         CellClass;
         typedef FOctree<FReal,CellClass,ContainerClass,LeafClass>  OctreeClass;
         //
-        typedef FInterpMatrixKernelR<FReal>                                                                              MatrixKernelClass;
+        typedef FInterpMatrixKernelR<FReal>                       MatrixKernelClass;
         const MatrixKernelClass MatrixKernel;
         typedef FChebSymKernel<FReal, CellClass,ContainerClass,MatrixKernelClass,ORDER>  KernelClass;
         //

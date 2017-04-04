@@ -17,8 +17,8 @@
 // "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#ifndef FCHEBKERNEL_HPP
-#define FCHEBKERNEL_HPP
+#ifndef FCHEBCMPKERNEL_HPP
+#define FCHEBCMPKERNEL_HPP
 
 #include "../../Utils/FGlobal.hpp"
 
