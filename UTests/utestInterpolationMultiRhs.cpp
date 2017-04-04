@@ -42,8 +42,8 @@
 
 #include "Kernels/Chebyshev/FChebCell.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"
-#include "Kernels/Chebyshev/FChebSymKernel.hpp"
 #include "Kernels/Chebyshev/FChebKernel.hpp"
+#include "Kernels/Chebyshev/FChebSymKernel.hpp"
 
 #include "Kernels/Uniform/FUnifCell.hpp"
 #include "Kernels/Interpolation/FInterpMatrixKernel.hpp"

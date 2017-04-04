@@ -39,7 +39,7 @@
 #include "Kernels/P2P/FP2PParticleContainerIndexed.hpp"
 
 #include "Utils/FParameters.hpp"
-#include "../../Src/Utils/FParameterNames.hpp"
+#include "Utils/FParameterNames.hpp"
 #include "Utils/FMemUtils.hpp"
 
 #include "Containers/FOctree.hpp"
@@ -160,7 +160,6 @@ int main(int argc, char* argv[])
 
     // accuracy
     const unsigned int ORDER = 5 ;
-    const FReal epsilon = FReal(1e-5);
     // set box width extension
     // ... either deduce from element size
   const FReal LeafCellWidth = FReal(loader.getBoxWidth()) / FReal(FMath::pow(2.,TreeHeight-1));
@@ -215,7 +214,7 @@ int main(int argc, char* argv[])
     { // -----------------------------------------------------
       std::cout << "\nChebyshev FMM (ORDER="<< ORDER << ") ... " << std::endl;
       time.tic();
-      KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel, BoxWidthExtension, epsilon);
+      KernelClass kernels(TreeHeight, loader.getBoxWidth(), loader.getCenterOfBox(), &MatrixKernel, BoxWidthExtension);
       FmmClass algorithm(&tree, &kernels);
       algorithm.execute();
       time.tac();

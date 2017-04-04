@@ -35,7 +35,7 @@
 
 
 #include "../../Src/Kernels/Chebyshev/FChebTensor.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebM2LHandler.hpp"
+#include "../../Src/Kernels/Chebyshev/FChebCmpM2LHandler.hpp"
 #include "../../Src/Kernels/Interpolation/FInterpMatrixKernel.hpp"
 
 #include "../../Src/Utils/FParameterNames.hpp"

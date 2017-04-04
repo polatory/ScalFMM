@@ -28,7 +28,8 @@
 
 #include "FChebTensor.hpp"
 #include "../Interpolation/FInterpSymmetries.hpp"
-#include "FChebM2LHandler.hpp"
+
+#include "FChebCmpM2LHandler.hpp"
 
 #include "Utils/FAca.hpp"
 
@@ -175,7 +176,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
                         stream << INFO;
                         throw std::runtime_error("SVD did not converge with " + stream.str());
                     }
-                    rank = getRank(S, aca_rank, Epsilon);
+                    rank = FSvd::getRank(S, aca_rank, Epsilon);
                 }                   
 
                 const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
@@ -238,7 +239,7 @@ static void precompute(const MatrixKernelClass *const MatrixKernel, const FReal 
                     stream << INFO;
                     throw std::runtime_error("SVD did not converge with " + stream.str());
                 }
-                const unsigned int rank = getRank<ORDER>(S, Epsilon);
+                const unsigned int rank = FSvd::getRank<ORDER>(S, Epsilon);
 
                 // store 
                 const unsigned int idx = (i+3)*7*7 + (j+3)*7 + (k+3);
