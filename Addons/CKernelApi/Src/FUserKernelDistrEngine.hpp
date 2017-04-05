@@ -431,6 +431,8 @@ public:
     ~FUserKernelDistrEngine(){
         delete comm;
         comm = nullptr;
+        delete kernel;
+        delete octreeDist;
     }
 
     //Qu'est-ce qu'il faut que je surcharge ?
@@ -486,15 +488,20 @@ public:
 
         for(int id = 0 ; id<nbPoints ; ++id){
             FTreeCoordinate host;
-            arrayToBeSorted[id].position = FPoint<FReal>(particleXYZ[id+0],particleXYZ[id+1],particleXYZ[id+2]);
+            arrayToBeSorted[id].position = FPoint<FReal>(particleXYZ[3*id+0],
+                                                         particleXYZ[3*id+1],
+                                                         particleXYZ[3*id+2]);
             arrayToBeSorted[id].orIndex = id + Ind.getoriIntervals(myRank).first;
             arrayToBeSorted[id].orOwner = myRank;
             //Evaluate Morton Index
-            host.setX(FCoordinateComputer::GetTreeCoordinate<FReal>(particleXYZ[id*3+0] - this->getBoxCorner().getX(),this->getBoxWidth(),this->getBoxWidthAtLeafLevel(),
+            host.setX(FCoordinateComputer::GetTreeCoordinate<FReal>(particleXYZ[id*3+0] - this->getBoxCorner().getX(),
+                                                                    this->getBoxWidth(),this->getBoxWidthAtLeafLevel(),
                                                                     this->getTreeHeight()));
-            host.setX(FCoordinateComputer::GetTreeCoordinate<FReal>(particleXYZ[id*3+1] - this->getBoxCorner().getY(),this->getBoxWidth(),this->getBoxWidthAtLeafLevel(),
+            host.setX(FCoordinateComputer::GetTreeCoordinate<FReal>(particleXYZ[id*3+1] - this->getBoxCorner().getY(),
+                                                                    this->getBoxWidth(),this->getBoxWidthAtLeafLevel(),
                                                                     this->getTreeHeight()));
-            host.setX(FCoordinateComputer::GetTreeCoordinate<FReal>(particleXYZ[id*3+2] - this->getBoxCorner().getZ(),this->getBoxWidth(),this->getBoxWidthAtLeafLevel(),
+            host.setX(FCoordinateComputer::GetTreeCoordinate<FReal>(particleXYZ[id*3+2] - this->getBoxCorner().getZ(),
+                                                                    this->getBoxWidth(),this->getBoxWidthAtLeafLevel(),
                                                                     this->getTreeHeight()));
             arrayToBeSorted[id].index = host.getMortonIndex();
         }
@@ -578,11 +585,11 @@ public:
                            return A*stride;
                        });
         std::transform(Ind.getDisplSendVector().begin(),Ind.getDisplSendVector().end(),displSendByte.begin(),
-                        [&](const FSize & A){
+                       [&](const FSize & A){
                            return A*stride;
                        });
         std::transform(Ind.getDisplRecvVector().begin(),Ind.getDisplRecvVector().end(),displRecvByte.begin(),
-                        [&](const FSize & A){
+                       [&](const FSize & A){
                            return A*stride;
                        });
         std::vector<char > recvBuffer;
@@ -603,12 +610,13 @@ public:
             //Then, i need to find the index where current index
             //is sorted inside currentArray;
             FSize idSearch = 0;
-            for(idSearch=0 ; idSearch < Ind.getCount(myRank) && (Ind.getCurrentArrayValue(idSearch) != currentIndex) ; ++idSearch);
-            memcpy(&output[idSearch*stride],&recvBuffer[idRead*stride],stride);
+            for(idSearch=0 ; idSearch < Ind.getCount(myRank) && (Ind.getCurrentArrayValue(idSearch) != currentIndex) ; ++idSearch){
+                memcpy(&output[idSearch*stride],&recvBuffer[idRead*stride],stride);
+            }
         }
 
         //C Part
-        *newArray = malloc(output.size());
+        *newArray = new char[output.size()];
         memcpy(*newArray,output.data(),output.size());
     }
 
@@ -696,13 +704,13 @@ public:
         //Only one config shall work , so let's use it
         switch(FScalFMMEngine<FReal>::Algorithm){
         case 5:
-            {
-                typedef FFmmAlgorithmThreadProc<OctreeClass,CoreCellDist,ContainerClass,CoreKernelClass,LeafClass> AlgoProcClass;
-                AlgoProcClass * algoProc = new AlgoProcClass(*comm,octreeDist,kernel);
-                FScalFMMEngine<FReal>::algoTimer = algoProc;
-                algoProc->execute(FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P | FFmmP2P);
-                break;
-            }
+        {
+            typedef FFmmAlgorithmThreadProc<OctreeClass,CoreCellDist,ContainerClass,CoreKernelClass,LeafClass> AlgoProcClass;
+            AlgoProcClass * algoProc = new AlgoProcClass(*comm,octreeDist,kernel);
+            FScalFMMEngine<FReal>::algoTimer = algoProc;
+            algoProc->execute(FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P | FFmmP2P);
+            break;
+        }
         default:
             break;
         }
@@ -714,13 +722,13 @@ public:
         //Only one config shall work , so let's use it
         switch(FScalFMMEngine<FReal>::Algorithm){
         case 5:
-            {
-                typedef FFmmAlgorithmThreadProc<OctreeClass,CoreCellDist,ContainerClass,CoreKernelClass,LeafClass> AlgoProcClass;
-                AlgoProcClass * algoProc = new AlgoProcClass(*comm,octreeDist,kernel);
-                FScalFMMEngine<FReal>::algoTimer = algoProc;
-                algoProc->execute(FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P);
-                break;
-            }
+        {
+            typedef FFmmAlgorithmThreadProc<OctreeClass,CoreCellDist,ContainerClass,CoreKernelClass,LeafClass> AlgoProcClass;
+            AlgoProcClass * algoProc = new AlgoProcClass(*comm,octreeDist,kernel);
+            FScalFMMEngine<FReal>::algoTimer = algoProc;
+            algoProc->execute(FFmmP2M | FFmmM2M | FFmmM2L | FFmmL2L | FFmmL2P);
+            break;
+        }
         default:
             break;
         }

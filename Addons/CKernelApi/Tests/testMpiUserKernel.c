@@ -175,9 +175,9 @@ void on_leaf(int level, FSize nbParts, const FSize * idxParts, long long morton_
         double pot = 0;
 
         for(int i=0 ; i<nbParts ; ++i){
-            pot += potentials[i];
+            ptrToUserData->totalEnergy += potentials[i]*(ptrToUserData->myPhyValues[idxParts[i]]);
         }
-        ptrToUserData->totalEnergy += pot*(ptrToUserData->myPhyValues[idxParts[i]]);
+
     }
     /* printf("I'm leaf at %lld pos, of center [%e %e %e], containing %lld parts\n", */
     /*        morton_index,center[0],center[1],center[2],nbParts); */
@@ -319,8 +319,6 @@ int main(int argc, char ** argv){
     //Only read, so no split needed
     userDatas.insertedPositions = outputArray;                     // Set the position
 
-    //Need to get the good ones...
-    double * newPhyValues = malloc(sizeof(double) * outputNbPoint);
     //In this part, we store the physicalvalues
 
     //Create as many array of forces as there are threads in order to
@@ -364,6 +362,7 @@ int main(int argc, char ** argv){
     //Dealloc scalfmm handle
     scalfmm_dealloc_handle(Handle,cheb_free_cell);
 
+
     {//This part will write generated particles to a file at ScalFMM
      //format in order to verify numercal results
         /* if(my_rank==0){ */
@@ -395,8 +394,9 @@ int main(int argc, char ** argv){
         /* } */
     }
 
-    free(outputIndexes);
-    free(outputArray);
+    scalfmm_call_delete(outputIndexes);
+    scalfmm_call_delete(outputArray);
+    scalfmm_call_delete(*outputPhyValPtr);
 
 
     MPI_Finalize();

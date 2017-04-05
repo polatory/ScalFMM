@@ -428,7 +428,7 @@ public:
 
     template<class ContainerClass,class LeafClass,class CellClass>
     void generic_set_positions(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
-                       int NbPositions, FReal * X, FReal * Y, FReal * Z, PartType type){
+                               int NbPositions, FReal * X, FReal * Y, FReal * Z, PartType type){
         int checkCount = 0;
         if(type == SOURCE || type==BOTH){
             octree->forEachLeaf([&](LeafClass* leaf){
@@ -564,7 +564,7 @@ public:
 
     template<class ContainerClass,class LeafClass,class CellClass>
     void generic_get_positions_xyz(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
-                           int NbPositions, FReal * positionsToFill, PartType type){
+                                   int NbPositions, FReal * positionsToFill, PartType type){
         int checkCount = 0;
         if(type == SOURCE || type==BOTH){
             octree->forEachLeaf([&](LeafClass* leaf){
@@ -599,7 +599,7 @@ public:
 
     template<class ContainerClass,class LeafClass,class CellClass>
     void generic_get_positions_xyz_npart(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
-                                 int NbPositions, int * idxOfParticles, FReal * positionsToFill, PartType type){
+                                         int NbPositions, int * idxOfParticles, FReal * positionsToFill, PartType type){
         int checkCount = 0;
         if(type == SOURCE || type==BOTH){
             octree->forEachLeaf([&](LeafClass* leaf){
@@ -654,7 +654,7 @@ public:
 
     template<class ContainerClass,class LeafClass,class CellClass>
     void generic_get_positions(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
-                       int NbPositions, FReal * X, FReal * Y , FReal * Z, PartType type){
+                               int NbPositions, FReal * X, FReal * Y , FReal * Z, PartType type){
         int checkCount = 0;
         if(type == SOURCE || type==BOTH){
             octree->forEachLeaf([&](LeafClass* leaf){
@@ -689,7 +689,7 @@ public:
 
     template<class ContainerClass,class LeafClass,class CellClass>
     void generic_get_positions_npart(FOctree<FReal,CellClass,ContainerClass,LeafClass> * octree,
-                             int NbPositions, int * idxOfParticles,FReal * X, FReal * Y , FReal * Z,PartType type){
+                                     int NbPositions, int * idxOfParticles,FReal * X, FReal * Y , FReal * Z,PartType type){
         int checkCount = 0;
         if(type == SOURCE || type==BOTH){
             octree->forEachLeaf([&](LeafClass* leaf){
@@ -865,12 +865,12 @@ extern "C" void scalfmm_get_physical_values(scalfmm_handle Handle, int nbPhysica
 extern "C" void scalfmm_set_physical_values_npart(scalfmm_handle Handle, int nbPhysicalValues,
                                                   int* idxOfParticles, double * physicalValues, PartType type){
     ((ScalFmmCoreHandle<double> * ) Handle)->engine->set_physical_values_npart(nbPhysicalValues,
-                                                                       idxOfParticles, physicalValues, type);
+                                                                               idxOfParticles, physicalValues, type);
 }
 extern "C" void scalfmm_get_physical_values_npart(scalfmm_handle Handle, int nbPhysicalValues,
                                                   int* idxOfParticles, double * physicalValues, PartType type){
     ((ScalFmmCoreHandle<double> * ) Handle)->engine->get_physical_values_npart(nbPhysicalValues,
-                                                                       idxOfParticles, physicalValues, type);
+                                                                               idxOfParticles, physicalValues, type);
 }
 
 //To get the result
@@ -1071,6 +1071,10 @@ extern "C" void scalfmm_create_global_partition(scalfmm_handle handle, int nbPoi
 
 extern "C" void scalfmm_generic_partition(scalfmm_handle handle, FSize nbThings, size_t sizeofthing, void * arrayOfThing, void ** newArray){
     ((ScalFmmCoreHandle<double> * ) handle)->engine->generic_partition(nbThings,sizeofthing,arrayOfThing,newArray);
+}
+
+extern "C" void scalfmm_call_delete(void * inPtr){
+    delete [] static_cast<double*>(inPtr);
 }
 
 #endif
