@@ -394,9 +394,8 @@ int main(int argc, char ** argv){
         /* } */
     }
 
-    scalfmm_call_delete(outputIndexes);
-    scalfmm_call_delete(outputArray);
-    scalfmm_call_delete(*outputPhyValPtr);
+    scalfmm_call_delete(outputArray,outputIndexes);
+    scalfmm_call_delete(*outputPhyValPtr,NULL);
 
 
     MPI_Finalize();

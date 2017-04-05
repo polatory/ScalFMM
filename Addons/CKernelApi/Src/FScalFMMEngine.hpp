@@ -1073,8 +1073,11 @@ extern "C" void scalfmm_generic_partition(scalfmm_handle handle, FSize nbThings,
     ((ScalFmmCoreHandle<double> * ) handle)->engine->generic_partition(nbThings,sizeofthing,arrayOfThing,newArray);
 }
 
-extern "C" void scalfmm_call_delete(void * inPtr){
-    delete [] static_cast<double*>(inPtr);
+extern "C" void scalfmm_call_delete(double * inDoublePtr,FSize * inFSizePtr){
+    if(inDoublePtr)
+        delete [] inDoublePtr;
+    if(inFSizePtr)
+        delete [] inFSizePtr;
 }
 
 #endif

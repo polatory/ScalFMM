@@ -891,9 +891,12 @@ void scalfmm_generic_partition(scalfmm_handle handle, FSize nbThings, size_t siz
 
 /**
  * @brief This fct will call delete on its arg, in order to free the
- * memory allocated inside scalfmm, but given back to the user.
+ * memory allocated inside scalfmm, but given back to the user. Both
+ * the args are tested, so user can call delete(NULL,array);
+ * @param array : array of double to be deleted
+ * @param arrayOfFSize : array of FSize to be deleted
  */
-void scalfmm_call_delete(void * array);
+void scalfmm_call_delete(double * array, FSize * arrayOfFSize);
 
 #endif //MPI_VERSION
 
