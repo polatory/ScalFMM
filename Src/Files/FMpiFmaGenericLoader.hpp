@@ -42,25 +42,31 @@ protected:
   FSize start;               // number of my first parts in file
   size_t headerSize;
 public:
-  FMpiFmaGenericLoader(const std::string inFilename,const FMpi::FComm& comm, const bool useMpiIO = false)
-    : FFmaGenericLoader<FReal>(inFilename,true),myNbOfParticles(0),idxParticles(0),headerSize(0)
+    FMpiFmaGenericLoader(const std::string inFilename,const FMpi::FComm& comm, const bool /*useMpiIO*/ = false)
+        : FFmaGenericLoader<FReal>(inFilename),myNbOfParticles(0),idxParticles(0),headerSize(0)
   {
     FSize startPart = comm.getLeft(nbParticles);
     FSize endPart   = comm.getRight(nbParticles);
     this->start = startPart;
     this->myNbOfParticles = endPart-startPart;
     std::cout << "Proc " << comm.processId() << " will hold " << myNbOfParticles << std::endl;
-    
-    //This is header size in bytes
-    //   MEANING :      sizeof(FReal)+nbAttr, nb of parts, boxWidth+boxCenter
-    headerSize = sizeof(int)*2 + sizeof(FSize) + sizeof(FReal)*4;
-    //To this header size, we had the parts that belongs to proc on my left
-    file->seekg(headerSize + startPart*typeData[1]*sizeof(FReal));
+
+    if(this->binaryFile) {
+        //This is header size in bytes
+        //   MEANING :      sizeof(FReal)+nbAttr, nb of parts, boxWidth+boxCenter
+        headerSize = sizeof(int)*2 + sizeof(FSize) + sizeof(FReal)*4;
+        //To this header size, we had the parts that belongs to proc on my left
+        file->seekg(headerSize + startPart*typeData[1]*sizeof(FReal));
+    } else {
+        for(int i = 0; i < startPart; ++i) {
+            file->ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+    }
   }
 
   ~FMpiFmaGenericLoader(){
   }
-  
+
   FSize getMyNumberOfParticles() const{
     return myNbOfParticles;
   }
@@ -68,7 +74,7 @@ public:
   FSize getStart() const{
     return start;
   }
-  
+
   /**
    * Given an index, get the one particle from this index
    */
@@ -76,7 +82,7 @@ public:
     file->seekg(headerSize+(int(indexInFile)*FFmaGenericLoader<FReal>::getNbRecordPerline()*sizeof(FReal)));
     file->read((char*) datas,FFmaGenericLoader<FReal>::getNbRecordPerline()*sizeof(FReal));
   }
-  
+
 };
 
 #endif //FMPIFMAGENERICLOADER_HPP
