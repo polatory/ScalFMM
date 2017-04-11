@@ -58,7 +58,6 @@
 #ifdef SCALFMM_USE_BLAS
 // chebyshev kernel
 #include "../../Src/Kernels/Chebyshev/FChebCell.hpp"
-#include "../../Src/Kernels/Chebyshev/FChebKernel.hpp"
 #include "../../Src/Kernels/Chebyshev/FChebSymKernel.hpp"
 #endif
 

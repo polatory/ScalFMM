@@ -17,8 +17,8 @@
 // "http://www.cecill.info".
 // "http://www.gnu.org/licenses".
 // ===================================================================================
-#ifndef FCHEBCMPKERNEL_HPP
-#define FCHEBCMPKERNEL_HPP
+#ifndef FCHEBDENSEKERNEL_HPP
+#define FCHEBDENSEKERNEL_HPP
 
 #include "../../Utils/FGlobal.hpp"
 
@@ -26,13 +26,13 @@
 
 #include "./FAbstractChebKernel.hpp"
 
-#include "./FChebCmpM2LHandler.hpp"
+#include "./FChebDenseM2LHandler.hpp"
 
 class FTreeCoordinate;
 
 /**
  * @author Matthias Messner(matthias.messner@inria.fr)
- * @class FChebCmpKernel
+ * @class FChebDenseKernel
  * @brief  Chebyshev interpolation based FMM operators for general non oscillatory kernels..
  *
  * This class implements the Chebyshev interpolation based FMM operators. It
@@ -52,11 +52,11 @@ class FTreeCoordinate;
  *  approximation of the M2L operators, then you can try to set EPSILON to 10 ^- (ORDER+{1,2,...}).
  */
 template < class FReal, class CellClass, class ContainerClass,   class MatrixKernelClass, int ORDER, int NVALS = 1>
-class FChebCmpKernel
+class FChebDenseKernel
     : public FAbstractChebKernel< FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
 {
     // private types
-    typedef FChebCmpM2LHandler<FReal, ORDER,MatrixKernelClass> M2LHandlerClass;
+    typedef FChebDenseM2LHandler<FReal, ORDER,MatrixKernelClass> M2LHandlerClass;
 
     // using from 
     typedef FAbstractChebKernel<FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>
@@ -81,7 +81,7 @@ public:
      *  but this will significantly slow down the computations.
      *
      */
-    FChebCmpKernel(const int inTreeHeight,  const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter, const MatrixKernelClass *const inMatrixKernel,
+    FChebDenseKernel(const int inTreeHeight,  const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter, const MatrixKernelClass *const inMatrixKernel,
                 const FReal Epsilon)
     : FAbstractChebKernel< FReal, CellClass, ContainerClass, MatrixKernelClass, ORDER, NVALS>(inTreeHeight,inBoxWidth,inBoxCenter),
       MatrixKernel(inMatrixKernel),
@@ -100,8 +100,8 @@ public:
      * Same as \see above constructor  but the epsilon is automatically set to EPSILON=10^-ORDER
      */
 
-    FChebCmpKernel(const int inTreeHeight, const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter, const MatrixKernelClass *const inMatrixKernel)
-        :   FChebCmpKernel(inTreeHeight, inBoxWidth,inBoxCenter,inMatrixKernel,FMath::pow(10.0,static_cast<FReal>(-ORDER)))
+    FChebDenseKernel(const int inTreeHeight, const FReal inBoxWidth, const FPoint<FReal>& inBoxCenter, const MatrixKernelClass *const inMatrixKernel)
+        :   FChebDenseKernel(inTreeHeight, inBoxWidth,inBoxCenter,inMatrixKernel,FMath::pow(10.0,static_cast<FReal>(-ORDER)))
     {
 
     }
@@ -111,15 +111,8 @@ public:
              const ContainerClass* const SourceParticles)
     {
         const FPoint<FReal> LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
-
-        // 1) apply Sy
         AbstractBaseClass::Interpolator->applyP2M(LeafCellCenter, AbstractBaseClass::BoxWidthLeaf,
                                                   LeafCell->getMultipole(0), SourceParticles);
-
-        for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-            // 2) apply B
-            M2LHandler->applyB(LeafCell->getMultipole(idxRhs), LeafCell->getMultipole(idxRhs) + AbstractBaseClass::nnodes);
-        }
     }
 
 
@@ -128,62 +121,27 @@ public:
              const int /*TreeLevel*/)
     {
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-            // 1) apply Sy
             for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex){
                 if (ChildCells[ChildIndex]){
                     AbstractBaseClass::Interpolator->applyM2M(ChildIndex, ChildCells[ChildIndex]->getMultipole(idxRhs),
                                                               ParentCell->getMultipole(idxRhs));
                 }
             }
-            // 2) apply B
-            M2LHandler->applyB(ParentCell->getMultipole(idxRhs), ParentCell->getMultipole(idxRhs) + AbstractBaseClass::nnodes);
         }
     }
-
-
-//  void M2L(CellClass* const FRestrict TargetCell,
-//                   const CellClass* SourceCells[],
-//                   const int NumSourceCells,
-//                   const int TreeLevel) const
-//  {
-//      const FReal CellWidth(BoxWidth / FReal(FMath::pow(2, TreeLevel)));
-//      const FTreeCoordinate& cx = TargetCell->getCoordinate();
-//      for (int idx=0; idx<NumSourceCells; ++idx) {
-//          const FTreeCoordinate& cy = SourceCells[idx]->getCoordinate();
-//          const int transfer[3] = {cy.getX()-cx.getX(),
-//                                                           cy.getY()-cx.getY(),
-//                                                           cy.getZ()-cx.getZ()};
-//          M2LHandler->applyC(transfer, CellWidth,
-//                                              SourceCells[idx]->getMultipole() + AbstractBaseClass::nnodes,
-//                                              TargetCell->getLocal() + AbstractBaseClass::nnodes);
-//      }
-//  }
 
     void M2L(CellClass* const FRestrict TargetCell, const CellClass* SourceCells[],
              const int neighborPositions[], const int inSize, const int TreeLevel)  override {
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-            FReal *const CompressedLocalExpansion = TargetCell->getLocal(idxRhs) + AbstractBaseClass::nnodes;
+            FReal *const localExpansion = TargetCell->getLocal(idxRhs);
             const FReal CellWidth(AbstractBaseClass::BoxWidth / FReal(FMath::pow(2, TreeLevel)));
             for(int idxExistingNeigh = 0 ; idxExistingNeigh < inSize ; ++idxExistingNeigh){
                 const int idx = neighborPositions[idxExistingNeigh];
-                M2LHandler->applyC(idx, CellWidth, SourceCells[idxExistingNeigh]->getMultipole(idxRhs) + AbstractBaseClass::nnodes,
-                                   CompressedLocalExpansion);
+                M2LHandler->applyC(idx, CellWidth, SourceCells[idxExistingNeigh]->getMultipole(idxRhs),
+                                   localExpansion);
             }
         }
     }
-
-//  void M2L(CellClass* const FRestrict TargetCell, const CellClass* SourceCells[],
-//    const int neighborPositions[], const int inSize, const int TreeLevel)  override {
-//      const unsigned int rank = M2LHandler.getRank();
-//      FBlas::scal(343*rank, FReal(0.), MultipoleExpansion);
-//      const FReal CellWidth(BoxWidth / FReal(FMath::pow(2, TreeLevel)));
-//      for(int idxExistingNeigh = 0 ; idxExistingNeigh < inSize ; ++idxExistingNeigh){
-//          const int idx = neighborPositions[idxExistingNeigh];
-//              FBlas::copy(rank, const_cast<FReal *const>(SourceCells[idxExistingNeigh]->getMultipole())+AbstractBaseClass::nnodes,
-//                                      MultipoleExpansion+idx*rank);
-//      
-//      M2LHandler->applyC(CellWidth, MultipoleExpansion, TargetCell->getLocal() + AbstractBaseClass::nnodes);
-//  }
 
 
     void L2L(const CellClass* const FRestrict ParentCell,
@@ -191,10 +149,6 @@ public:
              const int /*TreeLevel*/)
     {
         for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-            // 1) apply U
-            M2LHandler->applyU(ParentCell->getLocal(idxRhs) + AbstractBaseClass::nnodes,
-                               const_cast<CellClass*>(ParentCell)->getLocal(idxRhs));
-            // 2) apply Sx
             for (unsigned int ChildIndex=0; ChildIndex < 8; ++ChildIndex){
                 if (ChildCells[ChildIndex]){
                     AbstractBaseClass::Interpolator->applyL2L(ChildIndex, ParentCell->getLocal(idxRhs), ChildCells[ChildIndex]->getLocal(idxRhs));
@@ -207,11 +161,6 @@ public:
              ContainerClass* const TargetParticles)
     {
         const FPoint<FReal> LeafCellCenter(AbstractBaseClass::getLeafCellCenter(LeafCell->getCoordinate()));
-
-        for(int idxRhs = 0 ; idxRhs < NVALS ; ++idxRhs){
-            // 1) apply U
-            M2LHandler->applyU(LeafCell->getLocal(idxRhs) + AbstractBaseClass::nnodes, const_cast<CellClass*>(LeafCell)->getLocal(idxRhs));
-        }
 
         //// 2.a) apply Sx
         //AbstractBaseClass::Interpolator->applyL2P(LeafCellCenter,

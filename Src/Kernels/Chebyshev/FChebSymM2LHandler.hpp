@@ -29,7 +29,7 @@
 #include "FChebTensor.hpp"
 #include "../Interpolation/FInterpSymmetries.hpp"
 
-#include "FChebCmpM2LHandler.hpp"
+#include "FChebM2LHandler.hpp"
 
 #include "Utils/FAca.hpp"
 
