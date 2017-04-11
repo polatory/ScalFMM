@@ -2,6 +2,7 @@
 #ifndef FINTERPMATRIXKERNEL_TENSORIAL_INTERACTIONS_HPP
 #define FINTERPMATRIXKERNEL_TENSORIAL_INTERACTIONS_HPP
 
+#include <iostream>
 #include <stdexcept>
 
 #include "Utils/FPoint.hpp"

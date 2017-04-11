@@ -5,9 +5,9 @@
 #ifndef FINTERPMATRIXKERNEL_COVARIANCE_HPP
 #define FINTERPMATRIXKERNEL_COVARIANCE_HPP
 
-
-#include <stdlib.h>
-#include <math.h> // for exp
+#include <iostream>
+#include <cstdlib>
+#include <cmath> // for exp
 
 // ScalFMM includes
 #include "Utils/FNoCopyable.hpp"

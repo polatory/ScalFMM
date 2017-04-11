@@ -2,6 +2,7 @@
 #ifndef FINTERPMAPPING_HPP
 #define FINTERPMAPPING_HPP
 
+#include <iostream>
 #include <limits>
 
 #include "../../Utils/FNoCopyable.hpp"
