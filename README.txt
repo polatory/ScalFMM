@@ -4,6 +4,8 @@ ScalFmm, Inria, Please read the licence.
 ---------------------------------------------------
 ---------------------------------------------------
 
+/!\ ScalFMM has moved to Inria's GitLab: https://gitlab.inria.fr/solverstack/ScalFMM
+
 To compile:
 ==========
 # Go to 
