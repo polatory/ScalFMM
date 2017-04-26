@@ -6,6 +6,7 @@
 #include "../Utils/FGlobal.hpp"
 #include "../Utils/FAssert.hpp"
 #include "../Utils/FLog.hpp"
+#include "Utils/FAlgorithmTimers.hpp"
 
 #include "../Utils/FTic.hpp"
 #include "../Utils/FEnv.hpp"
@@ -15,6 +16,8 @@
 
 #include "FCoreCommon.hpp"
 #include "FP2PExclusion.hpp"
+
+#include <omp.h>
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -35,7 +38,7 @@
  */
 template<class OctreeClass, class CellClass, class ContainerClass, class KernelClass, class LeafClass, class P2PExclusionClass = FP2PMiddleExclusion>
 class FFmmAlgorithmSectionTask : public FAbstractAlgorithm, public FAlgorithmTimers {
-    
+
     OctreeClass* const tree;  ///< The octree to work on
     KernelClass** kernels;    ///< The kernels
 
@@ -46,7 +49,7 @@ class FFmmAlgorithmSectionTask : public FAbstractAlgorithm, public FAlgorithmTim
     const int leafLevelSeparationCriteria;
 public:
     /** \brief Class constructor
-     * 
+     *
      * \note An assert checks whether one of the arguments is null.
      * \param inTree the octree to work on.
      * \param inKernels the kernels used for computation.
@@ -95,26 +98,26 @@ protected:
         Timers[P2MTimer].tic();
         #pragma omp parallel num_threads(MaxThreads)
         {
-            #pragma omp sections 
+            #pragma omp sections
             {
-                #pragma omp section  
+                #pragma omp section
                 {
                     if(operationsToProceed & FFmmP2M) bottomPass();
-                    
+
                     if(operationsToProceed & FFmmM2M) upwardPass();
-                    
+
                     if(operationsToProceed & FFmmM2L) transferPass();
-                    
+
                     if(operationsToProceed & FFmmL2L) downardPass();
-                    
+
                 }
                 #pragma omp section
                 {
                     if( operationsToProceed & FFmmP2P ) directPass();
                 }
             }
-            
-            #pragma omp single 
+
+            #pragma omp single
             {
                 if(operationsToProceed & FFmmL2P) L2PPass();
             }
@@ -202,7 +205,7 @@ protected:
  	/** M2L  */
   void transferPass(){
 #ifdef SCALFMM_USE_EZTRACE
-    
+
     eztrace_start();
 #endif
     if(KernelClass::NeedFinishedM2LEvent()){
@@ -430,5 +433,3 @@ protected:
 
 
 #endif //FFMMALGORITHMTASK_HPP
-
-
