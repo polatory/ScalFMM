@@ -7,6 +7,7 @@
 #include "../Utils/FAssert.hpp"
 #include "../Utils/FLog.hpp"
 #include "../Utils/FEnv.hpp"
+#include "Utils/FAlgorithmTimers.hpp"
 
 #include "../Utils/FTic.hpp"
 
@@ -15,6 +16,8 @@
 
 #include "FCoreCommon.hpp"
 #include "FP2PExclusion.hpp"
+
+#include <omp.h>
 
 /**
  * @author Berenger Bramas (berenger.bramas@inria.fr)
@@ -432,5 +435,3 @@ protected:
 
 
 #endif //FFMMALGORITHMTASK_HPP
-
-
