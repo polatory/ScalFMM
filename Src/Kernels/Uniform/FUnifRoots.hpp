@@ -48,8 +48,8 @@ struct FUnifRoots : FNoCopyable
    */
     static FReal L(const unsigned int n, FReal x)
     {
-        assert(std::fabs(x)-1.<10.*std::numeric_limits<FReal>::epsilon());
-        if (std::fabs(x)>1.) {
+        assert(std::abs(x)-1.<10.*std::numeric_limits<FReal>::epsilon());
+        if (std::abs(x)>1.) {
             //std::cout << "x=" << x << " out of bounds!" << std::endl;
             x = (x > FReal( 1.) ? FReal( 1.) : x);
             x = (x < FReal(-1.) ? FReal(-1.) : x);
@@ -93,8 +93,8 @@ struct FUnifRoots : FNoCopyable
    */
     static FReal dL(const unsigned int n, FReal x)
     {
-        assert(std::fabs(x)-1.<10.*std::numeric_limits<FReal>::epsilon());
-        if (std::fabs(x)>1.) {
+        assert(std::abs(x)-1.<10.*std::numeric_limits<FReal>::epsilon());
+        if (std::abs(x)>1.) {
             x = (x > FReal( 1.) ? FReal( 1.) : x);
             x = (x < FReal(-1.) ? FReal(-1.) : x);
         }

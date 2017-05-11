@@ -46,8 +46,8 @@ struct FChebRoots : FNoCopyable
     static FReal T(const unsigned int n, FReal x)
     {
         //std::cout << x << std::endl;
-        assert(std::fabs(x)-1.<10.*std::numeric_limits<FReal>::epsilon());
-        if (std::fabs(x)>1.) {
+        assert(std::abs(x)-1.<10.*std::numeric_limits<FReal>::epsilon());
+        if (std::abs(x)>1.) {
             x = (x > FReal( 1.) ? FReal( 1.) : x);
             x = (x < FReal(-1.) ? FReal(-1.) : x);
         }
@@ -68,8 +68,8 @@ struct FChebRoots : FNoCopyable
    */
     static FReal U(const unsigned int n, FReal x)
     {
-        assert(std::fabs(x)-1.<10.*std::numeric_limits<FReal>::epsilon());
-        if (std::fabs(x)>1.) {
+        assert(std::abs(x)-1.<10.*std::numeric_limits<FReal>::epsilon());
+        if (std::abs(x)>1.) {
             x = (x > FReal( 1.) ? FReal( 1.) : x);
             x = (x < FReal(-1.) ? FReal(-1.) : x);
         }
