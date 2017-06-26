@@ -1137,7 +1137,9 @@ protected:
                             idxProcSend += 1;
                         }
                         // Next time we will not need to go further than idxProcSend
-                        righestProcToSendTo = idxProcSend;
+                        if(idxProcSend < righestProcToSendTo){
+                            righestProcToSendTo = idxProcSend;
+                        }
                     }
 
                     // Finalize the communication
