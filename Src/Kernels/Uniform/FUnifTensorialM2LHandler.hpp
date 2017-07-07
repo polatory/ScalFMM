@@ -424,12 +424,13 @@ public:
 
 
     ~FUnifTensorialM2LHandler()
-    {
+   {
+      if(FC.isLast()){
         for (unsigned int l=0; l<TreeHeight; ++l) 
-            for (unsigned int d=0; d<ncmp; ++d)
-                if (FC[l][d] != nullptr) delete [] FC[l][d];
+	  for (unsigned int d=0; d<ncmp; ++d)
+	    if (FC[l][d] != nullptr) delete [] FC[l][d];
+      }
     }
-
     /**
      * Computes and sets the matrix \f$C_t\f$
      */
