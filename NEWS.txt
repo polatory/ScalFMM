@@ -6,7 +6,9 @@ Copyright (c) 2011-2014 Inria,   All rights reserved.
 This file contains the main features as well as overviews of specific
 bug fixes (and other actions) for each version of ScalFMM since
 version 1.1
-
+1.5.1
+- Many bug fixes in MPI version (Loader, GroupTree, ...)
+-  
 
 1.5
 -----
