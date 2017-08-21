@@ -226,8 +226,8 @@ public:
 #endif
         FAssertLF(starpu_init(&conf) == 0);
         FAssertLF(starpu_mpi_init ( 0, 0, 0 ) == 0);
-		int *tag_ub = 0; 
-        int ok = 0; 
+		int *tag_ub = 0;
+        int ok = 0;
         MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &tag_ub, &ok);
 
 
@@ -448,7 +448,6 @@ protected:
     void executeCore(const unsigned operationsToProceed) override {
         FLOG( FLog::Controller << "\tStart FGroupTaskStarPUMpiAlgorithm\n" );
         const bool directOnly = (tree->getHeight() <= 2);
-
 #ifdef STARPU_USE_CPU
         FTIME_TASKS(cpuWrapper.taskTimeRecorder.start());
 #endif
@@ -459,20 +458,16 @@ protected:
         postRecvAllocatedBlocks();
 
         if( operationsToProceed & FFmmP2P ) insertParticlesSend();
-
         if( operationsToProceed & FFmmP2P ) directPass();
         if( operationsToProceed & FFmmP2P ) directPassMpi();
 
         if(operationsToProceed & FFmmP2M && !directOnly) bottomPass();
-
         if(operationsToProceed & FFmmM2M && !directOnly) upwardPass();
         if(operationsToProceed & FFmmM2L && !directOnly) insertCellsSend();
-
-        if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::upperWorkingLevel, FAbstractAlgorithm::lowerWorkingLevel-1 , true, true);
+         if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::upperWorkingLevel, FAbstractAlgorithm::lowerWorkingLevel-1 , true, true);
         if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, false, false);
         if(operationsToProceed & FFmmM2L && !directOnly) transferPassMpi();
-
-        if(operationsToProceed & FFmmL2L && !directOnly) downardPass();
+         if(operationsToProceed & FFmmL2L && !directOnly) downardPass();
 
         if(operationsToProceed & FFmmM2L && !directOnly) transferPass(FAbstractAlgorithm::lowerWorkingLevel-1, FAbstractAlgorithm::lowerWorkingLevel, true, true);
 
@@ -480,14 +475,11 @@ protected:
 #ifdef STARPU_USE_REDUX
         if( operationsToProceed & FFmmL2P && !directOnly) readParticle();
 #endif
-
         FLOG( FLog::Controller << "\t\t Submitting the tasks took " << timerSoumission.tacAndElapsed() << "s\n" );
         starpu_task_wait_for_all();
-
         FLOG( FTic timerSync; );
         syncData();
         FLOG( FLog::Controller << "\t\t Moving data to the host took " << timerSync.tacAndElapsed() << "s\n" );
-
         starpu_pause();
 
 #ifdef STARPU_USE_CPU
@@ -1012,7 +1004,7 @@ protected:
 
                         MortonIndex interactionsIndexes[189];
                         int interactionsPosition[189];
-                        const FTreeCoordinate coord(mindex, idxLevel);
+                        const FTreeCoordinate coord(mindex);
                         int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
 
                         for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -1116,7 +1108,7 @@ protected:
                         if(containers->exists(mindex)){
                             MortonIndex interactionsIndexes[26];
                             int interactionsPosition[26];
-                            FTreeCoordinate coord(mindex, tree->getHeight()-1);
+                            FTreeCoordinate coord(mindex);
                             int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
 
                             for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -1479,7 +1471,7 @@ protected:
 
                         MortonIndex interactionsIndexes[26];
                         int interactionsPosition[26];
-                        FTreeCoordinate coord(mindex, tree->getHeight()-1);
+                        FTreeCoordinate coord(mindex);
                         int counter = coord.getNeighborsIndexes(tree->getHeight(),interactionsIndexes,interactionsPosition);
 
                         for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -1567,7 +1559,7 @@ protected:
 
                             MortonIndex interactionsIndexes[189];
                             int interactionsPosition[189];
-                            const FTreeCoordinate coord(mindex, idxLevel);
+                            const FTreeCoordinate coord(mindex);
                             int counter = coord.getInteractionNeighbors(idxLevel,interactionsIndexes,interactionsPosition);
 
                             for(int idxInter = 0 ; idxInter < counter ; ++idxInter){
@@ -1799,13 +1791,15 @@ protected:
                                                                                                                                                                          " and owner is " << processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner << " tag " << getTag(idxLevel, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].globalIdx, 1, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner) << "\n");
                     FLOG(FLog::Controller.flush());
 
+
+
                     starpu_mpi_irecv_detached ( remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handleSymb,
                             processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner,
-                            getTag(idxLevel, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].globalIdx, 0, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner),
+                            getTag(idxLevel+1, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].globalIdx, 0, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner),
                             comm.getComm(), 0/*callback*/, 0/*arg*/ );
                     starpu_mpi_irecv_detached ( remoteCellGroups[idxLevel+1][firstOtherBlock + idxBlockToRecv].handleUp,
                             processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner,
-                            getTag(idxLevel, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].globalIdx, 1, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner),
+                            getTag(idxLevel+1, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].firstIndex, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].globalIdx, 1, processesBlockInfos[idxLevel+1][firstOtherBlock + idxBlockToRecv].owner),
                             comm.getComm(), 0/*callback*/, 0/*arg*/ );
 
 
@@ -1873,10 +1867,10 @@ protected:
                         FLOG(FLog::Controller.flush());
 
                         starpu_mpi_isend_detached( cellHandles[idxLevel+1][lowerIdxToSend].symb, dest,
-                                getTag(idxLevel, tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex(), nbBlocksBeforeMinPerLevel[idxLevel+1] + lowerIdxToSend, 0, dest),
+                                getTag(idxLevel+1, tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex(), nbBlocksBeforeMinPerLevel[idxLevel+1] + lowerIdxToSend, 0, dest),
                                 comm.getComm(), 0/*callback*/, 0/*arg*/ );
                         starpu_mpi_isend_detached( cellHandles[idxLevel+1][lowerIdxToSend].up, dest,
-                                getTag(idxLevel, tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex(), nbBlocksBeforeMinPerLevel[idxLevel+1] + lowerIdxToSend, 1, dest),
+                                getTag(idxLevel+1, tree->getCellGroup(idxLevel+1, lowerIdxToSend)->getStartingIndex(), nbBlocksBeforeMinPerLevel[idxLevel+1] + lowerIdxToSend, 1, dest),
                                 comm.getComm(), 0/*callback*/, 0/*arg*/ );
                         lowerIdxToSend += 1;
                     }
