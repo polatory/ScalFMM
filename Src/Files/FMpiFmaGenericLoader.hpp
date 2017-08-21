@@ -31,6 +31,7 @@ public:
     FSize endPart   = comm.getRight(nbParticles);
     this->start = startPart;
     this->myNbOfParticles = endPart-startPart;
+    std::cout << " startPart "<< startPart << " endPart " << endPart<<std::endl;
     std::cout << "Proc " << comm.processId() << " will hold " << myNbOfParticles << std::endl;
 
     if(this->binaryFile) {
@@ -40,6 +41,8 @@ public:
         //To this header size, we had the parts that belongs to proc on my left
         file->seekg(headerSize + startPart*typeData[1]*sizeof(FReal));
     } else {
+        // First finish to read the current line
+        file->ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         for(int i = 0; i < startPart; ++i) {
             file->ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         }
