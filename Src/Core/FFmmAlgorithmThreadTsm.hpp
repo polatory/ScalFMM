@@ -148,7 +148,7 @@ protected:
         FLOG(computationCounter.tac());
 
         FLOG( counterTime.tac() );
-        FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.elapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.elapsed() << " s)\n" );
         FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.elapsed() << " s\n" );
 
     }
@@ -215,11 +215,11 @@ protected:
                 }
             }
             FLOG(computationCounter.tac());
-            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << " s\n" );
         }
 
         FLOG( counterTime.tac() );
-        FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.elapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.elapsed() << " s)\n" );
         FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
 
     }
@@ -288,9 +288,9 @@ protected:
                     FLOG(computationCounter.tac());
                 }
                 FLOG(computationCounter.tac());
-                FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+                FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << " s\n" );
             }
-            FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+            FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.tacAndElapsed() << " s)\n" );
             FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         }
 
@@ -347,9 +347,9 @@ protected:
                     }
                 }
                 FLOG(computationCounter.tac());
-                FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+                FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << " s\n" );
             }
-            FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << "s)\n" );
+            FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.tacAndElapsed() << " s)\n" );
             FLOG( FLog::Controller << "\t\t Computation : " << computationCounter.cumulated() << " s\n" );
         }
 
@@ -403,7 +403,7 @@ protected:
         FLOG(computationCounter.tac());
 
         FLOG( counterTime.tac() );
-        FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.tacAndElapsed() << " s)\n" );
         FLOG( FLog::Controller << "\t\t Computation L2P + P2P : " << computationCounter.elapsed() << " s\n" );
 
     }

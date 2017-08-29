@@ -104,7 +104,7 @@ protected:
         } while(octreeIterator.moveRight());
 
         FLOG( counterTime.tac() );
-        FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.elapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\tFinished (@Bottom Pass (P2M) = "  << counterTime.elapsed() << " s)\n" );
         FLOG( FLog::Controller << "\t\t Computation : " << totalComputation << " s\n" );
 
     }
@@ -158,11 +158,11 @@ protected:
 
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
-            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << " s\n" );
         }
 
         FLOG( counterTime.tac() );
-        FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.elapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\tFinished (@Upward Pass (M2M) = "  << counterTime.elapsed() << " s)\n" );
         FLOG( FLog::Controller << "\t\t Computation : " << totalComputation << " s\n" );
 
     }
@@ -220,11 +220,11 @@ protected:
 
             avoidGotoLeftIterator.moveDown();
             octreeIterator = avoidGotoLeftIterator;
-            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << " s\n" );
         }
 
         FLOG( counterTime.tac() );
-        FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.elapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\tFinished (@Downward Pass (M2L) = "  << counterTime.elapsed() << " s)\n" );
         FLOG( FLog::Controller << "\t\t Computation : " << totalComputation << " s\n" );
     }
 
@@ -270,11 +270,11 @@ protected:
 
             avoidGotoLeftIterator.moveDown();
             octreeIterator = avoidGotoLeftIterator;
-            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << "s\n" );
+            FLOG( FLog::Controller << "\t\t>> Level " << idxLevel << " = "  << counterTimeLevel.tacAndElapsed() << " s\n" );
         }
 
         FLOG( counterTime.tac() );
-        FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.elapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\tFinished (@Downward Pass (L2L) = "  << counterTime.elapsed() << " s)\n" );
         FLOG( FLog::Controller << "\t\t Computation : " << totalComputation << " s\n" );
     }
 
@@ -316,7 +316,7 @@ protected:
         } while(octreeIterator.moveRight());
 
         FLOG( counterTime.tac() );
-        FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.elapsed() << "s)\n" );
+        FLOG( FLog::Controller << "\tFinished (@Direct Pass (L2P + P2P) = "  << counterTime.elapsed() << " s)\n" );
         FLOG( FLog::Controller << "\t\t Computation L2P + P2P : " << totalComputation << " s\n" );
 
     }
