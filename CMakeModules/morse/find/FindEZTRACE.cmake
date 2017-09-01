@@ -20,6 +20,7 @@
 # This module finds headers and eztrace library.
 # Results are reported in variables:
 #  EZTRACE_FOUND           - True if headers and requested libraries were found
+#  EZTRACE_C_FLAGS         - list of required compilation flags (excluding -I)
 #  EZTRACE_INCLUDE_DIRS    - eztrace include directories
 #  EZTRACE_LIBRARY_DIRS    - Link directories for eztrace libraries
 #  EZTRACE_LIBRARIES       - eztrace component libraries to be linked
@@ -85,6 +86,8 @@ if( PKG_CONFIG_EXECUTABLE AND NOT EZTRACE_GIVEN_BY_USER )
 	"\n   the PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
+
+  set(EZTRACE_C_FLAGS "${EZTRACE_CFLAGS_OTHER}")
 
 endif( PKG_CONFIG_EXECUTABLE AND NOT EZTRACE_GIVEN_BY_USER )
 

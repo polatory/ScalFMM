@@ -37,6 +37,7 @@
 # This module finds headers and chameleon library.
 # Results are reported in variables:
 #  CHAMELEON_FOUND            - True if headers and requested libraries were found
+#  CHAMELEON_C_FLAGS          - list of required compilation flags (excluding -I)
 #  CHAMELEON_LINKER_FLAGS     - list of required linker flags (excluding -l and -L)
 #  CHAMELEON_INCLUDE_DIRS     - chameleon include directories
 #  CHAMELEON_LIBRARY_DIRS     - Link directories for chameleon libraries
@@ -166,9 +167,10 @@ if(PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_GIVEN_BY_USER)
     endif()
   endif()
 
-  set(CHAMELEON_INCLUDE_DIRS_DEP "${CHAMELEON_INCLUDE_DIRS}")
-  set(CHAMELEON_LIBRARY_DIRS_DEP "${CHAMELEON_LIBRARY_DIRS}")
-  set(CHAMELEON_LIBRARIES_DEP "${CHAMELEON_LIBRARIES}")
+  set(CHAMELEON_C_FLAGS "${CHAMELEON_CFLAGS_OTHER}")
+  set(CHAMELEON_INCLUDE_DIRS_DEP "${CHAMELEON_STATIC_INCLUDE_DIRS}")
+  set(CHAMELEON_LIBRARY_DIRS_DEP "${CHAMELEON_STATIC_LIBRARY_DIRS}")
+  set(CHAMELEON_LIBRARIES_DEP "${CHAMELEON_STATIC_LIBRARIES}")
 
 endif(PKG_CONFIG_EXECUTABLE AND NOT CHAMELEON_GIVEN_BY_USER)
 

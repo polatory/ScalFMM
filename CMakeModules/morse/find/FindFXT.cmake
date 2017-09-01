@@ -16,6 +16,7 @@
 # This module finds headers and fxt library.
 # Results are reported in variables:
 #  FXT_FOUND           - True if headers and requested libraries were found
+#  FXT_C_FLAGS         - list of required compilation flags (excluding -I)
 #  FXT_INCLUDE_DIRS    - fxt include directories
 #  FXT_LIBRARY_DIRS    - Link directories for fxt libraries
 #  FXT_LIBRARIES       - fxt component libraries to be linked
@@ -81,6 +82,8 @@ if(PKG_CONFIG_EXECUTABLE AND NOT FXT_GIVEN_BY_USER)
 	"\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
+
+  set(FXT_C_FLAGS "${FXT_CFLAGS_OTHER}")
 
 endif(PKG_CONFIG_EXECUTABLE AND NOT FXT_GIVEN_BY_USER)
 

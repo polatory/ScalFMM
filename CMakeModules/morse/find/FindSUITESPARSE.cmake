@@ -180,7 +180,7 @@ list(APPEND SUITESPARSE_hdrs_to_find
   "cs.h"
   "klu.h"
   "ldl.h"
-  "RBio.h"
+  #"RBio.h"
   "spqr.hpp"
   "SuiteSparse_config.h"
   "umfpack.h")
@@ -209,7 +209,7 @@ else()
       set(SUITESPARSE_${suitesparse_hdr}_DIRS "SUITESPARSE_${suitesparse_hdr}_INCLUDE_DIRS-NOTFOUND")
       find_path(SUITESPARSE_${suitesparse_hdr}_DIRS
 	NAMES ${suitesparse_hdr}
-	HINTS ${_inc_env})
+	HINTS ${_inc_env} ${_inc_env}/suitesparse)
       mark_as_advanced(SUITESPARSE_${suitesparse_hdr}_DIRS)
     endforeach()
   endif()
@@ -249,7 +249,7 @@ set(SUITESPARSE_libs_to_find
   "camd"
   "ccolamd"
   "colamd"
-  "rbio"
+  #"rbio"
   "suitesparseconfig"
   )
 

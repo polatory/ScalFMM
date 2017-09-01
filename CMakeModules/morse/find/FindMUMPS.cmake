@@ -30,6 +30,7 @@
 #   - PTSCOTCH: to activate detection of MUMPS linked with PTSCOTCH
 #   - METIS: to activate detection of MUMPS linked with METIS
 #   - PARMETIS: to activate detection of MUMPS linked with PARMETIS
+#   - OPENMP: to activate detection of MUMPS linked with OPENMP
 #
 # This module finds headers and mumps library.
 # Results are reported in variables:
@@ -80,6 +81,7 @@ set(MUMPS_LOOK_FOR_SCOTCH OFF)
 set(MUMPS_LOOK_FOR_PTSCOTCH OFF)
 set(MUMPS_LOOK_FOR_METIS OFF)
 set(MUMPS_LOOK_FOR_PARMETIS OFF)
+set(MUMPS_LOOK_FOR_OPENMP OFF)
 
 if( MUMPS_FIND_COMPONENTS )
   foreach( component ${MUMPS_FIND_COMPONENTS} )
@@ -104,6 +106,9 @@ if( MUMPS_FIND_COMPONENTS )
     endif()
     if (${component} STREQUAL "PARMETIS")
       set(MUMPS_LOOK_FOR_PARMETIS ON)
+    endif()
+    if (${component} STREQUAL "OPENMP")
+      set(MUMPS_LOOK_FOR_OPENMP ON)
     endif()
   endforeach()
 endif()
@@ -242,6 +247,19 @@ if (NOT PARMETIS_FOUND AND MUMPS_LOOK_FOR_PARMETIS)
     find_package(PARMETIS REQUIRED)
   else()
     find_package(PARMETIS)
+  endif()
+endif()
+
+# MUMPS may depends on OPENMP
+#------------------------------
+if (NOT OPENMP_FOUND AND MUMPS_LOOK_FOR_OPENMP)
+  if (NOT MUMPS_FIND_QUIETLY)
+    message(STATUS "Looking for MUMPS - Try to detect OPENMP")
+  endif()
+  if (MUMPS_FIND_REQUIRED)
+    find_package(OpenMP REQUIRED)
+  else()
+    find_package(OpenMP)
   endif()
 endif()
 
@@ -561,6 +579,7 @@ if(MUMPS_LIBRARIES)
     endif()
   endforeach()
   set(REQUIRED_LIBS "${MUMPS_LIBRARIES}")
+
   # SCALAPACK
   if (MUMPS_LOOK_FOR_MPI AND SCALAPACK_FOUND)
     if (SCALAPACK_INCLUDE_DIRS)
@@ -652,6 +671,10 @@ if(MUMPS_LIBRARIES)
     endforeach()
     list(APPEND REQUIRED_LIBS "${PARMETIS_LIBRARIES}")
   endif()
+  # OpenMP
+  if(MUMPS_LOOK_FOR_OPENMP AND OPENMP_FOUND)
+    list(APPEND REQUIRED_LDFLAGS "${OpenMP_C_FLAGS}")
+  endif()
   # Fortran
   if (CMAKE_C_COMPILER_ID MATCHES "GNU")
     find_library(
@@ -727,9 +750,11 @@ if(MUMPS_LIBRARIES)
 	"See the explanation in FindMUMPS.cmake.")
     endif()
   endif()
+
   set(CMAKE_REQUIRED_INCLUDES)
   set(CMAKE_REQUIRED_FLAGS)
   set(CMAKE_REQUIRED_LIBRARIES)
+
 endif(MUMPS_LIBRARIES)
 
 if (MUMPS_LIBRARIES)

@@ -16,6 +16,7 @@
 # This module finds headers and papi library.
 # Results are reported in variables:
 #  PAPI_FOUND           - True if headers and requested libraries were found
+#  PAPI_C_FLAGS         - list of required compilation flags (excluding -I)
 #  PAPI_INCLUDE_DIRS    - papi include directories
 #  PAPI_LIBRARY_DIRS    - Link directories for papi libraries
 #  PAPI_LIBRARIES       - papi component libraries to be linked
@@ -81,6 +82,8 @@ if(PKG_CONFIG_EXECUTABLE AND NOT PAPI_GIVEN_BY_USER)
 	"\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
+
+  set(PAPI_C_FLAGS "${PAPI_CFLAGS_OTHER}")
 
 endif(PKG_CONFIG_EXECUTABLE AND NOT PAPI_GIVEN_BY_USER)
 

@@ -147,7 +147,7 @@ else ()
     message(STATUS "Looking for scotch -- scotch.h not found")
   endif()
 endif()
-
+list(REMOVE_DUPLICATES SCOTCH_INCLUDE_DIRS)
 
 # Looking for lib
 # ---------------
@@ -309,7 +309,7 @@ if (SCOTCH_LIBRARIES)
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
     set(SCOTCH_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of SCOTCH library" FORCE)
-  else()
+   else()
     set(SCOTCH_DIR_FOUND "${first_lib_path}" CACHE PATH "Installation directory of SCOTCH library" FORCE)
   endif()
 endif()
@@ -345,9 +345,12 @@ int main(int argc, char **argv) {
     return 1;
 }
 ")
+
+unset(SCOTCH_Num_4 CACHE)
+unset(SCOTCH_Num_8 CACHE)
 check_c_source_runs("${SCOTCH_C_TEST_SCOTCH_Num_4}" SCOTCH_Num_4)
+check_c_source_runs("${SCOTCH_C_TEST_SCOTCH_Num_8}" SCOTCH_Num_8)
 if(NOT SCOTCH_Num_4)
-  check_c_source_runs("${SCOTCH_C_TEST_SCOTCH_Num_8}" SCOTCH_Num_8)
   if(NOT SCOTCH_Num_8)
     set(SCOTCH_INTSIZE -1)
   else()

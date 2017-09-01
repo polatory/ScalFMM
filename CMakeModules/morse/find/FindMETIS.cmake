@@ -20,6 +20,7 @@
 #  METIS_INCLUDE_DIRS    - metis include directories
 #  METIS_LIBRARY_DIRS    - Link directories for metis libraries
 #  METIS_LIBRARIES       - metis component libraries to be linked
+#  METIX_INTSIZE         - Number of octets occupied by a idx_t (IDXTYPEWIDTH)
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DMETIS_DIR=path/to/metis):
@@ -252,6 +253,50 @@ if (METIS_LIBRARIES)
 endif()
 mark_as_advanced(METIS_DIR)
 mark_as_advanced(METIS_DIR_FOUND)
+
+# Check the size of METIS_Idx
+# ---------------------------------
+set(CMAKE_REQUIRED_INCLUDES ${METIS_INCLUDE_DIRS})
+
+include(CheckCSourceRuns)
+#stdio.h and stdint.h should be included by metis.h directly
+set(METIS_C_TEST_METIS_Idx_4 "
+#include <stdio.h>
+#include <stdint.h>
+#include <metis.h>
+int main(int argc, char **argv) {
+  if (sizeof(idx_t) == 4)
+    return 0;
+  else
+    return 1;
+}
+")
+
+set(METIS_C_TEST_METIS_Idx_8 "
+#include <stdio.h>
+#include <stdint.h>
+#include <metis.h>
+int main(int argc, char **argv) {
+  if (sizeof(idx_t) == 8)
+    return 0;
+  else
+    return 1;
+}
+")
+unset(METIS_Idx_4 CACHE)
+unset(METIS_Idx_8 CACHE)
+check_c_source_runs("${METIS_C_TEST_METIS_Idx_4}" METIS_Idx_4)
+check_c_source_runs("${METIS_C_TEST_METIS_Idx_8}" METIS_Idx_8)
+if(NOT METIS_Idx_4)
+  if(NOT METIS_Idx_8)
+    set(METIS_INTSIZE -1)
+  else()
+    set(METIS_INTSIZE 8)
+  endif()
+else()
+  set(METIS_INTSIZE 4)
+endif()
+set(CMAKE_REQUIRED_INCLUDES "")
 
 # check that METIS has been found
 # ---------------------------------

@@ -16,6 +16,7 @@
 # This module finds headers and hwloc library.
 # Results are reported in variables:
 #  HWLOC_FOUND           - True if headers and requested libraries were found
+#  HWLOC_C_FLAGS         - list of required compilation flags (excluding -I)
 #  HWLOC_INCLUDE_DIRS    - hwloc include directories
 #  HWLOC_LIBRARY_DIRS    - Link directories for hwloc libraries
 #  HWLOC_LIBRARIES       - hwloc component libraries to be linked
@@ -84,6 +85,8 @@ if( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
 	"\n   the PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
+
+  set(HWLOC_C_FLAGS "${HWLOC_CFLAGS_OTHER}")
 
 endif( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
 
@@ -318,6 +321,18 @@ endif()
 if (HWLOC_FOUND)
   set(HWLOC_SAVE_CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES})
   list(APPEND CMAKE_REQUIRED_INCLUDES ${HWLOC_INCLUDE_DIRS})
+  set(CMAKE_REQUIRED_LIBRARIES)
+  if (HWLOC_LIBRARY_DIRS)
+    set (LIBDIR ${HWLOC_LIBRARY_DIRS})
+  elseif(HWLOC_LIBDIR)
+    set (LIBDIR ${HWLOC_LIBDIR})
+  endif()
+  if (LIBDIR)
+    foreach(lib_dir ${LIBDIR})
+      list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
+    endforeach()
+  endif()
+  string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
 
   # test headers to guess the version
   check_struct_has_member( "struct hwloc_obj" parent hwloc.h HAVE_HWLOC_PARENT_MEMBER )

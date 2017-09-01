@@ -91,18 +91,20 @@ if (LAPACK_FOUND)
 
     if(LAPACKE_WORKS)
       if(NOT LAPACKE_FIND_QUIETLY)
-	message(STATUS "Looking for lapacke: test with lapack succeeds")
+        message(STATUS "Looking for lapacke: test with lapack succeeds")
       endif()
       # test succeeds: LAPACKE is in LAPACK
       set(LAPACKE_LIBRARIES "${LAPACK_LIBRARIES}")
+      set(LAPACKE_LIBRARIES_DEP "${LAPACK_LIBRARIES}")
       if (LAPACK_LIBRARY_DIRS)
-	set(LAPACKE_LIBRARY_DIRS "${LAPACK_LIBRARY_DIRS}")
+        set(LAPACKE_LIBRARY_DIRS "${LAPACK_LIBRARY_DIRS}")
       endif()
       if(LAPACK_INCLUDE_DIRS)
-	set(LAPACKE_INCLUDE_DIRS "${LAPACK_INCLUDE_DIRS}")
+        set(LAPACKE_INCLUDE_DIRS "${LAPACK_INCLUDE_DIRS}")
+        set(LAPACKE_INCLUDE_DIRS_DEP "${LAPACK_INCLUDE_DIRS}")
       endif()
       if (LAPACK_LINKER_FLAGS)
-	set(LAPACKE_LINKER_FLAGS "${LAPACK_LINKER_FLAGS}")
+        set(LAPACKE_LINKER_FLAGS "${LAPACK_LINKER_FLAGS}")
       endif()
     endif()
   endif (NOT LAPACKE_STANDALONE)
@@ -133,16 +135,16 @@ if (LAPACK_FOUND)
       list(APPEND _inc_env "${ENV_LAPACKE_DIR}/include/lapacke")
     else()
       if(WIN32)
-	string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
+        string(REPLACE ":" ";" _inc_env "$ENV{INCLUDE}")
       else()
-	string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
-	list(APPEND _inc_env "${_path_env}")
-	string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
-	list(APPEND _inc_env "${_path_env}")
-	string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
-	list(APPEND _inc_env "${_path_env}")
-	string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
-	list(APPEND _inc_env "${_path_env}")
+        string(REPLACE ":" ";" _path_env "$ENV{INCLUDE}")
+        list(APPEND _inc_env "${_path_env}")
+        string(REPLACE ":" ";" _path_env "$ENV{C_INCLUDE_PATH}")
+        list(APPEND _inc_env "${_path_env}")
+        string(REPLACE ":" ";" _path_env "$ENV{CPATH}")
+        list(APPEND _inc_env "${_path_env}")
+        string(REPLACE ":" ";" _path_env "$ENV{INCLUDE_PATH}")
+        list(APPEND _inc_env "${_path_env}")
       endif()
     endif()
     list(APPEND _inc_env "${CMAKE_PLATFORM_IMPLICIT_INCLUDE_DIRECTORIES}")
@@ -156,20 +158,20 @@ if (LAPACK_FOUND)
     if(LAPACKE_INCDIR)
       set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
       find_path(LAPACKE_lapacke.h_DIRS
-	NAMES lapacke.h
-	HINTS ${LAPACKE_INCDIR})
+        NAMES lapacke.h
+        HINTS ${LAPACKE_INCDIR})
     else()
       if(LAPACKE_DIR)
-	set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
-	find_path(LAPACKE_lapacke.h_DIRS
-	  NAMES lapacke.h
-	  HINTS ${LAPACKE_DIR}
-	  PATH_SUFFIXES "include" "include/lapacke")
+        set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
+        find_path(LAPACKE_lapacke.h_DIRS
+          NAMES lapacke.h
+          HINTS ${LAPACKE_DIR}
+          PATH_SUFFIXES "include" "include/lapacke")
       else()
-	set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
-	find_path(LAPACKE_lapacke.h_DIRS
-	  NAMES lapacke.h
-	  HINTS ${_inc_env})
+        set(LAPACKE_lapacke.h_DIRS "LAPACKE_lapacke.h_DIRS-NOTFOUND")
+        find_path(LAPACKE_lapacke.h_DIRS
+          NAMES lapacke.h
+          HINTS ${_inc_env})
       endif()
     endif()
     mark_as_advanced(LAPACKE_lapacke.h_DIRS)
@@ -181,7 +183,7 @@ if (LAPACK_FOUND)
     else ()
       set(LAPACKE_INCLUDE_DIRS "LAPACKE_INCLUDE_DIRS-NOTFOUND")
       if(NOT LAPACKE_FIND_QUIETLY)
-	message(STATUS "Looking for lapacke -- lapacke.h not found")
+        message(STATUS "Looking for lapacke -- lapacke.h not found")
       endif()
     endif()
 
@@ -200,15 +202,15 @@ if (LAPACK_FOUND)
       list(APPEND _lib_env "${ENV_LAPACKE_DIR}/lib")
     else()
       if(WIN32)
-	string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
+        string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
       else()
-	if(APPLE)
-	  string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
-	else()
-	  string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
-	endif()
-	list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
-	list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
+        if(APPLE)
+          string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+        else()
+          string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+        endif()
+        list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
+        list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
       endif()
     endif()
     list(REMOVE_DUPLICATES _lib_env)
@@ -220,20 +222,20 @@ if (LAPACK_FOUND)
     if(LAPACKE_LIBDIR)
       set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
       find_library(LAPACKE_lapacke_LIBRARY
-	NAMES lapacke
-	HINTS ${LAPACKE_LIBDIR})
+        NAMES lapacke
+        HINTS ${LAPACKE_LIBDIR})
     else()
       if(LAPACKE_DIR)
-	set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
-	find_library(LAPACKE_lapacke_LIBRARY
-	  NAMES lapacke
-	  HINTS ${LAPACKE_DIR}
-	  PATH_SUFFIXES lib lib32 lib64)
+        set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
+        find_library(LAPACKE_lapacke_LIBRARY
+          NAMES lapacke
+          HINTS ${LAPACKE_DIR}
+          PATH_SUFFIXES lib lib32 lib64)
       else()
-	set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
-	find_library(LAPACKE_lapacke_LIBRARY
-	  NAMES lapacke
-	  HINTS ${_lib_env})
+        set(LAPACKE_lapacke_LIBRARY "LAPACKE_lapacke_LIBRARY-NOTFOUND")
+        find_library(LAPACKE_lapacke_LIBRARY
+          NAMES lapacke
+          HINTS ${_lib_env})
       endif()
     endif()
     mark_as_advanced(LAPACKE_lapacke_LIBRARY)
@@ -249,7 +251,7 @@ if (LAPACK_FOUND)
       set(LAPACKE_LIBRARIES    "LAPACKE_LIBRARIES-NOTFOUND")
       set(LAPACKE_LIBRARY_DIRS "LAPACKE_LIBRARY_DIRS-NOTFOUND")
       if (NOT LAPACKE_FIND_QUIETLY)
-	message(STATUS "Looking for lapacke -- lib lapacke not found")
+        message(STATUS "Looking for lapacke -- lib lapacke not found")
       endif()
     endif ()
 
@@ -263,57 +265,57 @@ if (LAPACK_FOUND)
 
       # LAPACKE
       if (LAPACKE_INCLUDE_DIRS)
-	set(REQUIRED_INCDIRS "${LAPACKE_INCLUDE_DIRS}")
+        set(REQUIRED_INCDIRS "${LAPACKE_INCLUDE_DIRS}")
       endif()
       if (LAPACKE_LIBRARY_DIRS)
-	set(REQUIRED_LIBDIRS "${LAPACKE_LIBRARY_DIRS}")
+        set(REQUIRED_LIBDIRS "${LAPACKE_LIBRARY_DIRS}")
       endif()
       set(REQUIRED_LIBS "${LAPACKE_LIBRARIES}")
       # LAPACK
       if (LAPACK_INCLUDE_DIRS)
-	list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS}")
+        list(APPEND REQUIRED_INCDIRS "${LAPACK_INCLUDE_DIRS}")
       endif()
       if (LAPACK_LIBRARY_DIRS)
-	list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS}")
+        list(APPEND REQUIRED_LIBDIRS "${LAPACK_LIBRARY_DIRS}")
       endif()
       list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES}")
       if (LAPACK_LINKER_FLAGS)
-	list(APPEND REQUIRED_LDFLAGS "${LAPACK_LINKER_FLAGS}")
+        list(APPEND REQUIRED_LDFLAGS "${LAPACK_LINKER_FLAGS}")
       endif()
       # Fortran
       if (CMAKE_C_COMPILER_ID MATCHES "GNU")
-	find_library(
-	  FORTRAN_gfortran_LIBRARY
-	  NAMES gfortran
-	  HINTS ${_lib_env}
-	  )
-	mark_as_advanced(FORTRAN_gfortran_LIBRARY)
-	if (FORTRAN_gfortran_LIBRARY)
-	  list(APPEND REQUIRED_LIBS "${FORTRAN_gfortran_LIBRARY}")
-	endif()
+        find_library(
+          FORTRAN_gfortran_LIBRARY
+          NAMES gfortran
+          HINTS ${_lib_env}
+          )
+        mark_as_advanced(FORTRAN_gfortran_LIBRARY)
+        if (FORTRAN_gfortran_LIBRARY)
+          list(APPEND REQUIRED_LIBS "${FORTRAN_gfortran_LIBRARY}")
+        endif()
       elseif (CMAKE_C_COMPILER_ID MATCHES "Intel")
-	find_library(
-	  FORTRAN_ifcore_LIBRARY
-	  NAMES ifcore
-	  HINTS ${_lib_env}
-	  )
-	mark_as_advanced(FORTRAN_ifcore_LIBRARY)
-	if (FORTRAN_ifcore_LIBRARY)
-	  list(APPEND REQUIRED_LIBS "${FORTRAN_ifcore_LIBRARY}")
-	endif()
+        find_library(
+          FORTRAN_ifcore_LIBRARY
+          NAMES ifcore
+          HINTS ${_lib_env}
+          )
+        mark_as_advanced(FORTRAN_ifcore_LIBRARY)
+        if (FORTRAN_ifcore_LIBRARY)
+          list(APPEND REQUIRED_LIBS "${FORTRAN_ifcore_LIBRARY}")
+        endif()
       endif()
       # m
       find_library(M_LIBRARY NAMES m HINTS ${_lib_env})
       mark_as_advanced(M_LIBRARY)
       if(M_LIBRARY)
-	list(APPEND REQUIRED_LIBS "-lm")
+        list(APPEND REQUIRED_LIBS "-lm")
       endif()
       # set required libraries for link
       set(CMAKE_REQUIRED_INCLUDES "${REQUIRED_INCDIRS}")
       set(CMAKE_REQUIRED_LIBRARIES)
       list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LDFLAGS}")
       foreach(lib_dir ${REQUIRED_LIBDIRS})
-	list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
+        list(APPEND CMAKE_REQUIRED_LIBRARIES "-L${lib_dir}")
       endforeach()
       list(APPEND CMAKE_REQUIRED_LIBRARIES "${REQUIRED_LIBS}")
       string(REGEX REPLACE "^ -" "-" CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
@@ -325,21 +327,21 @@ if (LAPACK_FOUND)
       mark_as_advanced(LAPACKE_WORKS)
 
       if(LAPACKE_WORKS)
-	# save link with dependencies
-	set(LAPACKE_LIBRARIES_DEP "${REQUIRED_LIBS}")
-	set(LAPACKE_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
-	set(LAPACKE_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
-	set(LAPACKE_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
-	list(REMOVE_DUPLICATES LAPACKE_LIBRARY_DIRS_DEP)
-	list(REMOVE_DUPLICATES LAPACKE_INCLUDE_DIRS_DEP)
-	list(REMOVE_DUPLICATES LAPACKE_LINKER_FLAGS)
+        # save link with dependencies
+        set(LAPACKE_LIBRARIES_DEP "${REQUIRED_LIBS}")
+        set(LAPACKE_LIBRARY_DIRS_DEP "${REQUIRED_LIBDIRS}")
+        set(LAPACKE_INCLUDE_DIRS_DEP "${REQUIRED_INCDIRS}")
+        set(LAPACKE_LINKER_FLAGS "${REQUIRED_LDFLAGS}")
+        list(REMOVE_DUPLICATES LAPACKE_LIBRARY_DIRS_DEP)
+        list(REMOVE_DUPLICATES LAPACKE_INCLUDE_DIRS_DEP)
+        list(REMOVE_DUPLICATES LAPACKE_LINKER_FLAGS)
       else()
-	if(NOT LAPACKE_FIND_QUIETLY)
-	  message(STATUS "Looking for lapacke: test of LAPACKE_dgeqrf with lapacke and lapack libraries fails")
-	  message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-	  message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-	  message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
-	endif()
+        if(NOT LAPACKE_FIND_QUIETLY)
+          message(STATUS "Looking for lapacke: test of LAPACKE_dgeqrf with lapacke and lapack libraries fails")
+          message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+          message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+          message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+        endif()
       endif()
       set(CMAKE_REQUIRED_INCLUDES)
       set(CMAKE_REQUIRED_FLAGS)

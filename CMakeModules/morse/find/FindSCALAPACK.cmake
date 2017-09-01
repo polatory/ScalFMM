@@ -378,7 +378,7 @@ if(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
 	  ${SCALAPACK_mkl_SEARCH_SYMBOL}
 	  ""
 	  ""
-	  "${_BLAS_LIBRARIES};mkl_blacs_intelmpi_lp64"
+	  "${_BLAS_LIBRARIES}"
 	  ""
 	  "${MPI_Fortran_LIBRARIES}"
 	  )
@@ -391,8 +391,8 @@ if(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
 	    BLAS
 	    ${SCALAPACK_mkl_SEARCH_SYMBOL}
 	    ""
-	    "${IT}"
-	    "${_BLAS_LIBRARIES};mkl_blacs_intelmpi_lp64"
+	    "${IT};mkl_blacs_intelmpi_lp64"
+	    "${_BLAS_LIBRARIES}"
 	    ""
 	    "${MPI_Fortran_LIBRARIES}"
 	    )
