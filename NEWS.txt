@@ -8,6 +8,8 @@ bug fixes (and other actions) for each version of ScalFMM since
 version 1.1
 1.5.1
 - Many bug fixes in MPI version (Loader, GroupTree, ...)
+- set cmake_policy CMP0004 to NEW
+- fix some errors in Morse module for cmake 3.9.1
 -  
 
 1.5
@@ -17,7 +19,8 @@ version 1.1
 - Add P2P ?? on GPU
 - Add GPU version for ufmm (interpolation FMM based on uniform grid points)
 - Fix bug in distribution generation
--
+
+
 
 1.4
 -----
