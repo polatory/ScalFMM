@@ -9,8 +9,8 @@ version 1.1
 1.5.1
 - Many bug fixes in MPI version (Loader, GroupTree, ...)
 - set cmake_policy CMP0004 to NEW
-- fix some errors in Morse module for cmake 3.9.1
--  
+- fix some errors in Morse module with cmake 3.9.1
+- 
 
 1.5
 -----
