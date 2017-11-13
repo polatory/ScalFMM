@@ -1,5 +1,5 @@
 // @FUSE_BLAS
-//
+// @FUSE_MPI
 // @FUSE_STARPU
 // Keep in private GIT
 #include <iostream>
