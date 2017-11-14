@@ -297,13 +297,13 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
 
     # allows to use an external mpi compilation by setting compilers with
     # -DMPI_C_COMPILER=path/to/mpicc -DMPI_CXX_COMPILER=path/to/mpicxx
-    # at cmake configure
-    if(NOT MPI_C_COMPILER)
-      set(MPI_C_COMPILER mpicc)
-    endif()
-    if(NOT MPI_CXX_COMPILER)
-      set(MPI_CXX_COMPILER mpicxx)
-    endif()
+#    # at cmake configure
+#    if(NOT MPI_C_COMPILER)
+#      set(MPI_C_COMPILER mpicc)
+#    endif()
+#    if(NOT MPI_CXX_COMPILER)
+#      set(MPI_CXX_COMPILER mpicxx)
+#    endif()
 
     find_package(MPI REQUIRED)
     if (MPI_CXX_INCLUDE_PATH)
@@ -316,9 +316,12 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       set(SCALFMM_INCLUDES  "${SCALFMM_INCLUDES};${MPI_CXX_INCLUDE_PATH}")
     endif()
     if (MPI_CXX_LINK_FLAGS)
-      string(REGEX REPLACE " " ";" MPI_CXX_LINK_FLAGS  ${MPI_CXX_LINK_FLAGS} )
-      set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${MPI_CXX_LINK_FLAGS}")
-    endif()
+   #   string(REGEX REPLACE " " ";" MPI_CXX_LINK_FLAGS  ${MPI_CXX_LINK_FLAGS} )
+   #   set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${MPI_CXX_LINK_FLAGS}")
+      list(APPEND SCALFMM_LIBRARIES ${MPI_CXX_LIBRARIES})
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_CXX_LINK_FLAGS}")
+      message(STATUS "MPI link flags: ${MPI_CXX_LINK_FLAGS}")
+  endif()
     if (MPI_CXX_LIBRARIES)
       set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${MPI_CXX_LIBRARIES}")
     endif()
