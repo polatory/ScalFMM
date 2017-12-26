@@ -30,7 +30,7 @@ namespace FSvd {
      * @param[in] eps accuracy \f$\epsilon\f$
      */ 
     template <class FReal, int ORDER>
-    unsigned int getRank(const FReal singular_values[], const double eps)
+    unsigned int getRank(FReal singular_values[], const double eps)
     {
     	enum {nnodes = TensorTraits<ORDER>::nnodes};
 
@@ -48,7 +48,7 @@ namespace FSvd {
     }
 
     template <class FReal>
-    unsigned int getRank(const FReal singular_values[], const unsigned int size, const double eps)
+    unsigned int getRank(FReal singular_values[], const unsigned int size, const double eps)
     {
     	const FReal nrm2 = FBlas::scpr(size, singular_values, singular_values);
     	FReal nrm2k(0.);

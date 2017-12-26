@@ -30,7 +30,7 @@ public:
     FTreeCoordinate(): point_t() {}
 
     /** Constructor from Morton index */
-    [[gnu::deprecated]]
+    [[deprecated]]
     explicit FTreeCoordinate(const MortonIndex mindex, const int) {
         setPositionFromMorton(mindex);
     }
@@ -76,7 +76,7 @@ public:
      */
     FTreeCoordinate& operator=(const FTreeCoordinate& other) = default;
 
-    [[gnu::deprecated]]
+    [[deprecated]]
     MortonIndex getMortonIndex(const int /*inLevel*/) const {
         return getMortonIndex();
     }
@@ -115,7 +115,7 @@ public:
         return index;
     }
 
-    [[gnu::deprecated]]
+    [[deprecated]]
     void setPositionFromMorton(MortonIndex inIndex, const int /*inLevel*/){
         setPositionFromMorton(inIndex);
     }

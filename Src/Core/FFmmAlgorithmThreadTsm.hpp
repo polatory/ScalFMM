@@ -42,6 +42,8 @@ class FFmmAlgorithmThreadTsm : public FAbstractAlgorithm, public FAlgorithmTimer
 
     const int OctreeHeight;
 
+    int userChunkSize;
+
     const int leafLevelSeparationCriteria;
 
 public:
@@ -50,12 +52,13 @@ public:
       * @param inKernels the kernels to call
       * An assert is launched if one of the arguments is null
       */
-    FFmmAlgorithmThreadTsm(OctreeClass* const inTree, KernelClass* const inKernels, const int inLeafLevelSeperationCriteria = 1)
+    FFmmAlgorithmThreadTsm(OctreeClass* const inTree, KernelClass* const inKernels, const int inUserChunkSize = 10, const int inLeafLevelSeperationCriteria = 1)
                       : tree(inTree) , kernels(nullptr), iterArray(nullptr),
-                      MaxThreads(FEnv::GetValue("SCALFMM_ALGO_NUM_THREADS",omp_get_max_threads())) , OctreeHeight(tree->getHeight()), leafLevelSeparationCriteria(inLeafLevelSeperationCriteria) {
+                      MaxThreads(FEnv::GetValue("SCALFMM_ALGO_NUM_THREADS",omp_get_max_threads())) , OctreeHeight(tree->getHeight()), userChunkSize(inUserChunkSize), leafLevelSeparationCriteria(inLeafLevelSeperationCriteria) {
 
         FAssertLF(tree, "tree cannot be null");
         FAssertLF(leafLevelSeparationCriteria < 3, "Separation criteria should be < 3");
+        FAssertLF(0 < userChunkSize, "Chunk size should be > 0");
 
         this->kernels = new KernelClass*[MaxThreads];
         #pragma omp parallel num_threads(MaxThreads)
@@ -77,6 +80,94 @@ public:
             delete this->kernels[idxThread];
         }
         delete [] this->kernels;
+    }
+
+    void updateTargetCells()
+    {
+        std::vector<typename OctreeClass::Iterator> iterArray;
+        typename OctreeClass::Iterator octreeIterator(tree);
+
+        // Iterate on leafs
+        octreeIterator.gotoBottomLeft();
+        do {
+            iterArray.push_back(octreeIterator);
+        } while (octreeIterator.moveRight());
+        int numberOfLeafs = iterArray.size();
+
+        const int chunkSize = this->getChunkSize(numberOfLeafs);
+
+#pragma omp parallel num_threads(MaxThreads)
+        {
+#pragma omp for nowait schedule(dynamic, chunkSize)
+            for (int idxLeafs = 0; idxLeafs < numberOfLeafs; ++idxLeafs) {
+                // We need the current cell that represent the leaf
+                // and the list of particles
+                if (iterArray[idxLeafs].getCurrentListTargets()->getNbParticles()) {
+                    iterArray[idxLeafs].getCurrentCell()->setTargetsChildTrue();
+                } else {
+                    iterArray[idxLeafs].getCurrentCell()->setTargetsChildFalse();
+                }
+            }
+        }
+
+        // Start from leal level - 1
+        octreeIterator.gotoBottomLeft();
+        octreeIterator.moveUp();
+
+        for (int idxLevel = OctreeHeight - 2; idxLevel > FAbstractAlgorithm::lowerWorkingLevel - 1; --idxLevel) {
+            octreeIterator.moveUp();
+        }
+
+        typename OctreeClass::Iterator avoidGotoLeftIterator(octreeIterator);
+
+        // for each levels
+        for (int idxLevel = FMath::Min(OctreeHeight - 2, FAbstractAlgorithm::lowerWorkingLevel - 1); idxLevel >= FAbstractAlgorithm::upperWorkingLevel; --idxLevel) {
+            iterArray.clear();
+            // for each cells
+            do {
+                iterArray.push_back(octreeIterator);
+            } while (octreeIterator.moveRight());
+            int numberOfCells = iterArray.size();
+
+            avoidGotoLeftIterator.moveUp();
+            octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
+
+            const int chunkSize = this->getChunkSize(numberOfCells);
+
+#pragma omp parallel num_threads(MaxThreads)
+            {
+#pragma omp for nowait schedule(dynamic, chunkSize)
+                for (int idxCell = 0; idxCell < numberOfCells; ++idxCell) {
+                    // We need the current cell and the child
+                    // child is an array (of 8 child) that may be null
+                    CellClass** const realChild = iterArray[idxCell].getCurrentChild();
+                    CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
+                    currentCell->setTargetsChildFalse();
+                    for (int idxChild = 0; idxChild < 8; ++idxChild) {
+                        if (realChild[idxChild] && realChild[idxChild]->hasTargetsChild()) {
+                            currentCell->setTargetsChildTrue();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    template <class NumType>
+    NumType getChunkSize(const NumType inSize) const {
+        if(userChunkSize <= -1){
+            return FMath::Max(NumType(1) , NumType(double(inSize)/double(omp_get_max_threads())) );
+        } else if(userChunkSize == 0){
+            return FMath::Max(NumType(1) , inSize/NumType(omp_get_max_threads()*omp_get_max_threads()));
+        } else {
+            return userChunkSize;
+        }
+    }
+
+    template <class NumType>
+    void setChunkSize(const NumType size) {
+            userChunkSize = size;
     }
 
 protected:
@@ -125,7 +216,7 @@ protected:
             ++numberOfLeafs;
         } while(octreeIterator.moveRight());
 
-        const int chunkSize = FMath::Max(1 , numberOfLeafs/(omp_get_max_threads()*omp_get_max_threads()));
+        const int chunkSize = this->getChunkSize(numberOfLeafs);
 
         FLOG(FTic computationCounter);
         #pragma omp parallel num_threads(MaxThreads)
@@ -182,7 +273,7 @@ protected:
             avoidGotoLeftIterator.moveUp();
             octreeIterator = avoidGotoLeftIterator;// equal octreeIterator.moveUp(); octreeIterator.gotoLeft();
 
-            const int chunkSize = FMath::Max(1 , numberOfCells/(omp_get_max_threads()*omp_get_max_threads()));
+            const int chunkSize = this->getChunkSize(numberOfCells);
 
             FLOG(computationCounter.tic());
             #pragma omp parallel num_threads(MaxThreads)
@@ -253,7 +344,7 @@ protected:
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
 
-                const int chunkSize = FMath::Max(1 , numberOfCells/(omp_get_max_threads()*omp_get_max_threads()));
+                const int chunkSize = this->getChunkSize(numberOfCells);
 
                 FLOG(computationCounter.tic());
                 #pragma omp parallel num_threads(MaxThreads)
@@ -265,7 +356,7 @@ protected:
                     #pragma omp for  schedule(dynamic, chunkSize) nowait
                     for(int idxCell = 0 ; idxCell < numberOfCells ; ++idxCell){
                         CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
-                        if(currentCell->hasTargetsChild()){
+                        if(currentCell->hasTargetsChild() && !currentCell->isM2LDone()){
                             const int counter = tree->getInteractionNeighbors(neighbors, neighborPositions, iterArray[idxCell].getCurrentGlobalCoordinate(), idxLevel, separationCriteria);
                             if( counter ){
                                 int counterWithSrc = 0;
@@ -280,6 +371,7 @@ protected:
                                     myThreadkernels->M2L( currentCell , neighbors, neighborPositions, counterWithSrc, idxLevel);
                                 }
                             }
+                            currentCell->setM2LDoneTrue();
                         }
                     }
 
@@ -322,7 +414,7 @@ protected:
                 avoidGotoLeftIterator.moveDown();
                 octreeIterator = avoidGotoLeftIterator;
 
-                const int chunkSize = FMath::Max(1 , numberOfCells/(omp_get_max_threads()*omp_get_max_threads()));
+                const int chunkSize = this->getChunkSize(numberOfCells);
 
                 FLOG(computationCounter.tic());
                 #pragma omp parallel num_threads(MaxThreads)
@@ -335,11 +427,10 @@ protected:
                             CellClass** const realChild = iterArray[idxCell].getCurrentChild();
                             CellClass* const currentCell = iterArray[idxCell].getCurrentCell();
                             for(int idxChild = 0 ; idxChild < 8 ; ++idxChild){
-                                if(realChild[idxChild] && realChild[idxChild]->hasTargetsChild()){
+                                potentialChild[idxChild] = nullptr;
+                                if(realChild[idxChild] && realChild[idxChild]->hasTargetsChild() && !realChild[idxChild]->isL2LDone()){
                                     potentialChild[idxChild] = realChild[idxChild];
-                                }
-                                else{
-                                    potentialChild[idxChild] = nullptr;
+                                    realChild[idxChild]->setL2LDoneTrue();
                                 }
                             }
                             myThreadkernels->L2L( currentCell , potentialChild, idxLevel);
@@ -370,7 +461,7 @@ protected:
             } while(octreeIterator.moveRight());
         }
 
-        const int chunkSize = FMath::Max(1 , numberOfLeafs/(omp_get_max_threads()*omp_get_max_threads()));
+        const int chunkSize = this->getChunkSize(numberOfLeafs);
 
         const int heightMinusOne = OctreeHeight - 1;
         FLOG(FTic computationCounter);

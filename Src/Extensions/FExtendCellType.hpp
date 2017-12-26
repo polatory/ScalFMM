@@ -16,21 +16,25 @@ protected:
     /** Current type */
     bool containsTargets;
     bool containsSources;
+    bool m2lDone;
+    bool l2lDone;
 
 public:
     /** Default constructor */
-    FExtendCellType() : containsTargets(false), containsSources(false) {
+    FExtendCellType() : containsTargets(false), containsSources(false), m2lDone(false), l2lDone(false) {
     }
 
     /** Copy constructor */
     FExtendCellType(const FExtendCellType& other) : containsTargets(other.containsTargets),
-            containsSources(other.containsSources){
+            containsSources(other.containsSources), m2lDone(other.m2lDone), l2lDone(other.l2lDone){
     }
 
     /** Copy operator */
     FExtendCellType& operator=(const FExtendCellType& other) {
         this->containsTargets = other.containsTargets;
         this->containsSources = other.containsSources;
+        this->m2lDone = other.m2lDone;
+        this->l2lDone = other.l2lDone;
         return *this;
     }
 
@@ -54,6 +58,26 @@ public:
         containsTargets = true;
     }
 
+    void setTargetsChildFalse() {
+        containsTargets = false;
+    }
+
+    bool isM2LDone() const {
+        return m2lDone;
+    }
+
+    bool isL2LDone() const {
+        return l2lDone;
+    }
+
+    void setM2LDoneTrue() {
+        m2lDone = true;
+    }
+
+    void setL2LDoneTrue() {
+        l2lDone = true;
+    }
+
 public:
     /** Save current object */
     template <class BufferWriterClass>
@@ -71,6 +95,8 @@ public:
     void resetToInitialState(){
         containsTargets = false;
         containsSources = false;
+        m2lDone = false;
+        l2lDone = false;
     }
 
     FSize getSavedSize() const {
