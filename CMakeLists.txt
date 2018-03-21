@@ -294,39 +294,34 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   ##############################################################################
   #
   if( SCALFMM_USE_MPI )
+    if( NOT MPI_FOUND)
+      find_package(MPI REQUIRED)
+    endif()
+    if (MPI_CXX_FOUND)
+      message("MPI_CXX is in the place")
+      if (MPI_CXX_INCLUDE_PATH)
+	include_directories( ${MPI_CXX_INCLUDE_PATH} )
+      endif()
+      if (MPI_CXX_COMPILE_FLAGS)
+	set(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS} ${MPI_CXX_COMPILE_FLAGS}")
+      endif()
+      if (MPI_CXX_INCLUDE_PATH)
+	set(SCALFMM_INCLUDES  "${SCALFMM_INCLUDES};${MPI_CXX_INCLUDE_PATH}")
+      endif()
+      if (MPI_CXX_LINK_FLAGS)
+	list(APPEND "CMAKE_EXE_LINKER_FLAGS ${MPI_CXX_LINK_FLAGS}")
+      endif()
+      if (MPI_CXX_LIBRARIES)
+	set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${MPI_CXX_LIBRARIES}")
+      endif()
+    else (MPI_CXX_FOUND)
+      message(FATAL_ERROR "MPI is required but was not found. "
+	                  "Please provide an MPI compiler in your environment."
+			  "Note that you can give the path to your MPI installation "
+			  "by setting MPI_DIR cmake variable.")
+     endif (MPI_CXX_FOUND)
 
-    # allows to use an external mpi compilation by setting compilers with
-    # -DMPI_C_COMPILER=path/to/mpicc -DMPI_CXX_COMPILER=path/to/mpicxx
-#    # at cmake configure
-#    if(NOT MPI_C_COMPILER)
-#      set(MPI_C_COMPILER mpicc)
-#    endif()
-#    if(NOT MPI_CXX_COMPILER)
-#      set(MPI_CXX_COMPILER mpicxx)
-#    endif()
-
-    find_package(MPI REQUIRED)
-    if (MPI_CXX_INCLUDE_PATH)
-      include_directories( ${MPI_CXX_INCLUDE_PATH} )
-    endif()
-    if (MPI_CXX_COMPILE_FLAGS)
-      set(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS} ${MPI_CXX_COMPILE_FLAGS}")
-    endif()
-    if (MPI_CXX_INCLUDE_PATH)
-      set(SCALFMM_INCLUDES  "${SCALFMM_INCLUDES};${MPI_CXX_INCLUDE_PATH}")
-    endif()
-    if (MPI_CXX_LINK_FLAGS)
-   #   string(REGEX REPLACE " " ";" MPI_CXX_LINK_FLAGS  ${MPI_CXX_LINK_FLAGS} )
-   #   set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${MPI_CXX_LINK_FLAGS}")
-      list(APPEND SCALFMM_LIBRARIES ${MPI_CXX_LIBRARIES})
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_CXX_LINK_FLAGS}")
-      message(STATUS "MPI link flags: ${MPI_CXX_LINK_FLAGS}")
-  endif()
-    if (MPI_CXX_LIBRARIES)
-      set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${MPI_CXX_LIBRARIES}")
-    endif()
-
-  endif()
+  endif( SCALFMM_USE_MPI)
   #
   ##############################################################################
   #                             Blas option                                    #
