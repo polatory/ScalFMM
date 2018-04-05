@@ -35,12 +35,12 @@ GetCpuInfos()
 # SCALFMM version number.  An even minor number corresponds to releases.
 set(SCALFMM_MAJOR_VERSION 1)
 set(SCALFMM_MINOR_VERSION 5)
-set(SCALFMM_PATCH_VERSION 0)
+set(SCALFMM_PATCH_VERSION 1)
 set(SCALFMM_VERSION  "${SCALFMM_MAJOR_VERSION}.${SCALFMM_MINOR_VERSION}.${SCALFMM_PATCH_VERSION}" )
 
 set( MORSE_DISTRIB_DIR "" CACHE PATH "Directory of MORSE distribution")
 
-if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/")
+if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_cmake")
 
   # Add extra cmake module path and initialize morse cmake modules
   # --------------------------------------------------------------
@@ -48,10 +48,11 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
     list(APPEND CMAKE_MODULE_PATH ${MORSE_DISTRIB_DIR}/cmake_modules)
     list(APPEND CMAKE_MODULE_PATH "${MORSE_DISTRIB_DIR}/cmake_modules/morse")
     set(MORSE_CMAKE_MODULE_PATH ${MORSE_DISTRIB_DIR}/cmake_modules/morse )
-  elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/")
-    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/)
-    set(MORSE_CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse )
+  else() 
+    set(MORSE_CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_cmake" CACHE PATH "Path to morse_cmake sources")
+    list(APPEND CMAKE_MODULE_PATH "${MORSE_CMAKE_MODULE_PATH}/modules/" )
   endif()
+
   include(MorseInit)
   # Set the RPATH config
   # --------------------
@@ -440,7 +441,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   #
   # FFT option
   #
-  CMAKE_DEPENDENT_OPTION(SCALFMM_USE_MKL_AS_FFTW  "Set to ON to use MKL FFTW" ON  "SCALFMM_USE_FFT;SCALFMM_USE_MKL_AS_BLAS" OFF )
+  CMAKE_DEPENDENT_OPTION(SCALFMM_USE_MKL_AS_FFTW  "Set to ON to use MKL FFTW"  ON  "SCALFMM_USE_FFT;SCALFMM_USE_MKL_AS_BLAS"  OFF )
   CMAKE_DEPENDENT_OPTION(SCALFMM_USE_ESSL_AS_FFTW "Set to ON to use ESSL FFTW" ON  "SCALFMM_USE_FFT;SCALFMM_USE_ESSL_AS_BLAS" OFF )
   if( SCALFMM_USE_FFT )
     message(STATUS "SCALFMM USE FFT Configure:")
@@ -459,36 +460,37 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
       message(STATUS "         SCALFMM USE FFTW")
       find_package(FFTW COMPONENTS SIMPLE)
     endif()
-
-    if (FFTW_LIBRARY_DIRS_DEP)
-      set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your MKL flags")
-    endif()
-    if (FFTW_LIBRARIES_DEP)
-      foreach (fft_lib ${FFTW_LIBRARIES_DEP})
-        set(FFT_LIBRARIES "${FFT_LIBRARIES};${fft_lib};")
-      endforeach()
-    endif()
-
-    set(FFT_INCLUDES "${FFTW_INCLUDE_DIRS_DEP}" )
-    if (FFT_LIBRARIES)
-      set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${FFT_LIBRARIES}")
-    endif()
-
-    if(FFTW_LIBRARY_DIRS)
-      # the RPATH to be used when installing
-      list(APPEND CMAKE_INSTALL_RPATH "${FFTW_LIBRARY_DIRS}")
-    endif()
-    if (FFT_INCLUDES)
-      set(SCALFMM_INCLUDES "${SCALFMM_INCLUDES}; ${FFT_INCLUDES}")
-    endif()
-
+    
     if(NOT FFTW_FOUND)
+      if (FFTW_LIBRARY_DIRS_DEP)
+	set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your MKL flags")
+      endif()
+      if (FFTW_LIBRARIES_DEP)
+	foreach (fft_lib ${FFTW_LIBRARIES_DEP})
+          set(FFT_LIBRARIES "${FFT_LIBRARIES};${fft_lib};")
+	endforeach()
+      endif()
+
+      set(FFT_INCLUDES "${FFTW_INCLUDE_DIRS_DEP}" )
+      if (FFT_LIBRARIES)
+	set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${FFT_LIBRARIES}")
+      endif()
+
+      if(FFTW_LIBRARY_DIRS)
+	# the RPATH to be used when installing
+	list(APPEND CMAKE_INSTALL_RPATH "${FFTW_LIBRARY_DIRS}")
+      endif()
+      if (FFT_INCLUDES)
+	set(SCALFMM_INCLUDES "${SCALFMM_INCLUDES}; ${FFT_INCLUDES}")
+      endif()
+    else()
       message(WARNING "FFTW has not been found, SCALFMM will continue to compile but some applications will be disabled.")
       message(WARNING "If you have FFTW set FFTW_LIBDIR, FFTW_INCDIR or FFTW_DIR (CMake variables using -D or environment variables).")        
       set(SCALFMM_USE_FFT OFF)
     endif()
 
   endif(SCALFMM_USE_FFT)
+  
   list(APPEND FUSE_LIST "FFT")
   message(STATUS "SCALFMM_USE_FFT       =  ${SCALFMM_USE_FFT}")
   if (SCALFMM_INCLUDES)
@@ -964,7 +966,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/
   #                               END                              #
   ##################################################################
   #
-else(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/")
+else(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_cmake")
 
   message(STATUS "MORSE_DISTRIB_DIR is not set")
   message(STATUS "Please indicate where is located your MORSE distribution directory."
@@ -972,4 +974,4 @@ else(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse
   message(STATUS "If you are a MORSE developer, you normally have access to the svn repository of the MORSE_DISTRIB_DIR: "
     "svn checkout svn+ssh://yourlogin@scm.gforge.inria.fr/svnroot/morse/trunk/morse_distrib")
 
-endif(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse/")
+endif(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_cmake")
