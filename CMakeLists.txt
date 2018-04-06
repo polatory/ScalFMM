@@ -342,15 +342,15 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse"
 
     if( SCALFMM_USE_MKL_AS_BLAS )
       set(BLA_VENDOR "Intel10_64lp_seq")
-      find_package(BLASEXT QUIET) # not REQUIRED
+      find_package(BLAS QUIET) # not REQUIRED
       unset(LAPACK_LIBRARIES)
       if (BLAS_LIBRARIES)
         set(BLASLAPACK_LIBRARIES ${BLAS_LIBRARIES})
       endif()
     elseif(SCALFMM_USE_ESSL_AS_BLAS)
       set(BLA_VENDOR "IBMESSL")
-      find_package(BLASEXT   QUIET) # not REQUIRED
-      find_package(LAPACKEXT QUIET) # not REQUIRED
+      find_package(BLAS   QUIET) # not REQUIRED
+      find_package(LAPACK QUIET) # not REQUIRED
       if (LAPACK_LIBRARIES)
         set(BLASLAPACK_LIBRARIES "${LAPACK_LIBRARIES}")
       endif()
@@ -361,8 +361,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse"
       message(STATUS "BLAS SET BY EXTERNAL PROGRAM = ${BLAS_LIBRARIES}")
       list(APPEND BLASLAPACK_LIBRARIES "${BLAS_LIBRARIES}")
     else()
-      find_package(BLASEXT)  # not REQUIRED
-      find_package(LAPACKEXT)  # not REQUIRED
+      find_package(BLAS)  # not REQUIRED
+      find_package(LAPACK)  # not REQUIRED
       set(BLASLAPACK_LIBRARIES)
       if (LAPACK_LIBRARIES)
         set(BLASLAPACK_LIBRARIES "${LAPACK_LIBRARIES}")
