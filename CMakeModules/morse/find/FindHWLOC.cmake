@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -20,6 +20,7 @@
 #  HWLOC_INCLUDE_DIRS    - hwloc include directories
 #  HWLOC_LIBRARY_DIRS    - Link directories for hwloc libraries
 #  HWLOC_LIBRARIES       - hwloc component libraries to be linked
+#  HWLOC_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DHWLOC_DIR=path/to/hwloc):
@@ -30,11 +31,11 @@
 # are not given as cmake variable: HWLOC_DIR, HWLOC_INCDIR, HWLOC_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -74,19 +75,20 @@ if( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
   if (NOT HWLOC_FIND_QUIETLY)
     if (HWLOC_FOUND AND HWLOC_LIBRARIES)
       message(STATUS "Looking for HWLOC - found using PkgConfig")
-      #if(NOT HWLOC_INCLUDE_DIRS)
-      #    message("${Magenta}HWLOC_INCLUDE_DIRS is empty using PkgConfig."
-      #        "Perhaps the path to hwloc headers is already present in your"
-      #        "C(PLUS)_INCLUDE_PATH environment variable.${ColourReset}")
-      #endif()
     else()
       message(STATUS "${Magenta}Looking for HWLOC - not found using PkgConfig."
-	"\n   Perhaps you should add the directory containing hwloc.pc to"
-	"\n   the PKG_CONFIG_PATH environment variable.${ColourReset}")
+        "\n   Perhaps you should add the directory containing hwloc.pc to"
+        "\n   the PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
 
   set(HWLOC_C_FLAGS "${HWLOC_CFLAGS_OTHER}")
+
+  if (HWLOC_FOUND AND HWLOC_LIBRARIES)
+    set(HWLOC_FOUND_WITH_PKGCONFIG "TRUE")
+  else()
+    set(HWLOC_FOUND_WITH_PKGCONFIG "FALSE")
+  endif()
 
 endif( PKG_CONFIG_EXECUTABLE AND NOT HWLOC_GIVEN_BY_USER )
 
@@ -141,15 +143,15 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) O
     if(HWLOC_DIR)
       set(HWLOC_hwloc.h_DIRS "HWLOC_hwloc.h_DIRS-NOTFOUND")
       find_path(HWLOC_hwloc.h_DIRS
-	NAMES hwloc.h
-	HINTS ${HWLOC_DIR}
-	PATH_SUFFIXES "include" "include/hwloc")
+        NAMES hwloc.h
+        HINTS ${HWLOC_DIR}
+        PATH_SUFFIXES "include" "include/hwloc")
     else()
       set(HWLOC_hwloc.h_DIRS "HWLOC_hwloc.h_DIRS-NOTFOUND")
       find_path(HWLOC_hwloc.h_DIRS
-	NAMES hwloc.h
-	HINTS ${PATH_TO_LOOK_FOR}
-	PATH_SUFFIXES "hwloc")
+        NAMES hwloc.h
+        HINTS ${PATH_TO_LOOK_FOR}
+        PATH_SUFFIXES "hwloc")
     endif()
   endif()
   mark_as_advanced(HWLOC_hwloc.h_DIRS)
@@ -186,9 +188,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) O
       string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
     else()
       if(APPLE)
-	string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
       else()
-	string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
       endif()
       list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
       list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
@@ -212,14 +214,14 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) O
     if(HWLOC_DIR)
       set(HWLOC_hwloc_LIBRARY "HWLOC_hwloc_LIBRARY-NOTFOUND")
       find_library(HWLOC_hwloc_LIBRARY
-	NAMES hwloc
-	HINTS ${HWLOC_DIR}
-	PATH_SUFFIXES lib lib32 lib64)
+        NAMES hwloc
+        HINTS ${HWLOC_DIR}
+        PATH_SUFFIXES lib lib32 lib64)
     else()
       set(HWLOC_hwloc_LIBRARY "HWLOC_hwloc_LIBRARY-NOTFOUND")
       find_library(HWLOC_hwloc_LIBRARY
-	NAMES hwloc
-	HINTS ${PATH_TO_LOOK_FOR})
+        NAMES hwloc
+        HINTS ${PATH_TO_LOOK_FOR})
     endif()
   endif()
   mark_as_advanced(HWLOC_hwloc_LIBRARY)
@@ -276,10 +278,10 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HWLOC_FOUND) O
 
     if(NOT HWLOC_WORKS)
       if(NOT HWLOC_FIND_QUIETLY)
-	message(STATUS "Looking for hwloc : test of hwloc_topology_init with hwloc library fails")
-	message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-	message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-	message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+        message(STATUS "Looking for hwloc : test of hwloc_topology_init with hwloc library fails")
+        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
       endif()
     endif()
     set(CMAKE_REQUIRED_INCLUDES)
@@ -295,6 +297,7 @@ if (HWLOC_LIBRARIES)
   else()
     list(GET HWLOC_LIBRARIES 0 first_lib)
     get_filename_component(first_lib_path "${first_lib}" PATH)
+    set(HWLOC_LIBRARY_DIRS "${first_lib_path}")
   endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
@@ -338,7 +341,7 @@ if (HWLOC_FOUND)
   check_struct_has_member( "struct hwloc_obj" parent hwloc.h HAVE_HWLOC_PARENT_MEMBER )
   check_struct_has_member( "struct hwloc_cache_attr_s" size hwloc.h HAVE_HWLOC_CACHE_ATTR )
   check_c_source_compiles( "#include <hwloc.h>
-	    int main(void) { hwloc_obj_t o; o->type = HWLOC_OBJ_PU; return 0;}" HAVE_HWLOC_OBJ_PU)
+            int main(void) { hwloc_obj_t o; o->type = HWLOC_OBJ_PU; return 0;}" HAVE_HWLOC_OBJ_PU)
   include(CheckLibraryExists)
   check_library_exists(${HWLOC_LIBRARIES} hwloc_bitmap_free "" HAVE_HWLOC_BITMAP)
 

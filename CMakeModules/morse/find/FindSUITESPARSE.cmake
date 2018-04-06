@@ -199,17 +199,17 @@ else()
     set(SUITESPARSE_${suitesparse_hdr}_DIRS "SUITESPARSE_${suitesparse_hdr}_INCLUDE_DIRS-NOTFOUND")
     foreach(suitesparse_hdr ${SUITESPARSE_hdrs_to_find})
       find_path(SUITESPARSE_${suitesparse_hdr}_DIRS
-	NAMES ${suitesparse_hdr}
-	HINTS ${SUITESPARSE_DIR}
-	PATH_SUFFIXES "include")
+        NAMES ${suitesparse_hdr}
+        HINTS ${SUITESPARSE_DIR}
+        PATH_SUFFIXES "include")
       mark_as_advanced(SUITESPARSE_${suitesparse_hdr}_DIRS)
     endforeach()
   else()
     foreach(suitesparse_hdr ${SUITESPARSE_hdrs_to_find})
       set(SUITESPARSE_${suitesparse_hdr}_DIRS "SUITESPARSE_${suitesparse_hdr}_INCLUDE_DIRS-NOTFOUND")
       find_path(SUITESPARSE_${suitesparse_hdr}_DIRS
-	NAMES ${suitesparse_hdr}
-	HINTS ${_inc_env} ${_inc_env}/suitesparse)
+        NAMES ${suitesparse_hdr}
+        HINTS ${_inc_env} ${_inc_env}/suitesparse)
       mark_as_advanced(SUITESPARSE_${suitesparse_hdr}_DIRS)
     endforeach()
   endif()
@@ -267,17 +267,17 @@ else()
     foreach(suitesparse_lib ${SUITESPARSE_libs_to_find})
       set(SUITESPARSE_${suitesparse_lib}_LIBRARY "SUITESPARSE_${suitesparse_lib}_LIBRARY-NOTFOUND")
       find_library(SUITESPARSE_${suitesparse_lib}_LIBRARY
-	NAMES ${suitesparse_lib}
-	HINTS ${SUITESPARSE_DIR}
-	PATH_SUFFIXES lib lib32 lib64)
+        NAMES ${suitesparse_lib}
+        HINTS ${SUITESPARSE_DIR}
+        PATH_SUFFIXES lib lib32 lib64)
       mark_as_advanced(SUITESPARSE_${suitesparse_lib}_LIBRARY)
     endforeach()
   else()
     foreach(suitesparse_lib ${SUITESPARSE_libs_to_find})
       set(SUITESPARSE_${suitesparse_lib}_LIBRARY "SUITESPARSE_${suitesparse_lib}_LIBRARY-NOTFOUND")
       find_library(SUITESPARSE_${suitesparse_lib}_LIBRARY
-	NAMES ${suitesparse_lib}
-	HINTS ${_lib_env})
+        NAMES ${suitesparse_lib}
+        HINTS ${_lib_env})
       mark_as_advanced(SUITESPARSE_${suitesparse_lib}_LIBRARY)
     endforeach()
   endif()
@@ -330,7 +330,7 @@ if(SUITESPARSE_LIBRARIES)
     endif()
     foreach(libdir ${METIS_LIBRARY_DIRS})
       if (libdir)
-	list(APPEND REQUIRED_LIBDIRS "${libdir}")
+        list(APPEND REQUIRED_LIBDIRS "${libdir}")
       endif()
     endforeach()
     list(APPEND REQUIRED_LIBS "${METIS_LIBRARIES}")
@@ -342,7 +342,7 @@ if(SUITESPARSE_LIBRARIES)
     endif()
     foreach(libdir ${LAPACK_LIBRARY_DIRS})
       if (libdir)
-	list(APPEND REQUIRED_LIBDIRS "${libdir}")
+        list(APPEND REQUIRED_LIBDIRS "${libdir}")
       endif()
     endforeach()
     list(APPEND REQUIRED_LIBS "${LAPACK_LIBRARIES}")
@@ -357,7 +357,7 @@ if(SUITESPARSE_LIBRARIES)
     endif()
     foreach(libdir ${BLAS_LIBRARY_DIRS})
       if (libdir)
-	list(APPEND REQUIRED_LIBDIRS "${libdir}")
+        list(APPEND REQUIRED_LIBDIRS "${libdir}")
       endif()
     endforeach()
     list(APPEND REQUIRED_LIBS "${BLAS_LIBRARIES}")
@@ -415,6 +415,9 @@ endif(SUITESPARSE_LIBRARIES)
 if (SUITESPARSE_LIBRARIES)
   list(GET SUITESPARSE_LIBRARIES 0 first_lib)
   get_filename_component(first_lib_path "${first_lib}" PATH)
+  if (NOT SUITESPARSE_LIBRARY_DIRS)
+    set(SUITESPARSE_LIBRARY_DIRS "${first_lib_path}")
+  endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
     set(SUITESPARSE_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of SUITESPARSE library" FORCE)

@@ -3,8 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
-# @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
+# @copyright (c) 2012-2016 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
 #
@@ -158,6 +157,10 @@ endif()
 # the target receives a -DPRECISION_p in its cflags.
 #
 include(ParseArguments)
+
+# Add a hint to help Cmake to find the correct python version:
+# (see https://cmake.org/cmake/help/v3.0/module/FindPythonInterp.html)
+set(Python_ADDITIONAL_VERSIONS 2)
 find_package(PythonInterp REQUIRED)
 
 MACRO(precisions_rules_py)
@@ -237,10 +240,9 @@ MACRO(precisions_rules_py)
 	    COMMAND ${CMAKE_COMMAND} -E remove -f ${_dependency_OUTPUT} && ${pythoncmd} && chmod a-w ${_dependency_OUTPUT}
 	    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${_dependency_INPUT} ${RP_CODEGEN} ${RP_${CMAKE_PROJECT_NAME}_DICTIONNARY})
 
-	  set_SOURCE_FILES_PROPERTIES(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS "-DPRECISION_${_dependency_PREC}" GENERATED 1 IS_IN_BINARY_DIR 1 )
-
+          set_source_files_properties(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS "-DPRECISION_${_dependency_PREC}" GENERATED 1 IS_IN_BINARY_DIR 1 )
 	else( generate_out )
-	  set_SOURCE_FILES_PROPERTIES(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS "-DPRECISION_${_dependency_PREC}" GENERATED 0 )
+          set_source_files_properties(${_dependency_OUTPUT} PROPERTIES COMPILE_FLAGS "-DPRECISION_${_dependency_PREC}" GENERATED 0 )
 	endif( generate_out )
 
 	list(APPEND ${OUTPUTLIST} ${_dependency_OUTPUT})

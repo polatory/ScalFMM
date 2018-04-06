@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2015 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2015 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2015 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -39,6 +39,7 @@
 #  PARSEC_LIBRARIES_DEP          - parsec libraries + dependencies
 #  PARSEC_parsec_ptgpp_BIN_DIR   - path to parsec driver parsec_ptgpp
 #  PARSEC_PARSEC_PTGPP           - parsec jdf compiler
+#  PARSEC_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DPARSEC=path/to/parsec):
 #  PARSEC_DIR                    - Where to find the base directory of parsec
@@ -48,11 +49,11 @@
 # are not given as cmake variable: PARSEC_DIR, PARSEC_INCDIR, PARSEC_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -257,6 +258,12 @@ if(PKG_CONFIG_EXECUTABLE AND NOT PARSEC_GIVEN_BY_USER)
     if (PARSEC_FIND_REQUIRED)
       message(FATAL_ERROR "PARSEC_PREFIX not defined by pkg_search_module")
     endif()
+  endif()
+
+  if (PARSEC_FOUND AND PARSEC_LIBRARIES)
+    set(PARSEC_FOUND_WITH_PKGCONFIG "TRUE")
+  else()
+    set(PARSEC_FOUND_WITH_PKGCONFIG "FALSE")
   endif()
 
 endif(PKG_CONFIG_EXECUTABLE AND NOT PARSEC_GIVEN_BY_USER)
@@ -626,6 +633,7 @@ if (PARSEC_LIBRARIES)
   else()
     list(GET PARSEC_LIBRARIES 0 first_lib)
     get_filename_component(first_lib_path "${first_lib}" PATH)
+    set(PARSEC_LIBRARY_DIRS "${first_lib_path}")
   endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")

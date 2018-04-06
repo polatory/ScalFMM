@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2017 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -19,6 +19,7 @@
 #  HQR_INCLUDE_DIRS    - hqr include directories
 #  HQR_LIBRARY_DIRS    - Link directories for hqr libraries
 #  HQR_LIBRARIES       - hqr component libraries to be linked
+#  HQR_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DHQR_DIR=path/to/hqr):
@@ -29,11 +30,11 @@
 # are not given as cmake variable: HQR_DIR, HQR_INCDIR, HQR_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2017 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013-2017 Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -77,11 +78,15 @@ if(PKG_CONFIG_EXECUTABLE AND NOT HQR_GIVEN_BY_USER)
       #endif()
     else()
       message(STATUS "${Magenta}Looking for HQR - not found using PkgConfig."
-	"\n   Perhaps you should add the directory containing hqr.pc to the"
-	"\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
+        "\n   Perhaps you should add the directory containing hqr.pc to the"
+        "\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
-
+  if (HQR_FOUND AND HQR_LIBRARIES)
+    set(HQR_FOUND_WITH_PKGCONFIG "TRUE")
+  else()
+    set(HQR_FOUND_WITH_PKGCONFIG "FALSE")
+  endif()
 endif(PKG_CONFIG_EXECUTABLE AND NOT HQR_GIVEN_BY_USER)
 
 if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HQR_FOUND) OR (HQR_GIVEN_BY_USER) )
@@ -133,14 +138,14 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HQR_FOUND) OR 
     if(HQR_DIR)
       set(HQR_libhqr.h_DIRS "HQR_libhqr.h_DIRS-NOTFOUND")
       find_path(HQR_libhqr.h_DIRS
-	NAMES libhqr.h
-	HINTS ${HQR_DIR}
+        NAMES libhqr.h
+        HINTS ${HQR_DIR})
     else()
       set(HQR_libhqr.h_DIRS "HQR_libhqr.h_DIRS-NOTFOUND")
       find_path(HQR_libhqr.h_DIRS
-	NAMES libhqr.h
-	HINTS ${_inc_env}
-	PATH_SUFFIXES "hqr")
+        NAMES libhqr.h
+        HINTS ${_inc_env}
+        PATH_SUFFIXES "hqr")
     endif()
   endif()
   mark_as_advanced(HQR_libhqr.h_DIRS)
@@ -177,9 +182,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HQR_FOUND) OR 
       string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
     else()
       if(APPLE)
-	string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
       else()
-	string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
       endif()
       list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
       list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
@@ -200,14 +205,14 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HQR_FOUND) OR 
     if(HQR_DIR)
       set(HQR_hqr_LIBRARY "HQR_hqr_LIBRARY-NOTFOUND")
       find_library(HQR_hqr_LIBRARY
-	NAMES hqr
-	HINTS ${HQR_DIR}
-	PATH_SUFFIXES lib lib32 lib64)
+        NAMES hqr
+        HINTS ${HQR_DIR}
+        PATH_SUFFIXES lib lib32 lib64)
     else()
       set(HQR_hqr_LIBRARY "HQR_hqr_LIBRARY-NOTFOUND")
       find_library(HQR_hqr_LIBRARY
-	NAMES hqr
-	HINTS ${_lib_env})
+        NAMES hqr
+        HINTS ${_lib_env})
     endif()
   endif()
   mark_as_advanced(HQR_hqr_LIBRARY)
@@ -259,15 +264,15 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT HQR_FOUND) OR 
     # test link
     unset(HQR_WORKS CACHE)
     include(CheckFunctionExists)
-    check_function_exists(libhqr_hqr_init HQR_WORKS)
+    check_function_exists(libhqr_init_hqr HQR_WORKS)
     mark_as_advanced(HQR_WORKS)
 
     if(NOT HQR_WORKS)
       if(NOT HQR_FIND_QUIETLY)
-	message(STATUS "Looking for hqr : test of libhqr_hqr_init with hqr library fails")
-	message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-	message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-	message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+        message(STATUS "Looking for hqr : test of libhqr_hqr_init with hqr library fails")
+        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
       endif()
     endif()
     set(CMAKE_REQUIRED_INCLUDES)
@@ -283,6 +288,7 @@ if (HQR_LIBRARIES)
   else()
     list(GET HQR_LIBRARIES 0 first_lib)
     get_filename_component(first_lib_path "${first_lib}" PATH)
+    set(HQR_LIBRARY_DIRS "${first_lib_path}")
   endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")

@@ -244,7 +244,6 @@ macro(Check_Lapack_Libraries LIBRARIES _prefix _name _flags _list _blas _threads
       find_library(${_prefix}_${_library}_LIBRARY
         NAMES ${_library}
         HINTS ${_libdir}
-        NO_DEFAULT_PATH
         )
       mark_as_advanced(${_prefix}_${_library}_LIBRARY)
       # Print status if not found
@@ -507,7 +506,7 @@ if(BLAS_FOUND)
         LAPACK
         cheevd
         ""
-        "essl;lapack"
+        "essl"
         "${BLAS_LIBRARIES}"
         ""
         )
@@ -532,7 +531,7 @@ if(BLAS_FOUND)
         LAPACK
         cheevd
         ""
-        "esslsmp;lapack"
+        "esslsmp"
         "${BLAS_PAR_LIBRARIES}"
         ""
         )
@@ -719,6 +718,9 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES ${_lapack_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
 if (LAPACK_FOUND)
   list(GET LAPACK_LIBRARIES 0 first_lib)
   get_filename_component(first_lib_path "${first_lib}" PATH)
+  if (NOT LAPACK_LIBRARY_DIRS)
+    set(LAPACK_LIBRARY_DIRS "${first_lib_path}")
+  endif()
   if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
     string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
     set(LAPACK_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of LAPACK library" FORCE)

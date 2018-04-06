@@ -3,6 +3,7 @@
 # This module allows to find MPI libraries by calling the official FindMPI module
 # and adds an additional variable indicating the level of thread supported:
 #  MPI_THREAD_SUPPORTED_LEVEL - MPI_THREAD_MULTIPLE, MPI_THREAD_SERIALIZED, MPI_THREAD_FUNNELED, or MPI_THREAD_SINGLE
+#  MPIEXT_FOUND        - if a MPI has been found
 
 #=============================================================================
 # Copyright 2012-2013 Inria
@@ -29,8 +30,10 @@ if (NOT MPI_FOUND)
     find_package(MPI)
   endif()
 endif ()
+set(MPIEXT_FOUND ${MPI_FOUND})
 
 if (MPI_FOUND)
+
   set(CMAKE_REQUIRED_INCLUDES_SAVE ${CMAKE_REQUIRED_INCLUDES})
   set(CMAKE_REQUIRED_LIBRARIES_SAVE ${CMAKE_REQUIRED_LIBRARIES})
   set(CMAKE_REQUIRED_FLAGS_SAVE ${CMAKE_REQUIRED_FLAGS})
@@ -103,9 +106,9 @@ int main(int argc, char **argv) {
     if(NOT SERIALIZED_TEST_RUNS)
       check_c_source_runs("${MPI_C_TEST_FUNNELED_SOURCE}" FUNNELED_TEST_RUNS)
       if(NOT FUNNELED_TEST_RUNS)
-	set(MPI_THREAD_SUPPORTED_LEVEL "MPI_THREAD_SINGLE")
+        set(MPI_THREAD_SUPPORTED_LEVEL "MPI_THREAD_SINGLE")
       else(NOT FUNNELED_TEST_RUNS)
-	set(MPI_THREAD_SUPPORTED_LEVEL "MPI_THREAD_FUNNELED")
+        set(MPI_THREAD_SUPPORTED_LEVEL "MPI_THREAD_FUNNELED")
       endif(NOT FUNNELED_TEST_RUNS)
     else(NOT SERIALIZED_TEST_RUNS)
       set(MPI_THREAD_SUPPORTED_LEVEL "MPI_THREAD_SERIALIZED")
@@ -117,4 +120,5 @@ int main(int argc, char **argv) {
   set(CMAKE_REQUIRED_INCLUDES ${CMAKE_REQUIRED_INCLUDES_SAVE})
   set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES_SAVE})
   set(CMAKE_REQUIRED_FLAGS ${CMAKE_REQUIRED_FLAGS_SAVE})
+
 endif(MPI_FOUND)

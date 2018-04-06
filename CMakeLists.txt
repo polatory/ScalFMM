@@ -40,7 +40,7 @@ set(SCALFMM_VERSION  "${SCALFMM_MAJOR_VERSION}.${SCALFMM_MINOR_VERSION}.${SCALFM
 
 set( MORSE_DISTRIB_DIR "" CACHE PATH "Directory of MORSE distribution")
 
-if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_cmake")
+if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse")
 
   # Add extra cmake module path and initialize morse cmake modules
   # --------------------------------------------------------------
@@ -48,9 +48,9 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
     list(APPEND CMAKE_MODULE_PATH ${MORSE_DISTRIB_DIR}/cmake_modules)
     list(APPEND CMAKE_MODULE_PATH "${MORSE_DISTRIB_DIR}/cmake_modules/morse")
     set(MORSE_CMAKE_MODULE_PATH ${MORSE_DISTRIB_DIR}/cmake_modules/morse )
-  else() 
-    set(MORSE_CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_cmake" CACHE PATH "Path to morse_cmake sources")
-    list(APPEND CMAKE_MODULE_PATH "${MORSE_CMAKE_MODULE_PATH}/modules/" )
+  else()
+    set(MORSE_CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse" CACHE PATH "Path to morse_cmake sources")
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules" "${MORSE_CMAKE_MODULE_PATH}" )
   endif()
 
   include(MorseInit)
@@ -105,7 +105,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
   CMAKE_DEPENDENT_OPTION( SCALFMM_USE_AVX2             "Set to ON to compile with AVX support (and use intrinsec AVX2 P2P)" ON "CPUOPTION_AVX2" OFF )
 
   if( SCALFMM_ONLY_DEVEL )
-    # OPENMP 4/5 support 
+    # OPENMP 4/5 support
     option( OPENMP_SUPPORT_COMMUTE   "Set to ON to let tasks commute (KSTAR/StarPU compiler only)" OFF )
     option( OPENMP_SUPPORT_PRIORITY  "Set to ON to enable tasks priority (KSTAR/StarPU compiler only)" OFF )
     option( OPENMP_SUPPORT_TASK_NAME "Set to ON to enable a taskname clause for tasks (KSTAR/StarPU compiler only)" OFF )
@@ -167,11 +167,11 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
   if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     # INTEL
     IF (APPLE)
-      IF( CPUOPTION_SSE42 ) 
+      IF( CPUOPTION_SSE42 )
         set(SSE_FLAGS  "-msse4  -mfpmath=sse")   # -mtune=native -march=native
       ELSEIF (CPUOPTION_SSE3)
         set(SSE_FLAGS  "-msse3  -mfpmath=sse")   # -mtune=native -march=native
-      ENDIF (CPUOPTION_SSE42)  
+      ENDIF (CPUOPTION_SSE42)
     else(APPLE)
       set(AVX_FLAGS  "-fp-model source -march=native -axCORE-AVX2,CORE-AVX-I,AVX") #-mavx
       set(AVX2_FLAGS "-march=native  -axCORE-AVX2,CORE-AVX-I,AVX") #-march=core-avx2
@@ -198,7 +198,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
     endif()
     IF (APPLE)
       #      set(SSE_FLAGS  "-msse4  -mfpmath=sse")   # -mtune=native -march=native
-      IF( CPUOPTION_SSE42 ) 
+      IF( CPUOPTION_SSE42 )
         set(SSE_FLAGS  "-msse4  -mfpmath=sse")   # -mtune=native -march=native
       ELSEIF (CPUOPTION_SSE3)
         set(SSE_FLAGS  "-msse3  -mfpmath=sse")   # -mtune=native -march=native
@@ -267,8 +267,8 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
         #set(SCALFMM_FLAGS_OPTI_RELEASE "-fp-model precise -fp-model source -fimf-precision=low  -funroll-loops -ftree-vectorize"
         set(SCALFMM_FLAGS_OPTI_RELEASE "-funroll-loops -ftree-vectorize"
           CACHE STRING "Set your optimization flags for release mode.")
-	# set(SCALFMM_FLAGS_OPTI_RELEASE "-funroll-loops -ftree-vectorize" CACHE STRING
-	#   "Set your optimization flags for release mode.")
+        # set(SCALFMM_FLAGS_OPTI_RELEASE "-funroll-loops -ftree-vectorize" CACHE STRING
+        #   "Set your optimization flags for release mode.")
       else()
         set(SCALFMM_FLAGS_OPTI_RELEASE "-ffast-math -funroll-loops -ftree-vectorize" CACHE STRING
           "Set your optimization flags for release mode.")
@@ -301,25 +301,25 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
     if (MPI_CXX_FOUND)
       message("MPI_CXX is in the place")
       if (MPI_CXX_INCLUDE_PATH)
-	include_directories( ${MPI_CXX_INCLUDE_PATH} )
+        include_directories( ${MPI_CXX_INCLUDE_PATH} )
       endif()
       if (MPI_CXX_COMPILE_FLAGS)
-	set(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS} ${MPI_CXX_COMPILE_FLAGS}")
+        set(SCALFMM_CXX_FLAGS "${SCALFMM_CXX_FLAGS} ${MPI_CXX_COMPILE_FLAGS}")
       endif()
       if (MPI_CXX_INCLUDE_PATH)
-	set(SCALFMM_INCLUDES  "${SCALFMM_INCLUDES};${MPI_CXX_INCLUDE_PATH}")
+        list(APPEND SCALFMM_INCLUDES "${MPI_CXX_INCLUDE_PATH}")
       endif()
       if (MPI_CXX_LINK_FLAGS)
-	list(APPEND "CMAKE_EXE_LINKER_FLAGS ${MPI_CXX_LINK_FLAGS}")
+        list(APPEND "CMAKE_EXE_LINKER_FLAGS ${MPI_CXX_LINK_FLAGS}")
       endif()
       if (MPI_CXX_LIBRARIES)
-	set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${MPI_CXX_LIBRARIES}")
+        list(APPEND SCALFMM_LIBRARIES "${MPI_CXX_LIBRARIES}")
       endif()
     else (MPI_CXX_FOUND)
       message(FATAL_ERROR "MPI is required but was not found. "
-	                  "Please provide an MPI compiler in your environment."
-			  "Note that you can give the path to your MPI installation "
-			  "by setting MPI_DIR cmake variable.")
+                          "Please provide an MPI compiler in your environment."
+                          "Note that you can give the path to your MPI installation "
+                          "by setting MPI_DIR cmake variable.")
      endif (MPI_CXX_FOUND)
 
   endif( SCALFMM_USE_MPI)
@@ -373,10 +373,15 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
     endif()
 
     if(BLAS_FOUND)
-      set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${BLASLAPACK_LIBRARIES}")
+      list(APPEND SCALFMM_LIBRARIES "${BLASLAPACK_LIBRARIES}")
       if(BLAS_LIBRARY_DIRS)
         # the RPATH to be used when installing
         list(APPEND CMAKE_INSTALL_RPATH "${BLAS_LIBRARY_DIRS}")
+      endif()
+      if(BLAS_INCLUDE_DIRS)
+        foreach(_hdr_dir ${BLAS_INCLUDE_DIRS})
+          list(APPEND SCALFMM_INCLUDES "${_hdr_dir}")
+        endforeach()
       endif()
       if(LAPACK_FOUND AND LAPACK_LIBRARY_DIRS)
         # the RPATH to be used when installing
@@ -432,7 +437,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
       endif (NOT SCALFMM_BLAS_ADD_ AND NOT SCALFMM_BLAS_UPCASE AND NOT SCALFMM_BLAS_NOCHANGE)
     else()
       message(WARNING "BLAS has not been found, SCALFMM will continue to compile but some applications will be disabled.")
-      message(WARNING "If you have BLAS set BLAS_LIBDIR, BLAS_INCDIR or BLAS_DIR (CMake variables using -D or environment variables).")        
+      message(WARNING "If you have BLAS set BLAS_LIBDIR, BLAS_INCDIR or BLAS_DIR (CMake variables using -D or environment variables).")
       set(SCALFMM_USE_BLAS OFF)
     endif()
 
@@ -460,37 +465,38 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
       message(STATUS "         SCALFMM USE FFTW")
       find_package(FFTW COMPONENTS SIMPLE)
     endif()
-    
-    if(NOT FFTW_FOUND)
-      if (FFTW_LIBRARY_DIRS_DEP)
-	set(FFT_LIBRARIES "-L${FFTW_LIBRARY_DIRS_DEP};" CACHE STRING "Set your MKL flags")
-      endif()
-      if (FFTW_LIBRARIES_DEP)
-	foreach (fft_lib ${FFTW_LIBRARIES_DEP})
-          set(FFT_LIBRARIES "${FFT_LIBRARIES};${fft_lib};")
-	endforeach()
-      endif()
 
-      set(FFT_INCLUDES "${FFTW_INCLUDE_DIRS_DEP}" )
+    if(FFTW_FOUND)
+      # add headers paths
+      foreach (fft_hdrdir ${FFTW_INCLUDE_DIRS_DEP})
+        list(APPEND FFT_INCLUDES "${fft_hdrdir}")
+      endforeach()
+      # add libraries paths
+      foreach (fft_libdir ${FFTW_LIBRARY_DIR_DEP})
+        list(APPEND FFT_LIBRARIES "-L${fft_libdir}")
+      endforeach()
+      # add libraries
+      foreach (fft_lib ${FFTW_LIBRARIES_DEP})
+        list(APPEND FFT_LIBRARIES "${fft_lib}")
+      endforeach()
       if (FFT_LIBRARIES)
-	set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${FFT_LIBRARIES}")
+        list(APPEND SCALFMM_LIBRARIES "${FFT_LIBRARIES}")
       endif()
-
       if(FFTW_LIBRARY_DIRS)
-	# the RPATH to be used when installing
-	list(APPEND CMAKE_INSTALL_RPATH "${FFTW_LIBRARY_DIRS}")
+        # the RPATH to be used when installing
+        list(APPEND CMAKE_INSTALL_RPATH "${FFTW_LIBRARY_DIRS}")
       endif()
       if (FFT_INCLUDES)
-	set(SCALFMM_INCLUDES "${SCALFMM_INCLUDES}; ${FFT_INCLUDES}")
+        list(APPEND SCALFMM_INCLUDES "${FFT_INCLUDES}")
       endif()
     else()
       message(WARNING "FFTW has not been found, SCALFMM will continue to compile but some applications will be disabled.")
-      message(WARNING "If you have FFTW set FFTW_LIBDIR, FFTW_INCDIR or FFTW_DIR (CMake variables using -D or environment variables).")        
+      message(WARNING "If you have FFTW set FFTW_LIBDIR, FFTW_INCDIR or FFTW_DIR (CMake variables using -D or environment variables).")
       set(SCALFMM_USE_FFT OFF)
     endif()
 
   endif(SCALFMM_USE_FFT)
-  
+
   list(APPEND FUSE_LIST "FFT")
   message(STATUS "SCALFMM_USE_FFT       =  ${SCALFMM_USE_FFT}")
   if (SCALFMM_INCLUDES)
@@ -540,7 +546,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
         include_directories(${CUDA_INCLUDE_DIRS})
       endif()
       if (CUDA_LIBRARIES)
-        set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${CUDA_LIBRARIES}")
+        list(APPEND SCALFMM_LIBRARIES "${CUDA_LIBRARIES}")
       endif()
 
       set(CUDA_NEEDED_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/Src)
@@ -577,33 +583,33 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
     include_directories(${STARPU_INCLUDE_DIRS_DEP})
     foreach (starpu_libdir ${STARPU_LIBRARY_DIRS_DEP})
       if (${starpu_libdir} MATCHES "^ *-L")
-        set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${starpu_libdir}")
+        list(APPEND SCALFMM_LIBRARIES "${starpu_libdir}")
       else()
-        set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};-L${starpu_libdir}")
+        list(APPEND SCALFMM_LIBRARIES "-L${starpu_libdir}")
       endif()
     endforeach()
     foreach (starpu_lib ${STARPU_LIBRARIES_DEP})
       if (EXISTS ${starpu_lib} OR ${starpu_lib} MATCHES "^ *-")
-        set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${starpu_lib}")
+        list(APPEND SCALFMM_LIBRARIES "${starpu_lib}")
       else()
-        set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};-l${starpu_lib}")
+        list(APPEND SCALFMM_LIBRARIES "-l${starpu_lib}")
       endif()
     endforeach()
 
     # TODO: is this very useful? CUDA is already a component of find starpu
     if (CUDA_LIBRARIES)
-      set(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};${CUDA_LIBRARIES}")
+      list(APPEND SCALFMM_LIBRARIES "${CUDA_LIBRARIES}")
     endif()
 
     # Message
     message(STATUS "         STARPU_LIBRARIES          = ${STARPU_LIBRARIES}")
     if (STARPU_INCLUDE_DIRS)
       message(STATUS "         STARPU_INCLUDES           = ${STARPU_INCLUDE_DIRS}")
-      set(SCALFMM_INCLUDES  "${SCALFMM_INCLUDES}; ${STARPU_INCLUDE_DIRS}")
+      list(APPEND SCALFMM_INCLUDES "${STARPU_INCLUDE_DIRS}")
     endif()
 
     # Adding SimGrid includes
-    set(SCALFMM_INCLUDES "${SCALFMM_INCLUDES};$ENV{SIMGRID_INCLUDE}")
+    list(APPEND SCALFMM_INCLUDES "$ENV{SIMGRID_INCLUDE}")
     message(STATUS "         Adding SIMGRID           = $ENV{SIMGRID_INCLUDE}")
 
     # TODO: replace this by a component of find starpu
@@ -611,7 +617,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
     MESSAGE( STATUS "SCALFMM_USE_OPENCL             = ${SCALFMM_USE_OPENCL}" )
     if(SCALFMM_USE_OPENCL)
       include_directories($ENV{OPENCL_INC})
-      SET(SCALFMM_LIBRARIES "${SCALFMM_LIBRARIES};-L$ENV{OPENCL_LIB};-lOpenCL")
+      list(APPEND SCALFMM_LIBRARIES "-L$ENV{OPENCL_LIB};-lOpenCL")
     endif()
   endif(SCALFMM_USE_STARPU)
   list(APPEND FUSE_LIST "STARPU")
@@ -760,18 +766,18 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
         endif()
         IF( SCALFMM_USE_MPI )
           link_libraries(-leztrace-autostart-mpi)
-	ENDIF(SCALFMM_USE_MPI)     
-	include_directories(${EZTrace_INCLUDE_DIRS})
-	MESSAGE(STATUS "EZTRACE:  ${EZTrace_INCLUDE_DIRS}   ${EZTrace_LIBRARY_DIRS}  ${EZTrace_LIBRARIES}")
-	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_ALGO "Set to ON to trace the full algorithm (all operators)" ON  "SCALFMM_USE_EZTRACE" OFF )
-	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_P2M   "Set to ON to trace P2M operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
-	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2M   "Set to ON to trace M2M operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
-	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2L   "Set to ON to trace M2L operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
-	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_L2L   "Set to ON to trace L2L operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
-	CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_P2P   "Set to ON to trace P2P operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+        ENDIF(SCALFMM_USE_MPI)
+        include_directories(${EZTrace_INCLUDE_DIRS})
+        MESSAGE(STATUS "EZTRACE:  ${EZTrace_INCLUDE_DIRS}   ${EZTrace_LIBRARY_DIRS}  ${EZTrace_LIBRARIES}")
+        CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_ALGO "Set to ON to trace the full algorithm (all operators)" ON  "SCALFMM_USE_EZTRACE" OFF )
+        CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_P2M   "Set to ON to trace P2M operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+        CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2M   "Set to ON to trace M2M operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+        CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_M2L   "Set to ON to trace M2L operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+        CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_L2L   "Set to ON to trace L2L operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
+        CMAKE_DEPENDENT_OPTION(SCALFMM_TRACE_P2P   "Set to ON to trace P2P operator" OFF  "SCALFMM_USE_EZTRACE" OFF )
       else(EZTrace_FOUND)
-	MESSAGE(WARNING "Eztrace not found - EZTRACE Is set to OFF")
-	set(SCALFMM_USE_EZTRACE OFF)  
+        MESSAGE(WARNING "Eztrace not found - EZTRACE Is set to OFF")
+        set(SCALFMM_USE_EZTRACE OFF)
       endif(EZTrace_FOUND)
     else(PKG_CONFIG_FOUND)
       MESSAGE(WARNING "PKG-CONFIG not found - EZTRACE Is set to OFF")
@@ -784,7 +790,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
   #
   #   To catch signals
   #
-  ##################################################################  
+  ##################################################################
   if((WIN32 OR (${CMAKE_SYSTEM_NAME} MATCHES "Windows")) AND SCALFMM_USE_SIGNALS)
     # We are on Windows and we cannot catch signals
     message( FATAL_ERROR "Catching the signals requieres an UNIX system." )
@@ -801,13 +807,13 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
   #
   # Generate  ScalFmmConfig.h
   #
-  set(SCALFMM_COMPILE_FLAGS "${SCALFMM_CXX_FLAGS} ${CMAKE_CXX_FLAGS}") 
+  set(SCALFMM_COMPILE_FLAGS "${SCALFMM_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
   set(CMAKE_CXX_FLAGS "${SCALFMM_COMPILE_FLAGS}")
   # We need the libraries without spaces (inside the config file)
-  set(SCALFMM_COMPILE_LIBS   "")
+  set(SCALFMM_COMPILE_LIBS "")
   foreach(lib_var ${SCALFMM_LIBRARIES})
     string(STRIP ${lib_var} lib_var)
-    LIST(APPEND SCALFMM_COMPILE_LIBS   ${lib_var})
+    list(APPEND SCALFMM_COMPILE_LIBS ${lib_var})
   endforeach()
   configure_file( ${CMAKE_CURRENT_SOURCE_DIR}/Src/ScalFmmConfig.h.cmake
     ${CMAKE_CURRENT_BINARY_DIR}/Src/ScalFmmConfig.h  )
@@ -823,7 +829,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
   ##################################################################
   #            Remove compilation  of the drivers                  #
   ##################################################################
-  message(STATUS "SCALFMM_BUILD_EXAMPLES  =  ${SCALFMM_BUILD_EXAMPLES}" ) 
+  message(STATUS "SCALFMM_BUILD_EXAMPLES  =  ${SCALFMM_BUILD_EXAMPLES}" )
   if( SCALFMM_BUILD_EXAMPLES )
     # Build - Examples and drivers
     add_subdirectory(Examples)
@@ -860,7 +866,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
   #                           Add - doc                            #
   ##################################################################
   #
-  message(STATUS "SCALFMM_BUILD_DOC           =  ${SCALFMM_BUILD_DOC}" ) 
+  message(STATUS "SCALFMM_BUILD_DOC           =  ${SCALFMM_BUILD_DOC}" )
   if(SCALFMM_BUILD_DOC)
     add_subdirectory(Doc)
   endif()
@@ -954,7 +960,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
   message(STATUS "SCALFMM_USE_BLAS      =  ${SCALFMM_USE_BLAS}")
   message(STATUS "SCALFMM_USE_FFT       =  ${SCALFMM_USE_FFT}")
   message(STATUS "SCALFMM_USE_MKL       =   ${SCALFMM_USE_MKL}")
-  # 
+  #
   message(STATUS "CMAKE_CXX_FLAGS_TYPE  =  ${CMAKE_CXX_FLAGS_TYPE}")
   message(STATUS "CMAKE_CXX_FLAGS       =  ${CMAKE_CXX_FLAGS}")
   message(STATUS "SCALFMM_CXX_FLAGS     =  ${SCALFMM_CXX_FLAGS}")
@@ -966,7 +972,7 @@ if (MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_
   #                               END                              #
   ##################################################################
   #
-else(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_cmake")
+else(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse")
 
   message(STATUS "MORSE_DISTRIB_DIR is not set")
   message(STATUS "Please indicate where is located your MORSE distribution directory."
@@ -974,4 +980,4 @@ else(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse
   message(STATUS "If you are a MORSE developer, you normally have access to the svn repository of the MORSE_DISTRIB_DIR: "
     "svn checkout svn+ssh://yourlogin@scm.gforge.inria.fr/svnroot/morse/trunk/morse_distrib")
 
-endif(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse_cmake")
+endif(MORSE_DISTRIB_DIR OR EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules/morse")

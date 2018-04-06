@@ -1,4 +1,6 @@
 ###
+# WARNING: not maintained anymore
+###
 #
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
@@ -126,28 +128,28 @@ if(PKG_CONFIG_EXECUTABLE AND NOT MAGMA_GIVEN_BY_USER)
       #endif()
     else()
       message(STATUS "${Magenta}Looking for MAGMA - not found using PkgConfig. "
-	"\n   Perhaps you should add the directory containing magma.pc "
-	"\n   to the PKG_CONFIG_PATH environment variable.${ColourReset}")
+        "\n   Perhaps you should add the directory containing magma.pc "
+        "\n   to the PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
 
   if (MAGMA_FIND_VERSION_EXACT)
     if( NOT (MAGMA_FIND_VERSION_MAJOR STREQUAL MAGMA_VERSION_MAJOR) OR
-	NOT (MAGMA_FIND_VERSION_MINOR STREQUAL MAGMA_VERSION_MINOR) )
+        NOT (MAGMA_FIND_VERSION_MINOR STREQUAL MAGMA_VERSION_MINOR) )
       if(NOT MAGMA_FIND_QUIETLY)
-	message(FATAL_ERROR
-	  "MAGMA version found is ${MAGMA_VERSION_STRING} "
-	  "when required is ${MAGMA_FIND_VERSION}")
+        message(FATAL_ERROR
+          "MAGMA version found is ${MAGMA_VERSION_STRING} "
+          "when required is ${MAGMA_FIND_VERSION}")
       endif()
     endif()
   else()
     # if the version found is older than the required then error
     if( (MAGMA_FIND_VERSION_MAJOR STRGREATER MAGMA_VERSION_MAJOR) OR
-	(MAGMA_FIND_VERSION_MINOR STRGREATER MAGMA_VERSION_MINOR) )
+        (MAGMA_FIND_VERSION_MINOR STRGREATER MAGMA_VERSION_MINOR) )
       if(NOT MAGMA_FIND_QUIETLY)
-	message(FATAL_ERROR
-	  "MAGMA version found is ${MAGMA_VERSION_STRING} "
-	  "when required is ${MAGMA_FIND_VERSION} or newer")
+        message(FATAL_ERROR
+          "MAGMA version found is ${MAGMA_VERSION_STRING} "
+          "when required is ${MAGMA_FIND_VERSION} or newer")
       endif()
     endif()
   endif()
@@ -219,14 +221,14 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) O
     if(MAGMA_DIR)
       set(MAGMA_magma.h_DIRS "MAGMA_magma.h_DIRS-NOTFOUND")
       find_path(MAGMA_magma.h_DIRS
-	NAMES magma.h
-	HINTS ${MAGMA_DIR}
-	PATH_SUFFIXES "include" "include/magma")
+        NAMES magma.h
+        HINTS ${MAGMA_DIR}
+        PATH_SUFFIXES "include" "include/magma")
     else()
       set(MAGMA_magma.h_DIRS "MAGMA_magma.h_DIRS-NOTFOUND")
       find_path(MAGMA_magma.h_DIRS
-	NAMES magma.h
-	HINTS ${_inc_env})
+        NAMES magma.h
+        HINTS ${_inc_env})
     endif()
   endif()
   mark_as_advanced(MAGMA_magma.h_DIRS)
@@ -260,9 +262,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) O
       string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
     else()
       if(APPLE)
-	string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
       else()
-	string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
       endif()
       list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
       list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
@@ -283,14 +285,14 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) O
     if(MAGMA_DIR)
       set(MAGMA_magma_LIBRARY "MAGMA_magma_LIBRARY-NOTFOUND")
       find_library(MAGMA_magma_LIBRARY
-	NAMES magma
-	HINTS ${MAGMA_DIR}
-	PATH_SUFFIXES lib lib32 lib64)
+        NAMES magma
+        HINTS ${MAGMA_DIR}
+        PATH_SUFFIXES lib lib32 lib64)
     else()
       set(MAGMA_magma_LIBRARY "MAGMA_magma_LIBRARY-NOTFOUND")
       find_library(MAGMA_magma_LIBRARY
-	NAMES magma
-	HINTS ${_lib_env})
+        NAMES magma
+        HINTS ${_lib_env})
     endif()
   endif()
   mark_as_advanced(MAGMA_magma_LIBRARY)
@@ -392,11 +394,11 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT MAGMA_FOUND) O
       list(REMOVE_DUPLICATES MAGMA_LINKER_FLAGS)
     else()
       if(NOT MAGMA_FIND_QUIETLY)
-	message(STATUS "Looking for magma : test of magma_dgetrf with
-		magma, cblas, cuda and lapack libraries fails")
-	message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-	message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-	message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+        message(STATUS "Looking for magma : test of magma_dgetrf with
+                magma, cblas, cuda and lapack libraries fails")
+        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
       endif()
     endif()
     set(CMAKE_REQUIRED_INCLUDES)
@@ -410,12 +412,13 @@ if (MAGMA_LIBRARIES)
   if (MAGMA_LIBRARY_DIRS)
     foreach(dir ${MAGMA_LIBRARY_DIRS})
       if ("${dir}" MATCHES "magma")
-	set(first_lib_path "${dir}")
+        set(first_lib_path "${dir}")
       endif()
     endforeach()
   else()
     list(GET MAGMA_LIBRARIES 0 first_lib)
     get_filename_component(first_lib_path "${first_lib}" PATH)
+    set(MAGMA_LIBRARY_DIRS "${first_lib_path}")
   endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")

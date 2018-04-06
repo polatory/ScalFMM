@@ -1,4 +1,7 @@
 ###
+# WARNING: only HYPRE lib is searched for now
+# it is surely too simple, must be completed
+###
 #
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.

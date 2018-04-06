@@ -148,18 +148,18 @@ else()
     foreach(ptscotch_hdr ${PTSCOTCH_hdrs_to_find})
       set(PTSCOTCH_${ptscotch_hdr}_DIRS "PTSCOTCH_${ptscotch_hdr}_DIRS-NOTFOUND")
       find_path(PTSCOTCH_${ptscotch_hdr}_DIRS
-	NAMES ${ptscotch_hdr}
-	HINTS ${PTSCOTCH_DIR}
-	PATH_SUFFIXES "include" "include/scotch")
+        NAMES ${ptscotch_hdr}
+        HINTS ${PTSCOTCH_DIR}
+        PATH_SUFFIXES "include" "include/scotch")
       mark_as_advanced(PTSCOTCH_${ptscotch_hdr}_DIRS)
     endforeach()
   else()
     foreach(ptscotch_hdr ${PTSCOTCH_hdrs_to_find})
       set(PTSCOTCH_${ptscotch_hdr}_DIRS "PTSCOTCH_${ptscotch_hdr}_DIRS-NOTFOUND")
       find_path(PTSCOTCH_${ptscotch_hdr}_DIRS
-	NAMES ${ptscotch_hdr}
-	HINTS ${_inc_env}
-	PATH_SUFFIXES "scotch")
+        NAMES ${ptscotch_hdr}
+        HINTS ${_inc_env}
+        PATH_SUFFIXES "scotch")
       mark_as_advanced(PTSCOTCH_${ptscotch_hdr}_DIRS)
     endforeach()
   endif()
@@ -229,16 +229,16 @@ else()
     foreach(ptscotch_lib ${PTSCOTCH_libs_to_find})
       set(PTSCOTCH_${ptscotch_lib}_LIBRARY "PTSCOTCH_${ptscotch_lib}_LIBRARY-NOTFOUND")
       find_library(PTSCOTCH_${ptscotch_lib}_LIBRARY
-	NAMES ${ptscotch_lib}
-	HINTS ${PTSCOTCH_DIR}
-	PATH_SUFFIXES lib lib32 lib64)
+        NAMES ${ptscotch_lib}
+        HINTS ${PTSCOTCH_DIR}
+        PATH_SUFFIXES lib lib32 lib64)
     endforeach()
   else()
     foreach(ptscotch_lib ${PTSCOTCH_libs_to_find})
       set(PTSCOTCH_${ptscotch_lib}_LIBRARY "PTSCOTCH_${ptscotch_lib}_LIBRARY-NOTFOUND")
       find_library(PTSCOTCH_${ptscotch_lib}_LIBRARY
-	NAMES ${ptscotch_lib}
-	HINTS ${_lib_env})
+        NAMES ${ptscotch_lib}
+        HINTS ${_lib_env})
     endforeach()
   endif()
 endif()
@@ -289,7 +289,7 @@ if(PTSCOTCH_LIBRARIES)
     endif()
     if (MPI_C_LINK_FLAGS)
       if (${MPI_C_LINK_FLAGS} MATCHES "  -")
-	string(REGEX REPLACE " -" "-" MPI_C_LINK_FLAGS ${MPI_C_LINK_FLAGS})
+        string(REGEX REPLACE " -" "-" MPI_C_LINK_FLAGS ${MPI_C_LINK_FLAGS})
       endif()
       list(APPEND REQUIRED_LDFLAGS "${MPI_C_LINK_FLAGS}")
     endif()
@@ -360,6 +360,9 @@ endif(PTSCOTCH_LIBRARIES)
 if (PTSCOTCH_LIBRARIES)
   list(GET PTSCOTCH_LIBRARIES 0 first_lib)
   get_filename_component(first_lib_path "${first_lib}" PATH)
+  if (NOT PTSCOTCH_LIBRARY_DIRS)
+    set(PTSCOTCH_LIBRARY_DIRS "${first_lib_path}")
+  endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
     set(PTSCOTCH_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of PTSCOTCH library" FORCE)

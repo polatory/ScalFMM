@@ -34,19 +34,19 @@
 if (MORSE_ENABLE_WARNING)
 
   if(CMAKE_C_COMPILER_ID MATCHES GNU)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -fdiagnostics-show-option")
   elseif(CMAKE_C_COMPILER_ID MATCHES Intel)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w3 -diag-disable:remark")
   endif()
 
   if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fdiagnostics-show-option")
   elseif(CMAKE_CXX_COMPILER_ID MATCHES Intel)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w3 -diag-disable:remark")
   endif()
 
   if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -fdiagnostics-show-option")
   elseif(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
     set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -warn all -diag-disable:remark")
   endif()
@@ -56,21 +56,21 @@ endif(MORSE_ENABLE_WARNING)
 if (MORSE_ENABLE_COVERAGE)
 
   if(CMAKE_C_COMPILER_ID MATCHES GNU)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -fno-inline --coverage")
   else()
     message(FATAL_ERROR "Code coverage is only available with the GNU C (gcc)"
       "\n   compiler, please turn MORSE_ENABLE_COVERAGE OFF\n.")
   endif()
 
   if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --coverage")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -fno-inline --coverage")
   else()
     message(FATAL_ERROR "Code coverage is only available with the GNU CXX"
       "\n   (g++) compiler, please turn MORSE_ENABLE_COVERAGE OFF\n.")
   endif()
 
   if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} --coverage")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fPIC -fno-inline --coverage")
   else()
     message(FATAL_ERROR "Code coverage is only available with the GNU"
       "\n   Fortran (gfortran) compiler, please turn MORSE_ENABLE_COVERAGE"

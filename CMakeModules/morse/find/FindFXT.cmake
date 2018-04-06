@@ -3,7 +3,7 @@
 # @copyright (c) 2009-2014 The University of Tennessee and The University
 #                          of Tennessee Research Foundation.
 #                          All rights reserved.
-# @copyright (c) 2012-2014 Inria. All rights reserved.
+# @copyright (c) 2012-2018 Inria. All rights reserved.
 # @copyright (c) 2012-2014 Bordeaux INP, CNRS (LaBRI UMR 5800), Inria, Univ. Bordeaux. All rights reserved.
 #
 ###
@@ -20,6 +20,7 @@
 #  FXT_INCLUDE_DIRS    - fxt include directories
 #  FXT_LIBRARY_DIRS    - Link directories for fxt libraries
 #  FXT_LIBRARIES       - fxt component libraries to be linked
+#  FXT_FOUND_WITH_PKGCONFIG - True if found with pkg-config
 #
 # The user can give specific paths where to find the libraries adding cmake
 # options at configure (ex: cmake path/to/project -DFXT_DIR=path/to/fxt):
@@ -30,11 +31,11 @@
 # are not given as cmake variable: FXT_DIR, FXT_INCDIR, FXT_LIBDIR
 
 #=============================================================================
-# Copyright 2012-2013 Inria
+# Copyright 2012-2018 Inria
 # Copyright 2012-2013 Emmanuel Agullo
 # Copyright 2012-2013 Mathieu Faverge
 # Copyright 2012      Cedric Castagnede
-# Copyright 2013      Florent Pruvost
+# Copyright 2013-2018 Florent Pruvost
 #
 # Distributed under the OSI-approved BSD License (the "License");
 # see accompanying file MORSE-Copyright.txt for details.
@@ -78,12 +79,18 @@ if(PKG_CONFIG_EXECUTABLE AND NOT FXT_GIVEN_BY_USER)
       #endif()
     else()
       message(STATUS "${Magenta}Looking for FXT - not found using PkgConfig."
-	"\n   Perhaps you should add the directory containing fxt.pc to the"
-	"\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
+        "\n   Perhaps you should add the directory containing fxt.pc to the"
+        "\n   PKG_CONFIG_PATH environment variable.${ColourReset}")
     endif()
   endif()
 
   set(FXT_C_FLAGS "${FXT_CFLAGS_OTHER}")
+
+  if (FXT_FOUND AND FXT_LIBRARIES)
+    set(FXT_FOUND_WITH_PKGCONFIG "TRUE")
+  else()
+    set(FXT_FOUND_WITH_PKGCONFIG "FALSE")
+  endif()
 
 endif(PKG_CONFIG_EXECUTABLE AND NOT FXT_GIVEN_BY_USER)
 
@@ -137,15 +144,15 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FXT_FOUND) OR 
     if(FXT_DIR)
       set(FXT_fxt.h_DIRS "FXT_fxt.h_DIRS-NOTFOUND")
       find_path(FXT_fxt.h_DIRS
-	NAMES fxt.h
-	HINTS ${FXT_DIR}
-	PATH_SUFFIXES "include" "include/fxt")
+        NAMES fxt.h
+        HINTS ${FXT_DIR}
+        PATH_SUFFIXES "include" "include/fxt")
     else()
       set(FXT_fxt.h_DIRS "FXT_fxt.h_DIRS-NOTFOUND")
       find_path(FXT_fxt.h_DIRS
-	NAMES fxt.h
-	HINTS ${_inc_env}
-	PATH_SUFFIXES "fxt")
+        NAMES fxt.h
+        HINTS ${_inc_env}
+        PATH_SUFFIXES "fxt")
     endif()
   endif()
   mark_as_advanced(FXT_fxt.h_DIRS)
@@ -183,9 +190,9 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FXT_FOUND) OR 
       string(REPLACE ":" ";" _lib_env "$ENV{LIB}")
     else()
       if(APPLE)
-	string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _lib_env "$ENV{DYLD_LIBRARY_PATH}")
       else()
-	string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _lib_env "$ENV{LD_LIBRARY_PATH}")
       endif()
       list(APPEND _lib_env "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
       list(APPEND _lib_env "${CMAKE_C_IMPLICIT_LINK_DIRECTORIES}")
@@ -206,14 +213,14 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FXT_FOUND) OR 
     if(FXT_DIR)
       set(FXT_fxt_LIBRARY "FXT_fxt_LIBRARY-NOTFOUND")
       find_library(FXT_fxt_LIBRARY
-	NAMES fxt
-	HINTS ${FXT_DIR}
-	PATH_SUFFIXES lib lib32 lib64)
+        NAMES fxt
+        HINTS ${FXT_DIR}
+        PATH_SUFFIXES lib lib32 lib64)
     else()
       set(FXT_fxt_LIBRARY "FXT_fxt_LIBRARY-NOTFOUND")
       find_library(FXT_fxt_LIBRARY
-	NAMES fxt
-	HINTS ${_lib_env})
+        NAMES fxt
+        HINTS ${_lib_env})
     endif()
   endif()
   mark_as_advanced(FXT_fxt_LIBRARY)
@@ -270,10 +277,10 @@ if( (NOT PKG_CONFIG_EXECUTABLE) OR (PKG_CONFIG_EXECUTABLE AND NOT FXT_FOUND) OR 
 
     if(NOT FXT_WORKS)
       if(NOT FXT_FIND_QUIETLY)
-	message(STATUS "Looking for fxt : test of fut_keychange with fxt library fails")
-	message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
-	message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
-	message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
+        message(STATUS "Looking for fxt : test of fut_keychange with fxt library fails")
+        message(STATUS "CMAKE_REQUIRED_LIBRARIES: ${CMAKE_REQUIRED_LIBRARIES}")
+        message(STATUS "CMAKE_REQUIRED_INCLUDES: ${CMAKE_REQUIRED_INCLUDES}")
+        message(STATUS "Check in CMakeFiles/CMakeError.log to figure out why it fails")
       endif()
     endif()
     set(CMAKE_REQUIRED_INCLUDES)
@@ -289,6 +296,7 @@ if (FXT_LIBRARIES)
   else()
     list(GET FXT_LIBRARIES 0 first_lib)
     get_filename_component(first_lib_path "${first_lib}" PATH)
+    set(FXT_LIBRARY_DIRS "${first_lib_path}")
   endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")

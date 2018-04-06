@@ -68,18 +68,18 @@ macro(Print_Find_Library_Blas_Status _libname _lib_to_find)
   else()
     if(${LIBNAME}_DIR)
       message("${Yellow}${LIBNAME}_DIR is defined but ${_lib_to_find}"
-	"has not been found in ${ARGN}${ColourReset}")
+        "has not been found in ${ARGN}${ColourReset}")
     else()
       message("${Yellow}${_lib_to_find} not found."
-	"Nor ${LIBNAME}_DIR neither ${LIBNAME}_LIBDIR"
-	"are defined so that we look for ${_lib_to_find} in"
-	"system paths (Linux: LD_LIBRARY_PATH, Windows: LIB,"
-	"Mac: DYLD_LIBRARY_PATH,"
-	"CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES,"
-	"CMAKE_C_IMPLICIT_LINK_DIRECTORIES)${ColourReset}")
+        "Nor ${LIBNAME}_DIR neither ${LIBNAME}_LIBDIR"
+        "are defined so that we look for ${_lib_to_find} in"
+        "system paths (Linux: LD_LIBRARY_PATH, Windows: LIB,"
+        "Mac: DYLD_LIBRARY_PATH,"
+        "CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES,"
+        "CMAKE_C_IMPLICIT_LINK_DIRECTORIES)${ColourReset}")
       if(_lib_env)
-	message("${Yellow}${_lib_to_find} has not been found in"
-	  "${_lib_env}${ColourReset}")
+        message("${Yellow}${_lib_to_find} has not been found in"
+          "${_lib_env}${ColourReset}")
       endif()
     endif()
   endif()
@@ -145,11 +145,11 @@ macro(Check_Scalapack_Libraries LIBRARIES _prefix _name _flags _list _blaslapack
       list(APPEND _libdir "${BLAS_DIR}")
       list(APPEND _libdir "${BLAS_DIR}/lib")
       if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-	list(APPEND _libdir "${BLAS_DIR}/lib64")
-	list(APPEND _libdir "${BLAS_DIR}/lib/intel64")
+        list(APPEND _libdir "${BLAS_DIR}/lib64")
+        list(APPEND _libdir "${BLAS_DIR}/lib/intel64")
       else()
-	list(APPEND _libdir "${BLAS_DIR}/lib32")
-	list(APPEND _libdir "${BLAS_DIR}/lib/ia32")
+        list(APPEND _libdir "${BLAS_DIR}/lib32")
+        list(APPEND _libdir "${BLAS_DIR}/lib/ia32")
       endif()
     elseif(ENV_BLAS_LIBDIR)
       list(APPEND _libdir "${ENV_BLAS_LIBDIR}")
@@ -157,11 +157,11 @@ macro(Check_Scalapack_Libraries LIBRARIES _prefix _name _flags _list _blaslapack
       list(APPEND _libdir "${ENV_BLAS_DIR}")
       list(APPEND _libdir "${ENV_BLAS_DIR}/lib")
       if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-	list(APPEND _libdir "${ENV_BLAS_DIR}/lib64")
-	list(APPEND _libdir "${ENV_BLAS_DIR}/lib/intel64")
+        list(APPEND _libdir "${ENV_BLAS_DIR}/lib64")
+        list(APPEND _libdir "${ENV_BLAS_DIR}/lib/intel64")
       else()
-	list(APPEND _libdir "${ENV_BLAS_DIR}/lib32")
-	list(APPEND _libdir "${ENV_BLAS_DIR}/lib/ia32")
+        list(APPEND _libdir "${ENV_BLAS_DIR}/lib32")
+        list(APPEND _libdir "${ENV_BLAS_DIR}/lib/ia32")
       endif()
     endif()
     if (SCALAPACK_LIBDIR)
@@ -170,11 +170,11 @@ macro(Check_Scalapack_Libraries LIBRARIES _prefix _name _flags _list _blaslapack
       list(APPEND _libdir "${SCALAPACK_DIR}")
       list(APPEND _libdir "${SCALAPACK_DIR}/lib")
       if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-	list(APPEND _libdir "${SCALAPACK_DIR}/lib64")
-	list(APPEND _libdir "${SCALAPACK_DIR}/lib/intel64")
+        list(APPEND _libdir "${SCALAPACK_DIR}/lib64")
+        list(APPEND _libdir "${SCALAPACK_DIR}/lib/intel64")
       else()
-	list(APPEND _libdir "${SCALAPACK_DIR}/lib32")
-	list(APPEND _libdir "${SCALAPACK_DIR}/lib/ia32")
+        list(APPEND _libdir "${SCALAPACK_DIR}/lib32")
+        list(APPEND _libdir "${SCALAPACK_DIR}/lib/ia32")
       endif()
     elseif(ENV_SCALAPACK_LIBDIR)
       list(APPEND _libdir "${ENV_SCALAPACK_LIBDIR}")
@@ -182,29 +182,29 @@ macro(Check_Scalapack_Libraries LIBRARIES _prefix _name _flags _list _blaslapack
       list(APPEND _libdir "${ENV_SCALAPACK_DIR}")
       list(APPEND _libdir "${ENV_SCALAPACK_DIR}/lib")
       if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-	list(APPEND _libdir "${ENV_SCALAPACK_DIR}/lib64")
-	list(APPEND _libdir "${ENV_SCALAPACK_DIR}/lib/intel64")
+        list(APPEND _libdir "${ENV_SCALAPACK_DIR}/lib64")
+        list(APPEND _libdir "${ENV_SCALAPACK_DIR}/lib/intel64")
       else()
-	list(APPEND _libdir "${ENV_SCALAPACK_DIR}/lib32")
-	list(APPEND _libdir "${ENV_SCALAPACK_DIR}/lib/ia32")
+        list(APPEND _libdir "${ENV_SCALAPACK_DIR}/lib32")
+        list(APPEND _libdir "${ENV_SCALAPACK_DIR}/lib/ia32")
       endif()
     else()
       if (ENV_MKLROOT)
-	list(APPEND _libdir "${ENV_MKLROOT}/lib")
-	if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-	  list(APPEND _libdir "${ENV_MKLROOT}/lib64")
-	  list(APPEND _libdir "${ENV_MKLROOT}/lib/intel64")
-	else()
-	  list(APPEND _libdir "${ENV_MKLROOT}/lib32")
-	  list(APPEND _libdir "${ENV_MKLROOT}/lib/ia32")
-	endif()
+        list(APPEND _libdir "${ENV_MKLROOT}/lib")
+        if("${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+          list(APPEND _libdir "${ENV_MKLROOT}/lib64")
+          list(APPEND _libdir "${ENV_MKLROOT}/lib/intel64")
+        else()
+          list(APPEND _libdir "${ENV_MKLROOT}/lib32")
+          list(APPEND _libdir "${ENV_MKLROOT}/lib/ia32")
+        endif()
       endif()
       if (WIN32)
-	string(REPLACE ":" ";" _libdir2 "$ENV{LIB}")
+        string(REPLACE ":" ";" _libdir2 "$ENV{LIB}")
       elseif (APPLE)
-	string(REPLACE ":" ";" _libdir2 "$ENV{DYLD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _libdir2 "$ENV{DYLD_LIBRARY_PATH}")
       else ()
-	string(REPLACE ":" ";" _libdir2 "$ENV{LD_LIBRARY_PATH}")
+        string(REPLACE ":" ";" _libdir2 "$ENV{LD_LIBRARY_PATH}")
       endif ()
       list(APPEND _libdir "${_libdir2}")
       list(APPEND _libdir "${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}")
@@ -221,29 +221,29 @@ macro(Check_Scalapack_Libraries LIBRARIES _prefix _name _flags _list _blaslapack
 
     if(_libraries_work)
       if (BLA_STATIC)
-	if (WIN32)
-	  set(CMAKE_FIND_LIBRARY_SUFFIXES .lib ${CMAKE_FIND_LIBRARY_SUFFIXES})
-	endif ( WIN32 )
-	if (APPLE)
-	  set(CMAKE_FIND_LIBRARY_SUFFIXES .lib ${CMAKE_FIND_LIBRARY_SUFFIXES})
-	else (APPLE)
-	  set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
-	endif (APPLE)
+        if (WIN32)
+          set(CMAKE_FIND_LIBRARY_SUFFIXES .lib ${CMAKE_FIND_LIBRARY_SUFFIXES})
+        endif ( WIN32 )
+        if (APPLE)
+          set(CMAKE_FIND_LIBRARY_SUFFIXES .lib ${CMAKE_FIND_LIBRARY_SUFFIXES})
+        else (APPLE)
+          set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+        endif (APPLE)
       else (BLA_STATIC)
-	if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-	  # for ubuntu's libblas3gf and libscalapack3gf packages
-	  set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES} .so.3gf)
-	endif ()
+        if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+          # for ubuntu's libblas3gf and libscalapack3gf packages
+          set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES} .so.3gf)
+        endif ()
       endif (BLA_STATIC)
       find_library(${_prefix}_${_library}_LIBRARY
-	NAMES ${_library}
-	HINTS ${_libdir}
-	)
+        NAMES ${_library}
+        HINTS ${_libdir}
+        )
       mark_as_advanced(${_prefix}_${_library}_LIBRARY)
       # Print status if not found
       # -------------------------
       if (NOT ${_prefix}_${_library}_LIBRARY AND NOT SCALAPACK_FIND_QUIETLY AND SCALAPACK_VERBOSE)
-	Print_Find_Library_Blas_Status(scalapack ${_library} ${_libdir})
+        Print_Find_Library_Blas_Status(scalapack ${_library} ${_libdir})
       endif ()
       set(${LIBRARIES} ${${LIBRARIES}} ${${_prefix}_${_library}_LIBRARY})
       set(_libraries_work ${${_prefix}_${_library}_LIBRARY})
@@ -259,7 +259,7 @@ macro(Check_Scalapack_Libraries LIBRARIES _prefix _name _flags _list _blaslapack
     endif(UNIX AND BLA_STATIC)
     if (SCALAPACK_VERBOSE)
       message("${Cyan}SCALAPACK libs found. Try to compile symbol ${_name} with"
-	"following libraries: ${CMAKE_REQUIRED_LIBRARIES}")
+        "following libraries: ${CMAKE_REQUIRED_LIBRARIES}")
     endif ()
     if(NOT SCALAPACK_FOUND)
       unset(${_prefix}${_combined_name}_WORKS CACHE)
@@ -322,84 +322,96 @@ if(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
     endif(NOT BLA_VENDOR)
   endif ($ENV{BLA_VENDOR} MATCHES ".+")
 
-  # Generic SCALAPACK library
-  if (BLA_VENDOR STREQUAL "Generic" OR
-      BLA_VENDOR STREQUAL "All")
-    if ( NOT SCALAPACK_LIBRARIES )
-      check_scalapack_libraries(
-	SCALAPACK_LIBRARIES
-	SCALAPACK
-	pdgemm
-	""
-	"scalapack" # scalapack lib to look for
-	"${LAPACK_LIBRARIES};${BLAS_LIBRARIES}" # blas and lapack libs
-	"${MPI_Fortran_LIBRARIES}" # mpi libs
-	""          # threads libs
-	)
-    endif ( NOT SCALAPACK_LIBRARIES )
-  endif ()
   #intel scalapack
   if (BLA_VENDOR MATCHES "Intel" OR BLA_VENDOR STREQUAL "All")
     if (UNIX AND NOT WIN32)
       find_library(M_LIBRARY NAMES m)
       mark_as_advanced(M_LIBRARY)
       if(M_LIBRARY)
-	set(LM "-lm")
+        set(LM "-lm")
       else()
-	set(LM "")
+        set(LM "")
       endif()
     endif ()
     if (_LANGUAGES_ MATCHES C OR _LANGUAGES_ MATCHES CXX)
       if(SCALAPACK_FIND_QUIETLY OR NOT SCALAPACK_FIND_REQUIRED)
-	find_PACKAGE(Threads)
+        find_PACKAGE(Threads)
       else()
-	find_package(Threads REQUIRED)
+        find_package(Threads REQUIRED)
       endif()
 
       set(SCALAPACK_SEARCH_LIBS "")
 
       if (BLA_F95)
-	set(SCALAPACK_mkl_SEARCH_SYMBOL "PDGEMM")
-	set(_LIBRARIES SCALAPACK95_LIBRARIES)
-	set(_BLAS_LIBRARIES ${BLAS95_LIBRARIES})
-	list(APPEND SCALAPACK_SEARCH_LIBS "mkl_scalapack_lp64")
+        set(SCALAPACK_mkl_SEARCH_SYMBOL "PDGEMM")
+        set(_LIBRARIES SCALAPACK95_LIBRARIES)
+        set(_BLAS_LIBRARIES ${BLAS95_LIBRARIES})
+        list(APPEND SCALAPACK_SEARCH_LIBS "mkl_scalapack_lp64")
       else()
-	set(SCALAPACK_mkl_SEARCH_SYMBOL "pdgemm")
-	set(_LIBRARIES SCALAPACK_LIBRARIES)
-	set(_BLAS_LIBRARIES ${BLAS_LIBRARIES})
-	list(APPEND SCALAPACK_SEARCH_LIBS "mkl_scalapack_lp64")
+        set(SCALAPACK_mkl_SEARCH_SYMBOL "pdgemm")
+        set(_LIBRARIES SCALAPACK_LIBRARIES)
+        set(_BLAS_LIBRARIES ${BLAS_LIBRARIES})
+        list(APPEND SCALAPACK_SEARCH_LIBS "mkl_scalapack_lp64")
       endif()
 
       # First try empty scalapack libs
       if (NOT ${_LIBRARIES})
-	check_scalapack_libraries(
-	  ${_LIBRARIES}
-	  BLAS
-	  ${SCALAPACK_mkl_SEARCH_SYMBOL}
-	  ""
-	  ""
-	  "${_BLAS_LIBRARIES}"
-	  ""
-	  "${MPI_Fortran_LIBRARIES}"
-	  )
+        check_scalapack_libraries(
+          ${_LIBRARIES}
+          BLAS
+          ${SCALAPACK_mkl_SEARCH_SYMBOL}
+          ""
+          ""
+          "${_BLAS_LIBRARIES}"
+          ""
+          "${MPI_Fortran_LIBRARIES}"
+          )
       endif ()
       # Then try the search libs
       foreach (IT ${SCALAPACK_SEARCH_LIBS})
-	if (NOT ${_LIBRARIES})
-	  check_scalapack_libraries(
-	    ${_LIBRARIES}
-	    BLAS
-	    ${SCALAPACK_mkl_SEARCH_SYMBOL}
-	    ""
-	    "${IT};mkl_blacs_intelmpi_lp64"
-	    "${_BLAS_LIBRARIES}"
-	    ""
-	    "${MPI_Fortran_LIBRARIES}"
-	    )
-	endif ()
+        if (NOT ${_LIBRARIES})
+          check_scalapack_libraries(
+            ${_LIBRARIES}
+            BLAS
+            ${SCALAPACK_mkl_SEARCH_SYMBOL}
+            ""
+            "${IT};mkl_blacs_intelmpi_lp64"
+            "${_BLAS_LIBRARIES}"
+            ""
+            "${MPI_Fortran_LIBRARIES}"
+            )
+        endif ()
       endforeach ()
     endif ()
   endif()
+  # Generic SCALAPACK library
+  if (BLA_VENDOR STREQUAL "Generic" OR
+      BLA_VENDOR STREQUAL "All")
+    if ( NOT SCALAPACK_LIBRARIES )
+      check_scalapack_libraries(
+        SCALAPACK_LIBRARIES
+        SCALAPACK
+        pdgemm
+        ""
+        "scalapack" # scalapack lib to look for
+        "${LAPACK_LIBRARIES};${BLAS_LIBRARIES}" # blas and lapack libs
+        "${MPI_Fortran_LIBRARIES}" # mpi libs
+        ""          # threads libs
+        )
+    endif ( NOT SCALAPACK_LIBRARIES )
+    if ( NOT SCALAPACK_LIBRARIES )
+      check_scalapack_libraries(
+        SCALAPACK_LIBRARIES
+        SCALAPACK
+        pdgemm
+        ""
+        "scalapack-openmpi" # scalapack lib to look for
+        "${LAPACK_LIBRARIES};${BLAS_LIBRARIES}" # blas and lapack libs
+        "${MPI_Fortran_LIBRARIES}" # mpi libs
+        ""          # threads libs
+        )
+    endif ( NOT SCALAPACK_LIBRARIES )
+  endif ()
 else(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
   message(STATUS "SCALAPACK requires BLAS, LAPACK, and MPI")
 endif(BLAS_FOUND AND LAPACK_FOUND AND MPI_FOUND)
@@ -416,23 +428,23 @@ if(BLA_F95)
       message(STATUS "SCALAPACK_LIBRARIES ${SCALAPACK_LIBRARIES}")
     else(SCALAPACK95_FOUND)
       message(WARNING "BLA_VENDOR has been set to ${BLA_VENDOR} but SCALAPACK 95 libraries could not be found or check of symbols failed."
-	"\nPlease indicate where to find SCALAPACK libraries. You have three options:\n"
-	"- Option 1: Provide the installation directory of SCALAPACK library with cmake option: -DSCALAPACK_DIR=your/path/to/scalapack\n"
-	"- Option 2: Provide the directory where to find BLAS libraries with cmake option: -DBLAS_LIBDIR=your/path/to/blas/libs\n"
-	"- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
-	"\nTo follow libraries detection more precisely you can activate a verbose mode with -DSCALAPACK_VERBOSE=ON at cmake configure."
-	"\nYou could also specify a BLAS vendor to look for by setting -DBLA_VENDOR=blas_vendor_name."
-	"\nList of possible BLAS vendor: Goto, ATLAS PhiPACK, CXML, DXML, SunPerf, SCSL, SGIMATH, IBMESSL, Intel10_32 (intel mkl v10 32 bit),"
-	"Intel10_64lp (intel mkl v10 64 bit, lp thread model, lp64 model), Intel10_64lp_seq (intel mkl v10 64 bit, sequential code, lp64 model),"
-	"Intel( older versions of mkl 32 and 64 bit), ACML, ACML_MP, ACML_GPU, Apple, NAS, Generic")
+        "\nPlease indicate where to find SCALAPACK libraries. You have three options:\n"
+        "- Option 1: Provide the installation directory of SCALAPACK library with cmake option: -DSCALAPACK_DIR=your/path/to/scalapack\n"
+        "- Option 2: Provide the directory where to find BLAS libraries with cmake option: -DBLAS_LIBDIR=your/path/to/blas/libs\n"
+        "- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
+        "\nTo follow libraries detection more precisely you can activate a verbose mode with -DSCALAPACK_VERBOSE=ON at cmake configure."
+        "\nYou could also specify a BLAS vendor to look for by setting -DBLA_VENDOR=blas_vendor_name."
+        "\nList of possible BLAS vendor: Goto, ATLAS PhiPACK, CXML, DXML, SunPerf, SCSL, SGIMATH, IBMESSL, Intel10_32 (intel mkl v10 32 bit),"
+        "Intel10_64lp (intel mkl v10 64 bit, lp thread model, lp64 model), Intel10_64lp_seq (intel mkl v10 64 bit, sequential code, lp64 model),"
+        "Intel( older versions of mkl 32 and 64 bit), ACML, ACML_MP, ACML_GPU, Apple, NAS, Generic")
       if(SCALAPACK_FIND_REQUIRED)
-	message(FATAL_ERROR
-	  "A required library with SCALAPACK95 API not found. Please specify library location."
-	  )
+        message(FATAL_ERROR
+          "A required library with SCALAPACK95 API not found. Please specify library location."
+          )
       else(SCALAPACK_FIND_REQUIRED)
-	message(STATUS
-	  "A library with SCALAPACK95 API not found. Please specify library location."
-	  )
+        message(STATUS
+          "A library with SCALAPACK95 API not found. Please specify library location."
+          )
       endif(SCALAPACK_FIND_REQUIRED)
     endif(SCALAPACK95_FOUND)
   endif(NOT SCALAPACK_FIND_QUIETLY)
@@ -451,23 +463,23 @@ else(BLA_F95)
       message(STATUS "SCALAPACK_LIBRARIES ${SCALAPACK_LIBRARIES}")
     else(SCALAPACK_FOUND)
       message(WARNING "BLA_VENDOR has been set to ${BLA_VENDOR} but SCALAPACK libraries could not be found or check of symbols failed."
-	"\nPlease indicate where to find SCALAPACK libraries. You have three options:\n"
-	"- Option 1: Provide the installation directory of SCALAPACK library with cmake option: -DSCALAPACK_DIR=your/path/to/scalapack\n"
-	"- Option 2: Provide the directory where to find BLAS libraries with cmake option: -DBLAS_LIBDIR=your/path/to/blas/libs\n"
-	"- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
-	"\nTo follow libraries detection more precisely you can activate a verbose mode with -DSCALAPACK_VERBOSE=ON at cmake configure."
-	"\nYou could also specify a BLAS vendor to look for by setting -DBLA_VENDOR=blas_vendor_name."
-	"\nList of possible BLAS vendor: Goto, ATLAS PhiPACK, CXML, DXML, SunPerf, SCSL, SGIMATH, IBMESSL, Intel10_32 (intel mkl v10 32 bit),"
-	"Intel10_64lp (intel mkl v10 64 bit, lp thread model, lp64 model), Intel10_64lp_seq (intel mkl v10 64 bit, sequential code, lp64 model),"
-	"Intel( older versions of mkl 32 and 64 bit), ACML, ACML_MP, ACML_GPU, Apple, NAS, Generic")
+        "\nPlease indicate where to find SCALAPACK libraries. You have three options:\n"
+        "- Option 1: Provide the installation directory of SCALAPACK library with cmake option: -DSCALAPACK_DIR=your/path/to/scalapack\n"
+        "- Option 2: Provide the directory where to find BLAS libraries with cmake option: -DBLAS_LIBDIR=your/path/to/blas/libs\n"
+        "- Option 3: Update your environment variable (Linux: LD_LIBRARY_PATH, Windows: LIB, Mac: DYLD_LIBRARY_PATH)\n"
+        "\nTo follow libraries detection more precisely you can activate a verbose mode with -DSCALAPACK_VERBOSE=ON at cmake configure."
+        "\nYou could also specify a BLAS vendor to look for by setting -DBLA_VENDOR=blas_vendor_name."
+        "\nList of possible BLAS vendor: Goto, ATLAS PhiPACK, CXML, DXML, SunPerf, SCSL, SGIMATH, IBMESSL, Intel10_32 (intel mkl v10 32 bit),"
+        "Intel10_64lp (intel mkl v10 64 bit, lp thread model, lp64 model), Intel10_64lp_seq (intel mkl v10 64 bit, sequential code, lp64 model),"
+        "Intel( older versions of mkl 32 and 64 bit), ACML, ACML_MP, ACML_GPU, Apple, NAS, Generic")
       if(SCALAPACK_FIND_REQUIRED)
-	message(FATAL_ERROR
-	  "A required library with SCALAPACK API not found. Please specify library location."
-	  )
+        message(FATAL_ERROR
+          "A required library with SCALAPACK API not found. Please specify library location."
+          )
       else(SCALAPACK_FIND_REQUIRED)
-	message(STATUS
-	  "A library with SCALAPACK API not found. Please specify library location."
-	  )
+        message(STATUS
+          "A library with SCALAPACK API not found. Please specify library location."
+          )
       endif(SCALAPACK_FIND_REQUIRED)
     endif(SCALAPACK_FOUND)
   endif(NOT SCALAPACK_FIND_QUIETLY)
@@ -478,6 +490,9 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES ${_scalapack_ORIG_CMAKE_FIND_LIBRARY_SUFFIXES})
 if (SCALAPACK_LIBRARIES)
   list(GET SCALAPACK_LIBRARIES 0 first_lib)
   get_filename_component(first_lib_path "${first_lib}" PATH)
+  if (NOT SCALAPACK_LIBRARY_DIRS)
+    set(SCALAPACK_LIBRARY_DIRS "${first_lib_path}")
+  endif()
   if (${first_lib_path} MATCHES "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)")
     string(REGEX REPLACE "(/lib(32|64)?$)|(/lib/intel64$|/lib/ia32$)" "" not_cached_dir "${first_lib_path}")
     set(SCALAPACK_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of SCALAPACK library" FORCE)

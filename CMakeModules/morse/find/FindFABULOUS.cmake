@@ -7,9 +7,10 @@
 # Once done this will define
 #  FABULOUS_FOUND - System has fabulous
 #  FABULOUS_INCLUDE_DIRS - The fabulous include directories
+#  FABULOUS_MODULE_DIRS - The fabulous module directories for Fortran API
 #  FABULOUS_LIBRARIES - The libraries needed to use fabulous
 #  FABULOUS_DEFINITIONS - Compiler switches required for using fabulous
-
+#
 include(FindPackageHandleStandardArgs)
 
 macro(FABULOUS_FIND_LIBRARIES_FROM_PKGCONFIG_RESULTS _prefix _pc_xprefix)
@@ -115,6 +116,8 @@ if ((NOT FABULOUS_FOUND) AND (FABULOUS_GIVEN_BY_USER OR (NOT PKG_CONFIG_FOUND)))
         endif()
 
         find_path(FABULOUS_INCLUDE_DIRS NAMES fabulous.h HINTS ${FABULOUS_INCDIR})
+        find_path(FABULOUS_MODULE_DIRS NAMES fabulous_mod.mod HINTS ${FABULOUS_INCDIR}
+          PATH_SUFFIXES fabulous)
         find_library(FABULOUS_STATIC_LIBRARY NAMES libfabulous.a HINTS ${FABULOUS_LIBDIR})
         find_library(FABULOUS_SHARED_LIBRARY NAMES libfabulous.so HINTS ${FABULOUS_LIBDIR})
     else()
@@ -125,6 +128,9 @@ if ((NOT FABULOUS_FOUND) AND (FABULOUS_GIVEN_BY_USER OR (NOT PKG_CONFIG_FOUND)))
         endif()
 
         find_path(FABULOUS_INCLUDE_DIRS NAMES fabulous.h
+            HINTS ${FABULOUS_DIR}
+            PATH_SUFFIXES include include/fabulous)
+        find_path(FABULOUS_MODULE_DIRS NAMES fabulous_mod.mod
             HINTS ${FABULOUS_DIR}
             PATH_SUFFIXES include include/fabulous)
         find_library(FABULOUS_STATIC_LIBRARY NAMES libfabulous.a
@@ -139,17 +145,18 @@ if ((NOT FABULOUS_FOUND) AND (FABULOUS_GIVEN_BY_USER OR (NOT PKG_CONFIG_FOUND)))
     find_package_handle_standard_args(FABULOUS_SHARED DEFAULT_MSG FABULOUS_SHARED_LIBRARY)
     mark_as_advanced(FABULOUS_STATIC_LIBRARY FABULOUS_SHARED_LIBRARY)
 
+    if (FABULOUS_FIND_REQUIRED)
+      find_package(CBLAS REQUIRED)
+      find_package(LAPACKE REQUIRED)
+    else()
+      find_package(CBLAS)
+      find_package(LAPACKE)
+    endif()
+
     if (FABULOUS_STATIC_FOUND AND NOT FABULOUS_SHARED_FOUND)
-        if (FABULOUS_FIND_REQUIRED)
-            find_package(CBLAS REQUIRED)
-            find_package(LAPACKE REQUIRED)
-        else()
-            find_package(CBLAS)
-            find_package(LAPACKE)
-        endif()
-        set(FABULOUS_LIBRARIES ${FABULOUS_STATIC_LIBRARY} ${CBLAS_LIBRARIES} ${LAPACKE_LIBRARIES})
+        set(FABULOUS_LIBRARIES ${FABULOUS_STATIC_LIBRARY} ${CBLAS_LIBRARIES} ${LAPACKE_LIBRARIES} "-lstdc++" "-lm")
     elseif(FABULOUS_SHARED_FOUND)
-        set(FABULOUS_LIBRARIES ${FABULOUS_SHARED_LIBRARY})
+        set(FABULOUS_LIBRARIES ${FABULOUS_SHARED_LIBRARY} ${CBLAS_LIBRARIES} ${LAPACKE_LIBRARIES})
     endif()
     fabulous_check_function_exists(FABULOUS fabulous_create)
     find_package_handle_standard_args(

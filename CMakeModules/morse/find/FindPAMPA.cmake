@@ -128,18 +128,18 @@ else()
     foreach(pampa_hdr ${PAMPA_hdrs_to_find})
       set(PAMPA_${pampa_hdr}_DIRS "PAMPA_${pampa_hdr}_DIRS-NOTFOUND")
       find_path(PAMPA_${pampa_hdr}_DIRS
-	NAMES ${pampa_hdr}
-	HINTS ${PAMPA_DIR}
-	PATH_SUFFIXES "include" "include/pampa")
+        NAMES ${pampa_hdr}
+        HINTS ${PAMPA_DIR}
+        PATH_SUFFIXES "include" "include/pampa")
       mark_as_advanced(PAMPA_${pampa_hdr}_DIRS)
     endforeach()
   else()
     foreach(pampa_hdr ${PAMPA_hdrs_to_find})
       set(PAMPA_${pampa_hdr}_DIRS "PAMPA_${pampa_hdr}_DIRS-NOTFOUND")
       find_path(PAMPA_${pampa_hdr}_DIRS
-	NAMES ${pampa_hdr}
-	HINTS ${_inc_env}
-	PATH_SUFFIXES "pampa")
+        NAMES ${pampa_hdr}
+        HINTS ${_inc_env}
+        PATH_SUFFIXES "pampa")
       mark_as_advanced(PAMPA_${pampa_hdr}_DIRS)
     endforeach()
   endif()
@@ -203,16 +203,16 @@ else()
     foreach(pampa_lib ${PAMPA_libs_to_find})
       set(PAMPA_${pampa_lib}_LIBRARY "PAMPA_${pampa_lib}_LIBRARY-NOTFOUND")
       find_library(PAMPA_${pampa_lib}_LIBRARY
-	NAMES ${pampa_lib}
-	HINTS ${PAMPA_DIR}
-	PATH_SUFFIXES lib lib32 lib64)
+        NAMES ${pampa_lib}
+        HINTS ${PAMPA_DIR}
+        PATH_SUFFIXES lib lib32 lib64)
     endforeach()
   else()
     foreach(pampa_lib ${PAMPA_libs_to_find})
       set(PAMPA_${pampa_lib}_LIBRARY "PAMPA_${pampa_lib}_LIBRARY-NOTFOUND")
       find_library(PAMPA_${pampa_lib}_LIBRARY
-	NAMES ${pampa_lib}
-	HINTS ${_lib_env})
+        NAMES ${pampa_lib}
+        HINTS ${_lib_env})
     endforeach()
   endif()
 endif()
@@ -265,7 +265,7 @@ if(PAMPA_LIBRARIES)
     endif()
     if (MPI_C_LINK_FLAGS)
       if (${MPI_C_LINK_FLAGS} MATCHES "  -")
-	string(REGEX REPLACE " -" "-" MPI_C_LINK_FLAGS ${MPI_C_LINK_FLAGS})
+        string(REGEX REPLACE " -" "-" MPI_C_LINK_FLAGS ${MPI_C_LINK_FLAGS})
       endif()
       list(APPEND REQUIRED_LDFLAGS "${MPI_C_LINK_FLAGS}")
     endif()
@@ -323,6 +323,9 @@ endif(PAMPA_LIBRARIES)
 if (PAMPA_LIBRARIES)
   list(GET PAMPA_LIBRARIES 0 first_lib)
   get_filename_component(first_lib_path "${first_lib}" PATH)
+  if (NOT PAMPA_LIBRARY_DIRS)
+    set(PAMPA_LIBRARY_DIRS "${first_lib_path}")
+  endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
     set(PAMPA_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of PAMPA library" FORCE)

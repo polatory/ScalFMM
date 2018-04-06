@@ -197,16 +197,16 @@ else()
     foreach(scotch_lib ${SCOTCH_libs_to_find})
       set(SCOTCH_${scotch_lib}_LIBRARY "SCOTCH_${scotch_lib}_LIBRARY-NOTFOUND")
       find_library(SCOTCH_${scotch_lib}_LIBRARY
-	NAMES ${scotch_lib}
-	HINTS ${SCOTCH_DIR}
-	PATH_SUFFIXES lib lib32 lib64)
+        NAMES ${scotch_lib}
+        HINTS ${SCOTCH_DIR}
+        PATH_SUFFIXES lib lib32 lib64)
     endforeach()
   else()
     foreach(scotch_lib ${SCOTCH_libs_to_find})
       set(SCOTCH_${scotch_lib}_LIBRARY "SCOTCH_${scotch_lib}_LIBRARY-NOTFOUND")
       find_library(SCOTCH_${scotch_lib}_LIBRARY
-	NAMES ${scotch_lib}
-	HINTS ${_lib_env})
+        NAMES ${scotch_lib}
+        HINTS ${_lib_env})
     endforeach()
   endif()
 endif()
@@ -306,6 +306,9 @@ endif(SCOTCH_LIBRARIES)
 if (SCOTCH_LIBRARIES)
   list(GET SCOTCH_LIBRARIES 0 first_lib)
   get_filename_component(first_lib_path "${first_lib}" PATH)
+  if (NOT SCOTCH_LIBRARY_DIRS)
+    set(SCOTCH_LIBRARY_DIRS "${first_lib_path}")
+  endif()
   if (${first_lib_path} MATCHES "/lib(32|64)?$")
     string(REGEX REPLACE "/lib(32|64)?$" "" not_cached_dir "${first_lib_path}")
     set(SCOTCH_DIR_FOUND "${not_cached_dir}" CACHE PATH "Installation directory of SCOTCH library" FORCE)
