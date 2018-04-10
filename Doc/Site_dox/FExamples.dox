@@ -1,4 +1,4 @@
-/*! \page mainexamples Main Example	
+/*! \page mainexamples Main Examples	
 
  * \tableofcontents
  * \section The repositories structure
@@ -7,18 +7,18 @@
  <ul>
  <li> Src       sources folder </li>
   <ul>
-  <li>Arranger: ??</li>
+  <li>Arranger: </li>
   <li>Components: Basic components.</li>
   <li>Containers: The containers used in ScalFMM</li>
   <li>Core: The different kind of parallel algorithms: Threads means OpenMP (fork-join, task, ...) while Proc is for MPI.</li>
-  <li>Extensions:  ??</li>
+  <li>Extensions:  classes or methods to extend the FMM.</li>
   <li>Files: our different loaders/wrtiters for particule (csvn vtk, FMA, ...)</li>
   <li>GroupTree: A grouped octreed used with runtime system to improve the granularity.</li>
   <li>Kernels: The different kernels available ins ScalFMM. One forlder per kernel. </li>
   <li>Utils: All classes used inside the Library that are not specific to the FFM method.</li>
   </ul>
   
- <li> Examples  Main drivers: distribution generation, FMM drivers (Rotation (1/r), Interpolation (Uniform and Chebyschev)</li>
+ <li> Examples  Main drivers: distribution generation, FMM drivers (Rotation (1/r), Interpolation (Uniform/Lagrange and Chebyschev)</li>
   <li> Tests. Other examples (prototpes) to understand how you can use the different features of ScalFMM.</li>
   <li> UTests  unit tests (CTEST)</li> 
   <li> Addons  folder that contains one sub-folder per addon</li>
