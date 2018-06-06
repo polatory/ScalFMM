@@ -35,7 +35,7 @@ GetCpuInfos()
 # SCALFMM version number.  An even minor number corresponds to releases.
 set(SCALFMM_MAJOR_VERSION 1)
 set(SCALFMM_MINOR_VERSION 5)
-set(SCALFMM_PATCH_VERSION 1)
+set(SCALFMM_PATCH_VERSION 2)
 set(SCALFMM_VERSION  "${SCALFMM_MAJOR_VERSION}.${SCALFMM_MINOR_VERSION}.${SCALFMM_PATCH_VERSION}" )
 
 set( MORSE_DISTRIB_DIR "" CACHE PATH "Directory of MORSE distribution")

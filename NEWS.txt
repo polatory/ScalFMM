@@ -6,8 +6,12 @@ Copyright (c) 2011-2018 Inria,   All rights reserved.
 This file contains the main features as well as overviews of specific
 bug fixes (and other actions) for each version of ScalFMM since
 version 1.1
+1.5.2
+-----
+- Many bug fixes in pseudo preriodic boundary condition un MPI version
 
 1.5.1
+-----
 - Many bug fixes in MPI version (Loader, GroupTree, ...)
 - set cmake_policy CMP0004 to NEW
 - fix some errors in Morse module with cmake 3.9.1

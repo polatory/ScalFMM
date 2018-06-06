@@ -1,6 +1,6 @@
 // See LICENCE file at project root
-#ifndef FBASICPARTICLECONTAINER_HPP
-#define FBASICPARTICLECONTAINER_HPP
+#ifndef FBASIC_PARTICLE_CONTAINER_HPP_
+#define FBASIC_PARTICLE_CONTAINER_HPP_
 
 #include "FAbstractParticleContainer.hpp"
 #include "FAbstractSerializable.hpp"
@@ -135,7 +135,7 @@ public:
     /////////////////////////////////////////////////////
     /////////////////////////////////////////////////////
 
-    FBasicParticleContainer(const FBasicParticleContainer&)            = delete;
+  FBasicParticleContainer(const FBasicParticleContainer&)              = delete;
     FBasicParticleContainer& operator=(const FBasicParticleContainer&) = delete;
 
     /////////////////////////////////////////////////////
@@ -177,6 +177,13 @@ public:
     }
 
     /**
+   * @brief getPositions
+   * @return get the position in write mode
+   */
+    FReal* const* getPositions() {
+        return positions;
+    }
+   /**
    * @brief getWPositions
    * @return get the position in write mode
    */
