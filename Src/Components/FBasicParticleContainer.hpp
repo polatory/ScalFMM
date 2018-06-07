@@ -136,10 +136,8 @@ public:
     /////////////////////////////////////////////////////
     /////////////////////////////////////////////////////
 
-  //  FBasicParticleContainer(const FBasicParticleContainer& leaf)              = delete;
   FBasicParticleContainer( FBasicParticleContainer& leaf) : nbParticles(leaf.nbParticles),allocatedParticles(leaf.allocatedParticles) 
   {
-    
     // allocate memory
     const FSize moduloParticlesNumber = (MemoryAlignement/sizeof(FReal));
     allocatedParticles = (nbParticles + moduloParticlesNumber - 1) & ~(moduloParticlesNumber-1);
@@ -150,8 +148,9 @@ public:
     FReal * const oldData = (leaf.getWPositions()[0]);
     
     std::copy(oldData,oldData+allocatedBytes,newData) ;
+    //
     // Fill the structure
-    FAlignedMemory::DeallocBytes(positions[0]);    
+    //
     for(int idx = 0 ; idx < 3 ; ++idx){
       positions[idx] = newData + (allocatedParticles * idx);
     }
