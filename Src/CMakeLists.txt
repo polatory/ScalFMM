@@ -91,7 +91,7 @@ SET(my_include_dirs "."
   "Arranger"        "Core"           "Utils"
   "Kernels/Chebyshev"       "Components"       "Extensions"  
   "Containers"       "Files"       "Kernels/Spherical"
-  "Kernels/P2P" "Kernels/Taylor" "Kernels/ROtation"
+  "Kernels/P2P" "Kernels/Taylor" "Kernels/Rotation"
   "Kernels/Uniform" "Kernels/Interpolation")
 
 if(SCALFMM_ONLY_DEVEL)
