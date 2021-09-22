@@ -6,6 +6,7 @@
 #include <array>
 #include <iterator>
 #include <ostream>
+#include <istream>
 
 #include "FMath.hpp"
 #include "FConstFuncs.hpp"
