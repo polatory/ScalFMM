@@ -29,7 +29,8 @@ The following are optional:
 
 ``` bash
 # Move to the build folder
-cd scalfmm/Build
+mkdir Build
+cd Build
 # Use cmake, with relevant options
 cmake .. # -DSCALFMM_USE_MPI=ON
 ```
@@ -74,11 +75,12 @@ The documentation can then be accessed from an internet browser at the address `
 
 
 ### Help and News
-
+soon available
+<!---
 You can subscribe to the scalfmm-public-users@lists.gforge.inria.fr mailing list (http://lists.gforge.inria.fr/cgi-bin/mailman/listinfo/scalfmm-public-users). The list is very low trafic (~ 2 mails per year), we will let you know of improvements and releases.
 
 Contact the developers at : scalfmm-public-support@lists.gforge.inria.fr
-
+-->
 ### Folder structure
   - Src : library core.
   - Data : particle distribution examples.
