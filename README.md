@@ -10,7 +10,7 @@ Copyright Inria, please read the licence.
 
 ### Requirements
 
-  - CMake v2.8.12 or later
+  - CMake v3.10.0 or later
   - C++ compiler that supports
     - C++14 [compiler support list](http://en.cppreference.com/w/cpp/compiler_support)
     - [OpenMP](http://www.openmp.org/resources/openmp-compilers/)
