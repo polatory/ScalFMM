@@ -2,9 +2,6 @@
 
 ----
 
-:warning: ScalFMM has moved to Inria's GitLab: https://gitlab.inria.fr/solverstack/ScalFMM
-
-----
 
 **ScalFMM** is a C++ library that implements a kernel independent Fast Multipole Method.
 
