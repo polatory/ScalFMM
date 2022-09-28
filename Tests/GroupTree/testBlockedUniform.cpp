@@ -2,7 +2,6 @@
 // ==== CMAKE =====
 // @FUSE_BLAS
 // @FUSE_FFT
-// @FUSE_STARPU
 // ================
 // Keep in private GIT
 
@@ -44,7 +43,11 @@
 #include <memory>
 
 
-#define RANDOM_PARTICLES
+//#define RANDOM_PARTICLES
+#if defined(SCALFMM_SEQUENTIAL)
+#undef SCALFMM_USE_STARPU
+#undef SCALFMM_USE_OMP4
+#endif
 
 #ifdef STARPU_SIMGRID_MLR_MODELS
 extern "C" {
@@ -65,7 +68,7 @@ int main(int argc, char* argv[]){
 
     // Initialize the types
     typedef double FReal;
-    static const int ORDER = 5;
+    static const int ORDER = 6;
     typedef FInterpMatrixKernelR<FReal> MatrixKernelClass;
 
     typedef FUnifCellPODCore         GroupCellSymbClass;
@@ -85,14 +88,21 @@ int main(int argc, char* argv[]){
     omp_set_num_threads(FParameters::getValue(argc,argv,FParameterDefinitions::NbThreads.options, omp_get_max_threads()));
     typedef FGroupTaskDepAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass,
             GroupCellSymbClass, GroupCellUpClass, GroupCellDownClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
+#elif defined(SCALFMM_SEQUENTIAL)
+     typedef FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
+     typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #else
-    typedef FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
+        FUnifKernel<FReal,GroupCellClass,GroupContainerClass,MatrixKernelClass,ORDER> GroupKernelClass;
     //typedef FGroupSeqAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
     typedef FGroupTaskAlgorithm<GroupOctreeClass, typename GroupOctreeClass::CellGroupClass, GroupCellClass, GroupKernelClass, typename GroupOctreeClass::ParticleGroupClass, GroupContainerClass > GroupAlgorithm;
 #endif
     // Get params
     const int NbLevels      = FParameters::getValue(argc,argv,FParameterDefinitions::OctreeHeight.options, 5);
     const int groupSize     = FParameters::getValue(argc,argv,LocalOptionBlocSize.options, 250);
+    //
+    std::cout << "Tree height: " << NbLevels <<"\n"
+              << "Group Size:  " << groupSize <<"\n"
+	      << "Order:       " << ORDER << "\n";
 
     // Load the particles
 #ifdef RANDOM_PARTICLES
@@ -121,7 +131,7 @@ int main(int argc, char* argv[]){
     // Put the data into the tree
     timer.tic();
     GroupOctreeClass groupedTree(NbLevels, loader.getBoxWidth(), loader.getCenterOfBox(), groupSize, &allParticles);
-    groupedTree.printInfoBlocks();
+    //    groupedTree.printInfoBlocks();
     std::cout << "Tree created in " << timer.tacAndElapsed() << "s\n";
 
     // Run the algorithm
@@ -131,12 +141,15 @@ int main(int argc, char* argv[]){
 
     // Extended for Native vs SimGrid makespans comparison
     timer.tic();
+#ifdef SCALFMM_USE_STARPU
     double start_time = starpu_timing_now();
+#endif
     groupalgo.execute();
+#ifdef SCALFMM_USE_STARPU
     double end_time = starpu_timing_now();
-    std::cout << "Kernel executed in in " << timer.tacAndElapsed() << "s\n";
     std::cout << (end_time - start_time)/1000 << "\n";
-
+#endif
+    std::cout << "Kernel executed in in " << timer.tacAndElapsed() << "s\n";
     // Validate the result
     if(FParameters::existParameter(argc, argv, LocalOptionNoValidate.options) == false){
         FSize offsetParticles = 0;
