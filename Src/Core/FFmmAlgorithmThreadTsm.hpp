@@ -3,6 +3,8 @@
 #define FFMMALGORITHMTHREADTSM_HPP
 
 
+#include <vector>
+
 #include "../Utils/FAssert.hpp"
 #include "../Utils/FLog.hpp"
 
